@@ -32,12 +32,25 @@
    - 遷移完成的檔案不應再有任何 `privacygui_widgets` 導入
    - 逐步移除 `hide` 語句，直到完全不需要
 
-3. **不確定時請詢問**
+3. **替換 Flutter 原生基礎元件**
+   - 遷移時應順手將 Flutter 原生元件替換為 ui_kit 對應元件
+   - 這確保整個應用程式的視覺一致性和主題支援
+
+   | Flutter 原生元件 | ui_kit 替換 | 說明 |
+   |-----------------|-------------|------|
+   | `Text` | `AppText` | 統一字型和樣式系統 |
+   | `Icon` | `AppIcon.font` | 統一圖示渲染和主題 |
+   | `Image.asset` | `AppImage.asset` | 支援暗色主題適配 |
+   | `Image.network` | `AppImage.network` | 統一載入和錯誤處理 |
+   | `SvgPicture.asset` | `AppSvg` | SVG 渲染和主題支援 |
+   | `CircularProgressIndicator` | `AppLoader` | 載入指示器 |
+
+4. **不確定時請詢問**
    - 若找不到匹配的 ui_kit 元件 → **請詢問**
    - 若不確定遷移方式 → **請詢問**
    - 若元件行為有差異 → **請詢問**
 
-4. **已知 ui_kit 限制**
+5. **已知 ui_kit 限制**
    - **Radius 定義缺失**: ui_kit 沒有導出 radius 相關常數，使用標準 `BorderRadius.circular()` 值
    - **部分元件暫無**: 如 `AppListCard`，需建立組合元件替代 (詳見 [MIGRATION_NOTES.md](./MIGRATION_NOTES.md))
 
@@ -49,6 +62,138 @@
 | 元件名稱 | 處理方式 |
 |---------|---------|
 | `AppBasicLayout` | 移除，改用 `UiKitPageView` 或直接排版 |
+
+### AppLoadableWidget 遷移
+
+`AppLoadableWidget` 是一個帶有 loading 狀態的按鈕/開關元件。有兩種遷移方式：
+
+#### 方式一：使用 AppButton 內建 loading 參數 (推薦)
+
+```dart
+// 直接使用 AppButton 的 isLoading 參數
+AppButton.primary(
+  label: 'Submit',
+  isLoading: _isLoading,
+  onTap: () async {
+    setState(() => _isLoading = true);
+    await doSomething();
+    setState(() => _isLoading = false);
+  },
+)
+```
+
+#### 方式二：使用組合元件 AppLoadableWidget
+
+使用位於 `lib/page/components/composed/app_loadable_widget.dart` 的組合元件：
+
+```dart
+import 'package:privacy_gui/page/components/composed/app_loadable_widget.dart';
+
+// 與舊版 API 相容
+AppLoadableWidget.textButton(
+  title: 'Submit',
+  onTap: (controller) async {
+    // controller.showSpinner() 會自動調用 (若 showSpinnerWhenTap = true)
+    await doSomething();
+    // controller.hideSpinner() 會自動調用
+  },
+)
+```
+
+| 舊 API | 新 API |
+|--------|--------|
+| `AppLoadableWidget.elevatedButton` | `AppLoadableWidget.primaryButton` |
+| `AppLoadableWidget.filledButton` | `AppLoadableWidget.primaryButton` |
+| `AppLoadableWidget.outlineButton` | `AppLoadableWidget.primaryOutlineButton` |
+| `AppLoadableWidget.textButton` | `AppLoadableWidget.textButton` |
+| `AppLoadableWidget.appSwitch` | `AppLoadableWidget.appSwitch` |
+
+### AppPasswordInput 驗證遷移
+
+ui_kit 的 `AppPasswordInput` **原生支援驗證 UI**，無需自訂組合元件。
+
+```dart
+// 使用 AppPasswordRule 定義驗證規則
+final rules = [
+  AppPasswordRule(
+    label: loc(context).routerPasswordRuleTenChars,
+    validate: ((text) => LengthRule().validate(text)),
+  ),
+  AppPasswordRule(
+    label: loc(context).routerPasswordRuleLowerUpper,
+    validate: ((text) => HybridCaseRule().validate(text)),
+  ),
+  // ...更多規則
+];
+
+// 傳入 rules 參數，驗證 UI 自動顯示
+AppPasswordInput(
+  controller: controller,
+  label: loc(context).routerPasswordNew,
+  rules: rules,
+  onChanged: (value) {
+    setState(() {
+      isPasswordValid = !rules.any((r) => !r.validate(controller.text));
+    });
+  },
+)
+```
+
+| 舊 API | 新 API |
+|--------|--------|
+| `AppPasswordField(validations: ...)` | `AppPasswordInput(rules: ...)` |
+| `Validation(description:, validator:)` | `AppPasswordRule(label:, validate:)` |
+| `AppValidatorWidget` | 已內建於 `AppPasswordInput` |
+
+### Chips 遷移
+
+使用 ui_kit 的 `AppChipGroup` 替換原生的 `Wrap` + `FilterChip` 或 `ChoiceChip`。
+
+```dart
+AppChipGroup(
+  // 定義 Chip 項目
+  chips: dataList.map((e) => ChipItem(
+    label: e.name,
+    enabled: true, // 可選，預設 true
+    icon: e.icon, // 可選
+  )).toList(),
+
+  // 定義選中的索引集合 (Set<int>)
+  selectedIndices: selectedIndices,
+
+  // 選擇模式：single 或 multiple
+  selectionMode: ChipSelectionMode.multiple,
+
+  // 選擇變更回調
+  onSelectionChanged: (newIndices) {
+    setState(() {
+      selectedIndices = newIndices;
+    });
+  },
+)
+```
+
+| 舊元件 | 新元件 |
+|-------|-------|
+| `Wrap` + `FilterChip` | `AppChipGroup` (mode: multiple) |
+| `Wrap` + `ChoiceChip` | `AppChipGroup` (mode: single) |
+
+> [!NOTE]
+> **開發者注意事項：**
+> `AppChipGroup` 使用 **索引 (`Set<int>`)** 來管理選取狀態，而非常見的數據物件。這雖然能確保 UI 樣式統一，但在處理數據列表時需要進行轉換：
+> 1. **Data → Index**: 初始化 `selectedIndices` 時需找出對應索引。
+>    ```dart
+>    selectedIndices: dataList.asMap().entries
+>      .where((e) => checkIsSelected(e.value))
+>      .map((e) => e.key).toSet()
+>    ```
+> 2. **Index → Data**: 在 `onSelectionChanged` 中需映射回數據物件。
+>    ```dart
+>    onSelectionChanged: (indices) {
+>      // 處理單選或多選邏輯
+>      final selectedItems = indices.map((i) => dataList[i]).toList();
+>    }
+>    ```
 
 ---
 

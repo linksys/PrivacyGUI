@@ -16,6 +16,31 @@
 - **已完成**: 9
 - **完成率**: 100% ✅
 
+### Instant Topology 相關
+- **總檔案數**: 1
+- **已完成**: 1
+- **完成率**: 100% ✅
+
+### Instant Safety 相關
+- **總檔案數**: 1
+- **已完成**: 1
+- **完成率**: 100% ✅
+
+### Instant Privacy 相關
+- **總檔案數**: 1
+- **已完成**: 1
+- **完成率**: 100% ✅
+
+### Instant Device 相關
+- **總檔案數**: 6
+- **已完成**: 6
+- **完成率**: 100% ✅
+
+### Instant Admin 相關
+- **總檔案數**: 3
+- **已完成**: 3
+- **完成率**: 100% ✅
+
 ---
 
 ## 📋 已遷移檔案清單
@@ -41,6 +66,19 @@
 | `local_reset_router_password_view.dart` | `StyledAppPageView` → `UiKitPageView`, `AppTextField` → `AppTextFormField`, `AppPasswordField` → `AppPasswordInput`, buttons → `AppButton` | ✅ 完成 |
 | `login_local_view.dart` | Complete migration to ui_kit with `UiKitPageView`, `AppPasswordInput`, buttons and spacing updates | ✅ 完成 |
 | `instant_admin_view.dart` | `StyledAppPageView` → `UiKitPageView`, spacing and layout → ui_kit equivalents | ✅ 完成 |
+| `instant_topology_view.dart` | Complete ui_kit integration: `UiKitPageView`, `AppTopology`, `AppIcon`, `AppIconButton`, `AppText`, `AppPopupMenuItem`, `AppFontIcons`, `CircularProgressIndicator` | ✅ 完成 |
+| `instant_safety_view.dart` | `StyledAppPageView` → `UiKitPageView`, `AppListExpandCard` → `AppCard` + `RadioListTile`, `AppTextButton` → `AppButton.text`, spacing → ui_kit equivalents | ✅ 完成 |
+| `instant_privacy_view.dart` | `StyledAppPageView` → `UiKitPageView`, `ResponsiveLayout` → `AppResponsiveLayout`, `LinksysIcons` → `AppFontIcons` + `AppIcon.font`, `3.col` → `context.colWidth(3)`, `Icon` → `AppIcon.font` | ✅ 完成 |
+| `shared_widgets.dart` | `LinksysIcons` → `AppFontIcons`, `Icon` → `AppIcon.font`, `CustomTheme.getRouterImage()` → `DeviceImageHelper`, `Spacing` → `AppSpacing`, `Image` → `AppImage.provider` | ✅ 完成 |
+| `icon_device_category_ext.dart` | `LinksysIcons` → `AppFontIcons` | ✅ 完成 |
+| `instant_device_view.dart` | `StyledAppPageView` → `UiKitPageView`, `AppResponsiveLayout`, `UiKitBottomBarConfig`, `AppButton.primary`, `context.colWidth()` | ✅ 完成 |
+| `device_detail_view.dart` | `UiKitPageView`, `AppResponsiveLayout`, composed cards, `AppLoadableWidget.textButton`, `AppTextFormField`, `AppIcon.font` | ✅ 完成 |
+| `device_list_widget.dart` | Composed `_buildDeviceCell()` replacing `AppDeviceListCard`, `AppResponsiveLayout`, `AppIconButton`, `AppFontIcons` | ✅ 完成 |
+| `devices_filter_widget.dart` | `AppChipGroup(chips:[...])` with `ChipItem`, `AppButton.text`, `AppFontIcons`, `AppSpacing` | ✅ 完成 |
+| `select_device_view.dart` | `UiKitPageView.withSliver`, `UiKitBottomBarConfig`, composed `_buildDeviceGroups()` replacing `GroupList`, composed `_buildDeviceCard()` | ✅ 完成 |
+| `instant_admin_view.dart` | `UiKitPageView`, `AppPasswordInput(rules: [...])`, `AppPasswordRule`, composed `_buildListCard`, `_buildListRow`, `_buildSwitchTile`, `AppFontIcons` | ✅ 完成 |
+| `manual_firmware_update_view.dart` | `UiKitPageView`, `AppButton.primary`, `AppButton.text`, `AppFontIcons`, composed `_buildListCard` | ✅ 完成 |
+| `timezone_view.dart` | `UiKitPageView`, `UiKitBottomBarConfig`, composed `_buildSwitchTile`, `_buildListRow`, `AppButton.text`, `AppFontIcons` | ✅ 完成 |
 
 ---
 

@@ -5,24 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/rotating_icon.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_provider.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_state.dart';
 import 'package:privacy_gui/page/instant_admin/services/manual_firmware_update_service.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class ManualFirmwareUpdateView extends ArgumentsConsumerStatefulView {
   const ManualFirmwareUpdateView({
@@ -51,21 +47,19 @@ class _ManualFirmwareUpdateViewState
   }
 
   Widget _mainContent(FileInfo? file) {
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).manualFirmwareUpdate,
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppListCard(
-            title: AppText.bodyLarge(loc(context).manual),
-            description: AppText.labelMedium(
-                file == null ? loc(context).noFileChosen : file.name),
-            trailing: AppTextButton.noPadding(
-              file == null ? loc(context).chooseFile : loc(context).remove,
-              icon: file == null ? LinksysIcons.upload : LinksysIcons.delete,
-              color: file == null
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.error,
+          _buildListCard(
+            title: loc(context).manual,
+            description: file == null ? loc(context).noFileChosen : file.name,
+            trailing: AppButton.text(
+              label:
+                  file == null ? loc(context).chooseFile : loc(context).remove,
+              icon: AppIcon.font(
+                  file == null ? AppFontIcons.upload : AppFontIcons.delete),
               onTap: () async {
                 if (file == null) {
                   final result = await FilePicker.platform.pickFiles();
@@ -81,9 +75,9 @@ class _ManualFirmwareUpdateViewState
               },
             ),
           ),
-          const AppGap.large2(),
-          AppFilledButton(
-            loc(context).start,
+          AppGap.xxl(),
+          AppButton.primary(
+            label: loc(context).start,
             onTap: file == null
                 ? null
                 : () {
@@ -158,7 +152,7 @@ class _ManualFirmwareUpdateViewState
         Expanded(
           child: Center(
             child: SizedBox(
-              width: 6.col,
+              width: MediaQuery.of(context).size.width * 0.5,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -172,9 +166,9 @@ class _ManualFirmwareUpdateViewState
                       : Icon(_getProcessingIcon(status),
                           size: 64,
                           color: Theme.of(context).colorScheme.primary),
-                  AppGap.medium(),
+                  AppGap.lg(),
                   AppText.titleLarge(_getProcessingTitle(status)),
-                  AppGap.medium(),
+                  AppGap.lg(),
                   AppText.bodyMedium(_getProcessingMessage(status)),
                 ],
               ),
@@ -184,20 +178,49 @@ class _ManualFirmwareUpdateViewState
         status is ManualUpdateInstalling
             ? Center(
                 child: SizedBox(
-                  width: 6.col,
+                  width: MediaQuery.of(context).size.width * 0.5,
                   child: Column(
                     children: [
                       LinearProgressIndicator(
                           backgroundColor: Theme.of(context)
-                              .colorSchemeExt
+                              .colorScheme
                               .surfaceContainerHighest),
                     ],
                   ),
                 ),
               )
             : Center(),
-        AppGap.medium(),
+        AppGap.lg(),
       ],
+    );
+  }
+
+  /// Composed ListCard
+  Widget _buildListCard({
+    required String title,
+    required String description,
+    Widget? trailing,
+  }) {
+    return AppCard(
+      padding: EdgeInsets.symmetric(
+        vertical: AppSpacing.lg,
+        horizontal: AppSpacing.xxl,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodyLarge(title),
+                AppGap.xs(),
+                AppText.labelMedium(description),
+              ],
+            ),
+          ),
+          if (trailing != null) trailing,
+        ],
+      ),
     );
   }
 
@@ -213,8 +236,8 @@ class _ManualFirmwareUpdateViewState
 
   IconData _getProcessingIcon(ManualUpdateStatus? status) =>
       status is ManualUpdateInstalling
-          ? LinksysIcons.cloudDownload
-          : LinksysIcons.restartAlt;
+          ? AppFontIcons.cloudDownload
+          : AppFontIcons.restartAlt;
   String _getProcessingTitle(ManualUpdateStatus? status) {
     return status is ManualUpdateInstalling
         ? loc(context).firmwareInstallingTitle

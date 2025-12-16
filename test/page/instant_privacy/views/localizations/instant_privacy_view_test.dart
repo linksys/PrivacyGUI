@@ -4,9 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/screen.dart';
@@ -105,7 +103,7 @@ void main() {
       final loc = testHelper.loc(context);
 
       expect(find.text(loc.theDevicesAllowedToConnect), findsOneWidget);
-      expect(find.byIcon(LinksysIcons.delete), findsWidgets);
+      expect(find.byIcon(AppFontIcons.delete), findsWidgets);
     },
     screens: _allScreens,
     goldenFilename: 'IPRV-ENABLED_01_devices',
@@ -159,7 +157,7 @@ void main() {
       );
       final loc = testHelper.loc(context);
 
-      final deleteButton = find.byIcon(LinksysIcons.delete).first;
+      final deleteButton = find.byIcon(AppFontIcons.delete).first;
       await tester.tap(deleteButton);
       await tester.pumpAndSettle();
       expect(find.text(loc.deleteDevice), findsOneWidget);
@@ -187,7 +185,7 @@ void main() {
           scrollable: find.byType(Scrollable).last);
       final deleteSelf = find.descendant(
         of: targetCard,
-        matching: find.byIcon(LinksysIcons.delete),
+        matching: find.byIcon(AppFontIcons.delete),
       );
       await tester.tap(deleteSelf.first);
       await tester.pumpAndSettle();

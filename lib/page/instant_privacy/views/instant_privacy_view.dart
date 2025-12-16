@@ -6,21 +6,14 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class InstantPrivacyView extends ArgumentsConsumerStatefulView {
   const InstantPrivacyView({
@@ -52,28 +45,27 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
   Widget build(BuildContext context) {
     final state = ref.watch(instantPrivacyProvider);
     final displayDevices = ref.watch(instantPrivacyDeviceListProvider);
-    return StyledAppPageView.withSliver(
-      scrollable: true,
+    return UiKitPageView.withSliver(
       title: loc(context).instantPrivacy,
       markLabel: 'Beta',
-      child: (context, constraints) => ResponsiveLayout(
-        desktop: _desktopLayout(state, displayDevices),
-        mobile: _mobileLayout(state, displayDevices),
+      child: (context, constraints) => AppResponsiveLayout(
+        desktop: _desktopLayout(context, state, displayDevices),
+        mobile: _mobileLayout(context, state, displayDevices),
       ),
     );
   }
 
-  Widget _desktopLayout(
-      InstantPrivacyState state, List<DeviceListItem> deviceList) {
+  Widget _desktopLayout(BuildContext context, InstantPrivacyState state,
+      List<DeviceListItem> deviceList) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         AppText.bodyLarge(loc(context).instantPrivacyDescription),
-        const AppGap.large4(),
+        AppGap.xxxl(),
         if (state.settings.current.mode == MacFilterMode.deny) ...[
-          _warningCard(),
-          const AppGap.small2(),
+          _warningCard(context),
+          AppGap.sm(),
         ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,18 +74,19 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _enableTile(state),
-                  const AppGap.large2(),
+                  _enableTile(context, state),
+                  AppGap.xxl(),
                   _deviceListView(
+                      context,
                       state.settings.current.mode == MacFilterMode.allow,
                       deviceList),
                 ],
               ),
             ),
-            const AppGap.gutter(),
+            AppGap.gutter(),
             SizedBox(
-              width: 3.col,
-              child: _infoCard(),
+              width: context.colWidth(3),
+              child: _infoCard(context),
             ),
           ],
         ),
@@ -101,61 +94,66 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
     );
   }
 
-  Widget _mobileLayout(
-      InstantPrivacyState state, List<DeviceListItem> deviceList) {
+  Widget _mobileLayout(BuildContext context, InstantPrivacyState state,
+      List<DeviceListItem> deviceList) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (state.settings.current.mode == MacFilterMode.deny) ...[
-          _warningCard(),
-          const AppGap.small2(),
+          _warningCard(context),
+          AppGap.sm(),
         ],
         AppText.bodyLarge(loc(context).instantPrivacyDescription),
-        const AppGap.medium(),
-        _enableTile(state),
-        const AppGap.small2(),
-        _infoCard(),
-        const AppGap.large2(),
-        _deviceListView(
+        AppGap.lg(),
+        _enableTile(context, state),
+        AppGap.sm(),
+        _infoCard(context),
+        AppGap.xxl(),
+        _deviceListView(context,
             state.settings.current.mode == MacFilterMode.allow, deviceList),
-        const AppGap.large2(),
+        AppGap.xxl(),
       ],
     );
   }
 
-  Widget _warningCard() {
-    return AppSettingCard(
-      title: loc(context).macFilteringDisableWarning,
-      leading: Icon(
-        LinksysIcons.infoCircle,
-        color: Theme.of(context).colorScheme.error,
-      ),
-      borderColor: Theme.of(context).colorScheme.error,
-    );
-  }
-
-  Widget _infoCard() {
+  Widget _warningCard(BuildContext context) {
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Icon(
-            LinksysIcons.infoCircle,
-            semanticLabel: 'info icon',
-            color: Theme.of(context).colorScheme.primary,
+          AppIcon.font(
+            AppFontIcons.infoCircle,
+            color: Theme.of(context).colorScheme.error,
           ),
-          const AppGap.medium(),
-          AppText.bodySmall(
-            loc(context).instantPrivacyInfo,
-            maxLines: 30,
+          AppGap.lg(),
+          Expanded(
+            child: AppText.bodyMedium(loc(context).macFilteringDisableWarning),
           ),
         ],
       ),
     );
   }
 
-  Widget _deviceListView(bool isEnable, List<DeviceListItem> deviceList) {
+  Widget _infoCard(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon.font(
+            AppFontIcons.infoCircle,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          AppGap.lg(),
+          AppText.bodySmall(
+            loc(context).instantPrivacyInfo,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _deviceListView(
+      BuildContext context, bool isEnable, List<DeviceListItem> deviceList) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -167,19 +165,16 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
                 children: [
                   AppText.titleSmall(
                     loc(context).nDevices(deviceList.length).capitalizeWords(),
-                    maxLines: 5,
                   ),
-                  const AppGap.small1(),
+                  AppGap.xs(),
                   AppText.bodyMedium(
                     loc(context).theDevicesAllowedToConnect,
-                    maxLines: 5,
                   ),
                 ],
               ),
             ),
             AppIconButton(
-              icon: LinksysIcons.refresh,
-              color: Theme.of(context).colorScheme.primary,
+              icon: AppIcon.font(AppFontIcons.refresh),
               onTap: () {
                 doSomethingWithSpinner(
                   context,
@@ -189,7 +184,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
             ),
           ],
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         SizedBox(
           height: deviceList.length * 110,
           child: ListView.separated(
@@ -197,10 +192,10 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
             shrinkWrap: true,
             itemCount: deviceList.length,
             itemBuilder: (context, index) {
-              return _deviceCard(isEnable, deviceList[index]);
+              return _deviceCard(context, isEnable, deviceList[index]);
             },
             separatorBuilder: (BuildContext context, int index) {
-              return const AppGap.small2();
+              return AppGap.sm();
             },
           ),
         ),
@@ -208,22 +203,18 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
     );
   }
 
-  Widget _deviceCard(bool isEnable, DeviceListItem device) {
+  Widget _deviceCard(
+      BuildContext context, bool isEnable, DeviceListItem device) {
     final myMac = ref.watch(
         instantPrivacyProvider.select((state) => state.settings.current.myMac));
     return AppCard(
-      color:
-          device.isOnline ? null : Theme.of(context).colorScheme.surfaceVariant,
-      borderColor:
-          device.isOnline ? null : Theme.of(context).colorScheme.outlineVariant,
       child: Row(
         children: [
-          Icon(
+          AppIcon.font(
             IconDeviceCategoryExt.resolveByName(device.icon),
-            semanticLabel: 'device icon',
             size: 24,
           ),
-          const AppGap.medium(),
+          AppGap.lg(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,44 +224,43 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
                     final textPainter = TextPainter(
                       text: TextSpan(
                         text: device.name,
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelLarge, // Use your actual text style
+                        style: Theme.of(context).textTheme.labelLarge,
                       ),
-                      maxLines: 1, // Use your actual maxLines value
-                      textDirection:
-                          TextDirection.ltr, // Use your actual text direction
+                      maxLines: 1,
+                      textDirection: TextDirection.ltr,
                     )..layout(minWidth: 0, maxWidth: double.infinity);
                     if (textPainter.size.width > constraints.maxWidth) {
                       return Tooltip(
                         message: device.name,
-                        child: AppText.labelLarge(
+                        child: Text(
                           device.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelLarge,
                         ),
                       );
                     } else {
-                      return AppText.labelLarge(
+                      return Text(
                         device.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelLarge,
                       );
                     }
                   },
                 ),
-                const AppGap.small1(),
+                AppGap.xs(),
                 AppText.bodyMedium(device.isOnline
                     ? device.ipv4Address
                     : loc(context).offline),
-                const AppGap.small1(),
+                AppGap.xs(),
                 AppText.bodyMedium(device.macAddress),
               ],
             ),
           ),
-          const AppGap.small1(),
-          _connectionInfo(device),
-          const AppGap.medium(),
+          AppGap.xs(),
+          _connectionInfo(context, device),
+          AppGap.lg(),
           SharedWidgets.resolveSignalStrengthIcon(
             context,
             device.signalStrength,
@@ -278,11 +268,12 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
             isWired: device.isWired,
           ),
           if (isEnable) ...[
-            const AppGap.medium(),
-            AppIconButton.noPadding(
-              icon: LinksysIcons.delete,
-              semanticLabel: 'delete',
-              color: Theme.of(context).colorScheme.error,
+            AppGap.lg(),
+            AppIconButton(
+              icon: AppIcon.font(
+                AppFontIcons.delete,
+                color: Theme.of(context).colorScheme.error,
+              ),
               onTap: () {
                 _showDeleteDialog(
                     device.macAddress, device.macAddress == myMac);
@@ -294,9 +285,9 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
     );
   }
 
-  Widget _connectionInfo(DeviceListItem device) {
+  Widget _connectionInfo(BuildContext context, DeviceListItem device) {
     return device.isOnline
-        ? ResponsiveLayout(
+        ? AppResponsiveLayout(
             desktop: AppText.bodyMedium(device.isWired
                 ? loc(context).ethernet
                 : '${device.ssid}  •  ${device.band}'),
@@ -306,7 +297,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       AppText.bodyMedium(device.ssid),
-                      const AppGap.small1(),
+                      AppGap.xs(),
                       AppText.bodyMedium(device.band),
                     ],
                   ),
@@ -314,13 +305,12 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         : Container();
   }
 
-  Widget _enableTile(InstantPrivacyState state) {
+  Widget _enableTile(BuildContext context, InstantPrivacyState state) {
     return AppCard(
         child: Row(
       children: [
         Expanded(child: AppText.labelLarge(loc(context).instantPrivacy)),
         AppSwitch(
-          semanticLabel: 'instant privacy',
           value: state.settings.current.mode == MacFilterMode.allow,
           onChanged: (value) {
             _showEnableDialog(value);
@@ -364,24 +354,22 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
           : loc(context).instantPrivacyDeleteDeviceDesc),
       actions: [
         if (self) ...[
-          AppTextButton(
-            loc(context).ok,
+          AppButton.text(
+            label: loc(context).ok,
             onTap: () {
               context.pop();
             },
           ),
         ],
         if (!self) ...[
-          AppTextButton(
-            loc(context).cancel,
-            color: Theme.of(context).colorScheme.onSurface,
+          AppButton.text(
+            label: loc(context).cancel,
             onTap: () {
               context.pop();
             },
           ),
-          AppTextButton(
-            loc(context).delete,
-            color: Theme.of(context).colorScheme.error,
+          AppButton.text(
+            label: loc(context).delete,
             onTap: () {
               _notifier.removeSelection([macAddress]);
               context.pop();

@@ -16,7 +16,7 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -24,16 +24,8 @@ import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/loadable_widget/loadable_widget.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:privacy_gui/page/components/composed/app_loadable_widget.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class DeviceDetailView extends ArgumentsConsumerStatefulView {
   const DeviceDetailView({
@@ -79,89 +71,83 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     });
     return LayoutBuilder(
       builder: (context, constraint) {
-        return StyledAppPageView.withSliver(
+        return UiKitPageView.withSliver(
           padding: const EdgeInsets.only(),
           title: state.item.name,
-          scrollable: true,
-          child: (context, constraints) => ResponsiveLayout(
-            desktop: _desktopLayout(state),
-            mobile: _mobileLayout(state),
+          child: (context, constraints) => AppResponsiveLayout(
+            desktop: _desktopLayout(context, state),
+            mobile: _mobileLayout(context, state),
           ),
         );
       },
     );
   }
 
-  Widget _desktopLayout(ExternalDeviceDetailState state) {
+  Widget _desktopLayout(BuildContext context, ExternalDeviceDetailState state) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 4.col,
+          width: context.colWidth(4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _avatarCard(state),
+              _avatarCard(context, state),
             ],
           ),
         ),
-        const AppGap.gutter(),
+        AppGap.gutter(),
         SizedBox(
-          width: 8.col,
-          child: _detailSection(state),
+          width: context.colWidth(8),
+          child: _detailSection(context, state),
         ),
       ],
     );
   }
 
-  Widget _mobileLayout(ExternalDeviceDetailState state) {
+  Widget _mobileLayout(BuildContext context, ExternalDeviceDetailState state) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _avatarCard(state),
-        const AppGap.small2(),
-        _detailSection(state),
+        _avatarCard(context, state),
+        AppGap.sm(),
+        _detailSection(context, state),
       ],
     );
   }
 
-  Widget _avatarCard(ExternalDeviceDetailState state) {
+  Widget _avatarCard(BuildContext context, ExternalDeviceDetailState state) {
     return SelectionArea(
       child: AppCard(
-        padding: const EdgeInsets.all(Spacing.small2),
-        color: Theme.of(context).colorScheme.background,
+        padding: EdgeInsets.all(AppSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
               width: double.infinity,
               height: 120,
-              child: Icon(
+              child: AppIcon.font(
                 IconDeviceCategoryExt.resolveByName(state.item.icon),
-                semanticLabel: state.item.icon,
                 size: 40,
               ),
             ),
-            AppSettingCard.noBorder(
-              padding: const EdgeInsets.all(Spacing.medium),
-              color: Theme.of(context).colorScheme.background,
+            // Device name with edit button
+            _buildSettingRow(
+              context,
               title: state.item.name,
               trailing: AppIconButton(
-                icon: LinksysIcons.edit,
-                semanticLabel: 'edit',
+                icon: AppIcon.font(AppFontIcons.edit),
                 onTap: _showEdidDeviceModal,
               ),
             ),
-            AppSettingCard.noBorder(
-              padding: const EdgeInsets.all(Spacing.medium),
-              color: Theme.of(context).colorScheme.background,
+            _buildSettingRow(
+              context,
               title: loc(context).manufacturer,
               description: _formatEmptyValue(state.item.manufacturer),
             ),
-            AppSettingCard.noBorder(
-              padding: const EdgeInsets.all(Spacing.medium),
-              color: Theme.of(context).colorScheme.background,
+            _buildSettingRow(
+              context,
               title: loc(context).device,
               description: _formatEmptyValue(state.item.model),
             ),
@@ -171,127 +157,211 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     );
   }
 
-  Widget _detailSection(ExternalDeviceDetailState state) {
+  Widget _detailSection(BuildContext context, ExternalDeviceDetailState state) {
     final isBridge = ref.watch(dashboardHomeProvider).isBridgeMode;
 
     return SelectionArea(
       child: Column(
         children: [
-          AppSettingCard(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.large2,
-              vertical: Spacing.medium,
-            ),
+          _buildDetailCard(
+            context,
             title: loc(context).connectTo,
             description: state.item.upstreamDevice.isEmpty
                 ? loc(context).unknown
                 : state.item.upstreamDevice,
-            selectableDescription: true,
           ),
           if (state.item.isOnline && !state.item.isWired) ...[
-            const AppGap.small2(),
-            AppListCard(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.large2,
-                vertical: Spacing.medium,
-              ),
-              title: AppText.bodyMedium(loc(context).ssid),
-              description: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.labelLarge(
-                    _formatEmptyValue(
-                        '${state.item.ssid} • ${state.item.band}'),
-                    selectable: true,
-                  ),
-                  if (state.item.isMLO) ...[
-                    const AppGap.small2(),
-                    AppTextButton.noPadding(
-                      loc(context).mloCapable,
-                      onTap: () {
-                        showMLOCapableModal(context);
-                      },
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const AppGap.small2(),
-            AppListCard(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.large2,
-                vertical: Spacing.medium,
-              ),
-              title: AppText.bodyMedium(loc(context).signalStrength),
-              description: Row(children: [
-                AppText.labelLarge(
-                  getWifiSignalLevel(state.item.signalStrength)
-                      .resolveLabel(context),
-                  color: getWifiSignalLevel(state.item.signalStrength)
-                      .resolveColor(context),
-                ),
-                const AppText.labelLarge(' • '),
-                AppText.labelLarge(
-                  state.item.isWired
-                      ? ''
-                      : _formatEmptyValue('${state.item.signalStrength} dBm'),
-                  selectable: true,
-                ),
-              ]),
-              trailing: SharedWidgets.resolveSignalStrengthIcon(
-                  context, state.item.signalStrength),
-            ),
+            AppGap.sm(),
+            _buildSsidCard(context, state),
+            AppGap.sm(),
+            _buildSignalStrengthCard(context, state),
           ],
-          const AppGap.small2(),
-          AppSettingCard(
-            padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.large2, vertical: Spacing.medium),
-            title: loc(context).ipAddress,
-            description: _formatEmptyValue(state.item.ipv4Address),
-            trailing: !isBridge &&
-                    state.item.isOnline &&
-                    state.item.ipv4Address.isNotEmpty &&
-                    state.item.type != WifiConnectionType.guest &&
-                    isReservedIp != null
-                ? AppLoadableWidget.textButton(
-                    spinnerSize: Size(36, 36),
-                    title: isReservedIp == true
-                        ? loc(context).releaseReservedIp
-                        : loc(context).reserveIp,
-                    semanticsLabel: isReservedIp == true
-                        ? 'release reserved ip'
-                        : 'reserved ip',
-                    padding: const EdgeInsets.only(),
-                    showSpinnerWhenTap: false,
-                    onTap: (AppLoadableWidgetController controller) async {
-                      await handleReserveDhcp(
-                          state.item, isReservedIp!, controller);
-                    },
-                  )
-                : null,
-            selectableDescription: true,
-          ),
-          const AppGap.small2(),
-          AppSettingCard(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.large2,
-              vertical: Spacing.medium,
-            ),
+          AppGap.sm(),
+          _buildIpAddressCard(context, state, isBridge),
+          AppGap.sm(),
+          _buildDetailCard(
+            context,
             title: loc(context).macAddress,
             description: _formatEmptyValue(state.item.macAddress),
-            selectableDescription: true,
           ),
-          const AppGap.small2(),
-          AppSettingCard(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spacing.large2,
-              vertical: Spacing.medium,
-            ),
+          AppGap.sm(),
+          _buildDetailCard(
+            context,
             title: loc(context).ipv6Address,
             description: _formatEmptyValue(state.item.ipv6Address),
-            selectableDescription: true,
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Composed SettingRow to replace AppSettingCard.noBorder
+  Widget _buildSettingRow(
+    BuildContext context, {
+    required String title,
+    String? description,
+    Widget? trailing,
+  }) {
+    return Padding(
+      padding: EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(title),
+                if (description != null) ...[
+                  AppGap.xs(),
+                  AppText.bodyMedium(description),
+                ],
+              ],
+            ),
+          ),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
+
+  /// Composed DetailCard to replace AppSettingCard
+  Widget _buildDetailCard(
+    BuildContext context, {
+    required String title,
+    required String description,
+    Widget? trailing,
+  }) {
+    return AppCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.xxl,
+        vertical: AppSpacing.lg,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodyMedium(title),
+                AppGap.xs(),
+                AppText.labelLarge(description),
+              ],
+            ),
+          ),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSsidCard(BuildContext context, ExternalDeviceDetailState state) {
+    return AppCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.xxl,
+        vertical: AppSpacing.lg,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodyMedium(loc(context).ssid),
+                AppGap.xs(),
+                AppText.labelLarge(
+                  _formatEmptyValue('${state.item.ssid} • ${state.item.band}'),
+                ),
+                if (state.item.isMLO) ...[
+                  AppGap.sm(),
+                  AppButton.text(
+                    label: loc(context).mloCapable,
+                    onTap: () {
+                      showMLOCapableModal(context);
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSignalStrengthCard(
+      BuildContext context, ExternalDeviceDetailState state) {
+    return AppCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.xxl,
+        vertical: AppSpacing.lg,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodyMedium(loc(context).signalStrength),
+                AppGap.xs(),
+                Row(children: [
+                  AppText.labelLarge(
+                    getWifiSignalLevel(state.item.signalStrength)
+                        .resolveLabel(context),
+                    color: getWifiSignalLevel(state.item.signalStrength)
+                        .resolveColor(context),
+                  ),
+                  AppText.labelLarge(' • '),
+                  AppText.labelLarge(
+                    state.item.isWired
+                        ? ''
+                        : _formatEmptyValue('${state.item.signalStrength} dBm'),
+                  ),
+                ]),
+              ],
+            ),
+          ),
+          SharedWidgets.resolveSignalStrengthIcon(
+              context, state.item.signalStrength),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIpAddressCard(
+      BuildContext context, ExternalDeviceDetailState state, bool isBridge) {
+    final showReserveButton = !isBridge &&
+        state.item.isOnline &&
+        state.item.ipv4Address.isNotEmpty &&
+        state.item.type != WifiConnectionType.guest &&
+        isReservedIp != null;
+
+    return AppCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.xxl,
+        vertical: AppSpacing.lg,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodyMedium(loc(context).ipAddress),
+                AppGap.xs(),
+                AppText.labelLarge(_formatEmptyValue(state.item.ipv4Address)),
+              ],
+            ),
+          ),
+          if (showReserveButton)
+            AppLoadableWidget.textButton(
+              title: isReservedIp == true
+                  ? loc(context).releaseReservedIp
+                  : loc(context).reserveIp,
+              spinnerSize: Size(36, 36),
+              onTap: (controller) async {
+                await handleReserveDhcp(state.item, isReservedIp!);
+              },
+            ),
         ],
       ),
     );
@@ -325,11 +395,10 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const AppGap.large2(),
-              AppTextField.outline(
+              AppGap.xxl(),
+              AppTextFormField(
                 controller: _deviceNameController,
-                headerText: loc(context).deviceName,
-                errorText: _errorMessage,
+                label: loc(context).deviceName,
                 onChanged: (text) {
                   setState(() {
                     final overMaxSize =
@@ -341,15 +410,18 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                             : null;
                   });
                 },
-                onSubmitted: (_) {
-                  if (_errorMessage != null) {
-                    onSubmit();
-                  }
-                },
               ),
-              const AppGap.large3(),
+              if (_errorMessage != null)
+                Padding(
+                  padding: EdgeInsets.only(top: 8.0),
+                  child: AppText.bodySmall(
+                    _errorMessage!,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              AppGap.xxxl(),
               AppText.labelLarge(loc(context).selectIcon.capitalizeWords()),
-              const AppGap.large3(),
+              AppGap.xxxl(),
               GridView.builder(
                 shrinkWrap: true,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -363,11 +435,10 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
                         _iconIndex = index;
                       });
                     },
-                    child: Icon(
+                    child: AppIcon.font(
                       IconDeviceCategoryExt.resolveByName(
                         IconDeviceCategory.values[index].name,
                       ),
-                      semanticLabel: IconDeviceCategory.values[index].name,
                       color: index == _iconIndex
                           ? Theme.of(context).colorScheme.primary
                           : null,
@@ -406,8 +477,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return (value == null || value.isEmpty) ? '--' : value;
   }
 
-  Future<dynamic> handleReserveDhcp(DeviceListItem item, bool isReservedIp,
-      AppLoadableWidgetController controller) async {
+  Future<dynamic> handleReserveDhcp(
+      DeviceListItem item, bool isReservedIp) async {
     final notifier = ref.read(localNetworkSettingProvider.notifier);
     final dhcpReservationItem = DHCPReservation(
       description: item.name.replaceAll(HostNameRule().rule, ''),
@@ -418,7 +489,6 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
       // Show dialog to release
       final delete = await _showResevedIpDialog(isReservedIp);
       if (delete) {
-        controller.showSpinner();
         final dhcpReservationList =
             ref.read(localNetworkSettingProvider).status.dhcpReservationList;
         final hit = dhcpReservationList.firstWhereOrNull((e) =>
@@ -434,10 +504,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         await _saveDhcpResevervationSetting();
       }
     } else {
-      // Show dialog to release
+      // Show dialog to reserve
       final reserve = await _showResevedIpDialog(isReservedIp);
       if (reserve) {
-        controller.showSpinner();
         final isOverlap =
             notifier.isReservationOverlap(item: dhcpReservationItem);
         if (isOverlap) {
@@ -466,15 +535,14 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
           ? loc(context).releaseReservedIpDescription
           : loc(context).reservedIpDescription),
       actions: [
-        AppTextButton(
-          loc(context).cancel,
-          color: Theme.of(context).colorScheme.onSurface,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () {
             context.pop(false);
           },
         ),
-        AppTextButton(
-          isReservedIp ? loc(context).okay : loc(context).reserveIp,
+        AppButton.text(
+          label: isReservedIp ? loc(context).okay : loc(context).reserveIp,
           onTap: () {
             context.pop(true);
           },

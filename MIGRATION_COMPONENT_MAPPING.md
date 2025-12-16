@@ -25,6 +25,7 @@
 | `AppOutlinedButton('Label', onTap: ...)` | `AppButton(label: 'Label', variant: SurfaceVariant.tonal, onTap: ...)` | 使用 variant 參數替代專門類別 | ✅ |
 | `AppElevatedButton('Label', onTap: ...)` | `AppButton(label: 'Label', variant: SurfaceVariant.highlight, onTap: ...)` | 合併至標準 AppButton | ✅ |
 | `AppIconButton(icon: iconData, onTap: ...)` | `AppIconButton(icon: Widget, onTap: ...)` | Icon 類型: `IconData` → `Widget` (需包裝為 `Icon()`) | ✅ |
+| `AppLoadableWidget.*` | `AppButton(isLoading: ...)` 或組合元件 | 優先使用 AppButton 內建 loading | ✅ |
 
 ### 文字元件 (Text Components)
 
@@ -45,6 +46,7 @@
 |-------------------|----------------|---------|------|
 | `AppTextField(controller: ..., hint: ...)` | `AppTextFormField(controller: ..., label: ...)` | 參數名稱: `hint` → `label` | ✅ |
 | `AppPasswordField(controller: ..., validations: ...)` | `AppPasswordInput(controller: ..., rules: ...)` | 參數名稱: `validations` → `rules` | ✅ |
+| `AppValidatorWidget(...)` | **移除** | 功能已內建於 `AppPasswordInput` | ✅ |
 | `AppDropdownButton(items: ..., onChanged: ...)` | `AppDropdownButton(items: ..., onChanged: ...)` | API 相同 | ✅ |
 | `AppCheckbox(value: ..., onChanged: ...)` | `AppCheckbox(value: ..., onChanged: ...)` | API 相同 | ✅ |
 | `AppSwitch(value: ..., onChanged: ...)` | `AppSwitch(value: ..., onChanged: ...)` | 不支援 `semanticLabel` | ⚠️ |
@@ -79,6 +81,7 @@
 | `AppStatusLabel(isOff: bool)` | `AppBadge(label: String, color: Color)` | API 完全不同，需邏輯轉換 | ✅ |
 | `AppBadge(text: ...)` | `AppBadge(label: ...)` | 參數名稱: `text` → `label` | ✅ |
 | `AppChip(label: ...)` | `AppChip(label: ...)` | API 相同 | ✅ |
+| `FilterChip/ChoiceChip` | `AppChipGroup(chips: [...])` | 使用 `AppChipGroup` 進行 Chips 選擇管理 | ✅ |
 | `AppTooltip(message: ...)` | `AppTooltip(message: ...)` | API 相同 | ✅ |
 
 ### 載入和進度元件 (Loading & Progress Components)
@@ -310,4 +313,4 @@
 
 ---
 
-*最後更新：[自動生成時間]*
+*最後更新：2025-12-16*
