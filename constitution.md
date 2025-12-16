@@ -182,7 +182,7 @@ void main() {
     final result = await service.fetchSettings();
 
     // Assert: 驗證轉換後的 UI model
-    expect(result, isA<DMZUISettings>());
+    expect(result, isA<DMZSettingsUIModel>());
   });
 }
 ```
@@ -253,16 +253,18 @@ class DMZSettingsNotifier extends Notifier<DMZSettingsState> { ... }
 ```dart
 // 命名模式：[Feature]State
 class AuthState extends Equatable { ... }
-class DMZSettingsState extends FeatureState<DMZUISettings, DMZStatus> { ... }
+class DMZSettingsState extends FeatureState<DMZSettingsUIModel, DMZStatus> { ... }
 ```
 
 **3.3.4: Model Classes**
 
 **UI Models** (Presentation Layer):
 ```dart
-// 命名模式：[Feature]UI[Type] 或 [Feature][Type]Config
-class DMZUISettings extends Equatable { ... }
-class WirelessConfig extends Equatable { ... }
+// 命名模式：[Feature][Type]UIModel（必須以 UIModel 結尾）
+class DMZSettingsUIModel extends Equatable { ... }
+class WirelessConfigUIModel extends Equatable { ... }
+class SpeedTestUIModel extends Equatable { ... }
+class FirmwareUpdateUIModel extends Equatable { ... }
 ```
 
 **Data Models** (JNAP/Cloud):
@@ -520,7 +522,7 @@ class DMZSettingsService {
 
   DMZSettingsService(this._routerRepository);
 
-  Future<void> saveDmzSettings(Ref ref, DMZUISettings settings) async {
+  Future<void> saveDmzSettings(Ref ref, DMZSettingsUIModel settings) async {
     // Service 層會負責 UI Model 和 Data Model (JNAP Data) 的轉換
     final dataModel = DMZSettings(...);
     await _routerRepository.send(..., data: dataModel.toMap());
@@ -544,6 +546,79 @@ grep -r "import.*jnap/models" lib/page/*/views/
 # 3️⃣ 檢查 Service 層是否有正確的 imports
 grep -r "import.*jnap/models" lib/page/*/services/
 # ✅ 應該有結果（Service 層應該 import JNAP models）
+```
+
+**Section 5.3.4: UI Model 創建決策標準**
+
+**原則**: 不是所有的 State 都需要獨立的 UI Model。只在必要時創建 UI Model，避免過度設計。
+
+**需要獨立 UI Model 的情況**:
+
+1. **集合/列表數據**
+   - 當 State 需要存儲 `List<Something>` 時，Something 應該是一個 UI Model
+   - 範例：`List<FirmwareUpdateUIModel>` (多個節點狀態)、`List<SpeedTestUIModel>` (歷史記錄)
+
+2. **數據重用性**
+   - 同一個數據結構在多個地方使用（列表項、詳情頁、彈窗、不同 State 字段）
+   - 範例：`HealthCheckState` 中的 `SpeedTestUIModel` 用於 `result`、`latestSpeedTest`、`historicalSpeedTests`
+
+3. **複雜的嵌套結構**
+   - 數據本身包含多個層級的嵌套對象（>5 個字段或有嵌套）
+   - 避免 State 變得過於複雜和難以維護
+
+4. **包含計算邏輯或格式化方法**
+   - UI Model 可以封裝 getter、格式化方法、驗證邏輯
+   - 範例：`speedTest.formattedDownloadSpeed`、`node.updateProgressPercentage`
+
+**不需要獨立 UI Model 的情況**:
+
+1. **扁平的基本類型**
+   - 只有 String, int, bool, enum 等簡單字段
+   - 範例：`RouterPasswordState` (isDefault, isSetByUser, adminPassword, hint 等基本類型)
+
+2. **簡單的一對一映射**
+   - 從 Service/JNAP 返回的數據到 State 是直接映射，沒有複雜轉換
+
+**決策流程圖**:
+```
+是否需要獨立的 UI Model？
+├─ 是集合/列表數據？ → YES → 使用 UI Model
+├─ 數據會在多處重用？ → YES → 使用 UI Model
+├─ 數據結構複雜（>5個字段或有嵌套）？ → YES → 考慮 UI Model
+├─ 需要封裝業務邏輯/計算屬性？ → YES → 使用 UI Model
+└─ 否則 → State 直接持有基本類型即可
+```
+
+**實際範例對比**:
+
+✅ **不需要 UI Model** (`RouterPasswordState`):
+```dart
+class RouterPasswordState {
+  final bool isDefault;           // 基本類型
+  final bool isSetByUser;         // 基本類型
+  final String adminPassword;     // 基本類型
+  final String hint;              // 基本類型
+  final int? remainingErrorAttempts;
+  // 扁平結構，無重用需求
+}
+```
+
+✅ **需要 UI Model** (`HealthCheckState`):
+```dart
+class HealthCheckState {
+  final SpeedTestUIModel? result;              // 重用 1
+  final SpeedTestUIModel? latestSpeedTest;     // 重用 2
+  final List<SpeedTestUIModel> historicalSpeedTests;  // 重用 3 + 集合
+  // SpeedTestUIModel 在多處重用，且包含複雜測試數據
+}
+```
+
+✅ **需要 UI Model** (`FirmwareUpdateState`):
+```dart
+class FirmwareUpdateState {
+  final List<FirmwareUpdateUIModel>? nodesStatus;  // 集合類型
+  // 每個節點是獨立實體，有自己的狀態、進度、錯誤信息
+}
 ```
 
 **Section 5.4: Avoid Over-Engineering**
@@ -572,10 +647,12 @@ Services SHALL NOT:
 **Section 6.3: File Organization**
 Services MUST be organized as follows:
 * Location: `lib/page/[feature]/services/`
-* Naming: `[feature]_service.dart` (singular file name)
 * Folder: `services/` (plural folder name)
-* Provider: Define a Riverpod Provider for the service
-* Example: `lib/page/health_check/services/health_check_service.dart`
+* File naming: Follow **Article III Section 3.2** (files use `snake_case`)
+* Provider naming: Follow **Article III Section 3.4.1** (providers use `lowerCamelCase`)
+* Provider type: Use `Provider<T>` (stateless, NOT `NotifierProvider` or `StateNotifierProvider`)
+* Dependencies: Inject via `ref.watch()` in the provider definition
+**Reference implementation:** `lib/page/instant_admin/services/router_password_service.dart`
 
 **Section 6.4: Provider-Service Separation**
 Clear separation of concerns MUST be maintained:
@@ -650,10 +727,10 @@ The following abstractions ARE permitted and encouraged:
 class DMZSettings { ... }  // JNAP model
 
 // Application Layer (Service 轉換)
-DMZUISettings convertToUI(DMZSettings data) => ...
+DMZSettingsUIModel convertToUI(DMZSettings data) => ...
 
 // Presentation Layer
-class DMZUISettings { ... }  // UI model
+class DMZSettingsUIModel { ... }  // UI model
 
 // ❌ 錯誤：同層內重複
 class DMZSettings1 { ... }
