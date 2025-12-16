@@ -281,7 +281,7 @@
 
 | 元件 | 原因 | 建議 |
 |------|------|------|
-| `CustomTheme.of(context).images.*` | 圖片資源專用 | 保留使用 theme |
+| `CustomTheme.of(context).images.*` | `Assets.images.*` | `ui_kit_library` | 已遷移至 UI Kit Assets |
 | `neutralTonal` / `primaryTonal` | 主題顏色系統 | 保留使用 color_tonal_palettes |
 
 ---

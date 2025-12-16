@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:privacy_gui/constants/color_const.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/nodes/views/light_info_tile.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class LightDifferentColorModal extends StatelessWidget {
@@ -40,7 +38,7 @@ class LightDifferentColorModal extends StatelessWidget {
   List<Widget> _cognitiveNodeLightSet(BuildContext context) {
     return [
       LightInfoImageTile(
-        image: SvgPicture(CustomTheme.of(context).images.nodeLightOff),
+        image: Assets.images.nodeLightOff.svg(),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,7 +50,7 @@ class LightDifferentColorModal extends StatelessWidget {
       ),
       AppGap.xxl(),
       LightInfoImageTile(
-        image: SvgPicture(CustomTheme.of(context).images.nodeLightBlinkBlue),
+        image: Assets.images.nodeLightBlinkBlue.svg(),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,7 +62,7 @@ class LightDifferentColorModal extends StatelessWidget {
       ),
       AppGap.xxl(),
       LightInfoImageTile(
-        image: SvgPicture(CustomTheme.of(context).images.nodeLightSolidBlue),
+        image: Assets.images.nodeLightSolidBlue.svg(),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,7 +74,7 @@ class LightDifferentColorModal extends StatelessWidget {
       ),
       AppGap.xxl(),
       LightInfoImageTile(
-        image: SvgPicture(CustomTheme.of(context).images.nodeLightBlinkWhite),
+        image: Assets.images.nodeLightBlinkWhite.svg(),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,7 +86,7 @@ class LightDifferentColorModal extends StatelessWidget {
       ),
       AppGap.xxl(),
       LightInfoImageTile(
-        image: SvgPicture(CustomTheme.of(context).images.nodeLightSolidWhite),
+        image: Assets.images.nodeLightSolidWhite.svg(),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,7 +98,7 @@ class LightDifferentColorModal extends StatelessWidget {
       ),
       AppGap.xxl(),
       LightInfoImageTile(
-        image: SvgPicture(CustomTheme.of(context).images.nodeLightBlinkYellow),
+        image: Assets.images.nodeLightBlinkYellow.svg(),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +110,7 @@ class LightDifferentColorModal extends StatelessWidget {
       ),
       AppGap.xxl(),
       LightInfoImageTile(
-        image: SvgPicture(CustomTheme.of(context).images.nodeLightSolidRed),
+        image: Assets.images.nodeLightSolidRed.svg(),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,7 +124,7 @@ class LightDifferentColorModal extends StatelessWidget {
       ),
       AppGap.xxl(),
       LightInfoImageTile(
-        image: SvgPicture(CustomTheme.of(context).images.nodeLightBlinkRed),
+        image: Assets.images.nodeLightBlinkRed.svg(),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -27,8 +27,8 @@ import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/blink_node_light_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacy_gui/page/components/composed/app_popup_button.dart';
 import 'package:privacy_gui/page/components/composed/app_switch_trigger_tile.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -215,7 +215,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                   ],
                 ),
                 borderRadius: const BorderRadius.all(Radius.circular(10)),
-                backgroundColor: Theme.of(context).colorScheme.background,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 builder: (controller) {
                   return Container(
                     constraints: BoxConstraints(
@@ -347,7 +347,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                   child: Image(
                     semanticLabel: 'device image',
                     height: 120,
-                    image: CustomTheme.of(context).getRouterImage(
+                    image: DeviceImageHelper.getRouterImage(
                       routerIconTestByModel(modelNumber: state.modelNumber),
                     ),
                   ),
@@ -443,7 +443,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                   AppBadge(
                     label: statusText,
                     color: nodeLightStatus == NodeLightStatus.off
-                        ? Theme.of(context).colorScheme.surfaceVariant
+                        ? Theme.of(context).colorScheme.surfaceContainerHighest
                         : Theme.of(context).colorScheme.primary,
                   )
                 else

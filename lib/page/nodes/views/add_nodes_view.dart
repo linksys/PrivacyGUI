@@ -2,7 +2,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
@@ -15,8 +14,8 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/views/light_different_color_modal.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/page/nodes/views/light_info_tile.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacy_gui/page/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/page/components/composed/multiple_pages_alert_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -110,10 +109,10 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
                 ...state.childNodes?.map((e) {
                       final node = LinksysDevice.fromMap(e.toMap());
                       return AppNodeListCard(
-                          leading: CustomTheme.of(context).getRouterImage(
+                          leading: DeviceImageHelper.getRouterImage(
                               routerIconTestByModel(
                                   modelNumber: node.modelNumber ?? ''),
-                              false),
+                              xl: false),
                           title: e.getDeviceLocation(),
                           trailing: SharedWidgets.resolveSignalStrengthIcon(
                             context,
@@ -165,13 +164,11 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
         children: [
           AppStyledText(text: loc(context).addNodesDesc),
           AppGap.xxl(),
-          SvgPicture(
-            CustomTheme.of(context).images.imgAddNodes,
+          Assets.images.imgAddNodes.svg(
             semanticsLabel: 'add nodes image',
           ),
           LightInfoImageTile(
-              image:
-                  SvgPicture(CustomTheme.of(context).images.nodeLightSolidBlue),
+              image: Assets.images.nodeLightSolidBlue.svg(),
               content: AppStyledText(text: loc(context).addNodesSolidBlueDesc)),
           AppGap.lg(),
           AppButton.text(
