@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class TopNavigationMenu extends StatefulWidget {
   final List<NaviType> items;
@@ -34,7 +34,7 @@ class _TopNavigationMenuState extends State<TopNavigationMenu> {
           .expandIndexed<Widget>((index, element) sync* {
         if (index != widget.items.length - 1) {
           yield element;
-          yield const AppGap.medium();
+          yield AppGap.lg();
         } else {
           yield element;
         }

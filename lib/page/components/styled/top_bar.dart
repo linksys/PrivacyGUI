@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/general_settings_widget.dart';
@@ -39,7 +39,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         ref.watch(authProvider.select((value) => value.value?.loginType)) ??
             LoginType.none;
     final isRemote = loginType == LoginType.remote;
-    final isPollingDone = ref.watch(deviceManagerProvider).deviceList.isNotEmpty;
+    final isPollingDone =
+        ref.watch(deviceManagerProvider).deviceList.isNotEmpty;
     if (isRemote && isPollingDone) {
       _startRemoteAssistance(context);
     }
@@ -125,7 +126,6 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         children: [
           AppText.labelLarge(
             dashboardHomeState.mainSSID,
-            overflow: TextOverflow.fade,
             color: Color(
               neutralTonal.get(100),
             ),
@@ -135,7 +135,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     );
   }
 
-  Widget _sessionExpireCounter(GRASessionInfo sessionInfo, int? expiredCountdown) {
+  Widget _sessionExpireCounter(
+      GRASessionInfo sessionInfo, int? expiredCountdown) {
     var display = loc(context).remoteAssistanceSessionExpired;
     if (sessionInfo.status != GRASessionStatus.active) {
       return AppText.bodyMedium(display);
@@ -161,8 +162,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
           content:
               AppText.bodyMedium(loc(context).remoteAssistanceSessionExpired),
           actions: [
-            AppTextButton(
-              loc(context).ok,
+            AppButton.text(
+              label: loc(context).ok,
               onTap: () {
                 context.pop();
                 ref.read(remoteClientProvider.notifier).endRemoteAssistance();

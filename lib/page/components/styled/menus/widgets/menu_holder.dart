@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/bottom_navigati
 import 'package:privacy_gui/page/components/styled/menus/widgets/top_navigation_menu.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 final menuController = Provider((ref) => MenuController());
 
@@ -72,9 +72,8 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
         displayType = MenuDisplay.none;
       } else {
         if (context.mounted) {
-          displayType = ResponsiveLayout.isMobileLayout(context)
-              ? MenuDisplay.bottom
-              : MenuDisplay.top;
+          displayType =
+              context.isMobileLayout ? MenuDisplay.bottom : MenuDisplay.top;
         } else {
           displayType = MenuDisplay.none;
         }
