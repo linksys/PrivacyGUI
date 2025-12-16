@@ -149,14 +149,23 @@ AppStyledText(
 // 新版本 (ui_kit_library) - 使用 theme 標籤
 AppStyledText(text: 'Text with <color>styled</color> content')
 
-// 新版本 - 含可點擊連結
+// 新版本 - 含可點擊連結 (語法 1: Mustache 語法)
 AppStyledText(
   text: 'Agree to {{terms:Terms of Service}}',
   onTapHandlers: {'terms': () => showTerms()},
 )
+
+// 新版本 - 含可點擊連結 (語法 2: HTML Anchor 語法)
+// 適用於本地化字串中已包含 <a> 標籤的情況 (例如 "Learn more <a>here</a>")
+AppStyledText(
+  text: loc(context).descriptionWithLink, // "Click <a>here</a>"
+  onTapHandlers: {
+    'a': () => handleLinkClick(),
+  },
+)
 ```
 
-**支援的內建標籤**: `<b>`, `<i>`, `<u>`, `<color>`, `<large>`, `<small>`
+**支援的內建標籤**: `<b>`, `<i>`, `<u>`, `<color>`, `<large>`, `<small>`, `<a>` (需配合 onTapHandlers)
 
 ### Focus 處理模式
 當 ui_kit 元件不支援 `focusNode` 時：
@@ -315,4 +324,130 @@ TopologyModel.icon → MeshNode.iconData (需要圖標映射)
 - **效能優化**: 定期檢視 ui_kit 使用效能
 - **拓撲系統**: 評估是否將 TopologyAdapter 提升為 ui_kit 正式元件
 
-*最後更新：[自動生成時間]*
+---
+
+## 🔥 WiFi 設定模組遷移技術發現 (2024-12-16)
+
+### 重大 API 變更發現
+
+#### Provider 方法參數格式標準化
+在 WiFi 設定模組遷移中發現，`WifiBundleProvider` 的 API 已從 named parameters 改為 positional parameters：
+
+```dart
+// ❌ 舊版 API (不再有效)
+.setWiFiSSID(value, radioID: radio.radioID)
+.setWiFiPassword(value, radioID: radio.radioID)
+.setWiFiSecurityType(value, radioID: radio.radioID)
+
+// ✅ 新版 API (當前有效)
+.setWiFiSSID(value, radio.radioID)
+.setWiFiPassword(value, radio.radioID)
+.setWiFiSecurityType(value, radio.radioID)
+```
+
+#### 屬性名稱規範化
+發現多個屬性名稱已標準化：
+
+```dart
+// 屬性更名
+radio.isBroadcastSSID → radio.isBroadcast
+radio.availableChannelWidths → radio.availableChannels.keys.toList()
+
+// 方法更名
+.setWiFiBroadcastSSID() → .setEnableBoardcast()
+.setWiFiChannelWidth() → .setChannelWidth()
+.setWiFiChannel() → .setChannel()
+.showWiFiChannelModal() → .showChannelModal()
+```
+
+#### Modal 方法參數數量變更
+多個 modal 方法的參數需求已變更：
+
+```dart
+// showWirelessWiFiModeModal: 3 → 5 參數
+showWirelessWiFiModeModal(
+  radio.wirelessMode,           // mode
+  radio.defaultMixedMode,       // defaultMixedMode
+  availableModes,               // list
+  availableModes,               // availablelist
+  (value) => {...}              // onSelected
+);
+
+// showChannelWidthModal: 3 → 4 參數
+showChannelWidthModal(
+  radio.channelWidth,                    // channelWidth
+  radio.availableChannels.keys.toList(), // list
+  radio.availableChannels.keys.toList(), // validList
+  (value) => {...}                       // onSelected
+);
+
+// showChannelModal: 3 → 4 參數
+showChannelModal(
+  radio.channel,                               // channel
+  radio.availableChannels[radio.channelWidth] ?? [], // list
+  radio.radioID,                              // band
+  (value) => {...}                            // onSelected
+);
+```
+
+### UI Kit API 細節發現
+
+#### AppPasswordInput 參數變更
+```dart
+// ❌ 舊版 privacygui_widgets
+AppPasswordField(
+  validations: [
+    Validation(description: '...', validator: (text) => ...)
+  ]
+)
+
+// ✅ 新版 ui_kit
+AppPasswordInput(
+  rules: [
+    AppPasswordRule(label: '...', validate: (text) => ...)
+  ]
+)
+```
+
+#### AppIcon.font 不支援 semanticLabel
+```dart
+// ❌ 不支援
+AppIcon.font(AppFontIcons.edit, semanticLabel: 'edit')
+
+// ✅ 正確用法
+AppIcon.font(AppFontIcons.edit)
+```
+
+#### AppTextFormField 不支援 decoration
+ui_kit 的 `AppTextFormField` 不支援 `decoration` 參數，需移除此參數。
+
+### ServiceHelper 整合模式
+發現正確的 ServiceHelper 整合模式：
+
+```dart
+// 在 State class 中
+class _MyWidgetState extends State<MyWidget> {
+  // DI 整合
+  final serviceHelper = getIt<ServiceHelper>();
+
+  // 使用正確的方法名稱
+  if (serviceHelper.isSupportMLO()) {
+    // MLO 功能邏輯
+  }
+}
+
+// 必要 imports
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
+```
+
+### 遷移驗證策略
+建立了系統性的錯誤修正流程：
+1. **Import 檢查**: 確保 ui_kit 優先導入
+2. **API 對應**: 驗證所有方法呼叫的參數格式
+3. **屬性驗證**: 檢查模型屬性是否更名
+4. **編譯驗證**: `flutter analyze` 零錯誤目標
+5. **功能驗證**: 確保 UI 行為一致
+
+*WiFi 設定遷移完成：2024-12-16*
+*最後更新：2024-12-16*

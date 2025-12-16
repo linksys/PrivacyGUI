@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_list_tile.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class GuestWiFiCard extends ConsumerStatefulWidget {
   const GuestWiFiCard({
@@ -28,27 +25,8 @@ class GuestWiFiCard extends ConsumerStatefulWidget {
 
 class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
     with WifiSettingModalMixin {
-  final _guestPasswordController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _guestPasswordController.text = widget.state.password;
-  }
-
-  @override
-  void didUpdateWidget(covariant GuestWiFiCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.state.password != oldWidget.state.password) {
-      _guestPasswordController.text = widget.state.password;
-    }
-  }
-
-  @override
-  void dispose() {
-    _guestPasswordController.dispose();
-    super.dispose();
-  }
+  // Get serviceHelper from dependency injection
+  final serviceHelper = getIt<ServiceHelper>();
 
   @override
   Widget build(BuildContext context) {
@@ -56,16 +34,16 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
     return isSupportGuestWiFi
         ? Padding(
             padding: EdgeInsets.only(
-              right: widget.lastInRow
-                  ? 0
-                  : ResponsiveLayout.columnPadding(context),
-              bottom: Spacing.medium,
+              // Note: horizontal spacing is handled by Wrap's spacing property
+              // Only add bottom padding for vertical separation between rows
+              bottom: AppSpacing.lg,
             ),
             child: AppCard(
               key: const Key('WiFiGuestCard'),
               padding: const EdgeInsets.symmetric(
-                  vertical: Spacing.small2, horizontal: Spacing.large2),
+                  vertical: AppSpacing.sm, horizontal: AppSpacing.xxl),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   _guestWiFiBandCard(widget.state),
                   if (widget.state.isEnabled) ...[
@@ -78,16 +56,13 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
               ),
             ),
           )
-        : const SizedBox.shrink();
+        : const SizedBox.shrink(key: Key('guest-wifi-disabled'));
   }
 
-  Widget _guestWiFiBandCard(GuestWiFiItem state) => AppListCard(
-        showBorder: false,
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+  Widget _guestWiFiBandCard(GuestWiFiItem state) => WifiListTile(
         title: AppText.labelLarge(loc(context).guest),
         trailing: AppSwitch(
-          key: Key('WiFiGuestSwitch'),
-          semanticLabel: 'guest',
+          key: const Key('WiFiGuestSwitch'),
           value: state.isEnabled,
           onChanged: (value) {
             ref.read(wifiBundleProvider.notifier).setWiFiEnabled(value);
@@ -95,14 +70,11 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
         ),
       );
 
-  Widget _guestWiFiNameCard(GuestWiFiItem state) => AppListCard(
-        showBorder: false,
+  Widget _guestWiFiNameCard(GuestWiFiItem state) => WifiListTile(
         title: AppText.bodyMedium(loc(context).guestWiFiName),
         description: AppText.labelLarge(state.ssid),
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        trailing: const Icon(
-          LinksysIcons.edit,
-          semanticLabel: 'edit',
+        trailing: const AppIcon.font(
+          AppFontIcons.edit,
         ),
         onTap: () {
           showWiFiNameModal(state.ssid, (value) {
@@ -111,27 +83,10 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
         },
       );
 
-  Widget _guestWiFiPasswordCard(GuestWiFiItem state) => AppListCard(
-        showBorder: false,
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+  Widget _guestWiFiPasswordCard(GuestWiFiItem state) => WifiListTile(
         title: AppText.bodyMedium(loc(context).guestWiFiPassword),
-        description: IntrinsicWidth(
-            child: Theme(
-                data: Theme.of(context).copyWith(
-                    inputDecorationTheme: const InputDecorationTheme(
-                        isDense: true, contentPadding: EdgeInsets.zero)),
-                child: Semantics(
-                  textField: false,
-                  explicitChildNodes: true,
-                  child: AppPasswordField(
-                    semanticLabel: 'guest wifi password',
-                    readOnly: true,
-                    border: InputBorder.none,
-                    controller: _guestPasswordController,
-                    suffixIconConstraints: const BoxConstraints(),
-                  ),
-                ))),
-        trailing: const Icon(LinksysIcons.edit),
+        description: AppText.labelLarge('••••••••'),
+        trailing: const AppIcon.font(AppFontIcons.edit),
         onTap: () {
           showWifiPasswordModal(state.password, (value) {
             ref.read(wifiBundleProvider.notifier).setWiFiPassword(value);

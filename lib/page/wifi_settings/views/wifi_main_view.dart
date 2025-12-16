@@ -13,8 +13,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/mac_filtering_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_advanced_settings_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class WiFiMainView extends ArgumentsConsumerStatefulView {
   const WiFiMainView({Key? key, super.args}) : super(key: key);
@@ -80,48 +79,51 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
       const MacFilteringView(),
     ];
 
-    return UiKitPageView.withSliver(
-      title: loc(context).incredibleWiFi,
-      useMainPadding: false,
-      bottomBar: UiKitBottomBarConfig(
-        isPositiveEnabled: bundleState.isDirty &&
-            bundleState.current.wifiList.isSettingsValid(),
-        onPositiveTap: () async {
-          if (_tabController.index == 0) {
-            // if current tab is wifi list settings, show save confirm modal
-            _showSaveConfirmModal();
-          } else if (_tabController.index == 1) {
-            // if current tab is advanced settings, show dfs confirm modal if dfs is enabled
-            if (bundleState.current.advanced.isDFSEnabled == true) {
-              final shouldSave = await _showConfirmDFSModal();
-              if (shouldSave == true) {
+    return LayoutBuilder(builder: (context, constraints) {
+      return UiKitPageView.withSliver(
+        title: loc(context).incredibleWiFi,
+        useMainPadding: true,
+        bottomBar: UiKitBottomBarConfig(
+          isPositiveEnabled: bundleState.isDirty &&
+              bundleState.current.wifiList.isSettingsValid(),
+          onPositiveTap: () async {
+            if (_tabController.index == 0) {
+              // if current tab is wifi list settings, show save confirm modal
+              _showSaveConfirmModal();
+            } else if (_tabController.index == 1) {
+              // if current tab is advanced settings, show dfs confirm modal if dfs is enabled
+              if (bundleState.current.advanced.isDFSEnabled == true) {
+                final shouldSave = await _showConfirmDFSModal();
+                if (shouldSave == true) {
+                  await _doSave();
+                }
+              } else {
                 await _doSave();
               }
             } else {
-              await _doSave();
+              // if current tab is mac filtering, save mac filtering settings
+              final enableMacFiltering =
+                  bundleState.current.privacy.mode.isEnabled;
+              final shouldSave = await showMacFilteringConfirmDialog(
+                  context, enableMacFiltering);
+              if (shouldSave == true) {
+                await _doSave();
+              }
             }
-          } else {
-            // if current tab is mac filtering, save mac filtering settings
-            final enableMacFiltering =
-                bundleState.current.privacy.mode.isEnabled;
-            final shouldSave = await showMacFilteringConfirmDialog(
-                context, enableMacFiltering);
-            if (shouldSave == true) {
-              await _doSave();
-            }
-          }
-        },
-      ),
-      tabs: tabs
-          .mapIndexed((index, e) => Tab(
-                child: AppText.titleSmall(
-                  e,
-                ),
-              ))
-          .toList(),
-      tabContentViews: tabContents,
-      tabController: _tabController,
-    );
+          },
+        ),
+        tabs: tabs
+            .mapIndexed((index, e) => Tab(
+                  child: AppText.titleSmall(
+                    e,
+                  ),
+                ))
+            .toList(),
+        tabContentViews: tabContents,
+        tabController: _tabController,
+        unboundedFallbackHeight: constraints.maxHeight,
+      );
+    });
   }
 
   Future<void> _doSave() async {
@@ -166,23 +168,26 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
               AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
               ..._mloWarning(previewState),
               ..._disableBandWarning(previewState),
-              const AppGap.medium(),
+              AppGap.lg(),
               ..._buildNewSettings(previewState),
-              const AppGap.medium(),
+              AppGap.lg(),
               AppText.bodyMedium(loc(context).doYouWantToContinue),
             ],
           ),
         ),
         actions: [
-          AppTextButton(
-            loc(context).cancel,
+          AppButton.text(
+            label: loc(context).cancel,
             onTap: () {
               context.pop(false);
             },
           ),
-          AppTextButton(loc(context).ok, onTap: () {
-            context.pop(true);
-          })
+          AppButton.text(
+            label: loc(context).ok,
+            onTap: () {
+              context.pop(true);
+            },
+          )
         ]);
     if (result) {
       await _doSave();
@@ -196,12 +201,12 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
       title: loc(context).dfs,
       message: loc(context).modalDFSDesc,
       actions: [
-        AppTextButton(
-          loc(context).cancel,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () => context.pop(),
         ),
-        AppTextButton(
-          loc(context).ok,
+        AppButton.text(
+          label: loc(context).ok,
           onTap: () => context.pop(true),
         ),
       ],
@@ -230,7 +235,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
     final isGuestEnabled = state.guestWiFi.isEnabled;
     return isGuestEnabled
         ? [
-            AppGap.small2(),
+            AppGap.sm(),
             ...disabledWiFiBands
                 .map((e) => AppText.labelMedium(
                       loc(context).disableBandWarning(e.radioID.bandName),
@@ -250,7 +255,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
             .read(wifiBundleProvider.notifier)
             .checkingMLOSettingsConflicts(radios, isMloEnabled: isMLOEnabled)
         ? [
-            const AppGap.small3(),
+            AppGap.md(),
             AppText.labelLarge(
               loc(context).mloWarning,
               color: Theme.of(context).colorScheme.error,
@@ -283,7 +288,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
                   ),
                 ),
               ),
-              const AppGap.small3(),
+              AppGap.md(),
             ],
           ),
         )
@@ -308,7 +313,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
               ),
             ),
           ),
-          const AppGap.small3(),
+          AppGap.md(),
         ],
       ),
     );

@@ -8,14 +8,7 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state
 import 'package:privacy_gui/page/wifi_settings/providers/displayed_mac_filtering_devices_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/info_card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class MacFilteringView extends ConsumerWidget {
   const MacFilteringView({
@@ -35,9 +28,8 @@ class MacFilteringView extends ConsumerWidget {
     final displayDevices = ref.watch(macFilteringDeviceListProvider);
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
-        child: ResponsiveLayout(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+        child: AppResponsiveLayout(
           desktop: _desktopLayout(
               context, ref, privacyState, originalPrivacyState, displayDevices),
           mobile: _mobileLayout(
@@ -54,14 +46,14 @@ class MacFilteringView extends ConsumerWidget {
       InstantPrivacySettings originalState,
       List<DeviceListItem> deviceList) {
     return SizedBox(
-      width: 9.col,
+      width: context.colWidth(9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           if (originalState.mode == MacFilterMode.allow) ...[
             _warningCard(context),
-            const AppGap.small2(),
+            AppGap.sm(),
           ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,7 +63,7 @@ class MacFilteringView extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _enableTile(context, ref, state),
-                    const AppGap.small2(),
+                    AppGap.sm(),
                     _infoCard(context, state.mode == MacFilterMode.deny,
                         deviceList.length),
                   ],
@@ -96,40 +88,65 @@ class MacFilteringView extends ConsumerWidget {
       children: [
         if (originalState.mode == MacFilterMode.allow) ...[
           _warningCard(context),
-          const AppGap.small2(),
+          AppGap.sm(),
         ],
         _enableTile(context, ref, state),
-        const AppGap.small2(),
+        AppGap.sm(),
         _infoCard(context, state.mode == MacFilterMode.deny, deviceList.length),
-        const AppGap.large2(),
+        AppGap.xl(),
       ],
     );
   }
 
   Widget _warningCard(BuildContext context) {
-    return AppSettingCard(
-      title: loc(context).instantPrivacyDisableWarning,
-      leading: Icon(
-        LinksysIcons.infoCircle,
-        color: Theme.of(context).colorScheme.error,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).colorScheme.error),
       ),
-      borderColor: Theme.of(context).colorScheme.error,
+      child: AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Row(
+          children: [
+            AppIcon.font(
+              AppFontIcons.infoCircle,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            AppGap.lg(),
+            Expanded(
+              child: AppText.bodyMedium(loc(context).instantPrivacyDisableWarning),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _infoCard(BuildContext context, bool enabled, int length) {
     return Opacity(
       opacity: enabled ? 1 : .5,
-      child: AppInfoCard(
-        padding: const EdgeInsets.all(Spacing.medium),
+      child: AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         onTap: enabled
             ? () {
                 context.pushNamed(RouteNamed.macFilteringInput);
               }
             : null,
-        title: loc(context).nDevices(length).capitalizeWords(),
-        description: loc(context).denyAccessDesc,
-        trailing: Icon(LinksysIcons.chevronRight),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelLarge(loc(context).nDevices(length).capitalizeWords()),
+                  AppGap.xs(),
+                  AppText.bodyMedium(loc(context).denyAccessDesc),
+                ],
+              ),
+            ),
+            AppIcon.font(AppFontIcons.chevronRight),
+          ],
+        ),
       ),
     );
   }
@@ -143,7 +160,6 @@ class MacFilteringView extends ConsumerWidget {
         children: [
           Expanded(child: AppText.labelLarge(loc(context).wifiMacFiltering)),
           AppSwitch(
-            semanticLabel: 'wifi mac filtering',
             key: const Key('macFilteringEnableSwitch'),
             value: state.mode == MacFilterMode.deny,
             onChanged: (value) {

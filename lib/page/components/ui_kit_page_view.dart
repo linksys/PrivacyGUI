@@ -126,6 +126,8 @@ class UiKitPageView extends ConsumerStatefulWidget {
   final TabController? tabController;
   final void Function(int index)? onTabTap;
   final VoidCallback? onBackTap;
+  final double?
+      unboundedFallbackHeight; // Fallback height for unbounded content
 
   const UiKitPageView({
     super.key,
@@ -160,6 +162,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.tabController,
     this.onTabTap,
     this.onBackTap,
+    this.unboundedFallbackHeight,
   });
 
   /// Inner page factory constructor (similar to StyledAppPageView.innerPage)
@@ -234,6 +237,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     TabController? tabController,
     void Function(int index)? onTabTap,
     VoidCallback? onBackTap,
+    double? unboundedFallbackHeight,
   }) {
     return UiKitPageView(
       key: key,
@@ -267,6 +271,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       tabController: tabController,
       onTabTap: onTabTap,
       onBackTap: onBackTap,
+      unboundedFallbackHeight: unboundedFallbackHeight,
     );
   }
 
@@ -414,6 +419,9 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       header: headerWidget,
       bottomSheet: widget.bottomSheet,
       bottomNavigationBar: widget.bottomNavigationBar,
+
+      // Unbounded content height fallback
+      unboundedFallbackHeight: widget.unboundedFallbackHeight ?? 600,
 
       // Content - use childBuilder for function type
       childBuilder: widget.child,

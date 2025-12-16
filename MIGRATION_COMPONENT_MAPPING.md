@@ -45,7 +45,7 @@
 | privacygui_widgets | ui_kit_library | 變更說明 | 狀態 |
 |-------------------|----------------|---------|------|
 | `AppTextField(controller: ..., hint: ...)` | `AppTextFormField(controller: ..., label: ...)` | 參數名稱: `hint` → `label` | ✅ |
-| `AppPasswordField(controller: ..., validations: ...)` | `AppPasswordInput(controller: ..., rules: ...)` | 參數名稱: `validations` → `rules` | ✅ |
+| `AppPasswordField(controller: ..., validations: ...)` | `AppPasswordInput(controller: ..., rules: ...)` | 參數名稱: `validations` → `rules` <br>⚠️ **注意**: 不支援 `readOnly`，需使用 `IgnorePointer` 或等待 UI Kit 擴充 | ⚠️ |
 | `AppValidatorWidget(...)` | **移除** | 功能已內建於 `AppPasswordInput` | ✅ |
 | `AppDropdownButton(items: ..., onChanged: ...)` | `AppDropdownButton(items: ..., onChanged: ...)` | API 相同 | ✅ |
 | `AppCheckbox(value: ..., onChanged: ...)` | `AppCheckbox(value: ..., onChanged: ...)` | API 相同 | ✅ |
@@ -182,10 +182,11 @@
 > ui_kit 的 `AppSpacing` 常數**非 const**，在 const 語境中需移除 `const` 關鍵字。
 
 ### 響應式佈局 (Responsive Layout)
+> ⚠️ **重要**: 使用 UI Kit 的 `AppResponsiveLayout` 系統。
 
 | privacygui_widgets | ui_kit_library | 變更說明 | 狀態 |
 |-------------------|----------------|---------|------|
-| `ResponsiveLayout.isMobileLayout(context)` | `context.isMobile` | Context extension | ✅ |
+| `ResponsiveLayout.isMobileLayout(context)` | `context.isMobileLayout` | 使用 Project Extension (非 UI Kit 內建 isMobile) | ✅ |
 | `ResponsiveLayout.isOverMedimumLayout(context)` | `!context.isMobile` | Context extension | ✅ |
 | `ResponsiveLayout` | `AppResponsiveLayout` | 元件名稱變更 | ✅ |
 | `1.col` | `context.colWidth(1)` | Context extension method | ✅ |
