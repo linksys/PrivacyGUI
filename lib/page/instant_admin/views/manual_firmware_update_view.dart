@@ -181,10 +181,9 @@ class _ManualFirmwareUpdateViewState
                   width: MediaQuery.of(context).size.width * 0.5,
                   child: Column(
                     children: [
-                      LinearProgressIndicator(
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest),
+                      AppLoader(
+                        variant: LoaderVariant.linear,
+                      ),
                     ],
                   ),
                 ),

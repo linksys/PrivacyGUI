@@ -41,6 +41,16 @@
 - **已完成**: 3
 - **完成率**: 100% ✅
 
+### Instant Verify 相關
+- **總檔案數**: 4 (3 views + 1 service)
+- **已完成**: 4
+- **完成率**: 100% ✅
+
+### Health Check 相關
+- **總檔案數**: 3
+- **已完成**: 3
+- **完成率**: 100% ✅
+
 ---
 
 ## 📋 已遷移檔案清單
@@ -78,7 +88,18 @@
 | `select_device_view.dart` | `UiKitPageView.withSliver`, `UiKitBottomBarConfig`, composed `_buildDeviceGroups()` replacing `GroupList`, composed `_buildDeviceCard()` | ✅ 完成 |
 | `instant_admin_view.dart` | `UiKitPageView`, `AppPasswordInput(rules: [...])`, `AppPasswordRule`, composed `_buildListCard`, `_buildListRow`, `_buildSwitchTile`, `AppFontIcons` | ✅ 完成 |
 | `manual_firmware_update_view.dart` | `UiKitPageView`, `AppButton.primary`, `AppButton.text`, `AppFontIcons`, composed `_buildListCard` | ✅ 完成 |
-| `timezone_view.dart` | `UiKitPageView`, `UiKitBottomBarConfig`, composed `_buildSwitchTile`, `_buildListRow`, `AppButton.text`, `AppFontIcons` | ✅ 完成 |
+| `instant_verify_view.dart` | `UiKitPageView`, `AppResponsiveLayout`, `AppFontIcons`, `AppGap`, responsive layout refactor, PDF service extraction | ✅ 完成 |
+| `ping_network_modal.dart` | `UiKitPageView`, `AppButton.text`, `AppFontIcons`, removed duplicate code | ✅ 完成 |
+| `traceroute_modal.dart` | `UiKitPageView`, `AppButton.text`, `AppFontIcons`, removed duplicate code | ✅ 完成 |
+| `instant_verify_pdf_service.dart` | **新建服務** - PDF logic extracted (~450 lines), `AppSpacing`, `AppFontIcons` | ✅ 完成 |
+| `speed_test_view.dart` | `UiKitPageView`, `AppResponsiveLayout`, `AppFontIcons.bolt`, `AppGap`, `context.colWidth()` | ✅ 完成 |
+| `speed_test_selection.dart` | `UiKitPageView`, `AppSvg.asset(svg:...)`, `AppSpacing` | ✅ 完成 |
+| `speed_test_external.dart` | `UiKitPageView`, `AppButton.primary`, `AppSvg.asset`, custom numbered list | ✅ 完成 |
+| `firmware_update_table.dart` | `DeviceImageHelper`, `AppImage.provider`, semantic colors | ✅ 完成 |
+| `firmware_update_process_view.dart` | `AppLoader()`, `AppGap` adjustments | ✅ 完成 |
+| `firmware_update_detail_view.dart` | `UiKitPageView`, `UiKitBottomBarConfig`, `AppLoader()`, responsive layout | ✅ 完成 |
+| `manual_firmware_update_view.dart` | `LinearProgressIndicator` → `AppLoader(variant: LoaderVariant.linear)` | ✅ 完成 |
+| `timezone_view.dart` | `UiKitPageView`, `UiKitBottomBarConfig`, composed tile widgets, `AppButton.text`, `AppFontIcons` | ✅ 完成 |
 
 ---
 
@@ -102,23 +123,26 @@
 - **型別安全**: 所有 ui_kit 元件提供更好的型別安全
 - **一致性**: 統一的 API 和命名約定
 - **維護性**: 減少對舊系統的依賴
+- **職責分離**: PDF 服務抽離提升代碼組織性
 
 ---
 
 ## 📊 遷移統計
 
 ### 元件遷移統計
-- **按鈕元件**: 19 個檔案遷移
-- **文字元件**: 19 個檔案遷移
-- **間距系統**: 19 個檔案遷移
-- **佈局系統**: 19 個檔案遷移
-- **顏色系統**: 8 個檔案涉及顏色遷移
-- **圖片系統**: 2 個檔案涉及圖片遷移
+- **按鈕元件**: 26 個檔案遷移
+- **文字元件**: 26 個檔案遷移
+- **間距系統**: 26 個檔案遷移
+- **佈局系統**: 26 個檔案遷移
+- **顏色系統**: 10 個檔案涉及顏色遷移
+- **圖片/SVG系統**: 5 個檔案涉及圖片遷移
+- **服務抽離**: 1 個服務文件創建
 
 ### 移除的 privacygui_widgets 依賴
-- **移除總行數**: 約 500+ 行 import 和元件使用
-- **新增 ui_kit 使用**: 約 600+ 行新的 ui_kit 整合
+- **移除總行數**: 約 700+ 行 import 和元件使用
+- **新增 ui_kit 使用**: 約 800+ 行新的 ui_kit 整合
 - **淨變更**: 整體程式碼量略增，但獲得更好的型別安全和一致性
+- **服務層重構**: 450 行 PDF 邏輯從 View 抽離至專門 Service
 
 ---
 

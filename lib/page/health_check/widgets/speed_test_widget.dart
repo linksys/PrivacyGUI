@@ -86,7 +86,6 @@ class SpeedTestWidget extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.only(top: AppSpacing.lg),
               child: Assets.images.speedtestPowered.image(
-                package: 'ui_kit_library',
                 fit: BoxFit.fitWidth,
               ),
             ),

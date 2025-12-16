@@ -108,12 +108,12 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     final appLightTheme = AppTheme.create(
       brightness: Brightness.light,
       seedColor: themeColor,
-      designThemeBuilder: (scheme) => PixelDesignTheme.light(scheme),
+      designThemeBuilder: (scheme) => GlassDesignTheme.light(scheme),
     );
     final appDarkTheme = AppTheme.create(
       brightness: Brightness.dark,
       seedColor: themeColor,
-      designThemeBuilder: (scheme) => PixelDesignTheme.dark(scheme),
+      designThemeBuilder: (scheme) => GlassDesignTheme.dark(scheme),
     );
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,

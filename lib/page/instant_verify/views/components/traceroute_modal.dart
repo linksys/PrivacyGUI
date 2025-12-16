@@ -7,8 +7,8 @@ import 'package:privacy_gui/core/jnap/models/traceroute_status.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class TracerouteModal extends ConsumerStatefulWidget {
   const TracerouteModal({
@@ -48,13 +48,13 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
       mainAxisSize: MainAxisSize.min,
       children: [
         AppText.bodySmall(loc(context).ipAddress),
-        const AppGap.small2(),
+        AppGap.sm(),
         Opacity(
           opacity: isRunning ? .5 : 1,
           child: AbsorbPointer(
             absorbing: isRunning ? true : false,
             child: AppIPFormField(
-              border: const OutlineInputBorder(),
+              border: OutlineInputBorder(),
               controller: _controller,
               onChanged: (value) {
                 setState(() {
@@ -64,7 +64,7 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
             ),
           ),
         ),
-        const AppGap.large1(),
+        AppGap.xl(),
         if (isRunning && _tracerouteLog.isEmpty)
           Center(
               child: SizedBox(
@@ -78,30 +78,26 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            AppTextButton(
-              loc(context).close,
+            AppButton.text(
+              label: loc(context).close,
               onTap: () {
                 ref.read(instantVerifyProvider.notifier).stopTraceroute();
                 context.pop();
               },
             ),
-            Stack(
-              children: [
-                AppTextButton(
-                  loc(context).execute,
-                  onTap: isRunning || !_validIP
-                      ? null
-                      : () {
-                          setState(() {
-                            _tracerouteLog = '';
-                          });
-                          ref
-                              .read(instantVerifyProvider.notifier)
-                              .traceroute(host: _controller.text, pingCount: 5);
-                          _getTracerouteStatus();
-                        },
-                ),
-              ],
+            AppButton.text(
+              label: loc(context).execute,
+              onTap: isRunning || !_validIP
+                  ? null
+                  : () {
+                      setState(() {
+                        _tracerouteLog = '';
+                      });
+                      ref
+                          .read(instantVerifyProvider.notifier)
+                          .traceroute(host: _controller.text, pingCount: 5);
+                      _getTracerouteStatus();
+                    },
             )
           ],
         ),

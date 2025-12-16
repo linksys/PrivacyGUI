@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// The main view for the Speed Test feature.
 ///
@@ -30,9 +25,9 @@ class SpeedTestView extends ConsumerWidget {
       showInfoPanel: true,
       showStepDescriptions: true,
       showLatestOnIdle: false, // History is shown separately in this view
-      meterSize: ResponsiveLayout.isMobileLayout(context)
-          ? 3.col
-          : 5.col, // Make it larger on desktop
+      meterSize: context.isMobileLayout
+          ? context.colWidth(3)
+          : context.colWidth(5), // Make it larger on desktop
     );
 
     final latestSpeedTest = healthCheckState.result;
@@ -45,16 +40,16 @@ class SpeedTestView extends ConsumerWidget {
 
     final historyWidget = _buildHistoryPanel(context, historicalTests);
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView(
       scrollable: true,
       title: loc(context).speedTest,
-      child: (context, constraints) => ResponsiveLayout(
+      child: (context, constraints) => AppResponsiveLayout(
         mobile: Column(
           children: [
             mainWidget,
-            const AppGap.large5(),
+            AppGap.xxl(),
             performanceDescriptionCard,
-            const AppGap.large5(),
+            AppGap.xxl(),
             historyWidget,
           ],
         ),
@@ -62,13 +57,13 @@ class SpeedTestView extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(flex: 6, child: mainWidget),
-            const AppGap.gutter(),
+            AppGap.gutter(),
             Expanded(
                 flex: 6,
                 child: Column(
                   children: [
                     performanceDescriptionCard,
-                    const AppGap.large5(),
+                    AppGap.xxl(),
                     historyWidget,
                   ],
                 )),
@@ -82,12 +77,12 @@ class SpeedTestView extends ConsumerWidget {
   Widget _buildHistoryPanel(
       BuildContext context, List<SpeedTestUIModel> history) {
     return SizedBox(
-      width: ResponsiveLayout.isMobileLayout(context) ? double.infinity : 5.col,
+      width: context.isMobileLayout ? double.infinity : context.colWidth(5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.titleSmall(loc(context).speedTestHistory),
-          const AppGap.medium(),
+          AppGap.md(),
           history.isEmpty
               ? AppCard(
                   child: Center(
@@ -97,47 +92,47 @@ class SpeedTestView extends ConsumerWidget {
                 )
               : Column(
                   children: history
-                      .map((result) => AppCard(
-                            margin:
-                                const EdgeInsets.only(bottom: Spacing.small3),
-                            child: Padding(
-                              padding: const EdgeInsets.all(Spacing.medium),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppText.bodyMedium(result.timestamp),
-                                  const AppGap.small2(),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.download_rounded,
-                                          size: 20),
-                                      AppText.labelLarge(
-                                          '${result.downloadSpeed} ${result.downloadUnit}ps'),
-                                      const AppGap.small3(),
-                                      const Icon(Icons.upload_rounded,
-                                          size: 20),
-                                      AppText.labelLarge(
-                                          '${result.uploadSpeed} ${result.uploadUnit}ps'),
-                                    ],
-                                  ),
-                                  const AppGap.small2(),
-                                  Wrap(
-                                    children: [
-                                      AppText.bodySmall(
-                                          '${loc(context).ping}:'),
-                                      AppText.labelMedium(
-                                          '${result.latency} ms'),
-                                    ],
-                                  ),
-                                  const AppGap.small1(),
-                                  Wrap(
-                                    children: [
-                                      AppText.bodySmall(
-                                          '${loc(context).serverId}:'),
-                                      AppText.labelMedium(result.serverId),
-                                    ],
-                                  ),
-                                ],
+                      .map((result) => Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: AppCard(
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.md),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    AppText.bodyMedium(result.timestamp),
+                                    AppGap.sm(),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.download_rounded, size: 20),
+                                        AppText.labelLarge(
+                                            '${result.downloadSpeed} ${result.downloadUnit}ps'),
+                                        AppGap.sm(),
+                                        Icon(Icons.upload_rounded, size: 20),
+                                        AppText.labelLarge(
+                                            '${result.uploadSpeed} ${result.uploadUnit}ps'),
+                                      ],
+                                    ),
+                                    AppGap.sm(),
+                                    Wrap(
+                                      children: [
+                                        AppText.bodySmall(
+                                            '${loc(context).ping}:'),
+                                        AppText.labelMedium(
+                                            '${result.latency} ms'),
+                                      ],
+                                    ),
+                                    AppGap.xs(),
+                                    Wrap(
+                                      children: [
+                                        AppText.bodySmall(
+                                            '${loc(context).serverId}:'),
+                                        AppText.labelMedium(result.serverId),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ))
@@ -151,19 +146,16 @@ class SpeedTestView extends ConsumerWidget {
   Widget _performanceDescriptionCard(BuildContext context, String resultTitle,
       String resultDesc, String date) {
     return AppCard(
-      color: ResponsiveLayout.isMobileLayout(context)
-          ? Theme.of(context).colorScheme.surface
-          : null,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(LinksysIcons.bolt),
-          const AppGap.medium(),
+          AppIcon.font(AppFontIcons.bolt),
+          AppGap.md(),
           AppText.titleSmall(resultTitle),
-          const AppGap.small2(),
+          AppGap.sm(),
           AppText.bodyMedium(resultDesc),
-          const AppGap.small2(),
+          AppGap.sm(),
           AppText.bodySmall(date),
         ],
       ),

@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_ui_model.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class FirmwareUpdateDetailView extends ConsumerStatefulWidget {
   const FirmwareUpdateDetailView({
@@ -44,11 +40,10 @@ class _FirmwareUpdateDetailViewState
   Widget build(BuildContext context) {
     final state = ref.watch(firmwareUpdateProvider);
     final statusRecords = state.nodesStatus ?? [];
-    
+
     // Find any ongoing updating operations for candicates
     final ongoingList = statusRecords.where((record) {
-      return record.operation != null &&
-          candicateIDs.contains(record.deviceId);
+      return record.operation != null && candicateIDs.contains(record.deviceId);
     }).toList();
     final isUpdating = state.isUpdating;
     final isUpdateAvailable =
@@ -71,28 +66,27 @@ class _FirmwareUpdateDetailViewState
     });
     return isUpdating
         ? _updatingProgressView(ongoingList)
-        : StyledAppPageView.withSliver(
+        : UiKitPageView(
+            scrollable: true,
             title: loc(context).firmwareUpdate,
-            // There will be a short offline period after firmware updating
-            // During this period, the mock nodes displayed should not be able to be updated
             bottomBar: isUpdateAvailable && !isWaitingChildren
-                ? PageBottomBar(
-                    isPositiveEnabled: isUpdateAvailable && !isWaitingChildren,
+                ? UiKitBottomBarConfig(
+                    positiveLabel: loc(context).updateAll,
                     onPositiveTap: () {
                       ref
                           .read(firmwareUpdateProvider.notifier)
                           .updateFirmware();
                     },
-                    positiveLabel: loc(context).updateAll)
+                  )
                 : null,
             child: (context, constraints) => Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.bodyLarge(loc(context).firmwareUpdateDesc1),
-                const AppGap.medium(),
+                AppGap.md(),
                 AppText.bodyLarge(loc(context).firmwareUpdateDesc2),
-                const AppGap.large2(),
+                AppGap.lg(),
                 _buildList(statusRecords, isWaitingChildren),
               ],
             ),
@@ -124,10 +118,10 @@ class _FirmwareUpdateDetailViewState
           newVersion = updateStatus.availableUpdate?.version;
         }
         final modelNumber = updateStatus.modelNumber ?? '';
-        final routerImage = Image(
+        final routerImage = AppImage.provider(
           height: 40,
-          image: CustomTheme.of(context).getRouterImage(
-              routerIconTestByModel(modelNumber: modelNumber), false),
+          imageProvider: DeviceImageHelper.getRouterImage(
+              routerIconTestByModel(modelNumber: modelNumber)),
         );
 
         return FirmwareUpdateNodeCard(
@@ -138,19 +132,19 @@ class _FirmwareUpdateDetailViewState
           newVersion: newVersion,
         );
       },
-      separatorBuilder: (BuildContext context, int index) =>
-          const AppGap.medium(),
+      separatorBuilder: (BuildContext context, int index) => AppGap.md(),
     );
   }
 
-  Widget _updatingProgressView(
-      List<FirmwareUpdateUIModel> list) {
+  Widget _updatingProgressView(List<FirmwareUpdateUIModel> list) {
     if (list.isEmpty) {
       // if updating is ture but there are not items in the ongoing list,
       // it is a temporary blank period before getting the operation data
       // Or it is the last FwUpdateStatus request with a successful result
       // and without pending operation before isUpdating is set to false
-      return const AppFullScreenSpinner();
+      return const Scaffold(
+        body: Center(child: AppLoader()),
+      );
     }
     return Center(
       child: list.length == 1
@@ -158,13 +152,13 @@ class _FirmwareUpdateDetailViewState
           : GridView.builder(
               shrinkWrap: true,
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                mainAxisExtent:
-                    ResponsiveLayout.isMobileLayout(context) ? 4.col : 3.col,
+                mainAxisExtent: context.isMobileLayout
+                    ? context.colWidth(4)
+                    : context.colWidth(3),
                 childAspectRatio: 1,
-                crossAxisCount:
-                    ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
-                mainAxisSpacing: ResponsiveLayout.columnPadding(context),
-                crossAxisSpacing: Spacing.large4,
+                crossAxisCount: context.isMobileLayout ? 1 : 2,
+                mainAxisSpacing: AppSpacing.lg,
+                crossAxisSpacing: AppSpacing.xxl,
               ),
               itemCount: list.length,
               itemBuilder: (context, index) {
@@ -174,12 +168,10 @@ class _FirmwareUpdateDetailViewState
     );
   }
 
-  Widget _buildProgressIndicator(
-      FirmwareUpdateUIModel record) {
+  Widget _buildProgressIndicator(FirmwareUpdateUIModel record) {
     // The device will not be null here because the master is at least fallback one
     final name = record.deviceName;
-    final operationType =
-        _getOperationType(context, record.operation);
+    final operationType = _getOperationType(context, record.operation);
     final progressPercent = record.progressPercent ?? 0;
     return Stack(
       alignment: Alignment.center,
@@ -187,18 +179,15 @@ class _FirmwareUpdateDetailViewState
         SizedBox(
           width: 240,
           height: 240,
-          child: CircularProgressIndicator(
-            semanticsLabel: '$operationType spinner',
+          child: AppLoader(
             value: progressPercent / 100,
-            color: Theme.of(context).colorScheme.primary,
-            strokeWidth: 8,
           ),
         ),
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AppText.headlineSmall(name),
-            const AppGap.large2(),
+            AppGap.lg(),
             AppText.bodyLarge(operationType),
             AppText.bodyLarge('$progressPercent %'),
           ],
@@ -219,7 +208,7 @@ class _FirmwareUpdateDetailViewState
 }
 
 class FirmwareUpdateNodeCard extends StatelessWidget {
-  final Image image;
+  final Widget image;
   final String title;
   final String model;
   final String currentVersion;
@@ -242,13 +231,13 @@ class FirmwareUpdateNodeCard extends StatelessWidget {
         child: Row(
           children: [
             image,
-            const AppGap.medium(),
+            AppGap.md(),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.labelLarge('$title ($model)'),
-                const AppGap.small3(),
+                AppGap.md(),
                 AppText.bodyMedium(loc(context).currentVersion(currentVersion)),
                 if (newVersion != null)
                   AppText.bodyMedium(loc(context).newVersion(newVersion!))

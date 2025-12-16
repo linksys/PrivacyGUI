@@ -88,8 +88,10 @@
 
 | privacygui_widgets | ui_kit_library | 變更說明 | 狀態 |
 |-------------------|----------------|---------|------|
-| `AppSpinner()` | `CircularProgressIndicator()` | 改用 Flutter 標準元件 | ✅ |
-| `AppFullScreenSpinner(text: ...)` | **移除** | 改用 `Center` + `CircularProgressIndicator` + `AppText` | ✅ |
+| `AppSpinner()` | `AppLoader()` | 使用 UI Kit 載入器，默認 circular | ✅ |
+| `AppFullScreenSpinner` | `Scaffold + Center + AppLoader()` | 組合全屏載入 | ✅ |
+| `CircularProgressIndicator()` | `AppLoader()` | 圓形載入器，默認 variant | ✅ |
+| `LinearProgressIndicator()` | `AppLoader(variant: LoaderVariant.linear)` | 線性進度條 | ✅ |
 | `AppLinearProgressIndicator(...)` | `AppLinearProgressIndicator(...)` | API 相同 | ✅ |
 | `AppProgressBar(...)` | `AppProgressBar(...)` | API 相同 | ✅ |
 
@@ -253,6 +255,7 @@
 |---------|---------|---------|------|
 | `AppListCard` | `AppCard` + `Row` + `Column` | `lib/page/components/composed/app_list_card.dart` | ✅ |
 | `AppPanelWithValueCheck` | `AppText` + `AppIcon` + `Container` | `lib/page/components/composed/app_panel_with_value_check.dart` | ✅ |
+| `AppBulletList` | `Column` + `Row` + `AppText` 自訂編號列表 | 參考 `speed_test_external.dart` 中 `_buildNumberedList()` | ✅ |
 
 ### 需要工具類別的情況
 
@@ -274,7 +277,8 @@
 | **文字** | `AppText` | `AppText` | 完全相同 |
 | **輸入** | `AppTextField` | `AppTextFormField` | 加 Form 後綴 |
 | **圖標** | `LinksysIcons` | `AppFontIcons` | Linksys → AppFont |
-| **載入** | `AppSpinner` | `CircularProgressIndicator` | 回到 Flutter 標準 |
+| **載入** | `AppSpinner` | `AppLoader()` | 使用 UI Kit 載入器 |
+| **線性進度** | `LinearProgressIndicator` | `AppLoader(variant: LoaderVariant.linear)` | 指定 linear variant |
 
 ### 參數名稱變更對照
 
@@ -297,7 +301,7 @@
 | **按鈕元件** | 6 | 5 | 0 | 1 | 83% |
 | **文字元件** | 8 | 8 | 0 | 0 | 100% |
 | **輸入元件** | 6 | 5 | 0 | 0 | 83% |
-| **佈局元件** | 5 | 3 | 1 | 1 | 80% |
+| **佈局元件** | 5 | 3 | 2 | 1 | 80% |
 | **視覺元件** | 12 | 10 | 0 | 2 | 83% |
 | **間距系統** | 8 | 8 | 0 | 0 | 100% |
 | **響應式系統** | 6 | 6 | 0 | 0 | 100% |
@@ -307,7 +311,7 @@
 
 - **總元件數**: 59
 - **完全遷移**: 53 (90%)
-- **需要組合**: 2 (3%)
+- **需要組合**: 3 (5%)
 - **已移除**: 4 (7%)
 - **整體完成度**: 93%
 
