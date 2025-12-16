@@ -1,10 +1,10 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
@@ -19,30 +19,19 @@ import 'package:privacy_gui/page/components/customs/animated_refresh_container.d
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
+import 'package:privacy_gui/page/nodes/views/blink_node_light_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/label/status_label.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-
-import 'package:collection/collection.dart';
 import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
-
-import 'blink_node_light_widget.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {
   const NodeDetailView({
@@ -84,7 +73,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
     final filteredDeviceList = ref.watch(filteredDeviceListProvider);
     final isOnlineFilter = ref.watch(
         deviceFilterConfigProvider.select((value) => value.connectionFilter));
-    return ResponsiveLayout(
+    return AppResponsiveLayout(
       desktop: _desktopLayout(state, filteredDeviceList, isOnlineFilter),
       mobile: _mobileLayout(state, filteredDeviceList, isOnlineFilter),
     );
@@ -92,15 +81,15 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
 
   Widget _desktopLayout(NodeDetailState state,
       List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       padding: const EdgeInsets.only(),
       title: state.location,
       actions: [
         AnimatedRefreshContainer(
           builder: (controller) {
-            return AppTextButton.noPadding(
-              loc(context).refresh,
-              icon: LinksysIcons.refresh,
+            return AppButton.text(
+              label: loc(context).refresh,
+              icon: AppIcon.font(AppFontIcons.refresh),
               onTap: () {
                 controller.repeat();
                 ref.read(pollingProvider.notifier).forcePolling().then((value) {
@@ -117,12 +106,12 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: 4.col,
+                width: context.colWidth(4),
                 child: infoTab(state),
               ),
-              const AppGap.gutter(),
+              AppGap.gutter(),
               SizedBox(
-                width: 8.col,
+                width: context.colWidth(8),
                 child: deviceTab(
                   state.deviceId,
                   filteredDeviceList,
@@ -138,15 +127,15 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
 
   Widget _mobileLayout(NodeDetailState state,
       List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: state.location,
       tabController: _tabController,
       actions: [
         AnimatedRefreshContainer(
           builder: (controller) {
-            return AppTextButton.noPadding(
-              loc(context).refresh,
-              icon: LinksysIcons.refresh,
+            return AppButton.text(
+              label: loc(context).refresh,
+              icon: AppIcon.font(AppFontIcons.refresh),
               onTap: () {
                 controller.repeat();
                 ref.read(pollingProvider.notifier).forcePolling().then((value) {
@@ -186,11 +175,11 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const AppGap.small2(),
+        AppGap.sm(),
         _avatarCard(state),
-        const AppGap.small2(),
+        AppGap.sm(),
         _detailSection(state),
-        const AppGap.small2(),
+        AppGap.sm(),
         _lightCard(state),
       ],
     );
@@ -202,23 +191,23 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AppGap.small2(),
+        AppGap.sm(),
         Row(
           children: [
             Expanded(
               child: AppText.labelLarge(
                   loc(context).nDevices(filteredDeviceList.length)),
             ),
-            const AppGap.medium(),
-            ResponsiveLayout(
+            AppGap.lg(),
+            AppResponsiveLayout(
               desktop: AppPopupButton(
                 button: Row(
                   children: [
-                    Icon(
-                      LinksysIcons.filter,
+                    AppIcon.font(
+                      AppFontIcons.filter,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    const AppGap.small2(),
+                    AppGap.sm(),
                     AppText.labelLarge(
                       loc(context).filters,
                       color: Theme.of(context).colorScheme.primary,
@@ -229,17 +218,18 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                 backgroundColor: Theme.of(context).colorScheme.background,
                 builder: (controller) {
                   return Container(
-                    constraints:
-                        BoxConstraints(minWidth: 3.col, maxWidth: 7.col),
+                    constraints: BoxConstraints(
+                        minWidth: context.colWidth(3),
+                        maxWidth: context.colWidth(7)),
                     child: DevicesFilterWidget(
                       preselectedNodeId: [deviceId],
                     ),
                   );
                 },
               ),
-              mobile: AppIconButton.noPadding(
-                icon: LinksysIcons.filter,
-                color: Theme.of(context).colorScheme.primary,
+              mobile: AppIconButton(
+                icon: AppIcon.font(AppFontIcons.filter,
+                    color: Theme.of(context).colorScheme.primary),
                 onTap: () {
                   showModalBottomSheet(
                     context: context,
@@ -247,7 +237,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                     useRootNavigator: true,
                     showDragHandle: true,
                     builder: (context) => Container(
-                      padding: const EdgeInsets.all(Spacing.large2),
+                      padding: EdgeInsets.all(AppSpacing.xxl),
                       width: double.infinity,
                       child: DevicesFilterWidget(
                         preselectedNodeId: [deviceId],
@@ -259,7 +249,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             ),
           ],
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         _deviceList(filteredDeviceList, isOnlineFilter)
       ],
     );
@@ -284,16 +274,14 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           content: AppText.bodyMedium(
               loc(context).nDevicesDeleteDevicesDescription(1)),
           actions: [
-            AppTextButton(
-              loc(context).cancel,
-              color: Theme.of(context).colorScheme.onSurface,
+            AppButton.text(
+              label: loc(context).cancel,
               onTap: () {
                 context.pop();
               },
             ),
-            AppTextButton(
-              loc(context).delete,
-              color: Theme.of(context).colorScheme.error,
+            AppButton.text(
+              label: loc(context).delete,
               onTap: () {
                 context.pop();
                 doSomethingWithSpinner(
@@ -314,16 +302,14 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           title: loc(context).disconnectClient,
           content: AppText.bodyLarge(''),
           actions: [
-            AppTextButton(
-              loc(context).cancel,
-              color: Theme.of(context).colorScheme.onSurface,
+            AppButton.text(
+              label: loc(context).cancel,
               onTap: () {
                 context.pop();
               },
             ),
-            AppTextButton(
-              loc(context).disconnect,
-              color: Theme.of(context).colorScheme.error,
+            AppButton.text(
+              label: loc(context).disconnect,
               onTap: () {
                 context.pop();
                 doSomethingWithSpinner(
@@ -356,7 +342,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: Spacing.large4),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.xxxl),
                 child: Center(
                   child: Image(
                     semanticLabel: 'device image',
@@ -370,8 +356,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               _avatarInfoCard(
                 title: state.location,
                 trailing: AppIconButton(
-                  icon: LinksysIcons.edit,
-                  semanticLabel: 'edit',
+                  icon: AppIcon.font(AppFontIcons.edit),
                   onTap: () {
                     _showEditNodeNameDialog(state);
                   },
@@ -386,16 +371,15 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                   }),
               if (state.isMLO)
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: Spacing.medium),
-                  child: AppTextButton.noPadding(
-                    loc(context).connectedWithMLO,
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: AppButton.text(
+                    label: loc(context).connectedWithMLO,
                     onTap: () {
                       showMLOCapableModal(context);
                     },
                   ),
                 ),
-              const AppGap.medium(),
+              AppGap.lg(),
             ],
           ),
         ),
@@ -440,31 +424,43 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
       final nodeLightSettings = ref.watch(nodeLightSettingsProvider);
       final title = loc(context).nodeLight;
       final nodeLightStatus = NodeLightStatus.getStatus(nodeLightSettings);
+      final statusText = nodeLightStatus == NodeLightStatus.off
+          ? loc(context).off
+          : loc(context).on;
+
       return [
-        AppSettingCard(
+        GestureDetector(
           key: const ValueKey('nodeLightSettings'),
-          title: title,
-          showBorder: false,
-          color: Theme.of(context).colorScheme.background,
-          padding: const EdgeInsets.all(Spacing.medium),
-          trailing: nodeLightStatus != NodeLightStatus.night
-              ? AppStatusLabel(
-                  isOff: nodeLightStatus == NodeLightStatus.off,
-                  label: loc(context).on,
-                  offLabel: loc(context).off,
-                )
-              : const Row(
-                  children: [
-                    Icon(
-                      LinksysIcons.darkMode,
-                      size: 16,
-                    ),
-                    AppText.bodyMedium('8PM - 8AM')
-                  ],
-                ),
           onTap: () {
             _showNodeLightSelectionDialog(nodeLightStatus);
           },
+          child: AppCard(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Row(
+              children: [
+                Expanded(child: AppText.labelLarge(title)),
+                if (nodeLightStatus != NodeLightStatus.night)
+                  AppBadge(
+                    label: statusText,
+                    color: nodeLightStatus == NodeLightStatus.off
+                        ? Theme.of(context).colorScheme.surfaceVariant
+                        : Theme.of(context).colorScheme.primary,
+                  )
+                else
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppIcon.font(
+                        AppFontIcons.darkMode,
+                        size: 16,
+                      ),
+                      AppGap.sm(),
+                      AppText.bodyMedium('8PM - 8AM'),
+                    ],
+                  ),
+              ],
+            ),
+          ),
         ),
       ];
     }
@@ -518,16 +514,13 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
 
   Widget _nodeDetailBackgroundCard({required Widget child}) {
     return AppCard(
-      padding: const EdgeInsets.all(Spacing.small2),
-      color: Theme.of(context).colorScheme.background,
+      padding: EdgeInsets.all(AppSpacing.sm),
       child: child,
     );
   }
 
   Widget _nodeDetailInfoCard({required Widget child}) {
     return AppCard(
-      showBorder: false,
-      color: Theme.of(context).colorScheme.background,
       child: child,
     );
   }
@@ -544,8 +537,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               if (title != null)
                 AppText.labelLarge(
                   title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               if (description != null) AppText.bodyMedium(description),
             ],
@@ -585,29 +576,40 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
   }
 
   Widget _signalStrengthCard(NodeDetailState state) {
-    return AppListCard(
-      showBorder: false,
-      color: Theme.of(context).colorScheme.background,
-      padding: const EdgeInsets.all(Spacing.medium),
-      title: AppText.bodySmall(
-        loc(context).signalStrength,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
+    return AppCard(
+      padding: EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodySmall(
+                  loc(context).signalStrength,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Row(children: [
+                  AppText.labelLarge(
+                    getWifiSignalLevel(state.signalStrength)
+                        .resolveLabel(context),
+                    color: getWifiSignalLevel(state.signalStrength)
+                        .resolveColor(context),
+                  ),
+                  AppText.labelLarge(' • '),
+                  AppText.labelLarge(
+                    state.isWiredConnection
+                        ? ''
+                        : _checkEmptyValue('${state.signalStrength} dBm'),
+                  ),
+                ]),
+              ],
+            ),
+          ),
+          SharedWidgets.resolveSignalStrengthIcon(
+              context, state.signalStrength),
+        ],
       ),
-      description: Row(children: [
-        AppText.labelLarge(
-          getWifiSignalLevel(state.signalStrength).resolveLabel(context),
-          color: getWifiSignalLevel(state.signalStrength).resolveColor(context),
-        ),
-        const AppText.labelLarge(' • '),
-        AppText.labelLarge(
-          state.isWiredConnection
-              ? ''
-              : _checkEmptyValue('${state.signalStrength} dBm'),
-        ),
-      ]),
-      trailing: SharedWidgets.resolveSignalStrengthIcon(
-          context, state.signalStrength),
     );
   }
 
@@ -625,21 +627,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppTextField(
-                semanticLabel: 'node name',
+              AppTextFormField(
                 hintText: loc(context).nodeName,
-                border: const OutlineInputBorder(),
                 controller: textController,
-                errorText: isEmpty
-                    ? loc(context).theNameMustNotBeEmpty
-                    : overMaxSize
-                        ? loc(context).deviceNameExceedMaxSize
-                        : null,
-                onSubmitted: (_) {
-                  if (!isEmpty && !overMaxSize) {
-                    onSubmit();
-                  }
-                },
                 onChanged: (value) {
                   setState(() {
                     isEmpty = value.isEmpty;
@@ -647,8 +637,24 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                   });
                 },
               ),
+              if (isEmpty)
+                Padding(
+                  padding: EdgeInsets.only(top: AppSpacing.xs),
+                  child: AppText.bodySmall(
+                    loc(context).theNameMustNotBeEmpty,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              if (overMaxSize)
+                Padding(
+                  padding: EdgeInsets.only(top: AppSpacing.xs),
+                  child: AppText.bodySmall(
+                    loc(context).deviceNameExceedMaxSize,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
               if (isCognitive && hasBlinkFunction) ...[
-                const AppGap.medium(),
+                AppGap.lg(),
                 const BlinkNodeLightWidget(),
               ],
             ],
@@ -689,7 +695,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           const Divider(),
           AppCheckbox(
             value: nodeLightStatus == NodeLightStatus.off,
-            text: loc(context).lightsOff,
+            label: loc(context).lightsOff,
             onChanged: nodeLightStatus != NodeLightStatus.on
                 ? (value) {
                     if (value == null) {

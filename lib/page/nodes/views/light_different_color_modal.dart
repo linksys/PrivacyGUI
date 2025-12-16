@@ -4,9 +4,7 @@ import 'package:privacy_gui/constants/color_const.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/nodes/views/light_info_tile.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class LightDifferentColorModal extends StatelessWidget {
   final bool isCogntive;
@@ -23,26 +21,17 @@ class LightDifferentColorModal extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppText.labelLarge(loc(context).modalLightDifferentDesc),
-          const AppGap.large2(),
+          AppGap.xxl(),
           ...isCogntive
               ? _cognitiveNodeLightSet(context)
               : _meshNodeLightSet(context),
-          const AppGap.large2(),
+          AppGap.xxl(),
           AppText.labelLarge(loc(context).modalLightDifferentToFactoryReset),
-          const AppGap.large2(),
-          AppBulletList(
-              style: AppBulletStyle.number,
-              itemSpacing: 24,
-              children: [
-                AppStyledText.bold(
-                    loc(context).modalLightDifferentToFactoryResetStep1,
-                    defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-                    tags: const ['b']),
-                AppStyledText.bold(
-                    loc(context).modalLightDifferentToFactoryResetStep2,
-                    defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-                    tags: const ['b']),
-              ]),
+          AppGap.xxl(),
+          _buildNumberedList(context, [
+            loc(context).modalLightDifferentToFactoryResetStep1,
+            loc(context).modalLightDifferentToFactoryResetStep2,
+          ]),
         ],
       ),
     );
@@ -61,7 +50,7 @@ class LightDifferentColorModal extends StatelessWidget {
           ],
         ),
       ),
-      const AppGap.large2(),
+      AppGap.xxl(),
       LightInfoImageTile(
         image: SvgPicture(CustomTheme.of(context).images.nodeLightBlinkBlue),
         content: Column(
@@ -73,7 +62,7 @@ class LightDifferentColorModal extends StatelessWidget {
           ],
         ),
       ),
-      const AppGap.large2(),
+      AppGap.xxl(),
       LightInfoImageTile(
         image: SvgPicture(CustomTheme.of(context).images.nodeLightSolidBlue),
         content: Column(
@@ -85,7 +74,7 @@ class LightDifferentColorModal extends StatelessWidget {
           ],
         ),
       ),
-      const AppGap.large2(),
+      AppGap.xxl(),
       LightInfoImageTile(
         image: SvgPicture(CustomTheme.of(context).images.nodeLightBlinkWhite),
         content: Column(
@@ -97,7 +86,7 @@ class LightDifferentColorModal extends StatelessWidget {
           ],
         ),
       ),
-      const AppGap.large2(),
+      AppGap.xxl(),
       LightInfoImageTile(
         image: SvgPicture(CustomTheme.of(context).images.nodeLightSolidWhite),
         content: Column(
@@ -109,7 +98,7 @@ class LightDifferentColorModal extends StatelessWidget {
           ],
         ),
       ),
-      const AppGap.large2(),
+      AppGap.xxl(),
       LightInfoImageTile(
         image: SvgPicture(CustomTheme.of(context).images.nodeLightBlinkYellow),
         content: Column(
@@ -121,7 +110,7 @@ class LightDifferentColorModal extends StatelessWidget {
           ],
         ),
       ),
-      const AppGap.large2(),
+      AppGap.xxl(),
       LightInfoImageTile(
         image: SvgPicture(CustomTheme.of(context).images.nodeLightSolidRed),
         content: Column(
@@ -129,15 +118,13 @@ class LightDifferentColorModal extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.labelLarge(loc(context).solidRed),
-            AppStyledText.link(
-              loc(context).nodeSolidRedDesc,
-              defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-              tags: const ['u'],
+            AppStyledText(
+              text: loc(context).nodeSolidRedDesc,
             ),
           ],
         ),
       ),
-      const AppGap.large2(),
+      AppGap.xxl(),
       LightInfoImageTile(
         image: SvgPicture(CustomTheme.of(context).images.nodeLightBlinkRed),
         content: Column(
@@ -165,7 +152,7 @@ class LightDifferentColorModal extends StatelessWidget {
           ],
         ),
       ),
-      const AppGap.large2(),
+      AppGap.xxl(),
       LightInfoTile(
         color: ledPurple,
         content: Column(
@@ -177,7 +164,7 @@ class LightDifferentColorModal extends StatelessWidget {
           ],
         ),
       ),
-      const AppGap.large2(),
+      AppGap.xxl(),
       LightInfoTile(
         color: ledRed,
         content: Column(
@@ -190,5 +177,30 @@ class LightDifferentColorModal extends StatelessWidget {
         ),
       ),
     ];
+  }
+
+  Widget _buildNumberedList(BuildContext context, List<String> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: items.asMap().entries.map((entry) {
+        final index = entry.key + 1;
+        final text = entry.value;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 24,
+                child: AppText.bodyMedium('$index.'),
+              ),
+              Expanded(
+                child: AppStyledText(text: text),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
   }
 }
