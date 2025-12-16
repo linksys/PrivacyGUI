@@ -30,7 +30,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacy_gui/page/components/composed/app_switch_trigger_tile.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class NodeDetailView extends ArgumentsConsumerStatefulView {

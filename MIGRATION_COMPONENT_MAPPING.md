@@ -266,6 +266,26 @@
 
 ---
 
+## 🔧 已解耦且複製到專案中的元件 (Decoupled Components)
+
+以下元件已從 `privacygui_widgets` 複製到專案本地 `lib/page/components/composed/` 目錄，以解除相依性：
+
+| 原始元件 | 本地版本 | 檔案位置 | 說明 |
+|---------|---------|---------|------|
+| `AppSwitchTriggerTile` | `AppSwitchTriggerTile` | `lib/page/components/composed/app_switch_trigger_tile.dart` | Switch 開關觸發區塊，UI Kit 無對應 |
+| `MultiplePagesAlertDialog` | `MultiplePagesAlertDialog` | `lib/page/components/composed/multiple_pages_alert_dialog.dart` | 多頁對話框，改用 `AppButton.text` |
+| `AppNodeListCard` | `AppNodeListCard` | `lib/page/components/composed/app_node_list_card.dart` | Node 列表卡片，使用 `AppCard` 重組 |
+
+### 仍需保留 privacygui_widgets 的元件
+
+| 元件 | 原因 | 建議 |
+|------|------|------|
+| `AppPopupButton` | 複雜 overlay 行為，UI Kit PopupMenu 不相容 | 評估是否需複製到 composed |
+| `CustomTheme.of(context).images.*` | 圖片資源專用 | 保留使用 theme |
+| `neutralTonal` / `primaryTonal` | 主題顏色系統 | 保留使用 color_tonal_palettes |
+
+---
+
 ## 🎯 快速查找表 (Quick Reference)
 
 ### 最常用元件對應

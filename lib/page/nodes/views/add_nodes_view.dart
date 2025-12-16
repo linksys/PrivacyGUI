@@ -17,8 +17,8 @@ import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/views/light_different_color_modal.dart';
 import 'package:privacy_gui/page/nodes/views/light_info_tile.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/card/node_list_card.dart';
-import 'package:privacygui_widgets/widgets/dialogs/multiple_page_alert_dialog.dart';
+import 'package:privacy_gui/page/components/composed/app_node_list_card.dart';
+import 'package:privacy_gui/page/components/composed/multiple_pages_alert_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class AddNodesView extends ArgumentsConsumerStatefulView {
