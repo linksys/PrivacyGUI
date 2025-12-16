@@ -5,6 +5,7 @@ import 'dart:math' as math;
 ///
 /// The fill animates from 0 to 1 in a continuous loop.
 /// [size] sets the width/height of the widget.
+@Deprecated('Not used')
 class LinksysSpinner extends StatefulWidget {
   final double size;
 

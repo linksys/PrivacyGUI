@@ -4,18 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class SelectNetworkView extends ArgumentsConsumerStatefulView {
   const SelectNetworkView({super.key});
@@ -40,9 +35,9 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
     _items = state.value?.networks ?? [];
     _isLoading = state.isLoading || (state.value?.isCheckingOnline ?? false);
 
-    return StyledAppPageView(
+    return UiKitPageView(
       scrollable: true,
-      appBarStyle: AppBarStyle.close,
+      appBarStyle: UiKitAppBarStyle.close,
       onBackTap: ref.read(selectedNetworkIdProvider) != null
           ? null
           : () {
@@ -50,10 +45,8 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                   '[Auth]: Force to log out because the user does not select a network');
               ref.read(authProvider.notifier).logout();
             },
-      child: (context, constraints) => AppBasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        content: _networkSection(_items, _isLoading, title: 'Network'),
-      ),
+      child: (context, constraints) =>
+          _networkSection(_items, _isLoading, title: 'Network'),
     );
   }
 
@@ -63,7 +56,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _title(isLoading, title: title),
-        const AppGap.small3(),
+        AppGap.md(),
         SizedBox(
           height: 92.0 * networks.length,
           child: ImplicitlyAnimatedList<CloudNetworkModel>(
@@ -85,7 +78,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
         AppText.titleLarge(
           title,
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         _checkLoadingStatus(isLoading),
       ],
     );
@@ -96,18 +89,17 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
       return const SizedBox(
         width: 16,
         height: 16,
-        child: CircularProgressIndicator(
-          semanticsLabel: 'spinner',
-        ),
+        child: AppLoader(),
       );
     } else {
-      return AppIconButton(
-        padding: const EdgeInsets.all(0),
-        icon: LinksysIcons.refresh,
-        semanticLabel: 'refresh',
-        onTap: () {
-          ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
-        },
+      return Semantics(
+        label: 'refresh',
+        child: AppIconButton(
+          icon: const AppIcon.font(AppFontIcons.refresh),
+          onTap: () {
+            ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
+          },
+        ),
       );
     }
   }
@@ -119,13 +111,6 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
       animation: animation,
       child: _networkItem(network),
     );
-    // return SlideTransition(
-    //   position: Tween<Offset>(
-    //     begin: const Offset(-1, 0),
-    //     end: const Offset(0, 0),
-    //   ).animate(animation),
-    //   child: _networkItem(network),
-    // );
   }
 
   Widget _networkItem(CloudNetworkModel network) {
@@ -143,12 +128,6 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                     .read(dashboardManagerProvider.notifier)
                     .saveSelectedNetwork(network.network.routerSerialNumber,
                         network.network.networkId);
-                // logEvent(
-                //   eventName: 'ActionSelectNetwork',
-                //   parameters: {
-                //     'networkId': network.network.networkId,
-                //   },
-                // );
                 goRouter.goNamed('prepareDashboard');
               }
             }
@@ -156,20 +135,20 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
       child: Opacity(
         opacity: network.isOnline ? 1 : 0.8,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: Spacing.medium,
+          padding: EdgeInsets.symmetric(
+            vertical: AppSpacing.lg,
           ),
           child: Row(
             children: [
               Image(
-                image: CustomTheme.of(context).getRouterImage(
-                      network.network.routerModelNumber,
-                    ),
+                image: DeviceImageHelper.getRouterImage(
+                  network.network.routerModelNumber,
+                ),
                 semanticLabel: 'router image',
                 width: 60,
                 height: 60,
               ),
-              const AppGap.large2(),
+              AppGap.xxl(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -177,7 +156,7 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                       color: network.isOnline
                           ? null
                           : Theme.of(context).colorScheme.onInverseSurface),
-                  const AppGap.small3(),
+                  AppGap.md(),
                 ],
               ),
             ],

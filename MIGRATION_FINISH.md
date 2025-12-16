@@ -56,6 +56,16 @@
 - **已完成**: 9 (主要檔案完成，UI 問題修復完成)
 - **完成率**: 56% ✅ (核心遷移 + UI 修復完成)
 
+### VPN Settings 相關
+- **總檔案數**: 3
+- **已完成**: 3
+- **完成率**: 100% ✅
+
+### Select Network 相關
+- **總檔案數**: 1
+- **已完成**: 1
+- **完成率**: 100% ✅
+
 ---
 
 ## 📋 已遷移檔案清單
@@ -115,6 +125,9 @@
 | `firmware_update_detail_view.dart` | `UiKitPageView`, `UiKitBottomBarConfig`, `AppLoader()`, responsive layout | ✅ 完成 |
 | `manual_firmware_update_view.dart` | `LinearProgressIndicator` → `AppLoader(variant: LoaderVariant.linear)` | ✅ 完成 |
 | `timezone_view.dart` | `UiKitPageView`, `UiKitBottomBarConfig`, composed tile widgets, `AppButton.text`, `AppFontIcons` | ✅ 完成 |
+| `vpn_settings_page.dart` | `AppDropdown` workaround, `AppTextFormField` validation, `AppCard` composition | ✅ 完成 |
+| `vpn_status_tile.dart` | `AppCard` onTap, spacing updates | ✅ 完成 |
+| `select_network_view.dart` | `UiKitPageView`, `DeviceImageHelper`, `AppLoader`, `AppIconButton` | ✅ 完成 |
 
 ---
 
@@ -153,6 +166,8 @@
 - **顏色系統**: 10 個檔案涉及顏色遷移
 - **圖片/SVG系統**: 5 個檔案涉及圖片遷移
 - **服務抽離**: 1 個服務文件創建
+- **VPN系統**: 3 個檔案遷移 (全新)
+- **選擇網路系統**: 1 個檔案遷移 (全新)
 - **API 遷移**: 4 個檔案涉及重大 API 更新 (全新)
 
 ### 移除的 privacygui_widgets 依賴

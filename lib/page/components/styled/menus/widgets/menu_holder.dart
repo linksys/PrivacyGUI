@@ -96,16 +96,17 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
                   _controller.select(_controller.items[index]);
                 },
               ),
-            MenuDisplay.bottom => AnimatedContainer(
+            MenuDisplay.bottom => AnimatedSize(
                 duration: const Duration(milliseconds: 200),
-                height: _controller.isVisible ? kBottomNavigationBarHeight : 0,
-                child: BottomNavigationMenu(
-                  items: _controller.items,
-                  selected: _controller.selected,
-                  onItemClick: (index) {
-                    _controller.select(_controller.items[index]);
-                  },
-                ),
+                child: _controller.isVisible
+                    ? BottomNavigationMenu(
+                        items: _controller.items,
+                        selected: _controller.selected,
+                        onItemClick: (index) {
+                          _controller.select(_controller.items[index]);
+                        },
+                      )
+                    : const SizedBox.shrink(),
               ),
           };
         });

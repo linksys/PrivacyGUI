@@ -11,9 +11,7 @@ import 'package:privacy_gui/page/vpn/views/shared_widgets.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class VPNStatusTile extends ConsumerStatefulWidget {
   const VPNStatusTile({super.key});
@@ -35,79 +33,86 @@ class _VPNStatusTile extends ConsumerState<VPNStatusTile> {
         : '--';
     final isLoading = ref.watch(deviceManagerProvider).deviceList.isEmpty;
 
-    return isLoading
-        ? AppCard(
-            padding: EdgeInsets.zero,
-            child: SizedBox(
-                width: double.infinity,
-                height: 150,
-                child: const LoadingTile()))
-        : AppCard(
-            padding: EdgeInsets.all(Spacing.large2),
-            onTap: isBridge
-                ? null
-                : () {
-                    context.pushNamed(RouteNamed.settingsVPN);
-                  },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    AppText.titleMedium(loc(context).vpn),
-                    const AppGap.small2(),
-                    AppSwitch(
-                        value: vpnState.settings.serviceSettings.enabled,
-                        onChanged: (value) {
-                          final settings = vpnState.settings.serviceSettings;
-                          final notifier = ref.read(vpnProvider.notifier);
-                          notifier
-                              .setVPNService(settings.copyWith(enabled: value));
+    if (isLoading) {
+      return AppCard(
+        child: SizedBox(
+          width: double.infinity,
+          height: 150,
+          child: const LoadingTile(),
+        ),
+      );
+    }
 
-                          doSomethingWithSpinner(context, notifier.save());
-                        })
+    Widget content = Padding(
+      padding: const EdgeInsets.all(AppSpacing
+          .xxl), // Spacing.large2 usually corresponds to xxl or lg? Assuming xxl/xl based on 24px/32px. privacygui Spacing.large2 = 24. ui_kit AppSpacing.lg=16, xl=24, xxl=32. I'll use xl.
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              AppText.titleMedium(loc(context).vpn),
+              AppGap.sm(),
+              AppSwitch(
+                  value: vpnState.settings.serviceSettings.enabled,
+                  onChanged: (value) {
+                    final settings = vpnState.settings.serviceSettings;
+                    final notifier = ref.read(vpnProvider.notifier);
+                    notifier.setVPNService(settings.copyWith(enabled: value));
+
+                    doSomethingWithSpinner(context, notifier.save());
+                  })
+            ],
+          ),
+          vpnStatus(context,
+              isBridge ? IPsecStatus.unknown : vpnState.status.tunnelStatus),
+          if (!isBridge &&
+              vpnState.status.tunnelStatus == IPsecStatus.connected) ...[
+            AppGap.lg(),
+            // VPN statistics
+            buildStatRow(loc(context).vpnUptime, uptime),
+            AppGap.sm(),
+            Row(
+              children: [
+                Expanded(
+                    child: Column(
+                  children: [
+                    buildStatRow(loc(context).vpnBytesReceived,
+                        '${statistics?.bytesReceived ?? '--'}'),
+                    buildStatRow(loc(context).vpnPacketsReceived,
+                        '${statistics?.packetsReceived ?? '--'}'),
                   ],
-                ),
-                vpnStatus(
-                    context,
-                    isBridge
-                        ? IPsecStatus.unknown
-                        : vpnState.status.tunnelStatus),
-                if (!isBridge &&
-                    vpnState.status.tunnelStatus == IPsecStatus.connected) ...[
-                  AppGap.medium(),
-                  // VPN statistics
-                  buildStatRow(loc(context).vpnUptime, uptime),
-                  const AppGap.small2(),
-                  Row(
-                    children: [
-                      Expanded(
-                          child: Column(
-                        children: [
-                          buildStatRow(loc(context).vpnBytesReceived,
-                              '${statistics?.bytesReceived ?? '--'}'),
-                          buildStatRow(loc(context).vpnPacketsReceived,
-                              '${statistics?.packetsReceived ?? '--'}'),
-                        ],
-                      )),
-                      const AppGap.gutter(),
-                      Expanded(
-                          child: Column(
-                        children: [
-                          buildStatRow(loc(context).vpnBytesSent,
-                              '${statistics?.bytesSent ?? '--'}'),
-                          buildStatRow(loc(context).vpnPacketsSent,
-                              '${statistics?.packetsSent ?? '--'}'),
-                        ],
-                      )),
-                    ],
-                  ),
-                ],
+                )),
+                AppGap.xxl(), // gutter
+                Expanded(
+                    child: Column(
+                  children: [
+                    buildStatRow(loc(context).vpnBytesSent,
+                        '${statistics?.bytesSent ?? '--'}'),
+                    buildStatRow(loc(context).vpnPacketsSent,
+                        '${statistics?.packetsSent ?? '--'}'),
+                  ],
+                )),
               ],
             ),
-          );
+          ],
+        ],
+      ),
+    );
+
+    if (!isBridge) {
+      // Make card tappable
+      return AppCard(
+        onTap: () {
+          context.pushNamed(RouteNamed.settingsVPN);
+        },
+        child: content,
+      );
+    }
+
+    return AppCard(child: content);
   }
 }

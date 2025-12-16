@@ -4,11 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/otp_flow/_otp_flow.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -60,20 +58,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
         _handleError(next.error, next.stackTrace!);
       }
     });
-    ref.listen(otpProvider.select((value) => (value.step, value.extras)),
-        (previous, next) {
-      if (next.$1 == previous?.$1) {
-        return;
-      }
-      if (next.$1 == OtpStep.finish) {
-        logger.d('Login password: Otp pass! $next');
-        ref.read(authProvider.notifier).cloudLogin(
-              username: _usernameController.text,
-              password: _passwordController.text,
-              sessionToken: SessionToken.fromJson(next.$2),
-            );
-      }
-    });
+    
     return _isLoading
         ? const AppFullScreenLoader()
         : UiKitPageView(

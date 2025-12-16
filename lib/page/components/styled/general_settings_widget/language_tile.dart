@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/util/extensions.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class LanguageTile extends ConsumerStatefulWidget {
   final void Function(Locale locale)? onSelected;
@@ -19,7 +18,7 @@ class LanguageTile extends ConsumerStatefulWidget {
     this.onSelected,
     this.onTap,
     required this.locale,
-    this.icon = LinksysIcons.language,
+    this.icon = AppFontIcons.language,
     this.showAbbr = false,
   });
 
@@ -57,7 +56,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(widget.icon),
-              const AppGap.medium(),
+              AppGap.lg(),
               Flexible(child: AppText.labelMedium(locale.displayText)),
             ],
           );
@@ -78,8 +77,10 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
             itemBuilder: (context, index) {
               final locale = localeList[index];
               return ListTile(
-                hoverColor:
-                    Theme.of(context).colorScheme.background.withOpacity(.5),
+                hoverColor: Theme.of(context)
+                    .colorScheme
+                    .surface
+                    .withValues(alpha: 0.5),
                 title: Semantics(
                     identifier: 'now-locale-item-${locale.toLanguageTag()}',
                     child: AppText.labelLarge(locale.displayText)),
@@ -87,7 +88,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
                     ? Semantics(
                         identifier: 'now-locale-item-checked',
                         label: 'checked',
-                        child: const Icon(LinksysIcons.check))
+                        child: const Icon(AppFontIcons.check))
                     : null,
                 onTap: () {
                   context.pop(locale);

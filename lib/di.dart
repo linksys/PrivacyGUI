@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:ui_kit_library/ui_kit.dart';
+
+import 'package:privacy_gui/theme/theme_json_config.dart';
 
 /// A global instance of [GetIt] used as a service locator for dependency injection.
 ///
@@ -17,22 +18,18 @@ final getIt = GetIt.instance;
 /// - A singleton of [ServiceHelper].
 /// - The application's light theme data as a named instance.
 /// - The application's dark theme data as a named instance.
-void dependencySetup() {
+void dependencySetup({ThemeJsonConfig? themeConfig}) {
   getIt.registerSingleton<ServiceHelper>(ServiceHelper());
 
-  // Use AppTheme.create() to ensure AppDesignTheme extensions are included
-  final lightTheme = AppTheme.create(
-    brightness: Brightness.light,
-    seedColor: AppPalette.brandPrimary,
-    designThemeBuilder: (scheme) => GlassDesignTheme.light(scheme),
-  );
-  final darkTheme = AppTheme.create(
-    brightness: Brightness.dark,
-    seedColor: AppPalette.brandPrimary,
-    designThemeBuilder: (scheme) => GlassDesignTheme.dark(scheme),
-  );
+  final config = themeConfig ?? ThemeJsonConfig.defaultConfig();
+  getIt.registerSingleton<ThemeJsonConfig>(config);
 
-  getIt.registerSingleton<ThemeData>(lightTheme,
-      instanceName: 'lightThemeData');
-  getIt.registerSingleton<ThemeData>(darkTheme, instanceName: 'darkThemeData');
+  getIt.registerSingleton<ThemeData>(
+    config.createLightTheme(),
+    instanceName: 'lightThemeData',
+  );
+  getIt.registerSingleton<ThemeData>(
+    config.createDarkTheme(),
+    instanceName: 'darkThemeData',
+  );
 }

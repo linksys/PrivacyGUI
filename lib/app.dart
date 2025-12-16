@@ -21,6 +21,7 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/theme/custom_responsive.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
 
 /// The root widget of the Linksys application.
 ///
@@ -107,23 +108,10 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
 
     final themeColor = appSettings.themeColor ?? AppPalette.brandPrimary;
 
-    // Use DI as single source of truth, with fallback if not registered
-    final appLightTheme =
-        getIt.isRegistered<ThemeData>(instanceName: 'lightThemeData')
-            ? getIt.get<ThemeData>(instanceName: 'lightThemeData')
-            : AppTheme.create(
-                brightness: Brightness.light,
-                seedColor: themeColor,
-                designThemeBuilder: (scheme) => GlassDesignTheme.light(scheme),
-              );
-    final appDarkTheme =
-        getIt.isRegistered<ThemeData>(instanceName: 'darkThemeData')
-            ? getIt.get<ThemeData>(instanceName: 'darkThemeData')
-            : AppTheme.create(
-                brightness: Brightness.dark,
-                seedColor: themeColor,
-                designThemeBuilder: (scheme) => GlassDesignTheme.dark(scheme),
-              );
+    // Use ThemeJsonConfig as single source of truth
+    final themeConfig = getIt<ThemeJsonConfig>();
+    final appLightTheme = themeConfig.createLightTheme(themeColor);
+    final appDarkTheme = themeConfig.createDarkTheme(themeColor);
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
       theme: appLightTheme,

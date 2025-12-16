@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -48,10 +49,15 @@ class _BottomNavigationMenuState extends State<BottomNavigationMenu> {
         .map((e) => _createNavItem(e))
         .toList();
 
-    return AppNavigationBar(
-      currentIndex: widget.items.indexOf(widget.selected ?? NaviType.home),
-      items: navItems,
-      onTap: (index) => widget.onItemClick?.call(index),
+    // Force dark theme for AppNavigationBar
+    final darkTheme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
+    return Theme(
+      data: darkTheme,
+      child: AppNavigationBar(
+        currentIndex: widget.items.indexOf(widget.selected ?? NaviType.home),
+        items: navItems,
+        onTap: (index) => widget.onItemClick?.call(index),
+      ),
     );
   }
 

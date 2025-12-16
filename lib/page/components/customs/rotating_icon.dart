@@ -1,8 +1,9 @@
 import 'package:flutter/widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class RotatingIcon extends StatefulWidget {
   final Duration? duration;
-  final Icon icon;
+  final AppIcon icon;
   final bool animate;
   final bool reverse;
 

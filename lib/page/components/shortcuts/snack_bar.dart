@@ -1,34 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 showSuccessSnackBar(BuildContext context, String message) {
+  final appColors = Theme.of(context).extension<AppColorScheme>();
   showSimpleSnackBar(
     context,
     message,
-    background: Theme.of(context).colorSchemeExt.secondaryGreen,
-    textColor: Theme.of(context).colorSchemeExt.onSecondaryGreen,
-    borderColor: Theme.of(context).colorSchemeExt.onSecondaryGreen,
+    background: appColors?.semanticSuccess,
+    textColor: appColors?.onSemanticSuccess,
+    borderColor: appColors?.onSemanticSuccess,
   );
 }
 
 showFailedSnackBar(BuildContext context, String message) {
+  final appColors = Theme.of(context).extension<AppColorScheme>();
   showSimpleSnackBar(
     context,
     message,
-    background: Theme.of(context).colorScheme.errorContainer,
-    textColor: Theme.of(context).colorScheme.onErrorContainer,
-    borderColor: Theme.of(context).colorScheme.onErrorContainer,
+    background: appColors?.semanticDanger,
+    textColor: appColors?.onSemanticDanger,
+    borderColor: appColors?.onSemanticDanger,
   );
 }
 
 showSimpleSnackBar(
   BuildContext context,
   String message, {
-  Icon? icon,
+  Widget? icon,
   Color? borderColor,
   Color? textColor,
   Color? background,
@@ -36,31 +35,30 @@ showSimpleSnackBar(
   showSnackBar(
     context,
     background: background,
-    content: Card(
-      color: background ?? Theme.of(context).colorScheme.secondaryContainer,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-            color: borderColor ??
-                Theme.of(context).colorScheme.onSecondaryContainer),
-        borderRadius: CustomTheme.of(context).radius.asBorderRadius().small,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(Spacing.medium),
-        child: Row(
-          children: [
-            if (icon != null) ...[
-              icon,
-              const AppGap.medium(),
-            ],
-            Flexible(
-              child: AppText.bodySmall(
-                message,
-                color: textColor ??
-                    Theme.of(context).colorScheme.onSecondaryContainer,
-              ),
-            ),
-          ],
+    content: Container(
+      decoration: BoxDecoration(
+        color: background ?? Theme.of(context).colorScheme.secondaryContainer,
+        border: Border.all(
+          color:
+              borderColor ?? Theme.of(context).colorScheme.onSecondaryContainer,
         ),
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            icon,
+            AppGap.lg(),
+          ],
+          Flexible(
+            child: AppText.bodySmall(
+              message,
+              color: textColor ??
+                  Theme.of(context).colorScheme.onSecondaryContainer,
+            ),
+          ),
+        ],
       ),
     ),
   );
@@ -74,16 +72,16 @@ showSnackBar(BuildContext context,
       behavior: SnackBarBehavior.floating,
       margin: useWidth
           ? null
-          : ResponsiveLayout.isMobileLayout(context)
+          : context.isMobileLayout
               ? const EdgeInsets.only(
-                  left: Spacing.large2,
-                  right: Spacing.large2,
-                  bottom: Spacing.large2)
+                  left: AppSpacing.xxl,
+                  right: AppSpacing.xxl,
+                  bottom: AppSpacing.xxl)
               : EdgeInsets.only(
-                  left: ResponsiveLayout.getContentWidth(context) * 0.6,
-                  right: Spacing.large2,
-                  bottom: Spacing.large2),
-      width: !useWidth ? null : ResponsiveLayout.getContentWidth(context) * 0.6,
+                  left: context.screenWidth * 0.6,
+                  right: AppSpacing.xxl,
+                  bottom: AppSpacing.xxl),
+      width: !useWidth ? null : context.screenWidth * 0.6,
       content: content,
       backgroundColor: Colors.transparent,
       elevation: 0,

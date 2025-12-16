@@ -6,13 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
-import 'package:privacy_gui/providers/root/root_config.dart';
-import 'package:privacy_gui/providers/root/root_provider.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
 
 class AppRootContainer extends ConsumerStatefulWidget {
   final Widget? child;
@@ -38,7 +35,6 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
   @override
   Widget build(BuildContext context) {
     logger.d('Root Container:: build: ${widget.route}');
-    final rootConfig = ref.watch(rootProvider);
 
     return LayoutBuilder(builder: ((context, constraints) {
       return IdleChecker(
@@ -77,21 +73,12 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                 _buildLayout(Container(child: widget.child ?? const Center()),
                     constraints),
                 ..._handleConnectivity(ref),
-                _handleSpinner(rootConfig),
               ],
             ),
           ),
         ),
       );
     }));
-  }
-
-  Widget _handleSpinner(AppRootConfig config) {
-    if (config.spinnerTag != null) {
-      return AppFullScreenSpinner(title: config.singleMessage);
-    } else {
-      return const Center();
-    }
   }
 
   Widget _buildLayout(Widget child, BoxConstraints constraints) {

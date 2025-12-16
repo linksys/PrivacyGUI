@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 
+@Deprecated('Use UI Kit instead')
 StatusLabel betaLabel() => StatusLabel(label: 'BETA');
 
+@Deprecated('Use UI Kit instead')
 class StatusLabel extends StatelessWidget {
   final String label;
   final Color? background;

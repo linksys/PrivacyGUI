@@ -16,7 +16,6 @@ import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 
 import 'package:ui_kit_library/ui_kit.dart';
@@ -29,7 +28,6 @@ class DashboardNetworks extends ConsumerStatefulWidget {
 }
 
 class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
-
   @override
   Widget build(BuildContext context) {
     final uptimeInt =
@@ -46,12 +44,12 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     const treeViewBaseHeight = 68.0;
     final routerLength =
         topologyState.root.children.firstOrNull?.toFlatList().length ?? 1;
-    final double nodeTopologyHeight = ResponsiveLayout.isMobileLayout(context)
+    final double nodeTopologyHeight = context.isMobileLayout
         ? routerLength * topologyItemHeight
         : min(routerLength * topologyItemHeight, 3 * topologyItemHeight);
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
-    final showAllTopology = ResponsiveLayout.isMobileLayout(context) || routerLength <= 3;
+    final showAllTopology = context.isMobileLayout || routerLength <= 3;
     final isLoading =
         (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     return isLoading
@@ -75,20 +73,20 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                   mobile: _mobile(context, ref),
                 ),
                 SizedBox(
-                  height: isLoading
-                      ? 188
-                      : nodeTopologyHeight + treeViewBaseHeight,
+                  height:
+                      isLoading ? 188 : nodeTopologyHeight + treeViewBaseHeight,
                   child: AppTopology(
                     topology: meshTopology,
-                    viewMode: TopologyViewMode.tree, // Force tree view for dashboard
-                    enableAnimation: !showAllTopology, // Disable animation for mobile/small screens
+                    viewMode:
+                        TopologyViewMode.tree, // Force tree view for dashboard
+                    enableAnimation:
+                        !showAllTopology, // Disable animation for mobile/small screens
                     onNodeTap: TopologyAdapter.wrapNodeTapCallback(
                       topologyState.root.children,
                       (RouterTreeNode node) {
                         if (node.data.isOnline) {
-                          ref
-                              .read(nodeDetailIdProvider.notifier)
-                              .state = node.data.deviceId;
+                          ref.read(nodeDetailIdProvider.notifier).state =
+                              node.data.deviceId;
                           context.pushNamed(RouteNamed.nodeDetails);
                         }
                       },
@@ -129,7 +127,8 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   }
 
   /// Find the original RouterTreeNode by mesh node ID.
-  RouterTreeNode? _findOriginalNode(List<RouterTreeNode> rootNodes, String nodeId) {
+  RouterTreeNode? _findOriginalNode(
+      List<RouterTreeNode> rootNodes, String nodeId) {
     for (final rootNode in rootNodes) {
       final flatNodes = rootNode.toFlatList();
       for (final node in flatNodes) {
@@ -284,7 +283,10 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                 )
               : AppIcon.font(
                   AppFontIcons.check,
-                  color: Theme.of(context).extension<AppColorScheme>()?.semanticSuccess ?? Colors.green,
+                  color: Theme.of(context)
+                          .extension<AppColorScheme>()
+                          ?.semanticSuccess ??
+                      Colors.green,
                 )
         ],
       ),

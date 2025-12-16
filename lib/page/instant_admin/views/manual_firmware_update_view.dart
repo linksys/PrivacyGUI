@@ -158,7 +158,7 @@ class _ManualFirmwareUpdateViewState
                 children: [
                   status is ManualUpdateRebooting
                       ? RotatingIcon(
-                          Icon(_getProcessingIcon(status),
+                          AppIcon.font(_getProcessingIcon(status),
                               size: 64,
                               color: Theme.of(context).colorScheme.primary),
                           reverse: true,

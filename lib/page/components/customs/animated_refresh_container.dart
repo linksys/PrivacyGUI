@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class AnimatedRefreshContainer extends StatefulWidget {
   final Widget Function(AnimationController) builder;
@@ -9,7 +9,8 @@ class AnimatedRefreshContainer extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<AnimatedRefreshContainer> createState() => _AnimatedRefreshContainerState();
+  State<AnimatedRefreshContainer> createState() =>
+      _AnimatedRefreshContainerState();
 }
 
 class _AnimatedRefreshContainerState extends State<AnimatedRefreshContainer>
@@ -32,7 +33,7 @@ class _AnimatedRefreshContainerState extends State<AnimatedRefreshContainer>
             padding: const EdgeInsets.all(8.0),
             child: RotationTransition(
               turns: _controller,
-              child: const Icon(LinksysIcons.refresh),
+              child: const AppIcon.font(AppFontIcons.refresh),
             ),
           )
         : widget.builder(_controller);

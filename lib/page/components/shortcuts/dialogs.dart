@@ -8,17 +8,14 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 const kDefaultDialogWidth = 328.0;
 
 Future<T?> doSomethingWithSpinner<T>(
   BuildContext context,
   Future<T> task, {
-  Widget? icon,
+  IconData? icon,
   String? title,
   List<String>? messages,
   Duration? period,
@@ -44,7 +41,7 @@ Future<T?> doSomethingWithSpinner<T>(
   });
 
   await completer.future;
-  await Future.delayed(Duration(milliseconds: 100));
+  await Future.delayed(const Duration(milliseconds: 100));
   return task.then((value) {
     return value;
   }).onError((error, stackTrace) {
@@ -61,7 +58,7 @@ Future<T?> doSomethingWithSpinner<T>(
 
 Future<T?> showAppSpinnerDialog<T>(
   BuildContext context, {
-  Widget? icon,
+  IconData? icon,
   String? title,
   Widget? loadingWidget,
   double? width,
@@ -82,7 +79,7 @@ Future<T?> showAppSpinnerDialog<T>(
             stream: stream,
             initialData: messages.firstOrNull,
             builder: (context, snapshot) {
-              return AlertDialog(
+              return AppDialog(
                 icon: icon,
                 title: title != null
                     ? SizedBox(
@@ -94,8 +91,11 @@ Future<T?> showAppSpinnerDialog<T>(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      loadingWidget ?? const AppSpinner(),
-                      if (snapshot.hasData) AppText.labelLarge(snapshot.data!)
+                      loadingWidget ?? const AppLoader(),
+                      if (snapshot.hasData) ...[
+                        AppGap.md(),
+                        AppText.labelLarge(snapshot.data!)
+                      ]
                     ],
                   ),
                 ),
@@ -109,7 +109,7 @@ Future<T?> showAppSpinnerDialog<T>(
 
 Future<T?> showSubmitAppDialog<T>(
   BuildContext context, {
-  Widget? icon,
+  IconData? icon,
   String? title,
   required Widget Function(BuildContext, StateSetter, void Function())
       contentBuilder,
@@ -150,7 +150,7 @@ Future<T?> showSubmitAppDialog<T>(
           });
         }
 
-        return AlertDialog(
+        return AppDialog(
           icon: icon,
           title: title != null
               ? SizedBox(
@@ -161,22 +161,21 @@ Future<T?> showSubmitAppDialog<T>(
           content: SizedBox(
               width: width ?? kDefaultDialogWidth,
               child: switch (isLoading) {
-                true => loadingWidget ?? const AppSpinner(),
+                true => loadingWidget ?? const AppLoader(),
                 false => contentBuilder(context, setState, onSubmit),
               }),
           actions: isLoading
               ? []
               : [
-                  AppTextButton(
-                    negitiveLabel ?? loc(context).cancel,
+                  AppButton.text(
+                    label: negitiveLabel ?? loc(context).cancel,
                     key: const Key('alertNegativeButton'),
-                    color: Theme.of(context).colorScheme.onSurface,
                     onTap: () {
                       context.pop();
                     },
                   ),
-                  AppTextButton(
-                    positiveLabel ?? loc(context).save,
+                  AppButton.text(
+                    label: positiveLabel ?? loc(context).save,
                     key: const Key('alertPositiveButton'),
                     onTap: checkPositiveEnabled?.call() ?? true
                         ? () {
@@ -194,7 +193,7 @@ Future<T?> showSubmitAppDialog<T>(
 Future<T?> showSimpleAppDialog<T>(
   BuildContext context, {
   bool dismissible = true,
-  Widget? icon,
+  IconData? icon,
   String? title,
   Widget? content,
   bool scrollable = false,
@@ -207,7 +206,7 @@ Future<T?> showSimpleAppDialog<T>(
     barrierDismissible: dismissible,
     useRootNavigator: useRootNavigator,
     builder: (context) {
-      return AlertDialog(
+      return AppDialog(
         semanticLabel: title,
         scrollable: scrollable,
         icon: icon,
@@ -228,7 +227,7 @@ Future<T?> showSimpleAppOkDialog<T>(
   bool dismissible = true,
   bool scrollable = false,
   bool useRootNavigator = true,
-  Widget? icon,
+  IconData? icon,
   String? title,
   Widget? content,
   double? width,
@@ -244,8 +243,8 @@ Future<T?> showSimpleAppOkDialog<T>(
     icon: icon,
     width: width,
     actions: [
-      AppTextButton(
-        okLabel ?? loc(context).ok,
+      AppButton.text(
+        label: okLabel ?? loc(context).ok,
         onTap: () {
           context.pop();
         },
@@ -259,7 +258,7 @@ Future<T?> showMessageAppDialog<T>(
   bool dismissible = true,
   bool scrollable = false,
   bool useRootNavigator = true,
-  Widget? icon,
+  IconData? icon,
   String? title,
   required String message,
   List<Widget>? actions,
@@ -283,7 +282,7 @@ Future<T?> showMessageAppOkDialog<T>(
   bool dismissible = true,
   bool scrollable = false,
   bool useRootNavigator = true,
-  Widget? icon,
+  IconData? icon,
   String? title,
   String? message,
   String? okLabel,
@@ -299,8 +298,8 @@ Future<T?> showMessageAppOkDialog<T>(
     content: AppText.bodyMedium(message ?? ''),
     width: width,
     actions: [
-      AppTextButton(
-        okLabel ?? loc(context).ok,
+      AppButton.text(
+        label: okLabel ?? loc(context).ok,
         onTap: () {
           context.pop();
         },
@@ -311,7 +310,7 @@ Future<T?> showMessageAppOkDialog<T>(
 
 Future<T?> showSpinnerDialog<T>(BuildContext context) {
   return showSimpleAppDialog<T?>(context,
-      dismissible: false, content: const AppSpinner());
+      dismissible: false, content: const AppLoader());
 }
 
 Future<bool?> showUnsavedAlert(BuildContext context,
@@ -321,16 +320,14 @@ Future<bool?> showUnsavedAlert(BuildContext context,
     title: title ?? loc(context).unsavedChangesTitle,
     message: message ?? loc(context).unsavedChangesDesc,
     actions: [
-      AppTextButton(
-        loc(context).goBack,
-        color: Theme.of(context).colorScheme.onSurface,
+      AppButton.text(
+        label: loc(context).goBack,
         onTap: () {
           context.pop();
         },
       ),
-      AppTextButton(
-        loc(context).discardChanges,
-        color: Theme.of(context).colorScheme.error,
+      AppButton.dangerText(
+        label: loc(context).discardChanges,
         onTap: () {
           context.pop(true);
         },
@@ -350,17 +347,17 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(loc(context).notConnectedToRouter),
-          const AppGap.medium(),
-          AppBulletList(children: [
-            AppText.bodySmall(loc(context).routerNotFoundDesc1),
-            AppText.bodySmall(loc(context).routerNotFoundDesc2),
-            AppText.bodySmall(loc(context).routerNotFoundDesc3),
-          ])
+          AppGap.md(),
+          _buildBulletList([
+            loc(context).routerNotFoundDesc1,
+            loc(context).routerNotFoundDesc2,
+            loc(context).routerNotFoundDesc3,
+          ]),
         ],
       ),
       actions: [
-        AppFilledButtonWithLoading(
-          loc(context).tryAgain,
+        _AsyncLoadingButton(
+          label: loc(context).tryAgain,
           onTap: () async {
             await ref
                 .read(dashboardManagerProvider.notifier)
@@ -395,8 +392,8 @@ Future<T?> showRedirectNewIpAlert<T>(
         ],
       ),
       actions: [
-        AppFilledButton(
-          loc(context).redirect,
+        AppButton.primary(
+          label: loc(context).redirect,
           onTap: () {
             ref.read(redirectionProvider.notifier).state = 'https://$ip';
           },
@@ -413,11 +410,7 @@ Future<bool?> showFactoryResetModal(
           : 'Child';
 
   return showMessageAppDialog<bool>(context,
-      icon: Icon(
-        LinksysIcons.resetWrench,
-        color: Theme.of(context).colorScheme.error,
-        size: 42,
-      ),
+      icon: AppFontIcons.resetWrench,
       message: loc(context).factoryResetDesc,
       title: type == 'Master'
           ? loc(context).factoryResetParentTitle
@@ -425,17 +418,16 @@ Future<bool?> showFactoryResetModal(
               ? loc(context).factoryResetChildTitle
               : loc(context).factoryResetTitle,
       actions: [
-        AppTextButton(
-          loc(context).cancel,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () {
             context.pop();
           },
         ),
-        AppTextButton(
-          isLast
+        AppButton.dangerText(
+          label: isLast
               ? loc(context).factoryResetOkSingle
               : loc(context).factoryResetOk,
-          color: Theme.of(context).colorScheme.error,
           onTap: () {
             context.pop(true);
           },
@@ -452,11 +444,7 @@ Future<bool?> showRebootModal(
           : 'Child';
 
   return showMessageAppDialog<bool>(context,
-      icon: Icon(
-        LinksysIcons.restartAlt,
-        color: Theme.of(context).colorScheme.error,
-        size: 42,
-      ),
+      icon: AppFontIcons.restartAlt,
       message: type == 'Master'
           ? loc(context).menuRestartNetworkMessage
           : type == 'Last'
@@ -468,15 +456,14 @@ Future<bool?> showRebootModal(
               ? loc(context).rebootUnit
               : loc(context).rebootChildTitle,
       actions: [
-        AppTextButton(
-          loc(context).cancel,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () {
             context.pop();
           },
         ),
-        AppTextButton(
-          isLast ? loc(context).rebootOkSingle : loc(context).rebootOk,
-          color: Theme.of(context).colorScheme.error,
+        AppButton.dangerText(
+          label: isLast ? loc(context).rebootOkSingle : loc(context).rebootOk,
           onTap: () {
             context.pop(true);
           },
@@ -503,16 +490,14 @@ Future<bool?> showInstantPrivacyConfirmDialog(
         ? loc(context).instantPrivacyDescription
         : loc(context).turnOffInstantPrivacyDesc),
     actions: [
-      AppTextButton(
-        loc(context).cancel,
-        color: Theme.of(context).colorScheme.onSurface,
+      AppButton.text(
+        label: loc(context).cancel,
         onTap: () {
           context.pop();
         },
       ),
-      AppTextButton(
-        enable ? loc(context).turnOn : loc(context).turnOff,
-        color: Theme.of(context).colorScheme.primary,
+      AppButton.text(
+        label: enable ? loc(context).turnOn : loc(context).turnOff,
         onTap: () {
           context.pop(true);
         },
@@ -532,20 +517,84 @@ Future<bool?> showMacFilteringConfirmDialog(BuildContext context, bool enable) {
         ? loc(context).turnOnMacFilteringDesc
         : loc(context).turnOffMacFilteringDesc),
     actions: [
-      AppTextButton(
-        loc(context).cancel,
-        color: Theme.of(context).colorScheme.onSurface,
+      AppButton.text(
+        label: loc(context).cancel,
         onTap: () {
           context.pop();
         },
       ),
-      AppTextButton(
-        enable ? loc(context).turnOn : loc(context).turnOff,
-        color: Theme.of(context).colorScheme.primary,
+      AppButton.text(
+        label: enable ? loc(context).turnOn : loc(context).turnOff,
         onTap: () {
           context.pop(true);
         },
       ),
     ],
   );
+}
+
+// Private helper to mimic BulletList using Column/Row
+Widget _buildBulletList(List<String> items) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: items.map((item) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodySmall('• '),
+            Expanded(
+              child: AppText.bodySmall(item),
+            ),
+          ],
+        ),
+      );
+    }).toList(),
+  );
+}
+
+class _AsyncLoadingButton extends StatefulWidget {
+  final String label;
+  final Future<void> Function() onTap;
+
+  const _AsyncLoadingButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  State<_AsyncLoadingButton> createState() => _AsyncLoadingButtonState();
+}
+
+class _AsyncLoadingButtonState extends State<_AsyncLoadingButton> {
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // Assuming AppButton does not support isLoading property directly
+    // based on migration usage pattern.
+    if (_isLoading) {
+      return AppButton.primary(
+          label: '',
+          onTap: null); // Or specific loading button if provided by UI Kit
+    }
+    return AppButton.primary(
+      label: widget.label,
+      onTap: () async {
+        setState(() {
+          _isLoading = true;
+        });
+        try {
+          await widget.onTap();
+        } finally {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        }
+      },
+    );
+  }
 }

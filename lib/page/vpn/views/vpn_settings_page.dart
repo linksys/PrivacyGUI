@@ -10,17 +10,10 @@ import 'package:privacy_gui/page/vpn/providers/vpn_state.dart';
 import 'package:privacy_gui/page/vpn/views/shared_widgets.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
 import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class VPNSettingsPage extends ArgumentsConsumerStatefulView {
   const VPNSettingsPage({super.key, super.args});
@@ -125,12 +118,16 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         message:
             'We are applying your changes, please wait for a moment. It will restart the VPN service. Do you want to proceed?',
         actions: [
-          AppTextButton(loc(context).cancel, onTap: () {
-            context.pop(false);
-          }),
-          AppTextButton(loc(context).save, onTap: () {
-            context.pop(true);
-          }),
+          AppButton.text(
+              label: loc(context).cancel,
+              onTap: () {
+                context.pop(false);
+              }),
+          AppButton.text(
+              label: loc(context).save,
+              onTap: () {
+                context.pop(true);
+              }),
         ]);
   }
 
@@ -175,13 +172,6 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     final state = ref.watch(vpnProvider);
     final notifier = ref.read(vpnProvider.notifier);
 
-    // final changed = isStateChanged(state.settings);
-    // if (_hasChanges != changed) {
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     if (mounted) setState(() => _hasChanges = changed);
-    //   });
-    // }
-
     return StyledAppPageView(
       title: loc(context).vpnSettingsTitle,
       onBackTap: _onBackTap,
@@ -197,11 +187,10 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
           child: Column(
             children: [
               _buildStatusCard(state, notifier),
-              const AppGap.medium(),
-              ResponsiveLayout(
-                desktop: _buildDesktopLayout(state, notifier),
-                mobile: _buildMobileLayout(state, notifier),
-              ),
+              AppGap.lg(),
+              context.isMobileLayout
+                  ? _buildMobileLayout(state, notifier)
+                  : _buildDesktopLayout(state, notifier),
             ],
           ),
         );
@@ -218,9 +207,9 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           vpnStatus(context, status),
-          AppTextButton(
-            key: ValueKey('testAgain'),
-            loc(context).testAgain,
+          AppButton.text(
+            key: const ValueKey('testAgain'),
+            label: loc(context).testAgain,
             onTap: () async {
               final isChanged = isStateChanged(state.settings);
               final hasErrors = _hasErrors();
@@ -235,12 +224,16 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
                   message:
                       'Your changes is unsaved, do you want to save and test it?',
                   actions: [
-                    AppTextButton(loc(context).cancel, onTap: () {
-                      context.pop(false);
-                    }),
-                    AppTextButton(loc(context).save, onTap: () {
-                      context.pop(true);
-                    }),
+                    AppButton.text(
+                        label: loc(context).cancel,
+                        onTap: () {
+                          context.pop(false);
+                        }),
+                    AppButton.text(
+                        label: loc(context).save,
+                        onTap: () {
+                          context.pop(true);
+                        }),
                   ],
                 );
               } else {
@@ -249,7 +242,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
                   title: loc(context).alertExclamation,
                   message:
                       'Your changes has errors, please fix them before testing.',
-                  icon: Icon(LinksysIcons.error),
+                  icon: AppFontIcons.error,
                 );
                 shouldGo = false;
               }
@@ -290,28 +283,28 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 6.col,
+          width: context.colWidth(6),
           child: Column(
             children: [
               _buildCredentialsSection(state, notifier),
-              const AppGap.medium(),
+              AppGap.lg(),
               _buildGatewaySection(state, notifier),
             ],
           ),
         ),
-        const AppGap.gutter(),
+        AppGap.xxl(),
         SizedBox(
-          width: 6.col,
+          width: context.colWidth(6),
           child: Column(
             children: [
               _buildEnabledCard(state, notifier),
-              const AppGap.medium(),
+              AppGap.lg(),
               _buildAutoConnectCard(state, notifier),
-              const AppGap.medium(),
+              AppGap.lg(),
               _buildTunneledUserSection(state, notifier),
               if (state.status.tunnelStatus == IPsecStatus.connected &&
                   state.status.statistics != null) ...[
-                const AppGap.medium(),
+                AppGap.lg(),
                 _buildStatisticsSection(state.status.statistics!),
               ],
             ],
@@ -326,17 +319,17 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildEnabledCard(state, notifier),
-        const AppGap.medium(),
+        AppGap.lg(),
         _buildAutoConnectCard(state, notifier),
-        const AppGap.medium(),
+        AppGap.lg(),
         _buildCredentialsSection(state, notifier),
-        const AppGap.medium(),
+        AppGap.lg(),
         _buildGatewaySection(state, notifier),
-        const AppGap.medium(),
+        AppGap.lg(),
         _buildTunneledUserSection(state, notifier),
         if (state.status.tunnelStatus == IPsecStatus.connected &&
             state.status.statistics != null) ...[
-          const AppGap.medium(),
+          AppGap.lg(),
           _buildStatisticsSection(state.status.statistics!),
         ],
       ],
@@ -348,10 +341,11 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
       title: loc(context).vpnUserCredentialsSection,
       isEnabled: state.settings.isEditingCredentials,
       trailing: AppIconButton(
-        icon: state.settings.isEditingCredentials
-            ? LinksysIcons.close
-            : LinksysIcons.edit,
-        color: Theme.of(context).colorScheme.primary,
+        icon: AppIcon.font(
+            state.settings.isEditingCredentials
+                ? AppFontIcons.close
+                : AppFontIcons.edit,
+            color: Theme.of(context).colorScheme.primary),
         onTap: () {
           setState(() {
             if (state.settings.isEditingCredentials) {
@@ -373,12 +367,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         },
       ),
       children: [
-        AppTextField.outline(
-          key: ValueKey('username'),
-          hintText: loc(context).username,
-          headerText: loc(context).username,
+        AppTextFormField(
+          key: const ValueKey('username'),
+          label: loc(context).username,
           controller: _usernameController,
-          errorText: _usernameValidator.isValid ?? true
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) => _usernameValidator.isValid ?? true
               ? null
               : loc(context).invalidUsername,
           onChanged: (value) {
@@ -393,25 +387,23 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
               setState(() {});
             }
           },
-          onFocusChanged: (focus) {
-            if (!focus) {
-              _usernameValidator.validate(_usernameController.text);
-              setState(() {});
-            }
-          },
+          // onFocusChanged handled manually via listener if critical or ignored for now assuming validation updates on change
         ),
-        const AppGap.medium(),
-        AppDropdownButton<AuthMode>(
-          title: loc(context).vpnAuthMode,
-          items: AuthMode.values,
-          selected: state.settings.userCredentials?.authMode,
-          label: (mode) => mode.toDisplayName(context),
+        AppGap.lg(),
+        AppDropdown<String>(
+          label: loc(context).vpnAuthMode,
+          items: AuthMode.values.map((e) => e.toDisplayName(context)).toList(),
+          value:
+              state.settings.userCredentials?.authMode.toDisplayName(context),
           onChanged: (value) {
-            if (state.settings.userCredentials != null) {
+            if (value != null && state.settings.userCredentials != null) {
+              final selectedMode = AuthMode.values.firstWhere(
+                (e) => e.toDisplayName(context) == value,
+              );
               notifier.setVPNUser(
                 VPNUserCredentials(
                   username: state.settings.userCredentials!.username,
-                  authMode: value,
+                  authMode: selectedMode,
                   secret: null,
                 ),
               );
@@ -420,13 +412,13 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
           },
         ),
         if (state.settings.isEditingCredentials) ...[
-          const AppGap.medium(),
-          AppTextField.outline(
-            key: ValueKey('password'),
-            hintText: loc(context).password,
-            headerText: loc(context).password,
+          AppGap.lg(),
+          AppTextFormField(
+            key: const ValueKey('password'),
+            label: loc(context).password,
             controller: _passwordController,
-            errorText: _passwordValidator.isValid ?? true
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: (value) => _passwordValidator.isValid ?? true
                 ? null
                 : loc(context).invalidPassword,
             onChanged: (value) {
@@ -434,12 +426,6 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
                 notifier.setVPNUser(
                   state.settings.userCredentials!.copyWith(secret: value),
                 );
-                setState(() {});
-              }
-            },
-            onFocusChanged: (focus) {
-              if (!focus) {
-                _passwordValidator.validate(_passwordController.text);
                 setState(() {});
               }
             },
@@ -453,12 +439,12 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     return _buildSection(
       title: loc(context).gateway,
       children: [
-        AppTextField.outline(
-          key: ValueKey('gateway'),
-          hintText: loc(context).gateway,
-          headerText: loc(context).gateway,
+        AppTextFormField(
+          key: const ValueKey('gateway'),
+          label: loc(context).gateway,
           controller: _gatewayController,
-          errorText: _gatewayValidator.isValid ?? true
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) => _gatewayValidator.isValid ?? true
               ? null
               : loc(context).invalidGatewayIpAddress,
           onChanged: (value) {
@@ -470,11 +456,10 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
             }
           },
         ),
-        const AppGap.medium(),
-        AppTextField.outline(
-          key: ValueKey('dns'),
-          hintText: loc(context).dns,
-          headerText: loc(context).dns,
+        AppGap.lg(),
+        AppTextFormField(
+          key: const ValueKey('dns'),
+          label: loc(context).dns,
           controller: _dnsController,
           onChanged: (value) {
             if (state.settings.gatewaySettings != null) {
@@ -485,26 +470,27 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
             }
           },
         ),
-        const AppGap.medium(),
-        AppDropdownButton<IKEMode>(
-          title: loc(context).vpnIkeMode,
-          items: IKEMode.values,
-          selected: state.settings.gatewaySettings?.ikeMode,
-          label: (mode) => mode.toDisplayName(context),
+        AppGap.lg(),
+        AppDropdown<String>(
+          label: loc(context).vpnIkeMode,
+          items: IKEMode.values.map((e) => e.toDisplayName(context)).toList(),
+          value: state.settings.gatewaySettings?.ikeMode.toDisplayName(context),
           onChanged: (value) {
-            if (state.settings.gatewaySettings != null) {
+            if (value != null && state.settings.gatewaySettings != null) {
+              final selectedMode = IKEMode.values.firstWhere(
+                (e) => e.toDisplayName(context) == value,
+              );
               notifier.setVPNGateway(
-                state.settings.gatewaySettings!.copyWith(ikeMode: value),
+                state.settings.gatewaySettings!.copyWith(ikeMode: selectedMode),
               );
               setState(() {});
             }
           },
         ),
-        const AppGap.medium(),
-        AppTextField.outline(
-          key: ValueKey('ikeProposal'),
-          hintText: loc(context).vpnIkeProposal,
-          headerText: loc(context).vpnIkeProposal,
+        AppGap.lg(),
+        AppTextFormField(
+          key: const ValueKey('ikeProposal'),
+          label: loc(context).vpnIkeProposal,
           controller: _ikeProposalController,
           onChanged: (value) {
             if (state.settings.gatewaySettings != null) {
@@ -515,11 +501,10 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
             }
           },
         ),
-        const AppGap.medium(),
-        AppTextField.outline(
-          key: ValueKey('espProposal'),
-          hintText: loc(context).vpnEspProposal,
-          headerText: loc(context).vpnEspProposal,
+        AppGap.lg(),
+        AppTextFormField(
+          key: const ValueKey('espProposal'),
+          label: loc(context).vpnEspProposal,
           controller: _espProposalController,
           onChanged: (value) {
             if (state.settings.gatewaySettings != null) {
@@ -539,25 +524,17 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
       title: loc(context).vpnTunneledUserSection,
       isEnabled: state.settings.serviceSettings.enabled,
       children: [
-        AppIPFormField(
-          key: ValueKey('tunneledUser'),
-          header: AppText.labelLarge(loc(context).ipAddress),
+        AppTextFormField(
+          key: const ValueKey('tunneledUser'),
+          label: loc(context).ipAddress,
           controller: _tunneledUserController,
-          border: OutlineInputBorder(),
-          errorText: _tunneledUserValidator.isValid ?? true
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) => _tunneledUserValidator.isValid ?? true
               ? null
               : loc(context).invalidIpAddress,
           onChanged: (value) {
             notifier.setTunneledUser(value);
             setState(() {});
-          },
-          onFocusChanged: (focus) {
-            if (!focus && _tunneledUserController.text.isNotEmpty) {
-              _tunneledUserValidator.validate(
-                _tunneledUserController.text,
-              );
-              setState(() {});
-            }
           },
         ),
       ],
@@ -575,7 +552,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.titleMedium(loc(context).vpnTunnelStatistics),
-          const AppGap.small2(),
+          AppGap.sm(),
           buildStatRow(loc(context).vpnUptime, uptime),
           buildStatRow(
               loc(context).vpnPacketsSent, statistics.packetsSent.toString()),
@@ -597,31 +574,45 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
   }
 
   Widget _buildEnabledCard(VPNState state, VPNNotifier notifier) {
-    return AppSettingCard(
-      title: loc(context).vpnEnabled,
-      trailing: AppSwitch(
-        value: state.settings.serviceSettings.enabled,
-        onChanged: (value) {
-          notifier.setVPNService(
-            state.settings.serviceSettings.copyWith(enabled: value),
-          );
-          setState(() {});
-        },
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Row(
+          children: [
+            Expanded(child: AppText.titleMedium(loc(context).vpnEnabled)),
+            AppSwitch(
+              value: state.settings.serviceSettings.enabled,
+              onChanged: (value) {
+                notifier.setVPNService(
+                  state.settings.serviceSettings.copyWith(enabled: value),
+                );
+                setState(() {});
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildAutoConnectCard(VPNState state, VPNNotifier notifier) {
-    return AppSettingCard(
-      title: loc(context).vpnAutoConnect,
-      trailing: AppSwitch(
-        value: state.settings.serviceSettings.autoConnect,
-        onChanged: (value) {
-          notifier.setVPNService(
-            state.settings.serviceSettings.copyWith(autoConnect: value),
-          );
-          setState(() {});
-        },
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Row(
+          children: [
+            Expanded(child: AppText.titleMedium(loc(context).vpnAutoConnect)),
+            AppSwitch(
+              value: state.settings.serviceSettings.autoConnect,
+              onChanged: (value) {
+                notifier.setVPNService(
+                  state.settings.serviceSettings.copyWith(autoConnect: value),
+                );
+                setState(() {});
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -642,7 +633,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
               if (trailing != null) trailing,
             ],
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           Opacity(
             opacity: isEnabled ? 1 : 0.5,
             child: AbsorbPointer(

@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
-import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -48,6 +48,11 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         isRemote ? ref.watch(remoteClientProvider).sessionInfo : null;
     final expiredCountdown =
         isRemote ? ref.watch(remoteClientProvider).expiredCountdown : null;
+
+    // Use dark theme's color scheme for TopBar
+    final darkTheme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
+    final colorScheme = darkTheme.colorScheme;
+
     return SafeArea(
       bottom: false,
       child: GestureDetector(
@@ -57,55 +62,58 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
             Utils.exportLogFile(context);
           }
         },
-        child: Container(
-          color: Color(neutralTonal.get(6)),
-          height: 64,
-          padding: const EdgeInsets.only(
-            left: 24.0,
-            right: 24,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              AppText.titleLarge(loc(context).appTitle,
-                  color: Color(neutralTonal.get(100))),
-              MenuHolder(type: MenuDisplay.top),
-              Wrap(
-                children: [
-                  if (isRemote)
-                    Column(
-                      children: [
-                        _networkSelect(),
-                        if (sessionInfo != null)
-                          _sessionExpireCounter(sessionInfo, expiredCountdown),
-                      ],
+        child: Theme(
+          data: darkTheme,
+          child: AppSurface(
+            height: 64,
+            padding: const EdgeInsets.only(
+              left: 24.0,
+              right: 24,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                AppText.titleLarge(loc(context).appTitle,
+                    color: colorScheme.onSurface),
+                MenuHolder(type: MenuDisplay.top),
+                Wrap(
+                  children: [
+                    if (isRemote)
+                      Column(
+                        children: [
+                          _networkSelect(colorScheme),
+                          if (sessionInfo != null)
+                            _sessionExpireCounter(
+                                sessionInfo, expiredCountdown),
+                        ],
+                      ),
+                    // TODO: Add the button back when remote assistance is ready
+                    // if (loginType == LoginType.local)
+                    //   Padding(
+                    //     padding: EdgeInsets.symmetric(horizontal: 4.0),
+                    //     child: AppIconButton.noPadding(
+                    //       icon: Icons.support_agent,
+                    //       onTap: () {
+                    //         showRemoteAssistanceDialog(context, ref);
+                    //       },
+                    //     ),
+                    //   ),
+                    const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: GeneralSettingsWidget(),
                     ),
-                  // TODO: Add the button back when remote assistance is ready
-                  // if (loginType == LoginType.local)
-                  //   Padding(
-                  //     padding: EdgeInsets.symmetric(horizontal: 4.0),
-                  //     child: AppIconButton.noPadding(
-                  //       icon: Icons.support_agent,
-                  //       onTap: () {
-                  //         showRemoteAssistanceDialog(context, ref);
-                  //       },
-                  //     ),
-                  //   ),
-                  const Padding(
-                    padding: EdgeInsets.all(4.0),
-                    child: GeneralSettingsWidget(),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _networkSelect() {
+  Widget _networkSelect(ColorScheme colorScheme) {
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final hasMultiNetworks =
         ref.watch(selectNetworkProvider).when(data: (state) {
@@ -126,9 +134,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         children: [
           AppText.labelLarge(
             dashboardHomeState.mainSSID,
-            color: Color(
-              neutralTonal.get(100),
-            ),
+            color: colorScheme.onSurface,
           ),
         ],
       ),

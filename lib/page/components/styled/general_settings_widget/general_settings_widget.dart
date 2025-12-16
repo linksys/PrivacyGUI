@@ -5,18 +5,16 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/composed/app_popup_button.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_mode_tile.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/buttons/popup_button.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class GeneralSettingsWidget extends ConsumerStatefulWidget {
   const GeneralSettingsWidget({super.key});
@@ -34,6 +32,10 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
             LoginType.none;
     final isRemote = loginType == LoginType.remote;
 
+    // Use dark theme's color scheme for icon color
+    final darkTheme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
+    final colorScheme = darkTheme.colorScheme;
+
     return AppPopupButton(
       parent: shellNavigatorKey.currentContext,
       maxWidth: 240,
@@ -41,11 +43,9 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         identifier: 'now-topbar-icon-general-settings',
         label: 'general settings',
         child: Icon(
-          isRemote ? Icons.support_agent : LinksysIcons.person,
+          isRemote ? Icons.support_agent : AppFontIcons.person,
           size: 20,
-          color: Color(
-            neutralTonal.get(100),
-          ),
+          color: colorScheme.onSurface,
         ),
       ),
       borderRadius: const BorderRadius.all(Radius.circular(10)),
@@ -54,63 +54,65 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
             ref.watch(appSettingsProvider.select((value) => value.locale));
         return Semantics(
           explicitChildNodes: true,
-          child: Container(
-            constraints: const BoxConstraints(minWidth: 200, maxWidth: 240),
+          child: AppSurface(
             padding: const EdgeInsets.all(8.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: LanguageTile(
-                    locale: locale ?? const Locale('en'),
-                    onTap: () {
-                      controller.close();
-                    },
-                    onSelected: (locale) {
-                      final appSettings = ref.read(appSettingsProvider);
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 200, maxWidth: 240),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: LanguageTile(
+                      locale: locale ?? const Locale('en'),
+                      onTap: () {
+                        controller.close();
+                      },
+                      onSelected: (locale) {
+                        final appSettings = ref.read(appSettingsProvider);
 
-                      ref
-                          .read(appSettingsProvider.notifier)
-                          .update(appSettings.copyWith(locale: () => locale));
-                    },
+                        ref
+                            .read(appSettingsProvider.notifier)
+                            .update(appSettings.copyWith(locale: () => locale));
+                      },
+                    ),
                   ),
-                ),
-                const AppGap.medium(),
-                Padding(
-                  padding: const EdgeInsets.all(Spacing.small2),
-                  child: Semantics(
-                    identifier: 'now-general-settings-theme',
-                    label: 'theme',
-                    child: const ThemeModeTile(),
+                  AppGap.lg(),
+                  Padding(
+                    padding: EdgeInsets.all(AppSpacing.sm),
+                    child: Semantics(
+                      identifier: 'now-general-settings-theme',
+                      label: 'theme',
+                      child: const ThemeModeTile(),
+                    ),
                   ),
-                ),
-                // const AppGap.medium(),
-                // Padding(
-                //   padding: const EdgeInsets.all(Spacing.small2),
-                //   child: Semantics(
-                //     identifier: 'now-general-settings-theme-color',
-                //     label: 'themeColor',
-                //     child: const ThemeColorTile(),
-                //   ),
-                // ),
-                const AppGap.medium(),
-                ..._displayAdditional(loginType, controller),
-                FutureBuilder(
-                    future: getVersion(),
-                    initialData: '-',
-                    builder: (context, data) {
-                      return Semantics(
-                        identifier: 'now-general-text-version',
-                        label: 'version',
-                        child: AppText.bodySmall(
-                          'version ${data.data}',
-                        ),
-                      );
-                    }),
-              ],
+                  // const AppGap.lg(),
+                  // Padding(
+                  //   padding: EdgeInsets.all(AppSpacing.sm),
+                  //   child: Semantics(
+                  //     identifier: 'now-general-settings-theme-color',
+                  //     label: 'themeColor',
+                  //     child: const ThemeColorTile(),
+                  //   ),
+                  // ),
+                  AppGap.lg(),
+                  ..._displayAdditional(loginType, controller),
+                  FutureBuilder(
+                      future: getVersion(),
+                      initialData: '-',
+                      builder: (context, data) {
+                        return Semantics(
+                          identifier: 'now-general-text-version',
+                          label: 'version',
+                          child: AppText.bodySmall(
+                            'version ${data.data}',
+                          ),
+                        );
+                      }),
+                ],
+              ),
             ),
           ),
         );
@@ -118,14 +120,15 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
     );
   }
 
-  List<Widget> _displayAdditional(LoginType loginType, AppPopupButtonController controller) {
+  List<Widget> _displayAdditional(
+      LoginType loginType, AppPopupButtonController controller) {
     final isRemote = loginType == LoginType.remote;
     if (loginType != LoginType.none) {
       return [
         // Padding(
         //   padding: const EdgeInsets.all(8.0),
-        //   child: AppTextButton(
-        //     loc(context).endUserLicenseAgreement,
+        //   child: AppButton.text(
+        //     label: loc(context).endUserLicenseAgreement,
         //     onTap: () {
         //       gotoOfficialWebUrl(linkEULA,
         //           locale: ref.read(appSettingsProvider).locale);
@@ -134,8 +137,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         // ),
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: AppTextButton(
-            loc(context).termsOfService,
+          child: AppButton.text(
+            label: loc(context).termsOfService,
             onTap: () {
               gotoOfficialWebUrl(linkTerms,
                   locale: ref.read(appSettingsProvider).locale);
@@ -144,8 +147,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: AppTextButton(
-            loc(context).thirdPartyLicenses,
+          child: AppButton.text(
+            label: loc(context).thirdPartyLicenses,
             onTap: () {
               gotoOfficialWebUrl(linkThirdParty,
                   locale: ref.read(appSettingsProvider).locale);
@@ -154,8 +157,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: AppTextButton(
-            loc(context).privacyAndSecurity,
+          child: AppButton.text(
+            label: loc(context).privacyAndSecurity,
             onTap: () {
               gotoOfficialWebUrl(linkPrivacy,
                   locale: ref.read(appSettingsProvider).locale);
@@ -168,9 +171,10 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         // const AppText.labelMedium('Router'),
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: AppTextButton(
-            isRemote ? loc(context).endRemoteAssistance : loc(context).logout,
-            color: Theme.of(context).colorScheme.error,
+          child: AppButton.dangerText(
+            label: isRemote
+                ? loc(context).endRemoteAssistance
+                : loc(context).logout,
             onTap: isRemote
                 ? () {
                     controller.close();
@@ -180,16 +184,14 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                       content: AppText.bodyMedium(
                           loc(context).endRemoteAssistanceDesc),
                       actions: [
-                        AppTextButton(
-                          loc(context).cancel,
-                          color: Theme.of(context).colorScheme.onSurface,
+                        AppButton.text(
+                          label: loc(context).cancel,
                           onTap: () {
                             context.pop();
                           },
                         ),
-                        AppTextButton(
-                          loc(context).ok,
-                          color: Theme.of(context).colorScheme.error,
+                        AppButton.dangerText(
+                          label: loc(context).ok,
                           onTap: () {
                             logger.i('[Auth]: The user manually end session');
                             context.pop();
@@ -208,7 +210,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                   },
           ),
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
       ];
     } else {
       return [];

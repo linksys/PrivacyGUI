@@ -20,12 +20,14 @@
 | privacygui_widgets | ui_kit_library | 變更說明 | 狀態 |
 |-------------------|----------------|---------|------|
 | `AppTextButton('Label', onTap: ...)` | `AppButton.text(label: 'Label', onTap: ...)` | 參數名稱: `text` → `label` | ✅ |
+| `AppTextButton('Label', color: error, onTap: ...)` | `AppButton.dangerText(label: 'Label', onTap: ...)` | 紅色/警告按鈕使用 dangerText 變體 | ✅ |
 | `AppTextButton.noPadding('Label', onTap: ...)` | `AppButton.text(label: 'Label', onTap: ...)` | 移除 noPadding 變體，使用標準 text button | ✅ |
 | `AppFilledButton('Label', onTap: ...)` | `AppButton(label: 'Label', variant: SurfaceVariant.highlight, onTap: ...)` | 使用 variant 參數替代專門類別 | ✅ |
 | `AppOutlinedButton('Label', onTap: ...)` | `AppButton(label: 'Label', variant: SurfaceVariant.tonal, onTap: ...)` | 使用 variant 參數替代專門類別 | ✅ |
 | `AppElevatedButton('Label', onTap: ...)` | `AppButton(label: 'Label', variant: SurfaceVariant.highlight, onTap: ...)` | 合併至標準 AppButton | ✅ |
 | `AppIconButton(icon: iconData, onTap: ...)` | `AppIconButton(icon: Widget, onTap: ...)` | Icon 類型: `IconData` → `Widget` (需包裝為 `Icon()`) | ✅ |
 | `AppLoadableWidget.*` | `AppButton(isLoading: ...)` 或組合元件 | 優先使用 AppButton 內建 loading | ✅ |
+
 
 ### 文字元件 (Text Components)
 
@@ -44,10 +46,10 @@
 
 | privacygui_widgets | ui_kit_library | 變更說明 | 狀態 |
 |-------------------|----------------|---------|------|
-| `AppTextField(controller: ..., hint: ...)` | `AppTextFormField(controller: ..., label: ...)` | 參數名稱: `hint` → `label` | ✅ |
+| `AppTextField(controller: ..., hint: ...)` | `AppTextFormField(controller: ..., label: ...)` | 參數名稱 `hint` → `label`；不支援 `errorText`，需改用 `validator` 配合 `AutovalidateMode` | ✅ |
 | `AppPasswordField(controller: ..., validations: ...)` | `AppPasswordInput(controller: ..., rules: ...)` | 參數名稱: `validations` → `rules` <br>⚠️ **注意**: 不支援 `readOnly`，需使用 `IgnorePointer` 或等待 UI Kit 擴充 | ⚠️ |
 | `AppValidatorWidget(...)` | **移除** | 功能已內建於 `AppPasswordInput` | ✅ |
-| `AppDropdownButton(items: ..., onChanged: ...)` | `AppDropdownButton(items: ..., onChanged: ...)` | API 相同 | ✅ |
+| `AppDropdownButton(items: ..., onChanged: ...)` | `AppDropdown<String>(...)` | ⚠️ 如遇複雜型別顯示問題，建議轉為 `String` 處理；API 為 `items` (List) + `label` (Title) | ✅ |
 | `AppCheckbox(value: ..., onChanged: ...)` | `AppCheckbox(value: ..., onChanged: ...)` | API 相同 | ✅ |
 | `AppSwitch(value: ..., onChanged: ...)` | `AppSwitch(value: ..., onChanged: ...)` | 不支援 `semanticLabel` | ⚠️ |
 | `AppRadio<T>(value: ..., groupValue: ...)` | `AppRadio<T>(value: ..., groupValue: ...)` | API 相同 | ✅ |
@@ -56,7 +58,8 @@
 
 | privacygui_widgets | ui_kit_library | 變更說明 | 狀態 |
 |-------------------|----------------|---------|------|
-| `AppCard(child: ...)` | `AppCard(child: ...)` | API 相同 | ✅ |
+| `AppCard(child: ...)` | `AppCard(child: ...)` | 支援 `onTap`；不再內建內容Padding，需自行包 `Padding` | ✅ |
+| `Container(color: ...)` | `AppSurface(child: ...)` | 用於 surface 容器 <br>⚠️ **注意**: 不支援 `borderRadius` 自訂，預設有圓角 | ⚠️ |
 | `AppListCard(title: ..., trailing: ...)` | **Composed Component** | 需使用組合元件 | ✅ |
 | `AppBasicLayout(content: ...)` | **移除** | 改用 `UiKitPageView` 或直接排版 | ✅ |
 | `StyledAppPageView(...)` | `UiKitPageView(...)` | 完全替換 | ✅ |
@@ -179,7 +182,7 @@
 | `Spacing.large3` | `AppSpacing.xxxl` | 32px | ❌ | ✅ |
 
 > [!WARNING]
-> ui_kit 的 `AppSpacing` 常數**非 const**，在 const 語境中需移除 `const` 關鍵字。
+> ui_kit 的 `AppSpacing` 常數**非 const**，在 const 語境中需移除 `const` 關鍵字。同理 `AppGap` 的某些構造函數 (如 `.sm()`) 可能也非 const。
 
 ### 響應式佈局 (Responsive Layout)
 > ⚠️ **重要**: 使用 UI Kit 的 `AppResponsiveLayout` 系統。
@@ -264,6 +267,25 @@
 |---------|---------|---------|------|
 | `CustomTheme.getRouterImage()` | `DeviceImageHelper` | `lib/core/utils/device_image_helper.dart` | ✅ |
 
+### 主題設定重要事項
+
+> [!IMPORTANT]
+> DI 中的 ThemeData 必須使用 `AppTheme.create()` 創建，以確保包含 `AppDesignTheme` extension。
+> 否則 UI Kit 元件 (如 `AppText`, `AppSurface`) 會拋出 "AppDesignTheme extension not found" 錯誤。
+
+```dart
+// lib/di.dart - 正確的主題注入方式
+final darkTheme = AppTheme.create(
+  brightness: Brightness.dark,
+  seedColor: AppPalette.brandPrimary,
+  designThemeBuilder: (scheme) => GlassDesignTheme.dark(scheme),
+);
+getIt.registerSingleton<ThemeData>(darkTheme, instanceName: 'darkThemeData');
+```
+
+> [!TIP]
+> 對於強制使用深色主題的區域 (如 TopBar, BottomNavigationMenu)，使用 `Theme` widget 包裹並從 DI 獲取主題。
+
 ---
 
 ## 🔧 已解耦且複製到專案中的元件 (Decoupled Components)
@@ -279,10 +301,10 @@
 
 ### 仍需保留 privacygui_widgets 的元件
 
-| 元件 | 原因 | 建議 |
-|------|------|------|
-| `CustomTheme.of(context).images.*` | `Assets.images.*` | `ui_kit_library` | 已遷移至 UI Kit Assets |
-| `neutralTonal` / `primaryTonal` | 主題顏色系統 | 保留使用 color_tonal_palettes |
+| 元件 | 原因 | 替代方案 |
+|------|------|----------|
+| `neutralTonal` / `primaryTonal` | 主題顏色系統 | 優先使用 `colorScheme.surface/onSurface` 或 `AppPalette.brandPrimary`，僅無法替代時才保留 |
+
 
 ---
 
