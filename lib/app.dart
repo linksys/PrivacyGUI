@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
@@ -105,16 +106,24 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
     final themeColor = appSettings.themeColor ?? AppPalette.brandPrimary;
-    final appLightTheme = AppTheme.create(
-      brightness: Brightness.light,
-      seedColor: themeColor,
-      designThemeBuilder: (scheme) => GlassDesignTheme.light(scheme),
-    );
-    final appDarkTheme = AppTheme.create(
-      brightness: Brightness.dark,
-      seedColor: themeColor,
-      designThemeBuilder: (scheme) => GlassDesignTheme.dark(scheme),
-    );
+
+    // Use DI as single source of truth, with fallback if not registered
+    final appLightTheme =
+        getIt.isRegistered<ThemeData>(instanceName: 'lightThemeData')
+            ? getIt.get<ThemeData>(instanceName: 'lightThemeData')
+            : AppTheme.create(
+                brightness: Brightness.light,
+                seedColor: themeColor,
+                designThemeBuilder: (scheme) => GlassDesignTheme.light(scheme),
+              );
+    final appDarkTheme =
+        getIt.isRegistered<ThemeData>(instanceName: 'darkThemeData')
+            ? getIt.get<ThemeData>(instanceName: 'darkThemeData')
+            : AppTheme.create(
+                brightness: Brightness.dark,
+                seedColor: themeColor,
+                designThemeBuilder: (scheme) => GlassDesignTheme.dark(scheme),
+              );
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
       theme: appLightTheme,

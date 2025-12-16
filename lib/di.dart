@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacygui_widgets/theme/material/theme_data.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// A global instance of [GetIt] used as a service locator for dependency injection.
 ///
@@ -19,6 +19,20 @@ final getIt = GetIt.instance;
 /// - The application's dark theme data as a named instance.
 void dependencySetup() {
   getIt.registerSingleton<ServiceHelper>(ServiceHelper());
-  getIt.registerSingleton<ThemeData>(linksysLightThemeData, instanceName: 'lightThemeData');
-  getIt.registerSingleton<ThemeData>(linksysDarkThemeData, instanceName: 'darkThemeData');
+
+  // Use AppTheme.create() to ensure AppDesignTheme extensions are included
+  final lightTheme = AppTheme.create(
+    brightness: Brightness.light,
+    seedColor: AppPalette.brandPrimary,
+    designThemeBuilder: (scheme) => GlassDesignTheme.light(scheme),
+  );
+  final darkTheme = AppTheme.create(
+    brightness: Brightness.dark,
+    seedColor: AppPalette.brandPrimary,
+    designThemeBuilder: (scheme) => GlassDesignTheme.dark(scheme),
+  );
+
+  getIt.registerSingleton<ThemeData>(lightTheme,
+      instanceName: 'lightThemeData');
+  getIt.registerSingleton<ThemeData>(darkTheme, instanceName: 'darkThemeData');
 }
