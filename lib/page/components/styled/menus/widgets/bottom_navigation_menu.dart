@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -35,6 +34,7 @@ class _BottomNavigationMenuState extends State<BottomNavigationMenu> {
         type: NaviType.support,
         rootPath: RouteNamed.dashboardSupport),
   };
+
   @override
   void initState() {
     super.initState();
@@ -42,34 +42,22 @@ class _BottomNavigationMenuState extends State<BottomNavigationMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
-    return Theme(
-      data: theme.copyWith(),
-      child: NavigationBar(
-        selectedIndex: widget.items.indexOf(widget.selected ?? NaviType.home),
-        destinations: widget.items
-            .map((e) => menuItemsMap[e])
-            .nonNulls
-            .map((e) => _bottomSheetIconView(e))
-            .toList(),
-        onDestinationSelected: widget.onItemClick,
-        indicatorColor: Theme.of(context).colorScheme.primary,
-        elevation: 0,
-      ),
+    final navItems = widget.items
+        .map((e) => menuItemsMap[e])
+        .nonNulls
+        .map((e) => _createNavItem(e))
+        .toList();
+
+    return AppNavigationBar(
+      currentIndex: widget.items.indexOf(widget.selected ?? NaviType.home),
+      items: navItems,
+      onTap: (index) => widget.onItemClick?.call(index),
     );
   }
 
-  NavigationDestination _bottomSheetIconView(DashboardNaviItem item) {
-    return NavigationDestination(
-      icon: Icon(
-        item.icon,
-        semanticLabel: item.type.resloveLabel(context),
-      ),
-      selectedIcon: Icon(
-        item.icon,
-        semanticLabel: 'selected ${item.type.resloveLabel(context)}',
-        color: Theme.of(context).colorScheme.onPrimary,
-      ),
+  AppNavigationItem _createNavItem(DashboardNaviItem item) {
+    return AppNavigationItem(
+      icon: Icon(item.icon),
       label: item.type.resloveLabel(context),
     );
   }
