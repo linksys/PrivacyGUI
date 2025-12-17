@@ -6,11 +6,11 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/ipv6/base_ipv6_wan_form.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide AppTextField;
+// Keep specialized widgets from privacygui_widgets
+import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class AutomaticIPv6Form extends BaseIPv6WanForm {
   const AutomaticIPv6Form({
@@ -33,7 +33,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
 
   final _validator = InternetSettingsFormValidator();
 
-  static const inputPadding = EdgeInsets.symmetric(vertical: Spacing.small2);
+  static const inputPadding = EdgeInsets.symmetric(vertical: 8);
 
   @override
   void initState() {
@@ -113,14 +113,12 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
     final ipv6Setting = state.settings.current.ipv6Setting;
     return Column(
       children: [
-        const AppGap.small3(),
+        AppGap.md(),
         AppCard(
-          padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
-          showBorder: false,
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Row(
             children: [
               AppCheckbox(
-                semanticLabel: 'ipv6 automatic',
                 value: ipv6Setting.isIPv6AutomaticEnabled,
                 onChanged: (value) {
                   if (value == true) {
@@ -137,7 +135,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
                   }
                 },
               ),
-              const AppGap.medium(),
+              AppGap.lg(),
               AppText.bodyLarge(loc(context).ipv6Automatic),
             ],
           ),
@@ -145,9 +143,9 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
         AppSettingCard.noBorder(
           title: loc(context).duid,
           description: state.status.duid,
-          padding: const EdgeInsets.symmetric(vertical: Spacing.small2),
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
         ),
-        const AppGap.small1(),
+        AppGap.xs(),
         _divider(),
         _sixrdTunnel(ipv6Setting, context),
       ],
@@ -157,8 +155,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
   Widget _sixrdTunnel(Ipv6Setting ipv6Setting, BuildContext context) {
     final notifier = ref.read(internetSettingsProvider.notifier);
     return Padding(
-      padding:
-          const EdgeInsets.only(top: Spacing.small1, bottom: Spacing.small3),
+      padding: const EdgeInsets.only(top: 4, bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -291,7 +288,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
   Widget _divider() {
     return const Padding(
       padding: EdgeInsets.symmetric(
-        vertical: Spacing.small3,
+        vertical: 12,
       ),
       child: Divider(),
     );

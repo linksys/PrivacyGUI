@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/base_wan_form.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide AppTextField;
+// Keep specialized widgets from privacygui_widgets
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import './connection_mode_form.dart';
 
@@ -27,7 +27,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
   bool _usernameTouched = false;
   bool _passwordTouched = false;
 
-  static const inputPadding = EdgeInsets.symmetric(vertical: Spacing.small2);
+  static const inputPadding = EdgeInsets.symmetric(vertical: 8);
 
   @override
   void initState() {
@@ -190,7 +190,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
             },
           ),
         ),
-        const AppGap.small1(),
+        AppGap.xs(),
         const Divider(),
         const ConnectionModeForm(),
       ],

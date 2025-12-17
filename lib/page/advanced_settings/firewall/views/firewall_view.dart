@@ -5,11 +5,10 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacy_gui/page/components/composed/app_switch_trigger_tile.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class FirewallView extends ArgumentsConsumerStatefulView {
   const FirewallView({super.key, super.args});
@@ -63,11 +62,11 @@ class _FirewallViewState extends ConsumerState<FirewallView>
 
     final isDirty = firewallState.isDirty || ipv6State.isDirty;
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       padding: EdgeInsets.zero,
       tabController: _tabController,
       title: loc(context).firewall,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
           isPositiveEnabled: isDirty,
           onPositiveTap: () {
             List<Future> futures = [];
@@ -75,7 +74,8 @@ class _FirewallViewState extends ConsumerState<FirewallView>
               futures.add(ref.read(firewallProvider.notifier).save());
             }
             if (ipv6State.isDirty) {
-              futures.add(ref.read(ipv6PortServiceListProvider.notifier).save());
+              futures
+                  .add(ref.read(ipv6PortServiceListProvider.notifier).save());
             }
 
             doSomethingWithSpinner(context, Future.wait(futures))
@@ -107,35 +107,45 @@ class _FirewallViewState extends ConsumerState<FirewallView>
   Widget _firewallView(FirewallState state) {
     return SingleChildScrollView(
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppCard(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppCard(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
               child: AppSwitchTriggerTile(
                 key: const Key('ipv4SPIFirewallProtection'),
-                title: AppText.labelLarge(loc(context).ipv4SPIFirewallProtection),
+                title:
+                    AppText.labelLarge(loc(context).ipv4SPIFirewallProtection),
                 semanticLabel: 'ipv4 SPI firewall protection',
                 value: state.settings.current.isIPv4FirewallEnabled,
                 onChanged: (value) {
-                  ref.read(firewallProvider.notifier).setSettings(
-                      state.settings.current.copyWith(isIPv4FirewallEnabled: value));
+                  ref.read(firewallProvider.notifier).setSettings(state
+                      .settings.current
+                      .copyWith(isIPv4FirewallEnabled: value));
                 },
               ),
             ),
-            const AppGap.small2(),
-            AppCard(
+          ),
+          AppGap.sm(),
+          AppCard(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
               child: AppSwitchTriggerTile(
                 key: const Key('ipv6SPIFirewallProtection'),
-                title: AppText.labelLarge(loc(context).ipv6SPIFirewallProtection),
+                title:
+                    AppText.labelLarge(loc(context).ipv6SPIFirewallProtection),
                 semanticLabel: 'ipv6 SPI firewall protection',
                 value: state.settings.current.isIPv6FirewallEnabled,
                 onChanged: (value) {
-                  ref.read(firewallProvider.notifier).setSettings(
-                      state.settings.current.copyWith(isIPv6FirewallEnabled: value));
+                  ref.read(firewallProvider.notifier).setSettings(state
+                      .settings.current
+                      .copyWith(isIPv6FirewallEnabled: value));
                 },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -145,44 +155,50 @@ class _FirewallViewState extends ConsumerState<FirewallView>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(
-            child: AppSwitchTriggerTile(
-              key: const Key('ipsecPassthrough'),
-              title: AppText.labelLarge(loc(context).ipsecPassthrough),
-              semanticLabel: 'ipsec passthrough',
-              value: !state.settings.current.blockIPSec,
-              onChanged: (value) {
-                ref
-                    .read(firewallProvider.notifier)
-                    .setSettings(state.settings.current.copyWith(blockIPSec: !value));
-              },
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: AppSwitchTriggerTile(
+                key: const Key('ipsecPassthrough'),
+                title: AppText.labelLarge(loc(context).ipsecPassthrough),
+                semanticLabel: 'ipsec passthrough',
+                value: !state.settings.current.blockIPSec,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(
+                      state.settings.current.copyWith(blockIPSec: !value));
+                },
+              ),
             ),
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           AppCard(
-            child: AppSwitchTriggerTile(
-              key: const Key('pptpPassthrough'),
-              title: AppText.labelLarge(loc(context).pptpPassthrough),
-              semanticLabel: 'pptp passthrough',
-              value: !state.settings.current.blockPPTP,
-              onChanged: (value) {
-                ref
-                    .read(firewallProvider.notifier)
-                    .setSettings(state.settings.current.copyWith(blockPPTP: !value));
-              },
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: AppSwitchTriggerTile(
+                key: const Key('pptpPassthrough'),
+                title: AppText.labelLarge(loc(context).pptpPassthrough),
+                semanticLabel: 'pptp passthrough',
+                value: !state.settings.current.blockPPTP,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(
+                      state.settings.current.copyWith(blockPPTP: !value));
+                },
+              ),
             ),
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           AppCard(
-            child: AppSwitchTriggerTile(
-              key: const Key('l2tpPassthrough'),
-              title: AppText.labelLarge(loc(context).l2tpPassthrough),
-              semanticLabel: 'l2tp passthrough',
-              value: !state.settings.current.blockL2TP,
-              onChanged: (value) {
-                ref
-                    .read(firewallProvider.notifier)
-                    .setSettings(state.settings.current.copyWith(blockL2TP: !value));
-              },
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: AppSwitchTriggerTile(
+                key: const Key('l2tpPassthrough'),
+                title: AppText.labelLarge(loc(context).l2tpPassthrough),
+                semanticLabel: 'l2tp passthrough',
+                value: !state.settings.current.blockL2TP,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(
+                      state.settings.current.copyWith(blockL2TP: !value));
+                },
+              ),
             ),
           ),
         ],
@@ -196,56 +212,69 @@ class _FirewallViewState extends ConsumerState<FirewallView>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(
-            child: AppSwitchTriggerTile(
-              key: const Key('filterAnonymous'),
-              title: AppText.labelLarge(loc(context).filterAnonymous),
-              semanticLabel: 'filter anonymous',
-              value: state.settings.current.blockAnonymousRequests,
-              onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.current.copyWith(blockAnonymousRequests: value));
-              },
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: AppSwitchTriggerTile(
+                key: const Key('filterAnonymous'),
+                title: AppText.labelLarge(loc(context).filterAnonymous),
+                semanticLabel: 'filter anonymous',
+                value: state.settings.current.blockAnonymousRequests,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(state
+                      .settings.current
+                      .copyWith(blockAnonymousRequests: value));
+                },
+              ),
             ),
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           AppCard(
-            child: AppSwitchTriggerTile(
-              key: const Key('filterMulticast'),
-              title: AppText.labelLarge(loc(context).filterMulticast),
-              semanticLabel: 'filter multicast',
-              value: state.settings.current.blockMulticast,
-              onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.current.copyWith(blockMulticast: value));
-              },
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: AppSwitchTriggerTile(
+                key: const Key('filterMulticast'),
+                title: AppText.labelLarge(loc(context).filterMulticast),
+                semanticLabel: 'filter multicast',
+                value: state.settings.current.blockMulticast,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(
+                      state.settings.current.copyWith(blockMulticast: value));
+                },
+              ),
             ),
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           AppCard(
-            child: AppSwitchTriggerTile(
-              key: const Key('filterNATRedirection'),
-              title:
-                  AppText.labelLarge(loc(context).filterInternetNATRedirection),
-              semanticLabel: 'filter internet NAT redirection',
-              value: state.settings.current.blockNATRedirection,
-              onChanged: (value) {
-                ref.read(firewallProvider.notifier).setSettings(
-                    state.settings.current.copyWith(blockNATRedirection: value));
-              },
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: AppSwitchTriggerTile(
+                key: const Key('filterNATRedirection'),
+                title: AppText.labelLarge(
+                    loc(context).filterInternetNATRedirection),
+                semanticLabel: 'filter internet NAT redirection',
+                value: state.settings.current.blockNATRedirection,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(state
+                      .settings.current
+                      .copyWith(blockNATRedirection: value));
+                },
+              ),
             ),
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           AppCard(
-            child: AppSwitchTriggerTile(
-              key: const Key('filterIdent'),
-              title: AppText.labelLarge(loc(context).filterIdent),
-              semanticLabel: 'filter ident',
-              value: state.settings.current.blockIDENT,
-              onChanged: (value) {
-                ref
-                    .read(firewallProvider.notifier)
-                    .setSettings(state.settings.current.copyWith(blockIDENT: value));
-              },
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: AppSwitchTriggerTile(
+                key: const Key('filterIdent'),
+                title: AppText.labelLarge(loc(context).filterIdent),
+                semanticLabel: 'filter ident',
+                value: state.settings.current.blockIDENT,
+                onChanged: (value) {
+                  ref.read(firewallProvider.notifier).setSettings(
+                      state.settings.current.copyWith(blockIDENT: value));
+                },
+              ),
             ),
           ),
         ],

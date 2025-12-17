@@ -5,7 +5,7 @@ import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
@@ -31,7 +31,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(staticRoutingProvider);
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).staticRouting,
       scrollable: true,
       child: (context, constraints) => Column(

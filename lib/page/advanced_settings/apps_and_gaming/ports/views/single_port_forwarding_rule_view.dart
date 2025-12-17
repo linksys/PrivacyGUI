@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -103,9 +103,9 @@ class _AddRuleContentViewState
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).singlePortForwarding,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled: _notifier.isRuleValid(),
         positiveLabel: _isEdit ? loc(context).update : loc(context).add,
         onPositiveTap: () {

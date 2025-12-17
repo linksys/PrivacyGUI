@@ -8,20 +8,21 @@ import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_pr
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+// Keep specialized widgets from privacygui_widgets
 import 'package:privacygui_widgets/widgets/card/info_card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
+import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart'
+    as pgw;
 
 class DMZSettingsView extends ArgumentsConsumerStatefulView {
   const DMZSettingsView({super.key, super.args});
@@ -80,11 +81,11 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
     //   _updateControllers(next);
     // });
     final isDirty = ref.read(dmzSettingsProvider.notifier).isDirty();
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
         title: loc(context).dmz,
-        bottomBar: PageBottomBar(
-            isPositiveEnabled: isDirty &&
-                (_sourceError == null && _destinationError == null),
+        bottomBar: UiKitBottomBarConfig(
+            isPositiveEnabled:
+                isDirty && (_sourceError == null && _destinationError == null),
             onPositiveTap: () {
               doSomethingWithSpinner(
                   context,
@@ -109,9 +110,8 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                     title: loc(context).dmz,
                     description: loc(context).dmzDescription,
                     trailing: Padding(
-                      padding: const EdgeInsets.only(left: Spacing.medium),
+                      padding: EdgeInsets.only(left: AppSpacing.lg),
                       child: AppSwitch(
-                        semanticLabel: 'dmz',
                         value: state.settings.current.isDMZEnabled,
                         onChanged: (value) {
                           ref.read(dmzSettingsProvider.notifier).setSettings(
@@ -122,7 +122,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                     ),
                   ),
                   if (state.settings.current.isDMZEnabled) ...[
-                    const AppGap.medium(),
+                    AppGap.lg(),
                     AppCard(
                       child: Column(
                         children: [
@@ -130,7 +130,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                         ],
                       ),
                     ),
-                    const AppGap.medium(),
+                    AppGap.lg(),
                     AppCard(
                       child: Column(
                         children: [_destinationIPWidget(state)],
@@ -198,7 +198,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                               errorText: _sourceError != null ? '' : null,
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(Spacing.small2),
+                              padding: EdgeInsets.all(AppSpacing.sm),
                               child: Center(
                                   child: AppText.bodyMedium(loc(context).to)),
                             ),
@@ -296,7 +296,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                           DMZDestinationType.mac
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
-                          child: AppTextField.macAddress(
+                          child: pgw.AppTextField.macAddress(
                             border: const OutlineInputBorder(),
                             controller: _destinationMACController,
                             onChanged: (value) {
@@ -324,9 +324,9 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
               ref.read(dmzSettingsProvider.notifier).setDestinationType(value);
             },
           ),
-          const AppGap.medium(),
-          AppTextButton(
-            loc(context).dmzViewDHCP,
+          AppGap.lg(),
+          AppButton.text(
+            label: loc(context).dmzViewDHCP,
             onTap: () async {
               final result = await context.pushNamed<List<DeviceListItem>?>(
                   RouteNamed.devicePicker,

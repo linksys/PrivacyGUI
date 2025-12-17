@@ -6,8 +6,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/base_wan_form.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class StaticIpForm extends BaseWanForm {
   const StaticIpForm({
@@ -36,18 +35,22 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
 
   final _validator = InternetSettingsFormValidator();
 
-  static const inputPadding = EdgeInsets.symmetric(vertical: Spacing.small2);
+  static const inputPadding = EdgeInsets.symmetric(vertical: 8);
 
   @override
   void initState() {
     super.initState();
-    final ipv4Setting = ref.read(internetSettingsProvider).settings.current.ipv4Setting;
-    _ipAddressController = TextEditingController(text: ipv4Setting.staticIpAddress ?? '');
+    final ipv4Setting =
+        ref.read(internetSettingsProvider).settings.current.ipv4Setting;
+    _ipAddressController =
+        TextEditingController(text: ipv4Setting.staticIpAddress ?? '');
     _subnetController = TextEditingController(
         text: ipv4Setting.networkPrefixLength != null
-            ? NetworkUtils.prefixLengthToSubnetMask(ipv4Setting.networkPrefixLength!)
+            ? NetworkUtils.prefixLengthToSubnetMask(
+                ipv4Setting.networkPrefixLength!)
             : '');
-    _gatewayController = TextEditingController(text: ipv4Setting.staticGateway ?? '');
+    _gatewayController =
+        TextEditingController(text: ipv4Setting.staticGateway ?? '');
     _dns1Controller = TextEditingController(text: ipv4Setting.staticDns1 ?? '');
     _dns2Controller = TextEditingController(text: ipv4Setting.staticDns2 ?? '');
     _dns3Controller = TextEditingController(text: ipv4Setting.staticDns3 ?? '');
@@ -67,15 +70,19 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
   @override
   void didUpdateWidget(StaticIpForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldIpv4Setting = ref.read(internetSettingsProvider).settings.original.ipv4Setting;
-    final newIpv4Setting = ref.read(internetSettingsProvider).settings.current.ipv4Setting;
+    final oldIpv4Setting =
+        ref.read(internetSettingsProvider).settings.original.ipv4Setting;
+    final newIpv4Setting =
+        ref.read(internetSettingsProvider).settings.current.ipv4Setting;
 
     if (oldIpv4Setting.staticIpAddress != newIpv4Setting.staticIpAddress) {
       _ipAddressController.text = newIpv4Setting.staticIpAddress ?? '';
     }
-    if (oldIpv4Setting.networkPrefixLength != newIpv4Setting.networkPrefixLength) {
+    if (oldIpv4Setting.networkPrefixLength !=
+        newIpv4Setting.networkPrefixLength) {
       _subnetController.text = newIpv4Setting.networkPrefixLength != null
-          ? NetworkUtils.prefixLengthToSubnetMask(newIpv4Setting.networkPrefixLength!)
+          ? NetworkUtils.prefixLengthToSubnetMask(
+              newIpv4Setting.networkPrefixLength!)
           : '';
     }
     if (oldIpv4Setting.staticGateway != newIpv4Setting.staticGateway) {
@@ -94,7 +101,8 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
 
   @override
   Widget buildDisplayFields(BuildContext context) {
-    final ipv4Setting = ref.watch(internetSettingsProvider).settings.current.ipv4Setting;
+    final ipv4Setting =
+        ref.watch(internetSettingsProvider).settings.current.ipv4Setting;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -105,7 +113,8 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
         buildInfoCard(
           loc(context).subnetMask,
           ipv4Setting.networkPrefixLength != null
-              ? NetworkUtils.prefixLengthToSubnetMask(ipv4Setting.networkPrefixLength!)
+              ? NetworkUtils.prefixLengthToSubnetMask(
+                  ipv4Setting.networkPrefixLength!)
               : '-',
         ),
         buildInfoCard(
@@ -130,7 +139,8 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
   @override
   Widget buildEditableFields(BuildContext context) {
     final notifier = ref.read(internetSettingsProvider.notifier);
-    final ipv4Setting = ref.watch(internetSettingsProvider).settings.current.ipv4Setting;
+    final ipv4Setting =
+        ref.watch(internetSettingsProvider).settings.current.ipv4Setting;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,7 +156,10 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               semanticLabel: 'ip address',
               header: loc(context).internetIpv4Address,
               controller: _ipAddressController,
-              errorText: _ipAddressTouched ? getLocalizedErrorText(context, _validator.validateIpAddress(ipv4Setting.staticIpAddress)) : null,
+              errorText: _ipAddressTouched
+                  ? getLocalizedErrorText(context,
+                      _validator.validateIpAddress(ipv4Setting.staticIpAddress))
+                  : null,
               onChanged: (value) {
                 notifier.updateIpv4Settings(ipv4Setting.copyWith(
                   staticIpAddress: () => value,
@@ -166,7 +179,10 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               semanticLabel: 'subnet mask',
               header: loc(context).subnetMask.capitalizeWords(),
               controller: _subnetController,
-              errorText: _subnetTouched ? getLocalizedErrorText(context, _validator.validateSubnetMask(_subnetController.text)) : null,
+              errorText: _subnetTouched
+                  ? getLocalizedErrorText(context,
+                      _validator.validateSubnetMask(_subnetController.text))
+                  : null,
               onChanged: (value) {
                 if (_validator.validateSubnetMask(value) == null) {
                   notifier.updateIpv4Settings(ipv4Setting.copyWith(
@@ -189,7 +205,10 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               semanticLabel: 'default gateway',
               header: loc(context).defaultGateway,
               controller: _gatewayController,
-              errorText: _gatewayTouched ? getLocalizedErrorText(context, _validator.validateIpAddress(ipv4Setting.staticGateway)) : null,
+              errorText: _gatewayTouched
+                  ? getLocalizedErrorText(context,
+                      _validator.validateIpAddress(ipv4Setting.staticGateway))
+                  : null,
               onChanged: (value) {
                 notifier.updateIpv4Settings(ipv4Setting.copyWith(
                   staticGateway: () => value,
@@ -209,7 +228,10 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               semanticLabel: 'dns 1',
               header: loc(context).dns1,
               controller: _dns1Controller,
-              errorText: _dns1Touched ? getLocalizedErrorText(context, _validator.validateIpAddress(ipv4Setting.staticDns1)) : null,
+              errorText: _dns1Touched
+                  ? getLocalizedErrorText(context,
+                      _validator.validateIpAddress(ipv4Setting.staticDns1))
+                  : null,
               onChanged: (value) {
                 notifier.updateIpv4Settings(ipv4Setting.copyWith(
                   staticDns1: () => value,
@@ -229,7 +251,10 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               semanticLabel: 'dns 2 optional',
               header: loc(context).dns2Optional,
               controller: _dns2Controller,
-              errorText: _dns2Touched ? getLocalizedErrorText(context, _validator.validateIpAddress(ipv4Setting.staticDns2)) : null,
+              errorText: _dns2Touched
+                  ? getLocalizedErrorText(context,
+                      _validator.validateIpAddress(ipv4Setting.staticDns2))
+                  : null,
               onChanged: (value) {
                 notifier.updateIpv4Settings(ipv4Setting.copyWith(
                   staticDns2: () => value.isEmpty ? null : value,
@@ -249,7 +274,10 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
               semanticLabel: 'dns 3 optional',
               header: loc(context).dns3Optional,
               controller: _dns3Controller,
-              errorText: _dns3Touched ? getLocalizedErrorText(context, _validator.validateIpAddress(ipv4Setting.staticDns3)) : null,
+              errorText: _dns3Touched
+                  ? getLocalizedErrorText(context,
+                      _validator.validateIpAddress(ipv4Setting.staticDns3))
+                  : null,
               onChanged: (value) {
                 notifier.updateIpv4Settings(ipv4Setting.copyWith(
                   staticDns3: () => value.isEmpty ? null : value,
@@ -258,7 +286,7 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
             ),
           ),
         ),
-        const AppGap.small1(),
+        AppGap.xs(),
       ],
     );
   }

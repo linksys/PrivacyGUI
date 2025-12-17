@@ -9,12 +9,13 @@ import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
+// Keep privacygui_widgets for complex table editing components
 import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
@@ -78,10 +79,10 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
           inputDecorationTheme: Theme.of(context)
               .inputDecorationTheme
               .copyWith(contentPadding: EdgeInsets.all(Spacing.small1))),
-      child: StyledAppPageView.withSliver(
+      child: UiKitPageView.withSliver(
         title: loc(context).advancedRouting,
         scrollable: true,
-        bottomBar: PageBottomBar(
+        bottomBar: UiKitBottomBarConfig(
             isPositiveEnabled: state.isDirty,
             onPositiveTap: () {
               doSomethingWithSpinner(context, _notifier.save()).then((_) {

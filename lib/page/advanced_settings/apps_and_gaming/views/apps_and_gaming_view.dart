@@ -4,7 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
 
@@ -64,11 +64,11 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
       PortRangeTriggeringListView(),
     ];
     final isDirty = ref.read(appsAndGamingProvider.notifier).isDirty();
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).appsGaming,
       padding: EdgeInsets.zero,
       tabController: _tabController,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled:
             isDirty && ref.watch(appsAndGamingProvider.notifier).isDataValid(),
         onPositiveTap: () {

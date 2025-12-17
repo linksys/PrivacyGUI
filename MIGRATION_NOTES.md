@@ -450,4 +450,201 @@ import 'package:privacy_gui/di.dart';
 5. **功能驗證**: 確保 UI 行為一致
 
 *WiFi 設定遷移完成：2024-12-16*
-*最後更新：2024-12-16*
+*最後更新：2024-12-17*
+
+---
+
+## 📊 AppDataTable 遷移指南 (2024-12-17)
+
+### 概覽
+
+`AppDataTable<T>` 是 ui_kit 提供的強大表格元件，用於取代 `AppEditableTableSettingsView` 等舊版表格元件。它支援：
+- **CRUD 操作**: 新增、編輯、刪除、取消
+- **響應式佈局**: Desktop (表格) / Mobile (BottomSheet)
+- **內建驗證**: 透過 `Future<bool>` 返回值控制
+
+### 基本結構
+
+```dart
+AppDataTable<IPv6FirewallRule>(
+  // === 數據 ===
+  data: state.current.rules,           // List<T> 資料來源
+  totalRows: state.current.rules.length,
+  currentPage: 1,
+  rowsPerPage: 50,
+  onPageChanged: (_) {},
+
+  // === 欄位定義 ===
+  columns: _buildColumns(context),     // List<AppTableColumn<T>>
+
+  // === CRUD 回調 ===
+  onSave: _handleSave,                 // Future<bool> Function(T)
+  onAdd: _handleAdd,                   // Future<bool> Function(T)
+  onDelete: _handleDelete,             // Future<bool> Function(T)
+  onCancel: _handleCancel,             // VoidCallback
+
+  // === 新增模式 ===
+  showAddButton: isAddEnabled,
+  onCreateTemplate: () => IPv6FirewallRule(...),  // ⚠️ 不可使用 const
+
+  // === 空狀態與本地化 ===
+  emptyMessage: loc(context).noData,
+  localization: AppTableLocalization(
+    edit: loc(context).edit,
+    save: loc(context).save,
+    delete: loc(context).delete,
+    cancel: loc(context).cancel,
+    actions: loc(context).action,
+    add: loc(context).add,
+  ),
+)
+```
+
+### AppTableColumn 定義
+
+> [!IMPORTANT]
+> **editBuilder 簽名**: `(BuildContext, T, StateSetter)?`
+> - `StateSetter` 用於更新 Mobile BottomSheet 的 UI 狀態
+
+```dart
+AppTableColumn<IPv6FirewallRule>(
+  label: loc(context).applicationName,
+
+  // 顯示模式
+  cellBuilder: (BuildContext context, IPv6FirewallRule rule) =>
+      Text(rule.description),
+
+  // 編輯模式 (含 StateSetter)
+  editBuilder: (BuildContext context, IPv6FirewallRule rule, StateSetter setSheetState) {
+    _sheetStateSetter = setSheetState;  // 儲存供驗證使用
+    return AppTextField(
+      key: ValueKey('appName_${identityHashCode(rule)}'),
+      controller: _applicationTextController,
+      errorText: _nameError,
+    );
+  },
+)
+```
+
+### CRUD 回調實作
+
+```dart
+// Save/Add: 返回 Future<bool>
+Future<bool> _handleSave(IPv6FirewallRule originalRule) async {
+  _validateAll();
+  if (!_isValid()) return false;  // 驗證失敗，保持編輯模式
+  
+  final editedRule = _buildRuleFromControllers(originalRule);
+  _notifier.editRule(index, editedRule);
+  _editingRule = null;
+  _clearControllers();
+  return true;  // 成功，退出編輯模式
+}
+
+// Delete
+Future<bool> _handleDelete(IPv6FirewallRule rule) async {
+  _notifier.deleteRule(rule);
+  _clearControllers();
+  return true;
+}
+
+// Cancel
+void _handleCancel() {
+  _editingRule = null;
+  _sheetStateSetter = null;
+  _clearControllers();
+}
+```
+
+### ⚠️ 關鍵技術細節
+
+#### 1. Widget Key 策略 (防止 FocusManager Crash)
+
+```dart
+// ✅ 正確：使用 identityHashCode
+key: ValueKey('field_${identityHashCode(rule)}')
+
+// ❌ 錯誤：值相同時 hashCode 相同，導致 Key 衝突
+key: ValueKey('field_${rule.hashCode}')
+```
+
+#### 2. onCreateTemplate 必須返回新實例
+
+```dart
+// ✅ 正確：每次返回新物件
+onCreateTemplate: () => IPv6FirewallRule(...)
+
+// ❌ 錯誤：const 會導致所有新增行共用同一物件
+onCreateTemplate: () => const IPv6FirewallRule(...)
+```
+
+#### 3. StateSetter 機制 (Mobile BottomSheet 錯誤顯示)
+
+```dart
+// 1. 儲存 StateSetter
+StateSetter? _sheetStateSetter;
+
+// 2. 在 editBuilder 中捕獲
+editBuilder: (_, rule, setSheetState) {
+  _sheetStateSetter = setSheetState;
+  ...
+}
+
+// 3. 驗證時同時更新 Desktop 和 Mobile
+void _validateAll() {
+  setState(() { ... });               // Desktop
+  _sheetStateSetter?.call(() {});     // Mobile BottomSheet
+}
+```
+
+#### 4. Provider 修改保護 (防止 Build 階段錯誤)
+
+```dart
+bool _isInitializing = false;
+
+// editBuilder 中初始化 Controller
+if (_editingRule != rule) {
+  _isInitializing = true;
+  try {
+    _applicationTextController.text = rule.description;
+    ...
+  } finally {
+    _isInitializing = false;
+  }
+}
+
+// Listener 中檢查
+void _onStartPortChanged() {
+  if (_isInitializing) return;  // 初始化時不更新 Provider
+  _updateFirstPort(...);
+  _validateAll();
+}
+```
+
+### 相關元件對應
+
+| Legacy 元件 | UI Kit 元件 |
+|------------|-------------|
+| `AppEditableTableSettingsView` | `AppDataTable<T>` |
+| `AppTextField.outline` | `AppTextField` |
+| `AppDropdownButton` | `AppDropdown<T>` |
+| `AppIPv6FormField` | `AppIPv6TextField` (支援 `errorText`) |
+| 手動 Port 輸入 (2x TextField) | `AppRangeInput` (支援 `errorText`) |
+
+### 已知問題與解決方案
+
+| 問題 | 解決方案 |
+|------|----------|
+| 驗證錯誤不顯示 | 使用 `errorText` 參數 |
+| Port 空值無錯誤 | 增加 `isEmpty` 檢查 |
+| 數據殘留 | `_clearControllers()` 清空 |
+| FocusManager Crash | `identityHashCode` + 非 const template |
+| Provider Build Error | `_isInitializing` 旗標 |
+| Mobile 底表錯誤不顯示 | `StateSetter` 機制 |
+
+### 範例檔案
+
+完整遷移範例參見：
+- [ipv6_port_service_list_view.dart](file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart)
+
+*AppDataTable 遷移指南完成：2024-12-17*

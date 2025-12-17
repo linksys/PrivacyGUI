@@ -17,7 +17,7 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
@@ -75,10 +75,10 @@ class _DHCPReservationsContentViewState
           .toList());
     });
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       scrollable: true,
       title: loc(context).dhcpReservations.capitalizeWords(),
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
           isPositiveEnabled: notifier.isDirty(),
           onPositiveTap: () {
             doSomethingWithSpinner(

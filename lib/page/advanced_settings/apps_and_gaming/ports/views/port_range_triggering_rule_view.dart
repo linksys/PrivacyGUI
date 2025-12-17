@@ -5,7 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/list_card.dart';
@@ -95,10 +95,10 @@ class _AddRuleContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeTriggeringRuleProvider);
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       scrollable: true,
       title: loc(context).portRangeTriggering,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled: _notifier.isRuleValid(),
         onPositiveTap: () {
           final rule = ref.read(portRangeTriggeringRuleProvider).rule;

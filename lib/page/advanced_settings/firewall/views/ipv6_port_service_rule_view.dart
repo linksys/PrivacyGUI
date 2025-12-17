@@ -6,7 +6,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/_firewall.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -98,10 +98,10 @@ class _AddRuleContentViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ipv6PortServiceRuleProvider);
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       scrollable: true,
       title: loc(context).ipv6PortServices,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled: _notifier.isRuleValid(),
         onPositiveTap: () {
           final rule = ref.read(ipv6PortServiceRuleProvider).rule;

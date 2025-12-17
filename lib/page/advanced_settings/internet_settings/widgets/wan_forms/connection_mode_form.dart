@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide AppTextField;
+// Keep specialized widgets from privacygui_widgets
+import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
 
 class ConnectionModeForm extends ConsumerStatefulWidget {
@@ -63,14 +64,14 @@ class _ConnectionModeFormState extends ConsumerState<ConnectionModeForm> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-        vertical: Spacing.small3,
+        vertical: 12,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           AppText.titleSmall(loc(context).connectionMode),
-          const AppGap.medium(),
+          AppGap.lg(),
           AppRadioList(
             mainAxisSize: MainAxisSize.min,
             selected: behavior,

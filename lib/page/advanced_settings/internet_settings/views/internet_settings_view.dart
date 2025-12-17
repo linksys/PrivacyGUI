@@ -17,7 +17,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/views/ipv6_
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/release_and_renew_view.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
@@ -115,12 +115,12 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       ),
     ];
     final isDirty = ref.read(internetSettingsProvider.notifier).isDirty();
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       padding: EdgeInsets.zero,
       useMainPadding: false,
       title: loc(context).internetSettings.capitalizeWords(),
       bottomBar: isEditing
-          ? PageBottomBar(
+          ? UiKitBottomBarConfig(
               isPositiveEnabled: isDirty &&
                   isIpv4FormValid &&
                   isIpv6FormValid &&

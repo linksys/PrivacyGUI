@@ -10,11 +10,10 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/_v
 
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+// Keep specialized widgets from privacygui_widgets
 import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 
@@ -74,7 +73,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.titleMedium(loc(context).selectAProvider),
-            const AppGap.medium(),
+            AppGap.lg(),
             AppDropdownButton<String>(
               selected: state.current.provider.name,
               items: state.status.supportedProvider,
@@ -95,7 +94,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                 ref.read(ddnsProvider.notifier).setProvider(value);
               },
             ),
-            const AppGap.medium(),
+            AppGap.lg(),
             _buildDNSForms(state),
           ],
         ),
@@ -168,8 +167,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                       AnimatedRefreshContainer(
                         builder: (controller) {
                           return AppIconButton(
-                            icon: LinksysIcons.refresh,
-                            color: Theme.of(context).colorScheme.primary,
+                            icon: Icon(AppFontIcons.refresh),
                             onTap: () {
                               controller.repeat();
                               ref
@@ -183,13 +181,13 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                         },
                       ),
                     ]),
-                const AppGap.large2(),
+                AppGap.xxl(),
                 AppSettingCard.noBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).internetIPAddress,
                   description: state.status.ipAddress,
                 ),
-                const AppGap.large2(),
+                AppGap.xxl(),
                 AppSettingCard.noBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).status,

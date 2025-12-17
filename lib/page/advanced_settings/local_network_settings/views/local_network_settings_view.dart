@@ -11,7 +11,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
@@ -113,11 +113,11 @@ class _LocalNetworkSettingsViewState
       _ipAddressView(state),
       _dhcpServerView(state),
     ];
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       padding: EdgeInsets.zero,
       tabController: _tabController,
       useMainPadding: false,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled: _notifier.isDirty() && !_hasError(state),
         onPositiveTap: _saveSettings,
       ),

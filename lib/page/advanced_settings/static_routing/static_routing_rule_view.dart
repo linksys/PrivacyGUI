@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/advanced_settings/static_routing/providers/stat
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -87,10 +87,10 @@ class _StaticRoutingDetailViewState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(staticRoutingRuleProvider);
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       scrollable: true,
       title: _isEdit ? loc(context).edit : loc(context).addStaticRoute,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled: _notifier.isRuleValid(),
         positiveLabel: loc(context).save,
         onPositiveTap: () {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide AppTextField;
 import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 
 class NoIPDNSForm extends StatefulWidget {
@@ -56,7 +56,7 @@ class _NoIPDNSFormState extends State<NoIPDNSForm> {
             widget.onFormChanged.call(widget.value?.copyWith(username: value));
           },
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppTextField.outline(
           headerText: loc(context).password,
           controller: _passwordController,
@@ -67,7 +67,7 @@ class _NoIPDNSFormState extends State<NoIPDNSForm> {
             widget.onFormChanged.call(widget.value?.copyWith(password: value));
           },
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppTextField.outline(
           headerText: loc(context).hostName,
           controller: _hostnameController,

@@ -4,7 +4,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/base_wan_form.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import './connection_mode_form.dart';
 
 class L2tpForm extends BaseWanForm {
@@ -27,15 +26,19 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
   bool _serverIpTouched = false;
 
   final _validator = InternetSettingsFormValidator();
-  static const inputPadding = EdgeInsets.symmetric(vertical: Spacing.small2);
+  static const inputPadding = EdgeInsets.symmetric(vertical: 8);
 
   @override
   void initState() {
     super.initState();
-    final ipv4Setting = ref.read(internetSettingsProvider).settings.current.ipv4Setting;
-    _usernameController = TextEditingController(text: ipv4Setting.username ?? '');
-    _passwordController = TextEditingController(text: ipv4Setting.password ?? '');
-    _serverIpController = TextEditingController(text: ipv4Setting.serverIp ?? '');
+    final ipv4Setting =
+        ref.read(internetSettingsProvider).settings.current.ipv4Setting;
+    _usernameController =
+        TextEditingController(text: ipv4Setting.username ?? '');
+    _passwordController =
+        TextEditingController(text: ipv4Setting.password ?? '');
+    _serverIpController =
+        TextEditingController(text: ipv4Setting.serverIp ?? '');
   }
 
   @override
@@ -49,8 +52,10 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
   @override
   void didUpdateWidget(L2tpForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldIpv4Setting = ref.read(internetSettingsProvider).settings.original.ipv4Setting;
-    final newIpv4Setting = ref.read(internetSettingsProvider).settings.current.ipv4Setting;
+    final oldIpv4Setting =
+        ref.read(internetSettingsProvider).settings.original.ipv4Setting;
+    final newIpv4Setting =
+        ref.read(internetSettingsProvider).settings.current.ipv4Setting;
 
     if (oldIpv4Setting.username != newIpv4Setting.username) {
       _usernameController.text = newIpv4Setting.username ?? '';
@@ -65,7 +70,8 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
 
   @override
   Widget buildDisplayFields(BuildContext context) {
-    final ipv4Setting = ref.watch(internetSettingsProvider).settings.current.ipv4Setting;
+    final ipv4Setting =
+        ref.watch(internetSettingsProvider).settings.current.ipv4Setting;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -90,7 +96,8 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
   @override
   Widget buildEditableFields(BuildContext context) {
     final notifier = ref.read(internetSettingsProvider.notifier);
-    final ipv4Setting = ref.watch(internetSettingsProvider).settings.current.ipv4Setting;
+    final ipv4Setting =
+        ref.watch(internetSettingsProvider).settings.current.ipv4Setting;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -103,7 +110,10 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
             child: buildEditableField(
               label: loc(context).username,
               controller: _usernameController,
-              errorText: _usernameTouched && (ipv4Setting.username?.isEmpty ?? true) ? loc(context).invalidUsername : null,
+              errorText:
+                  _usernameTouched && (ipv4Setting.username?.isEmpty ?? true)
+                      ? loc(context).invalidUsername
+                      : null,
               onChanged: (value) {
                 notifier.updateIpv4Settings(ipv4Setting.copyWith(
                   username: () => value,
@@ -122,7 +132,10 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
               label: loc(context).password,
               controller: _passwordController,
               obscureText: true,
-              errorText: _passwordTouched && (ipv4Setting.password?.isEmpty ?? true) ? loc(context).invalidPassword : null,
+              errorText:
+                  _passwordTouched && (ipv4Setting.password?.isEmpty ?? true)
+                      ? loc(context).invalidPassword
+                      : null,
               onChanged: (value) {
                 notifier.updateIpv4Settings(ipv4Setting.copyWith(
                   password: () => value,
@@ -142,7 +155,10 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
               semanticLabel: 'server ip address',
               header: loc(context).serverIpv4Address,
               controller: _serverIpController,
-              errorText: _serverIpTouched ? getLocalizedErrorText(context, _validator.validateIpAddress(ipv4Setting.serverIp)) : null,
+              errorText: _serverIpTouched
+                  ? getLocalizedErrorText(context,
+                      _validator.validateIpAddress(ipv4Setting.serverIp))
+                  : null,
               onChanged: (value) {
                 notifier.updateIpv4Settings(ipv4Setting.copyWith(
                   serverIp: () => value,
@@ -151,7 +167,8 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
             ),
           ),
         ),
-        if ((ipv4Setting.wanTaggingSettingsEnable ?? false) && ipv4Setting.vlanId != null)
+        if ((ipv4Setting.wanTaggingSettingsEnable ?? false) &&
+            ipv4Setting.vlanId != null)
           buildInfoCard(
             '${loc(context).vlanIdOptional} (${loc(context).optional})',
             ipv4Setting.vlanId?.toString() ?? '-',

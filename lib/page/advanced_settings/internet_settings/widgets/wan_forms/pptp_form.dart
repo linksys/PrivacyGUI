@@ -8,10 +8,9 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/base_wan_form.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+// Keep specialized widgets from privacygui_widgets
 import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
 import './connection_mode_form.dart';
 
 class PptpForm extends BaseWanForm {
@@ -49,7 +48,7 @@ class _PptpFormState extends BaseWanFormState<PptpForm> {
       _passwordTouched = false;
 
   final _validator = InternetSettingsFormValidator();
-  static const inputPadding = EdgeInsets.symmetric(vertical: Spacing.small2);
+  static const inputPadding = EdgeInsets.symmetric(vertical: 8);
 
   @override
   void initState() {
@@ -172,7 +171,7 @@ class _PptpFormState extends BaseWanFormState<PptpForm> {
             ipv4Setting.useStaticSettings ?? false, ipv4Setting, context),
         if (ipv4Setting.useStaticSettings == true)
           ..._staticIpEditing(ipv4Setting, context),
-        const AppGap.small3(),
+        AppGap.md(),
         Padding(
           padding: inputPadding,
           child: Focus(
@@ -255,14 +254,14 @@ class _PptpFormState extends BaseWanFormState<PptpForm> {
     final notifier = ref.read(internetSettingsProvider.notifier);
     return Padding(
       padding: const EdgeInsets.symmetric(
-        vertical: Spacing.small3,
+        vertical: 12,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           AppText.titleSmall(loc(context).ipAddress.capitalizeWords()),
-          const AppGap.medium(),
+          AppGap.lg(),
           AppRadioList(
             initial: useStaticSettings
                 ? PPTPIpAddressMode.specify
@@ -428,7 +427,7 @@ class _PptpFormState extends BaseWanFormState<PptpForm> {
           ),
         ),
       ),
-      const AppGap.small1(),
+      AppGap.xs(),
     ];
   }
 }

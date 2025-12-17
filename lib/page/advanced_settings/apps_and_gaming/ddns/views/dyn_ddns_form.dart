@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide AppTextField;
+// Keep specialized widgets
+import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
 import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 
 enum DynDDNSSystem {
@@ -79,7 +81,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
             widget.onFormChanged.call(widget.value?.copyWith(username: value));
           },
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppTextField.outline(
           headerText: loc(context).password,
           controller: _passwordController,
@@ -90,7 +92,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
             widget.onFormChanged.call(widget.value?.copyWith(password: value));
           },
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppTextField.outline(
           headerText: loc(context).hostName,
           controller: _hostnameController,
@@ -101,7 +103,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
             widget.onFormChanged.call(widget.value?.copyWith(hostName: value));
           },
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppDropdownButton<DynDDNSSystem>(
           initial: DynDDNSSystem.values.firstWhereOrNull(
                   (e) => e.name == widget.value?.mode.toLowerCase()) ??
@@ -114,7 +116,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
                 widget.value?.copyWith(mode: value.name.capitalizeWords()));
           },
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppTextField.outline(
           headerText: loc(context).mailExchangeOptional,
           controller: _mailExchangeController,
@@ -127,7 +129,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
                     mailExchangeSettings.copyWith(hostName: value)));
           },
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         Opacity(
           opacity: _mailExchangeController.text.isNotEmpty ? 1 : .6,
           child: AbsorbPointer(
@@ -149,7 +151,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
             ),
           ),
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppSettingCard(
           title: loc(context).wildcard,
           trailing: AppSwitch(

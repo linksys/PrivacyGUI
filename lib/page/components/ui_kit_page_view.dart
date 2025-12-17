@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -480,7 +481,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
     // Note: PrivacyGUI localization will be added when needed
 
     return PageBottomBarConfig(
-      positiveLabel: bottomBar.positiveLabel,
+      positiveLabel: bottomBar.positiveLabel ?? loc(context).save,
       negativeLabel: bottomBar.negativeLabel,
       onPositiveTap: bottomBar.onPositiveTap,
       onNegativeTap: () {
