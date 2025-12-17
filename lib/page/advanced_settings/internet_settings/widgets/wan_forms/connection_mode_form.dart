@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
-import 'package:ui_kit_library/ui_kit.dart' hide AppTextField;
-// Keep specialized widgets from privacygui_widgets
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
-import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/components/composed/app_radio_list.dart';
+import 'package:privacy_gui/page/components/composed/app_min_max_number_text_field.dart';
 
 class ConnectionModeForm extends ConsumerStatefulWidget {
   const ConnectionModeForm({Key? key}) : super(key: key);
@@ -83,15 +82,13 @@ class _ConnectionModeFormState extends ConsumerState<ConnectionModeForm> {
                   children: [
                     const SizedBox(width: 40),
                     Expanded(
-                      child: AppTextField.minMaxNumber(
-                        headerText:
+                      child: AppMinMaxNumberTextField(
+                        label:
                             '${loc(context).maxIdleTime} (${loc(context).minutes})',
-                        semanticLabel: 'max idle time',
                         key: const ValueKey('maxIdleTimeText'),
                         max: 9999,
                         min: 1,
                         controller: _idleTimeController,
-                        border: const OutlineInputBorder(),
                         onChanged: (value) {
                           notifier.updateIpv4Settings(ipv4Setting.copyWith(
                             behavior: () =>
@@ -112,15 +109,13 @@ class _ConnectionModeFormState extends ConsumerState<ConnectionModeForm> {
                   children: [
                     const SizedBox(width: 40),
                     Expanded(
-                      child: AppTextField.minMaxNumber(
-                        headerText:
+                      child: AppMinMaxNumberTextField(
+                        label:
                             '${loc(context).redialPeriod} (${loc(context).seconds})',
-                        semanticLabel: 'redial period',
                         key: const ValueKey('redialPeriodText'),
                         max: 180,
                         min: 20,
                         controller: _redialPeriodController,
-                        border: const OutlineInputBorder(),
                         onChanged: (value) {
                           notifier.updateIpv4Settings(ipv4Setting.copyWith(
                             behavior: () => PPPConnectionBehavior.keepAlive,

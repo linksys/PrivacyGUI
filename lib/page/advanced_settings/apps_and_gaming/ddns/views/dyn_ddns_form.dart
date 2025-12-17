@@ -5,10 +5,8 @@ import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
-import 'package:ui_kit_library/ui_kit.dart' hide AppTextField;
-// Keep specialized widgets
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
+import 'package:privacy_gui/page/components/composed/app_dropdown_button.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 enum DynDDNSSystem {
   dynamic,
@@ -71,37 +69,59 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppTextField.outline(
-          headerText: loc(context).username,
-          controller: _usernameController,
-          errorText: _usernameController.text.isEmpty
-              ? loc(context).invalidUsername
-              : null,
-          onChanged: (value) {
-            widget.onFormChanged.call(widget.value?.copyWith(username: value));
-          },
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.labelLarge(loc(context).username),
+            AppGap.xs(),
+            AppTextField(
+              controller: _usernameController,
+              errorText: _usernameController.text.isEmpty
+                  ? loc(context).invalidUsername
+                  : null,
+              onChanged: (value) {
+                widget.onFormChanged
+                    .call(widget.value?.copyWith(username: value));
+              },
+            ),
+          ],
         ),
         AppGap.lg(),
-        AppTextField.outline(
-          headerText: loc(context).password,
-          controller: _passwordController,
-          errorText: _passwordController.text.isEmpty
-              ? loc(context).invalidPassword
-              : null,
-          onChanged: (value) {
-            widget.onFormChanged.call(widget.value?.copyWith(password: value));
-          },
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.labelLarge(loc(context).password),
+            AppGap.xs(),
+            AppTextField(
+              controller: _passwordController,
+              obscureText: true, // Assuming password should be obscured
+              errorText: _passwordController.text.isEmpty
+                  ? loc(context).invalidPassword
+                  : null,
+              onChanged: (value) {
+                widget.onFormChanged
+                    .call(widget.value?.copyWith(password: value));
+              },
+            ),
+          ],
         ),
         AppGap.lg(),
-        AppTextField.outline(
-          headerText: loc(context).hostName,
-          controller: _hostnameController,
-          errorText: _hostnameController.text.isEmpty
-              ? loc(context).invalidHostname
-              : null,
-          onChanged: (value) {
-            widget.onFormChanged.call(widget.value?.copyWith(hostName: value));
-          },
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.labelLarge(loc(context).hostName),
+            AppGap.xs(),
+            AppTextField(
+              controller: _hostnameController,
+              errorText: _hostnameController.text.isEmpty
+                  ? loc(context).invalidHostname
+                  : null,
+              onChanged: (value) {
+                widget.onFormChanged
+                    .call(widget.value?.copyWith(hostName: value));
+              },
+            ),
+          ],
         ),
         AppGap.lg(),
         AppDropdownButton<DynDDNSSystem>(
@@ -117,17 +137,25 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
           },
         ),
         AppGap.lg(),
-        AppTextField.outline(
-          headerText: loc(context).mailExchangeOptional,
-          controller: _mailExchangeController,
-          onChanged: (value) {
-            final mailExchangeSettings = widget.value?.mailExchangeSettings ??
-                const DynDNSMailExchangeSettings(hostName: '', isBackup: false);
-            widget.onFormChanged.call(widget.value?.copyWith(
-                isMailExchangeEnabled: value.isNotEmpty,
-                mailExchangeSettings: () =>
-                    mailExchangeSettings.copyWith(hostName: value)));
-          },
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.labelLarge(loc(context).mailExchangeOptional),
+            AppGap.xs(),
+            AppTextField(
+              controller: _mailExchangeController,
+              onChanged: (value) {
+                final mailExchangeSettings =
+                    widget.value?.mailExchangeSettings ??
+                        const DynDNSMailExchangeSettings(
+                            hostName: '', isBackup: false);
+                widget.onFormChanged.call(widget.value?.copyWith(
+                    isMailExchangeEnabled: value.isNotEmpty,
+                    mailExchangeSettings: () =>
+                        mailExchangeSettings.copyWith(hostName: value)));
+              },
+            ),
+          ],
         ),
         AppGap.lg(),
         Opacity(

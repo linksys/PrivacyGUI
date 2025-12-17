@@ -15,12 +15,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/views/inter
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class ReleaseAndRenewView extends ConsumerWidget {
   final InternetSettingsState internetSettingsState;
@@ -44,46 +39,71 @@ class ReleaseAndRenewView extends ConsumerWidget {
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+            horizontal: context.isMobileLayout ? 16.0 : 40.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.titleMedium(loc(context).internetIPAddress),
-            const AppGap.medium(),
+            AppGap.md(),
             SizedBox(
-              width: 9.col,
-              child: AppListCard(
-                title: AppText.bodyMedium(loc(context).ipv4),
-                description: AppText.labelLarge(
-                    wanStatus?.wanConnection?.ipAddress ?? '-'),
-                trailing: AppTextButton.noPadding(
-                  loc(context).releaseAndRenew,
-                  onTap: isBridgeMode
-                      ? null
-                      : () {
-                          _showRenewIPAlert(
-                              context, ref, InternetSettingsViewType.ipv4);
-                        },
+              width: context.colWidth(9),
+              child: AppCard(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppText.bodyMedium(loc(context).ipv4),
+                          AppText.labelLarge(
+                              wanStatus?.wanConnection?.ipAddress ?? '-'),
+                        ],
+                      ),
+                    ),
+                    AppButton.text(
+                      label: loc(context).releaseAndRenew,
+                      onTap: isBridgeMode
+                          ? null
+                          : () {
+                              _showRenewIPAlert(
+                                  context, ref, InternetSettingsViewType.ipv4);
+                            },
+                    ),
+                  ],
                 ),
               ),
             ),
-            const AppGap.small2(),
+            AppGap.sm(),
             SizedBox(
-              width: 9.col,
-              child: AppListCard(
-                title: AppText.bodyMedium(loc(context).ipv6),
-                description: AppText.labelLarge(
-                    wanStatus?.wanIPv6Connection?.networkInfo?.ipAddress ??
-                        '-'),
-                trailing: AppTextButton.noPadding(
-                  loc(context).releaseAndRenew,
-                  onTap: isBridgeMode || wanIpv6Type == WanIPv6Type.passThrough
-                      ? null
-                      : () {
-                          _showRenewIPAlert(
-                              context, ref, InternetSettingsViewType.ipv6);
-                        },
+              width: context.colWidth(9),
+              child: AppCard(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AppText.bodyMedium(loc(context).ipv6),
+                          AppText.labelLarge(wanStatus
+                                  ?.wanIPv6Connection?.networkInfo?.ipAddress ??
+                              '-'),
+                        ],
+                      ),
+                    ),
+                    AppButton.text(
+                      label: loc(context).releaseAndRenew,
+                      onTap: isBridgeMode ||
+                              wanIpv6Type == WanIPv6Type.passThrough
+                          ? null
+                          : () {
+                              _showRenewIPAlert(
+                                  context, ref, InternetSettingsViewType.ipv6);
+                            },
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -102,15 +122,14 @@ class ReleaseAndRenewView extends ConsumerWidget {
       content:
           AppText.bodyMedium(loc(context).releaseAndRenewIpAddressDescription),
       actions: [
-        AppTextButton(
-          loc(context).cancel,
-          color: Theme.of(context).colorScheme.onSurface,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () {
             context.pop();
           },
         ),
-        AppTextButton(
-          loc(context).releaseAndRenew,
+        AppButton.text(
+          label: loc(context).releaseAndRenew,
           onTap: () {
             context.pop();
 

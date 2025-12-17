@@ -188,32 +188,6 @@ void main() {
       goldenFilename: 'FWS-IPV6_ADD-01-add_rule_desktop',
       helper: testHelper);
 
-  // Test ID: FWS-IPV6_ADD
-  testLocalizationsV2('Firewall settings view - IPv6 port service - add rule',
-      (tester, screen) async {
-    final state =
-        Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState);
-    when(testHelper.mockIpv6PortServiceRuleNotifier.isRuleValid())
-        .thenReturn(true);
-    await testHelper.pumpView(
-      tester,
-      child: Ipv6PortServiceRuleView(
-        args: {'items': state.settings.current.rules},
-      ),
-      locale: screen.locale,
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('ruleName')), findsOneWidget);
-    expect(find.byKey(const Key('protocol')), findsOneWidget);
-    expect(find.byKey(const Key('ipAddress')), findsOneWidget);
-    expect(find.byKey(const Key('firstPort')), findsOneWidget);
-    expect(find.byKey(const Key('lastPort')), findsOneWidget);
-  },
-      screens: [...responsiveMobileScreens],
-      goldenFilename: 'FWS-IPV6_ADD-02-add_rule_mobile',
-      helper: testHelper);
-
   // Test ID: FWS-IPV6_DROP
   testLocalizationsV2(
       'Firewall settings view - IPv6 port service - add rule - protocol dropdown',
@@ -241,34 +215,6 @@ void main() {
   },
       screens: [...responsiveDesktopScreens],
       goldenFilename: 'FWS-IPV6_DROP-01-dropdown_desktop',
-      helper: testHelper);
-
-  // Test ID: FWS-IPV6_DROP
-  testLocalizationsV2(
-      'Firewall settings view - IPv6 port service - add rule - protocol dropdown',
-      (tester, screen) async {
-    final state =
-        Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState);
-    when(testHelper.mockIpv6PortServiceRuleNotifier.isRuleValid())
-        .thenReturn(true);
-    final context = await testHelper.pumpView(
-      tester,
-      child: Ipv6PortServiceRuleView(
-        args: {'items': state.current.rules},
-      ),
-      locale: screen.locale,
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byKey(const Key('protocol')));
-    await tester.pumpAndSettle();
-
-    expect(find.text(loc(context).tcp), findsOneWidget);
-    expect(find.text(loc(context).udp), findsOneWidget);
-    expect(find.text(loc(context).udpAndTcp), findsAtLeast(1));
-  },
-      screens: [...responsiveMobileScreens],
-      goldenFilename: 'FWS-IPV6_DROP-02-dropdown_mobile',
       helper: testHelper);
 
   // Test ID: FWS-IPV6_INVALID
@@ -301,34 +247,6 @@ void main() {
       goldenFilename: 'FWS-IPV6_INVALID-01-invalid_ports_desktop',
       helper: testHelper);
 
-  // Test ID: FWS-IPV6_INVALID
-  testLocalizationsV2(
-      'Firewall settings view - IPv6 port service - add rule - invalid ports',
-      (tester, screen) async {
-    final state =
-        Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState);
-    when(testHelper.mockIpv6PortServiceRuleNotifier.isRuleValid())
-        .thenReturn(false);
-    final context = await testHelper.pumpView(
-      tester,
-      child: Ipv6PortServiceRuleView(
-        args: {'items': state.current.rules},
-      ),
-      locale: screen.locale,
-    );
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byKey(const Key('firstPort')), '99');
-    await tester.enterText(find.byKey(const Key('lastPort')), '55');
-    await tester.tap(find.byKey(const Key('ruleName')));
-    await tester.pumpAndSettle();
-
-    expect(find.text(loc(context).portRangeError), findsOneWidget);
-  },
-      screens: [...responsiveMobileScreens],
-      goldenFilename: 'FWS-IPV6_INVALID-02-invalid_ports_mobile',
-      helper: testHelper);
-
   // Test ID: FWS-IPV6_OVERLAP
   testLocalizationsV2(
       'Firewall settings view - IPv6 port service - add rule - overlap ports',
@@ -341,18 +259,24 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.fling(find.byType(TabBar), const Offset(-200.0, 0.0), 10000.0);
-    await tester.tap(find.widgetWithText(Tab, loc(context).ipv6PortServices, skipOffstage: false));
+    await tester.tap(find.widgetWithText(Tab, loc(context).ipv6PortServices,
+        skipOffstage: false));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(LinksysIcons.add));
     await tester.pumpAndSettle();
 
-    when(testHelper.mockIpv6PortServiceRuleNotifier.isRuleValid()).thenReturn(false);
-    when(testHelper.mockIpv6PortServiceRuleNotifier.isPortRangeValid(any, any)).thenReturn(true);
-    when(testHelper.mockIpv6PortServiceRuleNotifier.isPortConflict(any, any, any)).thenReturn(true);
+    when(testHelper.mockIpv6PortServiceRuleNotifier.isRuleValid())
+        .thenReturn(false);
+    when(testHelper.mockIpv6PortServiceRuleNotifier.isPortRangeValid(any, any))
+        .thenReturn(true);
+    when(testHelper.mockIpv6PortServiceRuleNotifier
+            .isPortConflict(any, any, any))
+        .thenReturn(true);
 
     await tester.enterText(find.byKey(const Key('firstPort')), '1225');
     await tester.enterText(find.byKey(const Key('lastPort')), '1230');
-    await tester.tap(find.byKey(const Key('ruleName'))); // Tap to trigger validation
+    await tester
+        .tap(find.byKey(const Key('ruleName'))); // Tap to trigger validation
     await tester.pumpAndSettle();
 
     // TODO: ToolTip cannot display on screenshot
@@ -361,35 +285,4 @@ void main() {
       screens: [...responsiveDesktopScreens],
       goldenFilename: 'FWS-IPV6_OVERLAP-01-overlap_ports_desktop',
       helper: testHelper);
-
-  // Test ID: FWS-IPV6_OVERLAP
-  testLocalizationsV2(
-      'Firewall settings view - IPv6 port service - add rule - overlap ports',
-      (tester, screen) async {
-    final state =
-        Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState);
-    when(testHelper.mockIpv6PortServiceRuleNotifier.isRuleValid()).thenReturn(false);
-    when(testHelper.mockIpv6PortServiceRuleNotifier.isPortRangeValid(any, any)).thenReturn(true);
-    when(testHelper.mockIpv6PortServiceRuleNotifier.isPortConflict(any, any, any)).thenReturn(true);
-
-    final context = await testHelper.pumpView(
-      tester,
-      child: Ipv6PortServiceRuleView(
-        args: {'items': state.current.rules},
-      ),
-      locale: screen.locale,
-    );
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byKey(const Key('firstPort')), '1225');
-    await tester.enterText(find.byKey(const Key('lastPort')), '1230');
-    await tester.tap(find.byKey(const Key('ruleName'))); // Tap to trigger validation
-    await tester.pumpAndSettle();
-
-    expect(find.text(loc(context).rulesOverlapError), findsOneWidget);
-  },
-      screens: [...responsiveMobileScreens],
-      goldenFilename: 'FWS-IPV6_OVERLAP-02-overlap_ports_mobile',
-      helper: testHelper);
 }
-

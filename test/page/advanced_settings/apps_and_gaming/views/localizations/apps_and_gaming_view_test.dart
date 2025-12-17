@@ -477,8 +477,7 @@ void main() {
         when(testHelper.mockSinglePortForwardingRuleNotifier
                 .isDeviceIpValidate(any))
             .thenReturn(false);
-        when(testHelper.mockSinglePortForwardingRuleNotifier
-                .isNameValid(any))
+        when(testHelper.mockSinglePortForwardingRuleNotifier.isNameValid(any))
             .thenReturn(false);
 
         final context = await testHelper.pumpView(
@@ -497,7 +496,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap somewhere else to trigger validation, e.g., the application name field
-        final applicationNameField = find.byKey(const Key('applicationNameTextField'));
+        final applicationNameField =
+            find.byKey(const Key('applicationNameTextField'));
         await tester.tap(applicationNameField);
         await tester.pumpAndSettle();
 
@@ -556,7 +556,8 @@ void main() {
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byKey(const Key('externalPortTextField')), '22');
+        await tester.enterText(
+            find.byKey(const Key('externalPortTextField')), '22');
         await tester.pumpAndSettle();
 
         await tester.tap(find.byType(SinglePortForwardingListView));
@@ -597,13 +598,16 @@ void main() {
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byKey(const Key('applicationNameTextField')), 'name');
+        await tester.enterText(
+            find.byKey(const Key('applicationNameTextField')), 'name');
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byKey(const Key('internalPortTextField')), '20');
+        await tester.enterText(
+            find.byKey(const Key('internalPortTextField')), '20');
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byKey(const Key('externalPortTextField')), '40');
+        await tester.enterText(
+            find.byKey(const Key('externalPortTextField')), '40');
         await tester.pumpAndSettle();
 
         // Tap IP address form
@@ -627,173 +631,13 @@ void main() {
       ],
       goldenFilename: 'APPGAM-SPF_FILL_DESK-01-form_filled',
     );
-
-    // Test ID: APPGAM-SPF_EDIT_MOB
-    testLocalizationsV2(
-      'Single port forwarding - edit',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockSinglePortForwardingListNotifier.build())
-            .thenReturn(SinglePortForwardingListState.fromMap(
-                singlePortForwardingEmptyListTestState));
-
-        final context = await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const SinglePortForwardingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-            find.text(testHelper.loc(context).applicationName), findsOneWidget);
-        expect(find.text(testHelper.loc(context).internalPort), findsOneWidget);
-        expect(find.text(testHelper.loc(context).externalPort), findsOneWidget);
-        expect(find.text(testHelper.loc(context).protocol), findsOneWidget);
-        expect(find.text(testHelper.loc(context).ipAddress), findsOneWidget);
-        expect(
-            find.text(testHelper.loc(context).selectDevices), findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-SPF_EDIT_MOB-01-edit_form_mobile',
-    );
-
-    // Test ID: APPGAM-SPF_EDIT_ERR_MOB
-    testLocalizationsV2(
-      'Single port forwarding - edit error',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockSinglePortForwardingListNotifier.build())
-            .thenReturn(SinglePortForwardingListState.fromMap(
-                singlePortForwardingEmptyListTestState));
-        when(testHelper.mockSinglePortForwardingRuleNotifier.isRuleValid())
-            .thenAnswer((invocation) => false);
-
-        final context = await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const SinglePortForwardingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final nameFieldFinder = find.byKey(const Key('applicationNameTextField'));
-        await tester.tap(nameFieldFinder);
-        await tester.pumpAndSettle();
-
-        final ipFieldFinder = find.byKey(const Key('ipAddressTextField'));
-        final ipAddressTextFormField = find.descendant(
-            of: ipFieldFinder, matching: find.byType(TextFormField));
-        await tester.tap(ipAddressTextFormField.at(0));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byType(SinglePortForwardingRuleView));
-        await tester.pumpAndSettle();
-
-        expect(find.text(testHelper.loc(context).theNameMustNotBeEmpty),
-            findsOneWidget);
-        expect(find.text(testHelper.loc(context).invalidIpAddress),
-            findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-SPF_EDIT_ERR_MOB-01-form_errors_mobile',
-    );
-
-    // Test ID: APPGAM-SPF_OVER_ERR_MOB
-    testLocalizationsV2(
-      'Single port forwarding - edit overlap error',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockSinglePortForwardingListNotifier.build())
-            .thenReturn(SinglePortForwardingListState.fromMap(
-                singlePortForwardingListTestState));
-        when(testHelper.mockSinglePortForwardingRuleNotifier
-                .isPortConflict(any, any))
-            .thenAnswer((invocation) => true);
-        when(testHelper.mockSinglePortForwardingRuleNotifier.isRuleValid())
-            .thenAnswer((invocation) => false);
-
-        final context = await testHelper.pumpShellView(
-          tester,
-          locale: screen.locale,
-          child: const SinglePortForwardingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final textFieldFinder = find.byKey(const Key('externalPortTextField'));
-        await tester.enterText(textFieldFinder, '999');
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byType(SinglePortForwardingRuleView));
-        await tester.pumpAndSettle();
-
-        expect(find.text(testHelper.loc(context).rulesOverlapError),
-            findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-SPF_OVER_ERR_MOB-01-overlap_error_mobile',
-    );
-
-    // Test ID: APPGAM-SPF_FILL_MOB
-    testLocalizationsV2(
-      'Single port forwarding - edit filled up',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockSinglePortForwardingListNotifier.build())
-            .thenReturn(SinglePortForwardingListState.fromMap(
-                singlePortForwardingEmptyListTestState));
-
-        await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const SinglePortForwardingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final textFieldFinder = find.byKey(const Key('applicationNameTextField'));
-        await tester.tap(textFieldFinder);
-        await tester.pumpAndSettle();
-        await tester.enterText(textFieldFinder, 'name');
-        await tester.pumpAndSettle();
-
-        final internalPortField = find.byKey(const Key('internalPortTextField'));
-        await tester.enterText(internalPortField, '20');
-        await tester.pumpAndSettle();
-
-        await tester.enterText(find.byKey(const Key('externalPortTextField')), '40');
-        await tester.pumpAndSettle();
-
-        // Tap IP address form
-        final ipAddressForm = find.byKey(const Key('ipAddressTextField'));
-        await tester.tap(ipAddressForm);
-        // Input
-        final ipAddressTextFormField = find.descendant(
-            of: ipAddressForm, matching: find.byType(TextFormField));
-        await tester.enterText(ipAddressTextFormField.at(0), '15');
-        await tester.pumpAndSettle();
-
-        // TODO: Why the name error keep showing on screenshot
-        expect(find.text('name'), findsOneWidget);
-        expect(find.text('20'), findsOneWidget);
-        expect(find.text('40'), findsOneWidget);
-        expect(find.textContaining('15'), findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-SPF_FILL_MOB-01-form_filled_mobile',
-    );
   });
 
   group('Apps & Gaming - Port range forwarding', () {
     setUp(() {
-      when(testHelper.mockSinglePortForwardingListNotifier.build())
-            .thenReturn(SinglePortForwardingListState.fromMap(
-                singlePortForwardingEmptyListTestState));
+      when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
+          SinglePortForwardingListState.fromMap(
+              singlePortForwardingEmptyListTestState));
     });
     // Test ID: APPGAM-PRF_DATA
     testLocalizationsV2('Port range forwarding - with data',
@@ -905,7 +749,8 @@ void main() {
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
-        final textFieldFinder = find.byKey(const Key('applicationNameTextField'));
+        final textFieldFinder =
+            find.byKey(const Key('applicationNameTextField'));
         await tester.tap(textFieldFinder);
         await tester.pumpAndSettle();
 
@@ -964,11 +809,13 @@ void main() {
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
-        final firstExternalPortField = find.byKey(const Key('firstExternalPortTextField'));
+        final firstExternalPortField =
+            find.byKey(const Key('firstExternalPortTextField'));
         await tester.enterText(firstExternalPortField, '5000');
         await tester.pumpAndSettle();
 
-        final lastExternalPortField = find.byKey(const Key('lastExternalPortTextField'));
+        final lastExternalPortField =
+            find.byKey(const Key('lastExternalPortTextField'));
         await tester.enterText(lastExternalPortField, '5005');
         await tester.pumpAndSettle();
 
@@ -1016,11 +863,13 @@ void main() {
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
-        final firstExternalPortField = find.byKey(const Key('firstExternalPortTextField'));
+        final firstExternalPortField =
+            find.byKey(const Key('firstExternalPortTextField'));
         await tester.enterText(firstExternalPortField, '5000');
         await tester.pumpAndSettle();
 
-        final lastExternalPortField = find.byKey(const Key('lastExternalPortTextField'));
+        final lastExternalPortField =
+            find.byKey(const Key('lastExternalPortTextField'));
         await tester.enterText(lastExternalPortField, '0');
         await tester.pumpAndSettle();
 
@@ -1062,15 +911,18 @@ void main() {
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
-        final textFieldFinder = find.byKey(const Key('applicationNameTextField'));
+        final textFieldFinder =
+            find.byKey(const Key('applicationNameTextField'));
         await tester.enterText(textFieldFinder, 'name');
         await tester.pumpAndSettle();
 
-        final lastExternalPortField = find.byKey(const Key('lastExternalPortTextField'));
+        final lastExternalPortField =
+            find.byKey(const Key('lastExternalPortTextField'));
         await tester.enterText(lastExternalPortField, '40');
         await tester.pumpAndSettle();
 
-        final firstExternalPortField = find.byKey(const Key('firstExternalPortTextField'));
+        final firstExternalPortField =
+            find.byKey(const Key('firstExternalPortTextField'));
         await tester.enterText(firstExternalPortField, '20');
         await tester.pumpAndSettle();
 
@@ -1143,218 +995,6 @@ void main() {
             .toList()
       ],
       goldenFilename: 'APPGAM-PRF_PROTO_DESK-01-protocol_dropdown',
-    );
-
-    // Test ID: APPGAM-PRF_EDIT_MOB
-    testLocalizationsV2(
-      'Port range forwarding - edit',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
-            PortRangeForwardingListState.fromMap(
-                portRangeForwardingEmptyListTestState));
-
-        final context = await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const PortRangeForwardingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-            find.text(testHelper.loc(context).applicationName), findsOneWidget);
-        expect(find.text(testHelper.loc(context).startPort), findsOneWidget);
-        expect(find.text(testHelper.loc(context).endPort), findsOneWidget);
-        expect(find.text(testHelper.loc(context).protocol), findsOneWidget);
-        expect(find.text(testHelper.loc(context).ipAddress), findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-PRF_EDIT_MOB-01-edit_form_mobile',
-    );
-
-    // Test ID: APPGAM-PRF_EDIT_ERR_MOB
-    testLocalizationsV2(
-      'Port range forwarding - edit error',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
-            PortRangeForwardingListState.fromMap(
-                portRangeForwardingEmptyListTestState));
-
-        final context = await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const PortRangeForwardingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final textFieldFinder = find.byKey(const Key('applicationNameTextField'));
-        await tester.tap(textFieldFinder);
-        await tester.pumpAndSettle();
-
-        // Tap IP address form to trigger validation
-        final ipAddressForm = find.byKey(const Key('ipAddressTextField'));
-        await tester.tap(ipAddressForm);
-        // Input
-        final ipAddressTextFormField = find.descendant(
-            of: ipAddressForm, matching: find.byType(TextFormField));
-        await tester.tap(ipAddressTextFormField.at(0));
-        await tester.pumpAndSettle();
-
-        final firstExternalPortField = find.byKey(const Key('firstExternalPortTextField'));
-        await tester.enterText(firstExternalPortField, '20');
-        await tester.pumpAndSettle();
-
-        final lastExternalPortField = find.byKey(const Key('lastExternalPortTextField'));
-        await tester.enterText(lastExternalPortField, '10');
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byType(PortRangeForwardingRuleView));
-        await tester.pumpAndSettle();
-
-        expect(
-            find.text(testHelper.loc(context).portRangeError), findsOneWidget);
-        // TODO:
-        // expect(
-        //     find.text(testHelper.loc(context).theNameMustNotBeEmpty), findsOneWidget);
-        expect(
-            find.text(testHelper.loc(context).invalidIpAddress), findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-PRF_EDIT_ERR_MOB-01-form_errors_mobile',
-    );
-
-    // Test ID: APPGAM-PRF_OVER_ERR_MOB
-    testLocalizationsV2(
-      'Port range forwarding - edit overlap error',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
-            PortRangeForwardingListState.fromMap(
-                portRangeForwardingListTestState));
-        when(testHelper.mockPortRangeForwardingRuleNotifier
-                .isPortRangeValid(any, any))
-            .thenReturn(true);
-        when(testHelper.mockPortRangeForwardingRuleNotifier
-                .isPortConflict(any, any, any))
-            .thenReturn(true);
-
-        final context = await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const PortRangeForwardingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final firstExternalPortField = find.byKey(const Key('firstExternalPortTextField'));
-        await tester.enterText(firstExternalPortField, '5000');
-        await tester.pumpAndSettle();
-
-        final lastExternalPortField = find.byKey(const Key('lastExternalPortTextField'));
-        await tester.enterText(lastExternalPortField, '5005');
-        await tester.pumpAndSettle();
-        await tester.tap(find.byType(PortRangeForwardingRuleView));
-        await tester.pumpAndSettle();
-
-        expect(find.text(testHelper.loc(context).rulesOverlapError),
-            findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-PRF_OVER_ERR_MOB-01-overlap_error_mobile',
-    );
-
-    // Test ID: APPGAM-PRF_FILL_MOB
-    testLocalizationsV2(
-      'Port range forwarding - edit filled up',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
-            PortRangeForwardingListState.fromMap(
-                portRangeForwardingEmptyListTestState));
-
-        await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const PortRangeForwardingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final appNameField = find.byKey(const Key('applicationNameTextField'));
-        await tester.enterText(appNameField, 'name');
-        await tester.pumpAndSettle();
-
-        final lastExternalPortField = find.byKey(const Key('lastExternalPortTextField'));
-        await tester.enterText(lastExternalPortField, '40');
-        await tester.pumpAndSettle();
-
-        final firstExternalPortField = find.byKey(const Key('firstExternalPortTextField'));
-        await tester.enterText(firstExternalPortField, '20');
-        await tester.pumpAndSettle();
-
-        // Tap IP address form
-        final ipAddressForm = find.byKey(const Key('ipAddressTextField'));
-        await tester.tap(ipAddressForm);
-        // Input
-        final ipAddressTextFormField = find.descendant(
-            of: ipAddressForm, matching: find.byType(TextFormField));
-        await tester.enterText(ipAddressTextFormField.at(0), '15');
-        await tester.pumpAndSettle();
-
-        // TODO: Why the portRangeError showing on the screenshot
-        expect(find.text('name'), findsOneWidget);
-        expect(find.text('20'), findsOneWidget);
-        expect(find.text('40'), findsOneWidget);
-        expect(find.textContaining('15'), findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-PRF_FILL_MOB-01-form_filled_mobile',
-    );
-
-    // Test ID: APPGAM-PRF_PROTO_MOB
-    testLocalizationsV2(
-      'Port range forwarding - protocol',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
-            PortRangeForwardingListState.fromMap(
-                portRangeForwardingEmptyListTestState));
-
-        final context = await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const PortRangeForwardingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final protocolTypeFinder = find.byType(AppDropdownButton<String>);
-        await tester.tap(protocolTypeFinder.first);
-        await tester.pumpAndSettle();
-
-        expect(
-            find.widgetWithText(
-                DropdownMenuItem<String>, testHelper.loc(context).tcp),
-            findsOneWidget);
-        expect(
-            find.widgetWithText(
-                DropdownMenuItem<String>, testHelper.loc(context).udp),
-            findsOneWidget);
-        expect(
-            find.widgetWithText(
-                DropdownMenuItem<String>, testHelper.loc(context).udpAndTcp),
-            findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-PRF_PROTO_MOB-01-protocol_dropdown_mobile',
     );
   });
 
@@ -1651,186 +1291,6 @@ void main() {
             .toList()
       ],
       goldenFilename: 'APPGAM-PRT_FILL_DESK-01-form_filled',
-    );
-
-    // Test ID: APPGAM-PRT_EDIT_MOB
-    testLocalizationsV2(
-      'Port range triggerring - edit',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
-            PortRangeTriggeringListState.fromMap(
-                portRangeTriggerEmptyListTestState));
-
-        final context = await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const PortRangeTriggeringRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text(testHelper.loc(context).ruleName), findsOneWidget);
-        expect(
-            find.text(testHelper.loc(context).triggeredRange), findsOneWidget);
-        expect(
-            find.text(testHelper.loc(context).forwardedRange), findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-PRT_EDIT_MOB-01-edit_form_mobile',
-    );
-
-    // Test ID: APPGAM-PRT_EDIT_ERR_MOB
-    testLocalizationsV2(
-      'Port range triggerring - edit error',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
-            PortRangeTriggeringListState.fromMap(
-                portRangeTriggerEmptyListTestState));
-
-        final context = await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const PortRangeTriggeringRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final appNameField = find.byKey(const Key('ruleNameTextField'));
-        await tester.tap(appNameField);
-        await tester.pumpAndSettle();
-
-        final firstTriggerPortField =
-            find.byKey(const Key('firstTriggerPortTextField'));
-        await tester.enterText(firstTriggerPortField, '6000');
-        await tester.pumpAndSettle();
-
-        final lastTriggerPortField =
-            find.byKey(const Key('lastTriggerPortTextField'));
-        await tester.enterText(lastTriggerPortField, '5000');
-        await tester.pumpAndSettle();
-
-        final firstForwardedPortField =
-            find.byKey(const Key('firstForwardedPortTextField'));
-        await tester.enterText(firstForwardedPortField, '20');
-        await tester.pumpAndSettle();
-
-        final lastForwardedPortField =
-            find.byKey(const Key('lastForwardedPortTextField'));
-        await tester.enterText(lastForwardedPortField, '10');
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byType(PortRangeTriggeringRuleView));
-        await tester.pumpAndSettle();
-
-        expect(find.text(testHelper.loc(context).theNameMustNotBeEmpty),
-            findsOneWidget);
-        expect(find.text(testHelper.loc(context).portRangeError),
-            findsNWidgets(2));
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-PRT_EDIT_ERR_MOB-01-form_errors_mobile',
-    );
-
-    // Test ID: APPGAM-PRT_OVER_ERR_MOB
-    testLocalizationsV2(
-      'Port range triggerring - edit overlap error',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
-            PortRangeTriggeringListState.fromMap(
-                portRangeTriggerListTestState));
-        when(testHelper.mockPortRangeTriggeringRuleNotifier
-                .isTriggeredPortConflict(any, any))
-            .thenAnswer((invocation) => true);
-
-        final context = await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const PortRangeTriggeringRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final firstForwardedPortField =
-            find.byKey(const Key('firstForwardedPortTextField'));
-        await tester.enterText(firstForwardedPortField, '7000');
-        await tester.pumpAndSettle();
-
-        final lastForwardedPortField =
-            find.byKey(const Key('lastForwardedPortTextField'));
-        await tester.enterText(lastForwardedPortField, '7001');
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byType(PortRangeTriggeringRuleView));
-        await tester.pumpAndSettle();
-
-        // TODO: The logic on desktop/mobile, trigger/forwarded is not the same
-        // expect(find.text(testHelper.loc(context).rulesOverlapError),
-        //     findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-PRT_OVER_ERR_MOB-01-overlap_error_mobile',
-    );
-
-    // Test ID: APPGAM-PRT_FILL_MOB
-    testLocalizationsV2(
-      'Port range triggerring - edit filled up',
-      (tester, screen) async {
-        // For mobile layout
-        when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
-            PortRangeTriggeringListState.fromMap(
-                portRangeTriggerEmptyListTestState));
-
-        await testHelper.pumpView(
-          tester,
-          locale: screen.locale,
-          child: const PortRangeTriggeringRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final appNameField = find.byKey(const Key('ruleNameTextField'));
-        await tester.enterText(appNameField, 'name');
-        await tester.pumpAndSettle();
-
-        final firstTriggerPortField =
-            find.byKey(const Key('firstTriggerPortTextField'));
-        await tester.enterText(firstTriggerPortField, '10');
-        await tester.pumpAndSettle();
-
-        final lastTriggerPortField =
-            find.byKey(const Key('lastTriggerPortTextField'));
-        await tester.enterText(lastTriggerPortField, '20');
-        await tester.pumpAndSettle();
-
-        final firstForwardedPortField =
-            find.byKey(const Key('firstForwardedPortTextField'));
-        await tester.enterText(firstForwardedPortField, '30');
-        await tester.pumpAndSettle();
-
-        final lastForwardedPortField =
-            find.byKey(const Key('lastForwardedPortTextField'));
-        await tester.enterText(lastForwardedPortField, '40');
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byType(PortRangeTriggeringRuleView));
-        await tester.pumpAndSettle();
-
-        //TODO: Why the name error keep showing on screenshot
-        expect(find.text('name'), findsOneWidget);
-        expect(find.text('10'), findsOneWidget);
-        expect(find.text('20'), findsOneWidget);
-        expect(find.text('30'), findsOneWidget);
-        expect(find.text('40'), findsOneWidget);
-      },
-      screens: [
-        ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList()
-      ],
-      goldenFilename: 'APPGAM-PRT_FILL_MOB-01-form_filled_mobile',
     );
   });
 }

@@ -66,6 +66,11 @@
 - **已完成**: 1
 - **完成率**: 100% ✅
 
+### Internet Settings 相關
+- **總檔案數**: 11 (Views + Forms)
+- **已完成**: 11
+- **完成率**: 100% ✅
+
 ---
 
 ## 📋 已遷移檔案清單
@@ -104,8 +109,9 @@
 | `instant_admin_view.dart` | `UiKitPageView`, `AppPasswordInput(rules: [...])`, `AppPasswordRule`, composed `_buildListCard`, `_buildListRow`, `_buildSwitchTile`, `AppFontIcons` | ✅ 完成 |
 | `manual_firmware_update_view.dart` | `UiKitPageView`, `AppButton.primary`, `AppButton.text`, `AppFontIcons`, composed `_buildListCard` | ✅ 完成 |
 | `instant_verify_view.dart` | `UiKitPageView`, `AppResponsiveLayout`, `AppFontIcons`, `AppGap`, responsive layout refactor, PDF service extraction | ✅ 完成 |
-| `ping_network_modal.dart` | `UiKitPageView`, `AppButton.text`, `AppFontIcons`, removed duplicate code | ✅ 完成 |
-| `traceroute_modal.dart` | `UiKitPageView`, `AppButton.text`, `AppFontIcons`, removed duplicate code | ✅ 完成 |
+| `ping_network_modal.dart` | `AppIpv4TextField` replacement, removed `AppIPFormField` | ✅ 完成 |
+| `remote_assistance_dialog.dart` | `AppButton.primary`, `AppStyledText` (fixed URL), `AppGap` | ✅ 完成 |
+| `bottom_bar.dart` | `AppButton.text`, removed `privacygui_widgets` | ✅ 完成 |
 | `instant_verify_pdf_service.dart` | **新建服務** - PDF logic extracted (~450 lines), `AppSpacing`, `AppFontIcons` | ✅ 完成 |
 | `speed_test_view.dart` | `UiKitPageView`, `AppResponsiveLayout`, `AppFontIcons.bolt`, `AppGap`, `context.colWidth()` | ✅ 完成 |
 | `speed_test_selection.dart` | `UiKitPageView`, `AppSvg.asset(svg:...)`, `AppSpacing` | ✅ 完成 |
@@ -128,6 +134,13 @@
 | `vpn_settings_page.dart` | `AppDropdown` workaround, `AppTextFormField` validation, `AppCard` composition | ✅ 完成 |
 | `vpn_status_tile.dart` | `AppCard` onTap, spacing updates | ✅ 完成 |
 | `select_network_view.dart` | `UiKitPageView`, `DeviceImageHelper`, `AppLoader`, `AppIconButton` | ✅ 完成 |
+| `internet_settings_view.dart` | Remove `privacygui_widgets` dependnecy, `AppGap` | ✅ 完成 |
+| `ipv4_connection_view.dart` | `ResponsiveLayout` → `context.isMobileLayout`, `AppIconButton` fix | ✅ 完成 |
+| `ipv6_connection_view.dart` | `ResponsiveLayout` → `context.isMobileLayout`, `AppIconButton` fix | ✅ 完成 |
+| `release_and_renew_view.dart` | `AppListCard` → `AppCard` composition, `AppTextButton` → `AppButton.text` | ✅ 完成 |
+| `optional_settings_form.dart` | `AppTextButton` → `Row(Icon+AppButton)`, `AppMacAddressTextField` with `errorText` | ✅ 完成 |
+| `wan_forms/*` (6 files) | Complete migration of all WAN forms (PPPoE, Static IP, Bridge, etc.) | ✅ 完成 |
+| `dmz_settings_view.dart` | `AppMacAddressTextField` API update (`errorText`) | ✅ 完成 |
 
 ---
 
@@ -238,3 +251,28 @@ flutter analyze --no-fatal-infos --no-fatal-warnings
 - 🔄 **剩餘工作**: 約 7 個次要檔案待遷移 (不影響主要功能)
 
 *最後更新：2024-12-16*
+
+---
+
+## 🔥 近期重大遷移：Internet Settings (2024-12-17)
+
+### 遷移成果
+- **範圍**: 包含 `internet_settings_view`、所有 `connection_view`、`release_and_renew` 及 6 個 WAN Form 表單。
+- **完成狀態**: 全數遷移完成，並通過 `flutter analyze`。
+- **依賴移除**: 該模組已完全移除對 `privacygui_widgets` 的依賴。
+
+### 重大技術變更
+1. **響應式佈局升級**: 全面替換 `ResponsiveLayout` 為 `context.isMobileLayout` 與 `context.colWidth()`。
+2. **組件組合化**: `AppListCard` 重構為 `AppCard` 內部組合，提升彈性。
+3. **AppMacAddressTextField API 更新**:
+    - 新增 `errorText` 支援外部驗證錯誤顯示。
+    - `dmz_settings_view` 與 `dhcp_reservations_view` 同步更新以適配此變更。
+4. **按鈕標準化**: `AppTextButton` 替換為 `AppButton.text`，並標準化圖標按鈕用法 (`AppIconButton` 接受 Widget icon)。
+
+### 驗證結果
+```bash
+flutter analyze lib/page/advanced_settings/internet_settings/
+# 結果：No issues found! ✅
+```
+
+*最後更新：2024-12-17*

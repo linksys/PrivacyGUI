@@ -7,7 +7,7 @@ import 'package:privacy_gui/core/jnap/models/traceroute_status.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+
 import 'package:ui_kit_library/ui_kit.dart';
 
 class TracerouteModal extends ConsumerStatefulWidget {
@@ -47,22 +47,15 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppText.bodySmall(loc(context).ipAddress),
-        AppGap.sm(),
-        Opacity(
-          opacity: isRunning ? .5 : 1,
-          child: AbsorbPointer(
-            absorbing: isRunning ? true : false,
-            child: AppIPFormField(
-              border: OutlineInputBorder(),
-              controller: _controller,
-              onChanged: (value) {
-                setState(() {
-                  _validIP = IpAddressValidator().validate(value);
-                });
-              },
-            ),
-          ),
+        AppIpv4TextField(
+          label: loc(context).ipAddress,
+          controller: _controller,
+          enabled: !isRunning,
+          onChanged: (value) {
+            setState(() {
+              _validIP = IpAddressValidator().validate(value);
+            });
+          },
         ),
         AppGap.xl(),
         if (isRunning && _tracerouteLog.isEmpty)

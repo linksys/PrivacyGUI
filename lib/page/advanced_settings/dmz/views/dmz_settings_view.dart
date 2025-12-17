@@ -17,12 +17,8 @@ import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-// Keep specialized widgets from privacygui_widgets
-import 'package:privacygui_widgets/widgets/card/info_card.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart'
-    as pgw;
+import 'package:privacy_gui/page/components/composed/app_info_card.dart';
+import 'package:privacy_gui/page/components/composed/app_radio_list.dart';
 
 class DMZSettingsView extends ArgumentsConsumerStatefulView {
   const DMZSettingsView({super.key, super.args});
@@ -163,26 +159,8 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AppIPFormField(
-                              key: const Key('sourceFirstIP'),
-                              semanticLabel: 'specified range ip address start',
-                              border: const OutlineInputBorder(),
-                              controller: _sourceFirstIPController,
-                              onChanged: (value) {
-                                final sourceSettings =
-                                    state.settings.current.sourceRestriction ??
-                                        const DMZSourceRestriction(
-                                            firstIPAddress: '',
-                                            lastIPAddress: '');
-                                ref
-                                    .read(dmzSettingsProvider.notifier)
-                                    .setSettings(state.settings.current
-                                        .copyWith(
-                                            sourceRestriction: () =>
-                                                sourceSettings.copyWith(
-                                                    firstIPAddress: value)));
-                              },
-                              onFocusChanged: (value) {
+                            Focus(
+                              onFocusChange: (value) {
                                 if (!value) {
                                   final firstValue = NetworkUtils.ipToNum(
                                       _sourceFirstIPController.text);
@@ -195,38 +173,56 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                                   });
                                 }
                               },
-                              errorText: _sourceError != null ? '' : null,
+                              child: AppIpv4TextField(
+                                key: const Key('sourceFirstIP'),
+                                controller: _sourceFirstIPController,
+                                onChanged: (value) {
+                                  final sourceSettings = state
+                                          .settings.current.sourceRestriction ??
+                                      const DMZSourceRestriction(
+                                          firstIPAddress: '',
+                                          lastIPAddress: '');
+                                  ref
+                                      .read(dmzSettingsProvider.notifier)
+                                      .setSettings(state.settings.current
+                                          .copyWith(
+                                              sourceRestriction: () =>
+                                                  sourceSettings.copyWith(
+                                                      firstIPAddress: value)));
+                                },
+                                errorText: _sourceError != null ? '' : null,
+                              ),
                             ),
                             Padding(
                               padding: EdgeInsets.all(AppSpacing.sm),
                               child: Center(
                                   child: AppText.bodyMedium(loc(context).to)),
                             ),
-                            AppIPFormField(
-                              key: const Key('sourceLastIP'),
-                              semanticLabel: 'specified range ip address end',
-                              border: const OutlineInputBorder(),
-                              controller: _sourceLastIPController,
-                              onChanged: (value) {
-                                final sourceSettings =
-                                    state.settings.current.sourceRestriction ??
-                                        const DMZSourceRestriction(
-                                            firstIPAddress: '',
-                                            lastIPAddress: '');
-                                ref
-                                    .read(dmzSettingsProvider.notifier)
-                                    .setSettings(state.settings.current
-                                        .copyWith(
-                                            sourceRestriction: () =>
-                                                sourceSettings.copyWith(
-                                                    lastIPAddress: value)));
-                              },
-                              onFocusChanged: (value) {
+                            Focus(
+                              onFocusChange: (value) {
                                 if (!value) {
                                   _checkSourceIPRange();
                                 }
                               },
-                              errorText: _sourceError,
+                              child: AppIpv4TextField(
+                                key: const Key('sourceLastIP'),
+                                controller: _sourceLastIPController,
+                                onChanged: (value) {
+                                  final sourceSettings = state
+                                          .settings.current.sourceRestriction ??
+                                      const DMZSourceRestriction(
+                                          firstIPAddress: '',
+                                          lastIPAddress: '');
+                                  ref
+                                      .read(dmzSettingsProvider.notifier)
+                                      .setSettings(state.settings.current
+                                          .copyWith(
+                                              sourceRestriction: () =>
+                                                  sourceSettings.copyWith(
+                                                      lastIPAddress: value)));
+                                },
+                                errorText: _sourceError,
+                              ),
                             ),
                           ],
                         ),
@@ -265,27 +261,29 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                           DMZDestinationType.ip
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
-                          child: AppIPFormField(
-                            key: const Key('destinationIP'),
-                            semanticLabel: 'destination ip address',
-                            border: const OutlineInputBorder(),
-                            controller: _destinationIPController,
-                            octet1ReadOnly: subnetMask[0] == '255',
-                            octet2ReadOnly: subnetMask[1] == '255',
-                            octet3ReadOnly: subnetMask[2] == '255',
-                            octet4ReadOnly: subnetMask[3] == '255',
-                            onChanged: (value) {
-                              ref
-                                  .read(dmzSettingsProvider.notifier)
-                                  .setSettings(state.settings.current.copyWith(
-                                      destinationIPAddress: () => value));
-                            },
-                            onFocusChanged: (value) {
+                          child: Focus(
+                            onFocusChange: (value) {
                               if (!value) {
                                 _checkDestinationIPAdress();
                               }
                             },
-                            errorText: _destinationError,
+                            child: AppIpv4TextField(
+                              key: const Key('destinationIP'),
+                              controller: _destinationIPController,
+                              readOnly: SegmentReadOnly(
+                                segment1: subnetMask[0] == '255',
+                                segment2: subnetMask[1] == '255',
+                                segment3: subnetMask[2] == '255',
+                              ),
+                              onChanged: (value) {
+                                ref
+                                    .read(dmzSettingsProvider.notifier)
+                                    .setSettings(state.settings.current
+                                        .copyWith(
+                                            destinationIPAddress: () => value));
+                              },
+                              errorText: _destinationError,
+                            ),
                           ),
                         )
                       : null,
@@ -296,21 +294,27 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                           DMZDestinationType.mac
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
-                          child: pgw.AppTextField.macAddress(
-                            border: const OutlineInputBorder(),
-                            controller: _destinationMACController,
-                            onChanged: (value) {
-                              ref
-                                  .read(dmzSettingsProvider.notifier)
-                                  .setSettings(state.settings.current.copyWith(
-                                      destinationMACAddress: () => value));
-                            },
-                            onFocusChanged: (value) {
+                          child: Focus(
+                            onFocusChange: (value) {
                               if (!value) {
                                 _checkDestinationMACAddress();
                               }
                             },
-                            errorText: _destinationError,
+                            child: AppMacAddressTextField(
+                              label: loc(context).macAddress,
+                              invalidFormatMessage:
+                                  loc(context).invalidMACAddress,
+                              errorText: _destinationError,
+                              controller: _destinationMACController,
+                              onChanged: (value) {
+                                ref
+                                    .read(dmzSettingsProvider.notifier)
+                                    .setSettings(state.settings.current
+                                        .copyWith(
+                                            destinationMACAddress: () =>
+                                                value));
+                              },
+                            ),
                           ),
                         )
                       : null,

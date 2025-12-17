@@ -1,29 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-
 import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/_widgets.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/route/constants.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PortRangeForwardingListView extends ArgumentsConsumerStatelessView {
   const PortRangeForwardingListView({super.key, super.args});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return PortRangeForwardingListContentView(
-      args: super.args,
-    );
+    return PortRangeForwardingListContentView(args: super.args);
   }
 }
 
@@ -38,334 +27,383 @@ class PortRangeForwardingListContentView extends ArgumentsConsumerStatefulView {
 class _PortRangeForwardingContentViewState
     extends ConsumerState<PortRangeForwardingListContentView> {
   late final PortRangeForwardingListNotifier _notifier;
-  PortRangeForwardingListState? preservedState;
-// Fro Edit table settings
-  final TextEditingController applicationTextController =
+
+  // Controllers for editing
+  final TextEditingController _applicationTextController =
       TextEditingController();
-  final TextEditingController internalPortTextController =
+  final TextEditingController _firstPortTextController =
       TextEditingController();
-  final TextEditingController externalPortTextController =
+  final TextEditingController _lastPortTextController = TextEditingController();
+  final TextEditingController _ipAddressTextController =
       TextEditingController();
-  final TextEditingController ipAddressTextController = TextEditingController();
-  bool _isEditRuleValid = false;
+
+  // Editing state
+  PortRangeForwardingRule? _editingRule;
+  bool _isInitializing = false;
+  StateSetter? _sheetStateSetter;
+
+  // Validation errors
+  String? _nameError;
+  String? _ipError;
+  String? _portRangeError;
 
   @override
   void initState() {
-    _notifier = ref.read(portRangeForwardingListProvider.notifier);
-    // doSomethingWithSpinner(
-    //   context,
-    //   _notifier.fetch(),
-    // ).then((state) {
-    //   setState(() {
-    //     preservedState = state;
-    //   });
-    //   // ref.read(appsAndGamingProvider.notifier).setChanged(false);
-    // });
-
     super.initState();
+    _notifier = ref.read(portRangeForwardingListProvider.notifier);
+
+    // Add listeners for validation
+    _applicationTextController.addListener(_onNameChanged);
+    _firstPortTextController.addListener(_onFirstPortChanged);
+    _lastPortTextController.addListener(_onLastPortChanged);
+    _ipAddressTextController.addListener(_onIpChanged);
   }
 
   @override
   void dispose() {
+    _applicationTextController.removeListener(_onNameChanged);
+    _firstPortTextController.removeListener(_onFirstPortChanged);
+    _lastPortTextController.removeListener(_onLastPortChanged);
+    _ipAddressTextController.removeListener(_onIpChanged);
+
+    _applicationTextController.dispose();
+    _firstPortTextController.dispose();
+    _lastPortTextController.dispose();
+    _ipAddressTextController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(portRangeForwardingListProvider);
-    final submaskToken = state.status.subnetMask.split('.');
-    final prefixIP = state.status.routerIp;
-    // ref.listen(portRangeForwardingListProvider, (previous, next) {
-    //   ref
-    //       .read(appsAndGamingProvider.notifier)
-    //       .setChanged(next != preservedState);
-    // });
-    return SingleChildScrollView(
-      child: Theme(
-        data: Theme.of(context).copyWith(
-            inputDecorationTheme: Theme.of(context)
-                .inputDecorationTheme
-                .copyWith(contentPadding: EdgeInsets.all(Spacing.small1))),
-        child: ResponsiveLayout(
-          desktop: _desktopSettingsView(state, submaskToken, prefixIP),
-          mobile: _mobildSettingsView(state, submaskToken, prefixIP),
-        ),
+    final isAddEnabled = !_notifier.isExceedMax();
+
+    return AppDataTable<PortRangeForwardingRule>(
+      data: state.current.rules,
+      columns: _buildColumns(context, state),
+      totalRows: state.current.rules.length,
+      currentPage: 1,
+      rowsPerPage: 50,
+      onPageChanged: (_) {},
+      onSave: _handleSave,
+      emptyMessage: loc(context).noPortRangeForwarding,
+      showAddButton: isAddEnabled,
+      onCreateTemplate: () => PortRangeForwardingRule(
+        isEnabled: true,
+        firstExternalPort: 0,
+        lastExternalPort: 0,
+        protocol: 'Both',
+        internalServerIPAddress: state.status.routerIp,
+        description: '',
+      ),
+      onAdd: _handleAdd,
+      onDelete: _handleDelete,
+      onCancel: _handleCancel,
+      localization: AppTableLocalization(
+        edit: loc(context).edit,
+        save: loc(context).save,
+        delete: loc(context).delete,
+        cancel: loc(context).cancel,
+        actions: loc(context).action,
+        add: loc(context).add,
       ),
     );
   }
 
-  Widget _mobildSettingsView(PortRangeForwardingListState state,
-      List<String> submaskToken, String prefixIP) {
-    // return Center();
-    return EditableCardListsettingsView<PortRangeForwardingRule>(
-        title: loc(context).portRangeForwarding,
-        emptyMessage: loc(context).noPortRangeForwarding,
-        addEnabled: !_notifier.isExceedMax(),
-        addLabel: loc(context).add,
-        itemCardBuilder: (context, rule) => EditableListItem(
-              title: rule.description,
-              content: Table(
-                children: [
-                  TableRow(
-                    children: [
-                      AppSettingCard.noBorder(
-                        padding: EdgeInsets.only(bottom: Spacing.medium),
-                        title: loc(context).startPort,
-                        description: '${rule.firstExternalPort}',
-                      ),
-                      AppSettingCard.noBorder(
-                        padding: EdgeInsets.only(bottom: Spacing.medium),
-                        title: loc(context).endPort,
-                        description: '${rule.lastExternalPort}',
-                      )
-                    ],
-                  ),
-                  TableRow(
-                    children: [
-                      AppSettingCard.noBorder(
-                        padding: EdgeInsets.only(bottom: Spacing.medium),
-                        title: loc(context).protocol,
-                        description: getProtocolTitle(context, rule.protocol),
-                      ),
-                      AppSettingCard.noBorder(
-                        padding: EdgeInsets.only(bottom: Spacing.medium),
-                        title: loc(context).ipAddress,
-                        description: rule.internalServerIPAddress,
-                      )
-                    ],
-                  ),
-                ],
-              ),
-            ),
-        editRoute: RouteNamed.portRangeForwardingRule,
-        dataList: state.current.rules,
-        onSave: (index, rule) {
-          if (index >= 0) {
-            _notifier.editRule(index, rule);
-          } else {
-            _notifier.addRule(rule);
+  List<AppTableColumn<PortRangeForwardingRule>> _buildColumns(
+      BuildContext context, PortRangeForwardingListState state) {
+    return [
+      // Column 0: Application Name
+      AppTableColumn<PortRangeForwardingRule>(
+        label: loc(context).applicationName,
+        cellBuilder: (_, rule) => AppText.bodyMedium(rule.description),
+        editBuilder: (_, rule, setSheetState) {
+          _sheetStateSetter = setSheetState;
+          if (_editingRule != rule) {
+            _isInitializing = true;
+            try {
+              _editingRule = rule;
+              _applicationTextController.text = rule.description;
+              _firstPortTextController.text = '${rule.firstExternalPort}';
+              _lastPortTextController.text = '${rule.lastExternalPort}';
+              _ipAddressTextController.text = rule.internalServerIPAddress;
+              _nameError = null;
+              _ipError = null;
+              _portRangeError = null;
+            } finally {
+              _isInitializing = false;
+            }
           }
+          return AppTextField(
+            key: ValueKey('appName_${identityHashCode(rule)}'),
+            controller: _applicationTextController,
+            hintText: loc(context).applicationName,
+            errorText: _nameError,
+          );
         },
-        onDelete: (index, rule) {
-          _notifier.deleteRule(rule);
-        });
+      ),
+
+      // Column 1: Port Range (Start - End)
+      AppTableColumn<PortRangeForwardingRule>(
+        label: loc(context).startEndPorts,
+        cellBuilder: (_, rule) => AppText.bodyMedium(
+            '${rule.firstExternalPort} ${loc(context).to} ${rule.lastExternalPort}'),
+        editBuilder: (_, rule, setSheetState) {
+          return AppRangeInput(
+            key: ValueKey('portRange_${identityHashCode(rule)}'),
+            startController: _firstPortTextController,
+            endController: _lastPortTextController,
+            errorText: _portRangeError,
+          );
+        },
+      ),
+
+      // Column 2: Protocol
+      AppTableColumn<PortRangeForwardingRule>(
+        label: loc(context).protocol,
+        cellBuilder: (_, rule) =>
+            AppText.bodyMedium(getProtocolTitle(context, rule.protocol)),
+        editBuilder: (_, rule, setSheetState) {
+          final currentProtocol = rule.protocol;
+          final protocolDisplayMap = {
+            'TCP': getProtocolTitle(context, 'TCP'),
+            'UDP': getProtocolTitle(context, 'UDP'),
+            'Both': getProtocolTitle(context, 'Both'),
+          };
+          return AppDropdown<String>(
+            key: ValueKey('protocol_${identityHashCode(rule)}'),
+            items: protocolDisplayMap.values.toList(),
+            value: protocolDisplayMap[currentProtocol],
+            hint: loc(context).protocol,
+            onChanged: (displayValue) {
+              if (displayValue != null) {
+                final protocolKey = protocolDisplayMap.entries
+                    .firstWhere((e) => e.value == displayValue,
+                        orElse: () => const MapEntry('Both', 'Both'))
+                    .key;
+                _updateProtocol(protocolKey);
+              }
+            },
+          );
+        },
+      ),
+
+      // Column 3: Device IP
+      AppTableColumn<PortRangeForwardingRule>(
+        label: loc(context).deviceIP,
+        cellBuilder: (_, rule) =>
+            AppText.bodyMedium(rule.internalServerIPAddress),
+        editBuilder: (_, rule, setSheetState) {
+          return AppTextField(
+            key: ValueKey('ip_${identityHashCode(rule)}'),
+            controller: _ipAddressTextController,
+            hintText: loc(context).ipAddress,
+            errorText: _ipError,
+          );
+        },
+      ),
+    ];
   }
 
-  Widget _desktopSettingsView(PortRangeForwardingListState state,
-      List<String> submaskToken, String prefixIP) {
-    return AppEditableTableSettingsView<PortRangeForwardingRule>(
-      title: loc(context).portRangeForwarding,
-      addEnabled: !_notifier.isExceedMax(),
-      emptyMessage: loc(context).noPortRangeForwarding,
-      onStartEdit: (index, rule) {
-        ref.read(portRangeForwardingRuleProvider.notifier).init(
-            state.current.rules,
-            rule,
-            index,
-            state.status.routerIp,
-            state.status.subnetMask);
-        // Edit
-        applicationTextController.text = rule?.description ?? '';
-        internalPortTextController.text = '${rule?.firstExternalPort ?? 0}';
-        externalPortTextController.text = '${rule?.lastExternalPort ?? 0}';
-        ipAddressTextController.text = rule?.internalServerIPAddress ?? '';
-        setState(() {
-          _isEditRuleValid =
-              ref.read(portRangeForwardingRuleProvider.notifier).isRuleValid();
-        });
-      },
-      headers: [
-        loc(context).applicationName,
-        loc(context).startEndPorts,
-        loc(context).protocol,
-        loc(context).deviceIP,
-      ],
-      columnWidths: ResponsiveLayout.isOverLargeLayout(context)
-          ? const {
-              0: FractionColumnWidth(.2),
-              1: FractionColumnWidth(.2),
-              2: FractionColumnWidth(.18),
-              3: FractionColumnWidth(.27),
-            }
-          : const {
-              0: FractionColumnWidth(.2),
-              1: FractionColumnWidth(.2),
-              2: FractionColumnWidth(.2),
-              3: FractionColumnWidth(.3),
-            },
-      dataList: [...state.current.rules],
-      editRowIndex: 0,
-      cellBuilder: (context, ref, index, rule) {
-        return switch (index) {
-          0 => AppText.bodySmall(rule.description),
-          1 => AppText.bodySmall(
-              '${rule.firstExternalPort} ${loc(context).to} ${rule.lastExternalPort}'),
-          2 => AppText.bodySmall(getProtocolTitle(context, rule.protocol)),
-          3 => AppText.bodySmall(rule.internalServerIPAddress),
-          _ => AppText.bodySmall(''),
-        };
-      },
-      editCellBuilder: (context, index, controller) {
-        final stateRule = ref.watch(portRangeForwardingRuleProvider).rule;
+  // --- Update Methods ---
 
-        return switch (index) {
-          0 => AppTextField.outline(
-              key: const Key('applicationNameTextField'),
-              controller: applicationTextController,
-              onChanged: (value) {
-                ref
-                    .read(portRangeForwardingRuleProvider.notifier)
-                    .updateRule(stateRule?.copyWith(description: value));
-                setState(() {
-                  _isEditRuleValid = ref
-                      .read(portRangeForwardingRuleProvider.notifier)
-                      .isRuleValid();
-                });
-              },
-            ),
-          1 => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Expanded(
-                      child: AppTextField.minMaxNumber(
-                        key: const Key('firstExternalPortTextField'),
-                        min: 0,
-                        max: 65535,
-                        border: OutlineInputBorder(),
-                        controller: internalPortTextController,
-                        onChanged: (value) {
-                          ref
-                              .read(portRangeForwardingRuleProvider.notifier)
-                              .updateRule(stateRule?.copyWith(
-                                  firstExternalPort: int.tryParse(value) ?? 0));
-                          setState(() {
-                            _isEditRuleValid = ref
-                                .read(portRangeForwardingRuleProvider.notifier)
-                                .isRuleValid();
-                          });
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(
-                          left: Spacing.small1, right: Spacing.small1),
-                      child: AppText.bodySmall(loc(context).to),
-                    ),
-                    Expanded(
-                      child: AppTextField.minMaxNumber(
-                        key: const Key('lastExternalPortTextField'),
-                        min: 0,
-                        max: 65535,
-                        border: OutlineInputBorder(),
-                        controller: externalPortTextController,
-                        onChanged: (value) {
-                          ref
-                              .read(portRangeForwardingRuleProvider.notifier)
-                              .updateRule(stateRule?.copyWith(
-                                  lastExternalPort: int.tryParse(value) ?? 0));
-                          setState(() {
-                            _isEditRuleValid = ref
-                                .read(portRangeForwardingRuleProvider.notifier)
-                                .isRuleValid();
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          2 => AppDropdownButton(
-              initial: stateRule?.protocol,
-              items: const ['TCP', 'UDP', 'Both'],
-              label: (e) => getProtocolTitle(context, e),
-              onChanged: (value) {
-                ref
-                    .read(portRangeForwardingRuleProvider.notifier)
-                    .updateRule(stateRule?.copyWith(protocol: value));
-                setState(() {
-                  _isEditRuleValid = ref
-                      .read(portRangeForwardingRuleProvider.notifier)
-                      .isRuleValid();
-                });
-              },
-            ),
-          3 => AppIPFormField(
-              key: const Key('ipAddressTextField'),
-              controller: ipAddressTextController,
-              border: const OutlineInputBorder(),
-              octet1ReadOnly: submaskToken[0] == '255',
-              octet2ReadOnly: submaskToken[1] == '255',
-              octet3ReadOnly: submaskToken[2] == '255',
-              octet4ReadOnly: submaskToken[3] == '255',
-              onChanged: (value) {
-                ref.read(portRangeForwardingRuleProvider.notifier).updateRule(
-                    stateRule?.copyWith(internalServerIPAddress: value));
-                setState(() {
-                  _isEditRuleValid = ref
-                      .read(portRangeForwardingRuleProvider.notifier)
-                      .isRuleValid();
-                });
-              },
-            ),
-          _ => AppText.bodyLarge(''),
-        };
-      },
-      onValidate: (index) {
-        final notifier = ref.read(portRangeForwardingRuleProvider.notifier);
-        return switch (index) {
-          0 => notifier.isNameValid(applicationTextController.text)
-              ? null
-              : loc(context).theNameMustNotBeEmpty,
-          1 => notifier.isPortRangeValid(
-                  int.tryParse(internalPortTextController.text) ?? 0,
-                  int.tryParse(externalPortTextController.text) ?? 0)
-              ? !notifier.isPortConflict(
-                      int.tryParse(internalPortTextController.text) ?? 0,
-                      int.tryParse(externalPortTextController.text) ?? 0,
-                      ref
-                              .read(portRangeForwardingRuleProvider)
-                              .rule
-                              ?.protocol ??
-                          'Both')
-                  ? null
-                  : loc(context).rulesOverlapError
-              : loc(context).portRangeError,
-          3 => notifier.isDeviceIpValidate(ipAddressTextController.text)
-              ? null
-              : loc(context).invalidIpAddress,
-          _ => null,
-        };
-      },
-      createNewItem: () => PortRangeForwardingRule(
-          isEnabled: true,
-          firstExternalPort: 0,
-          protocol: 'Both',
-          internalServerIPAddress: prefixIP,
-          lastExternalPort: 0,
-          description: ''),
-      onSaved: (index, rule) {
-        final stateRule = ref.read(portRangeForwardingRuleProvider).rule;
-        if (stateRule == null) {
-          return;
-        }
-        if (index == null) {
-          // add
-          ref.read(portRangeForwardingListProvider.notifier).addRule(stateRule);
-        } else {
-          // edit
-          ref
-              .read(portRangeForwardingListProvider.notifier)
-              .editRule(index, stateRule);
-        }
-      },
-      onDeleted: (index, rule) {
-        ref.read(portRangeForwardingListProvider.notifier).deleteRule(rule);
-      },
-      isEditingDataValid: _isEditRuleValid,
+  void _updateProtocol(String protocol) {
+    final ruleNotifier = ref.read(portRangeForwardingRuleProvider.notifier);
+    final currentRule = ref.read(portRangeForwardingRuleProvider).rule;
+    if (currentRule != null) {
+      ruleNotifier.updateRule(currentRule.copyWith(protocol: protocol));
+    }
+  }
+
+  // --- Listeners ---
+
+  void _onNameChanged() {
+    if (_isInitializing) return;
+    final ruleNotifier = ref.read(portRangeForwardingRuleProvider.notifier);
+    final currentRule = ref.read(portRangeForwardingRuleProvider).rule;
+    if (currentRule != null) {
+      ruleNotifier.updateRule(
+          currentRule.copyWith(description: _applicationTextController.text));
+    }
+    _validateAll();
+  }
+
+  void _onFirstPortChanged() {
+    if (_isInitializing) return;
+    final ruleNotifier = ref.read(portRangeForwardingRuleProvider.notifier);
+    final currentRule = ref.read(portRangeForwardingRuleProvider).rule;
+    if (currentRule != null) {
+      ruleNotifier.updateRule(currentRule.copyWith(
+          firstExternalPort: int.tryParse(_firstPortTextController.text) ?? 0));
+    }
+    _validateAll();
+  }
+
+  void _onLastPortChanged() {
+    if (_isInitializing) return;
+    final ruleNotifier = ref.read(portRangeForwardingRuleProvider.notifier);
+    final currentRule = ref.read(portRangeForwardingRuleProvider).rule;
+    if (currentRule != null) {
+      ruleNotifier.updateRule(currentRule.copyWith(
+          lastExternalPort: int.tryParse(_lastPortTextController.text) ?? 0));
+    }
+    _validateAll();
+  }
+
+  void _onIpChanged() {
+    if (_isInitializing) return;
+    final ruleNotifier = ref.read(portRangeForwardingRuleProvider.notifier);
+    final currentRule = ref.read(portRangeForwardingRuleProvider).rule;
+    if (currentRule != null) {
+      ruleNotifier.updateRule(currentRule.copyWith(
+          internalServerIPAddress: _ipAddressTextController.text));
+    }
+    _validateAll();
+  }
+
+  // --- Validation ---
+
+  void _validateAll() {
+    final ruleNotifier = ref.read(portRangeForwardingRuleProvider.notifier);
+
+    setState(() {
+      // Validate name
+      _nameError = ruleNotifier.isNameValid(_applicationTextController.text)
+          ? null
+          : loc(context).theNameMustNotBeEmpty;
+
+      // Validate IP
+      _ipError = ruleNotifier.isDeviceIpValidate(_ipAddressTextController.text)
+          ? null
+          : loc(context).invalidIpAddress;
+
+      // Validate port range
+      final firstPort = int.tryParse(_firstPortTextController.text) ?? 0;
+      final lastPort = int.tryParse(_lastPortTextController.text) ?? 0;
+      final protocol =
+          ref.read(portRangeForwardingRuleProvider).rule?.protocol ?? 'Both';
+
+      if (_firstPortTextController.text.isEmpty ||
+          _lastPortTextController.text.isEmpty) {
+        _portRangeError = loc(context).portRangeError;
+      } else if (!ruleNotifier.isPortRangeValid(firstPort, lastPort)) {
+        _portRangeError = loc(context).portRangeError;
+      } else if (ruleNotifier.isPortConflict(firstPort, lastPort, protocol)) {
+        _portRangeError = loc(context).rulesOverlapError;
+      } else {
+        _portRangeError = null;
+      }
+    });
+
+    _sheetStateSetter?.call(() {});
+  }
+
+  bool _isValid() {
+    final ruleNotifier = ref.read(portRangeForwardingRuleProvider.notifier);
+
+    if (!ruleNotifier.isNameValid(_applicationTextController.text)) {
+      return false;
+    }
+    if (!ruleNotifier.isDeviceIpValidate(_ipAddressTextController.text)) {
+      return false;
+    }
+
+    final firstPort = int.tryParse(_firstPortTextController.text) ?? 0;
+    final lastPort = int.tryParse(_lastPortTextController.text) ?? 0;
+    final protocol =
+        ref.read(portRangeForwardingRuleProvider).rule?.protocol ?? 'Both';
+
+    if (_firstPortTextController.text.isEmpty ||
+        _lastPortTextController.text.isEmpty) {
+      return false;
+    }
+    if (!ruleNotifier.isPortRangeValid(firstPort, lastPort)) {
+      return false;
+    }
+    if (ruleNotifier.isPortConflict(firstPort, lastPort, protocol)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  void _clearControllers() {
+    _applicationTextController.clear();
+    _firstPortTextController.clear();
+    _lastPortTextController.clear();
+    _ipAddressTextController.clear();
+    _nameError = null;
+    _ipError = null;
+    _portRangeError = null;
+    setState(() {});
+  }
+
+  // --- CRUD Handlers ---
+
+  void _handleCancel() {
+    _editingRule = null;
+    _sheetStateSetter = null;
+    _clearControllers();
+  }
+
+  Future<bool> _handleDelete(PortRangeForwardingRule rule) async {
+    _notifier.deleteRule(rule);
+    _clearControllers();
+    return true;
+  }
+
+  Future<bool> _handleAdd(PortRangeForwardingRule templateRule) async {
+    // Initialize provider with template
+    final state = ref.read(portRangeForwardingListProvider);
+    ref.read(portRangeForwardingRuleProvider.notifier).init(
+          state.current.rules,
+          templateRule,
+          -1,
+          state.status.routerIp,
+          state.status.subnetMask,
+        );
+
+    _validateAll();
+    if (!_isValid()) {
+      return false;
+    }
+
+    final newRule = _buildRuleFromControllers(templateRule);
+    _notifier.addRule(newRule);
+
+    _editingRule = null;
+    _clearControllers();
+    return true;
+  }
+
+  Future<bool> _handleSave(PortRangeForwardingRule originalRule) async {
+    _validateAll();
+    if (!_isValid()) {
+      return false;
+    }
+
+    final editedRule = _buildRuleFromControllers(originalRule);
+    final state = ref.read(portRangeForwardingListProvider);
+    final index = state.current.rules.indexOf(originalRule);
+
+    if (index >= 0) {
+      _notifier.editRule(index, editedRule);
+    }
+
+    _editingRule = null;
+    _clearControllers();
+    return true;
+  }
+
+  PortRangeForwardingRule _buildRuleFromControllers(
+      PortRangeForwardingRule template) {
+    return template.copyWith(
+      description: _applicationTextController.text,
+      firstExternalPort: int.tryParse(_firstPortTextController.text) ?? 0,
+      lastExternalPort: int.tryParse(_lastPortTextController.text) ?? 0,
+      internalServerIPAddress: _ipAddressTextController.text,
+      protocol:
+          ref.read(portRangeForwardingRuleProvider).rule?.protocol ?? 'Both',
     );
   }
 }

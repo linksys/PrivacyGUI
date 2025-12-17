@@ -46,6 +46,7 @@ class RoutePath {
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
   static const settingsStaticRoutingRule = "staticRoutingRule";
+
   static const settingsVPN = "vpnSettings";
 
   /// otp
@@ -88,15 +89,13 @@ class RoutePath {
 
   /// port forwarding
   static const singlePortForwardingList = 'singlePortForwardingList';
-  static const singlePortForwardingRule = 'singlePortForwardingRule';
+
   static const portRangeForwardingList = 'portRangeForwardingList';
-  static const portRangeForwardingRule = 'portRangeForwardingRule';
+
   static const portRangeTriggeringList = 'portRangeTriggeringList';
-  static const protRangeTriggeringRule = 'portRangeTriggeringRule';
 
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
-  static const ipv6PortServiceRule = 'ipv6PortServiceRule';
 
   /// PnP
   static const pnp = '/pnp';
@@ -180,6 +179,7 @@ class RouteNamed {
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
   static const settingsStaticRoutingRule = "staticRoutingRule";
+
   static const settingsVPN = "vpnSettings";
 
   /// otp
@@ -222,16 +222,15 @@ class RouteNamed {
 
   /// port forwarding
   static const singlePortForwardingList = 'singlePortForwardingList';
-  static const singlePortForwardingRule = 'singlePortForwardingRule';
+
   static const portRangeForwardingList = 'portRangeForwardingList';
-  static const portRangeForwardingRule = 'portRangeForwardingRule';
+
   static const portRangeTriggeringList = 'portRangeTriggeringList';
-  static const portRangeTriggeringRule = 'portRangeTriggeringRule';
+
   static const selectProtocol = 'selectProtocol';
 
   /// Ipv6 port service
   static const ipv6PortServiceList = 'ipv6PortServiceList';
-  static const ipv6PortServiceRule = 'ipv6PortServiceRule';
 
   /// PnP
   static const pnp = 'pnp';
@@ -245,7 +244,7 @@ class RouteNamed {
   static const pnpStaticIp = 'pnpStaticIp';
   static const pnpIspAuth = 'pnpIspAuth';
   static const pnpAddNodes = 'pnpAddNodes';
-  
+
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';

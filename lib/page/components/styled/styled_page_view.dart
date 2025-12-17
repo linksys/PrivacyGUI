@@ -133,6 +133,7 @@ const double kDefaultBottomHeight = 80;
 /// - **Bottom Action Bar**: An optional area for action buttons.
 /// - **Bottom Navigation Bar Integration**: Automatically hides/shows the global
 ///   BottomNavigationBar based on scroll direction in Sliver mode.
+@Deprecated('Use UIKitPageView instead')
 class StyledAppPageView extends ConsumerStatefulWidget {
   final String? title;
   final Widget Function(BuildContext context, BoxConstraints constraints)?

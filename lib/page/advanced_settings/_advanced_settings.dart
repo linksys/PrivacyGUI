@@ -4,7 +4,6 @@ export 'firewall/_firewall.dart';
 export 'internet_settings/_internet_settings.dart';
 export 'local_network_settings/_local_network_settings.dart';
 export 'apps_and_gaming/ports/_ports.dart';
-export 'widgets/_widgets.dart';
 export 'advanced_settings_view.dart';
 export 'administration/views/administration_settings_view.dart';
 export 'dmz/views/dmz_settings_view.dart';

@@ -8,13 +8,12 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/validation_error.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/components/composed/app_dropdown_button.dart';
+import 'package:privacy_gui/page/components/composed/app_min_max_number_text_field.dart';
+
+import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
 
 class OptionalSettingsForm extends ConsumerStatefulWidget {
   final bool isEditing;
@@ -103,9 +102,9 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
       mainAxisSize: MainAxisSize.min,
       children: [
         AppText.titleMedium(loc(context).optional),
-        const AppGap.medium(),
+        AppGap.md(),
         _optionalCard(state.settings.current.ipv4Setting),
-        const AppGap.medium(),
+        AppGap.md(),
         _macAddressCloneCard(state.settings.current),
       ],
     );
@@ -114,8 +113,8 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
   Widget _optionalCard(Ipv4Setting ipv4Setting) {
     return AppCard(
       padding: const EdgeInsets.symmetric(
-        vertical: Spacing.small1,
-        horizontal: Spacing.large2,
+        vertical: AppSpacing.sm,
+        horizontal: AppSpacing.lg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,20 +138,24 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
     return widget.isEditing && isDomainNameEditable
         ? Padding(
             padding: const EdgeInsets.symmetric(
-              vertical: Spacing.small3,
+              vertical: AppSpacing.md,
             ),
-            child: AppTextField(
-              key: const ValueKey('domainName'),
-              headerText: loc(context).domainName,
-              hintText: '',
-              semanticLabel: 'domain name',
-              controller: _domainNameController,
-              border: const OutlineInputBorder(),
-              onChanged: (value) {
-                notifier.updateIpv4Settings(ipv4Setting.copyWith(
-                  domainName: () => value.isEmpty ? null : value,
-                ));
-              },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(loc(context).domainName),
+                AppGap.xs(),
+                AppTextField(
+                  key: const ValueKey('domainName'),
+                  hintText: '',
+                  controller: _domainNameController,
+                  onChanged: (value) {
+                    notifier.updateIpv4Settings(ipv4Setting.copyWith(
+                      domainName: () => value.isEmpty ? null : value,
+                    ));
+                  },
+                ),
+              ],
             ),
           )
         : _internetSettingInfoCard(
@@ -166,7 +169,7 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
     return widget.isEditing && !widget.isBridgeMode
         ? Padding(
             padding: const EdgeInsets.symmetric(
-              vertical: Spacing.small3,
+              vertical: AppSpacing.md,
             ),
             child: AppDropdownButton<String>(
               key: const ValueKey('mtuDropdown'),
@@ -195,7 +198,7 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
     return widget.isEditing && !widget.isBridgeMode
         ? Padding(
             padding: const EdgeInsets.symmetric(
-              vertical: Spacing.small3,
+              vertical: AppSpacing.md,
             ),
             child: Focus(
               onFocusChange: (hasFocus) {
@@ -207,12 +210,11 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
                   }
                 }
               },
-              child: AppTextField.minMaxNumber(
+              child: AppMinMaxNumberTextField(
                 key: const ValueKey('mtuManualSizeText'),
                 controller: _mtuSizeController,
                 enable: !isMtuAuto,
-                border: const OutlineInputBorder(),
-                headerText: loc(context).size,
+                label: loc(context).size,
                 inputType: TextInputType.number,
                 min: 576,
                 max: _getMaxMtu(ipv4Setting.ipv4ConnectionType),
@@ -228,18 +230,22 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
             ),
           )
         : isMtuAuto
-            ? AppListCard(
-                showBorder: false,
+            ? Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: Spacing.small3,
+                  vertical: AppSpacing.sm,
                 ),
-                title: AppText.bodyMedium(
-                  loc(context).size,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-                description: AppText.labelLarge(
-                  '0',
-                  color: Theme.of(context).colorScheme.outline,
+                child: Row(
+                  children: [
+                    AppText.bodyMedium(
+                      loc(context).size,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                    const Spacer(),
+                    AppText.labelLarge(
+                      '0',
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ],
                 ),
               )
             : _internetSettingInfoCard(
@@ -254,8 +260,8 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
     return AppCard(
       key: const ValueKey('macAddressCloneCard'),
       padding: const EdgeInsets.symmetric(
-        vertical: Spacing.small1,
-        horizontal: Spacing.large2,
+        vertical: AppSpacing.sm,
+        horizontal: AppSpacing.lg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,7 +269,7 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(
-              vertical: Spacing.small3,
+              vertical: AppSpacing.md,
             ),
             child: Row(
               children: [
@@ -271,9 +277,8 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
                   child: AppText.titleMedium(
                       loc(context).macAddressClone.capitalizeWords()),
                 ),
-                AppGap.small1(),
+                AppGap.sm(),
                 AppSwitch(
-                  semanticLabel: 'mac address clone',
                   value: settings.macClone,
                   onChanged: widget.isEditing && !widget.isBridgeMode
                       ? (value) {
@@ -295,38 +300,50 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
           _divider(),
           Padding(
             padding: const EdgeInsets.symmetric(
-              vertical: Spacing.small3,
+              vertical: AppSpacing.md,
             ),
             child: Focus(
               onFocusChange: (hasFocus) {
                 if (!hasFocus) setState(() => _macAddressTouched = true);
               },
-              child: AppTextField.macAddress(
-                semanticLabel: 'mac address',
-                controller: _macAddressCloneController,
-                border: const OutlineInputBorder(),
-                errorText: _macAddressTouched && settings.macClone
-                    ? getLocalizedErrorText(context,
-                        _validator.validateMacAddress(settings.macCloneAddress))
-                    : null,
-                enable: widget.isEditing &&
-                    settings.macClone &&
-                    !widget.isBridgeMode,
-                onChanged: (value) {
-                  notifier.updateMacAddressClone(value);
-                },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppMacAddressTextField(
+                    label: loc(context).macAddress,
+                    controller: _macAddressCloneController,
+                    readOnly: !(widget.isEditing &&
+                        settings.macClone &&
+                        !widget.isBridgeMode),
+                    invalidFormatMessage: loc(context).invalidMACAddress,
+                    errorText: _macAddressTouched && settings.macClone
+                        ? getLocalizedErrorText(
+                            context,
+                            _validator
+                                .validateMacAddress(settings.macCloneAddress))
+                        : null,
+                    onChanged: (value) {
+                      notifier.updateMacAddressClone(value);
+                    },
+                  ),
+                ],
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(
-              vertical: Spacing.small3,
+              vertical: AppSpacing.md,
             ),
-            child: AppTextButton.noPadding(
-              loc(context).cloneCurrentClientMac,
-              icon: LinksysIcons.duplicateControl,
-              onTap:
-                  widget.isEditing && settings.macClone && !widget.isBridgeMode
+            child: Row(
+              children: [
+                Icon(AppFontIcons.duplicateControl,
+                    size: 16, color: Theme.of(context).colorScheme.primary),
+                AppGap.xs(),
+                AppButton.text(
+                  label: loc(context).cloneCurrentClientMac,
+                  onTap: widget.isEditing &&
+                          settings.macClone &&
+                          !widget.isBridgeMode
                       ? () {
                           notifier.getMyMACAddress().then((value) {
                             notifier.updateMacAddressClone(value);
@@ -336,9 +353,11 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
                           });
                         }
                       : null,
+                ),
+              ],
             ),
           ),
-          const AppGap.small2(),
+          AppGap.md(),
         ],
       ),
     );
@@ -352,7 +371,7 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
       title: title,
       description: description,
       padding: const EdgeInsets.symmetric(
-        vertical: Spacing.small3,
+        vertical: AppSpacing.md,
       ),
     );
   }
@@ -360,7 +379,7 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
   Widget _divider() {
     return const Padding(
       padding: EdgeInsets.symmetric(
-        vertical: Spacing.small3,
+        vertical: AppSpacing.md,
       ),
       child: Divider(),
     );

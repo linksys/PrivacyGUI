@@ -7,10 +7,9 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/ipv6/base_ipv6_wan_form.dart';
 import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
-import 'package:ui_kit_library/ui_kit.dart' hide AppTextField;
-// Keep specialized widgets from privacygui_widgets
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/components/composed/app_dropdown_button.dart';
+import 'package:privacy_gui/page/components/composed/app_min_max_number_text_field.dart';
 
 class AutomaticIPv6Form extends BaseIPv6WanForm {
   const AutomaticIPv6Form({
@@ -219,13 +218,11 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
             )),
         Padding(
           padding: inputPadding,
-          child: AppTextField.minMaxNumber(
-            headerText: loc(context).prefixLength,
-            hintText: '',
+          child: AppMinMaxNumberTextField(
+            label: loc(context).prefixLength,
             max: 64,
             controller: _ipv6PrefixLengthController,
             enable: isEnable,
-            border: const OutlineInputBorder(),
             onChanged: (value) {
               notifier.updateIpv6Settings(ipv6Setting.copyWith(
                   ipv6PrefixLength: () => int.parse(value)));
@@ -258,14 +255,12 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
         ),
         Padding(
           padding: inputPadding,
-          child: AppTextField.minMaxNumber(
+          child: AppMinMaxNumberTextField(
             key: const Key('borderRelayLength'),
-            headerText: loc(context).borderRelayLength,
-            hintText: '',
+            label: loc(context).borderRelayLength,
             max: 32,
             controller: _ipv6BorderRelayPrefixLengthController,
             enable: isEnable,
-            border: const OutlineInputBorder(),
             onChanged: (value) {
               notifier.updateIpv6Settings(ipv6Setting.copyWith(
                   ipv6BorderRelayPrefixLength: () => int.parse(value)));

@@ -11,11 +11,8 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/_v
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
 import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
+import 'package:privacy_gui/page/components/composed/app_dropdown_button.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-// Keep specialized widgets from privacygui_widgets
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 
 class DDNSSettingsView extends ArgumentsConsumerStatefulView {
   const DDNSSettingsView({
@@ -37,33 +34,32 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
   Widget build(BuildContext context) {
     final state = ref.watch(ddnsProvider);
     return SingleChildScrollView(
-      child: ResponsiveLayout(
-        desktop: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-                width: ResponsiveLayout.isOverMedimumLayout(context)
-                    ? 6.col
-                    : 4.col,
-                child: _ddnsProvideSelector(state)),
-            if (state.current.provider is! NoDDNSProvider) ...[
-              AppGap.gutter(),
-              SizedBox(
-                  width: ResponsiveLayout.isOverMedimumLayout(context)
-                      ? 6.col
-                      : 4.col,
-                  child: _buildStatusCell(state))
-            ],
-          ],
-        ),
-        mobile: Column(
-          children: [
-            _ddnsProvideSelector(state),
-            if (state.current.provider is! NoDDNSProvider)
-              _buildStatusCell(state)
-          ],
-        ),
-      ),
+      child: context.isMobileLayout
+          ? Column(
+              children: [
+                _ddnsProvideSelector(state),
+                if (state.current.provider is! NoDDNSProvider)
+                  _buildStatusCell(state)
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                    width: context.screenWidth >= 992
+                        ? context.colWidth(6)
+                        : context.colWidth(4),
+                    child: _ddnsProvideSelector(state)),
+                if (state.current.provider is! NoDDNSProvider) ...[
+                  AppGap.gutter(),
+                  SizedBox(
+                      width: context.screenWidth >= 992
+                          ? context.colWidth(6)
+                          : context.colWidth(4),
+                      child: _buildStatusCell(state))
+                ],
+              ],
+            ),
     );
   }
 

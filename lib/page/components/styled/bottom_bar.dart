@@ -4,7 +4,7 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class BottomBar extends ConsumerStatefulWidget {
   const BottomBar({super.key});
@@ -41,48 +41,53 @@ class _BottomBarState extends ConsumerState<BottomBar> {
                           padding: const EdgeInsets.only(right: 8.0),
                           child: Semantics(
                               identifier: 'now-bottom-text-copyright',
-                              child: AppText.bodySmall(
-                                  loc(context).copyRight(BuildConfig.copyRightYear))),
+                              child: AppText.bodySmall(loc(context)
+                                  .copyRight(BuildConfig.copyRightYear))),
                         ),
-                        AppTextButton.noPadding(
-                          loc(context).endUserLicenseAgreement,
-                          identifier: 'now-bottom-text-button-eula',
+                        AppButton.text(
+                          label: loc(context).endUserLicenseAgreement,
+                          key: const ValueKey('now-bottom-text-button-eula'),
+                          size: AppButtonSize.small,
                           onTap: () {
                             gotoOfficialWebUrl(linkEULA,
                                 locale: ref.read(appSettingsProvider).locale);
                           },
                         ),
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8.0),
                           child: AppText.bodySmall('|'),
                         ),
-                        AppTextButton.noPadding(
-                          loc(context).termsOfService,
-                          identifier: 'now-bottom-text-button-terms',
+                        AppButton.text(
+                          label: loc(context).termsOfService,
+                          key: const ValueKey('now-bottom-text-button-terms'),
+                          size: AppButtonSize.small,
                           onTap: () {
                             gotoOfficialWebUrl(linkTerms,
                                 locale: ref.read(appSettingsProvider).locale);
                           },
                         ),
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8.0),
                           child: AppText.bodySmall('|'),
                         ),
-                        AppTextButton.noPadding(
-                          loc(context).privacyAndSecurity,
-                          identifier: 'now-bottom-text-button-privacy',
+                        AppButton.text(
+                          label: loc(context).privacyAndSecurity,
+                          key: const ValueKey('now-bottom-text-button-privacy'),
+                          size: AppButtonSize.small,
                           onTap: () {
                             gotoOfficialWebUrl(linkPrivacy,
                                 locale: ref.read(appSettingsProvider).locale);
                           },
                         ),
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8.0),
                           child: AppText.bodySmall('|'),
                         ),
-                        AppTextButton.noPadding(
-                          loc(context).thirdPartyLicenses,
-                          identifier: 'now-bottom-text-button-third-party',
+                        AppButton.text(
+                          label: loc(context).thirdPartyLicenses,
+                          key: const ValueKey(
+                              'now-bottom-text-button-third-party'),
+                          size: AppButtonSize.small,
                           onTap: () {
                             gotoOfficialWebUrl(linkThirdParty,
                                 locale: ref.read(appSettingsProvider).locale);

@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/validation_error.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 mixin BaseWidgetsMixin {
-
   @protected
   String? getLocalizedErrorText(BuildContext context, ValidationError? error) {
     if (error == null) return null;
@@ -27,9 +22,8 @@ mixin BaseWidgetsMixin {
 
   Widget buildInfoCard(String title, String description) {
     return AppCard(
-      showBorder: false,
-      padding: const EdgeInsets.symmetric(
-        vertical: Spacing.medium,
+      padding: EdgeInsets.symmetric(
+        vertical: AppSpacing.md,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,14 +51,20 @@ mixin BaseWidgetsMixin {
     bool obscureText = false,
     bool enable = true,
   }) {
-    return AppTextField(
-      border: const OutlineInputBorder(),
-      headerText: label,
-      controller: controller,
-      onChanged: onChanged,
-      errorText: errorText,
-      inputType: keyboardType,
-      enable: enable,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.labelLarge(label),
+        AppGap.xs(),
+        AppTextField(
+          controller: controller,
+          onChanged: onChanged,
+          errorText: errorText,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          readOnly: !enable,
+        ),
+      ],
     );
   }
 
@@ -78,15 +78,13 @@ mixin BaseWidgetsMixin {
     String? errorText,
     bool enable = true,
   }) {
-    return AppIPFormField(
+    return AppIpv4TextField(
       key: key,
-      semanticLabel: semanticLabel,
-      header: AppText.bodySmall(header),
+      label: header,
       controller: controller,
-      border: const OutlineInputBorder(),
       onChanged: onChanged,
       errorText: errorText,
-      enable: enable,
+      enabled: enable,
     );
   }
 }

@@ -40,7 +40,7 @@
 | `AppText.labelLarge('Text')` | `AppText.labelLarge('Text')` | API 相同 | ✅ |
 | `AppText.bodyMedium('Text')` | `AppText.bodyMedium('Text')` | API 相同 | ✅ |
 | `AppText.bodySmall('Text')` | `AppText.bodySmall('Text')` | API 相同 | ✅ |
-| `AppStyledText(text, styleTags: {...})` | `AppStyledText(text: 'Text with <b>tags</b>')` | 使用內建標籤系統 | ✅ |
+| `AppStyledText(text, styleTags: {...})` | `AppStyledText(text: '...', onTapHandlers: {...})` | 使用內建標籤與 `onTapHandlers` 處理連結 | ✅ |
 
 ### 輸入元件 (Input Components)
 
@@ -49,6 +49,8 @@
 | `AppTextField(controller: ..., hint: ...)` | `AppTextFormField(controller: ..., label: ...)` | 參數名稱 `hint` → `label`；不支援 `errorText`，需改用 `validator` 配合 `AutovalidateMode` | ✅ |
 | `AppPasswordField(controller: ..., validations: ...)` | `AppPasswordInput(controller: ..., rules: ...)` | 參數名稱: `validations` → `rules` <br>⚠️ **注意**: 不支援 `readOnly`，需使用 `IgnorePointer` 或等待 UI Kit 擴充 | ⚠️ |
 | `AppValidatorWidget(...)` | **移除** | 功能已內建於 `AppPasswordInput` | ✅ |
+| `AppIPFormField(...)` | `AppIpv4TextField(...)` | 專用 IP 輸入框，移除 `privacygui_widgets` 依賴 | ✅ |
+| `AppMacAddressTextField(...)` | `AppMacAddressTextField(...)` | UI Kit 版本，新增 `errorText` 與 `invalidFormatMessage` 參數 | ✅ |
 | `AppDropdownButton(items: ..., onChanged: ...)` | `AppDropdown<String>(...)` | ⚠️ 如遇複雜型別顯示問題，建議轉為 `String` 處理；API 為 `items` (List) + `label` (Title) | ✅ |
 | `AppCheckbox(value: ..., onChanged: ...)` | `AppCheckbox(value: ..., onChanged: ...)` | API 相同 | ✅ |
 | `AppSwitch(value: ..., onChanged: ...)` | `AppSwitch(value: ..., onChanged: ...)` | 不支援 `semanticLabel` | ⚠️ |

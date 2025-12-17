@@ -4,7 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
+
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
 import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
@@ -253,38 +253,6 @@ void main() {
     );
 
     testLocalizationsV2(
-      'Verifies the add static route rule view.',
-      (tester, screen) async {
-        // Test ID: SROUTE-ADD-RULE
-        final state = StaticRoutingState.fromMap(staticRoutingTestStateEmpty);
-        when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-
-        final context = await testHelper.pumpShellView(
-          tester,
-          locale: screen.locale,
-          child: StaticRoutingRuleView(
-              args: {'items': state.settings.current.entries.entries}),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-            find.text(testHelper.loc(context).addStaticRoute), findsOneWidget);
-        expect(find.byKey(const Key('ruleName')), findsOneWidget);
-        expect(find.byKey(const Key('destinationIP')), findsOneWidget);
-        expect(find.byKey(const Key('subnetMask')), findsOneWidget);
-        expect(find.byKey(const Key('gateway')), findsOneWidget);
-        expect(find.byKey(const Key('interface')), findsOneWidget);
-
-        final saveButton = tester.widget<AppFilledButton>(
-            find.byKey(const Key('pageBottomPositiveButton')));
-        expect(saveButton.onTap, isNull);
-      },
-      goldenFilename: 'SROUTE-ADD-RULE-01-initial_mobile',
-      screens: mobileScreens,
-      helper: testHelper,
-    );
-
-    testLocalizationsV2(
       'Verifies the edit static route rule view with pre-filled data.',
       (tester, screen) async {
         // Test ID: SROUTE-EDIT-RULE
@@ -335,58 +303,6 @@ void main() {
     );
 
     testLocalizationsV2(
-      'Verifies the edit static route rule view with pre-filled data.',
-      (tester, screen) async {
-        // Test ID: SROUTE-EDIT-RULE
-        final state = StaticRoutingState.fromMap(staticRoutingTestState);
-        final rule = state.current.entries.entries.first;
-        when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
-        when(testHelper.mockStaticRoutingRuleNotifier.isRuleValid())
-            .thenReturn(true);
-
-        final context = await testHelper.pumpShellView(
-          tester,
-          locale: screen.locale,
-          child: StaticRoutingRuleView(
-            args: {
-              'items': state.settings.current.entries.entries,
-              'edit': rule
-            },
-          ),
-        );
-        await tester.pump(const Duration(seconds: 1));
-        await tester.pumpAndSettle();
-
-        expect(find.widgetWithText(AppTextField, rule.name), findsOneWidget);
-        final destinationIp = tester
-            .widget<AppIPFormField>(find.byKey(Key('destinationIP')))
-            .controller
-            ?.text;
-        expect(destinationIp, rule.settings.destinationLAN);
-        final subnetMask = tester
-            .widget<AppIPFormField>(find.byKey(Key('subnetMask')))
-            .controller
-            ?.text;
-        expect(
-            subnetMask,
-            NetworkUtils.prefixLengthToSubnetMask(
-                rule.settings.networkPrefixLength));
-        final gatewayIp = tester
-            .widget<AppIPFormField>(find.byKey(Key('gateway')))
-            .controller
-            ?.text;
-        expect(gatewayIp, rule.settings.gateway);
-
-        final saveButton = tester.widget<AppFilledButton>(
-            find.byKey(const Key('pageBottomPositiveButton')));
-        expect(saveButton.onTap, isNotNull);
-      },
-      goldenFilename: 'SROUTE-EDIT-RULE-01-initial_mobile',
-      screens: mobileScreens,
-      helper: testHelper,
-    );
-
-    testLocalizationsV2(
       'Verifies the validation for an empty route name in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-NAME
@@ -417,37 +333,11 @@ void main() {
     );
 
     testLocalizationsV2(
-      'Verifies the validation for an empty route name in the rule view.',
-      (tester, screen) async {
-        // Test ID: SROUTE-VAL-NAME
-        final state = StaticRoutingState.fromMap(staticRoutingTestStateEmpty);
-
-        final context = await testHelper.pumpShellView(
-          tester,
-          locale: screen.locale,
-          child: StaticRoutingRuleView(
-              args: {'items': state.settings.current.entries.entries}),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.enterText(find.byKey(const Key('ruleName')), '');
-        await tester.pumpAndSettle();
-        await tester.tap(find.byType(StaticRoutingRuleView));
-        await tester.pumpAndSettle();
-
-        expect(
-            find.text(testHelper.loc(context).theNameMustNotBeEmpty), findsOneWidget);
-      },
-      goldenFilename: 'SROUTE-VAL-NAME-01-error_mobile',
-      screens: mobileScreens,
-      helper: testHelper,
-    );
-
-    testLocalizationsV2(
       'Verifies the validation for an invalid destination IP in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-DEST
-        when(testHelper.mockStaticRoutingRuleNotifier.isValidIpAddress(any, any))
+        when(testHelper.mockStaticRoutingRuleNotifier
+                .isValidIpAddress(any, any))
             .thenReturn(false);
 
         final context = await testHelper.pumpShellView(
@@ -479,36 +369,6 @@ void main() {
     );
 
     testLocalizationsV2(
-      'Verifies the validation for an invalid destination IP in the rule view.',
-      (tester, screen) async {
-        // Test ID: SROUTE-VAL-DEST
-        when(testHelper.mockStaticRoutingRuleNotifier.isValidIpAddress(any, any))
-            .thenReturn(false);
-
-        final context = await testHelper.pumpShellView(
-          tester,
-          locale: screen.locale,
-          child: const StaticRoutingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final ipAddressForm = find.byKey(const Key('destinationIP'));
-        final ipAddressTextFormField = find.descendant(
-            of: ipAddressForm, matching: find.byType(TextFormField));
-        await tester.tap(ipAddressTextFormField.first);
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byType(StaticRoutingRuleView));
-        await tester.pumpAndSettle();
-        expect(find.text(testHelper.loc(context).invalidIpAddress),
-            findsOneWidget);
-      },
-      goldenFilename: 'SROUTE-VAL-DEST-01-error_mobile',
-      screens: mobileScreens,
-      helper: testHelper,
-    );
-
-    testLocalizationsV2(
       'Verifies the validation for an invalid subnet mask in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-SUBNET
@@ -524,7 +384,7 @@ void main() {
 
         await tester.tap(find.byIcon(LinksysIcons.add));
         await tester.pumpAndSettle();
-        
+
         final ipAddressForm = find.byKey(const Key('subnetMask'));
         final ipAddressTextFormField = find.descendant(
             of: ipAddressForm, matching: find.byType(TextFormField));
@@ -544,40 +404,11 @@ void main() {
     );
 
     testLocalizationsV2(
-      'Verifies the validation for an invalid subnet mask in the rule view.',
-      (tester, screen) async {
-        // Test ID: SROUTE-VAL-SUBNET
-        when(testHelper.mockStaticRoutingRuleNotifier.isValidSubnetMask(any))
-            .thenReturn(false);
-
-        final context = await testHelper.pumpShellView(
-          tester,
-          locale: screen.locale,
-          child: const StaticRoutingRuleView(),
-        );
-        await tester.pumpAndSettle();
-        
-        final ipAddressForm = find.byKey(const Key('subnetMask'));
-        final ipAddressTextFormField = find.descendant(
-            of: ipAddressForm, matching: find.byType(TextFormField));
-        await tester.tap(ipAddressTextFormField.first);
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byType(StaticRoutingRuleView));
-        await tester.pumpAndSettle();
-        expect(find.text(testHelper.loc(context).invalidSubnetMask),
-            findsOneWidget);
-      },
-      goldenFilename: 'SROUTE-VAL-SUBNET-01-error_mobile',
-      screens: mobileScreens,
-      helper: testHelper,
-    );
-
-    testLocalizationsV2(
       'Verifies the validation for an invalid gateway IP in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-GATEWAY
-        when(testHelper.mockStaticRoutingRuleNotifier.isValidIpAddress(any, any))
+        when(testHelper.mockStaticRoutingRuleNotifier
+                .isValidIpAddress(any, any))
             .thenReturn(false);
 
         final context = await testHelper.pumpShellView(
@@ -608,36 +439,6 @@ void main() {
     );
 
     testLocalizationsV2(
-      'Verifies the validation for an invalid gateway IP in the rule view.',
-      (tester, screen) async {
-        // Test ID: SROUTE-VAL-GATEWAY
-        when(testHelper.mockStaticRoutingRuleNotifier.isValidIpAddress(any, any))
-            .thenReturn(false);
-
-        final context = await testHelper.pumpShellView(
-          tester,
-          locale: screen.locale,
-          child: const StaticRoutingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        final ipAddressForm = find.byKey(const Key('gateway'));
-        final ipAddressTextFormField = find.descendant(
-            of: ipAddressForm, matching: find.byType(TextFormField));
-        await tester.tap(ipAddressTextFormField.first);
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byType(StaticRoutingRuleView));
-        await tester.pumpAndSettle();
-        expect(find.text(testHelper.loc(context).invalidGatewayIpAddress),
-            findsOneWidget);
-      },
-      goldenFilename: 'SROUTE-VAL-GATEWAY-01-error_mobile',
-      screens: mobileScreens,
-      helper: testHelper,
-    );
-
-    testLocalizationsV2(
       "Verifies the 'Interface' dropdown menu in the rule view.",
       (tester, screen) async {
         // Test ID: SROUTE-DROPDOWN
@@ -656,32 +457,10 @@ void main() {
 
         expect(find.text(testHelper.loc(context).lanWireless), findsAtLeast(1));
         expect(find.text('Internet'), findsAtLeast(1));
-        await testHelper.takeScreenshot(tester, 'SROUTE-DROPDOWN-02-opened_desktop');
+        await testHelper.takeScreenshot(
+            tester, 'SROUTE-DROPDOWN-02-opened_desktop');
       },
       screens: desktopScreens,
-      helper: testHelper,
-    );
-
-    testLocalizationsV2(
-      "Verifies the 'Interface' dropdown menu in the rule view.",
-      (tester, screen) async {
-        // Test ID: SROUTE-DROPDOWN
-
-        final context = await testHelper.pumpShellView(
-          tester,
-          locale: screen.locale,
-          child: const StaticRoutingRuleView(),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byKey(const Key('interface')));
-        await tester.pumpAndSettle();
-
-        expect(find.text(testHelper.loc(context).lanWireless), findsAtLeast(1));
-        expect(find.text('Internet'), findsAtLeast(1));
-        await testHelper.takeScreenshot(tester, 'SROUTE-DROPDOWN-02-opened_mobile');
-      },
-      screens: mobileScreens,
       helper: testHelper,
     );
   });
