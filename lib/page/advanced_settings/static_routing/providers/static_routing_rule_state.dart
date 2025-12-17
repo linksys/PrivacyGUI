@@ -4,66 +4,7 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
-/// UI Model for a single static routing rule (not JNAP model)
-class StaticRoutingRuleUIModel extends Equatable {
-  final String name;
-  final String destinationIP;
-  final int networkPrefixLength;
-  final String? gateway;
-  final String interface;
-
-  const StaticRoutingRuleUIModel({
-    required this.name,
-    required this.destinationIP,
-    required this.networkPrefixLength,
-    this.gateway,
-    required this.interface,
-  });
-
-  @override
-  List<Object?> get props => [name, destinationIP, networkPrefixLength, gateway, interface];
-
-  StaticRoutingRuleUIModel copyWith({
-    String? name,
-    String? destinationIP,
-    int? networkPrefixLength,
-    String? gateway,
-    String? interface,
-  }) {
-    return StaticRoutingRuleUIModel(
-      name: name ?? this.name,
-      destinationIP: destinationIP ?? this.destinationIP,
-      networkPrefixLength: networkPrefixLength ?? this.networkPrefixLength,
-      gateway: gateway ?? this.gateway,
-      interface: interface ?? this.interface,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'destinationIP': destinationIP,
-      'networkPrefixLength': networkPrefixLength,
-      'gateway': gateway,
-      'interface': interface,
-    };
-  }
-
-  factory StaticRoutingRuleUIModel.fromMap(Map<String, dynamic> map) {
-    return StaticRoutingRuleUIModel(
-      name: map['name'] ?? '',
-      destinationIP: map['destinationIP'] ?? '',
-      networkPrefixLength: map['networkPrefixLength'] ?? 24,
-      gateway: map['gateway'],
-      interface: map['interface'] ?? 'LAN',
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory StaticRoutingRuleUIModel.fromJson(String source) =>
-      StaticRoutingRuleUIModel.fromMap(json.decode(source));
-}
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
 
 class StaticRoutingRuleState extends Equatable {
   final List<StaticRoutingRuleUIModel> rules;

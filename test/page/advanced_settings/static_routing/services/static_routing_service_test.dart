@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/services/static_routing_service.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import '../../../../mocks/test_data/static_routing_test_data.dart';
@@ -163,11 +164,12 @@ void main() {
   group('StaticRoutingService - Route Validation', () {
     test('validates correct route entry', () {
       // Arrange
-      final validEntry = StaticRouteEntryUI(
+      final validEntry = StaticRouteEntryUIModel(
         name: 'Valid Route',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Act
@@ -179,11 +181,12 @@ void main() {
 
     test('rejects empty route name', () {
       // Arrange
-      final invalidEntry = StaticRouteEntryUI(
+      final invalidEntry = StaticRouteEntryUIModel(
         name: '',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Act
@@ -196,11 +199,12 @@ void main() {
 
     test('rejects route name exceeding 32 characters', () {
       // Arrange
-      final invalidEntry = StaticRouteEntryUI(
+      final invalidEntry = StaticRouteEntryUIModel(
         name: 'This is a very long route name that exceeds thirty two characters',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Act
@@ -213,11 +217,12 @@ void main() {
 
     test('rejects invalid destination IP format', () {
       // Arrange
-      final invalidEntry = StaticRouteEntryUI(
+      final invalidEntry = StaticRouteEntryUIModel(
         name: 'Test Route',
         destinationIP: '256.256.256.256',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Act
@@ -229,11 +234,12 @@ void main() {
 
     test('rejects invalid subnet mask format', () {
       // Arrange
-      final invalidEntry = StaticRouteEntryUI(
+      final invalidEntry = StaticRouteEntryUIModel(
         name: 'Test Route',
         destinationIP: '10.0.0.0',
         subnetMask: '999.999.999.999',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Act
@@ -245,11 +251,12 @@ void main() {
 
     test('rejects invalid gateway IP format', () {
       // Arrange
-      final invalidEntry = StaticRouteEntryUI(
+      final invalidEntry = StaticRouteEntryUIModel(
         name: 'Test Route',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '999.999.999.999',
+        interface: 'LAN',
       );
 
       // Act
@@ -261,11 +268,12 @@ void main() {
 
     test('accepts empty gateway address', () {
       // Arrange
-      final validEntry = StaticRouteEntryUI(
+      final validEntry = StaticRouteEntryUIModel(
         name: 'Test Route',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '',
+        interface: 'LAN',
       );
 
       // Act
@@ -277,11 +285,12 @@ void main() {
 
     test('accepts CIDR prefix as subnet mask', () {
       // Arrange
-      final validEntry = StaticRouteEntryUI(
+      final validEntry = StaticRouteEntryUIModel(
         name: 'Test Route',
         destinationIP: '10.0.0.0',
         subnetMask: '24',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Act

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'dart:convert';
 
@@ -6,11 +7,12 @@ void main() {
   group('StaticRouteEntryUI - Model Tests', () {
     test('creates instance with required fields', () {
       // Act
-      final entry = StaticRouteEntryUI(
+      final entry = StaticRouteEntryUIModel(
         name: 'Route 1',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Assert
@@ -22,11 +24,12 @@ void main() {
 
     test('copyWith creates new instance with overrides', () {
       // Arrange
-      final original = StaticRouteEntryUI(
+      final original = StaticRouteEntryUIModel(
         name: 'Original',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Act
@@ -40,23 +43,26 @@ void main() {
 
     test('equality comparison works correctly', () {
       // Arrange
-      final entry1 = StaticRouteEntryUI(
+      final entry1 = StaticRouteEntryUIModel(
         name: 'Route 1',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
-      final entry2 = StaticRouteEntryUI(
+      final entry2 = StaticRouteEntryUIModel(
         name: 'Route 1',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
-      final entry3 = StaticRouteEntryUI(
+      final entry3 = StaticRouteEntryUIModel(
         name: 'Route 2',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Assert
@@ -66,11 +72,12 @@ void main() {
 
     test('toMap returns correct map representation', () {
       // Arrange
-      final entry = StaticRouteEntryUI(
+      final entry = StaticRouteEntryUIModel(
         name: 'Route 1',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Act
@@ -93,7 +100,7 @@ void main() {
       };
 
       // Act
-      final entry = StaticRouteEntryUI.fromMap(map);
+      final entry = StaticRouteEntryUIModel.fromMap(map);
 
       // Assert
       expect(entry.name, 'Route 1');
@@ -104,16 +111,17 @@ void main() {
 
     test('toJson and fromJson round-trip preserves data', () {
       // Arrange
-      final original = StaticRouteEntryUI(
+      final original = StaticRouteEntryUIModel(
         name: 'Route 1',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
 
       // Act
       final json = original.toJson();
-      final restored = StaticRouteEntryUI.fromJson(json);
+      final restored = StaticRouteEntryUIModel.fromJson(json);
 
       // Assert
       expect(restored, original);
@@ -126,7 +134,7 @@ void main() {
       final map = <String, dynamic>{};
 
       // Act
-      final entry = StaticRouteEntryUI.fromMap(map);
+      final entry = StaticRouteEntryUIModel.fromMap(map);
 
       // Assert
       expect(entry.name, '');
@@ -139,7 +147,7 @@ void main() {
   group('StaticRoutingUISettings - Model Tests', () {
     test('creates instance with fields', () {
       // Act
-      final settings = StaticRoutingUISettings(
+      final settings = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
         entries: [],
@@ -153,7 +161,7 @@ void main() {
 
     test('copyWith creates new instance with overrides', () {
       // Arrange
-      final original = StaticRoutingUISettings(
+      final original = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
         entries: [],
@@ -170,17 +178,17 @@ void main() {
 
     test('equality comparison works correctly', () {
       // Arrange
-      final settings1 = StaticRoutingUISettings(
+      final settings1 = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
         entries: [],
       );
-      final settings2 = StaticRoutingUISettings(
+      final settings2 = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
         entries: [],
       );
-      final settings3 = StaticRoutingUISettings(
+      final settings3 = StaticRoutingSettings(
         isNATEnabled: false,
         isDynamicRoutingEnabled: false,
         entries: [],
@@ -193,13 +201,14 @@ void main() {
 
     test('toMap returns correct map representation', () {
       // Arrange
-      final entry = StaticRouteEntryUI(
+      final entry = StaticRouteEntryUIModel(
         name: 'Route 1',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
-      final settings = StaticRoutingUISettings(
+      final settings = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
         entries: [entry],
@@ -224,7 +233,7 @@ void main() {
       };
 
       // Act
-      final settings = StaticRoutingUISettings.fromMap(map);
+      final settings = StaticRoutingSettings.fromMap(map);
 
       // Assert
       expect(settings.isNATEnabled, true);
@@ -234,7 +243,7 @@ void main() {
 
     test('toJson and fromJson round-trip preserves data', () {
       // Arrange
-      final original = StaticRoutingUISettings(
+      final original = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
         entries: [],
@@ -242,7 +251,7 @@ void main() {
 
       // Act
       final json = original.toJson();
-      final restored = StaticRoutingUISettings.fromJson(json);
+      final restored = StaticRoutingSettings.fromJson(json);
 
       // Assert
       expect(restored, original);
@@ -252,13 +261,14 @@ void main() {
 
     test('toJson and fromJson with entries round-trip preserves data', () {
       // Arrange
-      final entry = StaticRouteEntryUI(
+      final entry = StaticRouteEntryUIModel(
         name: 'Route 1',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',
+        interface: 'LAN',
       );
-      final original = StaticRoutingUISettings(
+      final original = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
         entries: [entry],
@@ -266,7 +276,7 @@ void main() {
 
       // Act
       final json = original.toJson();
-      final restored = StaticRoutingUISettings.fromJson(json);
+      final restored = StaticRoutingSettings.fromJson(json);
 
       // Assert
       expect(restored, original);
@@ -282,7 +292,7 @@ void main() {
       };
 
       // Act
-      final settings = StaticRoutingUISettings.fromMap(map);
+      final settings = StaticRoutingSettings.fromMap(map);
 
       // Assert
       expect(settings.entries, isEmpty);
@@ -348,7 +358,7 @@ void main() {
       // Assert
       expect(state.settings.original.isNATEnabled, false);
       expect(state.settings.current.isNATEnabled, false);
-      expect(state.settings.original.entries.entries, isEmpty);
+      expect(state.settings.original.entries, isEmpty);
       expect(state.status.maxStaticRouteEntries, 0);
     });
 

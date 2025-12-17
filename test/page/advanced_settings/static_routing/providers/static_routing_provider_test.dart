@@ -23,7 +23,7 @@ void main() {
       // Assert
       expect(state.settings.original.isNATEnabled, false);
       expect(state.settings.original.isDynamicRoutingEnabled, false);
-      expect(state.settings.original.entries.entries, isEmpty);
+      expect(state.settings.original.entries, isEmpty);
       expect(state.settings.current.isNATEnabled, false);
       expect(state.settings.current.isDynamicRoutingEnabled, false);
       expect(state.status.maxStaticRouteEntries, 0);
@@ -136,15 +136,15 @@ void main() {
       );
       container.read(staticRoutingProvider.notifier).state = newState;
 
-      final newRoute = StaticRoutingTestData.createRouteEntry(name: 'Test Route');
+      final newRoute = StaticRoutingTestData.createRouteEntryUIModel(name: 'Test Route');
 
       // Act
       notifier.addRule(newRoute);
 
       // Assert
       final state = container.read(staticRoutingProvider);
-      expect(state.settings.current.entries.entries.length, 1);
-      expect(state.settings.current.entries.entries.first.name, 'Test Route');
+      expect(state.settings.current.entries.length, 1);
+      expect(state.settings.current.entries.first.name, 'Test Route');
     });
 
     test('editRule modifies route at specified index', () {
@@ -160,21 +160,20 @@ void main() {
       container.read(staticRoutingProvider.notifier).state = newState;
 
       final originalRoute =
-          StaticRoutingTestData.createRouteEntry(name: 'Original');
+          StaticRoutingTestData.createRouteEntryUIModel(name: 'Original');
       notifier.addRule(originalRoute);
 
       // Act
-      final editedRoute = StaticRoutingTestData.createRouteEntry(
+      final editedRoute = StaticRoutingTestData.createRouteEntryUIModel(
         name: 'Edited',
-        destinationLAN: '10.2.0.0',
+        destinationIP: '10.2.0.0',
       );
       notifier.editRule(0, editedRoute);
 
       // Assert
       final state = container.read(staticRoutingProvider);
-      expect(state.settings.current.entries.entries.first.name, 'Edited');
-      expect(state.settings.current.entries.entries.first.settings.destinationLAN,
-          '10.2.0.0');
+      expect(state.settings.current.entries.first.name, 'Edited');
+      expect(state.settings.current.entries.first.destinationIP, '10.2.0.0');
     });
 
     test('deleteRule removes route by reference', () {
@@ -189,7 +188,7 @@ void main() {
       );
       container.read(staticRoutingProvider.notifier).state = newState;
 
-      final route = StaticRoutingTestData.createRouteEntry(name: 'To Delete');
+      final route = StaticRoutingTestData.createRouteEntryUIModel(name: 'To Delete');
       notifier.addRule(route);
 
       // Act
@@ -197,7 +196,7 @@ void main() {
 
       // Assert
       final state = container.read(staticRoutingProvider);
-      expect(state.settings.current.entries.entries, isEmpty);
+      expect(state.settings.current.entries, isEmpty);
     });
 
     test('isExceedMax returns true when limit is reached', () {
@@ -213,7 +212,7 @@ void main() {
       container.read(staticRoutingProvider.notifier).state = newState;
 
       // Add one route
-      notifier.addRule(StaticRoutingTestData.createRouteEntry());
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel());
 
       // Act
       final isExceed = notifier.isExceedMax();
@@ -258,17 +257,17 @@ void main() {
       // Act
       for (int i = 0; i < 3; i++) {
         notifier.addRule(
-          StaticRoutingTestData.createRouteEntry(
+          StaticRoutingTestData.createRouteEntryUIModel(
             name: 'Route $i',
-            destinationLAN: '10.${i + 10}.0.0',  // Avoid default 10.0.0.0
+            destinationIP: '10.${i + 10}.0.0',  // Avoid default 10.0.0.0
           ),
         );
       }
 
       // Assert
       final state = container.read(staticRoutingProvider);
-      expect(state.settings.current.entries.entries.length, 3);
-      expect(state.settings.current.entries.entries[1].name, 'Route 1');
+      expect(state.settings.current.entries.length, 3);
+      expect(state.settings.current.entries[1].name, 'Route 1');
     });
 
     test('editRule only modifies specific route, not others', () {
@@ -283,18 +282,18 @@ void main() {
       );
       container.read(staticRoutingProvider.notifier).state = newState;
 
-      notifier.addRule(StaticRoutingTestData.createRouteEntry(name: 'Route 1', destinationLAN: '10.1.0.0'));
-      notifier.addRule(StaticRoutingTestData.createRouteEntry(name: 'Route 2', destinationLAN: '10.2.0.0'));
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 1', destinationIP: '10.1.0.0'));
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 2', destinationIP: '10.2.0.0'));
 
       // Act
       final editedRoute =
-          StaticRoutingTestData.createRouteEntry(name: 'Route 2 Edited', destinationLAN: '10.2.0.0');
+          StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 2 Edited', destinationIP: '10.2.0.0');
       notifier.editRule(1, editedRoute);
 
       // Assert
       final state = container.read(staticRoutingProvider);
-      expect(state.settings.current.entries.entries[0].name, 'Route 1');
-      expect(state.settings.current.entries.entries[1].name, 'Route 2 Edited');
+      expect(state.settings.current.entries[0].name, 'Route 1');
+      expect(state.settings.current.entries[1].name, 'Route 2 Edited');
     });
 
     test('addRule throws when max route limit reached', () {
@@ -310,11 +309,11 @@ void main() {
       container.read(staticRoutingProvider.notifier).state = newState;
 
       // Add one route to reach limit
-      notifier.addRule(StaticRoutingTestData.createRouteEntry());
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel());
 
       // Act & Assert
       expect(
-        () => notifier.addRule(StaticRoutingTestData.createRouteEntry()),
+        () => notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel()),
         throwsException,
       );
     });
@@ -334,12 +333,12 @@ void main() {
       container.read(staticRoutingProvider.notifier).state = newState;
 
       // Add 2 routes to reach limit
-      notifier.addRule(StaticRoutingTestData.createRouteEntry(name: 'Route 1', destinationLAN: '10.1.0.0'));
-      notifier.addRule(StaticRoutingTestData.createRouteEntry(name: 'Route 2', destinationLAN: '10.2.0.0'));
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 1', destinationIP: '10.1.0.0'));
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 2', destinationIP: '10.2.0.0'));
 
       // Act & Assert - third route should fail
       expect(
-        () => notifier.addRule(StaticRoutingTestData.createRouteEntry(name: 'Route 3', destinationLAN: '10.3.0.0')),
+        () => notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 3', destinationIP: '10.3.0.0')),
         throwsException,
       );
     });
@@ -358,14 +357,14 @@ void main() {
 
       // Act & Assert - empty name should fail
       expect(
-        () => notifier.addRule(StaticRoutingTestData.createRouteEntry(name: '')),
+        () => notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: '')),
         throwsException,
       );
 
       // Act & Assert - name exceeding 32 chars should fail
       expect(
         () => notifier.addRule(
-          StaticRoutingTestData.createRouteEntry(
+          StaticRoutingTestData.createRouteEntryUIModel(
             name: 'This is a very long route name that exceeds thirty two characters',
           ),
         ),
@@ -387,18 +386,18 @@ void main() {
 
       // Add first route with destination 10.0.0.0
       notifier.addRule(
-        StaticRoutingTestData.createRouteEntry(
+        StaticRoutingTestData.createRouteEntryUIModel(
           name: 'Route 1',
-          destinationLAN: '10.0.0.0',
+          destinationIP: '10.0.0.0',
         ),
       );
 
       // Act & Assert - duplicate destination should fail
       expect(
         () => notifier.addRule(
-          StaticRoutingTestData.createRouteEntry(
+          StaticRoutingTestData.createRouteEntryUIModel(
             name: 'Route 2',
-            destinationLAN: '10.0.0.0',
+            destinationIP: '10.0.0.0',
           ),
         ),
         throwsException,
@@ -485,9 +484,9 @@ void main() {
       container.read(staticRoutingProvider.notifier).state = newState;
 
       // Add a route
-      notifier.addRule(StaticRoutingTestData.createRouteEntry(
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(
         name: 'Test Route',
-        destinationLAN: '10.1.0.0',
+        destinationIP: '10.1.0.0',
       ));
 
       // Act - Switch modes
@@ -496,8 +495,8 @@ void main() {
 
       // Assert - Route should still be there
       final state = container.read(staticRoutingProvider);
-      expect(state.settings.current.entries.entries.length, 1);
-      expect(state.settings.current.entries.entries.first.name, 'Test Route');
+      expect(state.settings.current.entries.length, 1);
+      expect(state.settings.current.entries.first.name, 'Test Route');
     });
   });
 
@@ -514,22 +513,22 @@ void main() {
       );
       container.read(staticRoutingProvider.notifier).state = newState;
 
-      final route = StaticRoutingTestData.createRouteEntry(
+      final route = StaticRoutingTestData.createRouteEntryUIModel(
         name: 'To Delete',
-        destinationLAN: '10.1.0.0',
+        destinationIP: '10.1.0.0',
       );
       notifier.addRule(route);
 
       // Verify route was added
       var state = container.read(staticRoutingProvider);
-      expect(state.settings.current.entries.entries.length, 1);
+      expect(state.settings.current.entries.length, 1);
 
       // Act
       notifier.deleteRule(route);
 
       // Assert
       state = container.read(staticRoutingProvider);
-      expect(state.settings.current.entries.entries.isEmpty, true);
+      expect(state.settings.current.entries.isEmpty, true);
     });
 
     test('route details contains all required fields for display', () {
@@ -549,20 +548,20 @@ void main() {
       container.read(staticRoutingProvider.notifier).state = newState;
 
       // Add route
-      notifier.addRule(StaticRoutingTestData.createRouteEntry(
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(
         name: 'Test Route',
-        destinationLAN: '10.1.0.0',
+        destinationIP: '10.1.0.0',
       ));
 
       // Act - Get route details
       final state = container.read(staticRoutingProvider);
-      final route = state.settings.current.entries.entries.first;
+      final route = state.settings.current.entries.first;
 
       // Assert - All fields present
       expect(route.name, 'Test Route');
-      expect(route.settings.destinationLAN, '10.1.0.0');
-      expect(route.settings.networkPrefixLength, isNotNull);
-      expect(route.settings.gateway, isNotNull);
+      expect(route.destinationIP, '10.1.0.0');
+      expect(route.subnetMask, isNotNull);
+      expect(route.gateway, isNotNull);
 
       // Assert - Network context available
       expect(state.status.routerIp, '192.168.1.1');

@@ -4,7 +4,8 @@ import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/set_routing_settings.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'package:privacy_gui/utils.dart';
 
@@ -44,7 +45,8 @@ class StaticRoutingService {
   /// - [forceRemote]: If true, fetches from cloud; otherwise uses local cache
   ///
   /// Throws: May throw on network errors, but handles JNAP protocol errors gracefully
-  Future<(StaticRoutingUISettings?, StaticRoutingStatus?)> fetchRoutingSettings({
+  Future<(StaticRoutingUISettings?, StaticRoutingStatus?)>
+      fetchRoutingSettings({
     bool forceRemote = false,
   }) async {
     try {
@@ -54,8 +56,7 @@ class StaticRoutingService {
         auth: true,
         fetchRemote: forceRemote,
       );
-      final lanSettings =
-          RouterLANSettings.fromMap(lanSettingsResponse.output);
+      final lanSettings = RouterLANSettings.fromMap(lanSettingsResponse.output);
       final routerIP = lanSettings.ipAddress;
       final subnetMask = NetworkUtils.prefixLengthToSubnetMask(
         lanSettings.networkPrefixLength,
@@ -96,7 +97,7 @@ class StaticRoutingService {
   /// Returns: Map of validation errors. Empty map means validation passed.
   /// Keys are field names (name, destinationIP, subnetMask, gateway)
   /// Values are user-friendly error messages.
-  Map<String, String> validateRouteEntry(StaticRouteEntryUI entry) {
+  Map<String, String> validateRouteEntry(StaticRouteEntryUIModel entry) {
     final errors = <String, String>{};
 
     // Validate route name
@@ -198,7 +199,7 @@ class StaticRoutingService {
   /// Transform JNAP GetRoutingSettings to UI StaticRoutingUISettings
   ///
   /// Converts JNAP data model to presentation layer UI model.
-  /// Transform JNAP NamedStaticRouteEntry to UI StaticRoutingRuleUIModel
+  /// Transform JNAP NamedStaticRouteEntry to UI StaticRoutingRuleUI
   ///
   /// Converts JNAP protocol model to UI presentation model for the rule editor.
   /// This is used by the StaticRoutingRuleNotifier to display rule details.
@@ -206,7 +207,7 @@ class StaticRoutingService {
   /// Parameters:
   /// - [jnapEntry]: NamedStaticRouteEntry from JNAP protocol
   ///
-  /// Returns: StaticRoutingRuleUIModel for UI layer
+  /// Returns: StaticRoutingRuleUI for UI layer
   StaticRoutingRuleUIModel transformJNAPRuleToUIModel(
     NamedStaticRouteEntry jnapEntry,
   ) {
@@ -219,13 +220,13 @@ class StaticRoutingService {
     );
   }
 
-  /// Transform UI StaticRoutingRuleUIModel to JNAP NamedStaticRouteEntry
+  /// Transform UI StaticRoutingRuleUI to JNAP NamedStaticRouteEntry
   ///
   /// Converts UI presentation model to JNAP protocol model for saving.
   /// This is used by the StaticRoutingNotifier to convert user input.
   ///
   /// Parameters:
-  /// - [uiModel]: StaticRoutingRuleUIModel from UI layer
+  /// - [uiModel]: StaticRoutingRuleUI from UI layer
   ///
   /// Returns: NamedStaticRouteEntry for JNAP protocol transmission
   NamedStaticRouteEntry transformUIModelToJNAPRule(
@@ -253,7 +254,7 @@ class StaticRoutingService {
   ) {
     final entries = jnapSettings.entries
         .map(
-          (entry) => StaticRouteEntryUI(
+          (entry) => StaticRouteEntryUIModel(
             name: entry.name,
             // JNAP uses 'destinationLAN' with network prefix length
             destinationIP: entry.settings.destinationLAN,
@@ -261,6 +262,7 @@ class StaticRoutingService {
               entry.settings.networkPrefixLength,
             ),
             gateway: entry.settings.gateway ?? '',
+            interface: entry.settings.interface,
           ),
         )
         .toList();
@@ -291,7 +293,7 @@ class StaticRoutingService {
             settings: StaticRouteEntry(
               destinationLAN: entry.destinationIP,
               gateway: entry.gateway.isNotEmpty ? entry.gateway : null,
-              interface: RoutingSettingInterface.lan.value,
+              interface: entry.interface,
               networkPrefixLength:
                   NetworkUtils.subnetMaskToPrefixLength(entry.subnetMask),
             ),

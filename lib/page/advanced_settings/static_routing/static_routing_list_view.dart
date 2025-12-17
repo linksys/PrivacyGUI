@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
@@ -57,8 +56,8 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
             children: [
               AppText.labelLarge(loc(context).staticRoute),
               const AppGap.medium(),
-              if (state.current.entries.entries.isNotEmpty)
-                ...state.current.entries.entries.map(
+              if (state.current.entries.isNotEmpty)
+                ...state.current.entries.map(
                   (entry) => buildStaticRouteCard(entry),
                 )
               else
@@ -77,7 +76,7 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
     );
   }
 
-  Widget buildStaticRouteCard(NamedStaticRouteEntry setting) {
+  Widget buildStaticRouteCard(StaticRouteEntryUIModel setting) {
     return AppCard(
       showBorder: true,
       padding: const EdgeInsets.all(Spacing.medium),
@@ -103,11 +102,11 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
     );
   }
 
-  Widget editingSection(NamedStaticRouteEntry setting) {
+  Widget editingSection(StaticRouteEntryUIModel setting) {
     return Row(
       mainAxisSize: MainAxisSize.max,
       children: [
-        AppText.bodyLarge(setting.settings.interface),
+        AppText.bodyLarge(getInterfaceTitle(setting.interface)),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: Spacing.medium),
           child: Icon(
@@ -130,33 +129,33 @@ class _StaticRoutingListViewState extends ConsumerState<StaticRoutingListView> {
     );
   }
 
-  Widget infoSection(NamedStaticRouteEntry setting) {
+  Widget infoSection(StaticRouteEntryUIModel setting) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.labelLarge(setting.name),
-        AppText.bodyMedium(getInterfaceTitle(setting.settings.interface)),
+        AppText.bodyMedium(getInterfaceTitle(setting.interface)),
         Wrap(
           spacing: Spacing.small3,
           children: [
             AppText.labelLarge(loc(context).destinationIPAddress),
-            AppText.bodyMedium(setting.settings.destinationLAN),
+            AppText.bodyMedium(setting.destinationIP),
           ],
         ),
         Wrap(
           spacing: Spacing.small3,
           children: [
             AppText.labelLarge(loc(context).subnetMask),
-            AppText.bodyMedium(NetworkUtils.prefixLengthToSubnetMask(
-                setting.settings.networkPrefixLength)),
+            AppText.bodyMedium(setting.subnetMask),
           ],
         ),
         Wrap(
           spacing: Spacing.small3,
           children: [
             AppText.labelLarge(loc(context).gateway),
-            AppText.bodyMedium(setting.settings.gateway ?? ''),
+            AppText.bodyMedium(
+                setting.gateway.isEmpty ? '--' : setting.gateway),
           ],
         ),
       ],

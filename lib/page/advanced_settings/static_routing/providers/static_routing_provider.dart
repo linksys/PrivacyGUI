@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/services/static_routing_service.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
 import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
-import 'package:privacy_gui/utils.dart';
 
 final staticRoutingProvider =
     NotifierProvider<StaticRoutingNotifier, StaticRoutingState>(
@@ -40,8 +39,7 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
   ///
   /// Implementation details:
   /// - Calls [StaticRoutingService.fetchRoutingSettings] to handle JNAP communication
-  /// - Transforms UI models returned by service to Provider's internal models
-  /// - Converts subnet masks from JNAP prefix length format
+  /// - Service already transforms JNAP models to UI models
   /// - Returns (null, null) tuple on fetch failure (handled gracefully by service)
   ///
   /// Parameters:
@@ -61,26 +59,11 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
       return (null, null);
     }
 
-    // Convert UI models to Provider models
-    final entries = uiSettings.entries
-        .map(
-          (entry) => NamedStaticRouteEntry(
-            name: entry.name,
-            settings: StaticRouteEntry(
-              destinationLAN: entry.destinationIP,
-              gateway: entry.gateway.isNotEmpty ? entry.gateway : null,
-              interface: RoutingSettingInterface.lan.value,
-              networkPrefixLength:
-                  NetworkUtils.subnetMaskToPrefixLength(entry.subnetMask),
-            ),
-          ),
-        )
-        .toList();
-
+    // Service already provides UI models, use them directly
     final settings = StaticRoutingSettings(
       isNATEnabled: uiSettings.isNATEnabled,
       isDynamicRoutingEnabled: uiSettings.isDynamicRoutingEnabled,
-      entries: NamedStaticRouteEntryList(entries: entries),
+      entries: uiSettings.entries,
     );
 
     return (settings, status);
@@ -113,10 +96,10 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
   /// Save routing settings to device
   ///
   /// Persists the current routing configuration back to the device via [StaticRoutingService].
-  /// Transforms Provider models to UI models, then delegates to service for JNAP transmission.
+  /// State entries are already UI models, so we use them directly for transmission.
   ///
   /// The method:
-  /// - Converts internal route entries to UI models with proper subnet mask formatting
+  /// - Creates StaticRoutingUISettings from current state
   /// - Calls [StaticRoutingService.saveRoutingSettings] to transmit to device
   /// - Marks state as saved after successful transmission (via mixin)
   /// - May throw on network errors or device rejection
@@ -126,24 +109,11 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
   Future<void> performSave() async {
     final service = ref.read(staticRoutingServiceProvider);
 
-    // Convert Provider models to UI models
-    final uiEntries = state.settings.current.entries.entries
-        .map(
-          (entry) => StaticRouteEntryUI(
-            name: entry.name,
-            destinationIP: entry.settings.destinationLAN,
-            subnetMask: NetworkUtils.prefixLengthToSubnetMask(
-              entry.settings.networkPrefixLength,
-            ),
-            gateway: entry.settings.gateway ?? '',
-          ),
-        )
-        .toList();
-
+    // State entries are already UI models, use them directly
     final uiSettings = StaticRoutingUISettings(
       isNATEnabled: state.settings.current.isNATEnabled,
       isDynamicRoutingEnabled: state.settings.current.isDynamicRoutingEnabled,
-      entries: uiEntries,
+      entries: state.settings.current.entries,
     );
 
     await service.saveRoutingSettings(uiSettings);
@@ -157,7 +127,7 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
   /// Returns: true if current route count equals max (limit reached), false otherwise
   bool isExceedMax() {
     return state.status.maxStaticRouteEntries ==
-        state.settings.current.entries.entries.length;
+        state.settings.current.entries.length;
   }
 
   /// Add a new route to the current routing configuration
@@ -174,10 +144,10 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
   /// if validation fails, or if destination is duplicate.
   ///
   /// Parameters:
-  /// - [rule]: The [NamedStaticRouteEntry] to add (includes name and route settings)
+  /// - [rule]: The [StaticRouteEntryUIModel] to add
   ///
   /// Throws: Exception if validation fails or max limit reached
-  void addRule(NamedStaticRouteEntry rule) {
+  void addRule(StaticRouteEntryUIModel rule) {
     // Validate route name
     if (rule.name.isEmpty) {
       throw Exception('Route name cannot be empty');
@@ -187,17 +157,17 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
     }
 
     // Check for duplicate destination
-    final destinationExists = state.settings.current.entries.entries.any(
-      (entry) => entry.settings.destinationLAN == rule.settings.destinationLAN,
+    final destinationExists = state.settings.current.entries.any(
+      (entry) => entry.destinationIP == rule.destinationIP,
     );
     if (destinationExists) {
       throw Exception(
-        'Route with destination ${rule.settings.destinationLAN} already exists',
+        'Route with destination ${rule.destinationIP} already exists',
       );
     }
 
     // Check max route limit
-    if (state.settings.current.entries.entries.length >=
+    if (state.settings.current.entries.length >=
         state.status.maxStaticRouteEntries) {
       throw Exception(
         'Cannot add route: maximum of ${state.status.maxStaticRouteEntries} routes allowed',
@@ -207,10 +177,7 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
     state = state.copyWith(
       settings: state.settings.copyWith(
         current: state.settings.current.copyWith(
-          entries: state.settings.current.entries.copyWith(
-            entries: List.from(state.settings.current.entries.entries)
-              ..add(rule),
-          ),
+          entries: List.from(state.settings.current.entries)..add(rule),
         ),
       ),
     );
@@ -223,15 +190,13 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
   ///
   /// Parameters:
   /// - [index]: The zero-based index of the route to edit
-  /// - [rule]: The updated [NamedStaticRouteEntry] to replace at the index
-  void editRule(int index, NamedStaticRouteEntry rule) {
+  /// - [rule]: The updated [StaticRouteEntryUIModel] to replace at the index
+  void editRule(int index, StaticRouteEntryUIModel rule) {
     state = state.copyWith(
       settings: state.settings.copyWith(
         current: state.settings.current.copyWith(
-          entries: state.settings.current.entries.copyWith(
-            entries: List.from(state.settings.current.entries.entries)
-              ..replaceRange(index, index + 1, [rule]),
-          ),
+          entries: List.from(state.settings.current.entries)
+            ..replaceRange(index, index + 1, [rule]),
         ),
       ),
     );
@@ -243,15 +208,12 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
   /// and marks the state as modified (dirty) for the dirty guard mechanism.
   ///
   /// Parameters:
-  /// - [rule]: The [NamedStaticRouteEntry] to remove (matched by object reference)
-  void deleteRule(NamedStaticRouteEntry rule) {
+  /// - [rule]: The [StaticRouteEntryUIModel] to remove (matched by object reference)
+  void deleteRule(StaticRouteEntryUIModel rule) {
     state = state.copyWith(
       settings: state.settings.copyWith(
         current: state.settings.current.copyWith(
-          entries: state.settings.current.entries.copyWith(
-            entries: List.from(state.settings.current.entries.entries)
-              ..remove(rule),
-          ),
+          entries: List.from(state.settings.current.entries)..remove(rule),
         ),
       ),
     );
@@ -266,7 +228,7 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
   ///
   /// Returns: Map of validation errors. Empty map means validation passes.
   /// Keys are field names, values are user-friendly error messages.
-  Map<String, String> getValidationErrors(NamedStaticRouteEntry rule) {
+  Map<String, String> getValidationErrors(StaticRouteEntryUIModel rule) {
     final errors = <String, String>{};
 
     // Check route name
@@ -277,16 +239,15 @@ class StaticRoutingNotifier extends Notifier<StaticRoutingState>
     }
 
     // Check for duplicate destination
-    final destinationExists = state.settings.current.entries.entries.any(
-      (entry) => entry.settings.destinationLAN == rule.settings.destinationLAN,
+    final destinationExists = state.settings.current.entries.any(
+      (entry) => entry.destinationIP == rule.destinationIP,
     );
     if (destinationExists) {
-      errors['destinationLAN'] =
-          'Route with this destination already exists';
+      errors['destinationIP'] = 'Route with this destination already exists';
     }
 
     // Check max route limit
-    if (state.settings.current.entries.entries.length >=
+    if (state.settings.current.entries.length >=
         state.status.maxStaticRouteEntries) {
       errors['limit'] =
           'Maximum of ${state.status.maxStaticRouteEntries} routes allowed';

@@ -1,6 +1,9 @@
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
+import 'package:privacy_gui/utils.dart';
 
 /// Test data builder for StaticRoutingService tests
 ///
@@ -49,7 +52,7 @@ class StaticRoutingTestData {
         ),
       );
 
-  /// Create a single route entry for testing
+  /// Create a single route entry for testing (JNAP model)
   static NamedStaticRouteEntry createRouteEntry({
     String name = 'Test Route',
     String destinationLAN = '10.0.0.0',
@@ -65,6 +68,22 @@ class StaticRoutingTestData {
           interface: interface,
           networkPrefixLength: networkPrefixLength,
         ),
+      );
+
+  /// Create a single route entry UI model for testing (Application layer)
+  static StaticRouteEntryUIModel createRouteEntryUIModel({
+    String name = 'Test Route',
+    String destinationIP = '10.0.0.0',
+    String subnetMask = '255.255.255.0',
+    String gateway = '192.168.1.254',
+    String interface = 'LAN',
+  }) =>
+      StaticRouteEntryUIModel(
+        name: name,
+        destinationIP: destinationIP,
+        subnetMask: subnetMask,
+        gateway: gateway,
+        interface: interface,
       );
 
   /// Create default empty route list
@@ -112,8 +131,7 @@ class StaticRoutingTestData {
       createSuccessfulResponse(isDynamicRoutingEnabled: true);
 
   /// Create with both NAT and dynamic routing enabled
-  static GetRoutingSettings createWithBothEnabled() =>
-      createSuccessfulResponse(
+  static GetRoutingSettings createWithBothEnabled() => createSuccessfulResponse(
         isNATEnabled: true,
         isDynamicRoutingEnabled: true,
       );

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/services/static_routing_service.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -55,8 +55,8 @@ class _StaticRoutingDetailViewState
     if (editItem != null) {
       _isEdit = true;
       _routeNameController.text = editItem.name;
-      _subnetController.text = NetworkUtils.prefixLengthToSubnetMask(
-          editItem.networkPrefixLength);
+      _subnetController.text =
+          NetworkUtils.prefixLengthToSubnetMask(editItem.networkPrefixLength);
       _gatewayController.text = editItem.gateway ?? '';
       _destinationIpController.text = editItem.destinationIP;
       index = items.indexOf(editItem);
@@ -68,8 +68,8 @@ class _StaticRoutingDetailViewState
         interface: 'LAN',
         networkPrefixLength: 24,
       );
-      _subnetController.text = NetworkUtils.prefixLengthToSubnetMask(
-          editItem.networkPrefixLength);
+      _subnetController.text =
+          NetworkUtils.prefixLengthToSubnetMask(editItem.networkPrefixLength);
     }
     doSomethingWithSpinner(context, Future.doWhile(() => !mounted)).then((_) {
       _notifier.init(items, editItem, index, routerIp, subnetMask);
