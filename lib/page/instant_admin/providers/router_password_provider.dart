@@ -1,14 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_admin/providers/router_password_state.dart';
+import 'package:privacy_gui/page/instant_admin/services/router_password_service.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 final routerPasswordProvider =
@@ -20,102 +14,82 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
   RouterPasswordState build() => RouterPasswordState.init();
 
   Future fetch([bool force = false]) async {
-    final repo = ref.read(routerRepositoryProvider);
-    final results = await repo.fetchIsConfigured();
-    final bool isAdminDefault = JNAPTransactionSuccessWrap.getResult(
-                JNAPAction.isAdminPasswordDefault, Map.fromEntries(results))
-            ?.output['isAdminPasswordDefault'] ??
-        false;
-    final bool isSetByUser = JNAPTransactionSuccessWrap.getResult(
-                JNAPAction.isAdminPasswordSetByUser, Map.fromEntries(results))
-            ?.output['isAdminPasswordSetByUser'] ??
-        true;
-    String passwordHint = '';
-    if (isSetByUser) {
-      passwordHint = await repo
-          .send(JNAPAction.getAdminPasswordHint, fetchRemote: force)
-          .then((result) => result.output['passwordHint'] ?? '')
-          .onError((error, stackTrace) => '');
-    }
-    const storage = FlutterSecureStorage();
-    final password = await storage.read(key: pLocalPassword);
+    try {
+      final service = ref.read(routerPasswordServiceProvider);
+      final result = await service.fetchPasswordConfiguration();
 
-    state = state.copyWith(
-        isDefault: isAdminDefault,
-        isSetByUser: isSetByUser,
-        adminPassword: password ?? '',
-        hint: passwordHint);
-    logger.d('[State]:[RouterPassword]:${state.toJson()}');
+      state = state.copyWith(
+        isDefault: result['isDefault'] as bool,
+        isSetByUser: result['isSetByUser'] as bool,
+        adminPassword: result['storedPassword'] as String,
+        hint: result['hint'] as String,
+      );
+      logger.d('[State]:[RouterPassword]:${state.toJson()}');
+    } on JNAPError catch (error) {
+      logger.e('[RouterPassword] JNAP error in fetch: ${error.result}');
+      rethrow;
+    } catch (error) {
+      logger.e('[RouterPassword] Error in fetch: $error');
+      rethrow;
+    }
   }
 
   Future<void> setAdminPasswordWithResetCode(
       String password, String hint, String code) async {
-    final repo = ref.read(routerRepositoryProvider);
-    return repo
-        .send(
-      JNAPAction.setupSetAdminPassword,
-      data: {
-        'adminPassword': password,
-        'passwordHint': hint,
-        'resetCode': code,
-      },
-      type: CommandType.local,
-    )
-        .then<void>((value) {
-      state = state.copyWith(
-        error: null,
-      );
-    });
+    try {
+      final service = ref.read(routerPasswordServiceProvider);
+      await service.setPasswordWithResetCode(password, hint, code);
+      state = state.copyWith(error: null);
+    } on JNAPError catch (error) {
+      logger.e(
+          '[RouterPassword] JNAP error in setPasswordWithResetCode: ${error.result}');
+      rethrow;
+    }
   }
 
   Future setAdminPasswordWithCredentials(String? password,
       [String? hint]) async {
-    final repo = ref.read(routerRepositoryProvider);
-    final pwd = password ?? ref.read(authProvider).value?.localPassword;
-    return repo
-        .send(
-      JNAPAction.coreSetAdminPassword,
-      data: {
-        'adminPassword': pwd,
-        'passwordHint': hint ?? state.hint,
-      },
-      type: CommandType.local,
-      auth: true,
-    )
-        .then<void>((value) async {
+    try {
+      final service = ref.read(routerPasswordServiceProvider);
+      final pwd = password ?? ref.read(authProvider).value?.localPassword;
+
+      await service.setPasswordWithCredentials(pwd ?? '', hint ?? state.hint);
+
+      // Keep AuthProvider.localLogin in notifier (per architecture decision)
       await ref
           .read(authProvider.notifier)
           .localLogin(pwd ?? '', guardError: false);
       await fetch(true);
-    });
+    } on JNAPError catch (error) {
+      logger.e(
+          '[RouterPassword] JNAP error in setPasswordWithCredentials: ${error.result}');
+      rethrow;
+    }
   }
 
   Future<bool> checkRecoveryCode(String code) async {
-    final repo = ref.read(routerRepositoryProvider);
-    return repo.send(
-      JNAPAction.verifyRouterResetCode,
-      data: {
-        'resetCode': code,
-      },
-    ).then((result) {
-      state = state.copyWith(
-        remainingErrorAttempts: null,
-        error: null,
-      );
-      return true;
-    }).onError((error, stackTrace) {
-      if (error is JNAPError) {
-        if (error.result == errorInvalidResetCode) {
-          final errorOutput = jsonDecode(error.error!) as Map<String, dynamic>;
-          final remaining = errorOutput['attemptsRemaining'] as int;
-          state = state.copyWith(remainingErrorAttempts: remaining);
-        } else if (error.result == errorConsecutiveInvalidResetCodeEntered) {
-          //Error results after the remaining is 0 will become "ErrorConsecutiveInvalidResetCodeEntered"
-          state = state.copyWith(remainingErrorAttempts: 0);
-        }
+    try {
+      final service = ref.read(routerPasswordServiceProvider);
+      final result = await service.verifyRecoveryCode(code);
+
+      final isValid = result['isValid'] as bool;
+      final attemptsRemaining = result['attemptsRemaining'] as int?;
+
+      if (isValid) {
+        state = state.copyWith(
+          remainingErrorAttempts: null,
+          error: null,
+        );
+        return true;
+      } else {
+        state = state.copyWith(remainingErrorAttempts: attemptsRemaining);
+        return false;
       }
-      return false;
-    });
+    } on JNAPError catch (error) {
+      logger.e(
+          '[RouterPassword] JNAP error in checkRecoveryCode: ${error.result}');
+      rethrow;
+    }
   }
 
   setEdited(bool hasEdited) {
