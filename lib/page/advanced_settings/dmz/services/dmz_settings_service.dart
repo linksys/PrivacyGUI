@@ -183,3 +183,11 @@ class DMZSettingsService {
     }
   }
 }
+
+/// Provider for DMZSettingsService
+///
+/// Provides a singleton instance of [DMZSettingsService] for use
+/// throughout the application. Can be overridden in tests to inject mock implementations.
+final dmzSettingsServiceProvider = Provider<DMZSettingsService>(
+  (ref) => DMZSettingsService(),
+);

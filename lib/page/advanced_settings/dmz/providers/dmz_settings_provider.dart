@@ -31,13 +31,13 @@ class DMZSettingsNotifier extends Notifier<DMZSettingsState>
   @override
   Future<(DMZUISettings?, DMZStatus?)> performFetch(
       {bool forceRemote = false, bool updateStatusOnly = false}) async {
-    final service = DMZSettingsService();
+    final service = ref.read(dmzSettingsServiceProvider);
     return service.fetchDmzSettings(ref, forceRemote: forceRemote);
   }
 
   @override
   Future<void> performSave() async {
-    final service = DMZSettingsService();
+    final service = ref.read(dmzSettingsServiceProvider);
     final uiSettings = state.settings.current;
     await service.saveDmzSettings(ref, uiSettings);
   }
