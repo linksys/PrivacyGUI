@@ -39,13 +39,13 @@ class FirewallNotifier extends Notifier<FirewallState>
   @override
   Future<(FirewallUISettings?, EmptyStatus?)> performFetch(
       {bool forceRemote = false, bool updateStatusOnly = false}) async {
-    final service = FirewallSettingsService();
+    final service = ref.read(firewallSettingsServiceProvider);
     return await service.fetchFirewallSettings(ref, forceRemote: forceRemote);
   }
 
   @override
   Future<void> performSave() async {
-    final service = FirewallSettingsService();
+    final service = ref.read(firewallSettingsServiceProvider);
     await service.saveFirewallSettings(ref, state.settings.current);
   }
 

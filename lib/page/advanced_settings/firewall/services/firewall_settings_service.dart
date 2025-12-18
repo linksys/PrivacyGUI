@@ -252,3 +252,11 @@ class FirewallSettingsService {
     logger.d('Firewall settings validation passed');
   }
 }
+
+/// Provider for FirewallSettingsService
+///
+/// Provides a singleton instance of [FirewallSettingsService] for use
+/// throughout the application. Can be overridden in tests to inject mock implementations.
+final firewallSettingsServiceProvider = Provider<FirewallSettingsService>(
+  (ref) => FirewallSettingsService(),
+);
