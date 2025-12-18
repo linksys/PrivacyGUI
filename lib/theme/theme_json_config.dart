@@ -19,8 +19,8 @@ class ThemeJsonConfig {
 
   /// Default configuration (Glass style).
   factory ThemeJsonConfig.defaultConfig() => ThemeJsonConfig._(
-        lightJson: {'style': 'glass', 'brightness': 'light'},
-        darkJson: {'style': 'glass', 'brightness': 'dark'},
+        lightJson: {'style': 'pixel', 'brightness': 'light'},
+        darkJson: {'style': 'pixel', 'brightness': 'dark'},
       );
 
   /// Constructs from a complete JSON object (including light/dark colors).

@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../apps_and_gaming/ports/views/widgets/_widgets.dart';
 
 class Ipv6PortServiceListView extends ArgumentsConsumerStatefulView {
   const Ipv6PortServiceListView({super.key, super.args});

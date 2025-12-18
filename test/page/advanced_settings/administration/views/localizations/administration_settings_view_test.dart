@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacy_gui/page/components/composed/app_switch_trigger_tile.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';

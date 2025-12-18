@@ -10,7 +10,6 @@ import 'package:privacy_gui/page/health_check/providers/health_check_state.dart'
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/components/composed/breath_dot.dart';
 
 /// Defines the layout orientation for the widget.
 enum SpeedTestLayout {
@@ -248,13 +247,13 @@ class SpeedTestWidget extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.only(right: 9),
-              child: BreathDot(
-                breathSpeed: const Duration(seconds: 1),
-                lightColor: Theme.of(context).colorScheme.primary,
-                borderColor: Theme.of(context).colorScheme.primary,
-                size: 12,
-                dotSize: 6,
-                animated: isLatencyStep, // Animate only during the latency step
+              child: AppBreathDot(
+                color: Theme.of(context).colorScheme.primary,
+                size: 10,
+                animation: isLatencyStep
+                    ? BreathDotAnimation.pulse
+                    : BreathDotAnimation.none,
+                period: const Duration(seconds: 1),
               ),
             ),
             AppText.titleSmall('Ping: ',

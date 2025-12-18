@@ -1,11 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/input_field/pin_code_input.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../test_data/_index.dart';
@@ -47,9 +45,8 @@ void main() {
 
       expect(find.text(loc.forgotPassword), findsOneWidget);
       expect(find.text(loc.localRouterRecoveryDescription), findsOneWidget);
-      expect(find.byType(AppPinCodeInput), findsOneWidget);
-      final continueButton =
-          tester.widget<AppFilledButton>(find.byType(AppFilledButton));
+      expect(find.byType(AppPinInput), findsOneWidget);
+      final continueButton = tester.widget<AppButton>(find.byType(AppButton));
       expect(continueButton.onTap, isNull);
     },
     goldenFilename: 'LRRV-INIT_01_initial_state',
@@ -71,15 +68,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final fields = find.descendant(
-          of: find.byType(AppPinCodeInput), matching: find.byType(TextFormField));
-      for (var i = 0; i < fields.evaluate().length; i++) {
-        await tester.enterText(fields.at(i), '1');
-      }
+      await tester.enterText(find.byType(AppPinInput), '11111');
       await tester.pumpAndSettle();
 
-      final buttonFinder = find.byType(AppFilledButton);
-      final continueButton = tester.widget<AppFilledButton>(buttonFinder);
+      final buttonFinder = find.byType(AppButton);
+      final continueButton = tester.widget<AppButton>(buttonFinder);
       expect(continueButton.onTap, isNotNull);
     },
     goldenFilename: 'LRRV-PIN_01_code_entered',

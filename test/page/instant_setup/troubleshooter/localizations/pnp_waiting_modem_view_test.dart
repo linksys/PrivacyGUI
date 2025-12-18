@@ -5,8 +5,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
@@ -48,9 +47,9 @@ void main() async {
       await tester.pump(const Duration(seconds: 3));
       expect(find.text(testHelper.loc(context).pnpWaitingModemTitle),
           findsOneWidget);
-      expect(
-          find.text(testHelper.loc(context).pnpWaitingModemDesc), findsOneWidget);
-      expect(find.byType(AppProgressBar), findsOneWidget);
+      expect(find.text(testHelper.loc(context).pnpWaitingModemDesc),
+          findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
       await testHelper.takeScreenshot(
           tester, 'PNPWM-FULL_FLOW_01_counting_down');
 
@@ -76,10 +75,11 @@ void main() async {
           tester, 'PNPWM-FULL_FLOW_03_waiting_to_start');
 
       // 4. State: Checking for internet
-      await tester.pump(const Duration(seconds: 5)); // Trigger _isCheckingInternet
+      await tester
+          .pump(const Duration(seconds: 5)); // Trigger _isCheckingInternet
       expect(find.text(testHelper.loc(context).pnpWaitingModemCheckingInternet),
           findsOneWidget);
-      expect(find.byType(AppSpinner), findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
     },
     helper: testHelper,
     screens: screens,

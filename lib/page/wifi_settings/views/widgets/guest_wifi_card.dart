@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_list_tile.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_password_field.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class GuestWiFiCard extends ConsumerStatefulWidget {
@@ -85,7 +86,12 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
 
   Widget _guestWiFiPasswordCard(GuestWiFiItem state) => WifiListTile(
         title: AppText.bodyMedium(loc(context).guestWiFiPassword),
-        description: AppText.labelLarge('••••••••'),
+        description: WifiPasswordField(
+          controller: TextEditingController(text: state.password),
+          readOnly: true,
+          showLabel: false,
+          isLength64: true,
+        ),
         trailing: const AppIcon.font(AppFontIcons.edit),
         onTap: () {
           showWifiPasswordModal(state.password, (value) {

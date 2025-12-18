@@ -19,7 +19,6 @@ import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/util/languages.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
@@ -141,13 +140,11 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
                 return null;
               }),
             },
-            child: CustomResponsive(
-              child: DesignSystem.init(
-                context,
-                AppRootContainer(
-                  route: _currentRoute,
-                  child: child,
-                ),
+            child: DesignSystem.init(
+              context,
+              AppRootContainer(
+                route: _currentRoute,
+                child: child,
               ),
             ),
           ),

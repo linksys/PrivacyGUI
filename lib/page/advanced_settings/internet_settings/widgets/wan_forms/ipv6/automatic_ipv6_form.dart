@@ -6,10 +6,8 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/internet_settings_form_validator.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/ipv6/base_ipv6_wan_form.dart';
-import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/components/composed/app_dropdown_button.dart';
-import 'package:privacy_gui/page/components/composed/app_min_max_number_text_field.dart';
 
 class AutomaticIPv6Form extends BaseIPv6WanForm {
   const AutomaticIPv6Form({
@@ -139,7 +137,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
             ],
           ),
         ),
-        AppSettingCard.noBorder(
+        AppListCard.settingNoBorder(
           title: loc(context).duid,
           description: state.status.duid,
           padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -161,21 +159,21 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
         children: [
           Padding(
             padding: inputPadding,
-            child: AppDropdownButton<IPv6rdTunnelMode>(
+            child: AppDropdown<IPv6rdTunnelMode>(
               key: const ValueKey('ipv6TunnelDropdown'),
-              title: loc(context).sixrdTunnel,
-              selected:
-                  ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,
+              label: loc(context).sixrdTunnel,
+              value: ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,
               items: const [
                 IPv6rdTunnelMode.disabled,
                 IPv6rdTunnelMode.automatic,
                 IPv6rdTunnelMode.manual,
               ],
-              label: (item) {
+              itemAsString: (item) {
                 return getIpv6rdTunnelModeLoc(context, item);
               },
               onChanged: widget.isEditing && !ipv6Setting.isIPv6AutomaticEnabled
                   ? (value) {
+                      if (value == null) return;
                       notifier.updateIpv6Settings(
                           ipv6Setting.copyWith(ipv6rdTunnelMode: () => value));
                     }
@@ -218,14 +216,15 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
             )),
         Padding(
           padding: inputPadding,
-          child: AppMinMaxNumberTextField(
+          child: AppMinMaxInput(
             label: loc(context).prefixLength,
             max: 64,
-            controller: _ipv6PrefixLengthController,
-            enable: isEnable,
+            value: int.tryParse(_ipv6PrefixLengthController.text),
+            enabled: isEnable,
             onChanged: (value) {
-              notifier.updateIpv6Settings(ipv6Setting.copyWith(
-                  ipv6PrefixLength: () => int.parse(value)));
+              _ipv6PrefixLengthController.text = value?.toString() ?? '';
+              notifier.updateIpv6Settings(
+                  ipv6Setting.copyWith(ipv6PrefixLength: () => value ?? 0));
             },
           ),
         ),
@@ -255,15 +254,17 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
         ),
         Padding(
           padding: inputPadding,
-          child: AppMinMaxNumberTextField(
+          child: AppMinMaxInput(
             key: const Key('borderRelayLength'),
             label: loc(context).borderRelayLength,
             max: 32,
-            controller: _ipv6BorderRelayPrefixLengthController,
-            enable: isEnable,
+            value: int.tryParse(_ipv6BorderRelayPrefixLengthController.text),
+            enabled: isEnable,
             onChanged: (value) {
+              _ipv6BorderRelayPrefixLengthController.text =
+                  value?.toString() ?? '';
               notifier.updateIpv6Settings(ipv6Setting.copyWith(
-                  ipv6BorderRelayPrefixLength: () => int.parse(value)));
+                  ipv6BorderRelayPrefixLength: () => value ?? 0));
             },
           ),
         ),

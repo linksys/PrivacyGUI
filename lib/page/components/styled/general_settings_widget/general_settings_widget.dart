@@ -7,13 +7,13 @@ import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/composed/app_popup_button.dart';
+
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_mode_tile.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
-import 'package:privacy_gui/route/router_provider.dart';
+
 import 'package:ui_kit_library/ui_kit.dart';
 
 class GeneralSettingsWidget extends ConsumerStatefulWidget {
@@ -37,7 +37,6 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
     final colorScheme = darkTheme.colorScheme;
 
     return AppPopupButton(
-      parent: shellNavigatorKey.currentContext,
       maxWidth: 240,
       button: Semantics(
         identifier: 'now-topbar-icon-general-settings',
@@ -121,7 +120,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
   }
 
   List<Widget> _displayAdditional(
-      LoginType loginType, AppPopupButtonController controller) {
+      LoginType loginType, AppPopupController controller) {
     final isRemote = loginType == LoginType.remote;
     if (loginType != LoginType.none) {
       return [

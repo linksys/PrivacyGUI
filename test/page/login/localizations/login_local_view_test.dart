@@ -5,8 +5,7 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../test_data/device_info_test_data.dart';
@@ -56,10 +55,10 @@ void main() async {
 
       await tester.pumpAndSettle();
       expect(find.text(loc.login), findsWidgets);
-      expect(find.byType(AppPasswordField), findsOneWidget);
+      expect(find.byType(AppPasswordInput), findsOneWidget);
       expect(find.text(loc.forgotPassword), findsOneWidget);
-      final loginButtonFinder = find.byType(AppFilledButton);
-      final loginButton = tester.widget<AppFilledButton>(loginButtonFinder);
+      final loginButtonFinder = find.byType(AppButton);
+      final loginButton = tester.widget<AppButton>(loginButtonFinder);
       expect(loginButton.onTap, isNull);
     },
     goldenFilename: 'LGLV-INIT_01_initial_state',
@@ -79,21 +78,21 @@ void main() async {
       final loc = testHelper.loc(context);
       await tester.pumpAndSettle();
 
-      final passwordFinder = find.byType(AppPasswordField);
+      final passwordFinder = find.byType(AppPasswordInput);
       await tester.enterText(passwordFinder, 'Password!!!');
       await tester.pumpAndSettle();
-      final loginButtonFinder = find.byType(AppFilledButton);
-      var loginButton = tester.widget<AppFilledButton>(loginButtonFinder);
+      final loginButtonFinder = find.byType(AppButton);
+      var loginButton = tester.widget<AppButton>(loginButtonFinder);
       expect(loginButton.onTap, isNotNull);
       await testHelper.takeScreenshot(
         tester,
         'LGLV-PASS_01_password_masked',
       );
 
-      final secureFinder = find.byIcon(LinksysIcons.visibility);
+      final secureFinder = find.byIcon(AppFontIcons.visibility);
       await tester.tap(secureFinder);
       await tester.pumpAndSettle();
-      loginButton = tester.widget<AppFilledButton>(loginButtonFinder);
+      loginButton = tester.widget<AppButton>(loginButtonFinder);
       expect(loginButton.onTap, isNotNull);
 
       final showHintFinder = find.text(loc.showHint);

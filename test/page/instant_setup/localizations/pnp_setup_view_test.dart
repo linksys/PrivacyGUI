@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
+
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
@@ -13,9 +13,7 @@ import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_helper.dart';
@@ -255,7 +253,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // --- Test Info Button ---
-          final infoButton = find.byIcon(LinksysIcons.infoCircle);
+          final infoButton = find.byIcon(AppFontIcons.infoCircle);
           expect(infoButton, findsOneWidget);
           await tester.tap(infoButton);
           await tester.pumpAndSettle();
@@ -431,9 +429,7 @@ void main() {
 
           expect(find.text(testHelper.loc(context).pnpYourNetworkTitle),
               findsOneWidget);
-          expect(
-              find.widgetWithText(
-                  AppFilledButton, testHelper.loc(context).done),
+          expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
         screens: screens,
@@ -482,9 +478,7 @@ void main() {
               findsOneWidget);
           expect(find.text('Living Room'), findsOneWidget);
           expect(find.text('Bedroom'), findsOneWidget);
-          expect(
-              find.widgetWithText(
-                  AppFilledButton, testHelper.loc(context).done),
+          expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
         screens: screens,
@@ -537,7 +531,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 500));
 
-        expect(find.byIcon(LinksysIcons.checkCircle), findsOneWidget);
+        expect(find.byIcon(AppFontIcons.checkCircle), findsOneWidget);
         expect(find.text(testHelper.loc(context).saved), findsOneWidget);
       },
       screens: screens,
@@ -565,7 +559,7 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byIcon(LinksysIcons.wifi), findsOneWidget);
+        expect(find.byIcon(AppFontIcons.wifi), findsOneWidget);
         expect(find.text(testHelper.loc(context).pnpReconnectWiFi),
             findsOneWidget);
         // Find the button by its unique key.
@@ -685,13 +679,12 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byIcon(LinksysIcons.wifi), findsOneWidget);
+        expect(find.byIcon(AppFontIcons.wifi), findsOneWidget);
 
         expect(find.text(testHelper.loc(context).pnpWiFiReady('MyTestWiFi')),
             findsOneWidget);
 
-        expect(
-            find.widgetWithText(AppFilledButton, testHelper.loc(context).done),
+        expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
             findsOneWidget);
       },
       screens: screens,
@@ -721,9 +714,7 @@ void main() {
 
         expect(find.text(testHelper.loc(context).generalError), findsOneWidget);
 
-        expect(
-            find.widgetWithText(
-                AppFilledButton, testHelper.loc(context).tryAgain),
+        expect(find.widgetWithText(AppButton, testHelper.loc(context).tryAgain),
             findsOneWidget);
       },
       screens: screens,

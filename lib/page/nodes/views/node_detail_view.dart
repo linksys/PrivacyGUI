@@ -29,7 +29,7 @@ import 'package:privacy_gui/page/nodes/views/blink_node_light_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacy_gui/page/components/composed/app_popup_button.dart';
+
 import 'package:privacy_gui/page/components/composed/app_switch_trigger_tile.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -82,7 +82,6 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
   Widget _desktopLayout(NodeDetailState state,
       List<DeviceListItem> filteredDeviceList, bool isOnlineFilter) {
     return UiKitPageView.withSliver(
-      padding: const EdgeInsets.only(),
       title: state.location,
       actions: [
         AnimatedRefreshContainer(
@@ -434,8 +433,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           onTap: () {
             _showNodeLightSelectionDialog(nodeLightStatus);
           },
-          child: AppCard(
-            padding: EdgeInsets.all(AppSpacing.lg),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Row(
               children: [
                 Expanded(child: AppText.labelLarge(title)),
@@ -520,7 +519,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
   }
 
   Widget _nodeDetailInfoCard({required Widget child}) {
-    return AppCard(
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.sm),
       child: child,
     );
   }

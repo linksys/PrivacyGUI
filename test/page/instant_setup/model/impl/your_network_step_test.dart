@@ -6,7 +6,6 @@ import 'package:privacy_gui/page/instant_setup/model/impl/your_network_step.dart
 import 'package:privacy_gui/page/instant_setup/providers/mock_pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart'; // Restored
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart'; // Corrected for StepViewStatus
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
 
 void main() {
   group('YourNetworkStep Corrected Widget Tests', () {
@@ -36,22 +35,22 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: CustomResponsive(
-              child: Scaffold(
-                body: Consumer(builder: (context, ref, child) {
-                  capturedRef = ref; // Capture the ref
-                  return yourNetworkStep.content(context: context, ref: ref);
-                }),
-              ),
+            home: Scaffold(
+              body: Consumer(builder: (context, ref, child) {
+                capturedRef = ref; // Capture the ref
+                return yourNetworkStep.content(context: context, ref: ref);
+              }),
             ),
           ),
         ),
       );
     }
 
-    testWidgets('onInit calls fetchDevices and updates UI with nodes', (tester) async {
+    testWidgets('onInit calls fetchDevices and updates UI with nodes',
+        (tester) async {
       // Arrange
-      final pnpNotifier = container.read(pnpProvider.notifier) as UnconfiguredMockPnpNotifier;
+      final pnpNotifier =
+          container.read(pnpProvider.notifier) as UnconfiguredMockPnpNotifier;
       // The mock implementation of fetchDevices in UnconfiguredMockPnpNotifier already returns a list of nodes.
 
       // Act
@@ -70,9 +69,11 @@ void main() {
       expect(find.text('Office'), findsOneWidget);
     });
 
-    testWidgets('onInit sets status to error when fetchDevices fails', (tester) async {
+    testWidgets('onInit sets status to error when fetchDevices fails',
+        (tester) async {
       // Arrange
-      final pnpNotifier = container.read(pnpProvider.notifier) as UnconfiguredMockPnpNotifier;
+      final pnpNotifier =
+          container.read(pnpProvider.notifier) as UnconfiguredMockPnpNotifier;
       pnpNotifier.shouldThrowFetchDevicesError = true;
 
       // Act

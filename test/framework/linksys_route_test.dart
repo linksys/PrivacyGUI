@@ -11,7 +11,8 @@ import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
+
+import 'package:privacy_gui/theme/theme_json_config.dart';
 
 // --- Mocks and Stubs ---
 
@@ -171,19 +172,17 @@ void main() {
 
   Widget createTestApp(GoRouter router) {
     return ProviderScope(
-      child: CustomTheme(
-        data: CustomThemeData.regular(),
-        child: MaterialApp.router(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('en'),
-          routerConfig: router,
-        ),
+      child: MaterialApp.router(
+        theme: ThemeJsonConfig.defaultConfig().createLightTheme(),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        routerConfig: router,
       ),
     );
   }
@@ -215,7 +214,8 @@ void main() {
       expect(find.text('Home Page'), findsOneWidget);
     }, tags: 'dirty-guard-framework');
 
-    testWidgets('blocks navigation when state is dirty and user cancels', (tester) async {
+    testWidgets('blocks navigation when state is dirty and user cancels',
+        (tester) async {
       final router = GoRouter(
         initialLocation: '/settings',
         routes: [
@@ -225,7 +225,8 @@ void main() {
             builder: (context, state) => const SettingsPage(),
             preservableProvider: preservableTestProvider,
             enableDirtyCheck: true,
-            showAlertForTest: (context) async => false, // Simulate user pressing CANCEL
+            showAlertForTest: (context) async =>
+                false, // Simulate user pressing CANCEL
           ),
         ],
       );
@@ -244,7 +245,8 @@ void main() {
       expect(find.text('Home Page'), findsNothing);
     }, tags: 'dirty-guard-framework');
 
-    testWidgets('allows navigation when state is dirty and user confirms', (tester) async {
+    testWidgets('allows navigation when state is dirty and user confirms',
+        (tester) async {
       final container = ProviderContainer();
       final router = GoRouter(
         initialLocation: '/settings',
@@ -255,7 +257,8 @@ void main() {
             builder: (context, state) => const SettingsPage(),
             preservableProvider: preservableTestProvider,
             enableDirtyCheck: true,
-            showAlertForTest: (context) async => true, // Simulate user pressing DISCARD
+            showAlertForTest: (context) async =>
+                true, // Simulate user pressing DISCARD
           ),
         ],
       );

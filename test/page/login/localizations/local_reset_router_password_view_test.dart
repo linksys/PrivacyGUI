@@ -4,8 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../test_data/_index.dart';
@@ -43,20 +42,20 @@ void main() {
     required String password,
     String? confirm,
   }) async {
-    final passwordFinder = find.byType(AppPasswordField);
+    final passwordFinder = find.byType(AppPasswordInput);
     await tester.enterText(passwordFinder.at(0), password);
     await tester.enterText(passwordFinder.at(1), confirm ?? password);
     await tester.pumpAndSettle();
   }
 
   Future<void> fillHint(WidgetTester tester, String hint) async {
-    final hintField = find.byType(AppTextField).last;
+    final hintField = find.byType(AppTextFormField).last;
     await tester.enterText(hintField, hint);
     await tester.pumpAndSettle();
   }
 
   Future<void> scrollToSave(WidgetTester tester) async {
-    final saveFinder = find.byType(AppFilledButton);
+    final saveFinder = find.byType(AppButton);
     await tester.scrollUntilVisible(
       saveFinder,
       200,
@@ -86,10 +85,9 @@ void main() {
         find.text(loc.localResetRouterPasswordDescription),
         findsOneWidget,
       );
-      expect(find.byType(AppTextField), findsNWidgets(3));
-      expect(find.byType(AppPasswordField), findsNWidgets(2));
-      final saveButton =
-          tester.widget<AppFilledButton>(find.byType(AppFilledButton));
+      expect(find.byType(AppTextFormField), findsNWidgets(3));
+      expect(find.byType(AppPasswordInput), findsNWidgets(2));
+      final saveButton = tester.widget<AppButton>(find.byType(AppButton));
       expect(saveButton.onTap, isNull);
     },
     goldenFilename: 'LRRP-INIT_01_initial_state',
@@ -109,7 +107,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await fillPasswords(tester, password: 'Linksys123!', confirm: 'Linksys!');
-      final visibilityFinder = find.byIcon(LinksysIcons.visibility).first;
+      final visibilityFinder = find.byIcon(AppFontIcons.visibility).first;
       await tester.tap(visibilityFinder);
       await tester.pumpAndSettle();
       await fillHint(tester, 'Home Wifi');
@@ -134,8 +132,7 @@ void main() {
       await tester.pumpAndSettle();
       await scrollToSave(tester);
 
-      final saveButton =
-          tester.widget<AppFilledButton>(find.byType(AppFilledButton));
+      final saveButton = tester.widget<AppButton>(find.byType(AppButton));
       expect(saveButton.onTap, isNotNull);
     },
     goldenFilename: 'LRRP-VALID_01_save_enabled',
@@ -162,7 +159,7 @@ void main() {
       await fillPasswords(tester, password: 'Linksys123!');
       await fillHint(tester, 'Home Wifi');
       await scrollToSave(tester);
-      await tester.tap(find.byType(AppFilledButton));
+      await tester.tap(find.byType(AppButton));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('resetSavedDialog')), findsOneWidget);
@@ -200,7 +197,7 @@ void main() {
       await fillPasswords(tester, password: 'Linksys123!');
       await fillHint(tester, 'Office Wifi');
       await scrollToSave(tester);
-      await tester.tap(find.byType(AppFilledButton));
+      await tester.tap(find.byType(AppButton));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('resetSavedDialog')), findsOneWidget);

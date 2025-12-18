@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_modem_lights_off_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/text/app_styled_text.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../../common/config.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../common/test_helper.dart';
@@ -46,11 +45,10 @@ void main() async {
       expect(find.bySemanticsLabel('modem Device image'),
           findsOneWidget); // Verify image by semantics label
       final showTipsButton = find.widgetWithText(
-          TextButton, testHelper.loc(context).pnpModemLightsOffTip);
+          AppButton, testHelper.loc(context).pnpModemLightsOffTip);
       expect(showTipsButton, findsOneWidget);
-      expect(find.widgetWithText(AppFilledButton, testHelper.loc(context).next),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).next),
           findsOneWidget);
-
 
       // Tap "Show Tips" button and verify modal
       await tester.tap(showTipsButton);
@@ -65,23 +63,17 @@ void main() async {
           findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpModemLightsOffTipDesc),
           findsOneWidget);
-      expect(
-          find.text(testHelper
-              .loc(context)
-              .pnpModemLightsOffTipStep1),
+      expect(find.text(testHelper.loc(context).pnpModemLightsOffTipStep1),
           findsOneWidget);
-      expect(
-          find.text(testHelper.loc(context).pnpModemLightsOffTipStep2),
+      expect(find.text(testHelper.loc(context).pnpModemLightsOffTipStep2),
           findsOneWidget);
       expect(
           tester
               .widget<AppStyledText>(
                   find.byKey(const Key('pnpModemLightsOffTipStep3')).first)
               .text,
-          testHelper
-              .loc(context)
-              .pnpModemLightsOffTipStep3);
-      final closeButton = find.widgetWithText(TextButton,
+          testHelper.loc(context).pnpModemLightsOffTipStep3);
+      final closeButton = find.widgetWithText(AppButton,
           testHelper.loc(context).ok); // Assuming 'close' for simple dialog
       expect(closeButton, findsOneWidget);
 
@@ -95,7 +87,7 @@ void main() async {
           findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpModemLightsOffDesc),
           findsOneWidget);
-      expect(find.widgetWithText(AppFilledButton, testHelper.loc(context).next),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).next),
           findsOneWidget);
     },
     helper: testHelper,

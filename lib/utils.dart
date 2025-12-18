@@ -14,7 +14,6 @@ import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/util/uuid.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'core/utils/logger.dart';
@@ -619,18 +618,18 @@ extension WiFiUtils on Utils {
       BuildContext context, int? signalStrength) {
     switch (getWifiSignalLevel(signalStrength)) {
       case NodeSignalLevel.excellent:
-        return LinksysIcons.signalWifi4Bar;
+        return AppFontIcons.signalWifi4Bar;
       case NodeSignalLevel.good:
-        return LinksysIcons.networkWifi3Bar;
+        return AppFontIcons.networkWifi3Bar;
       case NodeSignalLevel.fair:
-        return LinksysIcons.networkWifi2Bar;
+        return AppFontIcons.networkWifi2Bar;
       case NodeSignalLevel.poor:
-        return LinksysIcons.networkWifi1Bar;
+        return AppFontIcons.networkWifi1Bar;
       case NodeSignalLevel.none:
-        return LinksysIcons.signalWifi0Bar;
+        return AppFontIcons.signalWifi0Bar;
 // Default
       case NodeSignalLevel.wired:
-        return LinksysIcons.ethernet;
+        return AppFontIcons.ethernet;
     }
   }
 }

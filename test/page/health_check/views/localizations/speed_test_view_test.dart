@@ -24,8 +24,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
@@ -61,8 +60,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.runAsync(() async {
-        await precacheImage(
-            CustomTheme.of(context).images.speedtestPowered, context);
+        await precacheImage(Assets.images.speedtestPowered.provider(), context);
         await tester.pumpAndSettle();
       });
 
@@ -157,8 +155,7 @@ void main() {
         expect(find.text(testHelper.loc(context).speedUltraDescription),
             findsOneWidget);
         expect(
-            find.widgetWithText(
-                AppTextButton, testHelper.loc(context).testAgain),
+            find.widgetWithText(AppButton, testHelper.loc(context).testAgain),
             findsOneWidget);
       },
       goldenFilename: 'STV-SUCCESS-01-ultra',
@@ -254,8 +251,7 @@ void main() {
 
       expect(find.text(testHelper.loc(context).speedTestConfigurationError),
           findsOneWidget);
-      expect(
-          find.widgetWithText(AppTextButton, testHelper.loc(context).testAgain),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).testAgain),
           findsOneWidget);
     },
     goldenFilename: 'STV-ERROR-01-error_state',

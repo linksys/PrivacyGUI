@@ -17,8 +17,6 @@ import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/components/composed/app_info_card.dart';
-import 'package:privacy_gui/page/components/composed/app_radio_list.dart';
 
 class DMZSettingsView extends ArgumentsConsumerStatefulView {
   const DMZSettingsView({super.key, super.args});
@@ -102,9 +100,10 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
         child: (context, constraints) => SingleChildScrollView(
               child: Column(
                 children: [
-                  AppInfoCard(
-                    title: loc(context).dmz,
-                    description: loc(context).dmzDescription,
+                  AppListCard(
+                    title: AppText.labelLarge(loc(context).dmz),
+                    description:
+                        AppText.bodyMedium(loc(context).dmzDescription),
                     trailing: Padding(
                       padding: EdgeInsets.only(left: AppSpacing.lg),
                       child: AppSwitch(

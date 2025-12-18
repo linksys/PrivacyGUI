@@ -2,20 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
+
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
@@ -71,8 +65,8 @@ void main() {
         expect(
             find.text(testHelper.loc(context).dynamicRouting), findsOneWidget);
 
-        expect(find.byType(AppEditableTableSettingsView<NamedStaticRouteEntry>),
-            findsOneWidget);
+        expect(
+            find.byType(AppDataTable<NamedStaticRouteEntry>), findsOneWidget);
         expect(
             find.text(testHelper.loc(context).noStaticRoutes), findsOneWidget);
         expect(
@@ -103,8 +97,8 @@ void main() {
         expect(
             find.text(testHelper.loc(context).dynamicRouting), findsOneWidget);
 
-        expect(find.byType(EditableCardListsettingsView<NamedStaticRouteEntry>),
-            findsOneWidget);
+        expect(
+            find.byType(AppDataTable<NamedStaticRouteEntry>), findsOneWidget);
         expect(find.text(testHelper.loc(context).noAdvancedRouting),
             findsOneWidget);
         expect(
@@ -234,7 +228,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(LinksysIcons.add));
+        await tester.tap(find.byIcon(AppFontIcons.add));
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('ruleName')), findsOneWidget);
@@ -243,7 +237,7 @@ void main() {
         expect(find.byKey(const Key('gateway')), findsOneWidget);
         expect(find.byKey(const Key('interface')), findsOneWidget);
 
-        final saveButton = tester.widget<AppFilledButton>(
+        final saveButton = tester.widget<AppButton>(
             find.byKey(const Key('pageBottomPositiveButton')));
         expect(saveButton.onTap, isNull);
       },
@@ -270,17 +264,18 @@ void main() {
         await tester.pump(const Duration(seconds: 1));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(LinksysIcons.edit).first);
+        await tester.tap(find.byIcon(AppFontIcons.edit).first);
         await tester.pumpAndSettle();
 
-        expect(find.widgetWithText(AppTextField, rule.name), findsOneWidget);
+        expect(
+            find.widgetWithText(AppTextFormField, rule.name), findsOneWidget);
         final destinationIp = tester
-            .widget<AppIPFormField>(find.byKey(Key('destinationIP')))
+            .widget<AppIpv4TextField>(find.byKey(Key('destinationIP')))
             .controller
             ?.text;
         expect(destinationIp, rule.settings.destinationLAN);
         final subnetMask = tester
-            .widget<AppIPFormField>(find.byKey(Key('subnetMask')))
+            .widget<AppIpv4TextField>(find.byKey(Key('subnetMask')))
             .controller
             ?.text;
         expect(
@@ -288,12 +283,12 @@ void main() {
             NetworkUtils.prefixLengthToSubnetMask(
                 rule.settings.networkPrefixLength));
         final gatewayIp = tester
-            .widget<AppIPFormField>(find.byKey(Key('gateway')))
+            .widget<AppIpv4TextField>(find.byKey(Key('gateway')))
             .controller
             ?.text;
         expect(gatewayIp, rule.settings.gateway);
 
-        final saveButton = tester.widget<AppFilledButton>(
+        final saveButton = tester.widget<AppButton>(
             find.byKey(const Key('pageBottomPositiveButton')));
         expect(saveButton.onTap, isNull);
       },
@@ -314,7 +309,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(LinksysIcons.add));
+        await tester.tap(find.byIcon(AppFontIcons.add));
         await tester.pumpAndSettle();
 
         await tester.enterText(find.byKey(const Key('ruleName')), '');
@@ -347,7 +342,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(LinksysIcons.add));
+        await tester.tap(find.byIcon(AppFontIcons.add));
         await tester.pumpAndSettle();
 
         final ipAddressForm = find.byKey(const Key('destinationIP'));
@@ -382,7 +377,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(LinksysIcons.add));
+        await tester.tap(find.byIcon(AppFontIcons.add));
         await tester.pumpAndSettle();
 
         final ipAddressForm = find.byKey(const Key('subnetMask'));
@@ -418,7 +413,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(LinksysIcons.add));
+        await tester.tap(find.byIcon(AppFontIcons.add));
         await tester.pumpAndSettle();
 
         final ipAddressForm = find.byKey(const Key('gateway'));
@@ -449,7 +444,7 @@ void main() {
           child: const StaticRoutingView(),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(LinksysIcons.add));
+        await tester.tap(find.byIcon(AppFontIcons.add));
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(const Key('interface')));

@@ -16,7 +16,6 @@ import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/config.dart';
@@ -92,7 +91,7 @@ void main() {
     await tester.runAsync(() async {
       // TODO
       await precacheImage(
-        CustomTheme.of(context).images.devices.routerLn12,
+        Assets.images.devices.routerLn12.provider(),
         context,
       );
     });

@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_main_view.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/_index.dart';
 import '../../../common/test_helper.dart';
@@ -16,8 +16,10 @@ void main() {
 
   setUp(() {
     testHelper.setup();
-    final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
-    final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>);
+    final settings = WifiBundleSettings.fromMap(
+        wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final status = WifiBundleStatus.fromMap(
+        wifiBundleTestState['status'] as Map<String, dynamic>);
     initialState = WifiBundleState(
       settings: Preservable(original: settings, current: settings),
       status: status,
@@ -41,26 +43,31 @@ void main() {
 
     // Simulate a change to enable the save button
     final dirtyState = initialState.copyWith(
-        settings: initialState.settings.update(initialState.settings.current.copyWith(advanced: initialState.settings.current.advanced.copyWith(isIptvEnabled: true)))
-    );
+        settings: initialState.settings.update(initialState.settings.current
+            .copyWith(
+                advanced: initialState.settings.current.advanced
+                    .copyWith(isIptvEnabled: true))));
     when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(true);
     when(testHelper.mockWiFiBundleNotifier.state).thenReturn(dirtyState);
     await tester.pump();
 
     // Tap save button
-    final saveButtonFinder = find.byType(AppFilledButton);
+    final saveButtonFinder = find.byType(AppButton);
     await tester.tap(saveButtonFinder);
     await tester.pumpAndSettle();
   });
 
   testLocalizations('Dialog - You have unsaved changes',
       (tester, locale) async {
-    final settings = WifiBundleSettings.fromMap(wifiBundleTestState['settings'] as Map<String, dynamic>);
-    final status = WifiBundleStatus.fromMap(wifiBundleTestState['status'] as Map<String, dynamic>);
-    final dirtySettings = settings.copyWith(advanced: settings.advanced.copyWith(isIptvEnabled: true));
+    final settings = WifiBundleSettings.fromMap(
+        wifiBundleTestState['settings'] as Map<String, dynamic>);
+    final status = WifiBundleStatus.fromMap(
+        wifiBundleTestState['status'] as Map<String, dynamic>);
+    final dirtySettings = settings.copyWith(
+        advanced: settings.advanced.copyWith(isIptvEnabled: true));
     final dirtyState = WifiBundleState(
-        settings: Preservable(original: settings, current: dirtySettings),
-        status: status,
+      settings: Preservable(original: settings, current: dirtySettings),
+      status: status,
     );
 
     when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(true);

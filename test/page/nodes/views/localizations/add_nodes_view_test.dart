@@ -6,10 +6,9 @@ import 'package:privacy_gui/page/nodes/providers/add_nodes_state.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
 import 'package:privacy_gui/page/nodes/views/light_different_color_modal.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/node_list_card.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:privacy_gui/page/components/composed/app_node_list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
@@ -45,7 +44,8 @@ void main() async {
       final context = await testHelper.pumpView(
         tester,
         child: const AddNodesView(),
-        config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       );
 
       // Verify title
@@ -55,10 +55,14 @@ void main() async {
       expect(find.bySemanticsLabel('add nodes image'), findsOneWidget);
 
       // Verify "Light is a different color" button
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).addNodesLightDifferentColor), findsOneWidget);
+      expect(
+          find.widgetWithText(
+              AppButton, testHelper.loc(context).addNodesLightDifferentColor),
+          findsOneWidget);
 
       // Verify Next button
-      expect(find.widgetWithText(AppFilledButton, testHelper.loc(context).next), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).next),
+          findsOneWidget);
 
       await testHelper.takeScreenshot(tester, goldenFilename);
     },
@@ -74,7 +78,8 @@ void main() async {
       final context = await testHelper.pumpView(
         tester,
         child: const AddNodesView(),
-        config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       );
 
       // Tap the "Light is a different color" button
@@ -86,10 +91,12 @@ void main() async {
       expect(find.byType(AlertDialog), findsOneWidget);
 
       // Verify modal title
-      expect(find.text(testHelper.loc(context).addNodesLightDifferentColor), findsNWidgets(2)); // One in button, one in modal
+      expect(find.text(testHelper.loc(context).addNodesLightDifferentColor),
+          findsNWidgets(2)); // One in button, one in modal
 
       // Verify Close button in modal
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).close), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).close),
+          findsOneWidget);
 
       // Verify LightDifferentColorModal content
       expect(find.byType(LightDifferentColorModal), findsOneWidget);
@@ -105,23 +112,26 @@ void main() async {
       // Test ID: ADDND-SEARCH
       const goldenFilename = 'ADDND-SEARCH-01-loading_spinner';
 
-      when(testHelper.mockAddNodesNotifier.build())
-          .thenReturn(const AddNodesState(isLoading: true, loadingMessage: 'searching'));
+      when(testHelper.mockAddNodesNotifier.build()).thenReturn(
+          const AddNodesState(isLoading: true, loadingMessage: 'searching'));
 
       final context = await testHelper.pumpView(
         tester,
         child: const AddNodesView(),
-        config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       );
 
       // Verify full screen spinner is displayed
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Verify searching title
-      expect(find.text(testHelper.loc(context).addNodesSearchingNodes), findsOneWidget);
+      expect(find.text(testHelper.loc(context).addNodesSearchingNodes),
+          findsOneWidget);
 
       // Verify searching description
-      expect(find.text(testHelper.loc(context).addNodesSearchingNodesDesc), findsOneWidget);
+      expect(find.text(testHelper.loc(context).addNodesSearchingNodesDesc),
+          findsOneWidget);
 
       await testHelper.takeScreenshot(tester, goldenFilename);
     },
@@ -134,23 +144,26 @@ void main() async {
       // Test ID: ADDND-ONBOARD
       const goldenFilename = 'ADDND-ONBOARD-01-loading_spinner';
 
-      when(testHelper.mockAddNodesNotifier.build())
-          .thenReturn(const AddNodesState(isLoading: true, loadingMessage: 'onboarding'));
+      when(testHelper.mockAddNodesNotifier.build()).thenReturn(
+          const AddNodesState(isLoading: true, loadingMessage: 'onboarding'));
 
       final context = await testHelper.pumpView(
         tester,
         child: const AddNodesView(),
-        config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       );
 
       // Verify full screen spinner is displayed
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Verify onboarding title
-      expect(find.text(testHelper.loc(context).addNodesOnboardingNodes), findsOneWidget);
+      expect(find.text(testHelper.loc(context).addNodesOnboardingNodes),
+          findsOneWidget);
 
       // Verify onboarding description
-      expect(find.text(testHelper.loc(context).addNodesOnboardingNodesDesc), findsOneWidget);
+      expect(find.text(testHelper.loc(context).addNodesOnboardingNodesDesc),
+          findsOneWidget);
 
       await testHelper.takeScreenshot(tester, goldenFilename);
     },
@@ -169,23 +182,28 @@ void main() async {
       final context = await testHelper.pumpView(
         tester,
         child: const AddNodesView(),
-        config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       );
 
       // Verify title
       expect(find.text(testHelper.loc(context).addNodes), findsOneWidget);
 
       // Verify network description text
-      expect(find.text(testHelper.loc(context).pnpYourNetworkDesc), findsOneWidget);
+      expect(find.text(testHelper.loc(context).pnpYourNetworkDesc),
+          findsOneWidget);
 
       // Verify Refresh button
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).refresh), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).refresh),
+          findsOneWidget);
 
       // Verify Try Again button
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).tryAgain), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).tryAgain),
+          findsOneWidget);
 
       // Verify Next button
-      expect(find.widgetWithText(AppFilledButton, testHelper.loc(context).next), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).next),
+          findsOneWidget);
 
       await testHelper.takeScreenshot(tester, goldenFilename);
     },
@@ -204,7 +222,8 @@ void main() async {
       final _ = await testHelper.pumpView(
         tester,
         child: const AddNodesView(),
-        config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       );
       await tester.pumpAndSettle();
 /*
@@ -220,7 +239,7 @@ void main() async {
       expect(find.text(testHelper.loc(context).modalTroubleshootNoNodesFound), findsOneWidget);
 
       // Verify Close button
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).close), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).close), findsOneWidget);
 
       // Verify bullet list with numbered style
       expect(find.byType(AppBulletList), findsOneWidget);
@@ -232,7 +251,7 @@ void main() async {
       expect(find.text(testHelper.loc(context).modalTroubleshootNoNodesFoundDesc2), findsOneWidget);
 
       // Verify "Light is a different color" link in first step
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).addNodesLightDifferentColor), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).addNodesLightDifferentColor), findsOneWidget);
 */
       await testHelper.takeScreenshot(tester, goldenFilename);
     },
@@ -266,13 +285,14 @@ void main() async {
       final context = await testHelper.pumpView(
         tester,
         child: const AddNodesView(),
-        config: LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
+        config:
+            LinksysRouteConfig(column: ColumnGrid(column: 6, centered: true)),
       );
 
       // Pre-cache images to ensure proper rendering
       await tester.runAsync(() async {
         await precacheImage(
-            CustomTheme.of(context).images.devices.routerMx6200, context);
+            DeviceImageHelper.getRouterImage('Mx6200'), context);
       });
       await tester.pumpAndSettle();
 
@@ -280,19 +300,23 @@ void main() async {
       expect(find.text(testHelper.loc(context).addNodes), findsOneWidget);
 
       // Verify network description
-      expect(find.text(testHelper.loc(context).pnpYourNetworkDesc), findsOneWidget);
+      expect(find.text(testHelper.loc(context).pnpYourNetworkDesc),
+          findsOneWidget);
 
       // Verify Refresh button
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).refresh), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).refresh),
+          findsOneWidget);
 
       // Verify multiple node cards are displayed (5 nodes)
       expect(find.byType(AppNodeListCard), findsNWidgets(5));
 
       // Verify Try Again button
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).tryAgain), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).tryAgain),
+          findsOneWidget);
 
       // Verify Next button
-      expect(find.widgetWithText(AppFilledButton, testHelper.loc(context).next), findsOneWidget);
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).next),
+          findsOneWidget);
 
       await testHelper.takeScreenshot(tester, goldenFilename);
     },

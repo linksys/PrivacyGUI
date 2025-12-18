@@ -7,7 +7,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/guest_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/personal_wifi_step.dart';
@@ -16,19 +16,13 @@ import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
+import 'package:privacy_gui/page/components/composed/app_loadable_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/export_selector/export_base.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide AppBarStyle;
 import 'package:qr_flutter/qr_flutter.dart';
 
 /// A widget that orchestrates the entire PnP (Plug and Play) setup process.
@@ -141,16 +135,23 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
       steps = _buildSteps(pnpState);
     }
 
-    return StyledAppPageView.innerPage(
-      scrollable: true,
+    return UiKitPageView(
+      backState: UiKitBackState.none,
+      scrollable: false,
       padding: EdgeInsets.zero,
       useMainPadding: true,
-      child: (context, constraints) => AppCard(
-        showBorder: false,
-        color: Theme.of(context).colorScheme.background,
-        padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
-        child: _buildContentView(pnpState, constraints),
+      child: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: AppSurface(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                  horizontal:
+                      context.isMobileLayout ? AppSpacing.lg : AppSpacing.xxxl),
+              child: _buildContentView(pnpState, constraints),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -158,7 +159,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   /// Builds the content view, showing different widgets based on the current PnP status.
   Widget _buildContentView(PnpState pnpState, BoxConstraints constraints) {
     final status = pnpState.status;
-
+    print('XXXXX: ${constraints.maxHeight}');
     // Determine if the config view (stepper) should be visible and interactive.
     final showConfig = status == PnpFlowStatus.wizardConfiguring ||
         status == PnpFlowStatus.wizardSaveFailed;
@@ -196,18 +197,18 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     return LayoutBuilder(builder: (context, constraints) {
       return Padding(
         padding: EdgeInsets.symmetric(
-            vertical: ResponsiveLayout.isMobileLayout(context)
-                ? Spacing.small2
-                : Spacing.large5),
-        child: PnpStepper(
-          steps: steps,
-          stepperType: StepperType.horizontal,
-          onLastStep: pnpState.isRouterUnConfigured
-              ? null
-              : ref.read(pnpProvider.notifier).savePnpSettings,
-          onStepChanged: ((index, step, controller) {
-            _stepController = controller;
-          }),
+            vertical: context.isMobileLayout ? AppSpacing.sm : AppSpacing.xxxl),
+        child: Center(
+          child: PnpStepper(
+            steps: steps,
+            stepperVariant: StepperVariant.horizontal,
+            onLastStep: pnpState.isRouterUnConfigured
+                ? null
+                : ref.read(pnpProvider.notifier).savePnpSettings,
+            onStepChanged: ((index, step, controller) {
+              _stepController = controller;
+            }),
+          ),
         ),
       );
     });
@@ -215,16 +216,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
   /// Displays a view for firmware update checking/updating.
   Widget _fwUpdateCheck() => Container(
-        color: Theme.of(context).colorScheme.background,
+        color: Theme.of(context).colorScheme.surface,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(child: AppSpinner(key: Key('pnp_fw_update_spinner'))),
-              const AppGap.medium(),
+              Center(child: AppLoader(key: Key('pnp_fw_update_spinner'))),
+              AppGap.lg(),
               AppText.titleLarge(loc(context).pnpFwUpdateTitle),
-              const AppGap.medium(),
+              AppGap.lg(),
               AppText.bodyMedium(loc(context).pnpFwUpdateDesc),
             ],
           ),
@@ -236,14 +237,14 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
     // You can map statuses to specific messages if needed
     final message = pnpState.loadingMessage ?? loc(context).processing;
     return Container(
-      color: Theme.of(context).colorScheme.background,
+      color: Theme.of(context).colorScheme.surface,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Center(child: AppSpinner(key: Key('pnp_loading_spinner'))),
-            const AppGap.medium(),
+            Center(child: AppLoader(key: Key('pnp_loading_spinner'))),
+            AppGap.lg(),
             AppText.headlineSmall(message),
           ],
         ),
@@ -254,7 +255,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   /// Displays a generic error view with a "Try Again" button.
   Widget _errorView() {
     return Container(
-      color: Theme.of(context).colorScheme.background,
+      color: Theme.of(context).colorScheme.surface,
       child: Center(
         child: AppCard(
           padding: const EdgeInsets.all(24.0),
@@ -263,9 +264,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
             mainAxisSize: MainAxisSize.min,
             children: [
               AppText.headlineSmall(loc(context).generalError),
-              const AppGap.large5(),
-              AppFilledButton(
-                loc(context).tryAgain,
+              AppGap.xxxl(),
+              AppButton(
+                label: loc(context).tryAgain,
+                variant: SurfaceVariant.highlight,
                 onTap: () {
                   context.goNamed(RouteNamed.home);
                 },
@@ -279,16 +281,16 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
 
   /// Displays a success message after saving settings.
   Widget _showSaved() => Container(
-        color: Theme.of(context).colorScheme.background,
+        color: Theme.of(context).colorScheme.surface,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AppText.labelLarge(loc(context).saved),
-              const AppGap.medium(),
-              const Icon(
-                LinksysIcons.checkCircle,
-                semanticLabel: 'check icon',
+              AppGap.lg(),
+              AppIcon.font(
+                AppFontIcons.checkCircle,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ],
           ),
@@ -308,20 +310,19 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            LinksysIcons.wifi,
-            semanticLabel: 'wifi icon',
+          AppIcon.font(
+            AppFontIcons.wifi,
             color: Theme.of(context).colorScheme.primary,
             size: 48,
           ),
-          const AppGap.medium(),
+          AppGap.lg(),
           AppText.headlineSmall(loc(context).pnpWiFiReady(wifiSSID)),
-          const AppGap.medium(),
+          AppGap.lg(),
           if (needsReconnect)
             AppText.bodyMedium(loc(context).pnpWiFiReadyConnectToNewWiFi),
-          const AppGap.medium(),
+          AppGap.lg(),
           AppText.bodyMedium(loc(context).pnpScanQR),
-          const AppGap.large5(),
+          AppGap.xxxl(),
           Center(
             child: AppCard(
                 child: Column(
@@ -338,13 +339,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                     ).generate(),
                   ),
                 ),
-                const AppGap.medium(),
+                AppGap.lg(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    AppTextButton(
-                      loc(context).print,
-                      icon: LinksysIcons.print,
+                    AppButton.text(
+                      label: loc(context).print,
+                      icon: AppIcon.font(AppFontIcons.print),
                       onTap: () {
                         createWiFiQRCode(WiFiCredential(
                                 ssid: wifiSSID,
@@ -356,9 +357,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
                         });
                       },
                     ),
-                    AppTextButton(
-                      loc(context).downloadQR,
-                      icon: LinksysIcons.download,
+                    AppButton.text(
+                      label: loc(context).downloadQR,
+                      icon: AppIcon.font(AppFontIcons.download),
                       onTap: () async {
                         createWiFiQRCode(WiFiCredential(
                                 ssid: wifiSSID,
@@ -376,14 +377,13 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
               ],
             )),
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           Center(
-            child: AppSettingCard(
+            child: AppListCard.setting(
               title: loc(context).wifiPassword,
               description: wifiPassword,
               trailing: AppIconButton(
-                icon: LinksysIcons.fileCopy,
-                semanticLabel: 'file copy',
+                icon: AppIcon.font(AppFontIcons.fileCopy),
                 onTap: () {
                   service.Clipboard.setData(
                           service.ClipboardData(text: wifiPassword))
@@ -392,9 +392,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
               ),
             ),
           ),
-          const AppGap.large5(),
-          AppFilledButton(
-            loc(context).done,
+          AppGap.xxxl(),
+          AppButton(
+            label: loc(context).done,
+            variant: SurfaceVariant.highlight,
             onTap: () {
               context.goNamed(RouteNamed.prepareDashboard);
             },
@@ -407,7 +408,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   /// Displays a view prompting the user to reconnect to the Wi-Fi network.
   Widget _showNeedReconnect() {
     return Container(
-      color: Theme.of(context).colorScheme.background,
+      color: Theme.of(context).colorScheme.surface,
       child: Center(
         child: AppCard(
           padding: const EdgeInsets.all(24.0),
@@ -415,19 +416,18 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                LinksysIcons.wifi,
-                semanticLabel: 'wifi icon',
+              AppIcon.font(
+                AppFontIcons.wifi,
                 color: Theme.of(context).colorScheme.primary,
                 size: 48,
               ),
-              const AppGap.medium(),
+              AppGap.lg(),
               AppText.headlineSmall(loc(context).pnpReconnectWiFi),
-              const AppGap.large5(),
-              AppFilledButtonWithLoading(
+              AppGap.xxxl(),
+              AppLoadableWidget.primaryButton(
                 key: const Key('pnp_reconnect_next_button'),
-                loc(context).next,
-                onTap: () async {
+                title: loc(context).next,
+                onTap: (controller) async {
                   await ref.read(pnpProvider.notifier).testPnpReconnect();
                   _stepController?.stepContinue();
                 },

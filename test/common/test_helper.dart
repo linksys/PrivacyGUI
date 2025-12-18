@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
@@ -53,7 +54,7 @@ import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:privacy_gui/localization/localization_hook.dart' as hook;
 
@@ -61,10 +62,8 @@ import '../mocks/_index.dart';
 import '../mocks/connectivity_notifier_mocks.dart';
 import '../mocks/dhcp_reservations_notifier_mocks.dart';
 import '../mocks/instant_verify_notifier_mocks.dart';
-import '../mocks/manual_firmware_update_notifier_mocks.dart';
 import '../mocks/pnp_isp_service_notifier_mocks.dart';
 import '../mocks/pnp_notifier_mocks.dart' as Mock;
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_isp_settings_provider.dart';
 import '../mocks/pnp_isp_settings_notifier_mocks.dart';
 import '../mocks/pnp_service_mocks.dart';
 import '../mocks/power_table_notifier_mocks.dart';
@@ -448,8 +447,7 @@ class TestHelper {
         await precacheImage(image, context);
       }
       for (final image in preCacheCustomImages) {
-        await precacheImage(
-            CustomTheme.of(context).getRouterImage(image), context);
+        await precacheImage(DeviceImageHelper.getRouterImage(image), context);
       }
     });
     return context;
@@ -484,8 +482,7 @@ class TestHelper {
         await precacheImage(image, context);
       }
       for (final image in preCacheCustomImages) {
-        await precacheImage(
-            CustomTheme.of(context).getRouterImage(image), context);
+        await precacheImage(DeviceImageHelper.getRouterImage(image), context);
       }
     });
     return context;
@@ -519,8 +516,7 @@ class TestHelper {
         await precacheImage(image, context);
       }
       for (final image in preCacheCustomImages) {
-        await precacheImage(
-            CustomTheme.of(context).getRouterImage(image), context);
+        await precacheImage(DeviceImageHelper.getRouterImage(image), context);
       }
     });
     return context;

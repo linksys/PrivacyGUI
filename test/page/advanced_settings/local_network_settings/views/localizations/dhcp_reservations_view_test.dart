@@ -6,10 +6,8 @@ import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
@@ -66,7 +64,7 @@ void main() {
           findsOneWidget);
       expect(find.text(testHelper.loc(context).dhcpReservationDescption),
           findsOneWidget);
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).add),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).add),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
           findsOneWidget);
@@ -145,7 +143,7 @@ void main() {
       expect(
           find.descendant(
               of: find.byWidget(reservedCard),
-              matching: find.byIcon(LinksysIcons.edit)),
+              matching: find.byIcon(AppFontIcons.edit)),
           findsOneWidget);
     },
     screens: screens,
@@ -178,7 +176,7 @@ void main() {
       expect(
           find.text(testHelper.loc(context).nReservedAddresses(reservedCount)),
           findsOneWidget);
-      expect(find.byIcon(LinksysIcons.edit), findsNWidgets(reservedCount));
+      expect(find.byIcon(AppFontIcons.edit), findsNWidgets(reservedCount));
     },
     screens: screens,
     goldenFilename: 'DHCPR-ALL_RES-01-initial_state',
@@ -266,22 +264,22 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(LinksysIcons.edit).first);
+      await tester.tap(find.byIcon(AppFontIcons.edit).first);
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).edit), findsOneWidget);
       expect(find.text(testHelper.loc(context).update), findsOneWidget);
 
-      final nameField = tester
-          .widget<AppTextField>(find.byKey(const Key('deviceNameTextField')));
+      final nameField = tester.widget<AppTextFormField>(
+          find.byKey(const Key('deviceNameTextField')));
       expect(nameField.controller?.text, itemToEdit.data.description);
 
-      final ipField = tester
-          .widget<AppIPFormField>(find.byKey(const Key('ipAddressTextField')));
+      final ipField = tester.widget<AppIpv4TextField>(
+          find.byKey(const Key('ipAddressTextField')));
       expect(ipField.controller?.text, itemToEdit.data.ipAddress);
 
-      final macField = tester
-          .widget<AppTextField>(find.byKey(const Key('macAddressTextField')));
+      final macField = tester.widget<AppTextFormField>(
+          find.byKey(const Key('macAddressTextField')));
       expect(macField.controller?.text, itemToEdit.data.macAddress);
     },
     screens: screens,
@@ -302,7 +300,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final filterBtnFinder = find.byIcon(LinksysIcons.filter);
+      final filterBtnFinder = find.byIcon(AppFontIcons.filter);
       expect(filterBtnFinder, findsOneWidget);
       await tester.tap(filterBtnFinder);
       await tester.pumpAndSettle();

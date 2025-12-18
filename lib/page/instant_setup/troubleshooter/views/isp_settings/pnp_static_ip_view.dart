@@ -8,17 +8,14 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_isp_settings_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PnpStaticIpView extends ConsumerStatefulWidget {
   const PnpStaticIpView({
@@ -107,15 +104,15 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
         PnpIspSettingsStatus.saving => loc(context).savingChanges,
         PnpIspSettingsStatus.checkSettings => loc(context).launchCheckInternet,
         PnpIspSettingsStatus.checkInternetConnection =>
-            loc(context).launchCheckInternet,
+          loc(context).launchCheckInternet,
         PnpIspSettingsStatus.success => loc(context).successExclamation,
         PnpIspSettingsStatus.error => loc(context).error,
         _ => loc(context).savingChanges,
       };
-      return AppFullScreenSpinner(text: message);
+      return AppFullScreenLoader(title: message);
     }
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       scrollable: true,
       title: loc(context).staticIPAddress,
       child: (context, constraints) => Column(
@@ -124,26 +121,19 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
           AppText.bodyLarge(
             loc(context).pnpStaticIpDesc,
           ),
-          const AppGap.large4(),
+          AppGap.xxl(),
           if (errorMessage != null)
             Padding(
-              padding: const EdgeInsets.only(
-                bottom: Spacing.large4,
+              padding: EdgeInsets.only(
+                bottom: AppSpacing.xxl,
               ),
               child: AppText.bodyLarge(
                 errorMessage!,
                 color: Theme.of(context).colorScheme.error,
               ),
             ),
-          AppIPFormField(
-            semanticLabel: 'ip Address',
-            header: AppText.bodyLarge(
-              loc(context).ipAddress,
-            ),
-            controller: _ipController,
-            border: const OutlineInputBorder(),
-            errorText: _ipError,
-            onFocusChanged: (isFocused) {
+          Focus(
+            onFocusChange: (isFocused) {
               if (!isFocused) {
                 setState(() {
                   _ipError = ipAddressValidator.validate(_ipController.text)
@@ -153,17 +143,15 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 isDataValidate();
               }
             },
-          ),
-          const AppGap.large2(),
-          AppIPFormField(
-            semanticLabel: 'subnet Mask',
-            header: AppText.bodyLarge(
-              loc(context).subnetMask,
+            child: AppIpv4TextField(
+              label: loc(context).ipAddress,
+              controller: _ipController,
+              errorText: _ipError,
             ),
-            controller: _subnetController,
-            border: const OutlineInputBorder(),
-            errorText: _subnetError,
-            onFocusChanged: (isFocused) {
+          ),
+          AppGap.xl(),
+          Focus(
+            onFocusChange: (isFocused) {
               if (!isFocused) {
                 setState(() {
                   _subnetError =
@@ -174,17 +162,15 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 isDataValidate();
               }
             },
-          ),
-          const AppGap.large2(),
-          AppIPFormField(
-            semanticLabel: 'default Gateway',
-            header: AppText.bodyLarge(
-              loc(context).defaultGateway,
+            child: AppIpv4TextField(
+              label: loc(context).subnetMask,
+              controller: _subnetController,
+              errorText: _subnetError,
             ),
-            controller: _gatewayController,
-            border: const OutlineInputBorder(),
-            errorText: _gatewayError,
-            onFocusChanged: (isFocused) {
+          ),
+          AppGap.xl(),
+          Focus(
+            onFocusChange: (isFocused) {
               if (!isFocused) {
                 setState(() {
                   _gatewayError =
@@ -195,17 +181,15 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 isDataValidate();
               }
             },
-          ),
-          const AppGap.large2(),
-          AppIPFormField(
-            semanticLabel: 'dns 1',
-            header: AppText.bodyLarge(
-              loc(context).dns1,
+            child: AppIpv4TextField(
+              label: loc(context).defaultGateway,
+              controller: _gatewayController,
+              errorText: _gatewayError,
             ),
-            controller: _dns1Controller,
-            border: const OutlineInputBorder(),
-            errorText: _dns1Error,
-            onFocusChanged: (isFocused) {
+          ),
+          AppGap.xl(),
+          Focus(
+            onFocusChange: (isFocused) {
               if (!isFocused) {
                 if (_dns1Controller.text.isNotEmpty) {
                   setState(() {
@@ -222,15 +206,20 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 isDataValidate();
               }
             },
+            child: AppIpv4TextField(
+              label: loc(context).dns1,
+              controller: _dns1Controller,
+              errorText: _dns1Error,
+            ),
           ),
           Visibility(
             visible: _hasExtraDNS,
             replacement: Padding(
-              padding: const EdgeInsets.only(
-                top: Spacing.large5,
+              padding: EdgeInsets.only(
+                top: AppSpacing.xxxl,
               ),
-              child: AppTextButton.noPadding(
-                loc(context).addDns,
+              child: AppButton.text(
+                label: loc(context).addDns,
                 onTap: () {
                   setState(() {
                     _hasExtraDNS = true;
@@ -239,18 +228,11 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.only(
-                top: Spacing.large2,
+              padding: EdgeInsets.only(
+                top: AppSpacing.xl,
               ),
-              child: AppIPFormField(
-                semanticLabel: 'dns 2 Optional',
-                header: AppText.bodyLarge(
-                  loc(context).dns2Optional,
-                ),
-                controller: _dns2Controller,
-                border: const OutlineInputBorder(),
-                errorText: _dns2Error,
-                onFocusChanged: (isFocused) {
+              child: Focus(
+                onFocusChange: (isFocused) {
                   if (!isFocused) {
                     if (_dns2Controller.text.isNotEmpty) {
                       setState(() {
@@ -267,12 +249,18 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                     isDataValidate();
                   }
                 },
+                child: AppIpv4TextField(
+                  label: loc(context).dns2Optional,
+                  controller: _dns2Controller,
+                  errorText: _dns2Error,
+                ),
               ),
             ),
           ),
-          const AppGap.large5(),
-          AppFilledButton(
-            loc(context).next,
+          AppGap.xxxl(),
+          AppButton(
+            label: loc(context).next,
+            variant: SurfaceVariant.highlight,
             onTap: isDataValidate() ? onNext : null,
           ),
         ],

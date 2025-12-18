@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 
-// TODO: This is unused now since the Contact Linksys Support is removed
 enum FaqItem {
   faqVisitLinksysSupport,
   faqListCannotAddChildNode,

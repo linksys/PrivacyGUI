@@ -1,19 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PnpWaitingModemView extends ConsumerStatefulWidget {
   const PnpWaitingModemView({Key? key}) : super(key: key);
@@ -45,13 +39,13 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
   }
 
   Widget _countdownPage() {
-    return StyledAppPageView(
-      backState: StyledBackState.none,
+    return UiKitPageView(
+      backState: UiKitBackState.none,
       title: loc(context).pnpWaitingModemTitle,
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AppGap.large3(),
+          AppGap.xxl(),
           AppText.bodyLarge(loc(context).pnpWaitingModemDesc),
           Expanded(
             child: Center(
@@ -64,8 +58,8 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
   }
 
   Widget _plugBackPage() {
-    return StyledAppPageView(
-      backState: StyledBackState.none,
+    return UiKitPageView(
+      backState: UiKitBackState.none,
       title: _isPlugged
           ? _isCheckingInternet
               ? loc(context).pnpWaitingModemCheckingInternet
@@ -76,27 +70,24 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
         children: [
           if (_isCheckingInternet) ...[
             Center(
-              child: AppSpinner(),
+              child: AppLoader(),
             ),
           ],
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: Spacing.large5 + Spacing.large3,
-              ),
-              child: SvgPicture(
-                _isPlugged
-                    ? CustomTheme.of(context).images.modemWaiting
-                    : CustomTheme.of(context).images.modemPlugged,
-                semanticsLabel:
-                    _isPlugged ? 'modem Waiting image' : 'modem Plugged image',
-                fit: BoxFit.fitWidth,
-              ),
+          Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: AppSpacing.xxxl + AppSpacing.xxl,
             ),
+            child: _isPlugged
+                ? Assets.images.modemWaiting.svg(
+                    semanticsLabel: 'modem Waiting image', fit: BoxFit.fitWidth)
+                : Assets.images.modemPlugged.svg(
+                    semanticsLabel: 'modem Plugged image',
+                    fit: BoxFit.fitWidth),
           ),
           if (!_isPlugged)
-            AppFilledButton(
-              loc(context).pnpWaitingModemPluggedIn,
+            AppButton(
+              label: loc(context).pnpWaitingModemPluggedIn,
+              variant: SurfaceVariant.highlight,
               onTap: () {
                 logger.i(
                     '[PnP Troubleshooter]: Waiting for the modem to start up after plugging it back');
@@ -146,13 +137,12 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: AppProgressBar(
+            child: AppLoader(
               semanticLabel: 'timer',
-              style: AppProgressBarStyle.circular,
               duration: Duration(seconds: _maxTime),
-              stroke: 1.0,
+              strokeWidth: 1.0,
               repeat: false,
-              callback: (value) {
+              onProgress: (value) {
                 setState(() {
                   _countDown = (_maxTime * (1 - value)).toInt();
                 });

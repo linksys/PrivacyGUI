@@ -10,8 +10,8 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/_v
 
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
-import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
-import 'package:privacy_gui/page/components/composed/app_dropdown_button.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
+
 import 'package:ui_kit_library/ui_kit.dart';
 
 class DDNSSettingsView extends ArgumentsConsumerStatefulView {
@@ -70,10 +70,10 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
           children: [
             AppText.titleMedium(loc(context).selectAProvider),
             AppGap.lg(),
-            AppDropdownButton<String>(
-              selected: state.current.provider.name,
+            AppDropdown<String>(
+              value: state.current.provider.name,
               items: state.status.supportedProvider,
-              label: (item) {
+              itemAsString: (item) {
                 if (item == dynDNSProviderName) {
                   return 'dyn.com';
                 } else if (item == noIPDNSProviderName) {
@@ -87,6 +87,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                 }
               },
               onChanged: (value) {
+                if (value == null) return;
                 ref.read(ddnsProvider.notifier).setProvider(value);
               },
             ),
@@ -178,13 +179,13 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                       ),
                     ]),
                 AppGap.xxl(),
-                AppSettingCard.noBorder(
+                AppListCard.settingNoBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).internetIPAddress,
                   description: state.status.ipAddress,
                 ),
                 AppGap.xxl(),
-                AppSettingCard.noBorder(
+                AppListCard.settingNoBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).status,
                   description: state.status.status,

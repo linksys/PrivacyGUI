@@ -12,6 +12,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
@@ -57,9 +58,13 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               child: CircularProgressIndicator(),
             ),
           )
-        : UiKitPageView.withSliver(
+        : UiKitPageView(
             title: _isWidget ? null : loc(context).instantTopology,
+            hideTopbar: _isWidget,
             backState: _isWidget ? UiKitBackState.none : UiKitBackState.enabled,
+            useMainPadding: false,
+            appBarStyle:
+                _isWidget ? UiKitAppBarStyle.none : UiKitAppBarStyle.back,
             child: (context, constraints) => Column(
               children: [
                 // Refresh button for non-mobile platforms

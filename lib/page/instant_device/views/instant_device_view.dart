@@ -49,9 +49,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
       });
     }
 
-    return UiKitPageView(
-      padding: const EdgeInsets.only(),
-      enableSliverAppBar: true,
+    return UiKitPageView.withSliver(
       title: loc(context).instantDevices,
       bottomBar: isOnlineFilter
           ? null

@@ -6,9 +6,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/switch/switch.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/_index.dart';
 import '../../../../common/test_helper.dart';
@@ -232,7 +230,7 @@ void main() {
             of: wifiCard5GHzFinder,
             matching: find.byKey(ValueKey('wifiPasswordCard-5GHz')));
 
-        final passWidget = tester.widget<AppListCard>(wifiPasswordFinder);
+        final passWidget = tester.widget<AppCard>(wifiPasswordFinder);
         expect(passWidget.onTap, isNotNull);
 
         expect(wifiPasswordFinder, findsOneWidget);
@@ -245,7 +243,7 @@ void main() {
         await scrollAndTap(tester, wifiPasswordInputFinder);
         await tester.enterText(wifiPasswordInputFinder, ' 嗨');
         await tester.pumpAndSettle();
-        expect(find.byIcon(LinksysIcons.close), findsExactly(3));
+        expect(find.byIcon(AppFontIcons.close), findsExactly(3));
         await testHelper.takeScreenshot(
             tester, 'IWWL-PASSWORD-02-invalid_char_error');
       },

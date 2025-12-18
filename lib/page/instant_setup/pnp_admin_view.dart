@@ -2,18 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// A view responsible for the initial administrative setup and login process
 /// of the Plug and Play (PnP) flow.
@@ -172,8 +168,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const AppSpinner(),
-          const AppGap.medium(),
+          const AppLoader(),
+          AppGap.lg(),
           AppText.titleMedium(message),
         ],
       ),
@@ -186,13 +182,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            LinksysIcons.globe,
-            semanticLabel: 'globe',
+          AppIcon.font(
+            AppFontIcons.globe,
             color: Theme.of(context).colorScheme.primary,
             size: 48,
           ),
-          const AppGap.medium(),
+          AppGap.lg(),
           AppText.titleMedium(loc(context).launchInternetConnected),
         ],
       ),
@@ -201,21 +196,21 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
   /// Wraps an error view in a styled page layout.
   Widget _errorPage(Widget child) {
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
+    return UiKitPageView(
+      appBarStyle: UiKitAppBarStyle.none,
+      backState: UiKitBackState.none,
       padding: EdgeInsets.zero,
       enableSafeArea: (bottom: true, top: false, left: true, right: false),
       child: (context, constraints) => Center(
-          child: AppCard(
-            showBorder: false,
-            color: Theme.of(context).colorScheme.background,
+        child: AppSurface(
+          child: Padding(
             padding: EdgeInsets.zero,
             child: child,
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 
   /// Displays a generic error message with a "Try Again" button.
   Widget _errorView() {
@@ -229,9 +224,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               AppText.headlineSmall(loc(context).generalError),
-              const AppGap.large5(),
-              AppFilledButton(
-                loc(context).tryAgain,
+              AppGap.xxxl(),
+              AppButton(
+                label: loc(context).tryAgain,
+                variant: SurfaceVariant.highlight,
                 onTap: () {
                   context.goNamed(RouteNamed.home);
                 },
@@ -246,10 +242,10 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
   /// The main view for handling unconfigured routers or admin password input.
   Widget _mainView(PnpState pnpState) {
     final deviceInfo = pnpState.deviceInfo;
-    return StyledAppPageView(
+    return UiKitPageView(
       scrollable: true,
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
+      appBarStyle: UiKitAppBarStyle.none,
+      backState: UiKitBackState.none,
       enableSafeArea: (bottom: true, top: false, left: true, right: false),
       child: (context, constraints) => Center(
         child: AppCard(
@@ -260,9 +256,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (deviceInfo != null)
-                Image(
-                  image:
-                      CustomTheme.of(context).getRouterImage(deviceInfo.image),
+                AppImage.provider(
+                  imageProvider:
+                      DeviceImageHelper.getRouterImage(deviceInfo.image),
                   height: 160,
                   width: 160,
                   fit: BoxFit.contain,
@@ -288,11 +284,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.headlineSmall(loc(context).pnpFactoryResetTitle),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppText.bodyLarge(loc(context).factoryResetDesc),
-        const AppGap.large5(),
-        AppFilledButton(
-          loc(context).textContinue,
+        AppGap.xxxl(),
+        AppButton(
+          label: loc(context).textContinue,
+          variant: SurfaceVariant.highlight,
           onTap: () {
             ref.read(pnpProvider.notifier).continueFromUnconfigured();
           },
@@ -312,13 +309,12 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.headlineSmall(loc(context).welcome),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppText.bodyLarge(loc(context).pnpRouterLoginDesc),
-        const AppGap.large3(),
-        AppPasswordField(
+        AppGap.xxl(),
+        AppPasswordInput(
           key: const Key('admin_password_input_field'),
-          hintText: loc(context).routerPassword,
-          border: const OutlineInputBorder(),
+          label: loc(context).routerPassword,
           controller: _textEditController,
           onSubmitted: (_) {
             if (!isProcessing) {
@@ -335,16 +331,17 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             child: AppText.labelMedium(loc(context).incorrectPassword,
                 color: Theme.of(context).colorScheme.error),
           ),
-        const AppGap.large3(),
-        AppTextButton.noPadding(
-          loc(context).pnpRouterLoginWhereIsIt,
+        AppGap.xxl(),
+        AppButton.text(
+          label: loc(context).pnpRouterLoginWhereIsIt,
           onTap: () {
             _showRouterPasswordModal();
           },
         ),
-        const AppGap.large5(),
-        AppFilledButton(
-          loc(context).login,
+        AppGap.xxxl(),
+        AppButton(
+          label: loc(context).login,
+          variant: SurfaceVariant.highlight,
           onTap: !isProcessing
               ? () {
                   ref
@@ -365,8 +362,8 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
           return AlertDialog(
             title: AppText.titleLarge(loc(context).routerPassword),
             actions: [
-              AppTextButton(
-                loc(context).close,
+              AppButton.text(
+                label: loc(context).close,
                 onTap: () {
                   context.pop();
                 },

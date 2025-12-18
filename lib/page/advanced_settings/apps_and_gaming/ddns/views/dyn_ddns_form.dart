@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
-import 'package:privacy_gui/page/components/composed/app_dropdown_button.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
+
 import 'package:ui_kit_library/ui_kit.dart';
 
 enum DynDDNSSystem {
@@ -124,14 +124,15 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
           ],
         ),
         AppGap.lg(),
-        AppDropdownButton<DynDDNSSystem>(
-          initial: DynDDNSSystem.values.firstWhereOrNull(
+        AppDropdown<DynDDNSSystem>(
+          value: DynDDNSSystem.values.firstWhereOrNull(
                   (e) => e.name == widget.value?.mode.toLowerCase()) ??
               DynDDNSSystem.dynamic,
-          title: loc(context).system,
+          label: loc(context).system,
           items: DynDDNSSystem.values,
-          label: (item) => item.resolve(context),
+          itemAsString: (item) => item.resolve(context),
           onChanged: (value) {
+            if (value == null) return;
             widget.onFormChanged.call(
                 widget.value?.copyWith(mode: value.name.capitalizeWords()));
           },
@@ -162,7 +163,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
           opacity: _mailExchangeController.text.isNotEmpty ? 1 : .6,
           child: AbsorbPointer(
             absorbing: _mailExchangeController.text.isNotEmpty ? false : true,
-            child: AppSettingCard(
+            child: AppListCard.setting(
               title: loc(context).backupMX,
               trailing: AppSwitch(
                 value: widget.value?.mailExchangeSettings?.isBackup ?? false,
@@ -180,7 +181,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
           ),
         ),
         AppGap.lg(),
-        AppSettingCard(
+        AppListCard.setting(
           title: loc(context).wildcard,
           trailing: AppSwitch(
             value: widget.value?.isWildcardEnabled ?? false,

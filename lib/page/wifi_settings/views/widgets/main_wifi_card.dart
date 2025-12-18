@@ -6,6 +6,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_list_tile.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_password_field.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -126,8 +127,11 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
 
   Widget _advancedWiFiPasswordCard(WiFiItem radio) => WifiListTile(
         title: AppText.bodyMedium(loc(context).wifiPassword),
-        description: AppText.labelLarge(
-          radio.securityType.isOpenVariant ? '' : '••••••••',
+        description: WifiPasswordField(
+          controller: TextEditingController(text: radio.password),
+          readOnly: true,
+          showLabel: false,
+          isLength64: true,
         ),
         trailing: const AppIcon.font(AppFontIcons.edit),
         onTap: () {

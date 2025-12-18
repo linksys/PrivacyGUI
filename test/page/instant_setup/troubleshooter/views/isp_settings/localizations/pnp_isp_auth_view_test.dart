@@ -4,8 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../../common/config.dart';
 import '../../../../../../common/test_helper.dart';
@@ -41,10 +40,10 @@ void main() async {
       // --- Step 1: Initial State ---
       expect(find.text(testHelper.loc(context).pnpIspSettingsAuthTitle),
           findsOneWidget);
-      expect(find.byType(AppPasswordField), findsOneWidget);
+      expect(find.byType(AppPasswordInput), findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpRouterLoginWhereIsIt),
           findsOneWidget);
-      expect(find.widgetWithText(AppFilledButton, testHelper.loc(context).next),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).next),
           findsOneWidget);
       await testHelper.takeScreenshot(
           tester, 'PNP-ISP-AUTH_FULL-FLOW_01_initial_state');
@@ -72,11 +71,11 @@ void main() async {
         throw ExceptionInvalidAdminPassword();
       });
 
-      await tester.enterText(find.byType(AppPasswordField), 'wrong_password');
-      await tester.tap(
-          find.widgetWithText(AppFilledButton, testHelper.loc(context).next));
+      await tester.enterText(find.byType(AppPasswordInput), 'wrong_password');
+      await tester
+          .tap(find.widgetWithText(AppButton, testHelper.loc(context).next));
       await tester.pump(); // Show spinner
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
       await tester.pumpAndSettle(); // Wait for error handling
 
       expect(find.text(testHelper.loc(context).errorIncorrectPassword),
@@ -90,15 +89,15 @@ void main() async {
         await Future.delayed(const Duration(milliseconds: 1000));
       });
 
-      await tester.enterText(find.byType(AppPasswordField), 'correct_password');
-      await tester.tap(
-          find.widgetWithText(AppFilledButton, testHelper.loc(context).next));
+      await tester.enterText(find.byType(AppPasswordInput), 'correct_password');
+      await tester
+          .tap(find.widgetWithText(AppButton, testHelper.loc(context).next));
       await tester.pump();
       await testHelper.takeScreenshot(
           tester, 'PNP-ISP-AUTH_FULL-FLOW_04_spinner');
 
       // Show spinner
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
       await tester.pumpAndSettle(); // Wait for pop to be called
     },
     helper: testHelper,

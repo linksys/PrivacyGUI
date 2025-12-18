@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_
 import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/guest_wifi_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_list_tile.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_password_field.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class SimpleModeView extends ConsumerStatefulWidget {
@@ -135,33 +136,40 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
       String password, WifiSecurityType securityType) {
     return Opacity(
       opacity: securityType.isOpenVariant ? .5 : 1,
-      child: IntrinsicWidth(
-        child: IgnorePointer(
-          ignoring: securityType.isOpenVariant ? true : false,
-          child: WifiListTile(
-            title: AppText.bodyMedium(
-              loc(context).wifiPassword,
-              color: !securityType.isOpenVariant && password.isEmpty
-                  ? Theme.of(context).colorScheme.error
-                  : Theme.of(context).colorScheme.onSurface,
-            ),
-            description: IntrinsicWidth(
-                child: IgnorePointer(
-              child: AppTextFormField(
-                controller: _passwordController,
-                obscureText: true,
-              ),
-            )),
-            trailing: const AppIcon.font(AppFontIcons.edit),
-            onTap: () {
-              showWifiPasswordModal(password, (value) {
-                widget.onWifiPasswordEdited?.call(value);
-                setState(() {
+      child: IgnorePointer(
+        ignoring: securityType.isOpenVariant,
+        child: WifiListTile(
+          title: AppText.bodyMedium(
+            loc(context).wifiPassword,
+            color: !securityType.isOpenVariant && password.isEmpty
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.onSurface,
+          ),
+          description: WifiPasswordField(
+            controller: _passwordController,
+            readOnly: true,
+            showLabel: false,
+            // Assuming isLength64 logic matches MainWiFiCard, but SimpleMode doesn't show validations anyway.
+          ),
+          trailing: const AppIcon.font(AppFontIcons.edit),
+          onTap: () {
+            showWifiPasswordModal(password, (value) {
+              widget.onWifiPasswordEdited?.call(value);
+              // Controller update handled in setState below if needed,
+              // but showWifiPasswordModal callback usually means value saved.
+              // However, simpler to just update controller text here to reflect change immediately?
+              // The original code did:
+              /*
+              setState(() {
                   _passwordController.text = value;
                 });
+              */
+              // We should preserve that behavior if possible, but setState handles it.
+              setState(() {
+                _passwordController.text = value;
               });
-            },
-          ),
+            });
+          },
         ),
       ),
     );

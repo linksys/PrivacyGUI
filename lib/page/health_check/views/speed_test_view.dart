@@ -164,7 +164,7 @@ class SpeedTestView extends ConsumerWidget {
 
   (String, String) _getTestResultDesc(
       BuildContext context, SpeedTestUIModel? result) {
-    var downloadBandWidth = double.parse(result?.downloadSpeed ?? '0');
+    var downloadBandWidth = double.tryParse(result?.downloadSpeed ?? '0') ?? 0;
     var resultTitle = switch (downloadBandWidth) {
       < 50 => loc(context).speedOkay,
       < 100 => loc(context).speedGood,

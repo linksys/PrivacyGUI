@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/inter
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/base_wan_form.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/components/composed/app_radio_list.dart';
+
 import './connection_mode_form.dart';
 
 class PptpForm extends BaseWanForm {

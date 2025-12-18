@@ -7,8 +7,7 @@ import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/_index.dart';
 import '../../../../common/test_helper.dart';
@@ -356,9 +355,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify that the save button is enabled
-      final saveButtonFinder = find.byType(AppFilledButton);
+      final saveButtonFinder = find.byType(AppButton);
       expect(saveButtonFinder, findsOneWidget);
-      final AppFilledButton button = tester.widget(saveButtonFinder);
+      final AppButton button = tester.widget(saveButtonFinder);
       expect(button.onTap, isNotNull);
     }, goldenFilename: 'WIFIS-DIRTY_STATE-01-save_button_enabled');
   });

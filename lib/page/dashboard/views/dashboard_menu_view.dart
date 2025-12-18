@@ -46,20 +46,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       scrollable: true,
       backState: UiKitBackState.none,
       title: loc(context).menu,
-      menu: UiKitMenuConfig(title: loc(context).myNetwork, items: [
-        UiKitMenuItem(
-            label: loc(context).restartNetwork,
-            icon: AppFontIcons.restartAlt,
-            onTap: () {
-              _restartNetwork();
-            }),
-        UiKitMenuItem(
-            label: loc(context).menuSetupANewProduct,
-            icon: AppFontIcons.add,
-            onTap: () {
-              context.pushNamed(RouteNamed.addNodes);
-            })
-      ]),
+      menuView: _buildMenuView(context),
+      menuPosition: MenuPosition.left,
       child: (context, constraints) => Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,6 +102,37 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
           status: item.status,
           isBeta: item.isBeta,
           onTap: item.onTap,
+        ),
+      ),
+    );
+  }
+
+  PageMenuView _buildMenuView(BuildContext context) {
+    return PageMenuView(
+      icon: Icons.menu,
+      label: loc(context).myNetwork,
+      content: AppCard(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppListTile(
+              title: AppText.bodyMedium(loc(context).restartNetwork),
+              leading: const AppIcon.font(AppFontIcons.restartAlt),
+              onTap: () {
+                Navigator.of(context).maybePop();
+                _restartNetwork();
+              },
+            ),
+            AppListTile(
+              title: AppText.bodyMedium(loc(context).menuSetupANewProduct),
+              leading: const AppIcon.font(AppFontIcons.add),
+              onTap: () {
+                Navigator.of(context).maybePop();
+                context.pushNamed(RouteNamed.addNodes);
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -323,7 +342,10 @@ class AppMenuCard extends StatelessWidget {
                   label: status! ? 'Off' : 'On',
                   color: status!
                       ? Theme.of(context).colorScheme.outline
-                      : Theme.of(context).extension<AppColorScheme>()?.semanticSuccess ?? Colors.green,
+                      : Theme.of(context)
+                              .extension<AppColorScheme>()
+                              ?.semanticSuccess ??
+                          Colors.green,
                 )
             ],
           ),
@@ -338,7 +360,10 @@ class AppMenuCard extends StatelessWidget {
                   if (isBeta) ...[
                     AppBadge(
                       label: 'BETA',
-                      color: Theme.of(context).extension<AppColorScheme>()?.semanticWarning ?? Colors.orange,
+                      color: Theme.of(context)
+                              .extension<AppColorScheme>()
+                              ?.semanticWarning ??
+                          Colors.orange,
                     ),
                   ],
                 ],

@@ -239,6 +239,9 @@ class UiKitPageView extends ConsumerStatefulWidget {
     void Function(int index)? onTabTap,
     VoidCallback? onBackTap,
     double? unboundedFallbackHeight,
+    TextStyle? selectedTabTextStyle,
+    TextStyle? tabTextStyle,
+    Color? tabIndicatorColor,
   }) {
     return UiKitPageView(
       key: key,

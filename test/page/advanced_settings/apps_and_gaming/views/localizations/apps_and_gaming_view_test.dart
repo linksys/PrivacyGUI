@@ -10,9 +10,7 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dy
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/no_ip_ddns_form.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/tzo_ddns_form.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacygui_widgets/widgets/tab_bar/linksys_tab_bar.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
@@ -216,7 +214,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final systemTypeFinder = find.byType(AppDropdownButton<DynDDNSSystem>);
+        final systemTypeFinder = find.byType(AppDropdown<DynDDNSSystem>);
         expect(systemTypeFinder, findsOneWidget);
         await tester.tap(systemTypeFinder.first);
         await tester.pumpAndSettle();
@@ -444,7 +442,7 @@ void main() {
         await tester.tap(tabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -491,7 +489,7 @@ void main() {
         await tester.tap(tabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -552,7 +550,7 @@ void main() {
         await tester.tap(tabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -594,7 +592,7 @@ void main() {
         await tester.tap(tabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -704,7 +702,7 @@ void main() {
         await tester.tap(tabFinder.at(2));
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -745,7 +743,7 @@ void main() {
         await tester.tap(tabFinder.at(2)); // Tap on Port Range Forwarding tab
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -805,7 +803,7 @@ void main() {
         await tester.tap(tabFinder.at(2));
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -859,7 +857,7 @@ void main() {
         await tester.tap(tabFinder.at(2));
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -907,7 +905,7 @@ void main() {
         await tester.tap(tabFinder.at(2));
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -968,11 +966,11 @@ void main() {
         await tester.tap(tabFinder.at(2));
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
-        final protocolTypeFinder = find.byType(AppDropdownButton<String>).first;
+        final protocolTypeFinder = find.byType(AppDropdown<String>).first;
         await tester.tap(protocolTypeFinder);
         await tester.pumpAndSettle();
 
@@ -1012,7 +1010,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(AppTabBar);
+      final tabFinder = find.byType(TabBar);
       final portRangeTriggeringFinder = find.byKey(Key('portRangeTriggering'));
       await tester.drag(tabFinder, Offset(-500, 0));
       await tester.pumpAndSettle();
@@ -1038,7 +1036,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(AppTabBar);
+      final tabFinder = find.byType(TabBar);
       final portRangeTriggeringFinder = find.byKey(Key('portRangeTriggering'));
       await tester.drag(tabFinder, Offset(-500, 0));
       await tester.pumpAndSettle();
@@ -1064,7 +1062,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final tabFinder = find.byType(AppTabBar);
+        final tabFinder = find.byType(TabBar);
         final portRangeTriggeringFinder =
             find.byKey(Key('portRangeTriggering'));
         await tester.drag(tabFinder, Offset(-500, 0));
@@ -1072,7 +1070,7 @@ void main() {
         await tester.tap(portRangeTriggeringFinder);
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -1109,7 +1107,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final tabFinder = find.byType(AppTabBar);
+        final tabFinder = find.byType(TabBar);
         final portRangeTriggeringFinder =
             find.byKey(const Key('portRangeTriggering'));
         await tester.drag(tabFinder, const Offset(-500, 0));
@@ -1117,7 +1115,7 @@ void main() {
         await tester.tap(portRangeTriggeringFinder);
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -1173,7 +1171,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final tabFinder = find.byType(AppTabBar);
+        final tabFinder = find.byType(TabBar);
         final portRangeTriggeringFinder =
             find.byKey(Key('portRangeTriggering'));
         await tester.drag(tabFinder, Offset(-500, 0));
@@ -1181,7 +1179,7 @@ void main() {
         await tester.tap(portRangeTriggeringFinder);
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 
@@ -1240,7 +1238,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final tabFinder = find.byType(AppTabBar);
+        final tabFinder = find.byType(TabBar);
         final portRangeTriggeringFinder =
             find.byKey(Key('portRangeTriggering'));
         await tester.drag(tabFinder, Offset(-500, 0));
@@ -1248,7 +1246,7 @@ void main() {
         await tester.tap(portRangeTriggeringFinder);
         await tester.pumpAndSettle();
 
-        final addBtnFinder = find.byIcon(LinksysIcons.add);
+        final addBtnFinder = find.byIcon(AppFontIcons.add);
         await tester.tap(addBtnFinder);
         await tester.pumpAndSettle();
 

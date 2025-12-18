@@ -648,3 +648,130 @@ void _onStartPortChanged() {
 - [ipv6_port_service_list_view.dart](file:///Users/austin.chang/belkin/privacyGUI/PrivacyGUI/lib/page/advanced_settings/firewall/views/ipv6_port_service_list_view.dart)
 
 *AppDataTable 遷移指南完成：2024-12-17*
+
+---
+
+## 🔥 Instant Setup 模組遷移技術發現 (2025-12-17)
+
+### Component API 適配與增強
+
+#### 1. AppLoader 取代 AppProgressBar (Timer Mode)
+`AppLoader` 新增了計時器功能，可完全取代舊版 `AppProgressBar`。
+
+**舊版 (privacygui_widgets)**:
+```dart
+AppProgressBar(
+  duration: Duration(seconds: 60),
+  callback: (value) { ... }, // value: 0.0 -> 1.0
+)
+```
+
+**新版 (ui_kit_library)**:
+```dart
+AppLoader(
+  duration: Duration(seconds: 60),
+  onProgress: (value) { ... }, // value: 0.0 -> 1.0 (default)
+  variant: LoaderVariant.circular, // 或 linear
+)
+```
+
+#### 2. AppIpv4TextField Focus 驗證模式
+當需要模擬舊版 `AppIPFormField` 的 `onFocusChanged` 驗證行為時，需使用 `Focus` widget 包裝：
+
+```dart
+Focus(
+  onFocusChange: (isFocused) {
+    if (!isFocused) {
+      // 失去焦點時觸發驗證
+      setState(() {
+        _error = validator.validate(_controller.text) ? null : 'Error';
+      });
+    }
+  },
+  child: AppIpv4TextField(
+    controller: _controller,
+    errorText: _error,
+    // ...
+  ),
+)
+```
+
+#### 3. AppBulletList 組合替代方案
+UI Kit 暫無 `AppBulletList`，建議使用 `Column` + `Row` 組合：
+
+```dart
+Column(
+  children: [
+    _buildNumberedItem(1, 'Step 1 description'),
+    AppGap.sm(),
+    _buildNumberedItem(2, 'Step 2 description'),
+  ],
+)
+
+Widget _buildNumberedItem(int index, String text) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      AppText.bodyMedium('$index. '),
+      AppGap.sm(),
+      Expanded(child: AppText.bodyMedium(text)),
+    ],
+  );
+}
+```
+
+#### 4. AppFullScreenLoader API 調整
+*   舊版 `AppFullScreenSpinner`: 使用 `text` 參數
+*   新版 `AppFullScreenLoader`: 使用 `title` 和 `description` 參數
+
+```dart
+AppFullScreenLoader(
+  title: loc(context).loadingTitle,
+  // description: 'Optional description',
+)
+```
+
+#### 5. CustomResponsive 移除
+`CustomResponsive` 包裝器已不再需要。`ui_kit_library` 的 `DesignSystem.init` 已包含響應式設計支援。
+在 `lib/app.dart` 中，可以直接移除 `CustomResponsive` widget 包裝。
+
+#### 6. CustomTheme 圖片資源遷移
+`CustomTheme.of(context).images.*` 的圖片資源已確認遷移至 `Assets.images` (ui_kit_library)。
+
+**Mapping**:
+```dart
+// 舊版
+CustomTheme.of(context).images.linksysWordmark
+CustomTheme.of(context).images.modemWaiting
+
+// 新版
+Assets.images.linksysWordmark.svg() // 返回 SvgPicture Widget
+Assets.images.modemWaiting.svg()
+```
+注意：部分圖片可能在 `ui_kit` 中不存在，需逐一確認。在 `pnp` 模組中，`modemWaiting`, `modemPlugged`, `modemIdentifying` 均已確認存在。
+
+#### 7. UiKitPageView 底部欄位 (Footer/BottomBar) 模式
+`UiKitPageView` 提供兩種底部欄位配置方式：
+
+1.  **標準操作欄 (`bottomBar`)**: 使用 `UiKitBottomBarConfig`。適用於標準的 "Save/Cancel" 操作。
+    ```dart
+    bottomBar: UiKitBottomBarConfig(
+        positiveLabel: loc(context).save,
+        onPositiveTap: _saveChanges,
+        isPositiveEnabled: isEnabled,
+    )
+    ```
+
+2.  **自定義底部 widget (`pageFooter`)**: 對應內部的 `customBottomBar`。適用於非標準佈局 (如 HomeView 的登入按鈕)。
+    ```dart
+    pageFooter: Column(
+      children: [
+        AppButton(...),
+        // ...
+      ],
+    )
+    ```
+
+### 已遷移頁面範例
+*   **HomeView (`home_view.dart`)**: 使用 `pageFooter` 和 `Assets`圖片。
+*   **VpnSettingsPage (`vpn_settings_page.dart`)**: 使用 `UiKitBottomBarConfig`。

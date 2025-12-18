@@ -10,7 +10,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacy_gui/page/components/composed/app_radio_list.dart';
+
 import 'package:ui_kit_library/ui_kit.dart';
 
 class StaticRoutingView extends ArgumentsConsumerStatefulView {
@@ -92,36 +92,34 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
           });
         },
       ),
-      child: (context, constraints) => SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppRadioList(
-              key: const Key('settingNetwork'),
-              selected: state.current.isNATEnabled
-                  ? RoutingSettingNetwork.nat
-                  : RoutingSettingNetwork.dynamicRouting,
-              itemHeight: 56,
-              items: [
-                AppRadioListItem(
-                  title: loc(context).nat,
-                  value: RoutingSettingNetwork.nat,
-                ),
-                AppRadioListItem(
-                  title: loc(context).dynamicRouting,
-                  value: RoutingSettingNetwork.dynamicRouting,
-                ),
-              ],
-              onChanged: (index, value) {
-                if (value != null) {
-                  _notifier.updateSettingNetwork(value);
-                }
-              },
-            ),
-            AppGap.xxl(),
-            _buildDataTable(state, isAddEnabled),
-          ],
-        ),
+      child: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppRadioList(
+            key: const Key('settingNetwork'),
+            selected: state.current.isNATEnabled
+                ? RoutingSettingNetwork.nat
+                : RoutingSettingNetwork.dynamicRouting,
+            itemHeight: 56,
+            items: [
+              AppRadioListItem(
+                title: loc(context).nat,
+                value: RoutingSettingNetwork.nat,
+              ),
+              AppRadioListItem(
+                title: loc(context).dynamicRouting,
+                value: RoutingSettingNetwork.dynamicRouting,
+              ),
+            ],
+            onChanged: (index, value) {
+              if (value != null) {
+                _notifier.updateSettingNetwork(value);
+              }
+            },
+          ),
+          AppGap.xxl(),
+          _buildDataTable(state, isAddEnabled),
+        ],
       ),
     );
   }
@@ -264,13 +262,16 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
         final state = ref.read(staticRoutingProvider);
 
         // Initialize provider
-        ref.read(staticRoutingRuleProvider.notifier).init(
-              state.current.entries.entries,
-              rule,
-              state.current.entries.entries.indexOf(rule),
-              state.status.routerIp,
-              state.status.subnetMask,
-            );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          ref.read(staticRoutingRuleProvider.notifier).init(
+                state.current.entries.entries,
+                rule,
+                state.current.entries.entries.indexOf(rule),
+                state.status.routerIp,
+                state.status.subnetMask,
+              );
+        });
 
         // Set controller values
         _routerNameController.text = rule.name;

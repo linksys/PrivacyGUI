@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/providers/mock_pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
+
 import '../../../../common/_index.dart';
 
 // A wrapper widget to correctly handle the lifecycle of the onInit call.
@@ -61,13 +61,11 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             theme: mockLightThemeData,
-            home: CustomResponsive(
-              child: Scaffold(
-                body: Consumer(builder: (context, ref, child) {
-                  capturedRef = ref; // Capture the ref
-                  return InitOnceWrapper(step: personalWiFiStep);
-                }),
-              ),
+            home: Scaffold(
+              body: Consumer(builder: (context, ref, child) {
+                capturedRef = ref; // Capture the ref
+                return InitOnceWrapper(step: personalWiFiStep);
+              }),
             ),
           ),
         ),

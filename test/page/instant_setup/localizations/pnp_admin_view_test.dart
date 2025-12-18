@@ -5,10 +5,7 @@ import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_helper.dart';
@@ -70,7 +67,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byType(AppSpinner), findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
       expect(find.text(testHelper.loc(context).processing), findsOneWidget);
     }, screens: screens, goldenFilename: 'PNPA-INIT_01-initial_state');
 
@@ -95,7 +92,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byType(AppSpinner), findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
       expect(find.text(testHelper.loc(context).launchCheckInternet),
           findsOneWidget);
     },
@@ -123,7 +120,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byIcon(LinksysIcons.globe), findsOneWidget);
+      expect(find.byIcon(AppFontIcons.globe), findsOneWidget);
       expect(find.text(testHelper.loc(context).launchInternetConnected),
           findsOneWidget);
     },
@@ -153,15 +150,13 @@ void main() {
       );
 
       // expect image display matched
-      expect(find.image(CustomTheme.of(context).images.devices_xl.routerLn12),
+      expect(find.image(Assets.images.devicesXl.routerLn12.provider()),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpFactoryResetTitle),
           findsOneWidget);
       expect(
           find.text(testHelper.loc(context).factoryResetDesc), findsOneWidget);
-      expect(
-          find.widgetWithText(
-              AppFilledButton, testHelper.loc(context).textContinue),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).login),
           findsOneWidget);
     },
         screens: screens,
@@ -190,7 +185,7 @@ void main() {
       );
 
       // expect image display matched
-      expect(find.image(CustomTheme.of(context).images.devices_xl.routerLn12),
+      expect(find.image(Assets.images.devicesXl.routerLn12.provider()),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).welcome), findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpRouterLoginDesc),
@@ -199,15 +194,14 @@ void main() {
           find.byKey(const Key('admin_password_input_field')), findsOneWidget);
       expect(
           find.byWidgetPredicate((widget) =>
-              widget is AppPasswordField &&
-              widget.hintText == testHelper.loc(context).routerPassword),
+              widget is AppPasswordInput &&
+              widget.label == testHelper.loc(context).routerPassword),
           findsOneWidget);
-      expect(
-          find.widgetWithText(AppFilledButton, testHelper.loc(context).login),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).login),
           findsOneWidget);
       expect(
           find.widgetWithText(
-              AppTextButton, testHelper.loc(context).pnpRouterLoginWhereIsIt),
+              AppButton, testHelper.loc(context).pnpRouterLoginWhereIsIt),
           findsOneWidget);
     },
         screens: screens,
@@ -235,7 +229,7 @@ void main() {
         preCacheCustomImages: [deviceInfo.image],
       );
       // expect image display matched
-      expect(find.image(CustomTheme.of(context).images.devices_xl.routerLn12),
+      expect(find.image(Assets.images.devicesXl.routerLn12.provider()),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).welcome), findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpRouterLoginDesc),
@@ -244,23 +238,20 @@ void main() {
           find.byKey(const Key('admin_password_input_field')), findsOneWidget);
       expect(
           find.byWidgetPredicate((widget) =>
-              widget is AppPasswordField &&
-              widget.hintText == testHelper.loc(context).routerPassword),
+              widget is AppPasswordInput &&
+              widget.label == testHelper.loc(context).routerPassword),
           findsOneWidget);
       expect(
           find.widgetWithText(
-              AppTextButton, testHelper.loc(context).pnpRouterLoginWhereIsIt),
+              AppButton, testHelper.loc(context).pnpRouterLoginWhereIsIt),
           findsOneWidget);
       // next button should be disabled
-      expect(
-          find.widgetWithText(AppFilledButton, testHelper.loc(context).login),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).login),
           findsOneWidget);
-      final widget = tester.widget(find.byType(AppFilledButton));
-      expect(widget, isA<AppFilledButton>());
-      expect((widget as AppFilledButton).onTap, null);
-    },
-        screens: screens,
-        goldenFilename: 'PNPA-LOGIN_IN_01-logging_in_screen');
+      final widget = tester.widget(find.byType(AppButton));
+      expect(widget, isA<AppButton>());
+      expect((widget as AppButton).onTap, null);
+    }, screens: screens, goldenFilename: 'PNPA-LOGIN_IN_01-logging_in_screen');
 
     // Test ID: PNPA-LOGIN_FAIL
     testLocalizations(
@@ -286,7 +277,7 @@ void main() {
       );
 
       // expect image display matched
-      expect(find.image(CustomTheme.of(context).images.devices_xl.routerLn12),
+      expect(find.image(Assets.images.devicesXl.routerLn12.provider()),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).welcome), findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpRouterLoginDesc),
@@ -295,15 +286,14 @@ void main() {
           find.byKey(const Key('admin_password_input_field')), findsOneWidget);
       expect(
           find.byWidgetPredicate((widget) =>
-              widget is AppPasswordField &&
-              widget.hintText == testHelper.loc(context).routerPassword),
+              widget is AppPasswordInput &&
+              widget.label == testHelper.loc(context).routerPassword),
           findsOneWidget);
       expect(
           find.widgetWithText(
-              AppTextButton, testHelper.loc(context).pnpRouterLoginWhereIsIt),
+              AppButton, testHelper.loc(context).pnpRouterLoginWhereIsIt),
           findsOneWidget);
-      expect(
-          find.widgetWithText(AppFilledButton, testHelper.loc(context).login),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).login),
           findsOneWidget);
       expect(
           find.text(testHelper.loc(context).incorrectPassword), findsOneWidget);
@@ -335,9 +325,7 @@ void main() {
 
       expect(find.text(testHelper.loc(context).generalError), findsOneWidget);
 
-      expect(
-          find.widgetWithText(
-              AppFilledButton, testHelper.loc(context).tryAgain),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).tryAgain),
           findsOneWidget);
     }, screens: screens, goldenFilename: 'PNPA-ERROR_01-generic_error_screen');
 
@@ -363,7 +351,7 @@ void main() {
         preCacheCustomImages: [deviceInfo.image],
       );
 
-      expect(find.image(CustomTheme.of(context).images.devices_xl.routerLn12),
+      expect(find.image(Assets.images.devicesXl.routerLn12.provider()),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).welcome), findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpRouterLoginDesc),
@@ -372,14 +360,13 @@ void main() {
           find.byKey(const Key('admin_password_input_field')), findsOneWidget);
       expect(
           find.byWidgetPredicate((widget) =>
-              widget is AppPasswordField &&
-              widget.hintText == testHelper.loc(context).routerPassword),
+              widget is AppPasswordInput &&
+              widget.label == testHelper.loc(context).routerPassword),
           findsOneWidget);
-      expect(
-          find.widgetWithText(AppFilledButton, testHelper.loc(context).login),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).login),
           findsOneWidget);
       final btnFinder = find.widgetWithText(
-          AppTextButton, testHelper.loc(context).pnpRouterLoginWhereIsIt);
+          AppButton, testHelper.loc(context).pnpRouterLoginWhereIsIt);
       expect(btnFinder, findsOneWidget);
 
       await tester.tap(btnFinder);
@@ -396,10 +383,8 @@ void main() {
           findsOneWidget);
       expect(find.text(testHelper.loc(context).modalRouterPasswordLocation),
           findsOneWidget);
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).close),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).close),
           findsOneWidget);
-    },
-        screens: screens,
-        goldenFilename: 'PNPA-PASS_MOD_01-where_is_it_modal');
+    }, screens: screens, goldenFilename: 'PNPA-PASS_MOD_01-where_is_it_modal');
   });
 }

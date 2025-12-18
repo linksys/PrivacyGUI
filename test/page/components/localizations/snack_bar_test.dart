@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_helper.dart';
@@ -25,7 +25,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(0);
+    final buttonFinder = find.byType(AppButton).at(0);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -45,7 +45,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(1);
+    final buttonFinder = find.byType(AppButton).at(1);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -64,7 +64,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(2);
+    final buttonFinder = find.byType(AppButton).at(2);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -84,7 +84,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(3);
+    final buttonFinder = find.byType(AppButton).at(3);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -103,7 +103,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(4);
+    final buttonFinder = find.byType(AppButton).at(4);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -123,7 +123,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(5);
+    final buttonFinder = find.byType(AppButton).at(5);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -142,7 +142,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(6);
+    final buttonFinder = find.byType(AppButton).at(6);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -162,7 +162,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(7);
+    final buttonFinder = find.byType(AppButton).at(7);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -182,7 +182,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(8);
+    final buttonFinder = find.byType(AppButton).at(8);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -202,7 +202,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(9);
+    final buttonFinder = find.byType(AppButton).at(9);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -222,7 +222,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(10);
+    final buttonFinder = find.byType(AppButton).at(10);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -243,7 +243,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(11);
+    final buttonFinder = find.byType(AppButton).at(11);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -262,7 +262,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(12);
+    final buttonFinder = find.byType(AppButton).at(12);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -281,7 +281,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(13);
+    final buttonFinder = find.byType(AppButton).at(13);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -301,7 +301,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(14);
+    final buttonFinder = find.byType(AppButton).at(14);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -321,7 +321,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(15);
+    final buttonFinder = find.byType(AppButton).at(15);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -341,7 +341,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(16);
+    final buttonFinder = find.byType(AppButton).at(16);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -361,7 +361,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(17);
+    final buttonFinder = find.byType(AppButton).at(17);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -380,7 +380,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(18);
+    final buttonFinder = find.byType(AppButton).at(18);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -399,7 +399,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(19);
+    final buttonFinder = find.byType(AppButton).at(19);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -418,7 +418,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(20);
+    final buttonFinder = find.byType(AppButton).at(20);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -437,7 +437,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(21);
+    final buttonFinder = find.byType(AppButton).at(21);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -457,7 +457,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(22);
+    final buttonFinder = find.byType(AppButton).at(22);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -477,7 +477,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(23);
+    final buttonFinder = find.byType(AppButton).at(23);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -497,7 +497,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(24);
+    final buttonFinder = find.byType(AppButton).at(24);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -517,7 +517,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(25);
+    final buttonFinder = find.byType(AppButton).at(25);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,
@@ -537,7 +537,7 @@ void main() {
       ),
       locale: locale,
     );
-    final buttonFinder = find.byType(AppTextButton).at(26);
+    final buttonFinder = find.byType(AppButton).at(26);
     await tester.scrollUntilVisible(
       buttonFinder,
       100,

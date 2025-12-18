@@ -6,7 +6,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/main.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
-import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
 import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';

@@ -4,10 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-
 
 Widget testableRouter({
   required GoRouter router,
@@ -18,31 +17,15 @@ Widget testableRouter({
   ThemeData? darkTheme,
   Locale? locale,
 }) {
-  const themeColor = AppPalette.brandPrimary;
-  final appLightTheme = AppTheme.create(
-    brightness: Brightness.light,
-    seedColor: themeColor,
-    designThemeBuilder: (scheme) => FlatDesignTheme.light(scheme),
-  );
-  final appDarkTheme = AppTheme.create(
-    brightness: Brightness.dark,
-    seedColor: themeColor,
-    designThemeBuilder: (scheme) => FlatDesignTheme.dark(scheme),
-  );
+  final appLightTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
+  final appDarkTheme = ThemeJsonConfig.defaultConfig().createDarkTheme();
+
   return ProviderScope(
     overrides: overrides,
     parent: provider,
     child: MaterialApp.router(
-      theme: theme ??
-          appLightTheme.copyWith(extensions: [
-            ...appLightTheme.extensions.values,
-            lightColorSchemeExt
-          ]),
-      darkTheme: darkTheme ??
-          appDarkTheme.copyWith(extensions: [
-            ...appDarkTheme.extensions.values,
-            darkColorSchemeExt
-          ]),
+      theme: theme ?? appLightTheme,
+      darkTheme: darkTheme ?? appDarkTheme,
       locale: locale,
       themeMode: themeMode,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -51,8 +34,9 @@ Widget testableRouter({
       builder: (context, child) => Material(
         child: DesignSystem.init(
           context,
-          CustomResponsive(
-            child: child!,
+          AppResponsiveLayout(
+            mobile: child ?? const SizedBox(),
+            desktop: child ?? const SizedBox(),
           ),
         ),
       ),

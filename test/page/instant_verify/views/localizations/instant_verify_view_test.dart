@@ -9,7 +9,7 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.d
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/traceroute_modal.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/screen.dart';
@@ -59,12 +59,11 @@ void main() {
     );
     await tester.runAsync(() async {
       final element = tester.element(find.byType(InstantVerifyView));
-      final theme = CustomTheme.of(element);
       final images = [
-        theme.images.devices.routerMx6200,
-        theme.images.devices.routerWhw03,
-        theme.images.devices.routerMr7500,
-        theme.images.speedtestPowered,
+        Assets.images.devices.routerMx6200.provider(),
+        Assets.images.devices.routerWhw03.provider(),
+        Assets.images.devices.routerMr7500.provider(),
+        Assets.images.speedtestPowered.provider(),
       ];
       for (final image in images) {
         await precacheImage(image, element);

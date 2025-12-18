@@ -4,8 +4,6 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/components/composed/app_radio_list.dart';
-import 'package:privacy_gui/page/components/composed/app_min_max_number_text_field.dart';
 
 class ConnectionModeForm extends ConsumerStatefulWidget {
   const ConnectionModeForm({Key? key}) : super(key: key);
@@ -72,29 +70,28 @@ class _ConnectionModeFormState extends ConsumerState<ConnectionModeForm> {
           AppText.titleSmall(loc(context).connectionMode),
           AppGap.lg(),
           AppRadioList(
-            mainAxisSize: MainAxisSize.min,
             selected: behavior,
             items: [
               AppRadioListItem(
-                titleWidget: AppText.bodyLarge(loc(context).connectOnDemand),
+                title: loc(context).connectOnDemand,
                 value: PPPConnectionBehavior.connectOnDemand,
                 expandedWidget: Row(
                   children: [
                     const SizedBox(width: 40),
                     Expanded(
-                      child: AppMinMaxNumberTextField(
+                      child: AppMinMaxInput(
                         label:
                             '${loc(context).maxIdleTime} (${loc(context).minutes})',
                         key: const ValueKey('maxIdleTimeText'),
                         max: 9999,
                         min: 1,
-                        controller: _idleTimeController,
+                        value: int.tryParse(_idleTimeController.text),
                         onChanged: (value) {
+                          _idleTimeController.text = value?.toString() ?? '1';
                           notifier.updateIpv4Settings(ipv4Setting.copyWith(
                             behavior: () =>
                                 PPPConnectionBehavior.connectOnDemand,
-                            maxIdleMinutes: () =>
-                                int.parse(_idleTimeController.text),
+                            maxIdleMinutes: () => value ?? 1,
                           ));
                         },
                       ),
@@ -103,24 +100,25 @@ class _ConnectionModeFormState extends ConsumerState<ConnectionModeForm> {
                 ),
               ),
               AppRadioListItem(
-                titleWidget: AppText.bodyLarge(loc(context).keepAlive),
+                title: loc(context).keepAlive,
                 value: PPPConnectionBehavior.keepAlive,
                 expandedWidget: Row(
                   children: [
                     const SizedBox(width: 40),
                     Expanded(
-                      child: AppMinMaxNumberTextField(
+                      child: AppMinMaxInput(
                         label:
                             '${loc(context).redialPeriod} (${loc(context).seconds})',
                         key: const ValueKey('redialPeriodText'),
                         max: 180,
                         min: 20,
-                        controller: _redialPeriodController,
+                        value: int.tryParse(_redialPeriodController.text),
                         onChanged: (value) {
+                          _redialPeriodController.text =
+                              value?.toString() ?? '20';
                           notifier.updateIpv4Settings(ipv4Setting.copyWith(
                             behavior: () => PPPConnectionBehavior.keepAlive,
-                            reconnectAfterSeconds: () =>
-                                int.parse(_redialPeriodController.text),
+                            reconnectAfterSeconds: () => value ?? 20,
                           ));
                         },
                       ),

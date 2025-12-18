@@ -9,11 +9,8 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/info_card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
@@ -55,9 +52,7 @@ void main() {
   });
 
   // Test ID: DMZS-DISABLED
-    testLocalizationsV2(
-      'DMZ settings view - disabled',
-      (tester, screen) async {
+  testLocalizationsV2('DMZ settings view - disabled', (tester, screen) async {
     const settings = DMZUISettings(
         isDMZEnabled: false,
         sourceType: DMZSourceType.auto,
@@ -81,11 +76,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(AppInfoCard, loc(context).dmz), findsOneWidget);
-    expect(find.widgetWithText(AppInfoCard, loc(context).dmzDescription),
+    expect(find.widgetWithText(AppListCard, loc(context).dmz), findsOneWidget);
+    expect(find.widgetWithText(AppListCard, loc(context).dmzDescription),
         findsOneWidget);
     final appSwitchFinder = find.descendant(
-        of: find.widgetWithText(AppInfoCard, loc(context).dmz),
+        of: find.widgetWithText(AppListCard, loc(context).dmz),
         matching: find.byType(AppSwitch));
     final appSwitch = tester.widget<AppSwitch>(appSwitchFinder);
     expect(appSwitch.value, isFalse);
@@ -94,12 +89,13 @@ void main() {
     expect(
         find.widgetWithText(AppListCard, loc(context).dmzDestinationIPAddress),
         findsNothing);
-  }, helper: testHelper, goldenFilename: 'DMZS-DISABLED-01-initial_state', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-DISABLED-01-initial_state',
+      screens: screens);
 
   // Test ID: DMZS-ENABLED
-  testLocalizationsV2(
-    'DMZ settings view - enabled',
-    (tester, screen) async {
+  testLocalizationsV2('DMZ settings view - enabled', (tester, screen) async {
     const settings = DMZUISettings(
         isDMZEnabled: true,
         sourceType: DMZSourceType.auto,
@@ -124,29 +120,31 @@ void main() {
     await tester.pumpAndSettle();
 
     final appSwitchFinder = find.descendant(
-        of: find.widgetWithText(AppInfoCard, loc(context).dmz),
+        of: find.widgetWithText(AppListCard, loc(context).dmz),
         matching: find.byType(AppSwitch));
     final appSwitch = tester.widget<AppSwitch>(appSwitchFinder);
     expect(appSwitch.value, isTrue);
     expect(find.text(loc(context).dmzSourceIPAddress), findsOneWidget);
     expect(find.text(loc(context).dmzDestinationIPAddress), findsOneWidget);
 
-    final sourceRadioList = tester.widget<AppRadioList>(find.byKey(
-        const Key('sourceType')));
+    final sourceRadioList =
+        tester.widget<AppRadioList>(find.byKey(const Key('sourceType')));
     expect(sourceRadioList.selected, DMZSourceType.auto);
 
-    final destinationRadioList = tester.widget<AppRadioList>(find.byKey(
-        const Key('destinationType')));
+    final destinationRadioList =
+        tester.widget<AppRadioList>(find.byKey(const Key('destinationType')));
     expect(destinationRadioList.initial, DMZDestinationType.ip);
     expect(find.byKey(const Key('destinationIP')), findsOneWidget);
-    expect(find.widgetWithText(AppTextButton, loc(context).dmzViewDHCP),
+    expect(find.widgetWithText(AppButton, loc(context).dmzViewDHCP),
         findsOneWidget);
-  }, helper: testHelper, goldenFilename: 'DMZS-ENABLED-01-initial_state', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-ENABLED-01-initial_state',
+      screens: screens);
 
   // Test ID: DMZS-SRC_RANGE
-  testLocalizationsV2(
-    'DMZ settings view - enabled with specific range source',
-    (tester, screen) async {
+  testLocalizationsV2('DMZ settings view - enabled with specific range source',
+      (tester, screen) async {
     const settings = DMZUISettings(
         isDMZEnabled: true,
         sourceType: DMZSourceType.range,
@@ -180,14 +178,17 @@ void main() {
     expect(find.widgetWithText(AppText, loc(context).to), findsOneWidget);
 
     final startIpController = tester
-        .widget<AppIPFormField>(find.byKey(const Key('sourceFirstIP')))
+        .widget<AppIpv4TextField>(find.byKey(const Key('sourceFirstIP')))
         .controller;
     expect(startIpController?.text, '192.168.1.23');
     final endIpController = tester
-        .widget<AppIPFormField>(find.byKey(const Key('sourceLastIP')))
+        .widget<AppIpv4TextField>(find.byKey(const Key('sourceLastIP')))
         .controller;
     expect(endIpController?.text, '192.168.1.78');
-  }, helper: testHelper, goldenFilename: 'DMZS-SRC_RANGE-01-initial_state', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-SRC_RANGE-01-initial_state',
+      screens: screens);
 
   // Test ID: DMZS-SRC_ERR
   testLocalizationsV2(
@@ -228,12 +229,15 @@ void main() {
     await tester.enterText(textFormField.at(3), '1');
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(AppInfoCard, loc(context).dmz));
+    await tester.tap(find.widgetWithText(AppListCard, loc(context).dmz));
     await tester.pumpAndSettle();
 
-    final endIpFormField = tester.widget<AppIPFormField>(ipFormField);
+    final endIpFormField = tester.widget<AppIpv4TextField>(ipFormField);
     expect(endIpFormField.errorText, loc(context).dmzSourceRangeError);
-  }, helper: testHelper, goldenFilename: 'DMZS-SRC_ERR-02-after_error', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-SRC_ERR-02-after_error',
+      screens: screens);
 
   // Test ID: DMZS-DEST_IP_ERR
   testLocalizationsV2(
@@ -273,12 +277,15 @@ void main() {
     await tester.enterText(textFormField.at(0), '');
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(AppInfoCard, loc(context).dmz));
+    await tester.tap(find.widgetWithText(AppListCard, loc(context).dmz));
     await tester.pumpAndSettle();
 
-    final destIpFormField = tester.widget<AppIPFormField>(ipFormField);
+    final destIpFormField = tester.widget<AppIpv4TextField>(ipFormField);
     expect(destIpFormField.errorText, loc(context).invalidIpAddress);
-  }, helper: testHelper, goldenFilename: 'DMZS-DEST_IP_ERR-02-after_error', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-DEST_IP_ERR-02-after_error',
+      screens: screens);
 
   // Test ID: DMZS-DEST_MAC
   testLocalizationsV2(
@@ -315,7 +322,10 @@ void main() {
     expect(macField, findsOneWidget);
     final macController = tester.widget<AppTextField>(macField).controller;
     expect(macController?.text, '00:11:22:33:44:55');
-  }, helper: testHelper, goldenFilename: 'DMZS-DEST_MAC-01-initial_state', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-DEST_MAC-01-initial_state',
+      screens: screens);
 
   // Test ID: DMZS-DEST_MAC_ERR
   testLocalizationsV2(
@@ -349,12 +359,15 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'invalid mac');
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(AppInfoCard, loc(context).dmz));
+    await tester.tap(find.widgetWithText(AppListCard, loc(context).dmz));
     await tester.pumpAndSettle();
 
     final macField = tester.widget<AppTextField>(find.byType(AppTextField));
     expect(macField.errorText, loc(context).invalidMACAddress);
-  }, helper: testHelper, goldenFilename: 'DMZS-DEST_MAC_ERR-02-after_error', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-DEST_MAC_ERR-02-after_error',
+      screens: screens);
 
   // Test ID: DMZS-DHCP_TABLE
   testLocalizationsV2('DMZ settings view - view DHCP client table',
@@ -373,7 +386,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ListView), findsWidgets);
-  }, helper: testHelper, goldenFilename: 'DMZS-DHCP_TABLE-01-view', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-DHCP_TABLE-01-view',
+      screens: screens);
 
   // Test ID: DMZS-SAVE
   testLocalizationsV2('DMZ settings view - Saved', (tester, screen) async {
@@ -410,11 +426,11 @@ void main() {
     await testHelper.takeScreenshot(tester, 'DMZS-SAVE-01-before_save');
 
     final appSwitchFinder = find.descendant(
-        of: find.widgetWithText(AppInfoCard, loc(context).dmz),
+        of: find.widgetWithText(AppListCard, loc(context).dmz),
         matching: find.byType(AppSwitch));
     await tester.tap(appSwitchFinder);
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppFilledButton));
+    await tester.tap(find.byType(AppButton));
     await tester.pumpAndSettle();
 
     expect(find.byType(SnackBar), findsOneWidget);
@@ -422,7 +438,10 @@ void main() {
         find.descendant(
             of: find.byType(SnackBar), matching: find.text(loc(context).saved)),
         findsOneWidget);
-  }, helper: testHelper, goldenFilename: 'DMZS-SAVE-02-after_save', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-SAVE-02-after_save',
+      screens: screens);
 
   // Test ID: DMZS-SAVE_FAIL
   testLocalizationsV2('DMZ settings view - Save failed',
@@ -458,11 +477,11 @@ void main() {
     await testHelper.takeScreenshot(tester, 'DMZS-SAVE_FAIL-01-before_fail');
 
     final appSwitchFinder = find.descendant(
-        of: find.widgetWithText(AppInfoCard, loc(context).dmz),
+        of: find.widgetWithText(AppListCard, loc(context).dmz),
         matching: find.byType(AppSwitch));
     await tester.tap(appSwitchFinder);
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppFilledButton));
+    await tester.tap(find.byType(AppButton));
     await tester.pumpAndSettle();
 
     expect(find.byType(SnackBar), findsOneWidget);
@@ -471,5 +490,8 @@ void main() {
             of: find.byType(SnackBar),
             matching: find.text(loc(context).invalidDestinationIpAddress)),
         findsOneWidget);
-  }, helper: testHelper, goldenFilename: 'DMZS-SAVE_FAIL-02-after_fail', screens: screens);
+  },
+      helper: testHelper,
+      goldenFilename: 'DMZS-SAVE_FAIL-02-after_fail',
+      screens: screens);
 }

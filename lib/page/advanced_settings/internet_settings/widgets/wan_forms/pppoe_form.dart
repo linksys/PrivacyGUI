@@ -4,7 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/base_wan_form.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/components/composed/app_min_max_number_text_field.dart';
+
 import './connection_mode_form.dart';
 
 class PppoeForm extends BaseWanForm {
@@ -164,15 +164,15 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
                 }
               }
             },
-            child: AppMinMaxNumberTextField(
+            child: AppMinMaxInput(
               min: 5,
               max: 4094,
-              acceptEmpty: true,
               label: loc(context).vlanIdOptional,
-              controller: _vlanIdController,
+              value: int.tryParse(_vlanIdController.text),
               onChanged: (value) {
+                _vlanIdController.text = value?.toString() ?? '';
                 notifier.updateIpv4Settings(ipv4Setting.copyWith(
-                  vlanId: () => value.isEmpty ? null : int.parse(value),
+                  vlanId: () => value,
                 ));
               },
             ),

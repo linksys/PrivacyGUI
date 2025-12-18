@@ -4,7 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
@@ -179,7 +179,7 @@ void main() {
     await tester.tap(find.widgetWithText(Tab, loc(context).ipv6PortServices,
         skipOffstage: false));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(LinksysIcons.add));
+    await tester.tap(find.byIcon(AppFontIcons.add));
     await tester.pumpAndSettle();
 
     expect(find.byType(Ipv6PortServiceListView), findsOneWidget);
@@ -203,7 +203,7 @@ void main() {
     await tester.tap(find.widgetWithText(Tab, loc(context).ipv6PortServices,
         skipOffstage: false));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(LinksysIcons.add));
+    await tester.tap(find.byIcon(AppFontIcons.add));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('protocol')));
@@ -232,7 +232,7 @@ void main() {
     await tester.tap(find.widgetWithText(Tab, loc(context).ipv6PortServices,
         skipOffstage: false));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(LinksysIcons.add));
+    await tester.tap(find.byIcon(AppFontIcons.add));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byKey(const Key('firstPort')), '99');
@@ -262,7 +262,7 @@ void main() {
     await tester.tap(find.widgetWithText(Tab, loc(context).ipv6PortServices,
         skipOffstage: false));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(LinksysIcons.add));
+    await tester.tap(find.byIcon(AppFontIcons.add));
     await tester.pumpAndSettle();
 
     when(testHelper.mockIpv6PortServiceRuleNotifier.isRuleValid())

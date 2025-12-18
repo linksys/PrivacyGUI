@@ -12,6 +12,9 @@ class WifiPasswordField extends StatefulWidget {
   final Function(bool)? onValidationChanged;
   final Function(String)? onSubmitted;
 
+  final bool readOnly;
+  final bool showLabel;
+
   const WifiPasswordField({
     super.key,
     required this.controller,
@@ -20,6 +23,8 @@ class WifiPasswordField extends StatefulWidget {
     this.onChanged,
     this.onValidationChanged,
     this.onSubmitted,
+    this.readOnly = false,
+    this.showLabel = true,
   });
 
   @override
@@ -32,39 +37,55 @@ class _WifiPasswordFieldState extends State<WifiPasswordField> {
   @override
   Widget build(BuildContext context) {
     return AppPasswordInput(
-      label: widget.semanticLabel.isNotEmpty ? widget.semanticLabel : loc(context).wifiPassword,
-      // autofocus: true, // Not supported/needed in UI Kit usually
+      label: widget.showLabel
+          ? (widget.semanticLabel.isNotEmpty
+              ? widget.semanticLabel
+              : loc(context).wifiPassword)
+          : null,
       controller: widget.controller,
-      // border: const OutlineInputBorder(),
-      rules: [
-        AppPasswordRule(
-          label: loc(context).wifiPasswordLimit,
-          validate: ((text) => text.isNotEmpty
-              ? (wifiPasswordValidator.getRuleByIndex(0)?.validate(text) ?? false)
-              : false),
-        ),
-        AppPasswordRule(
-          label: loc(context).routerPasswordRuleStartEndWithSpace,
-          validate: ((text) => text.isNotEmpty
-              ? (wifiPasswordValidator.getRuleByIndex(1)?.validate(text) ?? false)
-              : false),
-        ),
-        AppPasswordRule(
-          label: loc(context).routerPasswordRuleUnsupportSpecialChar,
-          validate: ((text) => text.isNotEmpty
-              ? (wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ?? false)
-              : false),
-        ),
-        if (widget.isLength64)
-          AppPasswordRule(
-            label: loc(context).wifiPasswordRuleHex,
-            validate: ((text) => text.isNotEmpty
-                ? (wifiPasswordValidator.getRuleByIndex(3)?.validate(text) ?? false)
-                : false),
-          ),
-      ],
+      readOnly: widget.readOnly,
+      rules: widget.readOnly
+          ? []
+          : [
+              AppPasswordRule(
+                label: loc(context).wifiPasswordLimit,
+                validate: ((text) => text.isNotEmpty
+                    ? (wifiPasswordValidator
+                            .getRuleByIndex(0)
+                            ?.validate(text) ??
+                        false)
+                    : false),
+              ),
+              AppPasswordRule(
+                label: loc(context).routerPasswordRuleStartEndWithSpace,
+                validate: ((text) => text.isNotEmpty
+                    ? (wifiPasswordValidator
+                            .getRuleByIndex(1)
+                            ?.validate(text) ??
+                        false)
+                    : false),
+              ),
+              AppPasswordRule(
+                label: loc(context).routerPasswordRuleUnsupportSpecialChar,
+                validate: ((text) => text.isNotEmpty
+                    ? (wifiPasswordValidator
+                            .getRuleByIndex(2)
+                            ?.validate(text) ??
+                        false)
+                    : false),
+              ),
+              if (widget.isLength64)
+                AppPasswordRule(
+                  label: loc(context).wifiPasswordRuleHex,
+                  validate: ((text) => text.isNotEmpty
+                      ? (wifiPasswordValidator
+                              .getRuleByIndex(3)
+                              ?.validate(text) ??
+                          false)
+                      : false),
+                ),
+            ],
       onChanged: widget.onChanged,
-      // onValidationChanged: widget.onValidationChanged, // Not supported directly
       onSubmitted: widget.onSubmitted,
     );
   }

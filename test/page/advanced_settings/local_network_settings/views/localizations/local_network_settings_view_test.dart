@@ -3,10 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacy_gui/page/components/composed/app_switch_trigger_tile.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
@@ -54,7 +52,9 @@ void main() {
       expect(find.byKey(const Key('hostNameTextField')), findsOneWidget);
       expect(
           tester
-              .widget<AppTextField>(find.byKey(const Key('hostNameTextField')))
+              .widget<TextField>(find.descendant(
+                  of: find.byKey(const Key('hostNameTextField')),
+                  matching: find.byType(TextField)))
               .controller
               ?.text,
           mockLocalNetworkSettings2['hostName']);
@@ -84,12 +84,15 @@ void main() {
           find.widgetWithText(Tab, testHelper.loc(context).hostName);
       expect(
           find.descendant(
-              of: hostNameTab, matching: find.byIcon(LinksysIcons.error)),
+              of: hostNameTab, matching: find.byIcon(AppFontIcons.error)),
           findsOneWidget);
       expect(
           tester
-              .widget<AppTextField>(find.byKey(const Key('hostNameTextField')))
-              .errorText,
+              .widget<TextField>(find.descendant(
+                  of: find.byKey(const Key('hostNameTextField')),
+                  matching: find.byType(TextField)))
+              .decoration
+              ?.errorText,
           isNotNull);
     },
     screens: screens,
@@ -115,14 +118,14 @@ void main() {
 
       expect(
           tester
-              .widget<AppIPFormField>(
+              .widget<AppIpv4TextField>(
                   find.byKey(const Key('lanIpAddressTextField')))
               .controller
               ?.text,
           mockLocalNetworkSettings2['ipAddress']);
       expect(
           tester
-              .widget<AppIPFormField>(
+              .widget<AppIpv4TextField>(
                   find.byKey(const Key('lanSubnetMaskTextField')))
               .controller
               ?.text,
@@ -156,13 +159,17 @@ void main() {
           find.widgetWithText(Tab, testHelper.loc(context).lanIPAddress);
       expect(
           find.descendant(
-              of: ipAddressTab, matching: find.byIcon(LinksysIcons.error)),
+              of: ipAddressTab, matching: find.byIcon(AppFontIcons.error)),
           findsOneWidget);
       expect(
           tester
-              .widget<AppIPFormField>(
-                  find.byKey(const Key('lanIpAddressTextField')))
-              .errorText,
+              .widget<TextField>(find
+                  .descendant(
+                      of: find.byKey(const Key('lanIpAddressTextField')),
+                      matching: find.byType(TextField))
+                  .first)
+              .decoration
+              ?.errorText,
           isNotNull);
     },
     screens: screens,
@@ -224,7 +231,7 @@ void main() {
           find.widgetWithText(Tab, testHelper.loc(context).dhcpServer);
       expect(
           find.descendant(
-              of: dhcpTab, matching: find.byIcon(LinksysIcons.error)),
+              of: dhcpTab, matching: find.byIcon(AppFontIcons.error)),
           findsOneWidget);
     },
     screens: [
@@ -259,9 +266,13 @@ void main() {
 
       expect(
           tester
-              .widget<AppIPFormField>(
-                  find.byKey(const Key('startIpAddressTextField')))
-              .errorText,
+              .widget<TextField>(find
+                  .descendant(
+                      of: find.byKey(const Key('startIpAddressTextField')),
+                      matching: find.byType(TextField))
+                  .first)
+              .decoration
+              ?.errorText,
           isNotNull);
     },
     screens: [
@@ -301,7 +312,7 @@ void main() {
       expect(find.byKey(const Key('startIpAddressTextField')), findsNothing);
       expect(find.byKey(const Key('maxUsersTextField')), findsNothing);
       expect(find.byKey(const Key('clientLeaseTimeTextField')), findsNothing);
-      expect(find.byIcon(LinksysIcons.chevronRight), findsNothing);
+      expect(find.byIcon(AppFontIcons.chevronRight), findsNothing);
     },
     screens: [
       ...responsiveMobileScreens.map((e) => e.copyWith(height: 1480)).toList(),
@@ -334,7 +345,7 @@ void main() {
       await tester.tap(find.text(testHelper.loc(context).dhcpServer));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(LinksysIcons.chevronRight).first);
+      await tester.tap(find.byIcon(AppFontIcons.chevronRight).first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsOneWidget);

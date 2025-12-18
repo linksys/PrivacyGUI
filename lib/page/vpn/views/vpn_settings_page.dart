@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
@@ -13,7 +13,7 @@ import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
 import 'package:privacy_gui/page/components/mixin/preserved_state_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:ui_kit_library/ui_kit.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide AppBarStyle, AppStyledText;
 
 class VPNSettingsPage extends ArgumentsConsumerStatefulView {
   const VPNSettingsPage({super.key, super.args});
@@ -172,14 +172,14 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
     final state = ref.watch(vpnProvider);
     final notifier = ref.read(vpnProvider.notifier);
 
-    return StyledAppPageView(
+    return UiKitPageView(
       title: loc(context).vpnSettingsTitle,
       onBackTap: _onBackTap,
       scrollable: true,
-      bottomBar: PageBottomBar(
-        isPositiveEnabled: !_hasErrors() && isStateChanged(state.settings),
+      bottomBar: UiKitBottomBarConfig(
         positiveLabel: loc(context).save,
         onPositiveTap: _saveChanges,
+        isPositiveEnabled: !_hasErrors() && isStateChanged(state.settings),
       ),
       child: (context, constraints) {
         return Form(

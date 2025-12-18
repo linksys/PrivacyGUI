@@ -68,11 +68,13 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
       _instantTopologyWidget,
     ];
     return UiKitPageView.withSliver(
-      useMainPadding: false,
       onRefresh: () {
         return ref.read(pollingProvider.notifier).forcePolling();
       },
       title: loc(context).instantVerify,
+      tabs: tabs.map((e) => Tab(text: e)).toList(),
+      tabContentViews: tabContents,
+      tabController: _tabController,
       actions: [
         AppIconButton(
           icon: AppIcon.font(AppFontIcons.print),
@@ -102,20 +104,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
             },
           ),
       ],
-      child: (context, constraints) => Column(
-        children: [
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: tabContents,
-            ),
-          ),
-          TabBar(
-            controller: _tabController,
-            tabs: tabs.map((e) => Tab(text: e)).toList(),
-          ),
-        ],
-      ),
     );
   }
 
@@ -124,15 +112,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
         ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
     final desktopCol = context.colWidth(4);
     return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-            horizontal:
-                context.isMobileLayout ? AppSpacing.lg : AppSpacing.xxl),
-        child: AppResponsiveLayout(
-          mobile: _mobileLayout(context, ref),
-          desktop:
-              _desktopLayout(context, ref, isHealthCheckSupported, desktopCol),
-        ),
+      child: AppResponsiveLayout(
+        mobile: _mobileLayout(context, ref),
+        desktop:
+            _desktopLayout(context, ref, isHealthCheckSupported, desktopCol),
       ),
     );
   }
@@ -147,8 +130,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
         _speedTestContent(context),
         AppGap.lg(),
         _portsCard(context, ref),
-        AppGap.lg(),
-        _dnsDetailWidget(context, ref),
       ],
     );
   }
@@ -162,18 +143,15 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(
-                      width: desktopCol,
+                    Expanded(
                       child: _deviceInfoCard(context, ref),
                     ),
-                    AppGap.xxl(),
-                    SizedBox(
-                      width: desktopCol,
+                    AppGap.gutter(),
+                    Expanded(
                       child: _connectivityContentWidget(context, ref),
                     ),
-                    AppGap.xxl(),
-                    SizedBox(
-                      width: desktopCol,
+                    AppGap.gutter(),
+                    Expanded(
                       child: _speedTestContent(context),
                     ),
                   ],
@@ -182,111 +160,32 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(
-                          width: desktopCol,
-                          child: _deviceInfoCard(context, ref),
-                        ),
-                        AppGap.xxl(),
-                        SizedBox(
-                          width: desktopCol,
-                          child: _connectivityContentWidget(context, ref),
-                        ),
-                      ],
+                  Expanded(
+                    flex: 2,
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _deviceInfoCard(context, ref),
+                          ),
+                          AppGap.gutter(),
+                          Expanded(
+                            child: _connectivityContentWidget(context, ref),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  AppGap.xxl(),
-                  SizedBox(
-                    width: desktopCol,
+                  AppGap.gutter(),
+                  Expanded(
+                    flex: 1,
                     child: _speedTestContent(context),
                   ),
                 ],
               ),
         AppGap.lg(),
         _portsCard(context, ref),
-        AppGap.lg(),
-        _dnsDetailWidget(context, ref),
-      ],
-    );
-  }
-
-  Widget _dnsDetailWidget(BuildContext context, WidgetRef ref) {
-    final systemConnectivityState = ref.watch(instantVerifyProvider);
-    final wan = systemConnectivityState.wanConnection;
-    final dnsList = [wan?.dnsServer1, wan?.dnsServer2, wan?.dnsServer3]
-        .where((e) => e != null && e.isNotEmpty)
-        .toList();
-    final dnsContent = dnsList.join('\n');
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(child: _headerWidget(loc(context).dns)),
-            if (!Utils.isMobilePlatform())
-              // TODO: check if we need to migrate PingNetworkModal/TracerouteModal calls or button styles
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppButton.text(
-                    label: loc(context).ping,
-                    onTap: () {
-                      doSomethingWithSpinner(
-                          context, _showPingNetworkModal(context, ref));
-                    },
-                  ),
-                  AppGap.lg(),
-                  AppIconButton(
-                    icon: AppIcon.font(
-                      AppFontIcons.router,
-                    ),
-                    onTap: () {
-                      doSomethingWithSpinner(
-                          context, _showTracerouteModal(context, ref));
-                    },
-                  ),
-                ],
-              )
-          ],
-        ),
-        AppGap.lg(),
-        context.isMobileLayout
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _dnsItem(loc(context).dns, dnsContent),
-                  AppGap.lg(),
-                  if (Utils.isMobilePlatform()) ...[
-                    AppButton.text(
-                      label: loc(context).ping,
-                      onTap: () {
-                        doSomethingWithSpinner(
-                            context, _showPingNetworkModal(context, ref));
-                      },
-                    ),
-                    AppButton.text(
-                      label: loc(context).traceroute,
-                      onTap: () {
-                        doSomethingWithSpinner(
-                            context, _showTracerouteModal(context, ref));
-                      },
-                    ),
-                  ]
-                ],
-              )
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _dnsItem(loc(context).dns, dnsContent),
-                  ),
-                ],
-              )
       ],
     );
   }
@@ -621,18 +520,14 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
             AppGap.lg(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: _linkStatusWidget(context, ref)),
-                    const VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                    ),
-                    Expanded(child: _wanStatusWidget(context, ref)),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  _linkStatusWidget(context, ref),
+                  AppGap.lg(),
+                  _wifiStatusWidget(context, ref),
+                  AppGap.xxl(),
+                  _wanStatusWidget(context, ref),
+                ],
               ),
             ),
             AppGap.lg(),
@@ -645,7 +540,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
             AppGap.lg(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-              child: _dnsDetailWidget(context, ref),
+              child: _pingTracerouteWidget(context, ref),
             ),
           ],
         ));
@@ -654,32 +549,33 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   Widget _linkStatusWidget(BuildContext context, WidgetRef ref) {
     final systemConnectivityState = ref.watch(instantVerifyProvider);
     final isOnline = systemConnectivityState.wanConnection != null;
-    return Column(
-      children: [
-        AppGap.lg(),
-        Container(
-          padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: isOnline
-                ? Theme.of(context).extension<AppColorScheme>()?.semanticSuccess
-                : Theme.of(context).colorScheme.error,
-            borderRadius: BorderRadius.circular(AppSpacing.xxl),
+    final theme = Theme.of(context).extension<AppDesignTheme>();
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).dividerColor),
+        borderRadius: BorderRadius.circular(AppSpacing.lg),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          AppText(
+            loc(context).internet,
+            variant: AppTextVariant.titleSmall,
           ),
-          child: AppText.labelMedium(
-            isOnline ? loc(context).online : loc(context).offline,
-            color: Theme.of(context).colorScheme.onPrimary,
-          ),
-        ),
-        AppGap.sm(),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: AppText.labelMedium(
-            isOnline ? loc(context).online : loc(context).offline,
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ],
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isOnline
+                  ? theme?.colorScheme.semanticSuccess
+                  : theme?.colorScheme.semanticDanger,
+            ),
+          )
+        ],
+      ),
     );
   }
 
@@ -687,50 +583,160 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final systemConnectivityState = ref.watch(instantVerifyProvider);
     final wan = systemConnectivityState.wanConnection;
     final ipv4 = wan?.ipAddress ?? '';
-    const ipv6 = ''; // WAN IPv6 not in simple wanConnection model
+    final dns2 = wan?.dnsServer2;
+
+    Widget item(String label, String value) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.labelMedium(label),
+          AppText(
+            value,
+            variant: AppTextVariant.titleSmall,
+            fontWeight: FontWeight.bold,
+          ),
+          AppGap.md(),
+        ],
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          item(loc(context).wanIPAddress, ipv4.isNotEmpty ? ipv4 : '--'),
+          item(loc(context).gateway, wan?.gateway ?? '--'),
+          item(loc(context).connectionType, wan?.wanType ?? '--'),
+          item('${loc(context).dns} 1', wan?.dnsServer1 ?? '--'),
+          if (dns2 != null && dns2.isNotEmpty)
+            item('${loc(context).dns} 2', dns2),
+        ],
+      ),
+    );
+  }
+
+  Widget _wifiStatusWidget(BuildContext context, WidgetRef ref) {
+    final systemConnectivityState = ref.watch(instantVerifyProvider);
+    final radios = systemConnectivityState.radioInfo.radios;
+    final guestSettings = systemConnectivityState.guestRadioSettings;
+    final guestWiFi = guestSettings.radios.firstOrNull;
+    final theme = Theme.of(context).extension<AppDesignTheme>();
+
+    Widget dot(bool enabled) {
+      return Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: enabled
+              ? theme?.colorScheme.semanticSuccess
+              : theme?.colorScheme.outline,
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).dividerColor),
+        borderRadius: BorderRadius.circular(AppSpacing.lg),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText(
+                loc(context).wifi,
+                variant: AppTextVariant.titleSmall,
+                fontWeight: FontWeight.bold,
+              ),
+              dot(true),
+            ],
+          ),
+          Divider(height: AppSpacing.xxl),
+          for (final e in radios) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                    child:
+                        AppText.labelMedium('${e.band} | ${e.settings.ssid}')),
+                dot(e.settings.isEnabled),
+              ],
+            ),
+            AppGap.lg(),
+          ],
+          if (guestWiFi != null)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: AppText.labelMedium(
+                      '${loc(context).guest} | ${guestWiFi.guestSSID}'),
+                ),
+                dot(guestSettings.isGuestNetworkEnabled),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pingTracerouteWidget(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
-        AppGap.lg(),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: AppText.labelMedium(
-            loc(context).ipv4,
-            textAlign: TextAlign.center,
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: AppText.bodySmall(
-            ipv4.isNotEmpty ? ipv4 : '--',
-            textAlign: TextAlign.center,
-          ),
+        _toolCard(
+          context,
+          title: loc(context).ping,
+          icon: Icons.radio_button_checked,
+          onTap: () {
+            doSomethingWithSpinner(
+                context, _showPingNetworkModal(context, ref));
+          },
         ),
         AppGap.lg(),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: AppText.labelMedium(
-            loc(context).ipv6,
-            textAlign: TextAlign.center,
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: AppText.bodySmall(
-            ipv6.isNotEmpty ? ipv6 : '--',
-            textAlign: TextAlign.center,
-          ),
+        _toolCard(
+          context,
+          title: loc(context).traceroute,
+          icon: Icons.route,
+          onTap: () {
+            doSomethingWithSpinner(context, _showTracerouteModal(context, ref));
+          },
         ),
       ],
     );
   }
 
-  Widget _dnsItem(String title, String content) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.labelMedium(title),
-        AppText.bodySmall(content),
-      ],
+  Widget _toolCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.lg),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg, vertical: AppSpacing.lg),
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(AppSpacing.lg),
+        ),
+        child: Row(
+          children: [
+            AppText(
+              title,
+              variant: AppTextVariant.titleSmall,
+              fontWeight: FontWeight.bold,
+            ),
+            const Spacer(),
+            Icon(icon, color: Theme.of(context).iconTheme.color),
+          ],
+        ),
+      ),
     );
   }
 
@@ -764,10 +770,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _appNoBoarderCard({required Widget child, EdgeInsets? padding}) =>
-      AppCard(
-        // showBorder: false, // ui_kit AppCard might not support this, check properties.
-        // Assuming default AppCard is acceptable, or use decoration to hide border if needed.
-        // For now, removing showBorder as it flags an error.
+      Padding(
         padding: padding ??
             const EdgeInsets.symmetric(
                 horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),

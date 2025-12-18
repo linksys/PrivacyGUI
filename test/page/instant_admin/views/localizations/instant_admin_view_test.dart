@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/screen.dart';
@@ -89,11 +86,12 @@ void main() {
       final context = await pumpInstantAdmin(tester, screen);
       final loc = testHelper.loc(context);
 
-      await tester.tap(find.byIcon(LinksysIcons.edit));
+      await tester.tap(find.byIcon(AppFontIcons.edit));
       await tester.pumpAndSettle();
       expect(find.text(loc.routerPassword), findsWidgets);
       final newPasswordField = find.byKey(const Key('newPasswordField'));
-      final confirmPasswordField = find.byKey(const Key('confirmPasswordField'));
+      final confirmPasswordField =
+          find.byKey(const Key('confirmPasswordField'));
       final hintField = find.byKey(const Key('hintTextField'));
 
       expect(newPasswordField, findsOneWidget);
@@ -133,8 +131,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(loc.timezone), findsOneWidget);
-      expect(find.byType(AppSwitchTriggerTile), findsOneWidget);
-      expect(find.byType(AppListCard), findsWidgets);
+      expect(find.byType(AppSwitch), findsOneWidget);
+      expect(find.byType(AppCard), findsWidgets);
     },
     screens: _timezoneScreens,
     goldenFilename: 'IADM-TIMEZONE_01_view',

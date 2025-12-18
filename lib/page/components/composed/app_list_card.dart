@@ -23,6 +23,88 @@ class AppListCard extends StatelessWidget {
     this.margin,
   });
 
+  /// Factory constructor for settings-style cards with String title/description.
+  /// Replaces AppSettingCard usage.
+  factory AppListCard.setting({
+    Key? key,
+    Widget? leading,
+    Widget? trailing,
+    required String title,
+    String? description,
+    VoidCallback? onTap,
+    EdgeInsets? padding,
+    Color? color,
+    Color? borderColor,
+    EdgeInsets? margin,
+    bool selectableDescription = false,
+  }) {
+    final titleWidget = description != null
+        ? AppText.bodyMedium(title)
+        : AppText.labelLarge(title);
+
+    Widget? descWidget;
+    if (description != null) {
+      descWidget = selectableDescription
+          ? SelectableText(description)
+          : AppText.labelLarge(description);
+    }
+
+    return AppListCard(
+      key: key,
+      leading: leading,
+      trailing: trailing,
+      title: titleWidget,
+      description: descWidget != null
+          ? Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
+              child: descWidget,
+            )
+          : null,
+      padding: padding ??
+          EdgeInsets.symmetric(
+            vertical: AppSpacing.lg,
+            horizontal: AppSpacing.xxl,
+          ),
+      onTap: onTap,
+      color: color,
+      borderColor: borderColor,
+      margin: margin,
+    );
+  }
+
+  /// Factory for noBorder variant (replaces AppSettingCard.noBorder)
+  factory AppListCard.settingNoBorder({
+    Key? key,
+    Widget? leading,
+    Widget? trailing,
+    required String title,
+    String? description,
+    VoidCallback? onTap,
+    EdgeInsets? padding,
+    Color? color,
+    Color? borderColor,
+    EdgeInsets? margin,
+    bool selectableDescription = false,
+  }) {
+    return AppListCard.setting(
+      key: key,
+      leading: leading,
+      trailing: trailing,
+      title: title,
+      description: description,
+      onTap: onTap,
+      padding: padding ??
+          EdgeInsets.symmetric(
+            vertical: AppSpacing.lg,
+            horizontal: AppSpacing.xxl,
+          ),
+      color: color,
+      borderColor: borderColor,
+      margin: margin,
+      selectableDescription: selectableDescription,
+    );
+  }
+
   final Widget? leading;
   final Widget? trailing;
   final Widget title;
@@ -41,17 +123,18 @@ class AppListCard extends StatelessWidget {
       margin: margin,
       child: AppCard(
         onTap: onTap,
-        padding: padding ?? EdgeInsets.symmetric(
-          vertical: AppSpacing.md, // was Spacing.medium (16px)
-          horizontal: AppSpacing.xl, // was Spacing.large2 (24px)
-        ),
+        padding: padding ??
+            EdgeInsets.symmetric(
+              vertical: AppSpacing.md,
+              horizontal: AppSpacing.xl,
+            ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: crossAxisAlignment ?? CrossAxisAlignment.center,
           children: [
             if (leading != null) ...[
               leading!,
-              AppGap.lg(), // was AppGap.medium()
+              AppGap.lg(),
             ],
             Expanded(
               child: Column(

@@ -5,8 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/screen.dart';
 import '../../../../common/test_helper.dart';
@@ -83,7 +82,8 @@ void main() {
           ),
         );
 
-        expect(find.text(testHelper.loc(context).selectDevices), findsOneWidget);
+        expect(
+            find.text(testHelper.loc(context).selectDevices), findsOneWidget);
         expect(
             find.text(testHelper.loc(context).onlineDevices), findsOneWidget);
         expect(
@@ -152,7 +152,7 @@ void main() {
         );
 
         await tester.tap(find.descendant(
-          of: find.widgetWithText(AppListCard, 'Online Device 1'),
+          of: find.widgetWithText(AppCard, 'Online Device 1'),
           matching: find.byType(AppCheckbox),
         ));
         await tester.pumpAndSettle();
@@ -163,7 +163,7 @@ void main() {
         );
 
         await tester.tap(find.descendant(
-          of: find.widgetWithText(AppListCard, 'Online Device 2'),
+          of: find.widgetWithText(AppCard, 'Online Device 2'),
           matching: find.byType(AppCheckbox),
         ));
         await tester.pumpAndSettle();
@@ -184,11 +184,7 @@ void main() {
         final context = await testHelper.pumpView(
           tester,
           child: const SelectDeviceView(
-            args: {
-              'selectMode': 'multiple',
-              'type': 'mac',
-              'onlineOnly': true
-            },
+            args: {'selectMode': 'multiple', 'type': 'mac', 'onlineOnly': true},
           ),
         );
 
@@ -272,14 +268,13 @@ void main() {
 
         final card = find.ancestor(
           of: find.text('Unselectable Device'),
-          matching: find.byType(AppListCard),
+          matching: find.byType(AppCard),
         );
         expect(card, findsOneWidget);
 
         final cardOpacityFinder =
             find.ancestor(of: card, matching: find.byType(Opacity));
-        final cardOpacity =
-            tester.widget<Opacity>(cardOpacityFinder.first);
+        final cardOpacity = tester.widget<Opacity>(cardOpacityFinder.first);
         expect(cardOpacity.opacity, 1.0);
 
         final checkbox =

@@ -6,7 +6,6 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/models/inte
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/wan_type_helper.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/base_widgets_mixin.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/components/composed/app_dropdown_button.dart';
 
 abstract class BaseWanForm extends ConsumerStatefulWidget {
   final bool isEditing;
@@ -30,13 +29,14 @@ abstract class BaseWanFormState<T extends BaseWanForm> extends ConsumerState<T>
         widget.isEditing
             ? Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: AppDropdownButton<String>(
+                child: AppDropdown<String>(
                   key: const ValueKey('ipv4ConnectionDropdown'),
-                  selected:
-                      state.settings.current.ipv4Setting.ipv4ConnectionType,
+                  value: state.settings.current.ipv4Setting.ipv4ConnectionType,
                   items: state.status.supportedIPv4ConnectionType,
-                  label: (item) => getWanConnectedTypeText(context, item),
+                  itemAsString: (item) =>
+                      getWanConnectedTypeText(context, item),
                   onChanged: (value) {
+                    if (value == null) return;
                     notifier.updateIpv4Settings(
                         state.settings.current.ipv4Setting.copyWith(
                       ipv4ConnectionType: value,

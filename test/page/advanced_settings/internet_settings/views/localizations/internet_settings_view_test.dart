@@ -5,9 +5,8 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
@@ -343,12 +342,12 @@ Future<void> main() async {
           child: const InternetSettingsView(),
         );
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         expect(editBtnFinder, findsOneWidget);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(LinksysIcons.close), findsOneWidget);
+        expect(find.byIcon(AppFontIcons.close), findsOneWidget);
         expect(find.byKey(const ValueKey('ipv4ConnectionDropdown')),
             findsOneWidget);
       },
@@ -380,7 +379,7 @@ Future<void> main() async {
           child: const InternetSettingsView(),
         );
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
@@ -419,23 +418,25 @@ Future<void> main() async {
           child: const InternetSettingsView(),
         );
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
         expect(
-            find.widgetWithText(AppTextField, testHelper.loc(context).username),
-            findsOneWidget);
-        expect(
-            find.widgetWithText(AppTextField, testHelper.loc(context).password),
+            find.widgetWithText(
+                AppTextFormField, testHelper.loc(context).username),
             findsOneWidget);
         expect(
             find.widgetWithText(
-                AppTextField, testHelper.loc(context).vlanIdOptional),
+                AppTextFormField, testHelper.loc(context).password),
             findsOneWidget);
         expect(
             find.widgetWithText(
-                AppTextField, testHelper.loc(context).serviceNameOptional),
+                AppTextFormField, testHelper.loc(context).vlanIdOptional),
+            findsOneWidget);
+        expect(
+            find.widgetWithText(
+                AppTextFormField, testHelper.loc(context).serviceNameOptional),
             findsOneWidget);
       },
       screens: [
@@ -466,15 +467,17 @@ Future<void> main() async {
           child: const InternetSettingsView(),
         );
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
         expect(
-            find.widgetWithText(AppTextField, testHelper.loc(context).username),
+            find.widgetWithText(
+                AppTextFormField, testHelper.loc(context).username),
             findsOneWidget);
         expect(
-            find.widgetWithText(AppTextField, testHelper.loc(context).password),
+            find.widgetWithText(
+                AppTextFormField, testHelper.loc(context).password),
             findsOneWidget);
         expect(find.byKey(const ValueKey('serverIp')), findsOneWidget);
       },
@@ -506,15 +509,17 @@ Future<void> main() async {
           child: const InternetSettingsView(),
         );
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
         expect(
-            find.widgetWithText(AppTextField, testHelper.loc(context).username),
+            find.widgetWithText(
+                AppTextFormField, testHelper.loc(context).username),
             findsOneWidget);
         expect(
-            find.widgetWithText(AppTextField, testHelper.loc(context).password),
+            find.widgetWithText(
+                AppTextFormField, testHelper.loc(context).password),
             findsOneWidget);
         expect(find.byKey(const ValueKey('serverIp')), findsOneWidget);
       },
@@ -549,7 +554,7 @@ Future<void> main() async {
           child: const InternetSettingsView(),
         );
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
@@ -585,7 +590,7 @@ Future<void> main() async {
           child: const InternetSettingsView(),
         );
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
@@ -667,7 +672,7 @@ Future<void> main() async {
         await tester.tap(ipv6TabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
@@ -719,7 +724,7 @@ Future<void> main() async {
         await tester.tap(ipv6TabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
@@ -770,7 +775,7 @@ Future<void> main() async {
         await tester.tap(ipv6TabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
@@ -821,18 +826,19 @@ Future<void> main() async {
         await tester.tap(ipv6TabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
         expect(
             find.byKey(const ValueKey('ipv6TunnelDropdown')), findsOneWidget);
         expect(
-            find.widgetWithText(AppTextField, testHelper.loc(context).prefix),
+            find.widgetWithText(
+                AppTextFormField, testHelper.loc(context).prefix),
             findsOneWidget);
         expect(
             find.widgetWithText(
-                AppTextField, testHelper.loc(context).prefixLength),
+                AppTextFormField, testHelper.loc(context).prefixLength),
             findsOneWidget);
       },
       screens: [
@@ -906,7 +912,7 @@ Future<void> main() async {
         await tester.tap(ipv6TabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
@@ -980,7 +986,7 @@ Future<void> main() async {
         await tester.tap(ipv6TabFinder.at(1));
         await tester.pumpAndSettle();
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
@@ -1029,7 +1035,7 @@ Future<void> main() async {
             findsOneWidget);
         expect(
             find.widgetWithText(
-                AppTextButton, testHelper.loc(context).releaseAndRenew),
+                AppButton, testHelper.loc(context).releaseAndRenew),
             findsNWidgets(2));
       },
       goldenFilename: 'ISET-RR_VIEW-01-initial_state',
@@ -1056,8 +1062,8 @@ Future<void> main() async {
         await tester.tap(releaseAndRenewTabFinder.at(2));
         await tester.pumpAndSettle();
 
-        final button = tester.widget<AppTextButton>(
-            find.widgetWithText(AppTextButton, 'Release & Renew').first);
+        final button = tester.widget<AppButton>(
+            find.widgetWithText(AppButton, 'Release & Renew').first);
         expect(button.onTap, isNull);
       },
       goldenFilename: 'ISET-RR_BRIDGE_VIEW-01-initial_state',
@@ -1084,7 +1090,7 @@ Future<void> main() async {
         await tester.tap(releaseAndRenewTabFinder.at(2));
         await tester.pumpAndSettle();
 
-        final saveBtnFinder = find.byType(AppTextButton);
+        final saveBtnFinder = find.byType(AppButton);
         await tester.tap(saveBtnFinder.first);
         await tester.pumpAndSettle();
 
@@ -1095,8 +1101,7 @@ Future<void> main() async {
             find.text(
                 testHelper.loc(context).releaseAndRenewIpAddressDescription),
             findsOneWidget);
-        expect(
-            find.widgetWithText(AppTextButton, testHelper.loc(context).cancel),
+        expect(find.widgetWithText(AppButton, testHelper.loc(context).cancel),
             findsOneWidget);
       },
       goldenFilename: 'ISET-RR_DIALOG-01-confirmation_dialog',
@@ -1117,7 +1122,7 @@ Future<void> main() async {
         );
         await tester.pumpAndSettle();
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
@@ -1130,11 +1135,9 @@ Future<void> main() async {
             findsOneWidget);
         expect(find.text(testHelper.loc(context).restartWifiAlertDesc),
             findsOneWidget);
-        expect(
-            find.widgetWithText(AppTextButton, testHelper.loc(context).cancel),
+        expect(find.widgetWithText(AppButton, testHelper.loc(context).cancel),
             findsOneWidget);
-        expect(
-            find.widgetWithText(AppTextButton, testHelper.loc(context).restart),
+        expect(find.widgetWithText(AppButton, testHelper.loc(context).restart),
             findsOneWidget);
       },
       screens: [
@@ -1162,11 +1165,11 @@ Future<void> main() async {
           child: const InternetSettingsView(),
         );
 
-        final editBtnFinder = find.byIcon(LinksysIcons.edit);
+        final editBtnFinder = find.byIcon(AppFontIcons.edit);
         await tester.tap(editBtnFinder);
         await tester.pumpAndSettle();
 
-        final saveBtnFinder = find.byType(AppFilledButton);
+        final saveBtnFinder = find.byType(AppButton);
         await tester.tap(saveBtnFinder);
         await tester.pumpAndSettle();
 

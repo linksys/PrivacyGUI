@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
@@ -13,9 +12,7 @@ import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../../common/config.dart';
 import '../../../../../../common/test_helper.dart';
@@ -53,32 +50,17 @@ import '../../../../../../test_data/internet_settings_state_data.dart';
 //
 // 7. PNP-STATIC-IP_SAVE-PROGRESS:
 //    - Verifies the UI updates during save and verify progress.
-// 
+//
 
 // Helper function to enter text into the 4 fields of an AppIPFormField
 Future<void> enterIpByHeader(
-    WidgetTester tester, String headerText, List<String> parts) async {
-  final headerFinder = find.text(headerText);
-  expect(headerFinder, findsOneWidget,
-      reason: 'Could not find header "$headerText"');
-
-  final formField = find.ancestor(
-    of: headerFinder,
-    matching: find.byType(AppIPFormField),
-  );
+    WidgetTester tester, String headerText, String ipAddress) async {
+  final formField = find.widgetWithText(AppIpv4TextField, headerText);
   expect(formField, findsOneWidget,
-      reason: 'Could not find AppIPFormField for header "$headerText"');
+      reason: 'Could not find AppIpv4TextField for header "$headerText"');
 
-  final textFields = find.descendant(
-    of: formField,
-    matching: find.byType(TextFormField),
-  );
-  expect(textFields, findsNWidgets(4),
-      reason: 'Could not find 4 TextFormFields for header "$headerText"');
-
-  for (var i = 0; i < parts.length; i++) {
-    await tester.enterText(textFields.at(i), parts[i]);
-  }
+  await tester.enterText(formField, ipAddress);
+  await tester.pump();
 }
 
 void main() async {
@@ -124,14 +106,13 @@ void main() async {
           overrides: [],
         );
 
-        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
-            ['192', '168', '1', '10']);
-        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
-            ['255', '255', '255', '0']);
-        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
-            ['192', '168', '1', '1']);
         await enterIpByHeader(
-            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+            tester, testHelper.loc(context).ipAddress, '192.168.1.10');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).subnetMask, '255.255.255.0');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).defaultGateway, '192.168.1.1');
+        await enterIpByHeader(tester, testHelper.loc(context).dns1, '8.8.8.8');
 
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
@@ -139,89 +120,77 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNotNull);
+            tester.widget<AppButton>(find.byType(AppButton)).onTap, isNotNull);
         await testHelper.takeScreenshot(
             tester, 'PNP-STATIC-IP-UI_01_fully_input');
 
         // invalid ip address
         await enterIpByHeader(
-            tester, testHelper.loc(context).ipAddress, ['192', '168', '1', '']);
+            tester, testHelper.loc(context).ipAddress, '192.168.1.');
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
         await tester.pumpAndSettle();
         // expect error message
         expect(find.text(testHelper.loc(context).invalidIpAddress),
             findsOneWidget);
-        expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNull);
+        expect(tester.widget<AppButton>(find.byType(AppButton)).onTap, isNull);
         await testHelper.takeScreenshot(
             tester, 'PNP-STATIC-IP-UI_02_invalid_ip');
         // restore valid ip address
-        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
-            ['192', '168', '1', '10']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).ipAddress, '192.168.1.10');
 
         // invalid subnet mask
-        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
-            ['255', '255', '255', '255']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).subnetMask, '255.255.255.255');
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
         await tester.pumpAndSettle();
         // expect error message
         expect(find.text(testHelper.loc(context).invalidSubnetMask),
             findsOneWidget);
-        expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNull);
+        expect(tester.widget<AppButton>(find.byType(AppButton)).onTap, isNull);
         await testHelper.takeScreenshot(
             tester, 'PNP-STATIC-IP-UI_03_invalid_subnet_mask');
         // restore valid subnet mask
-        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
-            ['255', '255', '255', '0']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).subnetMask, '255.255.255.0');
 
         // invalid default gateway
-        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
-            ['192', '168', '1', '']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).defaultGateway, '192.168.1.');
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
         await tester.pumpAndSettle();
         // expect error message
         expect(find.text(testHelper.loc(context).invalidGatewayIpAddress),
             findsOneWidget);
-        expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNull);
+        expect(tester.widget<AppButton>(find.byType(AppButton)).onTap, isNull);
         await testHelper.takeScreenshot(
             tester, 'PNP-STATIC-IP-UI_04_invalid_default_gateway');
         // restore valid default gateway
-        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
-            ['192', '168', '1', '1']);
+        await enterIpByHeader(
+            tester, testHelper.loc(context).defaultGateway, '192.168.1.1');
 
         // invalid dns1
         await enterIpByHeader(
-            tester, testHelper.loc(context).dns1, ['255', '255', '255', '255']);
+            tester, testHelper.loc(context).dns1, '255.255.255.255');
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
         await tester.pumpAndSettle();
         // expect error message
         expect(find.text(testHelper.loc(context).invalidDns), findsOneWidget);
-        expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNull);
+        expect(tester.widget<AppButton>(find.byType(AppButton)).onTap, isNull);
         await testHelper.takeScreenshot(
             tester, 'PNP-STATIC-IP-UI_05_invalid_dns1');
         // restore valid dns1
-        await enterIpByHeader(
-            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+        await enterIpByHeader(tester, testHelper.loc(context).dns1, '8.8.8.8');
 
         expect(find.text(testHelper.loc(context).addDns), findsOneWidget);
         // toogle dns2
         await tester.tap(find.text(testHelper.loc(context).addDns));
         await tester.pumpAndSettle();
-        await testHelper.takeScreenshot(
-            tester, 'PNP-STATIC-IP-UI_06_add_dns2');
-        
+        await testHelper.takeScreenshot(tester, 'PNP-STATIC-IP-UI_06_add_dns2');
       },
       screens: screens,
       helper: testHelper,
@@ -247,14 +216,13 @@ void main() async {
           overrides: [],
         );
 
-        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
-            ['192', '168', '1', '10']);
-        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
-            ['255', '255', '255', '0']);
-        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
-            ['192', '168', '1', '1']);
         await enterIpByHeader(
-            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+            tester, testHelper.loc(context).ipAddress, '192.168.1.10');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).subnetMask, '255.255.255.0');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).defaultGateway, '192.168.1.1');
+        await enterIpByHeader(tester, testHelper.loc(context).dns1, '8.8.8.8');
 
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
@@ -262,10 +230,9 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNotNull);
+            tester.widget<AppButton>(find.byType(AppButton)).onTap, isNotNull);
 
-        await tester.tap(find.byType(AppFilledButton));
+        await tester.tap(find.byType(AppButton));
         await tester.pumpAndSettle();
 
         expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
@@ -292,14 +259,13 @@ void main() async {
           overrides: [],
         );
 
-        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
-            ['192', '168', '1', '10']);
-        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
-            ['255', '255', '255', '0']);
-        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
-            ['192', '168', '1', '1']);
         await enterIpByHeader(
-            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+            tester, testHelper.loc(context).ipAddress, '192.168.1.10');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).subnetMask, '255.255.255.0');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).defaultGateway, '192.168.1.1');
+        await enterIpByHeader(tester, testHelper.loc(context).dns1, '8.8.8.8');
 
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
@@ -307,10 +273,9 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNotNull);
+            tester.widget<AppButton>(find.byType(AppButton)).onTap, isNotNull);
 
-        await tester.tap(find.byType(AppFilledButton));
+        await tester.tap(find.byType(AppButton));
         await tester.pumpAndSettle();
 
         expect(
@@ -340,14 +305,13 @@ void main() async {
           overrides: [],
         );
 
-        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
-            ['192', '168', '1', '10']);
-        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
-            ['255', '255', '255', '0']);
-        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
-            ['192', '168', '1', '1']);
         await enterIpByHeader(
-            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+            tester, testHelper.loc(context).ipAddress, '192.168.1.10');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).subnetMask, '255.255.255.0');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).defaultGateway, '192.168.1.1');
+        await enterIpByHeader(tester, testHelper.loc(context).dns1, '8.8.8.8');
 
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
@@ -355,10 +319,9 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNotNull);
+            tester.widget<AppButton>(find.byType(AppButton)).onTap, isNotNull);
 
-        await tester.tap(find.byType(AppFilledButton));
+        await tester.tap(find.byType(AppButton));
         await tester.pumpAndSettle();
 
         expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
@@ -385,14 +348,13 @@ void main() async {
           overrides: [],
         );
 
-        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
-            ['192', '168', '1', '10']);
-        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
-            ['255', '255', '255', '0']);
-        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
-            ['192', '168', '1', '1']);
         await enterIpByHeader(
-            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+            tester, testHelper.loc(context).ipAddress, '192.168.1.10');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).subnetMask, '255.255.255.0');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).defaultGateway, '192.168.1.1');
+        await enterIpByHeader(tester, testHelper.loc(context).dns1, '8.8.8.8');
 
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
@@ -400,10 +362,9 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNotNull);
+            tester.widget<AppButton>(find.byType(AppButton)).onTap, isNotNull);
 
-        await tester.tap(find.byType(AppFilledButton));
+        await tester.tap(find.byType(AppButton));
         await tester.pumpAndSettle();
 
         expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
@@ -430,14 +391,13 @@ void main() async {
           overrides: [],
         );
 
-        await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
-            ['192', '168', '1', '10']);
-        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
-            ['255', '255', '255', '0']);
-        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
-            ['192', '168', '1', '1']);
         await enterIpByHeader(
-            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+            tester, testHelper.loc(context).ipAddress, '192.168.1.10');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).subnetMask, '255.255.255.0');
+        await enterIpByHeader(
+            tester, testHelper.loc(context).defaultGateway, '192.168.1.1');
+        await enterIpByHeader(tester, testHelper.loc(context).dns1, '8.8.8.8');
 
         // Tap somewhere else to trigger onFocusChanged
         await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
@@ -445,10 +405,9 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap,
-            isNotNull);
+            tester.widget<AppButton>(find.byType(AppButton)).onTap, isNotNull);
 
-        await tester.tap(find.byType(AppFilledButton));
+        await tester.tap(find.byType(AppButton));
         await tester.pumpAndSettle();
 
         expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
@@ -484,47 +443,46 @@ void main() async {
         overrides: [
           pnpIspServiceProvider.overrideWithValue(testHelper.mockPnpIspService),
           pnpServiceProvider.overrideWithValue(testHelper.mockPnpService),
-          internetSettingsProvider.overrideWith(() => testHelper.mockInternetSettingsNotifier),
+          internetSettingsProvider
+              .overrideWith(() => testHelper.mockInternetSettingsNotifier),
         ],
         forceOverride: true,
       );
       await tester.pumpAndSettle();
 
-      await enterIpByHeader(tester, testHelper.loc(context).ipAddress,
-            ['192', '168', '1', '10']);
-        await enterIpByHeader(tester, testHelper.loc(context).subnetMask,
-            ['255', '255', '255', '0']);
-        await enterIpByHeader(tester, testHelper.loc(context).defaultGateway,
-            ['192', '168', '1', '1']);
-        await enterIpByHeader(
-            tester, testHelper.loc(context).dns1, ['8', '8', '8', '8']);
+      await enterIpByHeader(
+          tester, testHelper.loc(context).ipAddress, '192.168.1.10');
+      await enterIpByHeader(
+          tester, testHelper.loc(context).subnetMask, '255.255.255.0');
+      await enterIpByHeader(
+          tester, testHelper.loc(context).defaultGateway, '192.168.1.1');
+      await enterIpByHeader(tester, testHelper.loc(context).dns1, '8.8.8.8');
 
-        // Tap somewhere else to trigger onFocusChanged
-        await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
-        await tester.pumpAndSettle();
-
+      // Tap somewhere else to trigger onFocusChanged
+      await tester.tap(find.text(testHelper.loc(context).staticIPAddress));
+      await tester.pumpAndSettle();
 
       // 3. Trigger the save process
-      await tester.tap(find.byType(AppFilledButton));
+      await tester.tap(find.byType(AppButton));
       await tester
           .pump(Duration(seconds: 1)); // Let the state change to 'saving'
 
       // 4. Verify 'saving' state
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
       await testHelper.takeScreenshot(
           tester, 'PNP-STATIC-IP_SAVE-PROGRESS_01_saving');
 
       // 5. Move to 'checkSettings' state
       saveCompleter.complete();
       await tester.pump(); // Let the state change to 'checkSettings'
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
       await testHelper.takeScreenshot(
           tester, 'PNP-STATIC-IP_SAVE-PROGRESS_02_checking_settings');
 
       // 6. Move to 'checkInternetConnection' state
       verifySettingsCompleter.complete(true);
       await tester.pump(); // Let the state change to 'checkInternetConnection'
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
       await testHelper.takeScreenshot(
           tester, 'PNP-STATIC-IP_SAVE-PROGRESS_03_checking_internet');
 
@@ -533,7 +491,7 @@ void main() async {
       await tester.pumpAndSettle(); // Let the UI handle success
 
       // Verify the spinner is gone
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
     },
     helper: testHelper,
     screens: screens,

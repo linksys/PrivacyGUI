@@ -8,9 +8,8 @@ import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_p
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/screen.dart';
@@ -86,10 +85,9 @@ void main() {
 
     await tester.runAsync(() async {
       final element = tester.element(find.byType(NodeDetailView));
-      final theme = CustomTheme.of(element);
       final iconName = routerIconTestByModel(
           modelNumber: (nodeState ?? _masterState).modelNumber);
-      await precacheImage(theme.getRouterImage(iconName), element);
+      await precacheImage(DeviceImageHelper.getRouterImage(iconName), element);
     });
     await tester.pumpAndSettle();
     return context;
@@ -114,7 +112,7 @@ void main() {
       expect(find.bySemanticsLabel('device image'), findsOneWidget);
 
       // Verify edit button
-      expect(find.byIcon(LinksysIcons.edit), findsWidgets);
+      expect(find.byIcon(AppFontIcons.edit), findsWidgets);
 
       // Verify connection info
       expect(find.text(loc.connectTo), findsWidgets);
@@ -133,7 +131,7 @@ void main() {
 
       // Verify refresh button
       expect(find.text(loc.refresh), findsOneWidget);
-      expect(find.byIcon(LinksysIcons.refresh), findsOneWidget);
+      expect(find.byIcon(AppFontIcons.refresh), findsOneWidget);
     },
     screens: _desktopScreens,
     goldenFilename: 'NDVL-INFO-01-desktop',
@@ -166,7 +164,7 @@ void main() {
       expect(find.text(loc.nDevices(_singleDeviceList.length)), findsOneWidget);
 
       // Verify filter icon button (mobile variant)
-      expect(find.byIcon(LinksysIcons.filter), findsOneWidget);
+      expect(find.byIcon(AppFontIcons.filter), findsOneWidget);
     },
     screens: _mobileScreens,
     goldenFilename: 'NDVL-MOBILE-01-tabs',
@@ -228,7 +226,7 @@ void main() {
       expect(find.text(loc.nodeLight), findsOneWidget);
 
       // Verify night mode icon and time display
-      expect(find.byIcon(LinksysIcons.darkMode), findsOneWidget);
+      expect(find.byIcon(AppFontIcons.darkMode), findsOneWidget);
       expect(find.text('8PM - 8AM'), findsOneWidget);
 
       // Tap to open dialog
@@ -264,7 +262,7 @@ void main() {
       final loc = testHelper.loc(context);
 
       // Tap edit button
-      final editButton = find.byIcon(LinksysIcons.edit).first;
+      final editButton = find.byIcon(AppFontIcons.edit).first;
       expect(editButton, findsOneWidget);
       await tester.tap(editButton);
       await tester.pumpAndSettle();
@@ -287,7 +285,7 @@ void main() {
       expect(find.text(loc.theNameMustNotBeEmpty), findsOneWidget);
 
       // Verify blink control widget appears (when LED blinking is supported)
-      expect(find.byType(AppTextButton), findsWidgets);
+      expect(find.byType(AppButton), findsWidgets);
 
       await testHelper.takeScreenshot(tester, 'NDVL-EDIT-01-empty_error');
     },
@@ -303,7 +301,7 @@ void main() {
       final loc = testHelper.loc(context);
 
       // Tap edit button
-      await tester.tap(find.byIcon(LinksysIcons.edit).first);
+      await tester.tap(find.byIcon(AppFontIcons.edit).first);
       await tester.pumpAndSettle();
 
       // Verify dialog opened

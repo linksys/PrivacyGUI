@@ -4,9 +4,8 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/screen.dart';
@@ -79,7 +78,7 @@ void main() {
       expect(find.text(loc.nDevices(_onlineDevices.length)), findsOneWidget);
       expect(find.byType(DevicesFilterWidget), findsOneWidget);
       expect(find.text(loc.selectAll), findsOneWidget);
-      expect(find.byIcon(LinksysIcons.refresh), findsOneWidget);
+      expect(find.byIcon(AppFontIcons.refresh), findsOneWidget);
     },
     screens: responsiveDesktopScreens,
     goldenFilename: 'IDVC-ONLINE-01-layout',
@@ -92,8 +91,7 @@ void main() {
     (tester, screen) async {
       await pumpInstantDeviceView(tester, screen);
 
-      final filterButton =
-          find.widgetWithIcon(AppTextButton, LinksysIcons.filter);
+      final filterButton = find.widgetWithIcon(AppButton, AppFontIcons.filter);
       expect(filterButton, findsOneWidget);
       expect(find.byType(DevicesFilterWidget), findsNothing);
 
@@ -120,8 +118,11 @@ void main() {
       final loc = testHelper.loc(context);
 
       final checkboxFinder = find.descendant(
-        of: find.byType(AppDeviceListCard),
-        matching: find.byType(AppCheckbox),
+        of: find.descendant(
+          of: find.byType(DeviceListWidget),
+          matching: find.byType(AppCard),
+        ),
+        matching: find.byType(Checkbox),
       );
       expect(checkboxFinder, findsWidgets);
 
@@ -130,7 +131,7 @@ void main() {
 
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is AppDeviceListCard && widget.isSelected == true,
+          (widget) => widget is Checkbox && widget.value == true,
         ),
         findsWidgets,
       );
@@ -155,8 +156,11 @@ void main() {
       final loc = testHelper.loc(context);
 
       final checkboxFinder = find.descendant(
-        of: find.byType(AppDeviceListCard),
-        matching: find.byType(AppCheckbox),
+        of: find.descendant(
+          of: find.byType(DeviceListWidget),
+          matching: find.byType(AppCard),
+        ),
+        matching: find.byType(Checkbox),
       );
       await tester.tap(checkboxFinder.first);
       await tester.pumpAndSettle();
@@ -191,8 +195,11 @@ void main() {
       final loc = testHelper.loc(context);
 
       final deauthButton = find.descendant(
-        of: find.byType(AppDeviceListCard),
-        matching: find.byIcon(LinksysIcons.bidirectional),
+        of: find.descendant(
+          of: find.byType(DeviceListWidget),
+          matching: find.byType(AppCard),
+        ),
+        matching: find.byIcon(AppFontIcons.bidirectional),
       );
       expect(deauthButton, findsWidgets);
 

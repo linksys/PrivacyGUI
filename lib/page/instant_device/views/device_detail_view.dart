@@ -72,7 +72,6 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
     return LayoutBuilder(
       builder: (context, constraint) {
         return UiKitPageView.withSliver(
-          padding: const EdgeInsets.only(),
           title: state.item.name,
           child: (context, constraints) => AppResponsiveLayout(
             desktop: _desktopLayout(context, state),

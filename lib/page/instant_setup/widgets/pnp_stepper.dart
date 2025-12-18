@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
-import 'package:privacygui_widgets/widgets/stepper/app_stepper.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PnpStepper extends ConsumerStatefulWidget {
   final List<PnpStep> steps;
-  final StepperType stepperType;
+  final StepperVariant stepperVariant;
   final VoidCallback? onLastStep;
   final void Function(
       int index,
@@ -20,7 +20,7 @@ class PnpStepper extends ConsumerStatefulWidget {
   const PnpStepper({
     super.key,
     required this.steps,
-    this.stepperType = StepperType.horizontal,
+    this.stepperVariant = StepperVariant.horizontal,
     this.onLastStep,
     this.onStepChanged,
   });
@@ -64,13 +64,14 @@ class _PnpStepperState extends ConsumerState<PnpStepper> {
     }
 
     return AppStepper(
-        type: widget.stepperType,
+        variant: widget.stepperVariant,
         controlsBuilder: widget.steps.isNotEmpty
             ? widget.steps[_index].controlBuilder(_index, _index)
             : null,
         currentStep: _index,
         onStepCancel: onStepCancel,
         onStepContinue: onStepContinue,
+        completedSteps: Set.from(List.generate(_index, (i) => i)),
         steps: widget.steps
             .map((e) => e.resolveStep(
                 context: context,

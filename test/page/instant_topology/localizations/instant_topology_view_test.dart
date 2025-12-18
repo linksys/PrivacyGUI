@@ -5,11 +5,11 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
-import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
+
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/screen.dart';
@@ -29,8 +29,9 @@ import '../../../test_data/topology_data.dart';
 /// | `ITOP-PAIR_SUCCESS` | Wired pairing dialog shows completion state when nodes are onboarded.         |
 /// | `ITOP-PAIR_EMPTY`   | Wired pairing dialog shows “not found” completion when no nodes detected.     |
 
-final _desktopTallScreens =
-    responsiveDesktopScreens.map((screen) => screen.copyWith(height: 1600)).toList();
+final _desktopTallScreens = responsiveDesktopScreens
+    .map((screen) => screen.copyWith(height: 1600))
+    .toList();
 final _topologyScreens = [
   ...responsiveMobileScreens.map((screen) => screen.copyWith(height: 1280)),
   ..._desktopTallScreens,
@@ -41,11 +42,10 @@ InstantTopologyState _defaultTopologyState() =>
 
 Future<void> _precacheTopologyImages(WidgetTester tester) async {
   final context = tester.element(find.byType(InstantTopologyView));
-  final theme = CustomTheme.of(context);
   final images = {
-    theme.images.devices.routerLn12,
-    theme.images.devices.routerMx5300,
-    theme.images.devices_xl.routerLn12,
+    Assets.images.devices.routerLn12.provider(),
+    Assets.images.devices.routerMx5300.provider(),
+    Assets.images.devicesXl.routerLn12.provider(),
   };
   for (final image in images) {
     await precacheImage(image, context);
@@ -53,8 +53,7 @@ Future<void> _precacheTopologyImages(WidgetTester tester) async {
 }
 
 Future<void> _openPairWiredDialog(WidgetTester tester) async {
-  final masterAction =
-      find.byType(PopupMenuButton<NodeInstantActions>).first;
+  final masterAction = find.byType(PopupMenuButton<NodeInstantActions>).first;
   await tester.tap(masterAction);
   await tester.pumpAndSettle();
 

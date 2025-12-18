@@ -10,10 +10,8 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/valid
 import 'package:privacy_gui/utils.dart';
 
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/page/components/composed/app_dropdown_button.dart';
-import 'package:privacy_gui/page/components/composed/app_min_max_number_text_field.dart';
 
-import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 
 class OptionalSettingsForm extends ConsumerStatefulWidget {
   final bool isEditing;
@@ -171,13 +169,14 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
             padding: const EdgeInsets.symmetric(
               vertical: AppSpacing.md,
             ),
-            child: AppDropdownButton<String>(
+            child: AppDropdown<String>(
               key: const ValueKey('mtuDropdown'),
-              title: loc(context).mtu,
-              selected: isMtuAuto ? loc(context).auto : loc(context).manual,
+              label: loc(context).mtu,
+              value: isMtuAuto ? loc(context).auto : loc(context).manual,
               items: [loc(context).auto, loc(context).manual],
-              label: (item) => item,
+              itemAsString: (item) => item,
               onChanged: (value) {
+                if (value == null) return;
                 final maxMtu = _getMaxMtu(ipv4Setting.ipv4ConnectionType);
                 setState(() {
                   isMtuAuto = value == loc(context).auto;
@@ -210,12 +209,11 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
                   }
                 }
               },
-              child: AppMinMaxNumberTextField(
+              child: AppMinMaxInput(
                 key: const ValueKey('mtuManualSizeText'),
-                controller: _mtuSizeController,
-                enable: !isMtuAuto,
+                value: int.tryParse(_mtuSizeController.text),
+                enabled: !isMtuAuto,
                 label: loc(context).size,
-                inputType: TextInputType.number,
                 min: 576,
                 max: _getMaxMtu(ipv4Setting.ipv4ConnectionType),
                 errorText: _mtuSizeTouched &&
@@ -224,7 +222,8 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
                     ? loc(context).invalidInput
                     : null,
                 onChanged: (value) {
-                  notifier.updateMtu(value.isEmpty ? 0 : int.parse(value));
+                  _mtuSizeController.text = value?.toString() ?? '';
+                  notifier.updateMtu(value ?? 0);
                 },
               ),
             ),
@@ -367,7 +366,7 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
     required String title,
     required String description,
   }) {
-    return AppSettingCard.noBorder(
+    return AppListCard.settingNoBorder(
       title: title,
       description: description,
       padding: const EdgeInsets.symmetric(

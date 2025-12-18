@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/page/components/composed/app_setting_card.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -104,7 +104,7 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
     final disabled = item.disabledOnBridge && isBridge;
     return Opacity(
       opacity: disabled ? .3 : 1,
-      child: AppSettingCard(
+      child: AppListCard.setting(
         title: item.title,
         trailing: AppIcon.font(AppFontIcons.chevronRight),
         onTap: disabled ? null : item.onTap,

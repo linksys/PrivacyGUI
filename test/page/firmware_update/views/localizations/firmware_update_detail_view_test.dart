@@ -5,7 +5,7 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_detail_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
@@ -153,12 +153,8 @@ void main() {
     // Verify page title is not present
     expect(find.text(testHelper.loc(context).firmwareUpdate), findsNothing);
 
-    // Verify full screen spinner is present
-    expect(find.byType(AppFullScreenSpinner),
-        findsNothing); // It should not be AppFullScreenSpinner if there is an ongoing list
-
     // Verify progress indicator and texts
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(AppLoader), findsOneWidget);
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareDownloadingTitle),
         findsOneWidget); // 'Checking' maps to 'firmwareDownloadingTitle'
@@ -222,7 +218,7 @@ void main() {
     expect(find.text(testHelper.loc(context).firmwareUpdate), findsNothing);
 
     // Verify progress indicator and texts
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(AppLoader), findsOneWidget);
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareRebootingTitle),
         findsOneWidget);
@@ -302,7 +298,7 @@ void main() {
     expect(find.byType(GridView), findsOneWidget);
 
     // Verify progress indicators and texts for both nodes
-    expect(find.byType(CircularProgressIndicator), findsNWidgets(2));
+    expect(find.byType(AppLoader), findsNWidgets(2));
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareDownloadingTitle),
         findsNWidgets(2)); // Both 'Checking' and 'Downloading' map to this
@@ -338,7 +334,7 @@ void main() {
     expect(find.byType(GridView), findsOneWidget);
 
     // Verify progress indicators and texts for all three nodes
-    expect(find.byType(CircularProgressIndicator), findsNWidgets(3));
+    expect(find.byType(AppLoader), findsNWidgets(3));
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareDownloadingTitle),
         findsNWidgets(3)); // All 'Checking' and 'Downloading' map to this
@@ -374,7 +370,7 @@ void main() {
     expect(find.byType(GridView), findsOneWidget);
     await testHelper.takeScreenshot(tester, 'XXXXX-FUDV-UPDATING_4_NODES');
     // Verify progress indicators and texts for all four nodes
-    expect(find.byType(CircularProgressIndicator), findsNWidgets(4));
+    expect(find.byType(AppLoader), findsNWidgets(4));
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareDownloadingTitle),
         findsNWidgets(4)); // All 'Checking' and 'Downloading' map to this
