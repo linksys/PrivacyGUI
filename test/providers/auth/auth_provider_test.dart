@@ -5,12 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
-import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/providers/auth/auth_error.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_result.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
@@ -117,7 +116,7 @@ void main() {
       when(() => mockAuthService.validateSessionToken())
           .thenAnswer((_) async => const AuthSuccess(null));
       when(() => mockAuthService.getStoredCredentials()).thenAnswer(
-          (_) async => const AuthFailure(StorageError('No credentials')));
+          (_) async => const AuthFailure(StorageError()));
       when(() => mockAuthService.getStoredLoginType())
           .thenAnswer((_) async => const AuthSuccess(LoginType.none));
 
@@ -192,19 +191,13 @@ void main() {
       const testUsername = 'wrong@example.com';
       const testPassword = 'wrongpass';
 
-      const errorResponse = ErrorResponse(
-        status: 401,
-        code: 'INVALID_CREDENTIALS',
-        errorMessage: 'Invalid credentials',
-      );
-
       when(() => mockAuthService.cloudLogin(
                 username: testUsername,
                 password: testPassword,
                 sessionToken: null,
               ))
           .thenAnswer((_) async => const AuthFailure(
-              CloudApiError('INVALID_CREDENTIALS', errorResponse)));
+              UnexpectedError(message: 'INVALID_CREDENTIALS')));
 
       // Act
       await container.read(authProvider.notifier).cloudLogin(
@@ -215,8 +208,8 @@ void main() {
       // Assert
       final state = container.read(authProvider);
       expect(state.hasError, true);
-      expect(state.error, isA<CloudApiError>());
-      expect((state.error as CloudApiError).code, 'INVALID_CREDENTIALS');
+      expect(state.error, isA<UnexpectedError>());
+      expect((state.error as UnexpectedError).message, 'INVALID_CREDENTIALS');
 
       container.dispose();
     });
@@ -270,7 +263,7 @@ void main() {
 
       when(() => mockAuthService.localLogin(wrongPassword, pnp: false))
           .thenAnswer((_) async =>
-              const AuthFailure(JnapError('ErrorInvalidPassword')));
+              const AuthFailure(UnexpectedError(message: 'ErrorInvalidPassword')));
 
       // Act
       await container.read(authProvider.notifier).localLogin(wrongPassword);
@@ -278,8 +271,8 @@ void main() {
       // Assert
       final state = container.read(authProvider);
       expect(state.hasError, true);
-      expect(state.error, isA<JnapError>());
-      expect((state.error as JnapError).resultCode, 'ErrorInvalidPassword');
+      expect(state.error, isA<UnexpectedError>());
+      expect((state.error as UnexpectedError).message, 'ErrorInvalidPassword');
 
       container.dispose();
     });
@@ -529,7 +522,7 @@ void main() {
                 sessionToken: null,
               ))
           .thenAnswer((_) async =>
-              AuthFailure(NetworkError(Exception('Network error'))));
+              const AuthFailure(NetworkError(message: 'Network error')));
 
       // Act
       await container.read(authProvider.notifier).cloudLogin(

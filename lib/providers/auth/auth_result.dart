@@ -1,4 +1,4 @@
-import 'package:privacy_gui/providers/auth/auth_error.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 
 /// Result type for AuthService operations.
 ///
@@ -10,7 +10,7 @@ import 'package:privacy_gui/providers/auth/auth_error.dart';
 /// final result = await authService.validateSessionToken();
 /// result.when(
 ///   success: (token) => print('Valid token: $token'),
-///   failure: (error) => print('Error: ${error.message}'),
+///   failure: (error) => print('Error: $error'),
 /// );
 /// ```
 sealed class AuthResult<T> {
@@ -19,7 +19,7 @@ sealed class AuthResult<T> {
   /// Execute callback based on result type (exhaustive pattern matching).
   R when<R>({
     required R Function(T value) success,
-    required R Function(AuthError error) failure,
+    required R Function(ServiceError error) failure,
   });
 
   /// Map success value, pass through failure.
@@ -42,7 +42,7 @@ final class AuthSuccess<T> extends AuthResult<T> {
   @override
   R when<R>({
     required R Function(T value) success,
-    required R Function(AuthError error) failure,
+    required R Function(ServiceError error) failure,
   }) =>
       success(value);
 
@@ -73,14 +73,14 @@ final class AuthSuccess<T> extends AuthResult<T> {
 /// Failed result containing an error.
 final class AuthFailure<T> extends AuthResult<T> {
   /// The error that occurred.
-  final AuthError error;
+  final ServiceError error;
 
   const AuthFailure(this.error);
 
   @override
   R when<R>({
     required R Function(T value) success,
-    required R Function(AuthError error) failure,
+    required R Function(ServiceError error) failure,
   }) =>
       failure(error);
 

@@ -10,9 +10,9 @@ import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/providers/auth/auth_error.dart';
 import 'package:privacy_gui/providers/auth/auth_result.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
@@ -342,7 +342,7 @@ void main() {
           )).called(1);
     });
 
-    // T027: Test cloudLogin() with invalid credentials (returns InvalidCredentialsError)
+    // T027: Test cloudLogin() with invalid credentials (returns UnexpectedError)
     test('T027: cloudLogin fails with invalid credentials', () async {
       // Arrange
       final errorResponse = ErrorResponse(
@@ -364,8 +364,8 @@ void main() {
       // Assert
       expect(result.isFailure, true);
       final error = (result as AuthFailure).error;
-      expect(error, isA<CloudApiError>());
-      expect((error as CloudApiError).code, 'INVALID_CREDENTIALS');
+      expect(error, isA<UnexpectedError>());
+      expect((error as UnexpectedError).message, 'INVALID_CREDENTIALS');
     });
 
     // T028: Test cloudLogin() with network failure (returns NetworkError)
@@ -387,7 +387,7 @@ void main() {
       expect(result.isFailure, true);
       final error = (result as AuthFailure).error;
       expect(error, isA<NetworkError>());
-      expect((error as NetworkError).cause, networkException);
+      expect((error as NetworkError).message, contains('Network timeout'));
     });
 
     // T029: Test localLogin() with valid password (JNAP success)
@@ -443,8 +443,8 @@ void main() {
       // Assert
       expect(result.isFailure, true);
       final error = (result as AuthFailure).error;
-      expect(error, isA<JnapError>());
-      expect((error as JnapError).resultCode, 'ErrorInvalidPassword');
+      expect(error, isA<UnexpectedError>());
+      expect((error as UnexpectedError).message, 'ErrorInvalidPassword');
     });
 
     // T031: Test raLogin() with valid session info
@@ -587,7 +587,7 @@ void main() {
       expect(result.isFailure, true);
       final error = (result as AuthFailure<void>).error;
       expect(error, isA<StorageError>());
-      expect((error as StorageError).cause, exception);
+      expect((error as StorageError).originalError, exception);
     });
 
     // T041: Test getStoredCredentials() retrieves all credential types
@@ -734,10 +734,10 @@ void main() {
   // Phase 7 (US5): Test Coverage Validation
   // ============================================================================
 
-  group('AuthError Coverage', () {
-    // T059: Test all AuthError types being returned correctly
+  group('ServiceError Coverage', () {
+    // T059: Test all ServiceError types being returned correctly
 
-    test('T059: All AuthError types can be returned and matched', () async {
+    test('T059: All ServiceError types can be returned and matched', () async {
       // Test NoSessionTokenError (already covered by existing tests)
       // Test SessionTokenExpiredError (already covered by existing tests)
 
@@ -752,7 +752,7 @@ void main() {
       expect(tokenRefreshError, isA<TokenRefreshError>());
       expect((tokenRefreshError as TokenRefreshError).cause, isA<Exception>());
 
-      // Test CloudApiError with code and cause
+      // Test UnexpectedError with ErrorResponse (cloud API error)
       const errorResponse = ErrorResponse(
         status: 401,
         code: 'INVALID_CREDENTIALS',
@@ -769,11 +769,11 @@ void main() {
       );
       expect(cloudResult.isFailure, true);
       final cloudApiError = (cloudResult as AuthFailure).error;
-      expect(cloudApiError, isA<CloudApiError>());
-      expect((cloudApiError as CloudApiError).code, 'INVALID_CREDENTIALS');
-      expect(cloudApiError.cause, errorResponse);
+      expect(cloudApiError, isA<UnexpectedError>());
+      expect((cloudApiError as UnexpectedError).message, 'INVALID_CREDENTIALS');
+      expect(cloudApiError.originalError, errorResponse);
 
-      // Test JnapError with resultCode
+      // Test UnexpectedError with JNAP error
       const jnapErrorResponse = JNAPSuccess(
         result: 'ErrorInvalidPassword',
         output: {},
@@ -788,10 +788,10 @@ void main() {
       final localResult = await authService.localLogin('wrong-password');
       expect(localResult.isFailure, true);
       final jnapError = (localResult as AuthFailure).error;
-      expect(jnapError, isA<JnapError>());
-      expect((jnapError as JnapError).resultCode, 'ErrorInvalidPassword');
+      expect(jnapError, isA<UnexpectedError>());
+      expect((jnapError as UnexpectedError).message, 'ErrorInvalidPassword');
 
-      // Test StorageError with cause
+      // Test StorageError with originalError
       final storageException = Exception('Storage write failed');
       when(() => mockSecureStorage.write(
           key: any(named: 'key'),
@@ -803,9 +803,9 @@ void main() {
       expect(storageResult.isFailure, true);
       final storageError = (storageResult as AuthFailure).error;
       expect(storageError, isA<StorageError>());
-      expect((storageError as StorageError).cause, storageException);
+      expect((storageError as StorageError).originalError, storageException);
 
-      // Test NetworkError with cause
+      // Test NetworkError with message
       final networkException = Exception('Connection timeout');
       when(() => mockCloudRepository.login(
             username: any(named: 'username'),
@@ -819,7 +819,8 @@ void main() {
       expect(networkResult.isFailure, true);
       final networkError = (networkResult as AuthFailure).error;
       expect(networkError, isA<NetworkError>());
-      expect((networkError as NetworkError).cause, networkException);
+      expect(
+          (networkError as NetworkError).message, contains('Connection timeout'));
     });
   });
 
@@ -847,7 +848,7 @@ void main() {
       // Assert - Test when() pattern matching
       final output = result.when(
         success: (token) => 'Success: ${token?.accessToken}',
-        failure: (error) => 'Failure: ${error.message}',
+        failure: (error) => 'Failure: ${error.runtimeType}',
       );
 
       expect(output, 'Success: test-token');

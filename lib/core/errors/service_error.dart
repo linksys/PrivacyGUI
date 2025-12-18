@@ -65,6 +65,22 @@ final class InvalidSessionTokenError extends ServiceError {
   const InvalidSessionTokenError();
 }
 
+/// No session token found in storage
+final class NoSessionTokenError extends ServiceError {
+  const NoSessionTokenError();
+}
+
+/// Session token has expired and cannot be refreshed
+final class SessionTokenExpiredError extends ServiceError {
+  const SessionTokenExpiredError();
+}
+
+/// Token refresh operation failed
+final class TokenRefreshError extends ServiceError {
+  final Object? cause;
+  const TokenRefreshError({this.cause});
+}
+
 /// Multi-factor authentication required
 final class MfaRequiredError extends ServiceError {
   const MfaRequiredError();

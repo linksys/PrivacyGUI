@@ -11,8 +11,8 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/providers/auth/auth_error.dart';
 import 'package:privacy_gui/providers/auth/auth_result.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
 import 'package:privacy_gui/utils.dart';
@@ -191,7 +191,7 @@ class AuthService {
     } catch (e) {
       // Unexpected errors wrap in StorageError
       logger.e('[AuthService]: Unexpected error validating token: $e');
-      return AuthFailure(StorageError(e));
+      return AuthFailure(StorageError(originalError: e));
     }
   }
 
@@ -225,7 +225,7 @@ class AuthService {
     } catch (e) {
       logger.e('[AuthService]: Token refresh failed: $e');
       // Return null on failure (caller can handle as needed)
-      return AuthFailure(TokenRefreshError(e));
+      return AuthFailure(TokenRefreshError(cause: e));
     }
   }
 
@@ -285,10 +285,10 @@ class AuthService {
       ));
     } on ErrorResponse catch (e) {
       logger.e('[AuthService]: Cloud login failed with ErrorResponse: $e');
-      return AuthFailure(CloudApiError(e.code, e));
+      return AuthFailure(UnexpectedError(originalError: e, message: e.code));
     } catch (e) {
       logger.e('[AuthService]: Cloud login failed: $e');
-      return AuthFailure(NetworkError(e));
+      return AuthFailure(NetworkError(message: e.toString()));
     }
   }
 
@@ -325,7 +325,8 @@ class AuthService {
       if (response.result != jnapResultOk) {
         logger.w(
             '[AuthService]: Local login failed with JNAP error: ${response.result}');
-        return AuthFailure(JnapError(response.result, response));
+        return AuthFailure(
+            UnexpectedError(originalError: response, message: response.result));
       }
 
       // Store local password
@@ -339,7 +340,7 @@ class AuthService {
       ));
     } catch (e) {
       logger.e('[AuthService]: Local login failed: $e');
-      return AuthFailure(NetworkError(e));
+      return AuthFailure(NetworkError(message: e.toString()));
     }
   }
 
@@ -393,7 +394,7 @@ class AuthService {
       ));
     } catch (e) {
       logger.e('[AuthService]: RA login failed: $e');
-      return AuthFailure(StorageError(e));
+      return AuthFailure(StorageError(originalError: e));
     }
   }
 
@@ -417,7 +418,8 @@ class AuthService {
       return AuthSuccess(hint);
     } catch (e) {
       logger.e('[AuthService]: Failed to get password hint: $e');
-      return AuthFailure(JnapError('GetPasswordHintFailed', e));
+      return AuthFailure(
+          UnexpectedError(originalError: e, message: 'GetPasswordHintFailed'));
     }
   }
 
@@ -451,7 +453,8 @@ class AuthService {
       return AuthSuccess(result.output);
     } catch (e) {
       logger.e('[AuthService]: Failed to get admin password auth status: $e');
-      return AuthFailure(JnapError('GetAuthStatusFailed', e));
+      return AuthFailure(
+          UnexpectedError(originalError: e, message: 'GetAuthStatusFailed'));
     }
   }
 
@@ -514,7 +517,7 @@ class AuthService {
       return const AuthSuccess(null);
     } catch (e) {
       logger.e('[AuthService]: Failed to update cloud credentials: $e');
-      return AuthFailure(StorageError(e));
+      return AuthFailure(StorageError(originalError: e));
     }
   }
 
@@ -567,7 +570,7 @@ class AuthService {
       ));
     } catch (e) {
       logger.e('[AuthService]: Failed to retrieve credentials: $e');
-      return AuthFailure(StorageError(e));
+      return AuthFailure(StorageError(originalError: e));
     }
   }
 
@@ -607,7 +610,7 @@ class AuthService {
       return const AuthSuccess(null);
     } catch (e) {
       logger.e('[AuthService]: Failed to clear credentials: $e');
-      return AuthFailure(StorageError(e));
+      return AuthFailure(StorageError(originalError: e));
     }
   }
 
@@ -639,7 +642,7 @@ class AuthService {
       return AuthSuccess(loginType);
     } catch (e) {
       logger.e('[AuthService]: Failed to get stored login type: $e');
-      return AuthFailure(StorageError(e));
+      return AuthFailure(StorageError(originalError: e));
     }
   }
 }

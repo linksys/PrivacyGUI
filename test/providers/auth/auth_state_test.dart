@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
-import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
 
 void main() {
