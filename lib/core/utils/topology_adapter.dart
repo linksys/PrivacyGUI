@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
+import 'device_image_helper.dart';
 
 /// Adapter to convert PrivacyGUI topology data to ui_kit MeshTopology format.
 ///
@@ -33,7 +34,7 @@ class TopologyAdapter {
 
     // Convert nodes recursively
     for (final rootNode in rootNodes) {
-      _convertNode(rootNode, null, nodes, links);
+      _convertNode(rootNode, null, nodes, links, 0);
     }
 
     return MeshTopology(
@@ -49,9 +50,11 @@ class TopologyAdapter {
     String? parentId,
     List<MeshNode> nodes,
     List<MeshLink> links,
+    int depth,
   ) {
     final topologyModel = treeNode.data;
-    final meshNode = _createMeshNode(topologyModel, parentId, treeNode.children);
+    final meshNode =
+        _createMeshNode(topologyModel, parentId, treeNode.children, depth);
 
     nodes.add(meshNode);
 
@@ -60,14 +63,18 @@ class TopologyAdapter {
       links.add(MeshLink(
         sourceId: parentId,
         targetId: meshNode.id,
-        connectionType: topologyModel.isWiredConnection ? ConnectionType.ethernet : ConnectionType.wifi,
-        rssi: topologyModel.isWiredConnection ? null : _mapToRSSI(topologyModel.signalStrength),
+        connectionType: topologyModel.isWiredConnection
+            ? ConnectionType.ethernet
+            : ConnectionType.wifi,
+        rssi: topologyModel.isWiredConnection
+            ? null
+            : _mapToRSSI(topologyModel.signalStrength),
       ));
     }
 
     // Process children recursively
     for (final child in treeNode.children) {
-      _convertNode(child, meshNode.id, nodes, links);
+      _convertNode(child, meshNode.id, nodes, links, depth + 1);
     }
   }
 
@@ -76,26 +83,90 @@ class TopologyAdapter {
     TopologyModel topology,
     String? parentId,
     List<RouterTreeNode> children,
+    int level,
   ) {
+    final nodeType = _determineNodeType(topology, children, level);
+
     return MeshNode(
-      id: topology.deviceId.isNotEmpty ? topology.deviceId : _generateId(topology),
+      id: topology.deviceId.isNotEmpty
+          ? topology.deviceId
+          : _generateId(topology),
       name: topology.location.isNotEmpty ? topology.location : 'Unknown Device',
-      type: _determineNodeType(topology, children),
+      type: nodeType,
       status: _mapNodeStatus(topology),
       parentId: parentId,
-      load: _calculateLoad(topology),
-      iconData: _mapIcon(topology.icon),
+      level: level.toDouble(),
+      iconData: topology.location == 'Internet'
+          ? Icons.public
+          : _mapIcon(topology.icon),
       deviceCategory: topology.isRouter ? 'router' : 'device',
+      // New fields
+      image: nodeType != MeshNodeType.client && topology.model.isNotEmpty
+          ? DeviceImageHelper.getRouterImage(topology.model)
+          : null,
+      signalQuality: _mapSignalQuality(topology),
+      extra: topology.model.isNotEmpty ? topology.model : null,
+      metadata: _buildMetadata(topology),
     );
   }
 
+  /// Map signal strength to SignalQuality enum.
+  static SignalQuality? _mapSignalQuality(TopologyModel topology) {
+    if (topology.isWiredConnection) return SignalQuality.wired;
+    if (!topology.isOnline) return null;
+
+    final strength = topology.signalStrength;
+
+    // Handle RSSI (Negative values)
+    if (strength < 0) {
+      if (strength >= -60) return SignalQuality.strong;
+      if (strength >= -70) return SignalQuality.medium;
+      if (strength >= -80) return SignalQuality.weak;
+      return SignalQuality.weak; // Below -80 is also weak
+    }
+
+    // Handle Percentage (0-100)
+    if (strength >= 80) return SignalQuality.strong;
+    if (strength >= 50) return SignalQuality.medium;
+    if (strength >= 20) return SignalQuality.weak;
+    return SignalQuality.unknown;
+  }
+
+  /// Build metadata map from TopologyModel.
+  static Map<String, dynamic>? _buildMetadata(TopologyModel topology) {
+    return {
+      'deviceId': topology.deviceId,
+      'macAddress': topology.macAddress,
+      'ipAddress': topology.ipAddress,
+      'model': topology.model,
+      'serialNumber': topology.serialNumber,
+      'fwVersion': topology.fwVersion,
+      'fwUpToDate': topology.fwUpToDate,
+      'hardwareVersion': topology.hardwareVersion,
+      'meshHealth': topology.meshHealth,
+      'connectedDeviceCount': topology.connectedDeviceCount,
+      'isWiredConnection': topology.isWiredConnection,
+      'signalStrength': topology.signalStrength,
+    };
+  }
+
   /// Determine MeshNodeType from TopologyModel and children.
-  static MeshNodeType _determineNodeType(TopologyModel topology, List<RouterTreeNode> children) {
-    if (topology.isRouter && topology.isMaster) {
+  static MeshNodeType _determineNodeType(
+      TopologyModel topology, List<RouterTreeNode> children, int level) {
+    // Only level 0 can be gateway (Internet or Main Router)
+    if (level == 0) {
       return MeshNodeType.gateway;
     }
 
     if (topology.isRouter || children.isNotEmpty) {
+      return MeshNodeType.extender;
+    }
+
+    // Heuristic: Check for known router models if isRouter flag is unreliable
+    final model = topology.model.toUpperCase();
+    if (model.startsWith('MX') ||
+        model.startsWith('LN') ||
+        model.startsWith('WHW')) {
       return MeshNodeType.extender;
     }
 
@@ -111,16 +182,6 @@ class TopologyAdapter {
     // Consider high load scenarios (if we can determine from topology data)
     // For now, default to online
     return MeshNodeStatus.online;
-  }
-
-  /// Calculate load percentage for extender nodes.
-  static double _calculateLoad(TopologyModel topology) {
-    if (!topology.isRouter) return 0.0;
-
-    // Use connected device count as a proxy for load
-    // Assume max 20 devices for 100% load (arbitrary but reasonable)
-    const maxDevices = 20;
-    return (topology.connectedDeviceCount / maxDevices).clamp(0.0, 1.0);
   }
 
   /// Map signal strength percentage (0-100) to RSSI (dBm).
@@ -226,9 +287,9 @@ class TopologyAdapter {
       }
 
       final targetNode = flatNodes.cast<RouterTreeNode?>().firstWhere(
-        (node) => node != null && getNodeId(node) == nodeId,
-        orElse: () => null,
-      );
+            (node) => node != null && getNodeId(node) == nodeId,
+            orElse: () => null,
+          );
 
       if (targetNode != null) {
         originalCallback(targetNode);

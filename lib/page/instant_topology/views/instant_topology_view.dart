@@ -12,7 +12,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/top_bar.dart';
+
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
@@ -50,7 +50,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     final topologyState = ref.watch(instantTopologyProvider);
 
     // Convert topology data to ui_kit format
-    final meshTopology = TopologyAdapter.convert(topologyState.root.children);
+    // Convert topology data to ui_kit format
+    final meshTopology = TopologyAdapter.convert([topologyState.root]);
 
     return _isLoading
         ? Scaffold(
@@ -93,14 +94,18 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                       ],
                     ),
                   ),
-                // Main topology content - needs bounded height for graph view links
-                SizedBox(
-                  height: constraints.maxHeight.isFinite
-                      ? (constraints.maxHeight - 60).clamp(300, 800)
-                      : 500,
-                  child: _buildTopology(
-                      context, ref, topologyState.root.children, meshTopology),
-                ),
+                // Main topology content - use Expanded to fill available space
+                if (constraints.maxHeight.isFinite)
+                  Expanded(
+                    child: _buildTopology(context, ref,
+                        topologyState.root.children, meshTopology),
+                  )
+                else
+                  SizedBox(
+                    height: 800,
+                    child: _buildTopology(context, ref,
+                        topologyState.root.children, meshTopology),
+                  ),
               ],
             ),
           );
@@ -148,10 +153,113 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       },
       enableAnimation: true,
       clientVisibility: ClientVisibility.always,
+      // Detail panel configuration
+      nodeDetailConfig: NodeDetailConfig(
+        trigger: NodeDetailTrigger.tap,
+        mode: NodeDetailMode.floatingPanel,
+        detailBuilder: (context, meshNode, metadata) => _buildDetailPanel(
+          context,
+          ref,
+          meshNode,
+          metadata,
+          originalNodes,
+        ),
+      ),
     );
   }
 
-  /// Find the original RouterTreeNode by mesh node ID for custom rendering
+  /// Build custom detail panel content for a node.
+  Widget _buildDetailPanel(
+    BuildContext context,
+    WidgetRef ref,
+    MeshNode meshNode,
+    Map<String, dynamic>? metadata,
+    List<RouterTreeNode> originalNodes,
+  ) {
+    // Find original node for more details
+    final originalNode = _findOriginalNode(originalNodes, meshNode.id);
+
+    // Disable detail panel for Internet node
+    if (originalNode?.data.location == 'Internet')
+      return const SizedBox.shrink();
+
+    final isRouter = originalNode?.data.isRouter ?? false;
+    final nodeType = isRouter ? 'Router' : 'Client';
+
+    final ipAddress = metadata?['ipAddress'] as String? ?? '';
+    final macAddress = metadata?['macAddress'] as String? ?? '';
+    final model = metadata?['model'] as String? ?? '';
+    final fwVersion = metadata?['fwVersion'] as String? ?? '';
+    final signalStrength = metadata?['signalStrength'] as int? ?? 0;
+    final isWired = metadata?['isWiredConnection'] as bool? ?? false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (model.isNotEmpty) _detailRow(loc(context).model, model),
+        if (ipAddress.isNotEmpty) _detailRow(loc(context).ipAddress, ipAddress),
+        _detailRow('Node Type', nodeType),
+        if (macAddress.isNotEmpty)
+          _detailRow(loc(context).macAddress, macAddress),
+        if (fwVersion.isNotEmpty)
+          _detailRow(loc(context).firmwareVersion, fwVersion),
+        if (isWired)
+          _detailRow(loc(context).connectionType, loc(context).wired),
+        // Force Signal Display for Debug
+        if (!isWired && !meshNode.isOffline)
+          _detailRow(loc(context).signalStrength, '$signalStrength dBm'),
+        if (originalNode?.data.isOnline == true &&
+            originalNode?.data.location != 'Internet')
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () =>
+                    _navigateToNodeDetail(context, ref, meshNode.id),
+                child: Text('Details'),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Build a detail row with label and value.
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            flex: 2,
+            child: AppText.bodySmall(
+              label,
+              color: Colors.grey,
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: AppText.bodySmall(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Navigate to node detail page.
+  void _navigateToNodeDetail(
+      BuildContext context, WidgetRef ref, String nodeId) {
+    ref.read(nodeDetailIdProvider.notifier).state = nodeId;
+    context.pushNamed(RouteNamed.nodeDetails);
+  }
+
   RouterTreeNode? _findOriginalNode(
       List<RouterTreeNode> rootNodes, String nodeId) {
     for (final rootNode in rootNodes) {
@@ -168,8 +276,9 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   /// Build node menu using ui_kit AppPopupMenuItem
   List<AppPopupMenuItem<String>>? _buildNodeMenu(
       BuildContext context, MeshNode meshNode) {
-    // Don't show menu for gateway/internet nodes
-    if (meshNode.isGateway) return null;
+    // Don't show menu for gateway/internet nodes or offline nodes
+    if (meshNode.isGateway || meshNode.status == MeshNodeStatus.offline)
+      return null;
 
     final items = <AppPopupMenuItem<String>>[];
 
@@ -271,12 +380,14 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     MeshNode meshNode,
     bool isOffline,
   ) {
+    Widget content;
+
     // For gateway nodes, show additional info
     if (meshNode.isGateway && originalNode.data.isMaster) {
       final internetStatus = ref.watch(internetStatusProvider);
       final isOnline = internetStatus == InternetStatus.online;
 
-      return AppIcon.font(
+      content = AppIcon.font(
         meshNode.iconData ?? Icons.router,
         size: 24,
         color: isOffline
@@ -285,16 +396,64 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                 ? Theme.of(context).colorScheme.primary
                 : Theme.of(context).colorScheme.error,
       );
+    } else if (meshNode.image != null) {
+      // For other nodes, use device image if available
+      content = Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image(
+          image: meshNode.image!,
+          fit: BoxFit.contain,
+        ),
+      );
+    } else {
+      // For other nodes, use default rendering with custom icon
+      content = AppIcon.font(
+        meshNode.iconData ?? _getIconForNode(originalNode.data),
+        size: 20,
+        color: isOffline
+            ? Theme.of(context).colorScheme.outline
+            : Theme.of(context).colorScheme.onPrimary,
+      );
     }
 
-    // For other nodes, use default rendering with custom icon
-    return AppIcon.font(
-      meshNode.iconData ?? _getIconForNode(originalNode.data),
-      size: 20,
-      color: isOffline
-          ? Theme.of(context).colorScheme.outline
-          : Theme.of(context).colorScheme.onPrimary,
-    );
+    // Use connectedDeviceCount from model
+    final clientCount = originalNode.data.connectedDeviceCount;
+    Widget result = content;
+
+    if (clientCount > 0) {
+      result = Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          content,
+          Positioned(
+            top: -2,
+            right: -6,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2B3A42), // Dark Badge (Golden Style)
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+              child: Center(
+                child: Text(
+                  '$clientCount',
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    height: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return result;
   }
 
   /// Get appropriate icon for topology node
@@ -334,10 +493,13 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   void onNodeTap(BuildContext context, WidgetRef ref, RouterTreeNode node) {
+    // Disable interaction for Internet node
+    if (node.data.location == 'Internet') return;
+
     ref.read(nodeDetailIdProvider.notifier).state = node.data.deviceId;
     if (node.data.isOnline) {
-      // Navigate to node details for online nodes
-      context.pushNamed(RouteNamed.nodeDetails);
+      // Online nodes: Handled by Detail Panel -> View Details button
+      return;
     } else {
       // Handle offline nodes with modal dialog
       _showOfflineNodeModal(node).then((value) {
