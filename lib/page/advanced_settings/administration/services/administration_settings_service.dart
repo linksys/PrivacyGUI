@@ -70,9 +70,12 @@ class AdministrationSettingsService {
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
 
+    // Transform JNAP ManagementSettings to UI Model
+    final managementSettingsUI = _transformManagementSettingsToUI(managementSettings);
+
     // Aggregate all settings into AdministrationSettings
     return AdministrationSettings(
-      managementSettings: managementSettings,
+      managementSettings: managementSettingsUI,
       isUPnPEnabled: upnpSettings?.isUPnPEnabled ?? false,
       canUsersConfigure: upnpSettings?.canUsersConfigure ?? false,
       canUsersDisableWANAccess: upnpSettings?.canUsersDisableWANAccess ?? false,
@@ -82,6 +85,20 @@ class AdministrationSettingsService {
       enabledExpressForwarfing:
           expressForwardingSettings?.isExpressForwardingEnabled ?? false,
       canDisAllowLocalMangementWirelessly: hasLanPort,
+    );
+  }
+
+  /// Transforms JNAP ManagementSettings data model to UI model.
+  ///
+  /// This isolates the JNAP model from the presentation layer.
+  ManagementSettingsUIModel _transformManagementSettingsToUI(
+      ManagementSettings jnapModel) {
+    return ManagementSettingsUIModel(
+      canManageUsingHTTP: jnapModel.canManageUsingHTTP,
+      canManageUsingHTTPS: jnapModel.canManageUsingHTTPS,
+      isManageWirelesslySupported: jnapModel.isManageWirelesslySupported,
+      canManageWirelessly: jnapModel.canManageWirelessly,
+      canManageRemotely: jnapModel.canManageRemotely,
     );
   }
 
@@ -200,12 +217,16 @@ class AdministrationSettingsService {
   ) async {
     final repo = ref.read(routerRepositoryProvider);
 
+    // Transform UI Model back to JNAP Model for API call
+    final jnapManagementSettings =
+        _transformManagementSettingsToJNAP(settings.managementSettings);
+
     // Build JNAP transaction with all four set actions
     final transaction = JNAPTransactionBuilder(
       commands: [
         MapEntry(
           JNAPAction.setManagementSettings,
-          settings.managementSettings.toMap()
+          jnapManagementSettings.toMap()
             ..remove('isManageWirelesslySupported'),
         ),
         MapEntry(
@@ -236,4 +257,27 @@ class AdministrationSettingsService {
       );
     }
   }
+
+  /// Transforms UI model back to JNAP ManagementSettings data model.
+  ///
+  /// This is used when saving settings to the device.
+  ManagementSettings _transformManagementSettingsToJNAP(
+      ManagementSettingsUIModel uiModel) {
+    return ManagementSettings(
+      canManageUsingHTTP: uiModel.canManageUsingHTTP,
+      canManageUsingHTTPS: uiModel.canManageUsingHTTPS,
+      isManageWirelesslySupported: uiModel.isManageWirelesslySupported,
+      canManageWirelessly: uiModel.canManageWirelessly,
+      canManageRemotely: uiModel.canManageRemotely,
+    );
+  }
 }
+
+/// Provider for AdministrationSettingsService
+///
+/// Provides a singleton instance of [AdministrationSettingsService] for use
+/// throughout the application. Can be overridden in tests to inject mock implementations.
+final administrationSettingsServiceProvider =
+    Provider<AdministrationSettingsService>(
+  (ref) => AdministrationSettingsService(),
+);

@@ -12,10 +12,13 @@ class MockAdministrationSettingsService extends Mock
 
 class _FakeAdministrationSettings extends Fake implements AdministrationSettings {}
 
+class _FakeRef extends Fake implements Ref {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeAdministrationSettings());
     registerFallbackValue(_MockRouterRepository());
+    registerFallbackValue(_FakeRef());
   });
 
   group('AdministrationSettingsNotifier', () {
@@ -198,6 +201,58 @@ void main() {
       // Setting back to original value
       notifier.setUPnPEnabled(false);
       expect(notifier.state.isDirty, false);
+    });
+
+    /// T041: Example test demonstrating service mocking capability
+    test('performFetch can be tested with mocked service', () async {
+      // Arrange
+      final mockService = MockAdministrationSettingsService();
+      const testSettings = AdministrationSettings(
+        managementSettings: ManagementSettingsUIModel(
+          canManageUsingHTTP: true,
+          canManageUsingHTTPS: true,
+          isManageWirelesslySupported: true,
+          canManageWirelessly: true,
+          canManageRemotely: false,
+        ),
+        isUPnPEnabled: true,
+        enabledALG: false,
+        isExpressForwardingSupported: false,
+        enabledExpressForwarfing: false,
+        canUsersConfigure: true,
+        canUsersDisableWANAccess: true,
+      );
+
+      // Mock the service to return test data
+      when(() => mockService.fetchAdministrationSettings(
+            any(),
+            forceRemote: any(named: 'forceRemote'),
+            updateStatusOnly: any(named: 'updateStatusOnly'),
+          )).thenAnswer((_) async => testSettings);
+
+      // Create container with overridden service
+      final container = ProviderContainer(
+        overrides: [
+          administrationSettingsServiceProvider.overrideWithValue(mockService),
+        ],
+      );
+
+      // Act
+      final notifier = container.read(administrationSettingsProvider.notifier);
+      await notifier.fetch();
+
+      // Assert
+      expect(notifier.state.current.managementSettings.canManageUsingHTTP, true);
+      expect(notifier.state.current.managementSettings.canManageUsingHTTPS, true);
+      expect(notifier.state.current.isUPnPEnabled, true);
+      expect(notifier.state.current.enabledALG, false);
+
+      // Verify service was called
+      verify(() => mockService.fetchAdministrationSettings(
+            any(),
+            forceRemote: false,
+            updateStatusOnly: false,
+          )).called(1);
     });
   });
 }

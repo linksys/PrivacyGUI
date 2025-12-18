@@ -1,15 +1,125 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/jnap/models/management_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/administration/providers/administration_settings_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
 void main() {
+  group('ManagementSettingsUIModel', () {
+    /// Test basic construction
+    test('constructs with all required fields', () {
+      const managementSettings = ManagementSettingsUIModel(
+        canManageUsingHTTP: true,
+        canManageUsingHTTPS: false,
+        isManageWirelesslySupported: true,
+        canManageRemotely: false,
+      );
+
+      expect(managementSettings.canManageUsingHTTP, true);
+      expect(managementSettings.canManageUsingHTTPS, false);
+      expect(managementSettings.isManageWirelesslySupported, true);
+      expect(managementSettings.canManageRemotely, false);
+      expect(managementSettings.canManageWirelessly, null);
+    });
+
+    /// Test copyWith creates new instance with updated fields
+    test('copyWith creates new instance with updated fields', () {
+      const managementSettings1 = ManagementSettingsUIModel(
+        canManageUsingHTTP: true,
+        canManageUsingHTTPS: false,
+        isManageWirelesslySupported: true,
+        canManageRemotely: false,
+      );
+
+      final managementSettings2 = managementSettings1.copyWith(
+        canManageUsingHTTP: false,
+        canManageWirelessly: true,
+      );
+
+      expect(managementSettings2.canManageUsingHTTP, false);
+      expect(managementSettings2.canManageWirelessly, true);
+      expect(managementSettings2.isManageWirelesslySupported, true);
+      expect(managementSettings1, isNot(managementSettings2));
+    });
+
+    /// Test toMap serialization
+    test('toMap serializes correctly', () {
+      const managementSettings = ManagementSettingsUIModel(
+        canManageUsingHTTP: true,
+        canManageUsingHTTPS: false,
+        isManageWirelesslySupported: true,
+        canManageWirelessly: true,
+        canManageRemotely: false,
+      );
+
+      final map = managementSettings.toMap();
+
+      expect(map['canManageUsingHTTP'], true);
+      expect(map['canManageUsingHTTPS'], false);
+      expect(map['isManageWirelesslySupported'], true);
+      expect(map['canManageWirelessly'], true);
+      expect(map['canManageRemotely'], false);
+    });
+
+    /// Test fromMap deserialization
+    test('fromMap deserializes correctly', () {
+      final map = <String, dynamic>{
+        'canManageUsingHTTP': true,
+        'canManageUsingHTTPS': false,
+        'isManageWirelesslySupported': true,
+        'canManageWirelessly': true,
+        'canManageRemotely': false,
+      };
+
+      final managementSettings = ManagementSettingsUIModel.fromMap(map);
+
+      expect(managementSettings.canManageUsingHTTP, true);
+      expect(managementSettings.canManageUsingHTTPS, false);
+      expect(managementSettings.isManageWirelesslySupported, true);
+      expect(managementSettings.canManageWirelessly, true);
+      expect(managementSettings.canManageRemotely, false);
+    });
+
+    /// Test toJson/fromJson
+    test('toJson and fromJson work correctly', () {
+      const managementSettings = ManagementSettingsUIModel(
+        canManageUsingHTTP: true,
+        canManageUsingHTTPS: false,
+        isManageWirelesslySupported: true,
+        canManageWirelessly: true,
+        canManageRemotely: false,
+      );
+
+      final jsonString = managementSettings.toJson();
+      final decoded = ManagementSettingsUIModel.fromJson(jsonString);
+
+      expect(decoded, equals(managementSettings));
+    });
+
+    /// Test equality via Equatable
+    test('equality comparison via Equatable', () {
+      const managementSettings1 = ManagementSettingsUIModel(
+        canManageUsingHTTP: true,
+        canManageUsingHTTPS: false,
+        isManageWirelesslySupported: true,
+        canManageRemotely: false,
+      );
+
+      const managementSettings2 = ManagementSettingsUIModel(
+        canManageUsingHTTP: true,
+        canManageUsingHTTPS: false,
+        isManageWirelesslySupported: true,
+        canManageRemotely: false,
+      );
+
+      expect(managementSettings1, equals(managementSettings2));
+    });
+  });
+
   group('AdministrationSettings', () {
     /// Test basic construction
     test('constructs with all required fields', () {
-      const managementSettings = ManagementSettings(
+      const managementSettings = ManagementSettingsUIModel(
         canManageUsingHTTP: true,
         canManageUsingHTTPS: false,
         isManageWirelesslySupported: true,
@@ -39,7 +149,7 @@ void main() {
 
     /// Test default value for canDisAllowLocalMangementWirelessly
     test('has default value for canDisAllowLocalMangementWirelessly', () {
-      const managementSettings = ManagementSettings(
+      const managementSettings = ManagementSettingsUIModel(
         canManageUsingHTTP: false,
         canManageUsingHTTPS: false,
         isManageWirelesslySupported: false,
@@ -61,7 +171,7 @@ void main() {
 
     /// Test copyWith creates new instance with updated fields
     test('copyWith creates new instance with updated fields', () {
-      const managementSettings1 = ManagementSettings(
+      const managementSettings1 = ManagementSettingsUIModel(
         canManageUsingHTTP: true,
         canManageUsingHTTPS: false,
         isManageWirelesslySupported: true,
@@ -92,7 +202,7 @@ void main() {
 
     /// Test toMap serialization
     test('toMap serializes correctly', () {
-      const managementSettings = ManagementSettings(
+      const managementSettings = ManagementSettingsUIModel(
         canManageUsingHTTP: true,
         canManageUsingHTTPS: false,
         isManageWirelesslySupported: true,
@@ -153,7 +263,7 @@ void main() {
 
     /// Test toJson serialization
     test('toJson serializes to valid JSON string', () {
-      const managementSettings = ManagementSettings(
+      const managementSettings = ManagementSettingsUIModel(
         canManageUsingHTTP: true,
         canManageUsingHTTPS: false,
         isManageWirelesslySupported: true,
@@ -207,7 +317,7 @@ void main() {
 
     /// Test equality via Equatable
     test('equality comparison via Equatable', () {
-      const managementSettings = ManagementSettings(
+      const managementSettings = ManagementSettingsUIModel(
         canManageUsingHTTP: true,
         canManageUsingHTTPS: false,
         isManageWirelesslySupported: true,
@@ -239,7 +349,7 @@ void main() {
 
     /// Test inequality when fields differ
     test('inequality when fields differ', () {
-      const managementSettings = ManagementSettings(
+      const managementSettings = ManagementSettingsUIModel(
         canManageUsingHTTP: true,
         canManageUsingHTTPS: false,
         isManageWirelesslySupported: true,
@@ -327,7 +437,7 @@ void main() {
   });
 
   group('AdministrationSettingsState', () {
-    const managementSettings = ManagementSettings(
+    const managementSettings = ManagementSettingsUIModel(
       canManageUsingHTTP: true,
       canManageUsingHTTPS: false,
       isManageWirelesslySupported: true,

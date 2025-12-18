@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/management_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/administration/services/administration_settings_service.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
@@ -67,7 +66,7 @@ class AdministrationSettingsNotifier
   AdministrationSettingsState build() => AdministrationSettingsState(
         settings: Preservable(
           original: const AdministrationSettings(
-            managementSettings: ManagementSettings(
+            managementSettings: ManagementSettingsUIModel(
               canManageUsingHTTP: false,
               canManageUsingHTTPS: false,
               isManageWirelesslySupported: false,
@@ -81,7 +80,7 @@ class AdministrationSettingsNotifier
             canUsersDisableWANAccess: false,
           ),
           current: const AdministrationSettings(
-            managementSettings: ManagementSettings(
+            managementSettings: ManagementSettingsUIModel(
               canManageUsingHTTP: false,
               canManageUsingHTTPS: false,
               isManageWirelesslySupported: false,
@@ -113,7 +112,7 @@ class AdministrationSettingsNotifier
     bool forceRemote = false,
     bool updateStatusOnly = false,
   }) async {
-    final service = AdministrationSettingsService();
+    final service = ref.read(administrationSettingsServiceProvider);
     final settings = await service.fetchAdministrationSettings(
       ref,
       forceRemote: forceRemote,
@@ -128,7 +127,7 @@ class AdministrationSettingsNotifier
   /// to the device via [AdministrationSettingsService].
   @override
   Future<void> performSave() async {
-    final service = AdministrationSettingsService();
+    final service = ref.read(administrationSettingsServiceProvider);
     await service.saveAdministrationSettings(ref, state.current);
   }
 
