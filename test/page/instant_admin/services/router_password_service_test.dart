@@ -5,6 +5,7 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_admin/services/router_password_service.dart';
 
@@ -125,7 +126,7 @@ void main() {
       verify(() => mockStorage.read(key: pLocalPassword)).called(1);
     });
 
-    test('throws JNAPError when JNAP call fails', () async {
+    test('throws ServiceError when JNAP call fails', () async {
       // Arrange
       final jnapError = RouterPasswordTestData.createGenericError(
         errorCode: 'ErrorNetworkTimeout',
@@ -136,11 +137,11 @@ void main() {
       // Act & Assert
       expect(
         () => service.fetchPasswordConfiguration(),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
 
-    test('throws Exception when FlutterSecureStorage read fails', () async {
+    test('throws StorageError when FlutterSecureStorage read fails', () async {
       // Arrange
       when(() =>
           mockRepository.transaction(any(),
@@ -154,7 +155,7 @@ void main() {
       // Act & Assert
       expect(
         () => service.fetchPasswordConfiguration(),
-        throwsA(isA<Exception>()),
+        throwsA(isA<StorageError>()),
       );
     });
   });
@@ -189,7 +190,7 @@ void main() {
           )).called(1);
     });
 
-    test('throws JNAPError with invalid code', () async {
+    test('throws ServiceError with invalid code', () async {
       // Arrange
       final jnapError = RouterPasswordTestData.createGenericError(
         errorCode: 'ErrorInvalidResetCode',
@@ -207,11 +208,11 @@ void main() {
           'hint',
           'INVALID',
         ),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
 
-    test('throws JNAPError when JNAP call fails', () async {
+    test('throws ServiceError when JNAP call fails', () async {
       // Arrange
       final jnapError = RouterPasswordTestData.createGenericError();
       when(() => mockRepository.send(
@@ -227,7 +228,7 @@ void main() {
           'hint',
           'code',
         ),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
   });
@@ -283,7 +284,7 @@ void main() {
       expect(captured.first['passwordHint'], 'Custom hint');
     });
 
-    test('throws JNAPError on authentication failure', () async {
+    test('throws ServiceError on authentication failure', () async {
       // Arrange
       final jnapError = RouterPasswordTestData.createGenericError(
         errorCode: 'ErrorAuthenticationFailed',
@@ -298,11 +299,11 @@ void main() {
       // Act & Assert
       expect(
         () => service.setPasswordWithCredentials('password'),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
 
-    test('throws JNAPError when JNAP call fails', () async {
+    test('throws ServiceError when JNAP call fails', () async {
       // Arrange
       final jnapError = RouterPasswordTestData.createGenericError();
       when(() => mockRepository.send(
@@ -315,7 +316,7 @@ void main() {
       // Act & Assert
       expect(
         () => service.setPasswordWithCredentials('password'),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
   });
@@ -374,7 +375,7 @@ void main() {
       expect(result['attemptsRemaining'], 0);
     });
 
-    test('throws JNAPError when JNAP call fails with unknown error', () async {
+    test('throws ServiceError when JNAP call fails with unknown error', () async {
       // Arrange
       final jnapError = RouterPasswordTestData.createGenericError(
         errorCode: 'ErrorNetworkFailure',
@@ -387,7 +388,7 @@ void main() {
       // Act & Assert
       expect(
         () => service.verifyRecoveryCode('CODE'),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
   });
@@ -410,7 +411,7 @@ void main() {
           )).called(1);
     });
 
-    test('throws Exception when FlutterSecureStorage write fails', () async {
+    test('throws StorageError when FlutterSecureStorage write fails', () async {
       // Arrange
       when(() => mockStorage.write(
             key: pLocalPassword,
@@ -420,7 +421,7 @@ void main() {
       // Act & Assert
       expect(
         () => service.persistPassword('password'),
-        throwsA(isA<Exception>()),
+        throwsA(isA<StorageError>()),
       );
     });
   });

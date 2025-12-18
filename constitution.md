@@ -1,10 +1,10 @@
 # The Constitution of Linksys Flutter App Development
 
-**Version:** 2.0
+**Version:** 1.0
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2025-12-11
+**Last Amended:** 2025-12-17
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -535,17 +535,34 @@ class DMZSettingsService {
 完成工作後，執行以下檢查：
 
 ```bash
-# 1️⃣ 檢查 Provider 層是否還有 JNAP imports
+# ═══════════════════════════════════════════════════════════════
+# JNAP Models 層級隔離檢查
+# ═══════════════════════════════════════════════════════════════
+
+# 1️⃣ 檢查 Provider 層是否還有 JNAP models imports
 grep -r "import.*jnap/models" lib/page/*/providers/
 # ✅ 應該返回 0 結果
 
-# 2️⃣ 檢查 UI 層是否還有 JNAP imports
+# 2️⃣ 檢查 UI 層是否還有 JNAP models imports
 grep -r "import.*jnap/models" lib/page/*/views/
 # ✅ 應該返回 0 結果
 
-# 3️⃣ 檢查 Service 層是否有正確的 imports
+# 3️⃣ 檢查 Service 層是否有正確的 JNAP imports
 grep -r "import.*jnap/models" lib/page/*/services/
 # ✅ 應該有結果（Service 層應該 import JNAP models）
+
+# ═══════════════════════════════════════════════════════════════
+# Error Handling 層級隔離檢查 (Article XIII)
+# ═══════════════════════════════════════════════════════════════
+
+# 4️⃣ 檢查 Provider 層是否有 JNAPError 或 jnap_result imports
+grep -r "import.*jnap/result" lib/page/*/providers/
+grep -r "on JNAPError" lib/page/*/providers/
+# ✅ 應該返回 0 結果
+
+# 5️⃣ 檢查 Service 層是否正確 import ServiceError
+grep -r "import.*core/errors/service_error" lib/page/*/services/
+# ✅ 應該有結果（Service 層應該 import ServiceError）
 ```
 
 **Section 5.3.4: UI Model 創建決策標準**
@@ -907,7 +924,161 @@ LinksysRoute(
 
 ---
 
+## Article XIII: Error Handling Strategy
 
+**Section 13.1: 統一錯誤處理原則**
 
+**原則**: 所有來自資料層的錯誤（JNAP、Cloud API、未來資料系統）必須在 Service 層轉換為統一的 `ServiceError` 類型，Provider 層不得直接處理資料層特定的錯誤類型。
 
-**Version**: 2.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2025-12-11
+**目的**:
+- **隔離資料層實作**: 當更換資料來源時（如 JNAP → 新系統），只需修改 Service 層
+- **Type-safe 錯誤處理**: 使用 sealed class 提供編譯時檢查和窮盡性驗證
+- **一致的錯誤契約**: Provider 和 UI 層使用統一的錯誤介面
+
+---
+
+**Section 13.2: ServiceError 定義**
+
+**檔案位置**: `lib/core/errors/service_error.dart`
+
+**結構**:
+```dart
+sealed class ServiceError implements Exception {
+  const ServiceError();
+}
+
+// 各類錯誤繼承 ServiceError
+final class InvalidAdminPasswordError extends ServiceError {
+  const InvalidAdminPasswordError();
+}
+
+final class InvalidResetCodeError extends ServiceError {
+  final int? attemptsRemaining;  // 可攜帶額外資訊
+  const InvalidResetCodeError({this.attemptsRemaining});
+}
+
+final class UnexpectedError extends ServiceError {
+  final Object? originalError;
+  final String? message;
+  const UnexpectedError({this.originalError, this.message});
+}
+```
+
+**新增錯誤類型**: 如需新增錯誤類型，必須在 `service_error.dart` 中定義，遵循 `[ErrorType]Error` 命名規範。
+
+---
+
+**Section 13.3: Service 層錯誤處理**
+
+**職責**: Service 層負責捕獲所有資料層錯誤並轉換為 `ServiceError`。
+
+**正確範例**:
+```dart
+// lib/page/instant_admin/services/router_password_service.dart
+Future<Map<String, dynamic>> verifyRecoveryCode(String code) async {
+  try {
+    await _routerRepository.send(JNAPAction.verifyRouterResetCode, ...);
+    return {'isValid': true};
+  } on JNAPError catch (e) {
+    // ✅ 在 Service 層轉換為 ServiceError
+    throw _mapJnapError(e);
+  }
+}
+
+ServiceError _mapJnapError(JNAPError error) {
+  return switch (error.result) {
+    'ErrorInvalidResetCode' => InvalidResetCodeError(
+        attemptsRemaining: _parseAttempts(error),
+      ),
+    'ErrorAdminAccountLocked' => const AdminAccountLockedError(),
+    'ErrorInvalidAdminPassword' => const InvalidAdminPasswordError(),
+    _ => UnexpectedError(originalError: error),
+  };
+}
+```
+
+**錯誤範例**:
+```dart
+// ❌ 錯誤：直接 rethrow JNAPError
+Future<void> someMethod() async {
+  try {
+    await _routerRepository.send(...);
+  } on JNAPError {
+    rethrow;  // ❌ 不應該讓 JNAPError 洩漏到 Provider 層
+  }
+}
+```
+
+---
+
+**Section 13.4: Provider 層錯誤處理**
+
+**職責**: Provider 層只處理 `ServiceError` 類型，不得 import 或處理 JNAP 相關錯誤。
+
+**正確範例**:
+```dart
+// lib/page/instant_admin/providers/router_password_provider.dart
+import 'package:privacy_gui/core/errors/service_error.dart';
+
+Future<bool> checkRecoveryCode(String code) async {
+  try {
+    final result = await service.verifyRecoveryCode(code);
+    return result['isValid'];
+  } on InvalidResetCodeError catch (e) {
+    // ✅ 處理 ServiceError 子類
+    state = state.copyWith(remainingAttempts: e.attemptsRemaining);
+    return false;
+  } on AdminAccountLockedError {
+    // ✅ 處理 ServiceError 子類
+    state = state.copyWith(isLocked: true);
+    return false;
+  } on ServiceError catch (e) {
+    // ✅ 處理其他 ServiceError
+    logger.e('Unexpected error: $e');
+    return false;
+  }
+}
+```
+
+**錯誤範例**:
+```dart
+// ❌ 錯誤：Provider 直接處理 JNAPError
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+
+Future<bool> checkRecoveryCode(String code) async {
+  try {
+    ...
+  } on JNAPError catch (e) {  // ❌ 不應該在 Provider 層出現
+    if (e.result == 'ErrorInvalidResetCode') { ... }
+  }
+}
+```
+
+---
+
+**Section 13.5: 未來資料來源遷移**
+
+當更換資料來源（如 JNAP → 新系統）時：
+
+| 層級 | 影響 |
+|-----|------|
+| **ServiceError** | ✅ 不變（契約/介面） |
+| **Service 實作** | ⚠️ 修改 error mapping 邏輯 |
+| **Provider** | ✅ 不變 |
+| **UI** | ✅ 不變 |
+
+**範例**:
+```dart
+// 未來：新資料系統的 error mapping
+ServiceError _mapNewSystemError(NewSystemError error) {
+  return switch (error.code) {
+    ErrorCode.invalidCode => InvalidResetCodeError(...),
+    ErrorCode.accountLocked => const AdminAccountLockedError(),
+    _ => UnexpectedError(originalError: error),
+  };
+}
+```
+
+---
+
+**Version**: 1.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2025-12-17

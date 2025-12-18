@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/instant_admin/providers/router_password_provider.dart';
 import 'package:privacy_gui/page/instant_admin/services/router_password_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -130,16 +130,16 @@ void main() {
           'securePassword123');
     });
 
-    test('rethrows JNAPError from service', () async {
+    test('rethrows ServiceError from service', () async {
       // Arrange
       container = createContainer();
-      final jnapError = JNAPError(result: 'ErrorNetworkTimeout', error: null);
-      when(() => mockService.fetchPasswordConfiguration()).thenThrow(jnapError);
+      const serviceError = UnexpectedError(message: 'ErrorNetworkTimeout');
+      when(() => mockService.fetchPasswordConfiguration()).thenThrow(serviceError);
 
       // Act & Assert
       expect(
         () => container.read(routerPasswordProvider.notifier).fetch(),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
 
@@ -181,41 +181,40 @@ void main() {
       expect(container.read(routerPasswordProvider).error, null);
     });
 
-    test('rethrows JNAPError from service', () async {
+    test('rethrows ServiceError from service', () async {
       // Arrange
       container = createContainer();
-      final jnapError = JNAPError(result: 'ErrorInvalidResetCode', error: null);
+      const serviceError = InvalidResetCodeError();
       when(() => mockService.setPasswordWithResetCode(
             any(),
             any(),
             any(),
-          )).thenThrow(jnapError);
+          )).thenThrow(serviceError);
 
       // Act & Assert
       expect(
         () => container
             .read(routerPasswordProvider.notifier)
             .setAdminPasswordWithResetCode('pwd', 'hint', 'CODE'),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
   });
 
   group('RouterPasswordNotifier - setAdminPasswordWithCredentials()', () {
-    test('rethrows JNAPError from service', () async {
+    test('rethrows ServiceError from service', () async {
       // Arrange
       container = createContainer();
-      final jnapError =
-          JNAPError(result: 'ErrorAuthenticationFailed', error: null);
+      const serviceError = InvalidAdminPasswordError();
       when(() => mockService.setPasswordWithCredentials(any(), any()))
-          .thenThrow(jnapError);
+          .thenThrow(serviceError);
 
       // Act & Assert
       expect(
         () => container
             .read(routerPasswordProvider.notifier)
             .setAdminPasswordWithCredentials('pwd', 'hint'),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
 
@@ -286,18 +285,18 @@ void main() {
       expect(container.read(routerPasswordProvider).remainingErrorAttempts, 1);
     });
 
-    test('rethrows JNAPError from service', () async {
+    test('rethrows ServiceError from service', () async {
       // Arrange
       container = createContainer();
-      final jnapError = JNAPError(result: 'ErrorNetworkFailure', error: null);
-      when(() => mockService.verifyRecoveryCode(any())).thenThrow(jnapError);
+      const serviceError = UnexpectedError(message: 'ErrorNetworkFailure');
+      when(() => mockService.verifyRecoveryCode(any())).thenThrow(serviceError);
 
       // Act & Assert
       expect(
         () => container
             .read(routerPasswordProvider.notifier)
             .checkRecoveryCode('CODE'),
-        throwsA(isA<JNAPError>()),
+        throwsA(isA<ServiceError>()),
       );
     });
   });

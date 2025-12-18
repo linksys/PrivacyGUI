@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_admin/providers/router_password_state.dart';
 import 'package:privacy_gui/page/instant_admin/services/router_password_service.dart';
@@ -25,8 +25,8 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         hint: result['hint'] as String,
       );
       logger.d('[State]:[RouterPassword]:${state.toJson()}');
-    } on JNAPError catch (error) {
-      logger.e('[RouterPassword] JNAP error in fetch: ${error.result}');
+    } on ServiceError catch (error) {
+      logger.e('[RouterPassword] ServiceError in fetch: $error');
       rethrow;
     } catch (error) {
       logger.e('[RouterPassword] Error in fetch: $error');
@@ -40,9 +40,8 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
       final service = ref.read(routerPasswordServiceProvider);
       await service.setPasswordWithResetCode(password, hint, code);
       state = state.copyWith(error: null);
-    } on JNAPError catch (error) {
-      logger.e(
-          '[RouterPassword] JNAP error in setPasswordWithResetCode: ${error.result}');
+    } on ServiceError catch (error) {
+      logger.e('[RouterPassword] ServiceError in setPasswordWithResetCode: $error');
       rethrow;
     }
   }
@@ -60,9 +59,8 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
           .read(authProvider.notifier)
           .localLogin(pwd ?? '', guardError: false);
       await fetch(true);
-    } on JNAPError catch (error) {
-      logger.e(
-          '[RouterPassword] JNAP error in setPasswordWithCredentials: ${error.result}');
+    } on ServiceError catch (error) {
+      logger.e('[RouterPassword] ServiceError in setPasswordWithCredentials: $error');
       rethrow;
     }
   }
@@ -85,9 +83,8 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
         state = state.copyWith(remainingErrorAttempts: attemptsRemaining);
         return false;
       }
-    } on JNAPError catch (error) {
-      logger.e(
-          '[RouterPassword] JNAP error in checkRecoveryCode: ${error.result}');
+    } on ServiceError catch (error) {
+      logger.e('[RouterPassword] ServiceError in checkRecoveryCode: $error');
       rethrow;
     }
   }
