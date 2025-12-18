@@ -146,3 +146,4 @@ macos/
 # Keep .specify/memory/ tracked for project constitution
 # Untrack auto-generated CLAUDE.md in project root
 CLAUDE.md
+.mcp.json
