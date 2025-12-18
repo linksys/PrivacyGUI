@@ -240,7 +240,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                 networkPrefixLength:
                     NetworkUtils.subnetMaskToPrefixLength(rule.subnetMask),
                 gateway: rule.gateway.isEmpty ? null : rule.gateway,
-                interface: 'LAN',
+                interface: rule.interface,
               )
             : null;
 
@@ -252,7 +252,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                       networkPrefixLength:
                           NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
                       gateway: e.gateway.isEmpty ? null : e.gateway,
-                      interface: 'LAN',
+                      interface: e.interface,
                     ))
                 .toList(),
             uiRule,
