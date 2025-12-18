@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/errors/jnap_error_mapper.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -33,8 +35,7 @@ class RouterPasswordService {
   /// Fetches router password configuration from JNAP and secure storage
   ///
   /// Returns: Map with keys 'isDefault', 'isSetByUser', 'hint', 'storedPassword'
-  /// Throws: JNAPError on JNAP communication failure
-  /// Throws: Exception on FlutterSecureStorage read failure
+  /// Throws: [ServiceError] on failure (NetworkError, StorageError, UnexpectedError)
   Future<Map<String, dynamic>> fetchPasswordConfiguration() async {
     try {
       // Fetch password configuration from JNAP
@@ -70,11 +71,10 @@ class RouterPasswordService {
         'hint': passwordHint,
         'storedPassword': password ?? '',
       };
-    } on JNAPError {
-      rethrow; // Let caller handle JNAP errors
+    } on JNAPError catch (e) {
+      throw mapJnapErrorToServiceError(e);
     } catch (e) {
-      // Wrap storage errors
-      throw Exception('Failed to read password configuration: $e');
+      throw StorageError(originalError: e);
     }
   }
 
@@ -85,21 +85,25 @@ class RouterPasswordService {
   ///   - hint: Password hint
   ///   - code: Setup reset code
   ///
-  /// Throws: JNAPError on JNAP communication failure or invalid code
+  /// Throws: [ServiceError] on failure (InvalidResetCodeError, NetworkError, etc.)
   Future<void> setPasswordWithResetCode(
     String password,
     String hint,
     String code,
   ) async {
-    await _routerRepository.send(
-      JNAPAction.setupSetAdminPassword,
-      data: {
-        'adminPassword': password,
-        'passwordHint': hint,
-        'resetCode': code,
-      },
-      type: CommandType.local,
-    );
+    try {
+      await _routerRepository.send(
+        JNAPAction.setupSetAdminPassword,
+        data: {
+          'adminPassword': password,
+          'passwordHint': hint,
+          'resetCode': code,
+        },
+        type: CommandType.local,
+      );
+    } on JNAPError catch (e) {
+      throw mapJnapErrorToServiceError(e);
+    }
   }
 
   /// Sets admin password with current credentials
@@ -108,20 +112,24 @@ class RouterPasswordService {
   ///   - password: New admin password
   ///   - hint: Password hint (optional)
   ///
-  /// Throws: JNAPError on JNAP communication failure or authentication failure
+  /// Throws: [ServiceError] on failure (InvalidAdminPasswordError, NetworkError, etc.)
   Future<void> setPasswordWithCredentials(
     String password, [
     String? hint,
   ]) async {
-    await _routerRepository.send(
-      JNAPAction.coreSetAdminPassword,
-      data: {
-        'adminPassword': password,
-        'passwordHint': hint ?? '',
-      },
-      type: CommandType.local,
-      auth: true,
-    );
+    try {
+      await _routerRepository.send(
+        JNAPAction.coreSetAdminPassword,
+        data: {
+          'adminPassword': password,
+          'passwordHint': hint ?? '',
+        },
+        type: CommandType.local,
+        auth: true,
+      );
+    } on JNAPError catch (e) {
+      throw mapJnapErrorToServiceError(e);
+    }
   }
 
   /// Verifies router recovery code
@@ -130,7 +138,7 @@ class RouterPasswordService {
   ///   - code: Recovery code to verify
   ///
   /// Returns: Map with keys 'isValid', 'attemptsRemaining'
-  /// Throws: JNAPError on JNAP communication failure
+  /// Throws: [ServiceError] on failure (UnexpectedError for non-recoverable errors)
   Future<Map<String, dynamic>> verifyRecoveryCode(String code) async {
     try {
       await _routerRepository.send(
@@ -157,7 +165,7 @@ class RouterPasswordService {
           'attemptsRemaining': 0,
         };
       }
-      rethrow; // Other JNAP errors
+      throw mapJnapErrorToServiceError(error);
     }
   }
 
@@ -166,12 +174,13 @@ class RouterPasswordService {
   /// Parameters:
   ///   - password: Password to store
   ///
-  /// Throws: Exception on FlutterSecureStorage write failure
+  /// Throws: [StorageError] on FlutterSecureStorage write failure
   Future<void> persistPassword(String password) async {
     try {
       await _secureStorage.write(key: pLocalPassword, value: password);
     } catch (e) {
-      throw Exception('Failed to persist password: $e');
+      throw StorageError(originalError: e);
     }
   }
+
 }

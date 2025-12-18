@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:collection/collection.dart';
-import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/default_country_codes.dart';
 import 'package:privacy_gui/constants/error_code.dart';
@@ -16,84 +12,19 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/providers/auth/auth_exception.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
+import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Re-export LoginType for backward compatibility with existing code
+// Re-export AuthState and LoginType for backward compatibility with existing code
+export 'package:privacy_gui/providers/auth/auth_state.dart' show AuthState;
 export 'package:privacy_gui/providers/auth/auth_types.dart' show LoginType;
-
-class AuthState extends Equatable {
-  final String? username;
-  final String? password;
-  final String? localPassword;
-  final String? localPasswordHint;
-  final SessionToken? sessionToken;
-  final LoginType loginType;
-
-  const AuthState({
-    this.username,
-    this.password,
-    this.localPassword,
-    this.localPasswordHint,
-    this.sessionToken,
-    required this.loginType,
-  });
-
-  factory AuthState.empty() {
-    return const AuthState(loginType: LoginType.none);
-  }
-
-  factory AuthState.fromJson(Map<String, dynamic> json) {
-    final sessionToken = json['sessionToken'] == null
-        ? null
-        : SessionToken.fromJson(jsonDecode(json['sessionToken']));
-    final loginType =
-        LoginType.values.firstWhereOrNull((e) => e.name == json['loginType']) ??
-            LoginType.none;
-    return AuthState(
-      username: json['username'],
-      password: json['password'],
-      localPassword: json['localPassword'],
-      localPasswordHint: json['localPasswordHint'],
-      sessionToken: sessionToken,
-      loginType: loginType,
-    );
-  }
-
-  AuthState copyWith({
-    String? username,
-    String? password,
-    String? localPassword,
-    String? localPasswordHint,
-    SessionToken? sessionToken,
-    LoginType? loginType,
-  }) {
-    return AuthState(
-      username: username ?? this.username,
-      password: password ?? this.password,
-      localPassword: localPassword ?? this.localPassword,
-      localPasswordHint: localPasswordHint ?? this.localPasswordHint,
-      sessionToken: sessionToken ?? this.sessionToken,
-      loginType: loginType ?? this.loginType,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        username,
-        password,
-        localPassword,
-        localPasswordHint,
-        sessionToken,
-        loginType,
-      ];
-}
 
 final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
@@ -189,21 +120,20 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// - null if no token exists or validation failed
   ///
   /// Throws:
-  /// - NoSessionTokenFoundException if no token exists (for backward compatibility)
-  /// - SessionTokenExpiredException if token expired without refresh token
-  /// - NeedToRefreshTokenException if token expired with refresh token
+  /// - NoSessionTokenError if no token exists (for backward compatibility)
+  /// - SessionTokenExpiredError if token expired without refresh token
   Future<SessionToken?> checkSessionToken() async {
     final result = await _authService.validateSessionToken();
     return result.when(
       success: (token) {
         if (token == null) {
-          throw NoSessionTokenFoundException();
+          throw const NoSessionTokenError();
         }
         return token;
       },
       failure: (error) {
         // For backward compatibility, maintain exception-based flow
-        throw NoSessionTokenFoundException();
+        throw const NoSessionTokenError();
       },
     );
   }
