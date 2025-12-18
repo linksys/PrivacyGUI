@@ -1,7 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_list_state.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/services/ipv6_port_service_list_service.dart';
@@ -39,21 +36,13 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState>
     bool updateStatusOnly = false,
   }) async {
     try {
-      final repo = ref.read(routerRepositoryProvider);
+      final service = ref.read(ipv6PortServiceListServiceProvider);
 
-      // Execute JNAP action to retrieve IPv6 firewall rules
-      final result = await repo.send(
-        JNAPAction.getIPv6FirewallRules,
-        auth: true,
-        fetchRemote: forceRemote,
+      // Delegate to service layer for JNAP communication and transformation
+      final (uiRules, _) = await service.fetchRulesFromDevice(
+        ref,
+        forceRemote: forceRemote,
       );
-
-      // Parse Data layer model (JNAP response)
-      final dataModel = IPv6FirewallRuleList.fromMap(result.output);
-
-      // Transform to Application layer UI model using service
-      final service = IPv6PortServiceListService();
-      final (uiRules, _) = await service.fetchPortServiceRules(dataModel.rules);
 
       if (uiRules == null) {
         return (null, null);
@@ -71,22 +60,10 @@ class Ipv6PortServiceListNotifier extends Notifier<Ipv6PortServiceListState>
   @override
   Future<void> performSave() async {
     try {
-      final repo = ref.read(routerRepositoryProvider);
+      final service = ref.read(ipv6PortServiceListServiceProvider);
 
-      // Transform UI rules back to JNAP models
-      final service = IPv6PortServiceListService();
-      final jnapRules = service.transformRulesToJNAP(state.current.rules);
-
-      // Build JNAP model for transmission
-      final dataModel = IPv6FirewallRuleList(rules: jnapRules);
-
-      // Execute JNAP action to save IPv6 firewall rules
-      await repo.send(
-        JNAPAction.setIPv6FirewallRules,
-        auth: true,
-        fetchRemote: true,
-        data: dataModel.toMap(),
-      );
+      // Delegate to service layer for transformation and JNAP communication
+      await service.saveRulesToDevice(ref, state.current.rules);
 
       // Update original to match current (commit the save)
       state = state.copyWith(

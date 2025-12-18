@@ -1,7 +1,17 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/services/ipv6_port_service_list_service.dart';
+
+// Mock classes
+class MockRouterRepository extends Mock implements RouterRepository {}
+
+class MockRef extends Mock implements Ref {}
 
 void main() {
   late IPv6PortServiceListService service;
@@ -651,6 +661,345 @@ void main() {
         // Assert
         expect(result.$1, isNull);
         expect(result.$2, isNull);
+      });
+    });
+
+    group('JNAP communication', () {
+      late MockRouterRepository mockRepo;
+      late MockRef mockRef;
+
+      setUp(() {
+        mockRepo = MockRouterRepository();
+        mockRef = MockRef();
+
+        when(() => mockRef.read(routerRepositoryProvider))
+            .thenReturn(mockRepo);
+      });
+
+      group('fetchRulesFromDevice', () {
+        test('fetches and transforms rules from device successfully', () async {
+          // Arrange
+          final jnapResponse = {
+            'rules': [
+              {
+                'isEnabled': true,
+                'description': 'SSH Access',
+                'ipv6Address': '2001:db8::1',
+                'portRanges': [
+                  {'protocol': 'TCP', 'firstPort': 22, 'lastPort': 22}
+                ]
+              },
+              {
+                'isEnabled': false,
+                'description': 'Web Server',
+                'ipv6Address': '2001:db8::2',
+                'portRanges': [
+                  {'protocol': 'TCP', 'firstPort': 80, 'lastPort': 80},
+                  {'protocol': 'TCP', 'firstPort': 443, 'lastPort': 443}
+                ]
+              }
+            ]
+          };
+
+          when(() => mockRepo.send(
+                JNAPAction.getIPv6FirewallRules,
+                auth: true,
+                fetchRemote: false,
+              )).thenAnswer(
+              (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
+
+          // Act
+          final result = await service.fetchRulesFromDevice(mockRef);
+
+          // Assert
+          expect(result.$1, isNotNull);
+          expect(result.$1!.rules, hasLength(2));
+          expect(result.$1!.rules[0].description, 'SSH Access');
+          expect(result.$1!.rules[0].enabled, true);
+          expect(result.$1!.rules[0].portRanges, hasLength(1));
+          expect(result.$1!.rules[1].description, 'Web Server');
+          expect(result.$1!.rules[1].enabled, false);
+          expect(result.$1!.rules[1].portRanges, hasLength(2));
+          expect(result.$2, isNotNull);
+
+          verify(() => mockRepo.send(
+                JNAPAction.getIPv6FirewallRules,
+                auth: true,
+                fetchRemote: false,
+              )).called(1);
+        });
+
+        test('fetches with forceRemote=true parameter', () async {
+          // Arrange
+          final jnapResponse = {
+            'rules': [
+              {
+                'isEnabled': true,
+                'description': 'Test',
+                'ipv6Address': '2001:db8::1',
+                'portRanges': [
+                  {'protocol': 'TCP', 'firstPort': 80, 'lastPort': 80}
+                ]
+              }
+            ]
+          };
+
+          when(() => mockRepo.send(
+                JNAPAction.getIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+              )).thenAnswer(
+              (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
+
+          // Act
+          final result =
+              await service.fetchRulesFromDevice(mockRef, forceRemote: true);
+
+          // Assert
+          expect(result.$1, isNotNull);
+          expect(result.$1!.rules, hasLength(1));
+
+          verify(() => mockRepo.send(
+                JNAPAction.getIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+              )).called(1);
+        });
+
+        test('returns (null, null) on JNAP error', () async {
+          // Arrange
+          when(() => mockRepo.send(
+                JNAPAction.getIPv6FirewallRules,
+                auth: true,
+                fetchRemote: false,
+              )).thenThrow(Exception('JNAP communication error'));
+
+          // Act
+          final result = await service.fetchRulesFromDevice(mockRef);
+
+          // Assert
+          expect(result.$1, isNull);
+          expect(result.$2, isNull);
+        });
+
+        test('returns (null, null) when JNAP returns empty rules', () async {
+          // Arrange
+          final jnapResponse = {'rules': []};
+
+          when(() => mockRepo.send(
+                JNAPAction.getIPv6FirewallRules,
+                auth: true,
+                fetchRemote: false,
+              )).thenAnswer(
+              (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
+
+          // Act
+          final result = await service.fetchRulesFromDevice(mockRef);
+
+          // Assert
+          expect(result.$1, isNotNull);
+          expect(result.$1!.rules, isEmpty);
+          expect(result.$2, isNotNull);
+        });
+
+        test('handles partial success when some rules fail transformation',
+            () async {
+          // Arrange
+          final jnapResponse = {
+            'rules': [
+              {
+                'isEnabled': true,
+                'description': 'Valid Rule',
+                'ipv6Address': '2001:db8::1',
+                'portRanges': [
+                  {'protocol': 'TCP', 'firstPort': 80, 'lastPort': 80}
+                ]
+              },
+              {
+                'isEnabled': true,
+                'description': 'Invalid Rule',
+                'ipv6Address': '2001:db8::2',
+                'portRanges': [
+                  {
+                    'protocol': 'INVALID_PROTOCOL',
+                    'firstPort': 443,
+                    'lastPort': 443
+                  }
+                ]
+              }
+            ]
+          };
+
+          when(() => mockRepo.send(
+                JNAPAction.getIPv6FirewallRules,
+                auth: true,
+                fetchRemote: false,
+              )).thenAnswer(
+              (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
+
+          // Act
+          final result = await service.fetchRulesFromDevice(mockRef);
+
+          // Assert - should return only valid rule
+          expect(result.$1, isNotNull);
+          expect(result.$1!.rules, hasLength(1));
+          expect(result.$1!.rules.first.description, 'Valid Rule');
+        });
+      });
+
+      group('saveRulesToDevice', () {
+        test('transforms and saves rules to device successfully', () async {
+          // Arrange
+          final uiRules = [
+            IPv6PortServiceRuleUI(
+              enabled: true,
+              description: 'SSH Access',
+              ipv6Address: '2001:db8::1',
+              portRanges: const [
+                PortRangeUI(protocol: 'TCP', firstPort: 22, lastPort: 22)
+              ],
+            ),
+            IPv6PortServiceRuleUI(
+              enabled: false,
+              description: 'Web Server',
+              ipv6Address: '2001:db8::2',
+              portRanges: const [
+                PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80),
+                PortRangeUI(protocol: 'TCP', firstPort: 443, lastPort: 443)
+              ],
+            )
+          ];
+
+          when(() => mockRepo.send(
+                JNAPAction.setIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+                data: any(named: 'data'),
+              )).thenAnswer(
+              (_) async => const JNAPSuccess(result: 'OK', output: {}));
+
+          // Act
+          await service.saveRulesToDevice(mockRef, uiRules);
+
+          // Assert
+          final captured = verify(() => mockRepo.send(
+                JNAPAction.setIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+                data: captureAny(named: 'data'),
+              )).captured;
+
+          expect(captured, hasLength(1));
+          final sentData = captured.first as Map<String, dynamic>;
+          expect(sentData['rules'], hasLength(2));
+          expect(sentData['rules'][0]['description'], 'SSH Access');
+          expect(sentData['rules'][0]['isEnabled'], true);
+          expect(sentData['rules'][1]['description'], 'Web Server');
+          expect(sentData['rules'][1]['isEnabled'], false);
+        });
+
+        test('saves empty rules list successfully', () async {
+          // Arrange
+          when(() => mockRepo.send(
+                JNAPAction.setIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+                data: any(named: 'data'),
+              )).thenAnswer(
+              (_) async => const JNAPSuccess(result: 'OK', output: {}));
+
+          // Act
+          await service.saveRulesToDevice(mockRef, []);
+
+          // Assert
+          final captured = verify(() => mockRepo.send(
+                JNAPAction.setIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+                data: captureAny(named: 'data'),
+              )).captured;
+
+          expect(captured, hasLength(1));
+          final sentData = captured.first as Map<String, dynamic>;
+          expect(sentData['rules'], isEmpty);
+        });
+
+        test('throws exception on JNAP save error', () async {
+          // Arrange
+          final uiRules = [
+            IPv6PortServiceRuleUI(
+              enabled: true,
+              description: 'Test Rule',
+              ipv6Address: '2001:db8::1',
+              portRanges: const [
+                PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+              ],
+            )
+          ];
+
+          when(() => mockRepo.send(
+                JNAPAction.setIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+                data: any(named: 'data'),
+              )).thenThrow(Exception('JNAP save failed'));
+
+          // Act & Assert
+          expect(
+            () => service.saveRulesToDevice(mockRef, uiRules),
+            throwsException,
+          );
+
+          verify(() => mockRepo.send(
+                JNAPAction.setIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+                data: any(named: 'data'),
+              )).called(1);
+        });
+
+        test('correctly transforms UI models with multiple port ranges',
+            () async {
+          // Arrange
+          final uiRules = [
+            IPv6PortServiceRuleUI(
+              enabled: true,
+              description: 'Complex Rule',
+              ipv6Address: '2001:db8::1',
+              portRanges: const [
+                PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80),
+                PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53),
+                PortRangeUI(protocol: 'Both', firstPort: 8000, lastPort: 9000)
+              ],
+            )
+          ];
+
+          when(() => mockRepo.send(
+                JNAPAction.setIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+                data: any(named: 'data'),
+              )).thenAnswer(
+              (_) async => const JNAPSuccess(result: 'OK', output: {}));
+
+          // Act
+          await service.saveRulesToDevice(mockRef, uiRules);
+
+          // Assert
+          final captured = verify(() => mockRepo.send(
+                JNAPAction.setIPv6FirewallRules,
+                auth: true,
+                fetchRemote: true,
+                data: captureAny(named: 'data'),
+              )).captured;
+
+          final sentData = captured.first as Map<String, dynamic>;
+          final savedRules = sentData['rules'] as List;
+          expect(savedRules[0]['portRanges'], hasLength(3));
+          expect(savedRules[0]['portRanges'][0]['protocol'], 'TCP');
+          expect(savedRules[0]['portRanges'][1]['protocol'], 'UDP');
+          expect(savedRules[0]['portRanges'][2]['protocol'], 'Both');
+        });
       });
     });
   });

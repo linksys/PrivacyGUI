@@ -1,11 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_list_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_list_state.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
+import 'package:privacy_gui/page/advanced_settings/firewall/services/ipv6_port_service_list_service.dart';
+import 'package:privacy_gui/providers/empty_status.dart';
+
+// Mock class for IPv6PortServiceListService
+class MockIPv6PortServiceListService extends Mock
+    implements IPv6PortServiceListService {}
+
+// Fake class for Ref
+class FakeRef extends Fake implements Ref {}
 
 void main() {
   late ProviderContainer container;
+
+  setUpAll(() {
+    registerFallbackValue(FakeRef());
+  });
 
   setUp(() {
     container = ProviderContainer();
@@ -836,6 +850,267 @@ void main() {
         expect(state.settings.current.rules[0].ipv6Address, '::1');
         expect(state.settings.current.rules[1].ipv6Address,
             'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff');
+      });
+    });
+
+    group('service integration', () {
+      late MockIPv6PortServiceListService mockService;
+      late ProviderContainer container;
+
+      setUp(() {
+        mockService = MockIPv6PortServiceListService();
+        container = ProviderContainer(
+          overrides: [
+            ipv6PortServiceListServiceProvider.overrideWithValue(mockService),
+          ],
+        );
+      });
+
+      tearDown(() {
+        container.dispose();
+      });
+
+      group('performFetch integration', () {
+        test('fetches rules via service provider', () async {
+          // Arrange
+          final testRules = IPv6PortServiceRuleUIList(rules: [
+            IPv6PortServiceRuleUI(
+              enabled: true,
+              description: 'Test Rule',
+              ipv6Address: '2001:db8::1',
+              portRanges: const [
+                PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+              ],
+            ),
+            IPv6PortServiceRuleUI(
+              enabled: false,
+              description: 'Another Rule',
+              ipv6Address: '2001:db8::2',
+              portRanges: const [
+                PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+              ],
+            )
+          ]);
+
+          when(() => mockService.fetchRulesFromDevice(any(),
+                  forceRemote: false))
+              .thenAnswer((_) async => (testRules, const EmptyStatus()));
+
+          // Act
+          await container.read(ipv6PortServiceListProvider.notifier).fetch();
+
+          // Assert
+          final state = container.read(ipv6PortServiceListProvider);
+          expect(state.settings.current.rules, hasLength(2));
+          expect(state.settings.current.rules[0].description, 'Test Rule');
+          expect(state.settings.current.rules[1].description, 'Another Rule');
+          expect(state.settings.original, state.settings.current);
+
+          verify(() => mockService.fetchRulesFromDevice(any(),
+              forceRemote: false)).called(1);
+        });
+
+        test('fetches with forceRemote parameter', () async {
+          // Arrange
+          final testRules = IPv6PortServiceRuleUIList(rules: [
+            IPv6PortServiceRuleUI(
+              enabled: true,
+              description: 'Remote Rule',
+              ipv6Address: '2001:db8::1',
+              portRanges: const [
+                PortRangeUI(protocol: 'TCP', firstPort: 22, lastPort: 22)
+              ],
+            )
+          ]);
+
+          when(() =>
+                  mockService.fetchRulesFromDevice(any(), forceRemote: true))
+              .thenAnswer((_) async => (testRules, const EmptyStatus()));
+
+          // Act
+          await container
+              .read(ipv6PortServiceListProvider.notifier)
+              .fetch(forceRemote: true);
+
+          // Assert
+          final state = container.read(ipv6PortServiceListProvider);
+          expect(state.settings.current.rules, hasLength(1));
+          expect(state.settings.current.rules.first.description, 'Remote Rule');
+
+          verify(() => mockService.fetchRulesFromDevice(any(),
+              forceRemote: true)).called(1);
+        });
+
+        test('handles fetch failure gracefully', () async {
+          // Arrange
+          when(() => mockService.fetchRulesFromDevice(any(),
+                  forceRemote: false))
+              .thenAnswer((_) async => (null, null));
+
+          // Act & Assert
+          expect(
+            () => container.read(ipv6PortServiceListProvider.notifier).fetch(),
+            throwsException,
+          );
+        });
+
+        test('handles service exception', () async {
+          // Arrange
+          when(() => mockService.fetchRulesFromDevice(any(),
+                  forceRemote: false))
+              .thenThrow(Exception('Service error'));
+
+          // Act & Assert
+          expect(
+            () => container.read(ipv6PortServiceListProvider.notifier).fetch(),
+            throwsException,
+          );
+        });
+      });
+
+      group('performSave integration', () {
+        test('saves rules via service provider', () async {
+          // Arrange
+          final testRule = IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Test Save Rule',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [
+              PortRangeUI(protocol: 'TCP', firstPort: 443, lastPort: 443)
+            ],
+          );
+
+          when(() => mockService.saveRulesToDevice(any(), any()))
+              .thenAnswer((_) async {});
+
+          // Act
+          container
+              .read(ipv6PortServiceListProvider.notifier)
+              .setRules([testRule]);
+          await container.read(ipv6PortServiceListProvider.notifier).save();
+
+          // Assert
+          final state = container.read(ipv6PortServiceListProvider);
+          expect(state.settings.original, state.settings.current);
+          expect(state.isDirty, false);
+
+          verify(() => mockService.saveRulesToDevice(any(), [testRule]))
+              .called(1);
+        });
+
+        test('saves multiple rules', () async {
+          // Arrange
+          final testRules = [
+            IPv6PortServiceRuleUI(
+              enabled: true,
+              description: 'Rule 1',
+              ipv6Address: '2001:db8::1',
+              portRanges: const [
+                PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+              ],
+            ),
+            IPv6PortServiceRuleUI(
+              enabled: false,
+              description: 'Rule 2',
+              ipv6Address: '2001:db8::2',
+              portRanges: const [
+                PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+              ],
+            )
+          ];
+
+          when(() => mockService.saveRulesToDevice(any(), any()))
+              .thenAnswer((_) async {});
+
+          // Act
+          container
+              .read(ipv6PortServiceListProvider.notifier)
+              .setRules(testRules);
+          await container.read(ipv6PortServiceListProvider.notifier).save();
+
+          // Assert
+          verify(() => mockService.saveRulesToDevice(any(), testRules))
+              .called(1);
+        });
+
+        test('handles save exception', () async {
+          // Arrange
+          final testRule = IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Fail Rule',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [
+              PortRangeUI(protocol: 'TCP', firstPort: 8080, lastPort: 8080)
+            ],
+          );
+
+          when(() => mockService.saveRulesToDevice(any(), any()))
+              .thenThrow(Exception('Save failed'));
+
+          // Act & Assert
+          container
+              .read(ipv6PortServiceListProvider.notifier)
+              .setRules([testRule]);
+
+          expect(
+            () => container.read(ipv6PortServiceListProvider.notifier).save(),
+            throwsException,
+          );
+
+          verify(() => mockService.saveRulesToDevice(any(), [testRule]))
+              .called(1);
+        });
+
+        test('updates original to match current after successful save',
+            () async {
+          // Arrange
+          final initialRule = IPv6PortServiceRuleUI(
+            enabled: true,
+            description: 'Initial',
+            ipv6Address: '2001:db8::1',
+            portRanges: const [
+              PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
+            ],
+          );
+
+          final modifiedRule = IPv6PortServiceRuleUI(
+            enabled: false,
+            description: 'Modified',
+            ipv6Address: '2001:db8::2',
+            portRanges: const [
+              PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
+            ],
+          );
+
+          when(() => mockService.saveRulesToDevice(any(), any()))
+              .thenAnswer((_) async {});
+
+          // Act
+          container
+              .read(ipv6PortServiceListProvider.notifier)
+              .setRules([initialRule]);
+          var state = container.read(ipv6PortServiceListProvider);
+          expect(state.settings.original.rules, [initialRule]);
+          expect(state.settings.current.rules, [initialRule]);
+
+          // Modify current
+          container
+              .read(ipv6PortServiceListProvider.notifier)
+              .editRule(0, modifiedRule);
+          state = container.read(ipv6PortServiceListProvider);
+          expect(state.settings.original.rules, [initialRule]);
+          expect(state.settings.current.rules, [modifiedRule]);
+          expect(state.isDirty, true);
+
+          // Save
+          await container.read(ipv6PortServiceListProvider.notifier).save();
+          state = container.read(ipv6PortServiceListProvider);
+
+          // Assert - original should now match current
+          expect(state.settings.original.rules, [modifiedRule]);
+          expect(state.settings.current.rules, [modifiedRule]);
+          expect(state.isDirty, false);
+        });
       });
     });
   });

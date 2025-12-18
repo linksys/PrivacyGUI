@@ -1,4 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/ipv6_port_service_rule_state.dart';
 import 'package:privacy_gui/providers/empty_status.dart';
@@ -16,6 +19,90 @@ export 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart'
 /// - Used by: Presentation layer (Providers and Views)
 /// - Never has direct JNAP imports in users (Provider/View)
 class IPv6PortServiceListService {
+  /// Fetches IPv6 firewall rules from device via JNAP and transforms to UI models.
+  ///
+  /// This method encapsulates the entire fetch operation:
+  /// 1. Executes JNAP action to retrieve IPv6 firewall rules
+  /// 2. Parses JNAP response into data layer models
+  /// 3. Transforms data models to UI models
+  ///
+  /// Parameters:
+  /// - ref: Riverpod ref for accessing router repository
+  /// - forceRemote: Whether to force remote fetch (bypass cache)
+  ///
+  /// Returns:
+  /// - IPv6PortServiceRuleUIList with transformed UI models, EmptyStatus on success
+  /// - (null, null) if fetch or transformation fails
+  Future<(IPv6PortServiceRuleUIList?, EmptyStatus?)> fetchRulesFromDevice(
+    Ref ref, {
+    bool forceRemote = false,
+  }) async {
+    try {
+      final repo = ref.read(routerRepositoryProvider);
+
+      // Execute JNAP action to retrieve IPv6 firewall rules
+      final result = await repo.send(
+        JNAPAction.getIPv6FirewallRules,
+        auth: true,
+        fetchRemote: forceRemote,
+      );
+
+      // Parse Data layer model (JNAP response)
+      final dataModel = IPv6FirewallRuleList.fromMap(result.output);
+
+      // Transform to Application layer UI model
+      final (uiRules, status) = await fetchPortServiceRules(dataModel.rules);
+
+      if (uiRules == null) {
+        return (null, null);
+      }
+
+      return (uiRules, status);
+    } catch (e, stackTrace) {
+      logger.e('Error fetching IPv6 port service rules from device',
+          error: e, stackTrace: stackTrace);
+      return (null, null);
+    }
+  }
+
+  /// Saves UI rules to device via JNAP.
+  ///
+  /// This method encapsulates the entire save operation:
+  /// 1. Transforms UI models back to JNAP models
+  /// 2. Builds JNAP request payload
+  /// 3. Executes JNAP action to save rules to device
+  ///
+  /// Parameters:
+  /// - ref: Riverpod ref for accessing router repository
+  /// - rules: List of UI models to save
+  ///
+  /// Throws exception if save fails
+  Future<void> saveRulesToDevice(
+    Ref ref,
+    List<IPv6PortServiceRuleUI> rules,
+  ) async {
+    try {
+      final repo = ref.read(routerRepositoryProvider);
+
+      // Transform UI rules back to JNAP models
+      final jnapRules = transformRulesToJNAP(rules);
+
+      // Build JNAP model for transmission
+      final dataModel = IPv6FirewallRuleList(rules: jnapRules);
+
+      // Execute JNAP action to save IPv6 firewall rules
+      await repo.send(
+        JNAPAction.setIPv6FirewallRules,
+        auth: true,
+        fetchRemote: true,
+        data: dataModel.toMap(),
+      );
+    } catch (e, stackTrace) {
+      logger.e('Error saving IPv6 port service rules to device',
+          error: e, stackTrace: stackTrace);
+      rethrow;
+    }
+  }
   /// Fetches IPv6 port service rules from JNAP and transforms to UI models.
   ///
   /// Transformation pipeline:
@@ -253,3 +340,8 @@ class IPv6PortServiceListService {
     );
   }
 }
+
+final ipv6PortServiceListServiceProvider =
+    Provider<IPv6PortServiceListService>(
+  (ref) => IPv6PortServiceListService(),
+);

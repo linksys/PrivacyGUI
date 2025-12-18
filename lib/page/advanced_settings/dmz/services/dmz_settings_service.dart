@@ -179,7 +179,7 @@ class DMZSettingsService {
           ..removeWhere((key, value) => value == null),
       );
     } catch (e) {
-      throw Exception('Failed to save DMZ settings: ${e.toString()}');
+      rethrow;
     }
   }
 }
