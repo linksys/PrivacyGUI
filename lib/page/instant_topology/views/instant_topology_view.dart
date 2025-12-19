@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -116,10 +115,12 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     return AppTopology(
       topology: meshTopology,
       viewMode: TopologyViewMode.auto, // Responsive switching
-      onNodeTap: TopologyAdapter.wrapNodeTapCallback(
-        originalNodes,
-        (RouterTreeNode node) => onNodeTap(context, ref, node),
-      ),
+      onNodeTap: (nodeId) {
+        final originalNode = _findOriginalNode(originalNodes, nodeId);
+        if (originalNode != null) {
+          onNodeTap(context, ref, originalNode);
+        }
+      },
       nodeMenuBuilder: _buildNodeMenu,
       onNodeMenuSelected: (nodeId, action) => _handleNodeMenuAction(
         context,
@@ -128,31 +129,58 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         action,
         originalNodes,
       ),
+      // Custom badge builder for client counts
       nodeContentBuilder: (context, meshNode, style, isOffline) {
-        // Find original node for custom content
+        // NOTE: Data Provider Limitation
+        // The `InstantTopologyProvider` currently filters out client nodes.
+        // As requested, we are reverting to standard `clientVisibility` logic.
+        // Since there are no client nodes in the graph, the system count will be 0,
+        // and the system badge will NOT appear.
+
         final originalNode = _findOriginalNode(originalNodes, meshNode.id);
-        if (originalNode == null) {
-          // Return default content if original node not found
-          return AppIcon.font(
-            meshNode.iconData ?? Icons.devices,
-            size: 20,
-            color: isOffline
-                ? Theme.of(context).colorScheme.outline
-                : Theme.of(context).colorScheme.onPrimary,
+
+        // Return simple content without manual badge (System handles badge in Graph View)
+        if (meshNode.image != null) {
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Image(
+              image: meshNode.image!,
+              fit: BoxFit.contain,
+            ),
           );
         }
 
-        // Custom content based on node type
-        return _buildCustomNodeContent(
-          context,
-          ref,
-          originalNode,
-          meshNode,
-          isOffline,
+        final iconData = meshNode.iconData ??
+            (originalNode != null
+                ? _getIconForNode(originalNode.data)
+                : Icons.devices);
+
+        return AppIcon.font(
+          iconData,
+          size: 24,
+          color: isOffline
+              ? Theme.of(context).colorScheme.outline
+              : Theme.of(context).colorScheme.onPrimary,
         );
       },
+
+      treeConfig: TopologyTreeConfiguration(
+        preferAnimationNode: false,
+        showType: true,
+        showStatusText: true,
+        showStatusIndicator: true,
+        titleBuilder: (meshNode) => meshNode.name,
+        subtitleBuilder: (meshNode) {
+          final originalNode = _findOriginalNode(originalNodes, meshNode.id);
+          return originalNode?.data.model ?? '';
+        },
+      ),
       enableAnimation: true,
-      clientVisibility: ClientVisibility.always,
+      clientVisibility: ClientVisibility.onHover,
+      // Use unified registry: RippleNode for Graph View, Pulse/Liquid for Tree View
+      nodeRendererRegistry: NodeRendererRegistry.unified,
+      // Disable interaction for Internet node
+      nodeTapFilter: (node) => !node.isInternet,
       // Detail panel configuration
       nodeDetailConfig: NodeDetailConfig(
         trigger: NodeDetailTrigger.tap,
@@ -276,24 +304,33 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   /// Build node menu using ui_kit AppPopupMenuItem
   List<AppPopupMenuItem<String>>? _buildNodeMenu(
       BuildContext context, MeshNode meshNode) {
-    // Don't show menu for gateway/internet nodes or offline nodes
-    if (meshNode.isGateway || meshNode.status == MeshNodeStatus.offline)
-      return null;
+    // Don't show menu for internet nodes only
+    if (meshNode.isInternet) return null;
 
     final items = <AppPopupMenuItem<String>>[];
+    final isOffline = meshNode.status == MeshNodeStatus.offline;
 
-    // Always add details
+    // Always add details for all node types
     items.add(AppPopupMenuItem(
       value: 'details',
-      label: 'Details', // Direct text since localization key may not exist
+      label: 'Details',
       icon: Icons.info_outline,
     ));
+
+    // Skip action items for offline nodes (they can only view details)
+    if (isOffline) {
+      return items;
+    }
 
     // Add actions based on node type and capabilities
     final supportChildReboot = serviceHelper.isSupportChildReboot();
     final autoOnboarding = serviceHelper.isSupportAutoOnboarding();
 
-    if (meshNode.isExtender || meshNode.isClient) {
+    // Gateway-specific logic (previously restricted to just Details)
+    // Removed restriction to allow fallback to common actions (Rename/Reboot)
+
+    // Extender and Client menu items
+    if (meshNode.isExtender || meshNode.isGateway) {
       // Reboot action for extenders and nodes
       if (supportChildReboot) {
         items.add(AppPopupMenuItem(
@@ -311,7 +348,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       ));
 
       // Pairing options for extenders
-      if (meshNode.isExtender && autoOnboarding) {
+      if (meshNode.isGateway && autoOnboarding) {
         items.add(AppPopupMenuItem(
           value: 'pair',
           label: loc(context).instantPair,
@@ -320,7 +357,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       }
 
       // Factory reset for extenders
-      if (meshNode.isExtender) {
+      if (meshNode.isExtender || meshNode.isGateway) {
         items.add(AppPopupMenuItem(
           value: 'reset',
           label: loc(context).resetToFactoryDefault,
@@ -363,132 +400,12 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         break;
       case 'details':
         // Handle details view
-        onNodeTap(context, ref, originalNode);
+        _navigateToNodeDetail(context, ref, originalNode.data.deviceId);
         return;
     }
 
     if (nodeAction != null) {
       _handleSelectedNodeAction(nodeAction, originalNode, supportChildReboot);
-    }
-  }
-
-  /// Build custom node content for ui_kit topology
-  Widget _buildCustomNodeContent(
-    BuildContext context,
-    WidgetRef ref,
-    RouterTreeNode originalNode,
-    MeshNode meshNode,
-    bool isOffline,
-  ) {
-    Widget content;
-
-    // For gateway nodes, show additional info
-    if (meshNode.isGateway && originalNode.data.isMaster) {
-      final internetStatus = ref.watch(internetStatusProvider);
-      final isOnline = internetStatus == InternetStatus.online;
-
-      content = AppIcon.font(
-        meshNode.iconData ?? Icons.router,
-        size: 24,
-        color: isOffline
-            ? Theme.of(context).colorScheme.outline
-            : isOnline
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.error,
-      );
-    } else if (meshNode.image != null) {
-      // For other nodes, use device image if available
-      content = Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Image(
-          image: meshNode.image!,
-          fit: BoxFit.contain,
-        ),
-      );
-    } else {
-      // For other nodes, use default rendering with custom icon
-      content = AppIcon.font(
-        meshNode.iconData ?? _getIconForNode(originalNode.data),
-        size: 20,
-        color: isOffline
-            ? Theme.of(context).colorScheme.outline
-            : Theme.of(context).colorScheme.onPrimary,
-      );
-    }
-
-    // Use connectedDeviceCount from model
-    final clientCount = originalNode.data.connectedDeviceCount;
-    Widget result = content;
-
-    if (clientCount > 0) {
-      result = Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          content,
-          Positioned(
-            top: -2,
-            right: -6,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2B3A42), // Dark Badge (Golden Style)
-                shape: BoxShape.circle,
-              ),
-              constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-              child: Center(
-                child: Text(
-                  '$clientCount',
-                  style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    height: 1.0,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return result;
-  }
-
-  /// Get appropriate icon for topology node
-  IconData _getIconForNode(TopologyModel topology) {
-    if (topology.isRouter) {
-      return topology.isMaster ? Icons.router : Icons.wifi_tethering;
-    }
-
-    // Map device icons based on topology.icon string
-    switch (topology.icon.toLowerCase()) {
-      case 'laptop':
-      case 'computer':
-        return Icons.laptop;
-      case 'phone':
-      case 'smartphone':
-        return AppFontIcons.smartPhone;
-      case 'tablet':
-        return Icons.tablet;
-      case 'tv':
-      case 'television':
-        return Icons.tv;
-      case 'gamedevice':
-      case 'gaming':
-        return AppFontIcons.stadiaController;
-      case 'camera':
-        return Icons.camera_alt;
-      case 'printer':
-        return Icons.print;
-      case 'speaker':
-        return AppFontIcons.musicSpeaker;
-      case 'smartdevice':
-      case 'iot':
-        return AppFontIcons.devices;
-      default:
-        return AppFontIcons.devices;
     }
   }
 
@@ -499,6 +416,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     ref.read(nodeDetailIdProvider.notifier).state = node.data.deviceId;
     if (node.data.isOnline) {
       // Online nodes: Handled by Detail Panel -> View Details button
+      // EXCEPT in Tree View (Mobile), where we must navigate directly on tap
+      if (MediaQuery.of(context).size.width < AppTopology.defaultBreakpoint) {
+        _navigateToNodeDetail(context, ref, node.data.deviceId);
+      }
       return;
     } else {
       // Handle offline nodes with modal dialog
@@ -620,6 +541,15 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         });
       }
     });
+  }
+
+  /// Get appropriate icon for topology node
+  IconData _getIconForNode(TopologyModel topology) {
+    if (topology.isRouter) {
+      return topology.isMaster ? Icons.router : Icons.wifi_tethering;
+    }
+    // Simple fallback
+    return Icons.devices;
   }
 
   _doBlinkNodeLed(WidgetRef ref, String deviceId) {
