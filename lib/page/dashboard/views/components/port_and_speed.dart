@@ -40,14 +40,14 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 height: 250,
                 child: const LoadingTile()))
         : AppResponsiveLayout(
-            desktop: !hasLanPort
+            desktop: (ctx) => !hasLanPort
                 ? _desktopNoLanPorts(context, ref, state, isOnline, isLoading)
                 : horizontalLayout
                     ? _desktopHorizontal(
                         context, ref, state, isOnline, isLoading)
                     : _desktopVertical(
                         context, ref, state, isOnline, isLoading),
-            mobile: _mobile(context, ref, state, isOnline, isLoading));
+            mobile: (ctx) => _mobile(context, ref, state, isOnline, isLoading));
   }
 
   Widget _mobile(BuildContext context, WidgetRef ref, DashboardHomeState state,
@@ -231,7 +231,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xl,
+                    vertical: AppSpacing.md, // Reduced from xl to fix overflow
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -327,7 +327,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             : CrossAxisAlignment.center,
         children: [
           AppResponsiveLayout(
-            desktop: !hasLanPort
+            desktop: (ctx) => !hasLanPort
                 ? Padding(
                     padding:
                         const EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -446,7 +446,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
                               _speedTestButton(context, state),
                             ]),
                       ),
-            mobile: Padding(
+            mobile: (ctx) => Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
               child: Row(
                 children: [
@@ -613,8 +613,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       ],
     );
     return AppResponsiveLayout(
-        desktop: hasLanPort && horizontalLayout ? rowHeader : columnHeader,
-        mobile: rowHeader);
+        desktop: (ctx) =>
+            hasLanPort && horizontalLayout ? rowHeader : columnHeader,
+        mobile: (ctx) => rowHeader);
   }
 
   Widget _speedTestButton(BuildContext context, DashboardHomeState state) {
@@ -772,23 +773,22 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Wrap(
-                      // mainAxisSize: MainAxisSize.min,
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        isMobile
-                            ? Column(
-                                children: portLabel,
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: portLabel,
-                              )
-                      ],
-                    ),
+                  Wrap(
+                    // mainAxisSize: MainAxisSize.min,
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      isMobile
+                          ? Column(
+                              children: portLabel,
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: portLabel,
+                            )
+                    ],
                   ),
                   Padding(
                     padding: const EdgeInsets.all(AppSpacing.sm),
