@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
-import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
-import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/models/_models.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/_views.dart';
 
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_provider.dart';
@@ -47,7 +45,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                     ? 6.col
                     : 4.col,
                 child: _ddnsProvideSelector(state)),
-            if (state.current.provider is! NoDDNSProvider) ...[
+            if (state.current.provider is! NoDDNSProviderUIModel) ...[
               AppGap.gutter(),
               SizedBox(
                   width: ResponsiveLayout.isOverMedimumLayout(context)
@@ -60,7 +58,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
         mobile: Column(
           children: [
             _ddnsProvideSelector(state),
-            if (state.current.provider is! NoDDNSProvider)
+            if (state.current.provider is! NoDDNSProviderUIModel)
               _buildStatusCell(state)
           ],
         ),
@@ -77,7 +75,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
             const AppGap.medium(),
             AppDropdownButton<String>(
               selected: state.current.provider.name,
-              items: state.status.supportedProvider,
+              items: state.status.supportedProviders,
               label: (item) {
                 if (item == dynDNSProviderName) {
                   return 'dyn.com';
@@ -100,25 +98,28 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
           ],
         ),
       );
+
   Widget _buildDNSForms(DDNSState state) {
     final provider = state.current.provider;
-    if (provider is DynDNSProvider) {
-      return _buildDynDNSForm(provider.settings);
-    } else if (provider is NoIPDNSProvider) {
-      return _buildNoIPDNSForm(provider.settings);
-    } else if (provider is TzoDNSProvider) {
-      return _buildTzoDNSForm(provider.settings);
+    if (provider is DynDNSProviderUIModel) {
+      return _buildDynDNSForm(provider);
+    } else if (provider is NoIPDNSProviderUIModel) {
+      return _buildNoIPDNSForm(provider);
+    } else if (provider is TzoDNSProviderUIModel) {
+      return _buildTzoDNSForm(provider);
     } else {
       return const Center();
     }
   }
 
-  Widget _buildDynDNSForm(DynDNSSettings? settings) {
+  Widget _buildDynDNSForm(DynDNSProviderUIModel? settings) {
     return Column(
       children: [
         DynDNSForm(
           onFormChanged: (settings) {
-            ref.read(ddnsProvider.notifier).setProviderSettings(settings);
+            if (settings != null) {
+              ref.read(ddnsProvider.notifier).setProviderSettings(settings);
+            }
           },
           value: settings,
         )
@@ -126,12 +127,14 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
     );
   }
 
-  Widget _buildNoIPDNSForm(NoIPSettings? settings) {
+  Widget _buildNoIPDNSForm(NoIPDNSProviderUIModel? settings) {
     return Column(
       children: [
         NoIPDNSForm(
           onFormChanged: (settings) {
-            ref.read(ddnsProvider.notifier).setProviderSettings(settings);
+            if (settings != null) {
+              ref.read(ddnsProvider.notifier).setProviderSettings(settings);
+            }
           },
           value: settings,
         ),
@@ -139,12 +142,14 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
     );
   }
 
-  Widget _buildTzoDNSForm(TZOSettings? settings) {
+  Widget _buildTzoDNSForm(TzoDNSProviderUIModel? settings) {
     return Column(
       children: [
         TzoDNSForm(
           onFormChanged: (settings) {
-            ref.read(ddnsProvider.notifier).setProviderSettings(settings);
+            if (settings != null) {
+              ref.read(ddnsProvider.notifier).setProviderSettings(settings);
+            }
           },
           value: settings,
         )
