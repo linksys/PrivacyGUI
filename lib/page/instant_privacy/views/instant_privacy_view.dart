@@ -49,8 +49,8 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
       title: loc(context).instantPrivacy,
       markLabel: 'Beta',
       child: (context, constraints) => AppResponsiveLayout(
-        desktop: _desktopLayout(context, state, displayDevices),
-        mobile: _mobileLayout(context, state, displayDevices),
+        desktop: (ctx) => _desktopLayout(ctx, state, displayDevices),
+        mobile: (ctx) => _mobileLayout(ctx, state, displayDevices),
       ),
     );
   }
@@ -288,10 +288,10 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
   Widget _connectionInfo(BuildContext context, DeviceListItem device) {
     return device.isOnline
         ? AppResponsiveLayout(
-            desktop: AppText.bodyMedium(device.isWired
+            desktop: (ctx) => AppText.bodyMedium(device.isWired
                 ? loc(context).ethernet
                 : '${device.ssid}  •  ${device.band}'),
-            mobile: device.isWired
+            mobile: (ctx) => device.isWired
                 ? AppText.bodyMedium(loc(context).ethernet)
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.end,

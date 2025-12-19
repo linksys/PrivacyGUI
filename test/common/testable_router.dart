@@ -35,8 +35,8 @@ Widget testableRouter({
         child: DesignSystem.init(
           context,
           AppResponsiveLayout(
-            mobile: child ?? const SizedBox(),
-            desktop: child ?? const SizedBox(),
+            mobile: (ctx) => child ?? const SizedBox(),
+            desktop: (ctx) => child ?? const SizedBox(),
           ),
         ),
       ),

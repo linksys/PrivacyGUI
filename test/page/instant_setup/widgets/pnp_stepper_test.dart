@@ -93,11 +93,11 @@ void main() {
           child: MaterialApp(
             home: Scaffold(
               body: AppResponsiveLayout(
-                mobile: PnpStepper(
+                mobile: (ctx) => PnpStepper(
                   steps: steps,
                   onLastStep: onLastStep,
                 ),
-                desktop: PnpStepper(
+                desktop: (ctx) => PnpStepper(
                   steps: steps,
                   onLastStep: onLastStep,
                 ),

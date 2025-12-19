@@ -74,8 +74,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
     final isOnlineFilter = ref.watch(
         deviceFilterConfigProvider.select((value) => value.connectionFilter));
     return AppResponsiveLayout(
-      desktop: _desktopLayout(state, filteredDeviceList, isOnlineFilter),
-      mobile: _mobileLayout(state, filteredDeviceList, isOnlineFilter),
+      desktop: (ctx) =>
+          _desktopLayout(state, filteredDeviceList, isOnlineFilter),
+      mobile: (ctx) => _mobileLayout(state, filteredDeviceList, isOnlineFilter),
     );
   }
 
@@ -199,7 +200,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             ),
             AppGap.lg(),
             AppResponsiveLayout(
-              desktop: AppPopupButton(
+              desktop: (ctx) => AppPopupButton(
                 button: Row(
                   children: [
                     AppIcon.font(
@@ -226,7 +227,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                   );
                 },
               ),
-              mobile: AppIconButton(
+              mobile: (ctx) => AppIconButton(
                 icon: AppIcon.font(AppFontIcons.filter,
                     color: Theme.of(context).colorScheme.primary),
                 onTap: () {

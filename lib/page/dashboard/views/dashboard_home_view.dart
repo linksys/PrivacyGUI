@@ -61,26 +61,27 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         top: 32.0, // was AppSpacing.large3
         bottom: 16.0, // was AppSpacing.medium
       ),
-      child: (context, constraints) => AppResponsiveLayout(
-        desktop: Column(
+      child: (childContext, constraints) => AppResponsiveLayout(
+        // New WidgetBuilder API: context has correct PageLayoutScope for colWidth
+        desktop: (layoutContext) => Column(
           mainAxisAlignment: MainAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             DashboardHomeTitle(),
             AppGap.xl(),
             !hasLanPort
-                ? _desktopNoLanPortsLayout()
+                ? _desktopNoLanPortsLayout(layoutContext)
                 : horizontalLayout
-                    ? _desktopHorizontalLayout()
-                    : _desktopVerticalLayout(),
+                    ? _desktopHorizontalLayout(layoutContext)
+                    : _desktopVerticalLayout(layoutContext),
           ],
         ),
-        mobile: _mobileLayout(),
+        mobile: (context) => _mobileLayout(),
       ),
     );
   }
 
-  Widget _desktopNoLanPortsLayout() {
+  Widget _desktopNoLanPortsLayout(BuildContext layoutContext) {
     return Column(
       children: [
         SizedBox(
@@ -89,11 +90,11 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
-                  width: context.colWidth(8),
+                  width: layoutContext.colWidth(8),
                   child: InternetConnectionWidget()),
               AppGap.gutter(),
               SizedBox(
-                  width: context.colWidth(4),
+                  width: layoutContext.colWidth(4),
                   child: DashboardHomePortAndSpeed()),
             ],
           ),
@@ -103,7 +104,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: context.colWidth(4),
+              width: layoutContext.colWidth(4),
               child: Column(
                 children: [
                   DashboardNetworks(),
@@ -115,7 +116,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             ),
             AppGap.gutter(),
             SizedBox(
-                width: context.colWidth(8),
+                width: layoutContext.colWidth(8),
                 child: Column(
                   children: [
                     if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
@@ -131,7 +132,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _desktopHorizontalLayout() {
+  Widget _desktopHorizontalLayout(BuildContext layoutContext) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -149,7 +150,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           ),
           AppGap.gutter(),
           SizedBox(
-              width: context.colWidth(4),
+              width: layoutContext.colWidth(4),
               child: Column(
                 children: [
                   DashboardNetworks(),
@@ -167,13 +168,13 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     );
   }
 
-  Widget _desktopVerticalLayout() {
+  Widget _desktopVerticalLayout(BuildContext layoutContext) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            width: context.colWidth(3),
+            width: layoutContext.colWidth(3),
             child: Column(
               children: [
                 DashboardHomePortAndSpeed(),

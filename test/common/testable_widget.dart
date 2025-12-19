@@ -31,8 +31,8 @@ Widget testableWidget({
         debugShowCheckedModeBanner: false,
         home: Scaffold(
           body: AppResponsiveLayout(
-            mobile: child,
-            desktop: child,
+            mobile: (ctx) => child,
+            desktop: (ctx) => child,
           ),
         ),
       ),

@@ -113,8 +113,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final desktopCol = context.colWidth(4);
     return SingleChildScrollView(
       child: AppResponsiveLayout(
-        mobile: _mobileLayout(context, ref),
-        desktop:
+        mobile: (ctx) => _mobileLayout(context, ref),
+        desktop: (ctx) =>
             _desktopLayout(context, ref, isHealthCheckSupported, desktopCol),
       ),
     );

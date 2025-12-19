@@ -60,13 +60,13 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: AppResponsiveLayout(
-              mobile: Scaffold(
+              mobile: (ctx) => Scaffold(
                 body: Consumer(builder: (context, ref, child) {
                   capturedRef = ref; // Capture the ref
                   return InitOnceWrapper(step: nightModeStep);
                 }),
               ),
-              desktop: Scaffold(
+              desktop: (ctx) => Scaffold(
                 body: Consumer(builder: (context, ref, child) {
                   capturedRef = ref; // Capture the ref
                   return InitOnceWrapper(step: nightModeStep);

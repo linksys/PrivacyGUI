@@ -75,8 +75,9 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
         ),
       ],
       child: (context, constraints) => AppResponsiveLayout(
-        desktop: _desktopLayout(context, isOnlineFilter, filteredDeviceList),
-        mobile: _mobileLayout(context, isOnlineFilter, filteredDeviceList),
+        desktop: (ctx) =>
+            _desktopLayout(ctx, isOnlineFilter, filteredDeviceList),
+        mobile: (ctx) => _mobileLayout(ctx, isOnlineFilter, filteredDeviceList),
       ),
     );
   }
@@ -114,7 +115,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
         Padding(
           padding: EdgeInsets.only(bottom: AppSpacing.lg),
           child: AppResponsiveLayout(
-            desktop: Column(
+            desktop: (ctx) => Column(
               children: [
                 Row(
                   children: [
@@ -127,7 +128,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
                 ),
               ],
             ),
-            mobile: Column(
+            mobile: (ctx) => Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

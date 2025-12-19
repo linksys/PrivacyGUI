@@ -30,9 +30,9 @@ class MacFilteringView extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
         child: AppResponsiveLayout(
-          desktop: _desktopLayout(
+          desktop: (ctx) => _desktopLayout(
               context, ref, privacyState, originalPrivacyState, displayDevices),
-          mobile: _mobileLayout(
+          mobile: (ctx) => _mobileLayout(
               context, ref, privacyState, originalPrivacyState, displayDevices),
         ),
       ),
@@ -114,7 +114,8 @@ class MacFilteringView extends ConsumerWidget {
             ),
             AppGap.lg(),
             Expanded(
-              child: AppText.bodyMedium(loc(context).instantPrivacyDisableWarning),
+              child:
+                  AppText.bodyMedium(loc(context).instantPrivacyDisableWarning),
             ),
           ],
         ),
@@ -138,7 +139,8 @@ class MacFilteringView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText.labelLarge(loc(context).nDevices(length).capitalizeWords()),
+                  AppText.labelLarge(
+                      loc(context).nDevices(length).capitalizeWords()),
                   AppGap.xs(),
                   AppText.bodyMedium(loc(context).denyAccessDesc),
                 ],

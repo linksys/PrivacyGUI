@@ -83,9 +83,9 @@ class TopologyAdapter {
     TopologyModel topology,
     String? parentId,
     List<RouterTreeNode> children,
-    int level,
+    int depth,
   ) {
-    final nodeType = _determineNodeType(topology, children, level);
+    final nodeType = _determineNodeType(topology, children, depth);
 
     return MeshNode(
       id: topology.deviceId.isNotEmpty
@@ -95,45 +95,44 @@ class TopologyAdapter {
       type: nodeType,
       status: _mapNodeStatus(topology),
       parentId: parentId,
-      level: level.toDouble(),
+      // Use signal strength as level for RippleNode animation
+      level: _mapSignalStrengthToLevel(topology),
       iconData: topology.location == 'Internet'
           ? Icons.public
           : _mapIcon(topology.icon),
       deviceCategory: topology.isRouter ? 'router' : 'device',
-      // New fields
       image: nodeType != MeshNodeType.client && topology.model.isNotEmpty
           ? DeviceImageHelper.getRouterImage(topology.model)
           : null,
-      signalQuality: _mapSignalQuality(topology),
       extra: topology.model.isNotEmpty ? topology.model : null,
-      metadata: _buildMetadata(topology),
+      metadata: _buildMetadata(topology, depth: depth),
     );
   }
 
-  /// Map signal strength to SignalQuality enum.
-  static SignalQuality? _mapSignalQuality(TopologyModel topology) {
-    if (topology.isWiredConnection) return SignalQuality.wired;
-    if (!topology.isOnline) return null;
+  /// Map signal strength to level (0.0-1.0) for RippleNode animation.
+  ///
+  /// Higher level = stronger signal = more rings, faster animation.
+  static double _mapSignalStrengthToLevel(TopologyModel topology) {
+    if (topology.isWiredConnection) return 1.0; // Wired = best
+    if (!topology.isOnline) return 0.0;
 
     final strength = topology.signalStrength;
 
-    // Handle RSSI (Negative values)
+    // Handle RSSI (Negative values): -30 to -90 dBm
     if (strength < 0) {
-      if (strength >= -60) return SignalQuality.strong;
-      if (strength >= -70) return SignalQuality.medium;
-      if (strength >= -80) return SignalQuality.weak;
-      return SignalQuality.weak; // Below -80 is also weak
+      // Map -30 to 1.0, -90 to 0.0
+      return ((strength + 90) / 60).clamp(0.0, 1.0);
     }
 
     // Handle Percentage (0-100)
-    if (strength >= 80) return SignalQuality.strong;
-    if (strength >= 50) return SignalQuality.medium;
-    if (strength >= 20) return SignalQuality.weak;
-    return SignalQuality.unknown;
+    return (strength / 100).clamp(0.0, 1.0);
   }
 
   /// Build metadata map from TopologyModel.
-  static Map<String, dynamic>? _buildMetadata(TopologyModel topology) {
+  static Map<String, dynamic>? _buildMetadata(
+    TopologyModel topology, {
+    required int depth,
+  }) {
     return {
       'deviceId': topology.deviceId,
       'macAddress': topology.macAddress,
@@ -147,14 +146,22 @@ class TopologyAdapter {
       'connectedDeviceCount': topology.connectedDeviceCount,
       'isWiredConnection': topology.isWiredConnection,
       'signalStrength': topology.signalStrength,
+      'depth': depth,
+      // Flag for nodeTapFilter
+      'isInternet': topology.location == 'Internet',
     };
   }
 
   /// Determine MeshNodeType from TopologyModel and children.
   static MeshNodeType _determineNodeType(
       TopologyModel topology, List<RouterTreeNode> children, int level) {
-    // Only level 0 can be gateway (Internet or Main Router)
-    if (level == 0) {
+    // Internet node - special static rendering
+    if (topology.location == 'Internet') {
+      return MeshNodeType.internet;
+    }
+
+    // Master router is the gateway
+    if (topology.isMaster) {
       return MeshNodeType.gateway;
     }
 

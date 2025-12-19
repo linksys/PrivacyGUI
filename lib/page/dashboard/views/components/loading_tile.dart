@@ -137,9 +137,11 @@ class _LoadingTileState extends State<LoadingTile>
         child: _buildSkeletonFromChild(child.child ?? Container()),
       );
     } else if (child is AppResponsiveLayout) {
+      // Note: child.desktop/mobile are now builders, so we create new builders
+      // that wrap the skeleton versions
       return AppResponsiveLayout(
-        desktop: _buildSkeletonFromChild(child.desktop),
-        mobile: _buildSkeletonFromChild(child.mobile),
+        desktop: (ctx) => _buildSkeletonFromChild(child.desktop(ctx)),
+        mobile: (ctx) => _buildSkeletonFromChild(child.mobile(ctx)),
       );
     } else if (child is Expanded) {
       return Expanded(

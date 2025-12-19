@@ -74,8 +74,8 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
         return UiKitPageView.withSliver(
           title: state.item.name,
           child: (context, constraints) => AppResponsiveLayout(
-            desktop: _desktopLayout(context, state),
-            mobile: _mobileLayout(context, state),
+            desktop: (ctx) => _desktopLayout(ctx, state),
+            mobile: (ctx) => _mobileLayout(ctx, state),
           ),
         );
       },

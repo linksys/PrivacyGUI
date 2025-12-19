@@ -44,7 +44,7 @@ class SpeedTestView extends ConsumerWidget {
       scrollable: true,
       title: loc(context).speedTest,
       child: (context, constraints) => AppResponsiveLayout(
-        mobile: Column(
+        mobile: (ctx) => Column(
           children: [
             mainWidget,
             AppGap.xxl(),
@@ -53,7 +53,7 @@ class SpeedTestView extends ConsumerWidget {
             historyWidget,
           ],
         ),
-        desktop: Row(
+        desktop: (ctx) => Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(flex: 6, child: mainWidget),

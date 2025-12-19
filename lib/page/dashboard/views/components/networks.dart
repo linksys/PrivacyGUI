@@ -15,7 +15,6 @@ import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 
 import 'package:ui_kit_library/ui_kit.dart';
@@ -30,10 +29,6 @@ class DashboardNetworks extends ConsumerStatefulWidget {
 class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   @override
   Widget build(BuildContext context) {
-    final uptimeInt =
-        ref.watch(dashboardHomeProvider.select((value) => value.uptime ?? 0));
-    final uptime =
-        DateFormatUtils.formatDuration(Duration(seconds: uptimeInt), null);
     final state = ref.watch(dashboardHomeProvider);
     final topologyState = ref.watch(instantTopologyProvider);
 
@@ -65,12 +60,12 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
               children: [
                 AppGap.lg(),
                 AppResponsiveLayout(
-                  desktop: !hasLanPort
+                  desktop: (ctx) => !hasLanPort
                       ? _mobile(context, ref)
                       : state.isHorizontalLayout
                           ? _desktopHorizontal(context, ref)
                           : _desktopVertical(context, ref),
-                  mobile: _mobile(context, ref),
+                  mobile: (ctx) => _mobile(context, ref),
                 ),
                 SizedBox(
                   height:
@@ -91,36 +86,23 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                         }
                       },
                     ),
-                    nodeContentBuilder: (context, meshNode, style, isOffline) {
-                      // Find original topology data for extra info (like uptime)
-                      final originalNode = _findOriginalNode(
-                        topologyState.root.children,
-                        meshNode.id,
-                      );
-
-                      // Create custom content that matches the original design
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            meshNode.iconData ?? Icons.devices,
-                            size: 20,
-                            color: isOffline
-                                ? Theme.of(context).colorScheme.outline
-                                : Theme.of(context).colorScheme.onPrimary,
-                          ),
-                          if (originalNode?.data.isMaster == true) ...[
-                            AppGap.xs(),
-                            AppText.labelSmall(
-                              '${loc(context).uptime}: $uptime',
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                          ],
-                        ],
-                      );
-                    },
+                    indent: 8.0, // Reduced indentation
+                    treeConfig: TopologyTreeConfiguration(
+                      preferAnimationNode: false,
+                      showType: false,
+                      showStatusText: false,
+                      showStatusIndicator: true,
+                      titleBuilder: (meshNode) => meshNode.name,
+                      subtitleBuilder: (meshNode) {
+                        final originalNode = _findOriginalNode(
+                          topologyState.root.children,
+                          meshNode.id,
+                        );
+                        return originalNode?.data.model ?? '';
+                      },
+                    ),
                   ),
-                )
+                ),
               ],
             ),
           );

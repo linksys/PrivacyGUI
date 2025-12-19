@@ -32,7 +32,7 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
       title: loc(context).advancedSettings,
       scrollable: true,
       child: (context, constraints) => AppResponsiveLayout(
-        desktop: GridView.builder(
+        desktop: (ctx) => GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             mainAxisSpacing: AppSpacing.lg,
@@ -47,7 +47,7 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
           },
           shrinkWrap: true,
         ),
-        mobile: ListView.separated(
+        mobile: (ctx) => ListView.separated(
           itemCount: advancedSettings.length,
           shrinkWrap: true,
           itemBuilder: (context, index) {

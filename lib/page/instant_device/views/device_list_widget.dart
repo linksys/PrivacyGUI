@@ -112,10 +112,10 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
   Widget _connectionInfo(DeviceListItem device) {
     return device.isOnline
         ? AppResponsiveLayout(
-            desktop: AppText.bodyMedium(device.isWired
+            desktop: (ctx) => AppText.bodyMedium(device.isWired
                 ? loc(context).ethernet
                 : '${device.ssid}  •  ${device.band}'),
-            mobile: device.isWired
+            mobile: (ctx) => device.isWired
                 ? AppText.bodyMedium(loc(context).ethernet)
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
