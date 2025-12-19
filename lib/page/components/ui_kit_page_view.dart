@@ -418,6 +418,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       tabs: _convertTabs(),
       tabViews: widget.tabContentViews,
       tabController: widget.tabController,
+      isTabScrollable: false,
 
       // Additional widgets - only pass header in sliver mode
       header: headerWidget,

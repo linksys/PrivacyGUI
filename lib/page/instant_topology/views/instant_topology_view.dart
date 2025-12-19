@@ -14,6 +14,7 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/instant_topology/helpers/topology_menu_helper.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
@@ -38,9 +39,12 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   bool _isLoading = false;
   bool _isWidget = false;
 
+  late final TopologyMenuHelper _menuHelper;
+
   @override
   void initState() {
     super.initState();
+    _menuHelper = TopologyMenuHelper(serviceHelper);
     _isWidget = widget.args['widget'] ?? false;
   }
 
@@ -48,7 +52,6 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   Widget build(BuildContext context) {
     final topologyState = ref.watch(instantTopologyProvider);
 
-    // Convert topology data to ui_kit format
     // Convert topology data to ui_kit format
     final meshTopology = TopologyAdapter.convert([topologyState.root]);
 
@@ -116,12 +119,13 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       topology: meshTopology,
       viewMode: TopologyViewMode.auto, // Responsive switching
       onNodeTap: (nodeId) {
-        final originalNode = _findOriginalNode(originalNodes, nodeId);
+        final originalNode =
+            _menuHelper.findOriginalNode(originalNodes, nodeId);
         if (originalNode != null) {
           onNodeTap(context, ref, originalNode);
         }
       },
-      nodeMenuBuilder: _buildNodeMenu,
+      nodeMenuBuilder: _menuHelper.buildNodeMenu,
       onNodeMenuSelected: (nodeId, action) => _handleNodeMenuAction(
         context,
         ref,
@@ -137,7 +141,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         // Since there are no client nodes in the graph, the system count will be 0,
         // and the system badge will NOT appear.
 
-        final originalNode = _findOriginalNode(originalNodes, meshNode.id);
+        final originalNode =
+            _menuHelper.findOriginalNode(originalNodes, meshNode.id);
 
         // Return simple content without manual badge (System handles badge in Graph View)
         if (meshNode.image != null) {
@@ -171,7 +176,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         showStatusIndicator: true,
         titleBuilder: (meshNode) => meshNode.name,
         subtitleBuilder: (meshNode) {
-          final originalNode = _findOriginalNode(originalNodes, meshNode.id);
+          final originalNode =
+              _menuHelper.findOriginalNode(originalNodes, meshNode.id);
           return originalNode?.data.model ?? '';
         },
       ),
@@ -205,7 +211,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     List<RouterTreeNode> originalNodes,
   ) {
     // Find original node for more details
-    final originalNode = _findOriginalNode(originalNodes, meshNode.id);
+    final originalNode =
+        _menuHelper.findOriginalNode(originalNodes, meshNode.id);
 
     // Disable detail panel for Internet node
     if (originalNode?.data.location == 'Internet')
@@ -288,87 +295,6 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     context.pushNamed(RouteNamed.nodeDetails);
   }
 
-  RouterTreeNode? _findOriginalNode(
-      List<RouterTreeNode> rootNodes, String nodeId) {
-    for (final rootNode in rootNodes) {
-      final flatNodes = rootNode.toFlatList();
-      for (final node in flatNodes) {
-        if (TopologyAdapter.getNodeId(node) == nodeId) {
-          return node;
-        }
-      }
-    }
-    return null;
-  }
-
-  /// Build node menu using ui_kit AppPopupMenuItem
-  List<AppPopupMenuItem<String>>? _buildNodeMenu(
-      BuildContext context, MeshNode meshNode) {
-    // Don't show menu for internet nodes only
-    if (meshNode.isInternet) return null;
-
-    final items = <AppPopupMenuItem<String>>[];
-    final isOffline = meshNode.status == MeshNodeStatus.offline;
-
-    // Always add details for all node types
-    items.add(AppPopupMenuItem(
-      value: 'details',
-      label: 'Details',
-      icon: Icons.info_outline,
-    ));
-
-    // Skip action items for offline nodes (they can only view details)
-    if (isOffline) {
-      return items;
-    }
-
-    // Add actions based on node type and capabilities
-    final supportChildReboot = serviceHelper.isSupportChildReboot();
-    final autoOnboarding = serviceHelper.isSupportAutoOnboarding();
-
-    // Gateway-specific logic (previously restricted to just Details)
-    // Removed restriction to allow fallback to common actions (Rename/Reboot)
-
-    // Extender and Client menu items
-    if (meshNode.isExtender || meshNode.isGateway) {
-      // Reboot action for extenders and nodes
-      if (supportChildReboot) {
-        items.add(AppPopupMenuItem(
-          value: 'reboot',
-          label: loc(context).rebootUnit,
-          icon: AppFontIcons.restartAlt,
-        ));
-      }
-
-      // Blink device light
-      items.add(AppPopupMenuItem(
-        value: 'blink',
-        label: loc(context).blinkDeviceLight,
-        icon: AppFontIcons.lightBulb,
-      ));
-
-      // Pairing options for extenders
-      if (meshNode.isGateway && autoOnboarding) {
-        items.add(AppPopupMenuItem(
-          value: 'pair',
-          label: loc(context).instantPair,
-          icon: Icons.link,
-        ));
-      }
-
-      // Factory reset for extenders
-      if (meshNode.isExtender || meshNode.isGateway) {
-        items.add(AppPopupMenuItem(
-          value: 'reset',
-          label: loc(context).resetToFactoryDefault,
-          icon: Icons.restore,
-        ));
-      }
-    }
-
-    return items.isEmpty ? null : items;
-  }
-
   /// Handle node menu action selection
   void _handleNodeMenuAction(
     BuildContext context,
@@ -377,36 +303,17 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     String action,
     List<RouterTreeNode> originalNodes,
   ) {
-    // Find the original node
-    final originalNode = _findOriginalNode(originalNodes, nodeId);
-    if (originalNode == null) return;
-
-    final supportChildReboot = serviceHelper.isSupportChildReboot();
-
-    // Convert action string to NodeInstantActions enum
-    NodeInstantActions? nodeAction;
-    switch (action) {
-      case 'reboot':
-        nodeAction = NodeInstantActions.reboot;
-        break;
-      case 'blink':
-        nodeAction = NodeInstantActions.blink;
-        break;
-      case 'pair':
-        nodeAction = NodeInstantActions.pair;
-        break;
-      case 'reset':
-        nodeAction = NodeInstantActions.reset;
-        break;
-      case 'details':
-        // Handle details view
-        _navigateToNodeDetail(context, ref, originalNode.data.deviceId);
-        return;
-    }
-
-    if (nodeAction != null) {
-      _handleSelectedNodeAction(nodeAction, originalNode, supportChildReboot);
-    }
+    _menuHelper.handleMenuAction(
+      context,
+      ref,
+      nodeId,
+      action,
+      originalNodes,
+      onNavigateToDetail: (deviceId) =>
+          _navigateToNodeDetail(context, ref, deviceId),
+      onNodeAction: (nodeAction, node) => _handleSelectedNodeAction(
+          nodeAction, node, serviceHelper.isSupportChildReboot()),
+    );
   }
 
   void onNodeTap(BuildContext context, WidgetRef ref, RouterTreeNode node) {

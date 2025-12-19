@@ -160,8 +160,8 @@ class TopologyAdapter {
       return MeshNodeType.internet;
     }
 
-    // Master router is the gateway
-    if (topology.isMaster) {
+    // Master router is the gateway (only when online)
+    if (topology.isMaster && topology.isOnline) {
       return MeshNodeType.gateway;
     }
 

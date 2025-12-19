@@ -10,6 +10,8 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -24,13 +26,19 @@ import 'package:privacy_gui/page/instant_verify/views/components/ping_network_mo
 import 'package:privacy_gui/page/health_check/widgets/speed_test_external_widget.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/traceroute_modal.dart';
+import 'package:privacy_gui/core/utils/topology_adapter.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
+import 'package:privacy_gui/page/instant_topology/helpers/topology_menu_helper.dart';
+import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
+import 'package:privacy_gui/page/instant_topology/views/widgets/instant_topology_card.dart';
+import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/page/instant_verify/services/instant_verify_pdf_service.dart';
+import 'package:privacy_gui/core/utils/wifi.dart';
 
 class InstantVerifyView extends ArgumentsConsumerStatefulView {
   const InstantVerifyView({super.key, super.args});
@@ -42,13 +50,13 @@ class InstantVerifyView extends ArgumentsConsumerStatefulView {
 class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  late final Widget _instantTopologyWidget;
+  late final TopologyMenuHelper _menuHelper;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _instantTopologyWidget = InstantTopologyView.widget();
+    _menuHelper = TopologyMenuHelper(serviceHelper);
 
     ref.read(wanExternalProvider.notifier).fetch();
   }
@@ -65,7 +73,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     final tabs = [loc(context).instantInfo, loc(context).instantTopology];
     final tabContents = [
       _instantInfo(context, ref),
-      _instantTopologyWidget,
+      _buildInstantTopology(context, ref),
     ];
     return UiKitPageView.withSliver(
       onRefresh: () {
@@ -105,6 +113,347 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           ),
       ],
     );
+  }
+
+  /// 使用 AppTopology 直接建構拓撲視圖 - Expanded Mode with Menu
+  Widget _buildInstantTopology(BuildContext context, WidgetRef ref) {
+    final topologyState = ref.watch(instantTopologyProvider);
+    final meshTopology = TopologyAdapter.convert([topologyState.root]);
+    final originalNodes = topologyState.root.children;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final content = AppTopology(
+          topology: meshTopology,
+          viewMode: TopologyViewMode.tree,
+          nodeRendererRegistry: NodeRendererRegistry.unified,
+          onNodeTap: (nodeId) {
+            final originalNode =
+                _menuHelper.findOriginalNode(originalNodes, nodeId);
+            if (originalNode != null && originalNode.data.isOnline) {
+              ref.read(nodeDetailIdProvider.notifier).state =
+                  originalNode.data.deviceId;
+              context.pushNamed(RouteNamed.nodeDetails);
+            }
+          },
+          nodeMenuBuilder: _menuHelper.buildNodeMenu,
+          nodeBuilder: (context, meshNode, isOffline) {
+            // Special handling for Internet node
+            if (meshNode.type == MeshNodeType.internet) {
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    AppIcon.font(
+                      Icons.public,
+                      size: 24,
+                      color: isOffline
+                          ? Theme.of(context).disabledColor
+                          : Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 16),
+                    AppText.bodyMedium(loc(context).internet),
+                  ],
+                ),
+              );
+            }
+
+            final originalNode =
+                _menuHelper.findOriginalNode(originalNodes, meshNode.id);
+            if (originalNode == null) return const SizedBox();
+
+            return InstantTopologyCard(
+              node: originalNode,
+              isOffline: isOffline,
+              isFocused:
+                  originalNode.data.deviceId == ref.watch(nodeDetailIdProvider),
+              onTap: () {
+                // Handle tap via nodeBuilder manually if needed, or reply on TopologyTreeView to wrap?
+                // TopologyTreeView wraps in AppCard which calls onNodeTap.
+                // But if we want to ensure focus state updates or correct navigation:
+                if (originalNode.data.isOnline) {
+                  ref.read(nodeDetailIdProvider.notifier).state =
+                      originalNode.data.deviceId;
+                  context.pushNamed(RouteNamed.nodeDetails);
+                } else {
+                  // If offline, maybe we want specific action? Handled by menu or custom logic?
+                  // InstantTopologyView logic was: check offline, show modal.
+                  // Implemented in onNodeTap parameter.
+                  // Since TopologyTreeView wraps this in AppCard with onNodeTap handler,
+                  // we DON'T need onTap here IF TopologyTreeView handles it?
+                  // BUT InstantTopologyCard might need to handle styling for touch.
+                  // For now pass null to rely on parent inkwell.
+                }
+              },
+            );
+          },
+          onNodeMenuSelected: (nodeId, action) => _handleNodeMenuAction(
+            context,
+            ref,
+            nodeId,
+            action,
+            originalNodes,
+          ),
+          treeConfig: TopologyTreeConfiguration(
+            expanded: true,
+            preferAnimationNode: true,
+            showType: false,
+            showStatusText: false,
+            showStatusIndicator: true,
+            titleBuilder: (meshNode) => meshNode.name,
+            subtitleBuilder: (meshNode) {
+              final originalNode =
+                  _menuHelper.findOriginalNode(originalNodes, meshNode.id);
+              return originalNode?.data.model ?? '';
+            },
+            detailBuilder: (context, meshNode, metadata) {
+              return _buildTreeDetailContent(
+                  context, meshNode, metadata, originalNodes);
+            },
+          ),
+        );
+
+        // 處理無限高度情況
+        if (constraints.maxHeight.isFinite) {
+          return content;
+        } else {
+          return SizedBox(
+            height: 800, // 增加高度以容納 expanded cards
+            child: content,
+          );
+        }
+      },
+    );
+  }
+
+  /// 建構 Tree View Expanded Mode 的詳細內容
+  Widget _buildTreeDetailContent(
+    BuildContext context,
+    MeshNode meshNode,
+    Map<String, dynamic>? metadata,
+    List<RouterTreeNode> originalNodes,
+  ) {
+    final theme = Theme.of(context);
+    final originalNode =
+        _menuHelper.findOriginalNode(originalNodes, meshNode.id);
+
+    // Internet 節點不顯示詳細內容
+    if (originalNode?.data.location == 'Internet') {
+      return const SizedBox.shrink();
+    }
+
+    final model = metadata?['model'] as String? ?? '';
+    final serialNumber = originalNode?.data.serialNumber ?? '';
+    final macAddress = metadata?['macAddress'] as String? ?? '';
+    final fwVersion = metadata?['fwVersion'] as String? ?? '';
+    final isWired = metadata?['isWiredConnection'] as bool? ?? false;
+    final isOnline = originalNode?.data.isOnline ?? false;
+    String ipAddress = '';
+    String meshHealth = '';
+
+    if (isOnline) {
+      ipAddress = metadata?['ipAddress'] as String? ?? '';
+
+      final signalStrength = metadata?['signalStrength'] as int? ?? 0;
+      if (signalStrength != 0) {
+        meshHealth = getWifiSignalLevel(signalStrength).resolveLabel(context);
+      }
+    }
+
+    Widget detailRow(String label, String value, {Color? valueColor}) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 100,
+              child: Text(
+                '$label:',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: valueColor ?? theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (model.isNotEmpty) detailRow(loc(context).model, model),
+        if (serialNumber.isNotEmpty)
+          detailRow(loc(context).serialNumber, serialNumber),
+        if (macAddress.isNotEmpty)
+          detailRow(loc(context).macAddress, macAddress),
+        if (fwVersion.isNotEmpty)
+          detailRow(loc(context).firmwareVersion, fwVersion),
+        if (isOnline)
+          detailRow(loc(context).connectionType,
+              isWired ? loc(context).wired : loc(context).wireless),
+        if (meshHealth.isNotEmpty) detailRow('Mesh Health', meshHealth),
+        if (ipAddress.isNotEmpty) detailRow(loc(context).ipAddress, ipAddress),
+      ],
+    );
+  }
+
+  void _handleNodeMenuAction(
+    BuildContext context,
+    WidgetRef ref,
+    String nodeId,
+    String action,
+    List<RouterTreeNode> originalNodes,
+  ) {
+    _menuHelper.handleMenuAction(
+      context,
+      ref,
+      nodeId,
+      action,
+      originalNodes,
+      onNavigateToDetail: (deviceId) {
+        ref.read(nodeDetailIdProvider.notifier).state = deviceId;
+        context.pushNamed(RouteNamed.nodeDetails);
+      },
+      onNodeAction: (nodeAction, node) => _handleSelectedNodeAction(
+          nodeAction, node, serviceHelper.isSupportChildReboot()),
+    );
+  }
+
+  void _handleSelectedNodeAction(
+    NodeInstantActions action,
+    RouterTreeNode node,
+    bool supportChildReboot,
+  ) {
+    switch (action) {
+      case NodeInstantActions.reboot:
+        _doReboot(supportChildReboot && !node.data.isMaster ? node : null,
+            node.isLeaf());
+        break;
+      case NodeInstantActions.pair:
+        // do nothing
+        break;
+      case NodeInstantActions.pairWired:
+        _doInstantPairWired(ref);
+        break;
+      case NodeInstantActions.pairWireless:
+        _doInstantPair();
+        break;
+      case NodeInstantActions.blink:
+        _doBlinkNodeLed(ref, node.data.deviceId);
+        break;
+      case NodeInstantActions.reset:
+        // If the target is a master, send null value to factory reset all nodes
+        _doFactoryReset(supportChildReboot && !node.data.isMaster ? node : null,
+            node.isLeaf());
+        break;
+    }
+  }
+
+  _doReboot(RouterTreeNode? node, bool isLastNode) {
+    final isMaster = node?.data.isMaster ?? true;
+    final targetDeviceIds =
+        node?.toFlatList().map((e) => e.data.deviceId).toList() ?? [];
+    showRebootModal(context, isMaster, isLastNode).then((result) {
+      if (result == true && mounted) {
+        doSomethingWithSpinner(
+          context,
+          Future.sync(() => ref.read(pollingProvider.notifier).stopPolling())
+              .then((_) => ref
+                  .read(instantTopologyProvider.notifier)
+                  .reboot(targetDeviceIds))
+              .then((_) async {
+            if (node?.data.isMaster == false) {
+              await ref.read(pollingProvider.notifier).forcePolling();
+            }
+          }),
+        ).catchError((e) {
+          logger.e('Reboot failed: $e');
+        });
+      }
+    });
+  }
+
+  _doBlinkNodeLed(WidgetRef ref, String deviceId) {
+    ref.read(instantTopologyProvider.notifier).toggleBlinkNode(deviceId);
+  }
+
+  _doInstantPair() {
+    context.pushNamed(RouteNamed.addNodes).then((result) {
+      if (result is bool && result) {
+        _showMoveChildNodesModal();
+      }
+    });
+  }
+
+  _doInstantPairWired(WidgetRef ref) {
+    context.pushNamed(RouteNamed.addNodes).then((result) {
+      if (result is bool && result) {
+        _showMoveChildNodesModal();
+      }
+    });
+  }
+
+  _showMoveChildNodesModal() {
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: AppText.headlineSmall(loc(context).modalMoveChildNodesTitle),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  context.pop();
+                },
+                child: Text(loc(context).close),
+              ),
+            ],
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.bodyMedium(loc(context).modalMoveChildNodesDesc),
+              ],
+            ),
+          );
+        });
+  }
+
+  Future<void> _doFactoryReset(RouterTreeNode? node, bool isLastNode) async {
+    final isMaster = node == null;
+    final targetDeviceIds =
+        node?.toFlatList().map((e) => e.data.deviceId).toList() ?? [];
+
+    final isAgreed = await showFactoryResetModal(context, isMaster, isLastNode);
+    if (isAgreed == true && mounted) {
+      doSomethingWithSpinner(
+        context,
+        ref
+            .read(instantTopologyProvider.notifier)
+            .factoryReset(targetDeviceIds)
+            .then((_) async {
+          if (!isMaster) {
+            await ref.read(deviceManagerProvider.notifier).deleteDevices(
+                  deviceIds: targetDeviceIds.reversed.toList(),
+                );
+            await ref.read(pollingProvider.notifier).forcePolling();
+          }
+        }),
+      ).catchError((error) {
+        logger.e(error.toString());
+        if (mounted) {
+          showRouterNotFoundAlert(context, ref);
+        }
+      });
+    }
   }
 
   Widget _instantInfo(BuildContext context, WidgetRef ref) {

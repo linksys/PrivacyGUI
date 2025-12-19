@@ -50,10 +50,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     return isLoading
         ? AppCard(
             padding: EdgeInsets.zero,
-            child: SizedBox(
-                width: double.infinity,
-                height: 256,
-                child: const LoadingTile()))
+            child: SizedBox(width: double.infinity, child: const LoadingTile()))
         : AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +83,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                         }
                       },
                     ),
-                    indent: 8.0, // Reduced indentation
+                    indent: 16.0, // Reduced indentation
                     treeConfig: TopologyTreeConfiguration(
                       preferAnimationNode: false,
                       showType: false,
