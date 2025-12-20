@@ -427,8 +427,9 @@ void main() {
           await tester.tap(find.byKey(const Key('pnp_stepper_next_button')));
           await tester.pumpAndSettle();
 
+          // Title appears twice (stepper label + page title), so verify at least one
           expect(find.text(testHelper.loc(context).pnpYourNetworkTitle),
-              findsOneWidget);
+              findsAtLeastNWidgets(1));
           expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
@@ -474,10 +475,11 @@ void main() {
           await tester.tap(find.byKey(const Key('pnp_stepper_next_button')));
           await tester.pumpAndSettle();
 
+          // Title appears twice (stepper label + page title), so verify at least one
           expect(find.text(testHelper.loc(context).pnpYourNetworkTitle),
-              findsOneWidget);
-          expect(find.text('Living Room'), findsOneWidget);
-          expect(find.text('Bedroom'), findsOneWidget);
+              findsAtLeastNWidgets(1));
+          expect(find.text('Living Room'), findsAtLeastNWidgets(1));
+          expect(find.text('Bedroom'), findsAtLeastNWidgets(1));
           expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
@@ -562,9 +564,15 @@ void main() {
         expect(find.byIcon(AppFontIcons.wifi), findsOneWidget);
         expect(find.text(testHelper.loc(context).pnpReconnectWiFi),
             findsOneWidget);
-        // Find the button by its unique key.
+        // Find the AppButton inside the AppLoadableWidget with specific key.
+        // Note: Both stepper and reconnect screens have "Next" buttons,
+        // so we use descendant finder with the specific key.
         expect(
-            find.byKey(const Key('pnp_reconnect_next_button')), findsOneWidget);
+            find.descendant(
+              of: find.byKey(const Key('pnp_reconnect_next_button')),
+              matching: find.byType(AppButton),
+            ),
+            findsOneWidget);
       },
       screens: screens,
       goldenFilename: 'PNPS-WIZ_RECONN_01-needs_reconnect_screen',

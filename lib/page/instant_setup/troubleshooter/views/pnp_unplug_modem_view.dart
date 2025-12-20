@@ -101,6 +101,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
           AppGap.lg(),
           AppGap.xxxl(),
           Container(
+            key: const Key('pnpUnplugModemTipImage'),
             alignment: Alignment.center,
             child: Assets.images.modemIdentifying.svg(
               semanticsLabel: 'modem Identifying image',

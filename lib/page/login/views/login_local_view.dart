@@ -256,6 +256,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                 ),
                 AppGap.xxxl(),
                 AppButton(
+                  key: const Key('loginLocalView_loginButton'),
                   label: loc(context).login,
                   variant: SurfaceVariant.highlight,
                   size: AppButtonSize.small,

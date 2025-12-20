@@ -23,6 +23,8 @@ void main() async {
 
   setUp(() {
     testHelper.setup();
+    // Enable animations for this test - required for countdown timer to work
+    testHelper.disableAnimations = false;
     when(testHelper.mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
     });
@@ -35,7 +37,7 @@ void main() async {
   testLocalizationsV2(
     'Verify waiting modem full flow',
     (tester, localizedScreen) async {
-      final context = await testHelper.pumpView(
+      final context = await testHelper.pumpShellView(
         tester,
         child: const PnpWaitingModemView(),
         config: LinksysRouteConfig(
@@ -53,7 +55,7 @@ void main() async {
       await testHelper.takeScreenshot(
           tester, 'PNPWM-FULL_FLOW_01_counting_down');
 
-      // 2. State: Plug your modem back in
+      // 2. State: Plug your modem back in (after 150 seconds countdown)
       await tester.pumpAndSettle(const Duration(seconds: 150));
       expect(find.text(testHelper.loc(context).pnpWaitingModemPlugBack),
           findsOneWidget);

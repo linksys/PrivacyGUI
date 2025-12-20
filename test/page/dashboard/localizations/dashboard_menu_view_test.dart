@@ -59,7 +59,8 @@ void main() {
   }
 
   Future<void> openMoreMenu(WidgetTester tester) async {
-    final moreFinder = find.byIcon(AppFontIcons.moreHoriz).last;
+    // After UI Kit migration, menu icon changed from AppFontIcons.moreHoriz to Icons.menu
+    final moreFinder = find.byIcon(Icons.menu).last;
     await tester.tap(moreFinder);
     await tester.pumpAndSettle();
   }
@@ -108,7 +109,8 @@ void main() {
       final context = await pumpMenu(tester, screen);
       final loc = testHelper.loc(context);
       await openMoreMenu(tester);
-      await tester.tap(find.byIcon(AppFontIcons.restartAlt).last);
+      // Tap on the restart option by text instead of icon to avoid off-screen tap issues
+      await tester.tap(find.text(loc.restartNetwork));
       await tester.pumpAndSettle();
       expect(find.text(loc.alertExclamation), findsOneWidget);
       expect(find.text(loc.menuRestartNetworkMessage), findsOneWidget);

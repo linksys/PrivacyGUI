@@ -95,6 +95,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
 
   Widget _advancedWiFiBandCard(WiFiItem radio, bool canBeDisable) {
     return WifiListTile(
+      key: Key('wifiBandCard-${radio.radioID.value}'),
       title: AppText.labelLarge(radio.radioID.bandName),
       trailing: canBeDisable
           ? AppSwitch(
@@ -111,6 +112,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
   }
 
   Widget _advancedWiFiNameCard(WiFiItem radio) => WifiListTile(
+        key: Key('wifiNameCard-${radio.radioID.value}'),
         title: AppText.bodyMedium(loc(context).wifiName),
         description: AppText.labelLarge(radio.ssid),
         trailing: const AppIcon.font(
@@ -126,6 +128,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
       );
 
   Widget _advancedWiFiPasswordCard(WiFiItem radio) => WifiListTile(
+        key: Key('wifiPasswordCard-${radio.radioID.value}'),
         title: AppText.bodyMedium(loc(context).wifiPassword),
         description: WifiPasswordField(
           controller: TextEditingController(text: radio.password),
@@ -144,6 +147,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
       );
 
   Widget _advancedWiFiSecurityTypeCard(WiFiItem radio) => WifiListTile(
+        key: Key('wifiSecurityCard-${radio.radioID.value}'),
         title: AppText.bodyMedium(loc(context).securityMode),
         description: AppText.labelLarge(
             getWifiSecurityTypeTitle(context, radio.securityType)),
@@ -165,19 +169,22 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
       return const SizedBox.shrink(key: Key('wireless-mode-hidden'));
 
     return WifiListTile(
+      key: Key('wifiWirelessModeCard-${radio.radioID.value}'),
       title: AppText.bodyMedium(loc(context).wifiMode),
       description: AppText.labelLarge(
           getWifiWirelessModeTitle(context, radio.wirelessMode, null)),
       trailing: const AppIcon.font(AppFontIcons.edit),
       onTap: () {
-        // Only show valid ax mode if MLO is supported
         final availableModes = radio.availableWirelessModes
             .where((element) =>
                 element != WifiWirelessMode.ax || serviceHelper.isSupportMLO())
             .toList();
 
+        final validList = validWirelessModeForChannelWidth(
+            radio.channelWidth, availableModes);
+
         showWirelessWiFiModeModal(radio.wirelessMode, radio.defaultMixedMode,
-            availableModes, availableModes, (value) {
+            availableModes, validList, (value) {
           ref
               .read(wifiBundleProvider.notifier)
               .setWiFiMode(value, radio.radioID);
@@ -187,6 +194,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
   }
 
   Widget _advancedWiFiBoradcastCard(WiFiItem radio) => WifiListTile(
+        key: Key('wifiBroadcastCard-${radio.radioID.value}'),
         title: AppText.bodyMedium(loc(context).broadcastSSID),
         trailing: AppSwitch(
           key: Key('BroadcastSwitch-${radio.radioID.value}'),
@@ -200,6 +208,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
       );
 
   Widget _advancedWiFiChannelWidthCard(WiFiItem radio) => WifiListTile(
+        key: Key('wifiChannelWidthCard-${radio.radioID.value}'),
         title: AppText.bodyMedium(loc(context).channelWidth),
         description: AppText.labelLarge(
           getWifiChannelWidthTitle(context, radio.channelWidth),
@@ -218,6 +227,7 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
       );
 
   Widget _advancedWiFiChannelCard(WiFiItem radio) => WifiListTile(
+        key: Key('wifiChannelCard-${radio.radioID.value}'),
         title: AppText.bodyMedium(loc(context).channel),
         description: AppText.labelLarge(getWifiChannelTitle(
           context,

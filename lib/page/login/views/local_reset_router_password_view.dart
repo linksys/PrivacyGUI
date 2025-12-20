@@ -151,6 +151,7 @@ class _LocalResetRouterPasswordViewState
                 ),
                 AppGap.xxxl(),
                 AppButton(
+                  key: const Key('localResetPassword_saveButton'),
                   label: loc(context).save,
                   variant: SurfaceVariant.highlight,
                   onTap: state.isValid ? _save : null,

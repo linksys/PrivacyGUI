@@ -320,34 +320,37 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
 
   void handleTransmitRegionTap(PowerTableState state) {
     var selected = state.country;
-    showSimpleAppDialog(context,
+    showSimpleAppDialog(context, title: loc(context).transmitRegion,
         content: StatefulBuilder(builder: (context, setState) {
-      return ListView.separated(
-          itemBuilder: (context, index) {
-            final country = state.supportedCountries[index];
-            return ListTile(
-              hoverColor: Theme.of(context).colorScheme.surface.withOpacity(.5),
-              title: Semantics(
-                identifier: 'now-locale-item-${country.name}',
-                child: AppText.labelLarge(
-                  country.resolveDisplayText(context),
-                ),
-              ),
-              trailing: selected == country
-                  ? Semantics(
-                      identifier: 'now-country-item-checked',
-                      label: 'checked',
-                      child: AppIcon.font(AppFontIcons.check))
-                  : null,
-              onTap: () {
-                setState(() {
-                  selected = country;
-                });
+      return SizedBox(
+          height: 300,
+          child: ListView.separated(
+              itemBuilder: (context, index) {
+                final country = state.supportedCountries[index];
+                return ListTile(
+                  hoverColor:
+                      Theme.of(context).colorScheme.surface.withOpacity(.5),
+                  title: Semantics(
+                    identifier: 'now-locale-item-${country.name}',
+                    child: AppText.labelLarge(
+                      country.resolveDisplayText(context),
+                    ),
+                  ),
+                  trailing: selected == country
+                      ? Semantics(
+                          identifier: 'now-country-item-checked',
+                          label: 'checked',
+                          child: AppIcon.font(AppFontIcons.check))
+                      : null,
+                  onTap: () {
+                    setState(() {
+                      selected = country;
+                    });
+                  },
+                );
               },
-            );
-          },
-          separatorBuilder: (context, index) => Divider(),
-          itemCount: state.supportedCountries.length);
+              separatorBuilder: (context, index) => Divider(),
+              itemCount: state.supportedCountries.length));
     }), actions: [
       AppButton.text(
         label: loc(context).cancel,

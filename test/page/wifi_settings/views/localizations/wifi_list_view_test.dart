@@ -126,8 +126,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AdvancedModeView), findsOneWidget);
-        expect(find.byKey(const ValueKey('WiFiCard-2.4GHz')), findsOneWidget);
-        expect(find.byKey(const ValueKey('WiFiCard-5GHz')), findsOneWidget);
+        expect(find.byKey(const ValueKey('WiFiCard-RADIO_2.4GHz')),
+            findsOneWidget);
+        expect(
+            find.byKey(const ValueKey('WiFiCard-RADIO_5GHz')), findsOneWidget);
       },
       helper: testHelper,
       screens: _wifiListScreens,
@@ -174,10 +176,10 @@ void main() {
         await tester.pumpAndSettle();
 
         final wifiCard24GHzFinder =
-            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+            find.byKey(const ValueKey('WiFiCard-RADIO_2.4GHz'));
         final wifiNameFinder = find.descendant(
             of: wifiCard24GHzFinder,
-            matching: find.byKey(const ValueKey('wifiNameCard-2.4GHz')));
+            matching: find.byKey(const ValueKey('wifiNameCard-RADIO_2.4GHz')));
         expect(wifiNameFinder, findsOneWidget);
         await scrollAndTap(tester, wifiNameFinder);
         await testHelper.takeScreenshot(tester, 'IWWL-SSID-01-edit_dialog');
@@ -225,10 +227,10 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        final wifiCard5GHzFinder = find.byKey(ValueKey('WiFiCard-5GHz'));
+        final wifiCard5GHzFinder = find.byKey(ValueKey('WiFiCard-RADIO_5GHz'));
         final wifiPasswordFinder = find.descendant(
             of: wifiCard5GHzFinder,
-            matching: find.byKey(ValueKey('wifiPasswordCard-5GHz')));
+            matching: find.byKey(ValueKey('wifiPasswordCard-RADIO_5GHz')));
 
         final passWidget = tester.widget<AppCard>(wifiPasswordFinder);
         expect(passWidget.onTap, isNotNull);
@@ -264,15 +266,15 @@ void main() {
         await tester.pumpAndSettle();
 
         final wifiCard24GHzFinder =
-            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+            find.byKey(const ValueKey('WiFiCard-RADIO_2.4GHz'));
         final securityModeFinder = find.descendant(
             of: wifiCard24GHzFinder,
             matching:
-                find.byKey(const ValueKey('wifiSecurityTypeCard-2.4GHz')));
+                find.byKey(const ValueKey('wifiSecurityCard-RADIO_2.4GHz')));
         expect(securityModeFinder, findsOneWidget);
         await scrollAndTap(tester, securityModeFinder);
         await tester.pumpAndSettle();
-        final alertFinder = find.byType(AlertDialog);
+        final alertFinder = find.byType(AppDialog);
         expect(alertFinder, findsOneWidget);
         final securityModeDialogFinder = find.descendant(
             of: alertFinder,
@@ -295,14 +297,14 @@ void main() {
         );
 
         final wifiCard24GHzFinder =
-            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+            find.byKey(const ValueKey('WiFiCard-RADIO_2.4GHz'));
         final wifiModeFinder = find.descendant(
             of: wifiCard24GHzFinder,
-            matching:
-                find.byKey(const ValueKey('wifiWirelessModeCard-2.4GHz')));
+            matching: find
+                .byKey(const ValueKey('wifiWirelessModeCard-RADIO_2.4GHz')));
         await scrollAndTap(tester, wifiModeFinder);
         await tester.pumpAndSettle();
-        final alertFinder = find.byType(AlertDialog);
+        final alertFinder = find.byType(AppDialog);
         expect(alertFinder, findsOneWidget);
         final wifiModeDialogFinder = find.descendant(
             of: alertFinder,
@@ -327,14 +329,14 @@ void main() {
         await tester.pumpAndSettle();
 
         final wifiCard24GHzFinder =
-            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+            find.byKey(const ValueKey('WiFiCard-RADIO_2.4GHz'));
         final channelWidthFinder = find.descendant(
             of: wifiCard24GHzFinder,
-            matching:
-                find.byKey(const ValueKey('wifiChannelWidthCard-2.4GHz')));
+            matching: find
+                .byKey(const ValueKey('wifiChannelWidthCard-RADIO_2.4GHz')));
         await scrollAndTap(tester, channelWidthFinder);
         await tester.pumpAndSettle();
-        final alertFinder = find.byType(AlertDialog);
+        final alertFinder = find.byType(AppDialog);
         expect(alertFinder, findsOneWidget);
         final channelWidthDialogFinder = find.descendant(
             of: alertFinder,
@@ -359,13 +361,14 @@ void main() {
         await tester.pumpAndSettle();
 
         final wifiCard24GHzFinder =
-            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+            find.byKey(const ValueKey('WiFiCard-RADIO_2.4GHz'));
         final channelFinder = find.descendant(
             of: wifiCard24GHzFinder,
-            matching: find.byKey(const ValueKey('wifiChannelCard-2.4GHz')));
+            matching:
+                find.byKey(const ValueKey('wifiChannelCard-RADIO_2.4GHz')));
         await scrollAndTap(tester, channelFinder);
         await tester.pumpAndSettle();
-        final alertFinder = find.byType(AlertDialog);
+        final alertFinder = find.byType(AppDialog);
         expect(alertFinder, findsOneWidget);
         final channelDialogFinder = find.descendant(
             of: alertFinder,
@@ -415,7 +418,8 @@ void main() {
         );
 
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(Key('pageBottomPositiveButton')));
+        await tester
+            .tap(find.widgetWithText(AppButton, testHelper.loc(context).save));
         await tester.pumpAndSettle();
 
         expect(find.text(testHelper.loc(context).wifiListSaveModalTitle),
@@ -440,15 +444,15 @@ void main() {
           locale: screen.locale,
         );
         final wifiCard24GHzFinder =
-            find.byKey(const ValueKey('WiFiCard-2.4GHz'));
+            find.byKey(const ValueKey('WiFiCard-RADIO_2.4GHz'));
         final wifiModeFinder = find.descendant(
             of: wifiCard24GHzFinder,
-            matching:
-                find.byKey(const ValueKey('wifiWirelessModeCard-2.4GHz')));
+            matching: find
+                .byKey(const ValueKey('wifiWirelessModeCard-RADIO_2.4GHz')));
         await scrollAndTap(tester, wifiModeFinder);
         await tester.pumpAndSettle();
 
-        final alertFinder = find.byType(AlertDialog);
+        final alertFinder = find.byType(AppDialog);
         expect(alertFinder, findsOneWidget);
         final wifiModeAlertFinder = find.descendant(
             of: alertFinder,
@@ -478,15 +482,17 @@ void main() {
           child: const WiFiMainView(),
           locale: screen.locale,
         );
-        final wifiCardFinder = find.byKey(const ValueKey('WiFiCard-5GHz'));
+        final wifiCardFinder =
+            find.byKey(const ValueKey('WiFiCard-RADIO_5GHz'));
 
         final channelWidthFinder = find.descendant(
             of: wifiCardFinder,
-            matching: find.byKey(const ValueKey('wifiChannelWidthCard-5GHz')));
+            matching:
+                find.byKey(const ValueKey('wifiChannelWidthCard-RADIO_5GHz')));
         await scrollAndTap(tester, channelWidthFinder);
         await tester.pumpAndSettle();
 
-        final alertFinder = find.byType(AlertDialog);
+        final alertFinder = find.byType(AppDialog);
         expect(alertFinder, findsOneWidget);
         final channelWidthAlertFinder = find.descendant(
             of: alertFinder,
@@ -533,7 +539,10 @@ void main() {
           locale: screen.locale,
         );
 
-        await tester.tap(find.byKey(Key('pageBottomPositiveButton')));
+        // After UI Kit migration, pageBottomPositiveButton key no longer exists
+        // Use widgetWithText to find save button
+        await tester
+            .tap(find.widgetWithText(AppButton, testHelper.loc(context).save));
         await tester.pumpAndSettle();
 
         expect(find.text(testHelper.loc(context).wifiListSaveModalTitle),
@@ -563,7 +572,8 @@ void main() {
           locale: screen.locale,
         );
 
-        await tester.tap(find.byKey(Key('pageBottomPositiveButton')));
+        await tester
+            .tap(find.widgetWithText(AppButton, testHelper.loc(context).save));
         await tester.pumpAndSettle();
 
         expect(find.text(testHelper.loc(context).wifiListSaveModalTitle),

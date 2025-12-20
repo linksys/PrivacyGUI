@@ -61,20 +61,20 @@ class _AutoParentFirstLoginViewState
           width: context.colWidth(4),
           child: AppCard(
             child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(child: CircularProgressIndicator()),
-                  AppText.titleLarge(loc(context).pnpFwUpdateTitle),
-                  AppGap.lg(),
-                  AppText.bodyMedium(loc(context).pnpFwUpdateDesc),
-                  AppGap.lg(),
-                ],
-              ),
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: AppLoader()),
+                AppText.titleLarge(loc(context).pnpFwUpdateTitle),
+                AppGap.lg(),
+                AppText.bodyMedium(loc(context).pnpFwUpdateDesc),
+                AppGap.lg(),
+              ],
             ),
           ),
         ),
+      ),
     );
   }
 
@@ -92,7 +92,8 @@ class _AutoParentFirstLoginViewState
     if (isNewFwAvailable) {
       logger.i('[FirstTime]: Firmware Updateing...');
     } else {
-      logger.i('[FirstTime]: ${failCheck ? 'Fw check failed' : 'No available FW'}, ready to go.');
+      logger.i(
+          '[FirstTime]: ${failCheck ? 'Fw check failed' : 'No available FW'}, ready to go.');
       _finishFirstTimeLogin(failCheck);
     }
   }

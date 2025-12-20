@@ -88,7 +88,7 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Verify modal dialog is displayed
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
 
       // Verify modal title
       expect(find.text(testHelper.loc(context).addNodesLightDifferentColor),
@@ -123,7 +123,7 @@ void main() async {
       );
 
       // Verify full screen spinner is displayed
-      expect(find.byType(AppFullScreenLoader), findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
 
       // Verify searching title
       expect(find.text(testHelper.loc(context).addNodesSearchingNodes),
@@ -155,7 +155,7 @@ void main() async {
       );
 
       // Verify full screen spinner is displayed
-      expect(find.byType(AppFullScreenLoader), findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
 
       // Verify onboarding title
       expect(find.text(testHelper.loc(context).addNodesOnboardingNodes),

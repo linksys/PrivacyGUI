@@ -156,7 +156,8 @@ void main() {
           findsOneWidget);
       expect(
           find.text(testHelper.loc(context).factoryResetDesc), findsOneWidget);
-      expect(find.widgetWithText(AppButton, testHelper.loc(context).login),
+      expect(
+          find.widgetWithText(AppButton, testHelper.loc(context).textContinue),
           findsOneWidget);
     },
         screens: screens,
@@ -248,7 +249,9 @@ void main() {
       // next button should be disabled
       expect(find.widgetWithText(AppButton, testHelper.loc(context).login),
           findsOneWidget);
-      final widget = tester.widget(find.byType(AppButton));
+      // After UI Kit migration, there may be multiple AppButton widgets, so find the specific login button
+      final widget = tester.widget(
+          find.widgetWithText(AppButton, testHelper.loc(context).login));
       expect(widget, isA<AppButton>());
       expect((widget as AppButton).onTap, null);
     }, screens: screens, goldenFilename: 'PNPA-LOGIN_IN_01-logging_in_screen');
@@ -372,12 +375,12 @@ void main() {
       await tester.tap(btnFinder);
       await tester.pumpAndSettle();
 
-      // Verify that the AlertDialog is displayed after tapping the button
-      expect(find.byType(AlertDialog), findsOneWidget);
-      // Find the title text specifically within the AlertDialog to avoid ambiguity
+      // Verify that the AppDialog is displayed after tapping the button
+      expect(find.byType(AppDialog), findsOneWidget);
+      // Find the title text specifically within the AppDialog to avoid ambiguity
       expect(
           find.descendant(
-            of: find.byType(AlertDialog),
+            of: find.byType(AppDialog),
             matching: find.text(testHelper.loc(context).routerPassword),
           ),
           findsOneWidget);

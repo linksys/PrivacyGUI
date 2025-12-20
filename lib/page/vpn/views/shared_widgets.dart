@@ -26,7 +26,12 @@ Widget buildStatRow(String label, String value) {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         AppText.bodyMedium(label),
-        AppText.bodyMedium(value),
+        Flexible(
+          child: AppText.bodyMedium(
+            value,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ],
     ),
   );

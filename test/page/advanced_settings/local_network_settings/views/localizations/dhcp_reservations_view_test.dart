@@ -64,8 +64,8 @@ void main() {
           findsOneWidget);
       expect(find.text(testHelper.loc(context).dhcpReservationDescption),
           findsOneWidget);
-      expect(find.widgetWithText(AppButton, testHelper.loc(context).add),
-          findsOneWidget);
+      // After UI Kit migration, Add button uses key 'addReservationButton'
+      expect(find.byKey(const Key('addReservationButton')), findsOneWidget);
       expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
           findsOneWidget);
       expect(find.byType(AppListCard), findsNothing);
@@ -270,7 +270,8 @@ void main() {
       expect(find.text(testHelper.loc(context).edit), findsOneWidget);
       expect(find.text(testHelper.loc(context).update), findsOneWidget);
 
-      final nameField = tester.widget<AppTextFormField>(
+      // After UI Kit migration, device name field uses AppTextField (not AppTextFormField)
+      final nameField = tester.widget<AppTextField>(
           find.byKey(const Key('deviceNameTextField')));
       expect(nameField.controller?.text, itemToEdit.data.description);
 

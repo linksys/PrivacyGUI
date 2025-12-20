@@ -198,7 +198,7 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
         builder: (context) {
           return MultiplePagesAlertDialog(
             onClose: () {
-              context.pop();
+              Navigator.of(context).pop();
             },
             pages: [
               MultipleAlertDialogPage(
@@ -264,15 +264,15 @@ class _AddNodesViewState extends ConsumerState<AddNodesView> {
   }
 
   _showLightDifferentColorModal() {
-    showDialog(
+    return showAppDialog(
         context: context,
         builder: (context) {
-          return AlertDialog(
+          return AppDialog(
             actions: [
               AppButton.text(
                 label: loc(context).close,
                 onTap: () {
-                  context.pop();
+                  Navigator.of(context).pop();
                 },
               )
             ],

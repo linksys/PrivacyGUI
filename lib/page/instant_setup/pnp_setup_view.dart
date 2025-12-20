@@ -159,7 +159,6 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView>
   /// Builds the content view, showing different widgets based on the current PnP status.
   Widget _buildContentView(PnpState pnpState, BoxConstraints constraints) {
     final status = pnpState.status;
-    print('XXXXX: ${constraints.maxHeight}');
     // Determine if the config view (stepper) should be visible and interactive.
     final showConfig = status == PnpFlowStatus.wizardConfiguring ||
         status == PnpFlowStatus.wizardSaveFailed;

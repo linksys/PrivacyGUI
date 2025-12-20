@@ -54,8 +54,12 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> scrollToSave(WidgetTester tester) async {
-    final saveFinder = find.byType(AppButton);
+  Future<void> scrollToSave(
+    WidgetTester tester,
+    String saveText,
+  ) async {
+    // Use specific finder for Save button to avoid multiple AppButtons
+    final saveFinder = find.widgetWithText(AppButton, saveText);
     await tester.scrollUntilVisible(
       saveFinder,
       200,
@@ -87,7 +91,10 @@ void main() {
       );
       expect(find.byType(AppTextFormField), findsNWidgets(3));
       expect(find.byType(AppPasswordInput), findsNWidgets(2));
-      final saveButton = tester.widget<AppButton>(find.byType(AppButton));
+      // Use specific widget+text finder for Save button
+      final saveButtonFinder = find.byKey(const Key('localResetPassword_saveButton'));
+      expect(saveButtonFinder, findsOneWidget);
+      final saveButton = tester.widget<AppButton>(saveButtonFinder);
       expect(saveButton.onTap, isNull);
     },
     goldenFilename: 'LRRP-INIT_01_initial_state',
@@ -123,16 +130,19 @@ void main() {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
         baseState().copyWith(isValid: true),
       );
-      await testHelper.pumpView(
+      final context = await testHelper.pumpView(
         tester,
         child: const LocalResetRouterPasswordView(),
         config: LinksysRouteConfig(noNaviRail: true),
         locale: screen.locale,
       );
+      final loc = testHelper.loc(context);
       await tester.pumpAndSettle();
-      await scrollToSave(tester);
+      await scrollToSave(tester, loc.save);
 
-      final saveButton = tester.widget<AppButton>(find.byType(AppButton));
+      final saveButtonFinder = find.byKey(const Key('localResetPassword_saveButton'));
+      expect(saveButtonFinder, findsOneWidget);
+      final saveButton = tester.widget<AppButton>(saveButtonFinder);
       expect(saveButton.onTap, isNotNull);
     },
     goldenFilename: 'LRRP-VALID_01_save_enabled',
@@ -158,8 +168,8 @@ void main() {
 
       await fillPasswords(tester, password: 'Linksys123!');
       await fillHint(tester, 'Home Wifi');
-      await scrollToSave(tester);
-      await tester.tap(find.byType(AppButton));
+      await scrollToSave(tester, loc.save);
+      await tester.tap(find.byKey(const Key('localResetPassword_saveButton')));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('resetSavedDialog')), findsOneWidget);
@@ -196,8 +206,8 @@ void main() {
 
       await fillPasswords(tester, password: 'Linksys123!');
       await fillHint(tester, 'Office Wifi');
-      await scrollToSave(tester);
-      await tester.tap(find.byType(AppButton));
+      await scrollToSave(tester, loc.save);
+      await tester.tap(find.byKey(const Key('localResetPassword_saveButton')));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('resetSavedDialog')), findsOneWidget);

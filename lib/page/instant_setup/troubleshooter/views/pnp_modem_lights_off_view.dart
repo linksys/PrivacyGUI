@@ -96,7 +96,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
               _buildNumberedItem(2, loc(context).pnpModemLightsOffTipStep2),
               AppGap.sm(),
               _buildNumberedItem(3, loc(context).pnpModemLightsOffTipStep3,
-                  isHtml: true),
+                  isHtml: true, key: const Key('pnpModemLightsOffTipStep3')),
             ],
           ),
         ],
@@ -104,7 +104,8 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
     );
   }
 
-  Widget _buildNumberedItem(int index, String text, {bool isHtml = false}) {
+  Widget _buildNumberedItem(int index, String text,
+      {bool isHtml = false, Key? key}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -112,7 +113,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
         AppGap.sm(),
         Expanded(
           child: isHtml
-              ? AppStyledText(text: '<b>$text</b>')
+              ? AppStyledText(key: key, text: '<b>$text</b>')
               : AppText.bodyMedium(text),
         ),
       ],

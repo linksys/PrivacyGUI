@@ -174,6 +174,7 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
           AppGap.xxl(),
           AppGap.sm(),
           AppButton(
+            key: const Key('pnpPppoeNextButton'),
             label: loc(context).next,
             variant: SurfaceVariant.highlight,
             onTap: _onNext,

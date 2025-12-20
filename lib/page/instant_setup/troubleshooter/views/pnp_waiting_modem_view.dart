@@ -47,10 +47,9 @@ class _PnpWaitingModemViewState extends ConsumerState<PnpWaitingModemView> {
         children: [
           AppGap.xxl(),
           AppText.bodyLarge(loc(context).pnpWaitingModemDesc),
-          Expanded(
-            child: Center(
-              child: _createCircleTimer(),
-            ),
+          AppGap.xxxl(),
+          Center(
+            child: _createCircleTimer(),
           ),
         ],
       ),

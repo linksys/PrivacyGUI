@@ -68,13 +68,18 @@ void main() {
             .chooseFile),
         findsOneWidget);
 
-    // Verify "Start" button is disabled
     expect(
         find.text(testHelper
             .loc(tester.element(find.byType(ManualFirmwareUpdateView)))
             .start),
         findsOneWidget);
-    expect(tester.widget<AppButton>(find.byType(AppButton)).onTap, isNull);
+    // Use widgetWithText to target the specific Start button (multiple AppButtons exist)
+    final startButton = tester.widget<AppButton>(find.widgetWithText(
+        AppButton,
+        testHelper
+            .loc(tester.element(find.byType(ManualFirmwareUpdateView)))
+            .start));
+    expect(startButton.onTap, isNull);
   }, screens: screens, goldenFilename: 'MFUV-DEFAULT-01-initial_state');
   testLocalizationsV2('Manual firmware update - file selected',
       (tester, localizedScreen) async {
@@ -105,7 +110,10 @@ void main() {
 
     // Verify "Start" button is enabled
     expect(find.text(testHelper.loc(context).start), findsOneWidget);
-    expect(tester.widget<AppButton>(find.byType(AppButton)).onTap, isNotNull);
+    // Use widgetWithText to target the specific Start button (multiple AppButtons exist)
+    final startButton = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, testHelper.loc(context).start));
+    expect(startButton.onTap, isNotNull);
   }, screens: screens, goldenFilename: 'MFUV-FILE_SELECTED-01-initial_state');
 
   testLocalizationsV2('Manual firmware update - installing status',

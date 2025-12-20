@@ -316,7 +316,7 @@ void main() {
     (tester, screen) async {
       await pumpDashboard(tester, screen);
       await toggleInstantPrivacy(tester);
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
     },
     screens: _verticalScreens,
     goldenFilename: 'DHOME-VERT_PRIVACY_ON_01_dialog',
@@ -332,7 +332,7 @@ void main() {
       );
       await pumpDashboard(tester, screen);
       await toggleInstantPrivacy(tester);
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
     },
     screens: _verticalScreens,
     goldenFilename: 'DHOME-VERT_PRIVACY_OFF_01_dialog',
@@ -352,7 +352,7 @@ void main() {
       );
       await tester.tap(shareButton.first);
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
     },
     screens: _verticalScreens,
     goldenFilename: 'DHOME-VERT_SHARE_WIFI_01_modal',

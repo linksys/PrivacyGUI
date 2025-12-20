@@ -57,8 +57,8 @@ void main() async {
       // Take intermediate screenshot of the tips modal
       await testHelper.takeScreenshot(tester, 'PNPM-INIT_01_tips_modal');
 
-      // Verify tips modal elements
-      expect(find.byType(AlertDialog), findsOneWidget);
+      // Verify tips modal elements (uses AppDialog from UI Kit)
+      expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpModemLightsOffTipTitle),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpModemLightsOffTipDesc),
@@ -67,12 +67,13 @@ void main() async {
           findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpModemLightsOffTipStep2),
           findsOneWidget);
+      // Step 3 uses AppStyledText with HTML formatting and has a key for testing
       expect(
           tester
               .widget<AppStyledText>(
-                  find.byKey(const Key('pnpModemLightsOffTipStep3')).first)
+                  find.byKey(const Key('pnpModemLightsOffTipStep3')))
               .text,
-          testHelper.loc(context).pnpModemLightsOffTipStep3);
+          '<b>${testHelper.loc(context).pnpModemLightsOffTipStep3}</b>');
       final closeButton = find.widgetWithText(AppButton,
           testHelper.loc(context).ok); // Assuming 'close' for simple dialog
       expect(closeButton, findsOneWidget);
@@ -82,7 +83,7 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Verify modal is gone and initial screen elements are still present
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byType(AppDialog), findsNothing);
       expect(find.text(testHelper.loc(context).pnpModemLightsOffTitle),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpModemLightsOffDesc),

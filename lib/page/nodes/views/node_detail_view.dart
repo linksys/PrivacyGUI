@@ -63,8 +63,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
 
   @override
   void dispose() {
-    super.dispose();
     _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -629,6 +629,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AppTextFormField(
+                key: const Key('nodeNameTextField'),
                 hintText: loc(context).nodeName,
                 controller: textController,
                 onChanged: (value) {

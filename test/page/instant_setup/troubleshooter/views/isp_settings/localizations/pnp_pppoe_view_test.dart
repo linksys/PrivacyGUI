@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/_constants.dart';
@@ -103,7 +105,7 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
@@ -142,7 +144,7 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
@@ -182,7 +184,7 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
@@ -221,7 +223,7 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
@@ -262,7 +264,7 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
@@ -315,7 +317,7 @@ void main() async {
       await tester.pumpAndSettle();
 
       // 3. Trigger the save process
-      await tester.tap(find.byType(AppButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Let the state change to 'saving'
 
       // 4. Verify 'saving' state

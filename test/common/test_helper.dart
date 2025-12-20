@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -154,6 +155,9 @@ class TestHelper {
   // Screen Size
   LocalizedScreen? current;
 
+  // Animation control - disable by default for stable golden tests
+  bool disableAnimations = true;
+
   AppLocalizations loc(BuildContext context) {
     return hook.loc(context);
   }
@@ -214,8 +218,28 @@ class TestHelper {
 
     SharedPreferences.setMockInitialValues({});
 
+    // Mock PackageInfo plugin to prevent MissingPluginException
+    _setupPackageInfoMock();
+
     _setupServiceHelper();
     _setupDefaultData();
+  }
+
+  void _setupPackageInfoMock() {
+    // Mock the PackageInfo method channel
+    const channel = MethodChannel('dev.fluttercommunity.plus/package_info');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      if (methodCall.method == 'getAll') {
+        return <String, dynamic>{
+          'appName': 'Privacy GUI Test',
+          'packageName': 'com.linksys.privacygui.test',
+          'version': '2.0.0',
+          'buildNumber': '1',
+        };
+      }
+      return null;
+    });
   }
 
   void _setupServiceHelper() {
@@ -440,6 +464,7 @@ class TestHelper {
           forceOverride ? overrides : [...defaultOverrides, ...overrides],
       themeMode: themeMode,
       locale: locale,
+      disableAnimations: disableAnimations,
     ));
     final context = tester.element(find.byType(baseViewType));
     await tester.runAsync(() async {
@@ -473,6 +498,7 @@ class TestHelper {
             forceOverride ? overrides : [...defaultOverrides, ...overrides],
         themeMode: themeMode,
         navigatorKey: navigatorKey,
+        disableAnimations: disableAnimations,
         child: child,
       ),
     );
@@ -505,6 +531,7 @@ class TestHelper {
         config: config ?? LinksysRouteConfig(column: ColumnGrid(column: 9)),
         locale: locale,
         themeMode: themeMode,
+        disableAnimations: disableAnimations,
         overrides:
             forceOverride ? overrides : [...defaultOverrides, ...overrides],
         child: child,

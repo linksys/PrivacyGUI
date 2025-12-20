@@ -430,8 +430,11 @@ void main() {
         matching: find.byType(AppSwitch));
     await tester.tap(appSwitchFinder);
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppButton));
+    // Use text finder to target the specific Save button
+    await tester.tap(find.widgetWithText(AppButton, loc(context).save));
     await tester.pumpAndSettle();
+    // Wait for SnackBar animation
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(SnackBar), findsOneWidget);
     expect(
@@ -481,7 +484,8 @@ void main() {
         matching: find.byType(AppSwitch));
     await tester.tap(appSwitchFinder);
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(AppButton));
+    // Use text finder to target the specific Save button
+    await tester.tap(find.widgetWithText(AppButton, loc(context).save));
     await tester.pumpAndSettle();
 
     expect(find.byType(SnackBar), findsOneWidget);

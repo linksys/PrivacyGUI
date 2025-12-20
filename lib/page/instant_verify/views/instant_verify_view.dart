@@ -1038,6 +1038,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
       children: [
         _toolCard(
           context,
+          key: const ValueKey('ping'),
           title: loc(context).ping,
           icon: Icons.radio_button_checked,
           onTap: () {
@@ -1048,6 +1049,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
         AppGap.lg(),
         _toolCard(
           context,
+          key: const ValueKey('traceroute'),
           title: loc(context).traceroute,
           icon: Icons.route,
           onTap: () {
@@ -1060,11 +1062,13 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
 
   Widget _toolCard(
     BuildContext context, {
+    Key? key,
     required String title,
     required IconData icon,
     VoidCallback? onTap,
   }) {
     return InkWell(
+      key: key,
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSpacing.lg),
       child: Container(

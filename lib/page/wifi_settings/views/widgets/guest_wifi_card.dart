@@ -61,6 +61,7 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
   }
 
   Widget _guestWiFiBandCard(GuestWiFiItem state) => WifiListTile(
+        key: const Key('guestWiFiBandCard'),
         title: AppText.labelLarge(loc(context).guest),
         trailing: AppSwitch(
           key: const Key('WiFiGuestSwitch'),
@@ -72,6 +73,7 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
       );
 
   Widget _guestWiFiNameCard(GuestWiFiItem state) => WifiListTile(
+        key: const Key('guestWiFiNameCard'),
         title: AppText.bodyMedium(loc(context).guestWiFiName),
         description: AppText.labelLarge(state.ssid),
         trailing: const AppIcon.font(
@@ -85,6 +87,7 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
       );
 
   Widget _guestWiFiPasswordCard(GuestWiFiItem state) => WifiListTile(
+        key: const Key('guestWiFiPasswordCard'),
         title: AppText.bodyMedium(loc(context).guestWiFiPassword),
         description: WifiPasswordField(
           controller: TextEditingController(text: state.password),

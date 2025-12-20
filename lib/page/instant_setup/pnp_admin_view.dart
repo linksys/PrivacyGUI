@@ -356,16 +356,16 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
 
   /// Shows a modal dialog explaining where to find the router password.
   _showRouterPasswordModal() {
-    return showDialog(
+    return showAppDialog(
         context: context,
         builder: (context) {
-          return AlertDialog(
+          return AppDialog(
             title: AppText.titleLarge(loc(context).routerPassword),
             actions: [
               AppButton.text(
                 label: loc(context).close,
                 onTap: () {
-                  context.pop();
+                  Navigator.of(context).pop();
                 },
               )
             ],

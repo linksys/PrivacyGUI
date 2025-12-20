@@ -46,7 +46,11 @@ void main() {
       expect(find.text(loc.forgotPassword), findsOneWidget);
       expect(find.text(loc.localRouterRecoveryDescription), findsOneWidget);
       expect(find.byType(AppPinInput), findsOneWidget);
-      final continueButton = tester.widget<AppButton>(find.byType(AppButton));
+      // Use specific widget+text finder to avoid multiple AppButtons from page chrome
+      final continueButtonFinder =
+          find.widgetWithText(AppButton, loc.textContinue);
+      expect(continueButtonFinder, findsOneWidget);
+      final continueButton = tester.widget<AppButton>(continueButtonFinder);
       expect(continueButton.onTap, isNull);
     },
     goldenFilename: 'LRRV-INIT_01_initial_state',
@@ -60,18 +64,21 @@ void main() {
       when(testHelper.mockRouterPasswordNotifier.build())
           .thenReturn(baseState());
 
-      await testHelper.pumpView(
+      final context = await testHelper.pumpView(
         tester,
         child: const LocalRouterRecoveryView(),
         locale: screen.locale,
         config: LinksysRouteConfig(noNaviRail: true),
       );
       await tester.pumpAndSettle();
+      final loc = testHelper.loc(context);
 
       await tester.enterText(find.byType(AppPinInput), '11111');
       await tester.pumpAndSettle();
 
-      final buttonFinder = find.byType(AppButton);
+      // Use specific widget+text finder to avoid multiple AppButtons from page chrome
+      final buttonFinder = find.widgetWithText(AppButton, loc.textContinue);
+      expect(buttonFinder, findsOneWidget);
       final continueButton = tester.widget<AppButton>(buttonFinder);
       expect(continueButton.onTap, isNotNull);
     },
