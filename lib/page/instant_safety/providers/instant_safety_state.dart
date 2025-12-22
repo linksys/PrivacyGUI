@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
@@ -42,30 +41,25 @@ class InstantSafetySettings extends Equatable {
 }
 
 class InstantSafetyStatus extends Equatable {
-  final RouterLANSettings? lanSetting;
   final bool hasFortinet;
 
   const InstantSafetyStatus({
-    this.lanSetting,
     this.hasFortinet = false,
   });
 
   @override
-  List<Object?> get props => [lanSetting, hasFortinet];
+  List<Object?> get props => [hasFortinet];
 
   InstantSafetyStatus copyWith({
-    RouterLANSettings? lanSetting,
     bool? hasFortinet,
   }) {
     return InstantSafetyStatus(
-      lanSetting: lanSetting ?? this.lanSetting,
       hasFortinet: hasFortinet ?? this.hasFortinet,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'lanSetting': lanSetting?.toMap(),
       'hasFortinet': hasFortinet,
     };
   }
@@ -107,9 +101,6 @@ class InstantSafetyState
     );
 
     final status = InstantSafetyStatus(
-      lanSetting: map['lanSetting'] != null
-          ? RouterLANSettings.fromMap(map['lanSetting'] as Map<String, dynamic>)
-          : null,
       hasFortinet: map['hasFortinet'] as bool? ?? false,
     );
 
