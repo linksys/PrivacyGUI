@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 import 'package:privacy_gui/util/extensions.dart';
 
@@ -38,7 +37,7 @@ class AppSettings extends Equatable {
     return <String, dynamic>{
       'themeMode': themeMode.name,
       'locale': locale?.toLanguageTag(),
-      'themeColor': themeColor?.value,
+      'themeColor': themeColor?.toARGB32(),
     };
   }
 

@@ -1,52 +1,40 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/guest_wifi_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/main_wifi_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class AdvancedModeView extends ConsumerStatefulWidget {
-  const AdvancedModeView({
-    super.key,
-  });
+class AdvancedModeView extends ConsumerWidget {
+  const AdvancedModeView({super.key});
 
   @override
-  ConsumerState<AdvancedModeView> createState() => _AdvancedModeViewState();
-}
-
-class _AdvancedModeViewState extends ConsumerState<AdvancedModeView> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(wifiBundleProvider);
 
-    return _wifiContentView(state);
-  }
-
-  Widget _wifiContentView(WifiBundleState state) {
-    // Use UI Kit responsive layout logic - simplified version based on screen size
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = context.isMobileLayout;
-
-    final columnCount = screenWidth > 1200
+    // Calculate column count based on breakpoints
+    // > 1440: 4 columns
+    // > 905: 3 columns
+    // <= 905: 2 columns
+    final columnCount = context.isDesktopLargeLayout
         ? 4
-        : screenWidth > 900
+        : context.isDesktopLayout
             ? 3
-            : isMobile
-                ? 2
-                : 3;
+            : 2;
 
-    final fixedWidth = screenWidth > 1200
-        ? context.colWidth(3)
-        : screenWidth > 900
-            ? context.colWidth(4)
-            : isMobile
-                ? context.colWidth(2)
-                : context.colWidth(4);
+    // Calculate span for each item in the underlying grid
+    // Desktop (12 cols) / 4 = 3 span
+    // Desktop (12 cols) / 3 = 4 span
+    // Tablet (8 cols) / 2 = 4 span
+    // Mobile (4 cols) / 2 = 2 span
+    final span = context.currentMaxColumns ~/ columnCount;
 
-    // Calculate column widths with spacing
-    final spacing = screenWidth > 900 ? AppSpacing.xxl : AppSpacing.lg;
+    // Calculate fixed width using colWidth from ui_kit
+    final fixedWidth = context.colWidth(span);
+    // Use layout gutter from ui_kit
+    final padding = context.layoutGutter;
 
     final enabledWiFiCount = state.settings.current.wifiList.mainWiFi
         .where((e) => e.isEnabled)
@@ -54,46 +42,57 @@ class _AdvancedModeViewState extends ConsumerState<AdvancedModeView> {
     final canDisableAllMainWiFi = state.status.wifiList.canDisableMainWiFi;
     final canBeDisabled = enabledWiFiCount > 1 || canDisableAllMainWiFi;
 
-    // Create all items to layout
-    final allWifiItems = state.settings.current.wifiList.mainWiFi
-        .map((e) => MainWiFiCard(
-              radio: e,
-              canBeDisable: canBeDisabled,
-              lastInRow: false, // Will be calculated below
-            ))
-        .toList();
+    // Better Approach: Flatten list and chunk it
+    final allItems = [
+      ...state.settings.current.wifiList.mainWiFi
+          .map((e) => _AppWiFiItem.main(e)),
+      _AppWiFiItem.guest(state.settings.current.wifiList.guestWiFi),
+    ];
 
-    final guestWifiCard = GuestWiFiCard(
-      state: state.settings.current.wifiList.guestWiFi,
-      lastInRow: false, // Will be calculated below
-    );
+    final rows = <TableRow>[];
+    for (var i = 0; i < allItems.length; i += columnCount) {
+      final chunk = allItems.skip(i).take(columnCount).toList();
+      final rowChildren = <Widget>[];
+      for (var j = 0; j < columnCount; j++) {
+        if (j < chunk.length) {
+          final item = chunk[j];
+          final isLast = j == columnCount - 1;
+          if (item.isMain) {
+            rowChildren.add(MainWiFiCard(
+                radio: item.main!,
+                canBeDisable: canBeDisabled,
+                lastInRow: isLast));
+          } else {
+            rowChildren
+                .add(GuestWiFiCard(state: item.guest!, lastInRow: isLast));
+          }
+        } else {
+          rowChildren.add(const SizedBox.shrink());
+        }
+      }
+      rows.add(TableRow(children: rowChildren));
+    }
 
-    final allCards = [...allWifiItems, guestWifiCard];
-
-    // Use Wrap with proper width calculation to allow flexible heights
-    // This maintains the grid behavior but allows cards to have different heights
-    return Wrap(
-      spacing: spacing,
-      runSpacing: AppSpacing.lg,
-      children: allCards.mapIndexed((index, card) {
-        // Calculate if this card is the last in its row
-        final isLastInRow =
-            (index + 1) % columnCount == 0 || index == allCards.length - 1;
-
-        return SizedBox(
-          width: fixedWidth,
-          child: card is MainWiFiCard
-              ? MainWiFiCard(
-                  radio: card.radio,
-                  canBeDisable: card.canBeDisable,
-                  lastInRow: isLastInRow,
-                )
-              : GuestWiFiCard(
-                  state: (card as GuestWiFiCard).state,
-                  lastInRow: isLastInRow,
-                ),
-        );
-      }).toList(),
+    return Table(
+      columnWidths: Map.fromEntries(
+        List.generate(columnCount, (index) => index).map((e) =>
+            e == columnCount - 1
+                ? MapEntry(e, FixedColumnWidth(fixedWidth))
+                : MapEntry(e, FixedColumnWidth(fixedWidth + padding))),
+      ),
+      children: rows,
     );
   }
+}
+
+class _AppWiFiItem {
+  final WiFiItem? main;
+  final GuestWiFiItem? guest;
+  final bool isMain;
+  _AppWiFiItem.main(this.main)
+      : guest = null,
+        isMain = true;
+  _AppWiFiItem.guest(this.guest)
+      : main = null,
+        isMain = false;
 }

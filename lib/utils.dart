@@ -268,7 +268,7 @@ extension MediaQueryUtils on Utils {
   }
 
   static double getTextScaleFactor(BuildContext context) {
-    return MediaQuery.of(context).textScaleFactor;
+    return MediaQuery.textScalerOf(context).scale(1.0);
   }
 
   static double getTopSafeAreaPadding(BuildContext context) {

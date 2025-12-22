@@ -116,6 +116,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
           child: Row(
             children: [
               AppCheckbox(
+                key: const ValueKey('ipv6AutomaticCheckbox'),
                 value: ipv6Setting.isIPv6AutomaticEnabled,
                 onChanged: (value) {
                   if (value == true) {
@@ -201,6 +202,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
                 if (!hasFocus) setState(() => _prefixTouched = true);
               },
               child: buildEditableField(
+                key: const ValueKey('ipv6Prefix'),
                 label: loc(context).prefix,
                 controller: _ipv6PrefixController,
                 enable: isEnable,
@@ -217,6 +219,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
         Padding(
           padding: inputPadding,
           child: AppMinMaxInput(
+            key: const ValueKey('ipv6PrefixLength'),
             label: loc(context).prefixLength,
             max: 64,
             value: int.tryParse(_ipv6PrefixLengthController.text),
@@ -235,6 +238,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
               if (!hasFocus) setState(() => _borderRelayTouched = true);
             },
             child: buildIpFormField(
+              key: const ValueKey('ipv6BorderRelay'),
               semanticLabel: 'border relay',
               header: loc(context).borderRelay,
               controller: _ipv6BorderRelayController,

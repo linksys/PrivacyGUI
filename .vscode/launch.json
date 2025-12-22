@@ -8,16 +8,30 @@
             "name": "linksys - Web (Remote)",
             "request": "launch",
             "type": "dart",
-            "args": ["--web-browser-flag", "--disable-web-security"],
-            "toolArgs": ["--dart-define","force=remote"],
+            "args": [
+                "--web-browser-flag",
+                "--disable-web-security"
+            ],
+            "toolArgs": [
+                "--dart-define",
+                "force=remote"
+            ],
             "program": "lib/main.dart"
         },
         {
             "name": "linksys - Web (Local)",
             "request": "launch",
             "type": "dart",
-            "args": ["--web-browser-flag", "--disable-web-security", "--web-port", "61672"],
-            "toolArgs": ["--dart-define","force=local"],
+            "args": [
+                "--web-browser-flag",
+                "--disable-web-security",
+                "--web-port",
+                "61672"
+            ],
+            "toolArgs": [
+                "--dart-define",
+                "force=local"
+            ],
             "program": "lib/main.dart"
         }
     ]

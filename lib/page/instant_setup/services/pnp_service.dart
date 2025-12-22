@@ -376,7 +376,7 @@ class PnpService with AvailabilityChecker {
       if (currentState.isRouterUnConfigured)
         const MapEntry(JNAPAction.setDeviceMode, {'mode': 'Master'}),
       _buildCloseCommandPayload(currentState),
-    ].whereNotNull().toList(); // Filter out nulls (no changes needed)
+    ].nonNulls.toList(); // Filter out nulls (no changes needed)
 
     // 2. Build the transaction
     final transaction = JNAPTransactionBuilder(commands: commands, auth: true);

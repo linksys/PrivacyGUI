@@ -38,6 +38,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
 
     return AppPopupButton(
       maxWidth: 240,
+      position: PopupVerticalPosition.bottom,
       button: Semantics(
         identifier: 'now-topbar-icon-general-settings',
         label: 'general settings',

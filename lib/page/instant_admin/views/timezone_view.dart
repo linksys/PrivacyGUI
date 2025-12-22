@@ -34,6 +34,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
       _notifier.fetch(),
     ).onError((error, stackTrace) {
       showErrorMessageSnackBar(error);
+      return null;
     });
   }
 

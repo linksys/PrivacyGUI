@@ -65,6 +65,8 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
   // NEED TO revisit
   Widget _localeList() {
     const localeList = AppLocalizations.supportedLocales;
+    // Calculate height based on number of items (56px per ListTile, capped at 400px)
+    final listHeight = (localeList.length * 56.0).clamp(100.0, 400.0);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -72,29 +74,31 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
         identifier: 'now-locale-list',
         label: 'locale list',
         explicitChildNodes: true,
-        child: ListView.builder(
-            itemCount: localeList.length,
-            itemBuilder: (context, index) {
-              final locale = localeList[index];
-              return ListTile(
-                hoverColor: Theme.of(context)
-                    .colorScheme
-                    .surface
-                    .withValues(alpha: 0.5),
-                title: Semantics(
-                    identifier: 'now-locale-item-${locale.toLanguageTag()}',
-                    child: AppText.labelLarge(locale.displayText)),
-                trailing: widget.locale == locale
-                    ? Semantics(
-                        identifier: 'now-locale-item-checked',
-                        label: 'checked',
-                        child: const Icon(AppFontIcons.check))
-                    : null,
-                onTap: () {
-                  context.pop(locale);
-                },
-              );
-            }),
+        child: SizedBox(
+          height: listHeight,
+          child: ListView.builder(
+              itemCount: localeList.length,
+              itemBuilder: (context, index) {
+                final locale = localeList[index];
+                final isSelected = widget.locale == locale;
+                return AppListTile(
+                  key: Key('locale_item_${locale.toLanguageTag()}'),
+                  selected: isSelected,
+                  title: Semantics(
+                      identifier: 'now-locale-item-${locale.toLanguageTag()}',
+                      child: AppText.labelLarge(locale.displayText)),
+                  trailing: isSelected
+                      ? Semantics(
+                          identifier: 'now-locale-item-checked',
+                          label: 'checked',
+                          child: const AppIcon.font(AppFontIcons.check))
+                      : null,
+                  onTap: () {
+                    context.pop(locale);
+                  },
+                );
+              }),
+        ),
       ),
     );
   }

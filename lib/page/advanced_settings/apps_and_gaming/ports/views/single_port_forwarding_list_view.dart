@@ -137,7 +137,7 @@ class _SinglePortForwardingContentViewState
             }
           }
           return AppTextField(
-            key: ValueKey('appName_${identityHashCode(rule)}'),
+            key: const Key('applicationNameTextField'),
             controller: _applicationTextController,
             hintText: loc(context).applicationName,
             errorText: _nameError,
@@ -151,7 +151,7 @@ class _SinglePortForwardingContentViewState
         cellBuilder: (_, rule) => AppText.bodyMedium('${rule.internalPort}'),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
-            key: ValueKey('intPort_${identityHashCode(rule)}'),
+            key: const Key('internalPortTextField'),
             controller: _internalPortTextController,
             hintText: loc(context).internalPort,
             keyboardType: TextInputType.number,
@@ -165,7 +165,7 @@ class _SinglePortForwardingContentViewState
         cellBuilder: (_, rule) => AppText.bodyMedium('${rule.externalPort}'),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
-            key: ValueKey('extPort_${identityHashCode(rule)}'),
+            key: const Key('externalPortTextField'),
             controller: _externalPortTextController,
             hintText: loc(context).externalPort,
             keyboardType: TextInputType.number,
@@ -187,7 +187,7 @@ class _SinglePortForwardingContentViewState
             'Both': getProtocolTitle(context, 'Both'),
           };
           return AppDropdown<String>(
-            key: ValueKey('protocol_${identityHashCode(rule)}'),
+            key: const Key('protocolDropdown'),
             items: protocolDisplayMap.values.toList(),
             value: protocolDisplayMap[currentProtocol],
             hint: loc(context).protocol,
@@ -211,7 +211,7 @@ class _SinglePortForwardingContentViewState
             AppText.bodyMedium(rule.internalServerIPAddress),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
-            key: ValueKey('ip_${identityHashCode(rule)}'),
+            key: const Key('ipAddressTextField'),
             controller: _ipAddressTextController,
             hintText: loc(context).ipAddress,
             errorText: _ipError,

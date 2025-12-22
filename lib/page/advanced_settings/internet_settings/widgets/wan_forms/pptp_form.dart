@@ -201,6 +201,7 @@ class _PptpFormState extends BaseWanFormState<PptpForm> {
               if (!hasFocus) setState(() => _usernameTouched = true);
             },
             child: buildEditableField(
+              key: const ValueKey('pptpUsername'),
               label: loc(context).username,
               controller: _usernameController,
               errorText:
@@ -222,6 +223,7 @@ class _PptpFormState extends BaseWanFormState<PptpForm> {
               if (!hasFocus) setState(() => _passwordTouched = true);
             },
             child: buildEditableField(
+              key: const ValueKey('pptpPassword'),
               label: loc(context).password,
               controller: _passwordController,
               obscureText: true,

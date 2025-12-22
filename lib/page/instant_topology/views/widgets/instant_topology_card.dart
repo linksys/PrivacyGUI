@@ -41,11 +41,14 @@ class InstantTopologyCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppText.bodyMedium(
-                    node.data.location ?? node.data.model ?? 'Unknown'),
-                if (node.data.model != null &&
+                AppText.bodyMedium(node.data.location.isNotEmpty
+                    ? node.data.location
+                    : (node.data.model.isNotEmpty
+                        ? node.data.model
+                        : 'Unknown')),
+                if (node.data.model.isNotEmpty &&
                     node.data.model != node.data.location)
-                  AppText.bodySmall(node.data.model!,
+                  AppText.bodySmall(node.data.model,
                       color: Theme.of(context).hintColor),
               ],
             ),

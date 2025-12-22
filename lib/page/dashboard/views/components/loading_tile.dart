@@ -51,7 +51,7 @@ class _LoadingTileState extends State<LoadingTile>
         width: widget.data?.length != null ? widget.data!.length * 8.0 : 100,
         height: 16,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
       );
@@ -61,7 +61,7 @@ class _LoadingTileState extends State<LoadingTile>
         width: 100,
         height: 16,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
       );
@@ -70,7 +70,7 @@ class _LoadingTileState extends State<LoadingTile>
         width: 24,
         height: 24,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
       );
@@ -79,7 +79,7 @@ class _LoadingTileState extends State<LoadingTile>
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
       );
@@ -93,7 +93,7 @@ class _LoadingTileState extends State<LoadingTile>
       width: 100,
       height: 24,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -155,7 +155,7 @@ class _LoadingTileState extends State<LoadingTile>
         margin: child.margin,
         constraints: child.constraints,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
         child: _buildSkeletonFromChild(child.child ?? Container()),
@@ -180,9 +180,12 @@ class _LoadingTileState extends State<LoadingTile>
   @override
   Widget build(BuildContext context) {
     final baseColor = widget.baseColor ??
-        Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3);
+        Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.3);
     final shimmerColor = widget.shimmerColor ??
-        Theme.of(context).colorScheme.primary.withOpacity(0.5);
+        Theme.of(context).colorScheme.primary.withValues(alpha: 0.5);
 
     return widget.isLoading
         ? AnimatedBuilder(
@@ -224,7 +227,7 @@ class _LoadingTileState extends State<LoadingTile>
             width: double.infinity,
             height: 24,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -233,7 +236,7 @@ class _LoadingTileState extends State<LoadingTile>
             width: 200,
             height: 16,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -242,7 +245,7 @@ class _LoadingTileState extends State<LoadingTile>
             width: 150,
             height: 16,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(4),
             ),
           ),

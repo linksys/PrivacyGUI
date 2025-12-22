@@ -328,8 +328,10 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
               itemBuilder: (context, index) {
                 final country = state.supportedCountries[index];
                 return ListTile(
-                  hoverColor:
-                      Theme.of(context).colorScheme.surface.withOpacity(.5),
+                  hoverColor: Theme.of(context)
+                      .colorScheme
+                      .surface
+                      .withValues(alpha: 0.5),
                   title: Semantics(
                     identifier: 'now-locale-item-${country.name}',
                     child: AppText.labelLarge(

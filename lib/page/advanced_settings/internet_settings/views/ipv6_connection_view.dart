@@ -99,6 +99,7 @@ class Ipv6ConnectionView extends StatelessWidget {
     return Tooltip(
         message: isRemote ? loc(context).featureUnavailableInRemoteMode : '',
         child: AppIconButton(
+          key: const Key('ipv6EditButton'),
           icon: Icon(
             isEditing ? AppFontIcons.close : AppFontIcons.edit,
             color: isEditing ? null : Theme.of(context).colorScheme.primary,

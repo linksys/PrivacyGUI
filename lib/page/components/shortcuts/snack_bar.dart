@@ -35,14 +35,16 @@ showSimpleSnackBar(
   showSnackBar(
     context,
     background: background,
-    content: Container(
-      decoration: BoxDecoration(
-        color: background ?? Theme.of(context).colorScheme.secondaryContainer,
-        border: Border.all(
-          color:
-              borderColor ?? Theme.of(context).colorScheme.onSecondaryContainer,
-        ),
-        borderRadius: BorderRadius.circular(AppSpacing.sm),
+    content: AppSurface(
+      style: SurfaceStyle(
+        backgroundColor:
+            background ?? Theme.of(context).colorScheme.secondaryContainer,
+        contentColor:
+            textColor ?? Theme.of(context).colorScheme.onSecondaryContainer,
+        borderColor:
+            borderColor ?? Theme.of(context).colorScheme.onSecondaryContainer,
+        borderWidth: 1.0,
+        borderRadius: AppSpacing.sm,
       ),
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(

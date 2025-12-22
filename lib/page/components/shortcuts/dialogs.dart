@@ -322,12 +322,14 @@ Future<bool?> showUnsavedAlert(BuildContext context,
     actions: [
       AppButton.text(
         label: loc(context).goBack,
+        key: const Key('unsavedAlert_goBackButton'),
         onTap: () {
           context.pop();
         },
       ),
       AppButton.dangerText(
         label: loc(context).discardChanges,
+        key: const Key('unsavedAlert_discardButton'),
         onTap: () {
           context.pop(true);
         },

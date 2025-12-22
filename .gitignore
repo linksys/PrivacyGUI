@@ -87,6 +87,8 @@ artifacts/webApp
 
 # Goldens
 test/**/goldens/*
+test/**/localizations/failures/
+
 # mock
 test/**/*.mocks.dart
 
@@ -134,3 +136,6 @@ doc/tests/output/*
 # Migration backup files
 *_backup.dart
 *backup*.dart
+
+# FVM Version Cache
+.fvm/

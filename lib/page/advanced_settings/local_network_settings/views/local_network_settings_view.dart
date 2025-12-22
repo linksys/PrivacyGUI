@@ -264,8 +264,6 @@ class _LocalNetworkSettingsViewState
   }
 
   void _saveSettings() {
-    final originalIpAddress =
-        ref.read(localNetworkSettingProvider).settings.original.ipAddress;
     doSomethingWithSpinner(
       context,
       _notifier.save(),

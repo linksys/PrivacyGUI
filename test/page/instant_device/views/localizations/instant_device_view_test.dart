@@ -32,6 +32,11 @@ final _offlineDevices = deviceFilteredOfflineTestData
     .map((e) => DeviceListItem.fromMap(e))
     .toList();
 
+// Pattern 0: Tall screens for tests needing visible bottom bar
+final _tallDesktopScreens = responsiveDesktopScreens
+    .map((screen) => screen.copyWith(height: 1280))
+    .toList();
+
 void main() {
   final testHelper = TestHelper();
 
@@ -78,7 +83,7 @@ void main() {
       expect(find.text(loc.nDevices(_onlineDevices.length)), findsOneWidget);
       expect(find.byType(DevicesFilterWidget), findsOneWidget);
       expect(find.text(loc.selectAll), findsOneWidget);
-      expect(find.byIcon(AppFontIcons.refresh), findsOneWidget);
+      // Refresh is inside AppButton.text with label, find by button with label\n      expect(find.widgetWithText(AppButton, loc.refresh), findsOneWidget);
     },
     screens: responsiveDesktopScreens,
     goldenFilename: 'IDVC-ONLINE-01-layout',
@@ -114,6 +119,7 @@ void main() {
         screen,
         devices: _offlineDevices,
         filterState: _defaultFilterState.copyWith(connectionFilter: false),
+        useShell: true, // Required for bottom bar rendering
       );
       final loc = testHelper.loc(context);
 
@@ -135,10 +141,12 @@ void main() {
         ),
         findsWidgets,
       );
-      expect(find.byKey(const Key('pageBottomPositiveButton')), findsOneWidget);
+      // Bottom bar is fixed at page bottom, not in scrollable area
+      final deleteButton = find.byKey(const Key('pageBottomPositiveButton'));
+      expect(deleteButton, findsOneWidget);
       expect(find.text(loc.delete), findsOneWidget);
     },
-    screens: responsiveDesktopScreens,
+    screens: _tallDesktopScreens, // Pattern 0: Use tall screens for bottom bar
     goldenFilename: 'IDVC-OFF_EDIT-01-selection',
     helper: testHelper,
   );
@@ -152,6 +160,7 @@ void main() {
         screen,
         devices: _offlineDevices,
         filterState: _defaultFilterState.copyWith(connectionFilter: false),
+        useShell: true, // Required for bottom bar rendering
       );
       final loc = testHelper.loc(context);
 
@@ -165,6 +174,7 @@ void main() {
       await tester.tap(checkboxFinder.first);
       await tester.pumpAndSettle();
 
+      // Bottom bar is fixed at page bottom, not in scrollable area
       final deleteButton = find.byKey(const Key('pageBottomPositiveButton'));
       await tester.tap(deleteButton);
       await tester.pumpAndSettle();
@@ -178,7 +188,7 @@ void main() {
         findsOneWidget,
       );
     },
-    screens: responsiveDesktopScreens,
+    screens: _tallDesktopScreens, // Pattern 0: Use tall screens for bottom bar
     goldenFilename: 'IDVC-OFF_DEL-01-dialog',
     helper: testHelper,
   );

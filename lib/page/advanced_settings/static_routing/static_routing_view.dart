@@ -168,7 +168,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
           _sheetStateSetter = setSheetState;
           _initEditingState(rule);
           return AppTextField(
-            key: ValueKey('routeName_${identityHashCode(rule)}'),
+            key: const Key('routeName'),
             controller: _routerNameController,
             hintText: loc(context).routeName,
             errorText: _nameError,
@@ -183,7 +183,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
             AppText.bodyMedium(rule.settings.destinationLAN),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
-            key: ValueKey('destIP_${identityHashCode(rule)}'),
+            key: const Key('destinationIP'),
             controller: _destinationIPController,
             hintText: loc(context).destinationIPAddress,
             errorText: _destIpError,
@@ -199,7 +199,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                 rule.settings.networkPrefixLength)),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
-            key: ValueKey('subnet_${identityHashCode(rule)}'),
+            key: const Key('subnetMask'),
             controller: _subnetMaskController,
             hintText: loc(context).subnetMask,
             errorText: _subnetError,
@@ -214,7 +214,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
             AppText.bodyMedium(rule.settings.gateway ?? '--'),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
-            key: ValueKey('gateway_${identityHashCode(rule)}'),
+            key: const Key('gateway'),
             controller: _gatewayController,
             hintText: loc(context).gateway,
             errorText: _gatewayError,
@@ -233,7 +233,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
             RoutingSettingInterface.internet: _getInterfaceTitle('Internet'),
           };
           return AppDropdown<String>(
-            key: ValueKey('interface_${identityHashCode(rule)}'),
+            key: const Key('interface'),
             items: interfaceDisplayMap.values.toList(),
             value: interfaceDisplayMap[_selectedInterface],
             hint: loc(context).labelInterface,

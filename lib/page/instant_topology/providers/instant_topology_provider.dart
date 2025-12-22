@@ -3,7 +3,6 @@ import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
@@ -155,8 +154,9 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     int? signalStrength = device.signalDecibels;
     String macAddress = device.getMacAddress();
 
-    final updateInfo = ref.watch(firmwareUpdateProvider.select((value) => value.nodesStatus
-            ?.firstWhereOrNull((element) => element.deviceId == deviceId)));
+    final updateInfo = ref.watch(firmwareUpdateProvider.select((value) => value
+        .nodesStatus
+        ?.firstWhereOrNull((element) => element.deviceId == deviceId)));
     final isFwUpToDate = updateInfo?.availableUpdate == null;
 
     final data = TopologyModel(

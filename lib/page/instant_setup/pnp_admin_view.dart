@@ -215,7 +215,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
   /// Displays a generic error message with a "Try Again" button.
   Widget _errorView() {
     return Container(
-      color: Theme.of(context).colorScheme.background,
+      color: Theme.of(context).colorScheme.surface,
       child: Center(
         child: AppCard(
           padding: const EdgeInsets.all(24.0),

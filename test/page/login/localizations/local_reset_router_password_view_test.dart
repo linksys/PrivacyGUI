@@ -89,10 +89,12 @@ void main() {
         find.text(loc.localResetRouterPasswordDescription),
         findsOneWidget,
       );
-      expect(find.byType(AppTextFormField), findsNWidgets(3));
+      // After UI Kit migration: 2 AppPasswordInput + 1 AppTextFormField (hint)
+      expect(find.byType(AppTextFormField), findsNWidgets(1));
       expect(find.byType(AppPasswordInput), findsNWidgets(2));
       // Use specific widget+text finder for Save button
-      final saveButtonFinder = find.byKey(const Key('localResetPassword_saveButton'));
+      final saveButtonFinder =
+          find.byKey(const Key('localResetPassword_saveButton'));
       expect(saveButtonFinder, findsOneWidget);
       final saveButton = tester.widget<AppButton>(saveButtonFinder);
       expect(saveButton.onTap, isNull);
@@ -140,7 +142,8 @@ void main() {
       await tester.pumpAndSettle();
       await scrollToSave(tester, loc.save);
 
-      final saveButtonFinder = find.byKey(const Key('localResetPassword_saveButton'));
+      final saveButtonFinder =
+          find.byKey(const Key('localResetPassword_saveButton'));
       expect(saveButtonFinder, findsOneWidget);
       final saveButton = tester.widget<AppButton>(saveButtonFinder);
       expect(saveButton.onTap, isNotNull);

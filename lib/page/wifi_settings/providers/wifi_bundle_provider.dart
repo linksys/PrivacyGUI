@@ -187,8 +187,8 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
       (wifi) => wifi.radioID == WifiRadioBand.radio_24,
       orElse: () => wifiItems.first, // Fallback, or handle error
     );
-    final availableSecurityTypeList = getSimpleModeAvailableSecurityTypeList(
-        wifiForSecurityList != null ? [wifiForSecurityList] : wifiItems);
+    final availableSecurityTypeList =
+        getSimpleModeAvailableSecurityTypeList([wifiForSecurityList]);
     final firstEnabledWifi =
         wifiItems.firstWhereOrNull((e) => e.isEnabled) ?? wifiItems.first;
 

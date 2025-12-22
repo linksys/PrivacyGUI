@@ -3,6 +3,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/validators.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:ui_kit_library/src/molecules/inputs/app_text_field.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class WifiNameField extends StatefulWidget {
@@ -29,9 +30,11 @@ class _WifiNameFieldState extends State<WifiNameField> {
   @override
   Widget build(BuildContext context) {
     return AppTextFormField(
-      key: widget.key,
-      label: widget.semanticLabel.isNotEmpty ? widget.semanticLabel : loc(context).wifiName,
+      label: widget.semanticLabel.isNotEmpty
+          ? widget.semanticLabel
+          : loc(context).wifiName,
       controller: widget.controller,
+      errorDisplayMode: AppErrorDisplayMode.text,
       // border: const OutlineInputBorder(), // UI Kit handles border
       onChanged: widget.onChanged,
       autovalidateMode: AutovalidateMode.onUserInteraction,

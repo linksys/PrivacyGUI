@@ -73,6 +73,9 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
       loc(context).macFiltering
     ];
 
+    // Tab keys for testing
+    const tabKeys = ['wifiTab', 'advancedTab', 'macFilteringTab'];
+
     final tabContents = [
       WiFiListView(args: widget.args),
       const WifiAdvancedSettingsView(),
@@ -114,6 +117,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
         ),
         tabs: tabs
             .mapIndexed((index, e) => Tab(
+                  key: Key(tabKeys[index]),
                   child: AppText.titleSmall(
                     e,
                   ),

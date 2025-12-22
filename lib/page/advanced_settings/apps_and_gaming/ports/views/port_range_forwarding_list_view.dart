@@ -135,7 +135,7 @@ class _PortRangeForwardingContentViewState
             }
           }
           return AppTextField(
-            key: ValueKey('appName_${identityHashCode(rule)}'),
+            key: const Key('applicationNameTextField'),
             controller: _applicationTextController,
             hintText: loc(context).applicationName,
             errorText: _nameError,
@@ -150,7 +150,9 @@ class _PortRangeForwardingContentViewState
             '${rule.firstExternalPort} ${loc(context).to} ${rule.lastExternalPort}'),
         editBuilder: (_, rule, setSheetState) {
           return AppRangeInput(
-            key: ValueKey('portRange_${identityHashCode(rule)}'),
+            key: const Key('portRangeInput'),
+            startKey: const Key('firstExternalPortTextField'),
+            endKey: const Key('lastExternalPortTextField'),
             startController: _firstPortTextController,
             endController: _lastPortTextController,
             errorText: _portRangeError,
@@ -171,7 +173,7 @@ class _PortRangeForwardingContentViewState
             'Both': getProtocolTitle(context, 'Both'),
           };
           return AppDropdown<String>(
-            key: ValueKey('protocol_${identityHashCode(rule)}'),
+            key: const Key('protocolDropdown'),
             items: protocolDisplayMap.values.toList(),
             value: protocolDisplayMap[currentProtocol],
             hint: loc(context).protocol,
@@ -195,7 +197,7 @@ class _PortRangeForwardingContentViewState
             AppText.bodyMedium(rule.internalServerIPAddress),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
-            key: ValueKey('ip_${identityHashCode(rule)}'),
+            key: const Key('ipAddressTextField'),
             controller: _ipAddressTextController,
             hintText: loc(context).ipAddress,
             errorText: _ipError,

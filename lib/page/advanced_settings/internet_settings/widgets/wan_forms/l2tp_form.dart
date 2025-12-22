@@ -108,6 +108,7 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
               if (!hasFocus) setState(() => _usernameTouched = true);
             },
             child: buildEditableField(
+              key: const ValueKey('l2tpUsername'),
               label: loc(context).username,
               controller: _usernameController,
               errorText:
@@ -129,6 +130,7 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
               if (!hasFocus) setState(() => _passwordTouched = true);
             },
             child: buildEditableField(
+              key: const ValueKey('l2tpPassword'),
               label: loc(context).password,
               controller: _passwordController,
               obscureText: true,

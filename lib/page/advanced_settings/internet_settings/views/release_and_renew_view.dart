@@ -63,6 +63,7 @@ class ReleaseAndRenewView extends ConsumerWidget {
                       ),
                     ),
                     AppButton.text(
+                      key: const ValueKey('ipv4ReleaseRenewButton'),
                       label: loc(context).releaseAndRenew,
                       onTap: isBridgeMode
                           ? null
@@ -94,6 +95,7 @@ class ReleaseAndRenewView extends ConsumerWidget {
                       ),
                     ),
                     AppButton.text(
+                      key: const ValueKey('ipv6ReleaseRenewButton'),
                       label: loc(context).releaseAndRenew,
                       onTap: isBridgeMode ||
                               wanIpv6Type == WanIPv6Type.passThrough
@@ -123,12 +125,14 @@ class ReleaseAndRenewView extends ConsumerWidget {
           AppText.bodyMedium(loc(context).releaseAndRenewIpAddressDescription),
       actions: [
         AppButton.text(
+          key: const ValueKey('rrCancelButton'),
           label: loc(context).cancel,
           onTap: () {
             context.pop();
           },
         ),
         AppButton.text(
+          key: const ValueKey('rrConfirmButton'),
           label: loc(context).releaseAndRenew,
           onTap: () {
             context.pop();
@@ -165,10 +169,10 @@ class ReleaseAndRenewView extends ConsumerWidget {
         });
       }, test: (error) => error is JNAPSideEffectError).onError(
           (error, stackTrace) {
-        final errorMsg = switch (error.runtimeType) {
-          JNAPError => (error as JNAPError).result == 'ErrorInvalidWANType'
+        final errorMsg = switch (error) {
+          JNAPError e => e.result == 'ErrorInvalidWANType'
               ? loc(context).currentWanTypeIsNotDhcp
-              : errorCodeHelper(context, (error as JNAPError).result),
+              : errorCodeHelper(context, e.result),
           TimeoutException => loc(context).generalError,
           _ => loc(context).unknownError,
         };
@@ -203,10 +207,10 @@ class ReleaseAndRenewView extends ConsumerWidget {
         });
       }, test: (error) => error is JNAPSideEffectError).onError(
           (error, stackTrace) {
-        final errorMsg = switch (error.runtimeType) {
-          JNAPError => (error as JNAPError).result == 'ErrorInvalidIPv6WANType'
+        final errorMsg = switch (error) {
+          JNAPError e => e.result == 'ErrorInvalidIPv6WANType'
               ? loc(context).currentIPv6ConnectionTypeIsNotAutomatic
-              : errorCodeHelper(context, (error as JNAPError).result),
+              : errorCodeHelper(context, e.result),
           TimeoutException => loc(context).generalError,
           _ => loc(context).unknownError,
         };

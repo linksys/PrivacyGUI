@@ -129,6 +129,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
   final VoidCallback? onBackTap;
   final double?
       unboundedFallbackHeight; // Fallback height for unbounded content
+  final bool isTabScrollable;
 
   const UiKitPageView({
     super.key,
@@ -164,6 +165,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.onTabTap,
     this.onBackTap,
     this.unboundedFallbackHeight,
+    this.isTabScrollable = true,
   });
 
   /// Inner page factory constructor (similar to StyledAppPageView.innerPage)
@@ -198,6 +200,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       appBarStyle: UiKitAppBarStyle.none, // Inner pages have no app bar
       backState: UiKitBackState.none,
       hideTopbar: true, // Inner pages do not show TopBar
+      isTabScrollable: true,
     );
   }
 
@@ -242,6 +245,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     TextStyle? selectedTabTextStyle,
     TextStyle? tabTextStyle,
     Color? tabIndicatorColor,
+    bool isTabScrollable = true,
   }) {
     return UiKitPageView(
       key: key,
@@ -276,6 +280,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       onTabTap: onTabTap,
       onBackTap: onBackTap,
       unboundedFallbackHeight: unboundedFallbackHeight,
+      isTabScrollable: isTabScrollable,
     );
   }
 
@@ -388,6 +393,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
 
     // Create main AppPageView with all configurations
     final appPageView = AppPageView(
+      showGridOverlay: false,
       // UI Kit configuration
       appBarConfig: appBarConfig,
       bottomBarConfig: bottomBarConfig,
@@ -418,7 +424,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       tabs: _convertTabs(),
       tabViews: widget.tabContentViews,
       tabController: widget.tabController,
-      isTabScrollable: false,
+      isTabScrollable: widget.isTabScrollable,
 
       // Additional widgets - only pass header in sliver mode
       header: headerWidget,

@@ -114,6 +114,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
               if (!hasFocus) setState(() => _usernameTouched = true);
             },
             child: buildEditableField(
+              key: const ValueKey('pppoeUsername'),
               label: loc(context).username,
               controller: _usernameController,
               errorText:
@@ -135,6 +136,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
               if (!hasFocus) setState(() => _passwordTouched = true);
             },
             child: buildEditableField(
+              key: const ValueKey('pppoePassword'),
               label: loc(context).password,
               controller: _passwordController,
               obscureText: true,
@@ -165,6 +167,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
               }
             },
             child: AppMinMaxInput(
+              key: const ValueKey('pppoeVlanId'),
               min: 5,
               max: 4094,
               label: loc(context).vlanIdOptional,
@@ -181,6 +184,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
         Padding(
           padding: inputPadding,
           child: buildEditableField(
+            key: const ValueKey('serviceName'),
             label: loc(context).serviceNameOptional,
             controller: _serviceNameController,
             onChanged: (value) {

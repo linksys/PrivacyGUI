@@ -1,88 +1,83 @@
+import 'package:flutter/material.dart';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
-import 'package:privacy_gui/page/wifi_settings/views/wifi_main_view.dart';
-import 'package:privacy_gui/providers/preservable.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/_index.dart';
 import '../../../common/test_helper.dart';
-import '../../../test_data/wifi_bundle_test_state.dart';
+
+// Test Harness Widget Class
+// We use a class instead of a function returning Builder to avoid runtimeType ambiguity
+// in TestHelper.pumpView's finder logic.
+class DialogTestHarness extends StatelessWidget {
+  final Future<void> Function(BuildContext context) onTrigger;
+
+  const DialogTestHarness({super.key, required this.onTrigger});
+
+  @override
+  Widget build(BuildContext context) {
+    return Builder(builder: (context) {
+      return Center(
+        child: AppButton.text(
+          label: 'Show Dialog',
+          onTap: () => onTrigger(context),
+        ),
+      );
+    });
+  }
+}
+
+// Reference to Implementation File: lib/page/components/shortcuts/dialogs.dart
+// View ID: DIALOGS
+/// | Test ID             | Description                                                                 |
+/// | :------------------ | :-------------------------------------------------------------------------- |
+/// | `DIALOGS-UNSAVED`   | Verifies "Unsaved Changes" dialog appears with correct text and buttons.    |
 
 void main() {
   final testHelper = TestHelper();
-  late WifiBundleState initialState;
 
   setUp(() {
     testHelper.setup();
-    final settings = WifiBundleSettings.fromMap(
-        wifiBundleTestState['settings'] as Map<String, dynamic>);
-    final status = WifiBundleStatus.fromMap(
-        wifiBundleTestState['status'] as Map<String, dynamic>);
-    initialState = WifiBundleState(
-      settings: Preservable(original: settings, current: settings),
-      status: status,
-    );
-    when(testHelper.mockWiFiBundleNotifier.build()).thenReturn(initialState);
-    when(testHelper.mockWiFiBundleNotifier.state).thenReturn(initialState);
-    when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(false);
   });
 
-  testLocalizations('Dialog - Router Not Found', (tester, locale) async {
-    when(testHelper.mockWiFiBundleNotifier.save()).thenAnswer((_) async {
-      await Future.delayed(const Duration(seconds: 1));
-      throw JNAPSideEffectError();
-    });
+  // Test ID: DIALOGS-UNSAVED
+  testLocalizationsV2('Dialog - You have unsaved changes',
+      (tester, screen) async {
+    // Enable animations to ensure Dialog transition completes and becomes visible
+    testHelper.disableAnimations = false;
 
     await testHelper.pumpView(
       tester,
-      child: const WiFiMainView(),
-      locale: locale,
+      child: DialogTestHarness(
+        onTrigger: (context) => showUnsavedAlert(context),
+      ),
+      locale: screen.locale,
     );
 
-    // Simulate a change to enable the save button
-    final dirtyState = initialState.copyWith(
-        settings: initialState.settings.update(initialState.settings.current
-            .copyWith(
-                advanced: initialState.settings.current.advanced
-                    .copyWith(isIptvEnabled: true))));
-    when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(true);
-    when(testHelper.mockWiFiBundleNotifier.state).thenReturn(dirtyState);
-    await tester.pump();
-
-    // Tap save button
-    final saveButtonFinder = find.byType(AppButton);
-    await tester.tap(saveButtonFinder);
-    await tester.pumpAndSettle();
-  });
-
-  testLocalizations('Dialog - You have unsaved changes',
-      (tester, locale) async {
-    final settings = WifiBundleSettings.fromMap(
-        wifiBundleTestState['settings'] as Map<String, dynamic>);
-    final status = WifiBundleStatus.fromMap(
-        wifiBundleTestState['status'] as Map<String, dynamic>);
-    final dirtySettings = settings.copyWith(
-        advanced: settings.advanced.copyWith(isIptvEnabled: true));
-    final dirtyState = WifiBundleState(
-      settings: Preservable(original: settings, current: dirtySettings),
-      status: status,
-    );
-
-    when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(true);
-    when(testHelper.mockWiFiBundleNotifier.state).thenReturn(dirtyState);
-
-    await testHelper.pumpView(
-      tester,
-      child: const WiFiMainView(),
-      locale: locale,
-    );
+    // Tap the harness button to trigger the dialog
+    await tester.tap(find.text('Show Dialog'));
     await tester.pumpAndSettle();
 
-    // Tap back button
-    final backButtonFinder = find.byType(AppIconButton);
-    await tester.tap(backButtonFinder);
-    await tester.pumpAndSettle();
-  });
+    // Capture context for localization lookup
+    final context = tester.element(find.byType(AppDialog));
+
+    // Verify the Dialog UI using Keys and Localized Strings
+    expect(find.byType(AppDialog), findsOneWidget);
+
+    // Title & Description
+    expect(
+        find.text(testHelper.loc(context).unsavedChangesTitle), findsOneWidget);
+    expect(
+        find.text(testHelper.loc(context).unsavedChangesDesc), findsOneWidget);
+
+    // Buttons (Keys + Text)
+    expect(find.byKey(const Key('unsavedAlert_goBackButton')), findsOneWidget);
+    expect(find.text(testHelper.loc(context).goBack), findsOneWidget);
+
+    expect(find.byKey(const Key('unsavedAlert_discardButton')), findsOneWidget);
+    expect(find.text(testHelper.loc(context).discardChanges), findsOneWidget);
+
+    await testHelper.takeScreenshot(tester, 'DIALOGS-UNSAVED-01-initial_state');
+  }, helper: testHelper);
 }

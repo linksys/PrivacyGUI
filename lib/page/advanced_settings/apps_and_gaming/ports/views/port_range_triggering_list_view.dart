@@ -141,7 +141,7 @@ class _PortRangeTriggeringContentViewState
             }
           }
           return AppTextField(
-            key: ValueKey('appName_${identityHashCode(rule)}'),
+            key: const Key('applicationNameTextField'),
             controller: _applicationTextController,
             hintText: loc(context).applicationName,
             errorText: _nameError,
@@ -156,7 +156,9 @@ class _PortRangeTriggeringContentViewState
             '${rule.firstTriggerPort} ${loc(context).to} ${rule.lastTriggerPort}'),
         editBuilder: (_, rule, setSheetState) {
           return AppRangeInput(
-            key: ValueKey('triggerRange_${identityHashCode(rule)}'),
+            key: const Key('triggeredRangeInput'),
+            startKey: const Key('firstTriggerPortTextField'),
+            endKey: const Key('lastTriggerPortTextField'),
             startController: _firstTriggerPortController,
             endController: _lastTriggerPortController,
             errorText: _triggeredRangeError,
@@ -171,7 +173,9 @@ class _PortRangeTriggeringContentViewState
             '${rule.firstForwardedPort} ${loc(context).to} ${rule.lastForwardedPort}'),
         editBuilder: (_, rule, setSheetState) {
           return AppRangeInput(
-            key: ValueKey('forwardRange_${identityHashCode(rule)}'),
+            key: const Key('forwardedRangeInput'),
+            startKey: const Key('firstForwardedPortTextField'),
+            endKey: const Key('lastForwardedPortTextField'),
             startController: _firstForwardedPortController,
             endController: _lastForwardedPortController,
             errorText: _forwardedRangeError,

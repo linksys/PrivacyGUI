@@ -22,6 +22,7 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
         mainAxisSize: MainAxisSize.min,
         children: [
           WifiNameField(
+            key: const Key('wifiNameInput'),
             semanticLabel: loc(context).wifiName,
             controller: controller,
             onChanged: (value) {

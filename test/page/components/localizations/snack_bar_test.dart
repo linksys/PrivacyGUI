@@ -8,542 +8,146 @@ import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 import 'snack_bar_sample_view.dart';
 
+// Reference to Implementation File: lib/page/components/shortcuts/snack_bar.dart
+// View ID: SNACKBAR
+/// | Test ID             | Description                                                                 |
+/// | :------------------ | :-------------------------------------------------------------------------- |
+/// | `SNACKBAR-SUCCESS`  | Verifies all success snackbar variants (Saved, Copied, etc.).               |
+/// | `SNACKBAR-FAIL`     | Verifies all failure snackbar variants (Invalid password, IP errors, etc.). |
+
 void main() {
   final testHelper = TestHelper();
+  // Include both mobile and desktop screens for full coverage
   final screens = responsiveAllScreens;
 
   setUp(() {
     testHelper.setup();
   });
 
-  testLocalizations('Snack bar - Success: Saved', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(0);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+  // Test ID: SNACKBAR-SUCCESS
+  testLocalizationsV2('Snack bar - Success scenarios', (tester, screen) async {
+    testHelper.disableAnimations = false;
 
-  testLocalizations('Snack bar - Success: Changes saved',
-      (tester, locale) async {
     await testHelper.pumpShellView(
       tester,
       child: const SnackBarSampleView(),
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 9),
       ),
-      locale: locale,
+      locale: screen.locale,
     );
-    final buttonFinder = find.byType(AppButton).at(1);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
     await tester.pumpAndSettle();
-  }, screens: screens);
 
-  testLocalizations('Snack bar - Success: Success!', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(2);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+    final successButtons = [
+      'Success: Saved',
+      'Success: Changes saved',
+      'Success: Success!',
+      'Success: Copied to clipboard!',
+      'Success: Done',
+      'Success: Router password updated',
+    ];
 
-  testLocalizations('Snack bar - Success: Copied to clipboard!',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(3);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+    for (var i = 0; i < successButtons.length; i++) {
+      final label = successButtons[i];
+      final buttonFinder = find.text(label);
 
-  testLocalizations('Snack bar - Success: Done', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(4);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+      await tester.scrollUntilVisible(
+        buttonFinder,
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(buttonFinder);
+      await tester.pump(); // Start animation
+      await tester
+          .pump(const Duration(milliseconds: 500)); // Wait for visibility
 
-  testLocalizations('Snack bar - Success: Router password updated',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(5);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+      final step = (i + 1).toString().padLeft(2, '0');
+      final safeLabel = label
+          .replaceAll('Success: ', '')
+          .replaceAll('!', '')
+          .replaceAll(' ', '_')
+          .toLowerCase();
+      await testHelper.takeScreenshot(
+          tester, 'SNACKBAR-SUCCESS-$step-$safeLabel');
 
-  testLocalizations('Snack bar - Failed!', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(6);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+      await tester.pump(const Duration(seconds: 4)); // Wait for auto-hide
+    }
+  }, screens: screens, helper: testHelper);
 
-  testLocalizations('Snack bar - Invalid admin password',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(7);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+  // Test ID: SNACKBAR-FAIL
+  testLocalizationsV2('Snack bar - Failed scenarios', (tester, screen) async {
+    testHelper.disableAnimations = false;
 
-  testLocalizations('Snack bar - Invalid firmware file!',
-      (tester, locale) async {
     await testHelper.pumpShellView(
       tester,
       child: const SnackBarSampleView(),
       config: LinksysRouteConfig(
         column: ColumnGrid(column: 9),
       ),
-      locale: locale,
+      locale: screen.locale,
     );
-    final buttonFinder = find.byType(AppButton).at(8);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
     await tester.pumpAndSettle();
-  }, screens: screens);
 
-  testLocalizations('Snack bar - Error manual update failed!',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(9);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+    final failedButtons = [
+      'Failed: Failed!',
+      'Failed: Invalid admin password',
+      'Failed: Invalid firmware file!',
+      'Failed: Error manual update failed!',
+      'Failed: IP address or MAC address overlap',
+      'Failed: Oops, something wrong here! Please try again later',
+      'Failed: Unknown error',
+      'Failed: Incorrect password',
+      'Failed: Too many failed attempts',
+      'Failed: Invalid destination MAC address',
+      'Failed: Invalid destination IP address',
+      'Failed: Invalid gateway IP address',
+      'Failed: Invalid IP address',
+      'Failed: Invalid DNS',
+      'Failed: Invalid MAC address.',
+      'Failed: Invalid input',
+      'Failed: The specified server IP address is not valid.',
+      'Failed: Invalid destination IP address', // Duplicate text
+      'Failed: The rules cannot be created',
+      'Failed: Guest network names must be different',
+      'Failed: Unknown error: _ErrorUnexpected',
+    ];
 
-  testLocalizations('Snack bar - IP address or MAC address overlap',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(10);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+    final startIndex = 6; // Success buttons (0-5) take up first 6 slots
 
-  testLocalizations(
-      'Snack bar - Oops, something wrong here! Please try again later',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(11);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+    for (var i = 0; i < failedButtons.length; i++) {
+      final label = failedButtons[i];
+      final buttonIndex = startIndex + i;
+      final buttonFinder = find.byType(AppButton).at(buttonIndex);
 
-  testLocalizations('Snack bar - Unknown error', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(12);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+      await tester.scrollUntilVisible(
+        buttonFinder,
+        100,
+        scrollable: find.byType(Scrollable).last,
+      );
 
-  testLocalizations('Snack bar - Incorrect password', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(13);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+      await tester.tap(buttonFinder);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
-  testLocalizations('Snack bar - Too many failed attempts',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(14);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+      final step = (i + 1).toString().padLeft(2, '0');
+      // Handle duplicate filenames if necessary, keeping simple for now
+      // Or append index to ensure uniqueness if labels are dupes
+      final safeLabel = label
+          .replaceAll('Failed: ', '')
+          .replaceAll('!', '')
+          .replaceAll('.', '')
+          .replaceAll(':', '')
+          .replaceAll(' ', '_')
+          .toLowerCase();
 
-  testLocalizations('Snack bar - Invalid destination MAC address',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(15);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+      // Truncate long labels
+      final truncatedLabel =
+          safeLabel.length > 30 ? safeLabel.substring(0, 30) : safeLabel;
 
-  testLocalizations('Snack bar - Invalid destination IP address',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(16);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+      await testHelper.takeScreenshot(
+          tester, 'SNACKBAR-FAIL-$step-${truncatedLabel}_$i');
 
-  testLocalizations('Snack bar - Invalid gateway IP address',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(17);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
-
-  testLocalizations('Snack bar - Invalid IP address', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(18);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
-
-  testLocalizations('Snack bar - Invalid DNS', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(19);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
-
-  testLocalizations('Snack bar - Invalid MAC address.', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(20);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
-
-  testLocalizations('Snack bar - Invalid input', (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(21);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
-
-  testLocalizations('Snack bar - The specified server IP address is not valid.',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(22);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
-
-  testLocalizations('Snack bar - Invalid destination IP address',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(23);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
-
-  testLocalizations('Snack bar - The rules cannot be created',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(24);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
-
-  testLocalizations('Snack bar - Guest network names must be different',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(25);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
-
-  testLocalizations('Snack bar - Unknown error: _ErrorUnexpected',
-      (tester, locale) async {
-    await testHelper.pumpShellView(
-      tester,
-      child: const SnackBarSampleView(),
-      config: LinksysRouteConfig(
-        column: ColumnGrid(column: 9),
-      ),
-      locale: locale,
-    );
-    final buttonFinder = find.byType(AppButton).at(26);
-    await tester.scrollUntilVisible(
-      buttonFinder,
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(buttonFinder);
-    await tester.pumpAndSettle();
-  }, screens: screens);
+      await tester.pump(const Duration(seconds: 4));
+    }
+  }, screens: screens, helper: testHelper);
 }

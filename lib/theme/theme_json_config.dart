@@ -91,7 +91,7 @@ class ThemeJsonConfig {
     final json = Map<String, dynamic>.from(_lightJson);
     if (overrideSeedColor != null) {
       json['seedColor'] =
-          '#${overrideSeedColor.value.toRadixString(16).substring(2)}';
+          '#${overrideSeedColor.toARGB32().toRadixString(16).substring(2)}';
     }
 
     final designTheme = CustomDesignTheme.fromJson(json);
@@ -107,7 +107,7 @@ class ThemeJsonConfig {
     final json = Map<String, dynamic>.from(_darkJson);
     if (overrideSeedColor != null) {
       json['seedColor'] =
-          '#${overrideSeedColor.value.toRadixString(16).substring(2)}';
+          '#${overrideSeedColor.toARGB32().toRadixString(16).substring(2)}';
     }
 
     final designTheme = CustomDesignTheme.fromJson(json);

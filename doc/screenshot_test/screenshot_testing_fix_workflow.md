@@ -2,7 +2,18 @@
 
 ## Overview
 
-This document defines the workflow for fixing screenshot tests after UI Kit migration. The goal is to ensure all tests pass successfully.
+This document defines the workflow for fixing screenshot tests after UI Kit migration.
+
+### Purpose (Core Objective)
+
+> **⚠️ IMPORTANT: These tests are NOT functional tests.**
+>
+> The goal of screenshot testing is to **capture visual snapshots of all possible UI states** and verify that:
+> 1.  All UI elements render correctly (no broken layouts, missing text, etc.)
+> 2.  Localized text displays properly across different languages
+> 3.  Visual consistency is maintained across screen sizes (mobile/desktop)
+>
+> We are **not testing application logic or user flows**. The focus is purely on **visual output verification**.
 
 ---
 

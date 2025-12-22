@@ -18,6 +18,7 @@ Widget testableRouter({
   Locale? locale,
   bool disableAnimations = true,
 }) {
+  // Use ThemeJsonConfig for consistent rendering with DI-registered themes
   final appLightTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
   final appDarkTheme = ThemeJsonConfig.defaultConfig().createDarkTheme();
 

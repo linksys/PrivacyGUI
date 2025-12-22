@@ -107,6 +107,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                     trailing: Padding(
                       padding: EdgeInsets.only(left: AppSpacing.lg),
                       child: AppSwitch(
+                        key: const Key('dmzSwitch'),
                         value: state.settings.current.isDMZEnabled,
                         onChanged: (value) {
                           ref.read(dmzSettingsProvider.notifier).setSettings(
@@ -300,6 +301,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                               }
                             },
                             child: AppMacAddressTextField(
+                              key: const Key('destinationMAC'),
                               label: loc(context).macAddress,
                               invalidFormatMessage:
                                   loc(context).invalidMACAddress,

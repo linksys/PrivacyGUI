@@ -43,6 +43,7 @@ mixin BaseWidgetsMixin {
 
   @protected
   Widget buildEditableField({
+    Key? key,
     required String label,
     required TextEditingController controller,
     required Function(String) onChanged,
@@ -57,6 +58,7 @@ mixin BaseWidgetsMixin {
         AppText.labelLarge(label),
         AppGap.xs(),
         AppTextField(
+          key: key,
           controller: controller,
           onChanged: onChanged,
           errorText: errorText,

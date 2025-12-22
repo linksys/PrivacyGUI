@@ -13,6 +13,12 @@ import '../../../../common/_index.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../test_data/_index.dart';
 
+// Tall screens for tests that require bottom bar visibility (Pattern 0)
+final _tallScreens = [
+  ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+  ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
+];
+
 // View ID: WIFIS
 /// Implementation file under test: lib/page/wifi_settings/views/wifi_main_view.dart
 ///
@@ -41,6 +47,8 @@ void main() {
 
   setUp(() {
     testHelper.setup();
+    // Enable animations for Tab switching
+    testHelper.disableAnimations = false;
 
     final wifiBundleTestStateInitialState =
         getWifiBundleTestState(wifiListTestData: wifiListAdvancedModeTestState);
@@ -62,7 +70,7 @@ void main() {
       final tabFinder = find.byType(Tab);
       expect(tabFinder, findsNWidgets(3));
 
-      await tester.tap(tabFinder.at(1));
+      await tester.tap(find.byKey(const Key('advancedTab')));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).advanced), findsOneWidget);
@@ -91,7 +99,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.at(1));
+      await tester.tap(find.byKey(const Key('advancedTab')));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).mloWarning), findsOneWidget);
@@ -112,15 +120,18 @@ void main() {
       await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.at(1));
+      await tester.tap(find.byKey(const Key('advancedTab')));
       await tester.pumpAndSettle();
 
-      final saveButtonFinder = find.byKey(Key('pageBottomPositiveButton'));
+      final saveButtonFinder =
+          find.byKey(const Key('pageBottomPositiveButton'));
+      await tester.scrollUntilVisible(saveButtonFinder, 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).modalDFSDesc), findsOneWidget);
-    }, goldenFilename: 'WIFIS-DFS_WARN-01-modal_shown');
+    }, screens: _tallScreens, goldenFilename: 'WIFIS-DFS_WARN-01-modal_shown');
   });
 
   group('Incredible-WiFi - MAC Filtering view', () {
@@ -135,7 +146,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).macFiltering), findsOneWidget);
@@ -161,7 +172,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
       final enableSwitchFinder =
@@ -189,17 +200,20 @@ void main() {
       await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
-      final saveButtonFinder = find.byKey(Key('pageBottomPositiveButton'));
+      final saveButtonFinder =
+          find.widgetWithText(AppButton, testHelper.loc(context).save);
+      await tester.scrollUntilVisible(saveButtonFinder, 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).turnOnMacFilteringDesc),
           findsOneWidget);
     },
-        screens: [...responsiveMobileScreens, ...responsiveDesktopScreens],
+        screens: _tallScreens,
         goldenFilename: 'WIFIS-MAC_ON_ALERT-01-alert_shown');
 
     // Test ID: WIFIS-MAC_OFF_ALERT
@@ -219,17 +233,20 @@ void main() {
       await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
-      final saveButtonFinder = find.byKey(Key('pageBottomPositiveButton'));
+      final saveButtonFinder =
+          find.widgetWithText(AppButton, testHelper.loc(context).save);
+      await tester.scrollUntilVisible(saveButtonFinder, 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).turnOffMacFilteringDesc),
           findsOneWidget);
     },
-        screens: [...responsiveMobileScreens, ...responsiveDesktopScreens],
+        screens: _tallScreens,
         goldenFilename: 'WIFIS-MAC_OFF_ALERT-01-alert_shown');
 
     // Test ID: WIFIS-IP_DIS_WARN
@@ -249,7 +266,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).instantPrivacyDisableWarning),

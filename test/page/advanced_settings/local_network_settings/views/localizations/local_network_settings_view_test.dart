@@ -4,12 +4,22 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/page/components/composed/app_switch_trigger_tile.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
 import '../../../../../test_data/local_network_settings_state.dart';
+
+Future<void> switchToTab(WidgetTester tester, int index) async {
+  final tabController =
+      tester.widget<UiKitPageView>(find.byType(UiKitPageView)).tabController;
+  if (tabController != null) {
+    tabController.animateTo(index);
+    await tester.pumpAndSettle();
+  }
+}
 
 // View ID: LNS
 // Implementation file under test: lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart
@@ -43,6 +53,8 @@ void main() {
     (tester, screen) async {
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
           LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
+
+      testHelper.disableAnimations = false;
 
       final context = await testHelper.pumpView(tester,
           child: const LocalNetworkSettingsView(), locale: screen.locale);
@@ -87,13 +99,10 @@ void main() {
               of: hostNameTab, matching: find.byIcon(AppFontIcons.error)),
           findsOneWidget);
       expect(
-          tester
-              .widget<TextField>(find.descendant(
-                  of: find.byKey(const Key('hostNameTextField')),
-                  matching: find.byType(TextField)))
-              .decoration
-              ?.errorText,
-          isNotNull);
+          find.descendant(
+              of: find.byKey(const Key('hostNameTextField')),
+              matching: find.byIcon(Icons.error_outline)),
+          findsOneWidget);
     },
     screens: screens,
     goldenFilename: 'LNS-HOSTNAME_ERR-01-error_state',
@@ -106,12 +115,13 @@ void main() {
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
           LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
 
-      final context = await testHelper.pumpView(tester,
+      testHelper.disableAnimations = false;
+
+      await testHelper.pumpView(tester,
           child: const LocalNetworkSettingsView(), locale: screen.locale);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(testHelper.loc(context).lanIPAddress));
-      await tester.pumpAndSettle();
+      await switchToTab(tester, 1);
 
       expect(find.byKey(const Key('lanIpAddressTextField')), findsOneWidget);
       expect(find.byKey(const Key('lanSubnetMaskTextField')), findsOneWidget);
@@ -148,12 +158,13 @@ void main() {
       when(testHelper.mockLocalNetworkSettingsNotifier.build())
           .thenReturn(errorState);
 
+      testHelper.disableAnimations = false;
+
       final context = await testHelper.pumpView(tester,
           child: const LocalNetworkSettingsView(), locale: screen.locale);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(testHelper.loc(context).lanIPAddress));
-      await tester.pumpAndSettle();
+      await switchToTab(tester, 1);
 
       final ipAddressTab =
           find.widgetWithText(Tab, testHelper.loc(context).lanIPAddress);
@@ -161,16 +172,15 @@ void main() {
           find.descendant(
               of: ipAddressTab, matching: find.byIcon(AppFontIcons.error)),
           findsOneWidget);
+      await tester
+          .ensureVisible(find.byKey(const Key('lanIpAddressTextField')));
+      await tester.pumpAndSettle();
+
       expect(
-          tester
-              .widget<TextField>(find
-                  .descendant(
-                      of: find.byKey(const Key('lanIpAddressTextField')),
-                      matching: find.byType(TextField))
-                  .first)
-              .decoration
-              ?.errorText,
-          isNotNull);
+          find.descendant(
+              of: find.byKey(const Key('lanIpAddressTextField')),
+              matching: find.byIcon(Icons.error_outline)),
+          findsOneWidget);
     },
     screens: screens,
     goldenFilename: 'LNS-IP_ERR-01-ip_error_state',
@@ -183,12 +193,13 @@ void main() {
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
           LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
 
-      final context = await testHelper.pumpView(tester,
+      testHelper.disableAnimations = false;
+
+      await testHelper.pumpView(tester,
           child: const LocalNetworkSettingsView(), locale: screen.locale);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(testHelper.loc(context).dhcpServer));
-      await tester.pumpAndSettle();
+      await switchToTab(tester, 2);
 
       expect(find.byType(DHCPServerView), findsOneWidget);
       // Verify switch is on
@@ -220,12 +231,13 @@ void main() {
       when(testHelper.mockLocalNetworkSettingsNotifier.build())
           .thenReturn(errorState);
 
+      testHelper.disableAnimations = false;
+
       final context = await testHelper.pumpView(tester,
           child: const LocalNetworkSettingsView(), locale: screen.locale);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(testHelper.loc(context).dhcpServer));
-      await tester.pumpAndSettle();
+      await switchToTab(tester, 2);
 
       final dhcpTab =
           find.widgetWithText(Tab, testHelper.loc(context).dhcpServer);
@@ -257,23 +269,19 @@ void main() {
       when(testHelper.mockLocalNetworkSettingsNotifier.build())
           .thenReturn(errorState);
 
-      final context = await testHelper.pumpView(tester,
+      testHelper.disableAnimations = false;
+
+      await testHelper.pumpView(tester,
           child: const LocalNetworkSettingsView(), locale: screen.locale);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(testHelper.loc(context).dhcpServer));
-      await tester.pumpAndSettle();
+      await switchToTab(tester, 2);
 
       expect(
-          tester
-              .widget<TextField>(find
-                  .descendant(
-                      of: find.byKey(const Key('startIpAddressTextField')),
-                      matching: find.byType(TextField))
-                  .first)
-              .decoration
-              ?.errorText,
-          isNotNull);
+          find.descendant(
+              of: find.byKey(const Key('startIpAddressTextField')),
+              matching: find.byIcon(Icons.error_outline)),
+          findsOneWidget);
     },
     screens: [
       ...responsiveMobileScreens.map((e) => e.copyWith(height: 1480)).toList(),
@@ -296,12 +304,13 @@ void main() {
       when(testHelper.mockLocalNetworkSettingsNotifier.build())
           .thenReturn(offState);
 
-      final context = await testHelper.pumpView(tester,
+      testHelper.disableAnimations = false;
+
+      await testHelper.pumpView(tester,
           child: const LocalNetworkSettingsView(), locale: screen.locale);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(testHelper.loc(context).dhcpServer));
-      await tester.pumpAndSettle();
+      await switchToTab(tester, 2);
 
       expect(
           tester
@@ -338,17 +347,22 @@ void main() {
       when(testHelper.mockLocalNetworkSettingsNotifier.isDirty())
           .thenReturn(true);
 
+      testHelper.disableAnimations = false;
+
       final context = await testHelper.pumpView(tester,
           child: const LocalNetworkSettingsView(), locale: screen.locale);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(testHelper.loc(context).dhcpServer));
+      await switchToTab(tester, 2);
+
+      await tester
+          .ensureVisible(find.text(testHelper.loc(context).dhcpReservations));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(AppFontIcons.chevronRight).first);
+      await tester.tap(find.text(testHelper.loc(context).dhcpReservations));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
       expect(
           find.text('${testHelper.loc(context).saveChanges}?'), findsOneWidget);
     },

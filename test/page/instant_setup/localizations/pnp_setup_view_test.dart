@@ -163,6 +163,17 @@ void main() {
   final testHelper = TestHelper();
   final screens = responsiveAllScreens;
 
+  // Tall screens for multi-step wizard tests that navigate to Step 4.
+  // Desktop content height can exceed 720px, causing RenderFlex overflow.
+  // Pattern 0 (Tall Screen) from screenshot_testing_knowledge_base.md
+  final _tallDesktopScreens = responsiveDesktopScreens
+      .map((screen) => screen.copyWith(height: 1080))
+      .toList();
+  final _tallScreens = [
+    ...responsiveMobileScreens,
+    ..._tallDesktopScreens,
+  ];
+
   PnpState getDefaultPnpState(PnpFlowStatus status,
       {bool isUnconfigured = false,
       bool forceLogin = false,
@@ -288,7 +299,7 @@ void main() {
           await tester.enterText(passwordField, 'MyTestPassword123');
           await tester.pumpAndSettle();
         },
-        screens: screens,
+        screens: _tallScreens, // Use tall screens for info dialog interaction
         goldenFilename: 'PNPS-STEP1_WIFI_04-final_state',
       );
 
@@ -351,7 +362,7 @@ void main() {
           await tester.tap(guestSwitch);
           await tester.pumpAndSettle();
         },
-        screens: screens,
+        screens: _tallScreens, // Use tall screens for Step 2 navigation
         goldenFilename: 'PNPS-STEP2_GST_04-final_state',
       );
 
@@ -393,7 +404,7 @@ void main() {
           await tester.tap(nightModeSwitch);
           await tester.pumpAndSettle();
         },
-        screens: screens,
+        screens: _tallScreens, // Use tall screens for Step 3 navigation
         goldenFilename: 'PNPS-STEP3_NIT_02-final_state',
       );
 
@@ -433,7 +444,8 @@ void main() {
           expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
-        screens: screens,
+        screens:
+            _tallScreens, // Use tall screens for Step 4 to prevent overflow
         goldenFilename: 'PNPS-STEP4_NET_01-final_state',
       );
 
@@ -483,7 +495,7 @@ void main() {
           expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
-        screens: screens,
+        screens: _tallScreens, // Use tall screens for Step 4 with child nodes
         goldenFilename: 'PNPS-NET_CHILD_01-final_state',
       );
     });

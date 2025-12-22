@@ -37,7 +37,7 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
 
   @override
   Widget build(BuildContext context) {
-    final appsAndGamingState = ref.watch(appsAndGamingProvider);
+    final _ = ref.watch(appsAndGamingProvider);
     ref.watch(singlePortForwardingListProvider);
     ref.watch(portRangeForwardingListProvider);
     ref.watch(portRangeTriggeringListProvider);

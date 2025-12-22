@@ -65,7 +65,7 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
           ref.read(authProvider.notifier).logout();
         },
         child: Container(
-          color: Theme.of(context).colorScheme.background,
+          color: Theme.of(context).colorScheme.surface,
           child: CompositedTransformTarget(
             link: _link,
             child: Stack(

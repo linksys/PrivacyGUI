@@ -38,6 +38,7 @@ class _GuestWiFiCardState extends ConsumerState<GuestWiFiCard>
               // Note: horizontal spacing is handled by Wrap's spacing property
               // Only add bottom padding for vertical separation between rows
               bottom: AppSpacing.lg,
+              right: widget.lastInRow ? 0 : context.layoutGutter,
             ),
             child: AppCard(
               key: const Key('WiFiGuestCard'),

@@ -21,8 +21,6 @@ class _FirewallViewState extends ConsumerState<FirewallView>
     with PageSnackbarMixin, SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  int _tabIndex = 0;
-
   @override
   void initState() {
     super.initState();

@@ -36,8 +36,8 @@ class AppPanelWithValueCheck extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isChecked
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
