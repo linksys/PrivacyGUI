@@ -250,7 +250,7 @@ void main() {
           final fakeNotifier = FakePnpNotifier(
               getDefaultPnpState(PnpFlowStatus.wizardConfiguring));
 
-          final context = await testHelper.pumpView(
+          await testHelper.pumpView(
             tester,
             child: const PnpSetupView(),
             config: LinksysRouteConfig(
@@ -310,7 +310,7 @@ void main() {
           final fakeNotifier = FakePnpNotifier(
               getDefaultPnpState(PnpFlowStatus.wizardConfiguring));
 
-          final context = await testHelper.pumpView(
+          await testHelper.pumpView(
             tester,
             child: const PnpSetupView(),
             config: LinksysRouteConfig(
@@ -373,7 +373,7 @@ void main() {
           final fakeNotifier = FakePnpNotifier(
               getDefaultPnpState(PnpFlowStatus.wizardConfiguring));
 
-          final context = await testHelper.pumpView(
+          await testHelper.pumpView(
             tester,
             child: const PnpSetupView(),
             config: LinksysRouteConfig(
@@ -748,7 +748,7 @@ void main() {
         final fakeNotifier =
             FakePnpNotifier(getDefaultPnpState(PnpFlowStatus.wizardSaveFailed));
 
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           child: const PnpSetupView(),
           config: LinksysRouteConfig(

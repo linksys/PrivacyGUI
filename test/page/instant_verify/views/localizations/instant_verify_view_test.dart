@@ -94,13 +94,19 @@ void main() {
   testLocalizationsV2(
     'instant verify view - instant topology tab',
     (tester, screen) async {
+      // Enable animations to allow tab switching to work properly
+      testHelper.disableAnimations = false;
       final context = await pumpInstantVerify(tester, screen);
       final loc = testHelper.loc(context);
 
       final tabFinder = find.text(loc.instantTopology);
       await tester.ensureVisible(tabFinder);
       await tester.tap(tabFinder);
-      await tester.pumpAndSettle();
+      // Multiple pumps to ensure tab controller animation completes
+      // and AppTopology widget is rendered
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(AppTopology), findsOneWidget);
     },
     screens: _infoScreens,
@@ -167,7 +173,9 @@ void main() {
       await pumpInstantVerify(tester, screen);
 
       await tester.tap(find.byKey(const ValueKey('ping')));
-      await tester.pumpAndSettle();
+      // Use pump with fixed duration to avoid pumpAndSettle timeout
+      // from modal or network-related animations
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(PingNetworkModal), findsOneWidget);
     },
     screens: _infoScreens,
@@ -182,7 +190,9 @@ void main() {
       await pumpInstantVerify(tester, screen);
 
       await tester.tap(find.byKey(const ValueKey('traceroute')));
-      await tester.pumpAndSettle();
+      // Use pump with fixed duration to avoid pumpAndSettle timeout
+      // from modal or network-related animations
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(TracerouteModal), findsOneWidget);
     },
     screens: _infoScreens,

@@ -22,9 +22,8 @@ Widget testableRouter({
   final appLightTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
   final appDarkTheme = ThemeJsonConfig.defaultConfig().createDarkTheme();
 
-  return ProviderScope(
+  Widget result = ProviderScope(
     overrides: overrides,
-    parent: provider,
     child: MaterialApp.router(
       theme: theme ?? appLightTheme,
       darkTheme: darkTheme ?? appDarkTheme,
@@ -50,6 +49,15 @@ Widget testableRouter({
       routerDelegate: router.routerDelegate,
     ),
   );
+
+  if (provider != null) {
+    result = UncontrolledProviderScope(
+      container: provider,
+      child: result,
+    );
+  }
+
+  return result;
 }
 
 Widget testableSingleRoute({

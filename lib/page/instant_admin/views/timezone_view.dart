@@ -52,6 +52,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
           ? () async {
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
+                if (!mounted) return;
                 _notifier.revert();
                 context.pop();
               }
@@ -70,6 +71,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
                 showChangesSavedSnackBar();
               }
             }).onError((error, stackTrace) {
+              if (!mounted) return;
               showErrorMessageSnackBar(error);
             });
           }),

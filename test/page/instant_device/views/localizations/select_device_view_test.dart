@@ -108,7 +108,7 @@ void main() {
     testLocalizationsV2(
       'should display devices in single selection mode and pop on tap',
       (tester, screen) async {
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           child: const SelectDeviceView(
             args: {'selectMode': 'single', 'type': 'ipv4'},

@@ -46,7 +46,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
       context,
       ref.read(dmzSettingsProvider.notifier).fetch(forceRemote: true),
     ).then((state) {
-      if (state == null) return;
+      if (!mounted || state == null) return;
       _updateControllers(state);
       if (state.settings.current.destinationType == DMZDestinationType.ip) {
         _checkDestinationIPAdress();
@@ -84,6 +84,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
               doSomethingWithSpinner(
                   context,
                   ref.read(dmzSettingsProvider.notifier).save().then((value) {
+                    if (!mounted) return;
                     _updateControllers(value);
                     showSuccessSnackBar(context, loc(context).saved);
                   }).onError((error, stackTrace) {

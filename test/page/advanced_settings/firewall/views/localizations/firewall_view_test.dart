@@ -246,8 +246,6 @@ void main() {
   },
       screens: [...responsiveDesktopScreens],
       goldenFilename: 'FWS-IPV6_DROP-01-dropdown_desktop',
-      skip:
-          true, // TODO: Needs stable keys for form fields in Ipv6PortServiceListView
       helper: testHelper);
 
   // Test ID: FWS-IPV6_INVALID
@@ -281,8 +279,6 @@ void main() {
   },
       screens: [...responsiveDesktopScreens],
       goldenFilename: 'FWS-IPV6_INVALID-01-invalid_ports_desktop',
-      skip:
-          true, // TODO: Needs stable keys for form fields in Ipv6PortServiceListView
       helper: testHelper);
 
   // Test ID: FWS-IPV6_OVERLAP
@@ -324,7 +320,5 @@ void main() {
   },
       screens: [...responsiveDesktopScreens],
       goldenFilename: 'FWS-IPV6_OVERLAP-01-overlap_ports_desktop',
-      skip:
-          true, // TODO: Needs stable keys for form fields in Ipv6PortServiceListView
       helper: testHelper);
 }

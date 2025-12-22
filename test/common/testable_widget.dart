@@ -16,24 +16,33 @@ Widget testableWidget({
   ThemeData? theme,
   ThemeData? darkTheme,
   Locale? locale,
-}) =>
-    ProviderScope(
-      overrides: overrides,
-      parent: parent,
-      child: MaterialApp(
-        navigatorKey: globalKey,
-        theme: theme ?? mockLightThemeData,
-        darkTheme: darkTheme ?? mockDarkThemeData,
-        locale: locale,
-        themeMode: themeMode,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: AppResponsiveLayout(
-            mobile: (ctx) => child,
-            desktop: (ctx) => child,
-          ),
+}) {
+  Widget result = ProviderScope(
+    overrides: overrides,
+    child: MaterialApp(
+      navigatorKey: globalKey,
+      theme: theme ?? mockLightThemeData,
+      darkTheme: darkTheme ?? mockDarkThemeData,
+      locale: locale,
+      themeMode: themeMode,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: AppResponsiveLayout(
+          mobile: (ctx) => child,
+          desktop: (ctx) => child,
         ),
       ),
+    ),
+  );
+
+  if (parent != null) {
+    result = UncontrolledProviderScope(
+      container: parent,
+      child: result,
     );
+  }
+
+  return result;
+}

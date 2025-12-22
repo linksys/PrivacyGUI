@@ -65,6 +65,7 @@ class LinksysRoute extends GoRoute {
               if (!await onExit(context, state)) {
                 return false; // Custom logic blocked navigation.
               }
+              if (!context.mounted) return true;
             }
 
             // If dirty checking is enabled and a provider is given...
@@ -76,6 +77,7 @@ class LinksysRoute extends GoRoute {
                 final bool? confirmed =
                     await (showAlertForTest?.call(context) ??
                         showUnsavedAlert(context));
+                if (!context.mounted) return true;
                 if (confirmed == true) {
                   // User wants to discard, so revert the state.
                   notifier.revert();

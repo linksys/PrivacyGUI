@@ -193,7 +193,12 @@ class TopologyAdapter {
 
   /// Map signal strength percentage (0-100) to RSSI (dBm).
   /// This is an approximation since we don't have actual RSSI values.
+  ///
+  /// If the input is already negative (RSSI format), return it directly.
   static int _mapToRSSI(int signalStrength) {
+    // If already RSSI (negative value), return as-is
+    if (signalStrength < 0) return signalStrength;
+
     // Convert percentage to approximate RSSI values
     // 100% = -30 dBm (excellent)
     // 80% = -50 dBm (strong)

@@ -30,6 +30,7 @@ import 'wifi_main_view_test.dart';
 /// - **`IWWL-ADV_INIT_GUEST`**: Verifies the wifi list view in advanced mode with guest wifi enabled.
 /// - **`IWWL-SSID`**: Verifies SSID name input and validation.
 /// - **`IWWL-PASSWORD`**: Verifies password input and validation.
+/// - **`IWWL-PASSWD_5G`**: Verifies 5GHz band password dialog displays correctly.
 /// - **`IWWL-SECURITY`**: Verifies security mode selection.
 /// - **`IWWL-WIFI_MODE`**: Verifies wifi mode selection.
 /// - **`IWWL-CHANNEL_WID`**: Verifies channel width selection.
@@ -224,7 +225,7 @@ void main() {
     testLocalizationsV2(
       'Verify password input and validation',
       (tester, screen) async {
-        final context = await testHelper.pumpShellView(
+        await testHelper.pumpShellView(
           tester,
           child: const WiFiMainView(),
           locale: screen.locale,
@@ -241,19 +242,87 @@ void main() {
         expect(passWidget.onTap, isNotNull);
 
         expect(wifiPasswordFinder, findsOneWidget);
-        await scrollAndTap(tester, wifiPasswordFinder);
+
+        // Tap the trailing edit icon to trigger the password dialog
+        // Note: We tap the edit icon because WifiPasswordField intercepts taps on the tile center
+        final trailingIconFinder = find
+            .descendant(
+              of: wifiPasswordFinder,
+              matching: find.byType(AppIcon),
+            )
+            .last;
+        await tester.tap(trailingIconFinder);
+        await tester.pumpAndSettle();
+
+        // Verify dialog opened
+        final dialogFinder = find.byType(AppDialog);
+        expect(dialogFinder, findsOneWidget,
+            reason: 'Password dialog should be visible');
+
         await testHelper.takeScreenshot(tester, 'IWWL-PASSWORD-01-edit_dialog');
 
-        final wifiPasswordInputFinder =
-            find.byKey(ValueKey('wifi password input'));
+        // Use descendant finder to ensure we get the input INSIDE the dialog
+        final wifiPasswordInputFinder = find.descendant(
+          of: dialogFinder,
+          matching: find.byType(EditableText),
+        );
         expect(wifiPasswordInputFinder, findsOneWidget);
-        await scrollAndTap(tester, wifiPasswordInputFinder);
+        await tester.tap(wifiPasswordInputFinder);
         await tester.enterText(wifiPasswordInputFinder, ' 嗨');
         await tester.pumpAndSettle();
         // Note: UI Kit uses theme-based icons for password rules (pendingIcon)
         // Visual validation is captured by screenshot
         await testHelper.takeScreenshot(
             tester, 'IWWL-PASSWORD-02-invalid_char_error');
+      },
+      helper: testHelper,
+      screens: _wifiListScreens,
+    );
+
+    // Test ID: IWWL-PASSWD_5G
+    testLocalizationsV2(
+      'Verify 5GHz band password dialog displays correctly',
+      (tester, screen) async {
+        await testHelper.pumpShellView(
+          tester,
+          child: const WiFiMainView(),
+          locale: screen.locale,
+        );
+
+        await tester.pumpAndSettle();
+
+        // Find the 5GHz WiFi card and its password tile
+        final wifiCard5GHzFinder =
+            find.byKey(const ValueKey('WiFiCard-RADIO_5GHz'));
+        expect(wifiCard5GHzFinder, findsOneWidget);
+
+        final wifiPasswordFinder = find.descendant(
+            of: wifiCard5GHzFinder,
+            matching:
+                find.byKey(const ValueKey('wifiPasswordCard-RADIO_5GHz')));
+        expect(wifiPasswordFinder, findsOneWidget);
+
+        // Verify the password tile has an onTap callback
+        final passWidget = tester.widget<WifiListTile>(wifiPasswordFinder);
+        expect(passWidget.onTap, isNotNull);
+
+        // Tap the trailing edit icon to trigger the password dialog
+        // Note: We tap the edit icon because WifiPasswordField intercepts taps on the tile center
+        final trailingIconFinder = find
+            .descendant(
+              of: wifiPasswordFinder,
+              matching: find.byType(AppIcon),
+            )
+            .last;
+        await tester.tap(trailingIconFinder);
+        await tester.pumpAndSettle();
+
+        // Verify dialog opened
+        final dialogFinder = find.byType(AppDialog);
+        expect(dialogFinder, findsOneWidget,
+            reason: '5GHz password dialog should be visible');
+
+        await testHelper.takeScreenshot(tester, 'IWWL-PASSWD_5G-01-dialog');
       },
       helper: testHelper,
       screens: _wifiListScreens,
@@ -449,12 +518,14 @@ void main() {
           child: const WiFiMainView(),
           locale: screen.locale,
         );
-        final wifiCard24GHzFinder =
-            find.byKey(const ValueKey('WiFiCard-RADIO_2.4GHz'));
+        // Use 5GHz card which supports Wide160c channel width
+        // This will cause 802.11a (wide20) and 802.11an (wide40) to be marked as unavailable
+        final wifiCard5GHzFinder =
+            find.byKey(const ValueKey('WiFiCard-RADIO_5GHz'));
         final wifiModeFinder = find.descendant(
-            of: wifiCard24GHzFinder,
-            matching: find
-                .byKey(const ValueKey('wifiWirelessModeCard-RADIO_2.4GHz')));
+            of: wifiCard5GHzFinder,
+            matching:
+                find.byKey(const ValueKey('wifiWirelessModeCard-RADIO_5GHz')));
         await scrollAndTap(tester, wifiModeFinder);
         await tester.pumpAndSettle();
 

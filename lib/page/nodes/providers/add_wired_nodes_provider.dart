@@ -53,6 +53,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     ref.read(idleCheckerPauseProvider.notifier).state = true;
     // Set router auto onboarding to true
     await setAutoOnboardingSettings(true);
+    if (!context.mounted) return;
     // Get backhaul info
     final backhaulList = ref.read(deviceManagerProvider).backhaulInfoData;
     state = state.copyWith(backhaulSnapshot: backhaulList);
@@ -68,6 +69,7 @@ class AddWiredNodesNotifier extends AutoDisposeNotifier<AddWiredNodesState> {
     // Fetch latest status
     logger.d('[AddWiredNode]: fetch nodes');
     final nodes = await _fetchNodes();
+    if (!context.mounted) return;
     state = state.copyWith(nodes: nodes);
     stopCheckingBackhaul(context);
     await ref.read(pollingProvider.notifier).forcePolling();

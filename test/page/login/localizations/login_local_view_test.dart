@@ -129,7 +129,7 @@ void main() async {
         };
       });
 
-      final context = await testHelper.pumpView(
+      await testHelper.pumpView(
         tester,
         child: const LoginLocalView(),
         locale: screen.locale,

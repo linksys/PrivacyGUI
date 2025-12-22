@@ -255,7 +255,7 @@ void main() async {
       when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
           .thenAnswer((_) => completer.future);
 
-      final context = await testHelper.pumpView(
+      await testHelper.pumpView(
         tester,
         child: const PnpPPPOEView(),
         locale: localizedScreen.locale,

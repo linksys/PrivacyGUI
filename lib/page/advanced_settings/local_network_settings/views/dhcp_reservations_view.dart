@@ -83,16 +83,19 @@ class _DHCPReservationsContentViewState
               ref.read(dhcpReservationProvider.notifier).revert();
             });
           }),
-      actions: [
-        AppButton.text(
-          label: loc(context).add,
-          key: Key('addReservationButton'),
-          icon: Icon(AppFontIcons.add),
-          onTap: () {
-            _showManualAddReservationModal();
-          },
-        )
-      ],
+      menu: UiKitMenuConfig(
+        title: '',
+        items: [
+          UiKitMenuItem(
+            label: loc(context).add,
+            icon: AppFontIcons.add,
+            onTap: () {
+              _showManualAddReservationModal();
+            },
+          ),
+        ],
+      ),
+      menuIcon: AppFontIcons.add,
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

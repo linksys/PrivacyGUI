@@ -64,12 +64,12 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
           .where((result) => _checkAdvertisementData(result.advertisementData));
       for (ScanResult result in filtered) {
         logger.d(
-            'BT scan result: ${result.device.name} found! <${result.device}>, rssi: ${result.rssi}, advertisementData: ${result.advertisementData}');
-        final isExist =
-            _results.any((element) => element.device.id == result.device.id);
+            'BT scan result: ${result.device.platformName} found! <${result.device}>, rssi: ${result.rssi}, advertisementData: ${result.advertisementData}');
+        final isExist = _results.any(
+            (element) => element.device.remoteId == result.device.remoteId);
         if (isExist) {
-          final index = _results
-              .indexWhere((element) => element.device.id == result.device.id);
+          final index = _results.indexWhere(
+              (element) => element.device.remoteId == result.device.remoteId);
           _results.replaceRange(index, index + 1, [result]);
         } else {
           _results.add(result);
@@ -89,9 +89,9 @@ class BluetoothManager with JNAPCommandExecutor<JNAPResult> {
     try {
       logger.d('BT start to connect to $device');
       await device.connect(timeout: Duration(seconds: durationInSec));
-      logger.d('BT ${device.id} connected');
+      logger.d('BT ${device.remoteId} connected');
       final services = await device.discoverServices();
-      logger.d('BT Services on ${device.id}');
+      logger.d('BT Services on ${device.remoteId}');
       for (var service in services) {
         logger.d('BT Service: $service');
       }

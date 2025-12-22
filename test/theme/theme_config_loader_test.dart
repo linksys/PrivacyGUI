@@ -22,7 +22,7 @@ void main() {
 
     test('resolve should prioritize CI/CD (themeJsonEnv) over Assets',
         () async {
-      final config = await ThemeConfigLoader.resolve(
+      await ThemeConfigLoader.resolve(
         forcedSource: ThemeSource.normal,
         themeJsonEnv: '{"style": "cicd_style"}', // CICD present
         themeNetworkUrl: '',

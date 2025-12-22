@@ -215,8 +215,9 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         _menuHelper.findOriginalNode(originalNodes, meshNode.id);
 
     // Disable detail panel for Internet node
-    if (originalNode?.data.location == 'Internet')
+    if (originalNode?.data.location == 'Internet') {
       return const SizedBox.shrink();
+    }
 
     final isRouter = originalNode?.data.isRouter ?? false;
     final nodeType = isRouter ? 'Router' : 'Client';

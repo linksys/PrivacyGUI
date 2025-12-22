@@ -91,7 +91,7 @@ List<Locale> get targetLocales {
           .split(',')
           .map((e) => allLocales
               .firstWhereOrNull((locale) => locale.toLanguageTag() == e.trim()))
-          .whereNotNull()
+          .nonNulls
           .toList();
     } catch (e) {
       _localeConfigured = false;

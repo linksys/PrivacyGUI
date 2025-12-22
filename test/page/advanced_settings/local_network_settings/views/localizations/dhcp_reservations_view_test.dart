@@ -43,12 +43,17 @@ void main() {
             LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
     when(testHelper.mockDeviceFilterConfigNotifier.initFilter())
         .thenAnswer((_) async => {});
+    // Mock getBandConnectedBy to return proper band name instead of dummy string
+    when(testHelper.mockDeviceManagerNotifier.getBandConnectedBy(any))
+        .thenReturn('2.4GHz');
   });
 
   // Test ID: DHCPR-EMPTY
   testLocalizationsV2(
     'Verifies the view when there are no devices or reservations',
     (tester, screen) async {
+      // Enable animations to allow UI to fully render
+      testHelper.disableAnimations = false;
       when(testHelper.mockDHCPReservationsNotifier.build())
           .thenReturn(DHCPReservationState.fromMap(dhcpReservationEmptyState));
 
@@ -64,8 +69,8 @@ void main() {
           findsOneWidget);
       expect(find.text(testHelper.loc(context).dhcpReservationDescption),
           findsOneWidget);
-      // After UI Kit migration, Add button uses key 'addReservationButton'
-      expect(find.byKey(const Key('addReservationButton')), findsOneWidget);
+      // After UI Kit migration, Add button is now in menu, find by icon
+      expect(find.byIcon(AppFontIcons.add), findsOneWidget);
       expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
           findsOneWidget);
       expect(find.byType(AppListCard), findsNothing);
@@ -220,6 +225,8 @@ void main() {
   testLocalizationsV2(
     'Verifies the "manually add reservation" dialog',
     (tester, screen) async {
+      // Enable animations to allow UI to fully render
+      testHelper.disableAnimations = false;
       when(testHelper.mockDHCPReservationsNotifier.build())
           .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
 
@@ -230,7 +237,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('addReservationButton')));
+      // Tap the menu button (Add icon) to open the modal
+      await tester.tap(find.byIcon(AppFontIcons.add));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).manuallyAddReservation),

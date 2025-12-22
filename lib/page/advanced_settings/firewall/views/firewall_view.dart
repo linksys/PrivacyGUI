@@ -78,8 +78,10 @@ class _FirewallViewState extends ConsumerState<FirewallView>
 
             doSomethingWithSpinner(context, Future.wait(futures))
                 .then((values) {
+              if (!mounted) return;
               showChangesSavedSnackBar();
             }).onError((error, stackTrace) {
+              if (!mounted) return;
               showErrorMessageSnackBar(error);
             });
           }),
@@ -87,6 +89,7 @@ class _FirewallViewState extends ConsumerState<FirewallView>
           ? () async {
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
+                if (!mounted) return;
                 ref.read(firewallProvider.notifier).revert();
                 ref.read(ipv6PortServiceListProvider.notifier).revert();
                 context.pop();

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:path_provider/path_provider.dart';

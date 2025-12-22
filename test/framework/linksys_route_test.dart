@@ -155,6 +155,7 @@ class SettingsPage extends ConsumerWidget {
 }
 
 void main() {
+  // ignore: unused_element
   GoRouter createTestRouter() {
     return GoRouter(
       initialLocation: '/settings',
@@ -188,11 +189,6 @@ void main() {
   }
 
   group('LinksysRoute Integration Test', () {
-    // This function will simulate the user's choice in the dialog.
-    Future<bool?> mockShowAlert(bool discard) async {
-      return discard;
-    }
-
     testWidgets('allows navigation when state is clean', (tester) async {
       final router = GoRouter(
         initialLocation: '/settings',

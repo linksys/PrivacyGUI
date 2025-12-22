@@ -63,6 +63,7 @@ class _ManualFirmwareUpdateViewState
               onTap: () async {
                 if (file == null) {
                   final result = await FilePicker.platform.pickFiles();
+                  if (!mounted) return;
                   if (result != null) {
                     ref.read(manualFirmwareUpdateProvider.notifier).setFile(
                         result.files.first.name, result.files.first.bytes!);
@@ -101,6 +102,7 @@ class _ManualFirmwareUpdateViewState
                           .then((_) {
                         handleSuccessUpdated();
                       }).catchError((error) {
+                        if (!mounted) return;
                         setState(() {
                           status?.stop();
                           ref
@@ -115,6 +117,7 @@ class _ManualFirmwareUpdateViewState
                               test: (error) =>
                                   error is JNAPSideEffectError).catchError(
                               (error) {
+                        if (!mounted) return;
                         setState(() {
                           status?.stop();
                           ref
@@ -224,6 +227,7 @@ class _ManualFirmwareUpdateViewState
   }
 
   void handleSuccessUpdated() {
+    if (!mounted) return;
     ref.read(manualFirmwareUpdateProvider.notifier).reset();
     SharedPreferences.getInstance().then((pref) {
       pref.setBool(pFWUpdated, true);

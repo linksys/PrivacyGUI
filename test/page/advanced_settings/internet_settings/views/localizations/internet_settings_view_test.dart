@@ -5,7 +5,6 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
-import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
@@ -412,7 +411,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePppoe);
         });
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const InternetSettingsView(),
@@ -449,7 +448,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStatePptp);
         });
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const InternetSettingsView(),
@@ -485,7 +484,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateL2tp);
         });
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const InternetSettingsView(),
@@ -524,7 +523,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return state.copyWith(status: status);
         });
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const InternetSettingsView(),
@@ -560,7 +559,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateStatic);
         });
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const InternetSettingsView(),
@@ -797,7 +796,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return newState;
         });
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const InternetSettingsView(),
@@ -1064,7 +1063,7 @@ Future<void> main() async {
           await Future.delayed(const Duration(seconds: 1));
           return InternetSettingsState.fromMap(internetSettingsStateDHCP);
         });
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const InternetSettingsView(),

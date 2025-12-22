@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
@@ -207,7 +206,7 @@ void main() {
         .thenAnswer((_) async {
       return state;
     });
-    final context = await testHelper.pumpShellView(
+    await testHelper.pumpShellView(
       tester,
       child: const DMZSettingsView(),
       config: LinksysRouteConfig(
@@ -229,7 +228,7 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
-    final endIpFormField = tester.widget<AppIpv4TextField>(ipFormField);
+    // final endIpFormField = tester.widget<AppIpv4TextField>(ipFormField);
     // TODO: Validation error text not reliable in screenshot tests
     // expect(endIpFormField.errorText, loc(context).dmzSourceRangeError);
   },
@@ -255,7 +254,7 @@ void main() {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    final context = await testHelper.pumpShellView(
+    await testHelper.pumpShellView(
       tester,
       child: const DMZSettingsView(),
       config: LinksysRouteConfig(
@@ -277,7 +276,7 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
-    final destIpFormField = tester.widget<AppIpv4TextField>(ipFormField);
+    // final destIpFormField = tester.widget<AppIpv4TextField>(ipFormField);
     // TODO: Validation error text not reliable in screenshot tests
     // expect(destIpFormField.errorText, loc(context).invalidIpAddress);
   },
@@ -303,7 +302,7 @@ void main() {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    final context = await testHelper.pumpShellView(
+    await testHelper.pumpShellView(
       tester,
       child: const DMZSettingsView(),
       config: LinksysRouteConfig(
@@ -318,8 +317,8 @@ void main() {
     expect(destinationRadioList.initial, DMZDestinationType.mac);
     final macField = find.byKey(const Key('destinationMAC'));
     expect(macField, findsOneWidget);
-    final macController =
-        tester.widget<AppMacAddressTextField>(macField).controller;
+    // final macController =
+    //     tester.widget<AppMacAddressTextField>(macField).controller;
     // TODO: Assertion removed for snapshot-only focus
     // expect(macController?.text, '00:11:22:33:44:55');
   },
@@ -345,7 +344,7 @@ void main() {
       await Future.delayed(const Duration(seconds: 1));
       return state;
     });
-    final context = await testHelper.pumpShellView(
+    await testHelper.pumpShellView(
       tester,
       child: const DMZSettingsView(),
       config: LinksysRouteConfig(
@@ -365,8 +364,8 @@ void main() {
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
-    final macField = tester.widget<AppMacAddressTextField>(
-        find.byKey(const Key('destinationMAC')));
+    // final macField = tester.widget<AppMacAddressTextField>(
+    //     find.byKey(const Key('destinationMAC')));
     // TODO: Validation error text not reliable in screenshot tests
     // expect(macField.errorText, loc(context).invalidMACAddress);
   },

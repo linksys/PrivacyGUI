@@ -4,12 +4,12 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/advanced_settings/advanced_settings_view.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/route/constants.dart';
+
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 
 import '../../../../common/config.dart';
-import '../../../../common/screen.dart';
+
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../test_data/dashboard_home_test_state.dart';

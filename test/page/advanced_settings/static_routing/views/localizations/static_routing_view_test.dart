@@ -268,7 +268,7 @@ void main() {
         when(testHelper.mockStaticRoutingRuleNotifier.isRuleValid())
             .thenReturn(true);
 
-        final context = await testHelper.pumpShellView(
+        await testHelper.pumpShellView(
           tester,
           locale: screen.locale,
           child: const StaticRoutingView(),
@@ -316,7 +316,7 @@ void main() {
         // Test ID: SROUTE-VAL-NAME
         testHelper.disableAnimations = false; // Enable animations for this test
 
-        final context = await testHelper.pumpShellView(
+        await testHelper.pumpShellView(
           tester,
           locale: screen.locale,
           child: const StaticRoutingView(),
@@ -352,7 +352,7 @@ void main() {
                 .isValidIpAddress(any, any))
             .thenReturn(false);
 
-        final context = await testHelper.pumpShellView(
+        await testHelper.pumpShellView(
           tester,
           locale: screen.locale,
           child: const StaticRoutingView(),
@@ -390,7 +390,7 @@ void main() {
         when(testHelper.mockStaticRoutingRuleNotifier.isValidSubnetMask(any))
             .thenReturn(false);
 
-        final context = await testHelper.pumpShellView(
+        await testHelper.pumpShellView(
           tester,
           locale: screen.locale,
           child: const StaticRoutingView(),
@@ -429,7 +429,7 @@ void main() {
                 .isValidIpAddress(any, any))
             .thenReturn(false);
 
-        final context = await testHelper.pumpShellView(
+        await testHelper.pumpShellView(
           tester,
           locale: screen.locale,
           child: const StaticRoutingView(),

@@ -98,7 +98,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
       await tester.tap(find.byKey(const Key('advancedTab')));
       await tester.pumpAndSettle();
 
@@ -119,7 +118,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
       await tester.tap(find.byKey(const Key('advancedTab')));
       await tester.pumpAndSettle();
 
@@ -145,7 +143,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
       await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
@@ -171,7 +168,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
       await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
@@ -199,7 +195,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
       await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
@@ -232,7 +227,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
       await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
@@ -265,7 +259,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
       await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 

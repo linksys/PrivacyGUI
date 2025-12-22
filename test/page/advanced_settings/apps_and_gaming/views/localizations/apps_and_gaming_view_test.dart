@@ -482,7 +482,7 @@ void main() {
         // Enable animations for tab switching - MUST be set before pumpView
         testHelper.disableAnimations = false;
 
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const AppsGamingSettingsView(),
@@ -525,7 +525,7 @@ void main() {
         // Enable animations for tab switching - MUST be set before pumpView
         testHelper.disableAnimations = false;
 
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const AppsGamingSettingsView(),
@@ -1074,7 +1074,7 @@ void main() {
         // Enable animations for tab switching - MUST be set before pumpView
         testHelper.disableAnimations = false;
 
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const AppsGamingSettingsView(),
@@ -1123,7 +1123,7 @@ void main() {
         // Enable animations for tab switching - MUST be set before pumpView
         testHelper.disableAnimations = false;
 
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           locale: screen.locale,
           child: const AppsGamingSettingsView(),

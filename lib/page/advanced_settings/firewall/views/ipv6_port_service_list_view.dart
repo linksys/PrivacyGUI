@@ -10,7 +10,6 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-
 class Ipv6PortServiceListView extends ArgumentsConsumerStatefulView {
   const Ipv6PortServiceListView({super.key, super.args});
 
@@ -138,7 +137,7 @@ class _Ipv6PortServiceListViewState
             }
           }
           return AppTextField(
-            key: ValueKey('appName_${identityHashCode(rule)}'),
+            key: const Key('ruleName'),
             controller: _applicationTextController,
             hintText: loc(context).applicationName,
             errorText: _nameError,
@@ -163,7 +162,7 @@ class _Ipv6PortServiceListViewState
             'Both': getProtocolTitle(context, 'Both'),
           };
           return AppDropdown<String>(
-            key: ValueKey('protocol_${identityHashCode(rule)}'),
+            key: const Key('protocol'),
             items: protocolDisplayMap.values.toList(),
             value: protocolDisplayMap[currentProtocol],
             hint: loc(context).protocol,
@@ -191,7 +190,7 @@ class _Ipv6PortServiceListViewState
             children: [
               Expanded(
                 child: AppIPv6TextField(
-                  key: ValueKey('ip_${identityHashCode(rule)}'),
+                  key: const Key('ipAddress'),
                   label: loc(context).ipAddress,
                   controller: _ipAddressTextController,
                   invalidFormatMessage: loc(context).invalidIpAddress,
@@ -221,7 +220,9 @@ class _Ipv6PortServiceListViewState
         editBuilder: (_, rule, setSheetState) {
           // Controllers are initialized in column 0's editBuilder
           return AppRangeInput(
-            key: ValueKey('range_${identityHashCode(rule)}'),
+            key: const Key('portRange'),
+            startKey: const Key('firstPort'),
+            endKey: const Key('lastPort'),
             startController: _firstPortTextController,
             endController: _lastPortTextController,
             startLabel: loc(context).startPort,

@@ -166,8 +166,9 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
   Widget _advanvedWiFiWirelessModeCard(WiFiItem radio) {
     final isShowMode = radio.availableWirelessModes.isNotEmpty;
 
-    if (!isShowMode)
+    if (!isShowMode) {
       return const SizedBox.shrink(key: Key('wireless-mode-hidden'));
+    }
 
     return WifiListTile(
       key: Key('wifiWirelessModeCard-${radio.radioID.value}'),
@@ -216,10 +217,14 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
         ),
         trailing: const AppIcon.font(AppFontIcons.edit),
         onTap: () {
+          final allChannelWidths = radio.availableChannels.keys.toList();
+          final validChannelWidths = getAvailableChannelWidths(
+            radio.wirelessMode,
+            allChannelWidths,
+          );
           showChannelWidthModal(
-              radio.channelWidth,
-              radio.availableChannels.keys.toList(),
-              radio.availableChannels.keys.toList(), (value) {
+              radio.channelWidth, allChannelWidths, validChannelWidths,
+              (value) {
             ref
                 .read(wifiBundleProvider.notifier)
                 .setChannelWidth(value, radio.radioID);

@@ -74,22 +74,20 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
                   AppText.labelLarge(loc(context).provider),
                   AppGap.sm(),
                   ...[
-                    if (status.hasFortinet)
-                      RadioListTile<InstantSafetyType>(
-                        title: Text(loc(context).fortinetSecureDns),
-                        value: InstantSafetyType.fortinet,
-                        groupValue: settings.safeBrowsingType,
-                        onChanged: (value) {
-                          if (value != null) {
-                            _notifier.setSafeBrowsingProvider(value);
-                          }
-                        },
-                      ),
-                    RadioListTile<InstantSafetyType>(
-                      title: Text(loc(context).openDNS),
-                      value: InstantSafetyType.openDNS,
-                      groupValue: settings.safeBrowsingType,
-                      onChanged: (value) {
+                    AppRadioList<InstantSafetyType>(
+                      selected: settings.safeBrowsingType,
+                      items: [
+                        if (status.hasFortinet)
+                          AppRadioListItem<InstantSafetyType>(
+                            title: loc(context).fortinetSecureDns,
+                            value: InstantSafetyType.fortinet,
+                          ),
+                        AppRadioListItem<InstantSafetyType>(
+                          title: loc(context).openDNS,
+                          value: InstantSafetyType.openDNS,
+                        ),
+                      ],
+                      onChanged: (index, value) {
                         if (value != null) {
                           _notifier.setSafeBrowsingProvider(value);
                         }
@@ -136,9 +134,11 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
         showChangesSavedSnackBar();
       }),
     ).catchError((error, stackTrace) {
+      if (!mounted) return;
       if (error is JNAPSideEffectError) {
         showRouterNotFoundAlert(context, ref, onComplete: () async {
           await _notifier.fetch(forceRemote: true);
+          if (!mounted) return;
           showChangesSavedSnackBar();
         });
       } else {
