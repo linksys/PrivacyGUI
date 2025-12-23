@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
@@ -151,7 +150,7 @@ void main() {
         isDMZEnabled: true,
         sourceType: DMZSourceType.range,
         destinationType: DMZDestinationType.ip,
-        sourceRestriction: DMZSourceRestriction(
+        sourceRestriction: DMZSourceRestrictionUI(
             firstIPAddress: '192.168.1.23', lastIPAddress: '192.168.1.78'));
     final state = DMZSettingsState.fromMap(dmzSettingsTestState)
         .copyWith(settings: Preservable(original: settings, current: settings));
@@ -197,7 +196,7 @@ void main() {
         isDMZEnabled: true,
         sourceType: DMZSourceType.range,
         destinationType: DMZDestinationType.ip,
-        sourceRestriction: DMZSourceRestriction(
+        sourceRestriction: DMZSourceRestrictionUI(
             firstIPAddress: '192.168.1.23', lastIPAddress: '192.168.1.78'));
     var state = DMZSettingsState.fromMap(dmzSettingsTestState)
         .copyWith(settings: Preservable(original: settings, current: settings));

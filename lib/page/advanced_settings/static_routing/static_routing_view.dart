@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
@@ -130,83 +131,139 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
   Widget _mobildSettingsView(
       StaticRoutingState state, List<String> submaskToken, String prefixIP) {
     // return Center();
-    return EditableCardListsettingsView<NamedStaticRouteEntry>(
+    return EditableCardListsettingsView<StaticRoutingRuleUIModel>(
         title: loc(context).staticRouting,
         emptyMessage: loc(context).noAdvancedRouting,
         addLabel: loc(context).add,
         addEnabled: !_notifier.isExceedMax(),
-        itemCardBuilder: (context, rule) => EditableListItem(
-              title: rule.name,
-              content: Table(
-                children: [
-                  TableRow(
-                    children: [
-                      AppSettingCard.noBorder(
-                        padding: EdgeInsets.only(bottom: Spacing.medium),
-                        title: loc(context).destinationIPAddress,
-                        description: rule.settings.destinationLAN,
-                      ),
-                      AppSettingCard.noBorder(
-                        padding: EdgeInsets.only(bottom: Spacing.medium),
-                        title: loc(context).subnetMask,
-                        description: NetworkUtils.prefixLengthToSubnetMask(
-                            rule.settings.networkPrefixLength),
-                      )
-                    ],
-                  ),
-                  TableRow(
-                    children: [
-                      AppSettingCard.noBorder(
-                        padding: EdgeInsets.only(bottom: Spacing.medium),
-                        title: loc(context).gateway,
-                        description: rule.settings.gateway ?? '--',
-                      ),
-                      AppSettingCard.noBorder(
-                        padding: EdgeInsets.only(bottom: Spacing.medium),
-                        title: loc(context).labelInterface,
-                        description: getInterfaceTitle(rule.settings.interface),
-                      )
-                    ],
-                  ),
-                ],
-              ),
+        itemCardBuilder: (context, rule) {
+          // Convert from StaticRoutingRuleUIModel (CIDR) to display format
+          final displaySubnetMask =
+              NetworkUtils.prefixLengthToSubnetMask(rule.networkPrefixLength);
+          return EditableListItem(
+            title: rule.name,
+            content: Table(
+              children: [
+                TableRow(
+                  children: [
+                    AppSettingCard.noBorder(
+                      padding: EdgeInsets.only(bottom: Spacing.medium),
+                      title: loc(context).destinationIPAddress,
+                      description: rule.destinationIP,
+                    ),
+                    AppSettingCard.noBorder(
+                      padding: EdgeInsets.only(bottom: Spacing.medium),
+                      title: loc(context).subnetMask,
+                      description: displaySubnetMask,
+                    )
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    AppSettingCard.noBorder(
+                      padding: EdgeInsets.only(bottom: Spacing.medium),
+                      title: loc(context).gateway,
+                      description: rule.gateway?.isEmpty ?? true
+                          ? '--'
+                          : rule.gateway ?? '--',
+                    ),
+                    AppSettingCard.noBorder(
+                      padding: EdgeInsets.only(bottom: Spacing.medium),
+                      title: loc(context).labelInterface,
+                      description: getInterfaceTitle(rule.interface),
+                    )
+                  ],
+                ),
+              ],
             ),
+          );
+        },
         editRoute: RouteNamed.settingsStaticRoutingRule,
-        dataList: state.current.entries.entries,
+        // Convert entries to StaticRoutingRuleUIModel for editor
+        dataList: state.current.entries
+            .map((e) => StaticRoutingRuleUIModel(
+                  name: e.name,
+                  destinationIP: e.destinationIP,
+                  networkPrefixLength:
+                      NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
+                  gateway: e.gateway.isEmpty ? null : e.gateway,
+                  interface: e.interface,
+                ))
+            .toList(),
         onSave: (index, rule) {
+          // Convert from StaticRoutingRuleUIModel back to StaticRouteEntryUIModel
+          final uiEntry = StaticRouteEntryUIModel(
+            name: rule.name,
+            destinationIP: rule.destinationIP,
+            subnetMask:
+                NetworkUtils.prefixLengthToSubnetMask(rule.networkPrefixLength),
+            gateway: rule.gateway ?? '',
+            interface: rule.interface,
+          );
           if (index >= 0) {
-            _notifier.editRule(index, rule);
+            _notifier.editRule(index, uiEntry);
           } else {
-            _notifier.addRule(rule);
+            _notifier.addRule(uiEntry);
           }
         },
         onDelete: (index, rule) {
-          _notifier.deleteRule(rule);
+          // Convert for deletion
+          final uiEntry = StaticRouteEntryUIModel(
+            name: rule.name,
+            destinationIP: rule.destinationIP,
+            subnetMask:
+                NetworkUtils.prefixLengthToSubnetMask(rule.networkPrefixLength),
+            gateway: rule.gateway ?? '',
+            interface: rule.interface,
+          );
+          _notifier.deleteRule(uiEntry);
         });
   }
 
   Widget _desktopSettingsView(
       StaticRoutingState state, List<String> submaskToken, String prefixIP) {
-    return AppEditableTableSettingsView<NamedStaticRouteEntry>(
+    return AppEditableTableSettingsView<StaticRouteEntryUIModel>(
       title: loc(context).staticRouting,
       emptyMessage: loc(context).noStaticRoutes,
       addEnabled: !_notifier.isExceedMax(),
       pivotalIndex: 4, // Changes on the interface may make other values invalid
       onStartEdit: (index, rule) {
         currentFocus = null;
+        // Entries are already UI models, no conversion needed
+        final uiEntries = state.current.entries;
+
+        // Create UI rule for editor (with CIDR notation prefix length)
+        final uiRule = rule != null
+            ? StaticRoutingRuleUIModel(
+                name: rule.name,
+                destinationIP: rule.destinationIP,
+                networkPrefixLength:
+                    NetworkUtils.subnetMaskToPrefixLength(rule.subnetMask),
+                gateway: rule.gateway.isEmpty ? null : rule.gateway,
+                interface: rule.interface,
+              )
+            : null;
+
         ref.read(staticRoutingRuleProvider.notifier).init(
-            state.current.entries.entries,
-            rule,
+            uiEntries
+                .map((e) => StaticRoutingRuleUIModel(
+                      name: e.name,
+                      destinationIP: e.destinationIP,
+                      networkPrefixLength:
+                          NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
+                      gateway: e.gateway.isEmpty ? null : e.gateway,
+                      interface: e.interface,
+                    ))
+                .toList(),
+            uiRule,
             index,
             state.status.routerIp,
             state.status.subnetMask);
         // Edit
         routerNameTextController.text = rule?.name ?? '';
-        destinationIPTextController.text =
-            '${rule?.settings.destinationLAN ?? 0}';
-        subnetMaskTextController.text = NetworkUtils.prefixLengthToSubnetMask(
-            rule?.settings.networkPrefixLength ?? 0);
-        gatewayTextController.text = rule?.settings.gateway ?? '';
+        destinationIPTextController.text = rule?.destinationIP ?? '';
+        subnetMaskTextController.text = rule?.subnetMask ?? '';
+        gatewayTextController.text = rule?.gateway ?? '';
         setState(() {
           _isEditRuleValid =
               ref.read(staticRoutingRuleProvider.notifier).isRuleValid();
@@ -234,16 +291,15 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               3: FractionColumnWidth(.2),
               4: FractionColumnWidth(.15),
             },
-      dataList: [...state.current.entries.entries],
+      dataList: [...state.current.entries],
       editRowIndex: 0,
       cellBuilder: (context, ref, index, rule) {
         return switch (index) {
           0 => AppText.bodySmall(rule.name),
-          1 => AppText.bodySmall(rule.settings.destinationLAN),
-          2 => AppText.bodySmall(NetworkUtils.prefixLengthToSubnetMask(
-              rule.settings.networkPrefixLength)),
-          3 => AppText.bodySmall(rule.settings.gateway ?? '--'),
-          4 => AppText.bodySmall(getInterfaceTitle(rule.settings.interface)),
+          1 => AppText.bodySmall(rule.destinationIP),
+          2 => AppText.bodySmall(rule.subnetMask),
+          3 => AppText.bodySmall(rule.gateway.isEmpty ? '--' : rule.gateway),
+          4 => AppText.bodySmall(getInterfaceTitle(rule.interface)),
           _ => AppText.bodySmall(''),
         };
       },
@@ -272,8 +328,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               onChanged: (value) {
                 ref.read(staticRoutingRuleProvider.notifier).updateRule(
                       stateRule?.copyWith(
-                        settings:
-                            stateRule.settings.copyWith(destinationLAN: value),
+                        destinationIP: value,
                       ),
                     );
                 setState(() {
@@ -291,10 +346,8 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               onChanged: (value) {
                 ref.read(staticRoutingRuleProvider.notifier).updateRule(
                       stateRule?.copyWith(
-                        settings: stateRule.settings.copyWith(
-                          networkPrefixLength:
-                              NetworkUtils.subnetMaskToPrefixLength(value),
-                        ),
+                        networkPrefixLength:
+                            NetworkUtils.subnetMaskToPrefixLength(value),
                       ),
                     );
                 setState(() {
@@ -312,8 +365,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               onChanged: (value) {
                 ref.read(staticRoutingRuleProvider.notifier).updateRule(
                       stateRule?.copyWith(
-                        settings:
-                            stateRule.settings.copyWith(gateway: () => value),
+                        gateway: value,
                       ),
                     );
                 setState(() {
@@ -331,13 +383,12 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
                 RoutingSettingInterface.internet,
               ],
               initial: RoutingSettingInterface.resolve(
-                  stateRule?.settings.interface ?? 'LAN'),
+                  stateRule?.interface ?? 'LAN'),
               label: (item) => getInterfaceTitle(item.value),
               onChanged: (value) {
                 ref.read(staticRoutingRuleProvider.notifier).updateRule(
                       stateRule?.copyWith(
-                        settings:
-                            stateRule.settings.copyWith(interface: value.value),
+                        interface: value.value,
                       ),
                     );
                 setState(() {
@@ -370,31 +421,39 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
               : loc(context).invalidSubnetMask,
           3 => ref.read(staticRoutingRuleProvider.notifier).isValidIpAddress(
                   gatewayTextController.text,
-                  (stateRule?.settings.interface ?? 'LAN') == 'LAN')
+                  (stateRule?.interface ?? 'LAN') == 'LAN')
               ? null
               : loc(context).invalidGatewayIpAddress,
           _ => null,
         };
       },
-      createNewItem: () => NamedStaticRouteEntry(
+      createNewItem: () => const StaticRouteEntryUIModel(
         name: '',
-        settings: StaticRouteEntry(
-          destinationLAN: '',
-          interface: 'LAN',
-          networkPrefixLength: 24,
-        ),
+        destinationIP: '',
+        subnetMask: '255.255.255.0',
+        gateway: '',
+        interface: 'LAN',
       ),
       onSaved: (index, rule) {
         final stateRule = ref.read(staticRoutingRuleProvider).rule;
         if (stateRule == null) {
           return;
         }
+        // Convert StaticRoutingRuleUIModel to StaticRouteEntryUIModel
+        final uiEntry = StaticRouteEntryUIModel(
+          name: stateRule.name,
+          destinationIP: stateRule.destinationIP,
+          subnetMask: NetworkUtils.prefixLengthToSubnetMask(
+              stateRule.networkPrefixLength),
+          gateway: stateRule.gateway ?? '',
+          interface: stateRule.interface,
+        );
         if (index == null) {
           // add
-          ref.read(staticRoutingProvider.notifier).addRule(stateRule);
+          ref.read(staticRoutingProvider.notifier).addRule(uiEntry);
         } else {
           // edit
-          ref.read(staticRoutingProvider.notifier).editRule(index, stateRule);
+          ref.read(staticRoutingProvider.notifier).editRule(index, uiEntry);
         }
       },
       onDeleted: (index, rule) {
