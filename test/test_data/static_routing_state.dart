@@ -3,36 +3,28 @@ const staticRoutingTestState = {
     "original": {
       "isNATEnabled": true,
       "isDynamicRoutingEnabled": false,
-      "entries": {
-        "entries": [
-          {
-            "name": "test",
-            "settings": {
-              "destinationLAN": "10.137.1.177",
-              "gateway": "10.137.1.1",
-              "interface": "LAN",
-              "networkPrefixLength": 24
-            }
-          }
-        ]
-      }
+      "entries": [
+        {
+          "name": "test",
+          "destinationIP": "10.137.1.177",
+          "subnetMask": "255.255.255.0",
+          "gateway": "10.137.1.1",
+          "interface": "LAN"
+        }
+      ]
     },
     "current": {
       "isNATEnabled": true,
       "isDynamicRoutingEnabled": false,
-      "entries": {
-        "entries": [
-          {
-            "name": "test",
-            "settings": {
-              "destinationLAN": "10.137.1.177",
-              "gateway": "10.137.1.1",
-              "interface": "LAN",
-              "networkPrefixLength": 24
-            }
-          }
-        ]
-      }
+      "entries": [
+        {
+          "name": "test",
+          "destinationIP": "10.137.1.177",
+          "subnetMask": "255.255.255.0",
+          "gateway": "10.137.1.1",
+          "interface": "LAN"
+        }
+      ]
     }
   },
   "status": {
@@ -47,18 +39,12 @@ const staticRoutingTestStateEmpty = {
     "original": {
       "isNATEnabled": true,
       "isDynamicRoutingEnabled": false,
-      "entries": {"entries": [
-          
-        ]
-      }
+      "entries": []
     },
     "current": {
       "isNATEnabled": true,
       "isDynamicRoutingEnabled": false,
-      "entries": {"entries": [
-          
-        ]
-      }
+      "entries": []
     }
   },
   "status": {

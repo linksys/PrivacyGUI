@@ -31,15 +31,6 @@ void main() {
 
   setUp(() {
     testHelper.setup();
-    when(testHelper.mockFirewallNotifier.fetch())
-        .thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-      return FirewallState.fromMap(firewallSettingsTestState);
-    });
-    when(testHelper.mockIpv6PortServiceListNotifier.fetch())
-        .thenAnswer((realInvocation) async {
-      return Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState);
-    });
   });
 
   // Test ID: FWS-FW_INIT
@@ -254,7 +245,7 @@ void main() {
     final context = await testHelper.pumpView(
       tester,
       child: Ipv6PortServiceRuleView(
-        args: {'items': state.current.rules},
+        args: {'items': state.settings.current.rules},
       ),
       locale: screen.locale,
     );
@@ -312,7 +303,7 @@ void main() {
     final context = await testHelper.pumpView(
       tester,
       child: Ipv6PortServiceRuleView(
-        args: {'items': state.current.rules},
+        args: {'items': state.settings.current.rules},
       ),
       locale: screen.locale,
     );
@@ -375,7 +366,7 @@ void main() {
     final context = await testHelper.pumpView(
       tester,
       child: Ipv6PortServiceRuleView(
-        args: {'items': state.current.rules},
+        args: {'items': state.settings.current.rules},
       ),
       locale: screen.locale,
     );

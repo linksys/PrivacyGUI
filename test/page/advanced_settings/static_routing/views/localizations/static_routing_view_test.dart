@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
@@ -71,7 +71,7 @@ void main() {
         expect(
             find.text(testHelper.loc(context).dynamicRouting), findsOneWidget);
 
-        expect(find.byType(AppEditableTableSettingsView<NamedStaticRouteEntry>),
+        expect(find.byType(AppEditableTableSettingsView<StaticRouteEntryUIModel>),
             findsOneWidget);
         expect(
             find.text(testHelper.loc(context).noStaticRoutes), findsOneWidget);
@@ -103,7 +103,7 @@ void main() {
         expect(
             find.text(testHelper.loc(context).dynamicRouting), findsOneWidget);
 
-        expect(find.byType(EditableCardListsettingsView<NamedStaticRouteEntry>),
+        expect(find.byType(EditableCardListsettingsView<StaticRoutingRuleUIModel>),
             findsOneWidget);
         expect(find.text(testHelper.loc(context).noAdvancedRouting),
             findsOneWidget);
@@ -133,9 +133,9 @@ void main() {
 
         expect(
             find.text(testHelper.loc(context).advancedRouting), findsOneWidget);
-        final firstRule = state.current.entries.entries.first;
+        final firstRule = state.current.entries.first;
         expect(find.text(firstRule.name), findsOneWidget);
-        expect(find.text(firstRule.settings.destinationLAN), findsOneWidget);
+        expect(find.text(firstRule.destinationIP), findsOneWidget);
       },
       goldenFilename: 'SROUTE-NAT-01-initial',
       screens: screens,
@@ -152,11 +152,11 @@ void main() {
             original: StaticRoutingSettings(
                 isNATEnabled: false,
                 isDynamicRoutingEnabled: true,
-                entries: NamedStaticRouteEntryList(entries: [])),
+                entries: []),
             current: StaticRoutingSettings(
                 isNATEnabled: false,
                 isDynamicRoutingEnabled: true,
-                entries: NamedStaticRouteEntryList(entries: [])),
+                entries: []),
           ),
         );
         when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
@@ -191,11 +191,11 @@ void main() {
             original: StaticRoutingSettings(
                 isNATEnabled: false,
                 isDynamicRoutingEnabled: true,
-                entries: NamedStaticRouteEntryList(entries: [])),
+                entries: []),
             current: StaticRoutingSettings(
                 isNATEnabled: false,
                 isDynamicRoutingEnabled: true,
-                entries: NamedStaticRouteEntryList(entries: [])),
+                entries: []),
           ),
         );
         when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
@@ -259,11 +259,23 @@ void main() {
         final state = StaticRoutingState.fromMap(staticRoutingTestStateEmpty);
         when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
 
+        // Convert entries to StaticRoutingRuleUIModel for editor
+        final ruleItems = state.settings.current.entries
+            .map((e) => StaticRoutingRuleUIModel(
+                  name: e.name,
+                  destinationIP: e.destinationIP,
+                  networkPrefixLength:
+                      NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
+                  gateway: e.gateway.isEmpty ? null : e.gateway,
+                  interface: e.interface,
+                ))
+            .toList();
+
         final context = await testHelper.pumpShellView(
           tester,
           locale: screen.locale,
           child: StaticRoutingRuleView(
-              args: {'items': state.settings.current.entries.entries}),
+              args: {'items': ruleItems}),
         );
         await tester.pumpAndSettle();
 
@@ -289,7 +301,7 @@ void main() {
       (tester, screen) async {
         // Test ID: SROUTE-EDIT-RULE
         final state = StaticRoutingState.fromMap(staticRoutingTestState);
-        final rule = state.current.entries.entries.first;
+        final rule = state.current.entries.first;
         when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
         when(testHelper.mockStaticRoutingRuleNotifier.isRuleValid())
             .thenReturn(true);
@@ -310,20 +322,17 @@ void main() {
             .widget<AppIPFormField>(find.byKey(Key('destinationIP')))
             .controller
             ?.text;
-        expect(destinationIp, rule.settings.destinationLAN);
+        expect(destinationIp, rule.destinationIP);
         final subnetMask = tester
             .widget<AppIPFormField>(find.byKey(Key('subnetMask')))
             .controller
             ?.text;
-        expect(
-            subnetMask,
-            NetworkUtils.prefixLengthToSubnetMask(
-                rule.settings.networkPrefixLength));
+        expect(subnetMask, rule.subnetMask);
         final gatewayIp = tester
             .widget<AppIPFormField>(find.byKey(Key('gateway')))
             .controller
             ?.text;
-        expect(gatewayIp, rule.settings.gateway);
+        expect(gatewayIp, rule.gateway);
 
         final saveButton = tester.widget<AppFilledButton>(
             find.byKey(const Key('pageBottomPositiveButton')));
@@ -339,18 +348,40 @@ void main() {
       (tester, screen) async {
         // Test ID: SROUTE-EDIT-RULE
         final state = StaticRoutingState.fromMap(staticRoutingTestState);
-        final rule = state.current.entries.entries.first;
+        final rule = state.current.entries.first;
         when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
         when(testHelper.mockStaticRoutingRuleNotifier.isRuleValid())
             .thenReturn(true);
+
+        // Convert entries to StaticRoutingRuleUIModel for editor
+        final ruleItems = state.settings.current.entries
+            .map((e) => StaticRoutingRuleUIModel(
+                  name: e.name,
+                  destinationIP: e.destinationIP,
+                  networkPrefixLength:
+                      NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
+                  gateway: e.gateway.isEmpty ? null : e.gateway,
+                  interface: e.interface,
+                ))
+            .toList();
+
+        // Convert edit rule to StaticRoutingRuleUIModel
+        final editRule = StaticRoutingRuleUIModel(
+          name: rule.name,
+          destinationIP: rule.destinationIP,
+          networkPrefixLength:
+              NetworkUtils.subnetMaskToPrefixLength(rule.subnetMask),
+          gateway: rule.gateway.isEmpty ? null : rule.gateway,
+          interface: rule.interface,
+        );
 
         final context = await testHelper.pumpShellView(
           tester,
           locale: screen.locale,
           child: StaticRoutingRuleView(
             args: {
-              'items': state.settings.current.entries.entries,
-              'edit': rule
+              'items': ruleItems,
+              'edit': editRule,
             },
           ),
         );
@@ -362,20 +393,17 @@ void main() {
             .widget<AppIPFormField>(find.byKey(Key('destinationIP')))
             .controller
             ?.text;
-        expect(destinationIp, rule.settings.destinationLAN);
+        expect(destinationIp, rule.destinationIP);
         final subnetMask = tester
             .widget<AppIPFormField>(find.byKey(Key('subnetMask')))
             .controller
             ?.text;
-        expect(
-            subnetMask,
-            NetworkUtils.prefixLengthToSubnetMask(
-                rule.settings.networkPrefixLength));
+        expect(subnetMask, rule.subnetMask);
         final gatewayIp = tester
             .widget<AppIPFormField>(find.byKey(Key('gateway')))
             .controller
             ?.text;
-        expect(gatewayIp, rule.settings.gateway);
+        expect(gatewayIp, rule.gateway);
 
         final saveButton = tester.widget<AppFilledButton>(
             find.byKey(const Key('pageBottomPositiveButton')));
@@ -422,11 +450,23 @@ void main() {
         // Test ID: SROUTE-VAL-NAME
         final state = StaticRoutingState.fromMap(staticRoutingTestStateEmpty);
 
+        // Convert entries to StaticRoutingRuleUIModel for editor
+        final ruleItems = state.settings.current.entries
+            .map((e) => StaticRoutingRuleUIModel(
+                  name: e.name,
+                  destinationIP: e.destinationIP,
+                  networkPrefixLength:
+                      NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
+                  gateway: e.gateway.isEmpty ? null : e.gateway,
+                  interface: e.interface,
+                ))
+            .toList();
+
         final context = await testHelper.pumpShellView(
           tester,
           locale: screen.locale,
           child: StaticRoutingRuleView(
-              args: {'items': state.settings.current.entries.entries}),
+              args: {'items': ruleItems}),
         );
         await tester.pumpAndSettle();
 

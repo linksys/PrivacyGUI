@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/services/static_routing_service.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -48,29 +49,30 @@ class _StaticRoutingDetailViewState
     final state = ref.read(staticRoutingProvider);
     final routerIp = state.status.routerIp;
     final subnetMask = state.status.subnetMask;
-    final rules = widget.args['items'] as List<NamedStaticRouteEntry>? ?? [];
-    var rule = widget.args['edit'] as NamedStaticRouteEntry?;
+    final items = widget.args['items'] as List<StaticRoutingRuleUIModel>? ?? [];
+    var editItem = widget.args['edit'] as StaticRoutingRuleUIModel?;
     int? index;
-    if (rule != null) {
+    if (editItem != null) {
       _isEdit = true;
-      _routeNameController.text = rule.name;
-      _subnetController.text = NetworkUtils.prefixLengthToSubnetMask(
-          rule.settings.networkPrefixLength);
-      _gatewayController.text = rule.settings.gateway ?? '';
-      _destinationIpController.text = rule.settings.destinationLAN;
-      index = rules.indexOf(rule);
+      _routeNameController.text = editItem.name;
+      _subnetController.text =
+          NetworkUtils.prefixLengthToSubnetMask(editItem.networkPrefixLength);
+      _gatewayController.text = editItem.gateway ?? '';
+      _destinationIpController.text = editItem.destinationIP;
+      index = items.indexOf(editItem);
     } else {
       _isEdit = false;
-      rule = NamedStaticRouteEntry(
+      editItem = const StaticRoutingRuleUIModel(
         name: '',
-        settings: StaticRouteEntry(
-            destinationLAN: '', interface: 'LAN', networkPrefixLength: 24),
+        destinationIP: '',
+        interface: 'LAN',
+        networkPrefixLength: 24,
       );
-      _subnetController.text = NetworkUtils.prefixLengthToSubnetMask(
-          rule.settings.networkPrefixLength);
+      _subnetController.text =
+          NetworkUtils.prefixLengthToSubnetMask(editItem.networkPrefixLength);
     }
     doSomethingWithSpinner(context, Future.doWhile(() => !mounted)).then((_) {
-      _notifier.init(rules, rule, index, routerIp, subnetMask);
+      _notifier.init(items, editItem, index, routerIp, subnetMask);
     });
     super.initState();
   }
@@ -94,8 +96,12 @@ class _StaticRoutingDetailViewState
         isPositiveEnabled: _notifier.isRuleValid(),
         positiveLabel: loc(context).save,
         onPositiveTap: () {
-          final rule = ref.read(staticRoutingRuleProvider).rule;
-          context.pop(rule);
+          final uiRule = ref.read(staticRoutingRuleProvider).rule;
+          if (uiRule != null) {
+            final service = ref.read(staticRoutingServiceProvider);
+            final jnapRule = service.transformUIModelToJNAPRule(uiRule);
+            context.pop(jnapRule);
+          }
         },
       ),
       child: (context, constraints) => AppCard(
@@ -140,8 +146,7 @@ class _StaticRoutingDetailViewState
               onChanged: (text) {
                 _notifier.updateRule(
                   state.rule?.copyWith(
-                    settings:
-                        state.rule?.settings.copyWith(destinationLAN: text),
+                    destinationIP: text,
                   ),
                 );
               },
@@ -169,10 +174,8 @@ class _StaticRoutingDetailViewState
               onChanged: (text) {
                 _notifier.updateRule(
                   state.rule?.copyWith(
-                    settings: state.rule?.settings.copyWith(
-                      networkPrefixLength:
-                          NetworkUtils.subnetMaskToPrefixLength(text),
-                    ),
+                    networkPrefixLength:
+                        NetworkUtils.subnetMaskToPrefixLength(text),
                   ),
                 );
               },
@@ -207,9 +210,7 @@ class _StaticRoutingDetailViewState
               onChanged: (text) {
                 _notifier.updateRule(
                   state.rule?.copyWith(
-                    settings: state.rule?.settings.copyWith(
-                      gateway: () => text,
-                    ),
+                    gateway: text,
                   ),
                 );
               },
@@ -218,7 +219,7 @@ class _StaticRoutingDetailViewState
                 if (!focused) {
                   setState(() {
                     _gatewayIpError = _notifier.isValidIpAddress(
-                            text, state.rule?.settings.interface == 'LAN')
+                            text, state.rule?.interface == 'LAN')
                         ? null
                         : loc(context).invalidGatewayIpAddress;
                   });
@@ -235,13 +236,12 @@ class _StaticRoutingDetailViewState
                 RoutingSettingInterface.internet,
               ],
               initial: RoutingSettingInterface.resolve(
-                  state.rule?.settings.interface ?? 'LAN'),
+                  state.rule?.interface ?? 'LAN'),
               label: (item) => getInterfaceTitle(item.value),
               onChanged: (value) {
                 _notifier.updateRule(
                   state.rule?.copyWith(
-                    settings:
-                        state.rule?.settings.copyWith(interface: value.value),
+                    interface: value.value,
                   ),
                 );
               },
