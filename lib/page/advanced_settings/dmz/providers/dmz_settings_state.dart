@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_status.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
@@ -25,9 +24,51 @@ enum DMZDestinationType {
       values.firstWhere((element) => element.name == value);
 }
 
+/// UI-specific model for DMZ source IP restriction.
+///
+/// This is the Application layer's view of source restrictions, separate
+/// from the Data layer's [DMZSourceRestriction] model. This ensures the
+/// Provider layer only knows about UI models, not JNAP data models.
+class DMZSourceRestrictionUI extends Equatable {
+  final String firstIPAddress;
+  final String lastIPAddress;
+
+  const DMZSourceRestrictionUI({
+    required this.firstIPAddress,
+    required this.lastIPAddress,
+  });
+
+  @override
+  List<Object> get props => [firstIPAddress, lastIPAddress];
+
+  DMZSourceRestrictionUI copyWith({
+    String? firstIPAddress,
+    String? lastIPAddress,
+  }) {
+    return DMZSourceRestrictionUI(
+      firstIPAddress: firstIPAddress ?? this.firstIPAddress,
+      lastIPAddress: lastIPAddress ?? this.lastIPAddress,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'firstIPAddress': firstIPAddress,
+      'lastIPAddress': lastIPAddress,
+    };
+  }
+
+  factory DMZSourceRestrictionUI.fromMap(Map<String, dynamic> map) {
+    return DMZSourceRestrictionUI(
+      firstIPAddress: map['firstIPAddress'] as String,
+      lastIPAddress: (map['lastIPAddress'] ?? map['firstIPAddress']) as String,
+    );
+  }
+}
+
 class DMZUISettings extends Equatable {
   final bool isDMZEnabled;
-  final DMZSourceRestriction? sourceRestriction;
+  final DMZSourceRestrictionUI? sourceRestriction;
   final String? destinationIPAddress;
   final String? destinationMACAddress;
   final DMZSourceType sourceType;
@@ -54,7 +95,7 @@ class DMZUISettings extends Equatable {
 
   DMZUISettings copyWith({
     bool? isDMZEnabled,
-    ValueGetter<DMZSourceRestriction?>? sourceRestriction,
+    ValueGetter<DMZSourceRestrictionUI?>? sourceRestriction,
     ValueGetter<String?>? destinationIPAddress,
     ValueGetter<String?>? destinationMACAddress,
     DMZSourceType? sourceType,
@@ -62,8 +103,9 @@ class DMZUISettings extends Equatable {
   }) {
     return DMZUISettings(
       isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
-      sourceRestriction:
-          sourceRestriction != null ? sourceRestriction() : this.sourceRestriction,
+      sourceRestriction: sourceRestriction != null
+          ? sourceRestriction()
+          : this.sourceRestriction,
       destinationIPAddress: destinationIPAddress != null
           ? destinationIPAddress()
           : this.destinationIPAddress,
@@ -90,13 +132,14 @@ class DMZUISettings extends Equatable {
     return DMZUISettings(
       isDMZEnabled: map['isDMZEnabled'] as bool,
       sourceRestriction: map['sourceRestriction'] != null
-          ? DMZSourceRestriction.fromMap(
+          ? DMZSourceRestrictionUI.fromMap(
               map['sourceRestriction'] as Map<String, dynamic>)
           : null,
       destinationIPAddress: map['destinationIPAddress'] as String?,
       destinationMACAddress: map['destinationMACAddress'] as String?,
       sourceType: DMZSourceType.resolve(map['sourceType'] ?? 'auto'),
-      destinationType: DMZDestinationType.resolve(map['destinationType'] ?? 'ip'),
+      destinationType:
+          DMZDestinationType.resolve(map['destinationType'] ?? 'ip'),
     );
   }
 }

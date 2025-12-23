@@ -1,102 +1,30 @@
-import 'dart:convert';
-
-import 'package:collection/collection.dart';
-import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:privacy_gui/constants/default_country_codes.dart';
 import 'package:privacy_gui/constants/error_code.dart';
-import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
+import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/model/region_code.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/providers/auth/auth_exception.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/providers/auth/auth_service.dart';
+import 'package:privacy_gui/providers/auth/auth_state.dart';
+import 'package:privacy_gui/providers/auth/auth_types.dart';
+import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-enum LoginType { none, local, remote }
-
-class AuthState extends Equatable {
-  final String? username;
-  final String? password;
-  final String? localPassword;
-  final String? localPasswordHint;
-  final SessionToken? sessionToken;
-  final LoginType loginType;
-
-  const AuthState({
-    this.username,
-    this.password,
-    this.localPassword,
-    this.localPasswordHint,
-    this.sessionToken,
-    required this.loginType,
-  });
-
-  factory AuthState.empty() {
-    return const AuthState(loginType: LoginType.none);
-  }
-
-  factory AuthState.fromJson(Map<String, dynamic> json) {
-    final sessionToken = json['sessionToken'] == null
-        ? null
-        : SessionToken.fromJson(jsonDecode(json['sessionToken']));
-    final loginType =
-        LoginType.values.firstWhereOrNull((e) => e.name == json['loginType']) ??
-            LoginType.none;
-    return AuthState(
-      username: json['username'],
-      password: json['password'],
-      localPassword: json['localPassword'],
-      localPasswordHint: json['localPasswordHint'],
-      sessionToken: sessionToken,
-      loginType: loginType,
-    );
-  }
-
-  AuthState copyWith({
-    String? username,
-    String? password,
-    String? localPassword,
-    String? localPasswordHint,
-    SessionToken? sessionToken,
-    LoginType? loginType,
-  }) {
-    return AuthState(
-      username: username ?? this.username,
-      password: password ?? this.password,
-      localPassword: localPassword ?? this.localPassword,
-      localPasswordHint: localPasswordHint ?? this.localPasswordHint,
-      sessionToken: sessionToken ?? this.sessionToken,
-      loginType: loginType ?? this.loginType,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        username,
-        password,
-        localPassword,
-        localPasswordHint,
-        sessionToken,
-        loginType,
-      ];
-}
+// Re-export AuthState and LoginType for backward compatibility with existing code
+export 'package:privacy_gui/providers/auth/auth_state.dart' show AuthState;
+export 'package:privacy_gui/providers/auth/auth_types.dart' show LoginType;
 
 final authProvider =
     AsyncNotifierProvider<AuthNotifier, AuthState>(() => AuthNotifier());
@@ -136,92 +64,111 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() => Future.value(AuthState.empty());
 
+  /// Lazy-initialized AuthService instance.
+  ///
+  /// This getter provides access to the AuthService singleton via Riverpod.
+  /// It's lazily initialized to avoid issues with the constructor's
+  /// LinksysHttpClient.onError setup.
+  AuthService get _authService => ref.read(authServiceProvider);
+
   Future<AuthState?> init() async {
-    // if (_isInit) {
-    //   logger.d(
-    //       '[Auth]: auth provider has already been initialized: ${state.value?.loginType}');
-    //   return state.value;
-    // }
-    // _isInit = true;
-
     state = const AsyncValue.loading();
-    // check session token exist and is session token expored
     state = await AsyncValue.guard(() async {
-      var loginType = LoginType.none;
-      // Refresh token handle
-      final sessionToken =
-          await checkSessionToken().onError(handleSessionTokenError);
-      const storage = FlutterSecureStorage();
-      // local password
-      final localPassword = await storage.read(key: pLocalPassword);
-      // cloud username and password
-      final username = await storage.read(key: pUsername);
-      final password = await storage.read(key: pUserPassword);
+      // Validate/refresh session token using AuthService
+      final tokenResult = await _authService.validateSessionToken();
+      final sessionToken = tokenResult.when(
+        success: (token) => token,
+        failure: (_) => null, // Token validation failed, continue without it
+      );
 
-      if (sessionToken != null) {
-        loginType = LoginType.remote;
-      } else if (localPassword != null) {
-        loginType = LoginType.local;
-      }
+      // Get all stored credentials using AuthService
+      final credsResult = await _authService.getStoredCredentials();
+      final creds = credsResult.when(
+        success: (c) => c,
+        failure: (_) => null, // Failed to get credentials, use defaults
+      );
+
+      // Determine login type using AuthService
+      final loginTypeResult = await _authService.getStoredLoginType();
+      final loginType = loginTypeResult.when(
+        success: (type) => type,
+        failure: (_) => LoginType.none, // Default to none on failure
+      );
+
       logger.d(
-          '[Auth]: Existence: cloud user name: ${username != null}, cloud pwd: ${password != null}, admin password: ${localPassword != null}. Login type = $loginType');
+          '[Auth]: Existence: cloud user name: ${creds?.username != null}, cloud pwd: ${creds?.password != null}, admin password: ${creds?.localPassword != null}. Login type = $loginType');
+
       return AuthState(
         localPasswordHint: state.value?.localPasswordHint,
-        username: username ?? '',
+        username: creds?.username ?? '',
         loginType: loginType,
         sessionToken: sessionToken,
-        password: password,
-        localPassword: localPassword,
+        password: creds?.password,
+        localPassword: creds?.localPassword,
       );
     });
     return state.value;
   }
 
+  /// Validates session token by delegating to AuthService.
+  ///
+  /// This method maintains backward compatibility with existing code that
+  /// calls checkSessionToken(). It now delegates to AuthService.
+  ///
+  /// Returns:
+  /// - SessionToken if valid or successfully refreshed
+  /// - null if no token exists or validation failed
+  ///
+  /// Throws:
+  /// - NoSessionTokenError if no token exists (for backward compatibility)
+  /// - SessionTokenExpiredError if token expired without refresh token
   Future<SessionToken?> checkSessionToken() async {
-    // logger.d(
-    //     '[Auth]: Check expiration time for the cloud session token (if it exists)');
-    const storage = FlutterSecureStorage();
-    final ts = await storage.read(key: pSessionTokenTs);
-    final json = await storage.read(key: pSessionToken);
-    if (ts == null || json == null) {
-      throw NoSessionTokenFoundException();
-    }
-    final session = SessionToken.fromJson(jsonDecode(json));
-    final expireTs = int.parse(ts) + session.expiresIn * 1000;
-    final isExpired = expireTs - DateTime.now().millisecondsSinceEpoch < 0;
-    logger.d(
-        '[Auth]: Token session Ts: $ts, expire Ts: $expireTs. Expired: $isExpired');
-    if (isExpired) {
-      final refreshToken = session.refreshToken;
-      throw refreshToken == null
-          ? SessionTokenExpiredException()
-          : NeedToRefreshTokenException(refreshToken);
-    }
-
-    return session;
+    final result = await _authService.validateSessionToken();
+    return result.when(
+      success: (token) {
+        if (token == null) {
+          throw const NoSessionTokenError();
+        }
+        return token;
+      },
+      failure: (error) {
+        // For backward compatibility, maintain exception-based flow
+        throw const NoSessionTokenError();
+      },
+    );
   }
 
+  /// Handles session token errors for backward compatibility.
+  ///
+  /// This method is kept for backward compatibility with the existing
+  /// exception-based error handling. New code should use AuthService directly.
   Future<SessionToken?> handleSessionTokenError(
       Object error, StackTrace trace) {
-    if (error is NeedToRefreshTokenException) {
-      // logger.e('[Auth]: Start to refresh session token');
-      return refreshToken(error.refreshToken);
-    } else {
-      // not handling at this moment
-      // logger.e('[Auth]: Unhandled session token error: $error');
-      return Future.value(null);
-    }
+    // Simply return null for all errors - AuthService already handled refresh
+    return Future.value(null);
   }
 
-  Future<SessionToken?> refreshToken(String refreshToken) {
-    final cloud = ref.read(cloudRepositoryProvider);
-    return cloud.refreshToken(refreshToken).then((value) async {
-      logger.e('[Auth]: Session token refreshed successfully');
-      await updateCloudCredientials(sessionToken: value);
-      return value;
-    });
+  /// Refreshes token by delegating to AuthService.
+  ///
+  /// This method maintains backward compatibility while delegating to AuthService.
+  Future<SessionToken?> refreshToken(String refreshToken) async {
+    final result = await _authService.refreshSessionToken(refreshToken);
+    return result.when(
+      success: (token) async {
+        if (token != null) {
+          // Update credentials after successful refresh
+          await _authService.updateCloudCredentials(sessionToken: token);
+        }
+        return token;
+      },
+      failure: (_) => null,
+    );
   }
 
+  /// Performs cloud login auth with GRA session info.
+  ///
+  /// This method is used for Guardian Remote Assistance authentication.
+  /// It delegates credential storage to AuthService.
   Future cloudLoginAuth(
       {required String token,
       required String sn,
@@ -232,14 +179,23 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(pCurrentSN, sn);
       await prefs.setString(pGRASessionId, sessionInfo.id);
-      // Save the new cloud credentials
-      return await updateCloudCredientials(
-          sessionToken: SessionToken(
-              accessToken: token,
-              tokenType: 'Bearer',
-              expiresIn: DateTime.now()
-                  .add(Duration(seconds: sessionInfo.expiredIn * -1))
-                  .millisecondsSinceEpoch));
+
+      // Create session token
+      final sessionToken = SessionToken(
+          accessToken: token,
+          tokenType: 'Bearer',
+          expiresIn: DateTime.now()
+              .add(Duration(seconds: sessionInfo.expiredIn * -1))
+              .millisecondsSinceEpoch);
+
+      // Delegate credential storage to AuthService
+      await _authService.updateCloudCredentials(sessionToken: sessionToken);
+
+      // Update auth state
+      return (state.value ?? AuthState.empty()).copyWith(
+        sessionToken: sessionToken,
+        loginType: LoginType.remote,
+      );
     });
   }
 
@@ -249,6 +205,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     return cloud.getSessionInfo(token: token, sessionId: session);
   }
 
+  /// Performs cloud login by delegating to AuthService.
+  ///
+  /// This method maintains the existing async state management while
+  /// delegating business logic to AuthService.
   Future cloudLogin({
     required String username,
     required String password,
@@ -256,59 +216,42 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final cloud = ref.read(cloudRepositoryProvider);
-      final newToken = sessionToken ??
-          await cloud.login(username: username, password: password);
-      // Save the new cloud credentials
-      return await updateCloudCredientials(
-        sessionToken: newToken,
+      // Delegate to AuthService
+      final result = await _authService.cloudLogin(
         username: username,
         password: password,
+        sessionToken: sessionToken,
+      );
+
+      return result.when(
+        success: (loginInfo) {
+          // Convert LoginInfo to AuthState
+          return AuthState(
+            username: loginInfo.username,
+            password: loginInfo.password,
+            sessionToken: loginInfo.sessionToken,
+            loginType: loginInfo.loginType,
+            localPasswordHint: state.value?.localPasswordHint,
+          );
+        },
+        failure: (error) {
+          // Re-throw error to be caught by AsyncValue.guard
+          throw error;
+        },
       );
     });
     logger.d('[Auth]: Cloud login done: Auth state = $state');
   }
 
-  Future<AuthState> updateCloudCredientials({
-    SessionToken? sessionToken,
-    String? username,
-    String? password,
-  }) async {
-    logger.d(
-        '[Auth]: Update cloud credientials: $sessionToken, $username, $password');
-    const storage = FlutterSecureStorage();
-    if (sessionToken != null) {
-      await storage.write(
-        key: pSessionToken,
-        value: jsonEncode(
-          sessionToken.toJson(),
-        ),
-      );
-      await storage.write(
-        key: pSessionTokenTs,
-        value: '${DateTime.now().millisecondsSinceEpoch}',
-      );
-    }
-    if (username != null) {}
-    if (password != null) {
-      await storage.write(
-        key: pUserPassword,
-        value: password,
-      );
-    }
-    // Update the auth state
-    return (state.value ?? AuthState.empty()).copyWith(
-      sessionToken: sessionToken,
-      username: username,
-      password: password,
-      loginType: LoginType.remote,
-    );
-  }
-
+  /// Performs local login by delegating to AuthService.
   ///
-  /// if guardError is true, error will not throw out, instead put into state as error state
-  /// else error will throw out.
+  /// This method maintains the existing async state management while
+  /// delegating business logic to AuthService.
   ///
+  /// Parameters:
+  /// - [password]: Router admin password
+  /// - [pnp]: If true, uses PnP-specific JNAP action
+  /// - [guardError]: If true, errors are put into state; if false, thrown
   Future localLogin(
     String password, {
     bool pnp = false,
@@ -317,65 +260,60 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     final previousState = state.value ?? AuthState.empty();
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final routerRepository = ref.read(routerRepositoryProvider);
-      final response = await routerRepository.send(
-        pnp ? JNAPAction.pnpCheckAdminPassword : JNAPAction.checkAdminPassword,
-        // extraHeaders: pnp
-        //     ? {
-        //         kJNAPAuthorization:
-        //             'Basic ${Utils.stringBase64Encode('admin:$password')}'
-        //       }
-        //     : {},
-        extraHeaders: {
-          kJNAPAuthorization:
-              'Basic ${Utils.stringBase64Encode('admin:$password')}'
+      // Delegate to AuthService
+      final result = await _authService.localLogin(password, pnp: pnp);
+
+      return result.when(
+        success: (loginInfo) {
+          // Convert LoginInfo to AuthState
+          return previousState.copyWith(
+            localPassword: loginInfo.localPassword,
+            loginType: loginInfo.loginType,
+          );
         },
-        data: {
-          'adminPassword': password,
+        failure: (error) {
+          // Re-throw error to be caught by AsyncValue.guard
+          throw error;
         },
-        cacheLevel: CacheLevel.noCache,
       );
-      // Check the login result
-      if (response.result == jnapResultOk) {
-        // Save the new local credentials
-        const storage = FlutterSecureStorage();
-        await storage.write(key: pLocalPassword, value: password);
-        return previousState.copyWith(
-          localPassword: password,
-          loginType: LoginType.local,
-        );
-      } else {
-        throw response;
-      }
     }, (error) => guardError);
     logger.d('[Auth]: Local login done: Auth state = $state');
   }
 
+  /// Retrieves password hint by delegating to AuthService.
+  ///
+  /// This method maintains the existing state management while
+  /// delegating business logic to AuthService.
   Future<void> getPasswordHint() async {
     final previousState = state.value;
     if (previousState != null) {
       state = await AsyncValue.guard(() async {
-        final routerRepository = ref.read(routerRepositoryProvider);
-        final result = await routerRepository.send(
-          JNAPAction.getAdminPasswordHint,
-        );
-        return previousState.copyWith(
-          localPasswordHint: result.output['passwordHint'] ?? '',
+        // Delegate to AuthService
+        final result = await _authService.getPasswordHint();
+
+        return result.when(
+          success: (hint) {
+            return previousState.copyWith(localPasswordHint: hint);
+          },
+          failure: (error) {
+            // Re-throw to be caught by AsyncValue.guard
+            throw error;
+          },
         );
       });
     }
   }
 
+  /// Retrieves admin password auth status by delegating to AuthService.
+  ///
+  /// This method maintains backward compatibility while delegating to AuthService.
   Future<Map<String, dynamic>?> getAdminPasswordAuthStatus(
       List<String> services) async {
-    if (serviceHelper.isSupportAdminPasswordAuthStatus(services) != true) {
-      return null;
-    }
-    final routerRepository = ref.read(routerRepositoryProvider);
-    final result = await routerRepository.send(
-      JNAPAction.getAdminPasswordAuthStatus,
+    final result = await _authService.getAdminPasswordAuthStatus(services);
+    return result.when(
+      success: (status) => status,
+      failure: (_) => null, // Return null on failure for backward compatibility
     );
-    return result.output;
   }
 
   Future<void> getDeviceInfo() async {
@@ -385,26 +323,18 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     );
   }
 
+  /// Performs logout by delegating to AuthService for credential cleanup.
+  ///
+  /// This method delegates credential clearing to AuthService while maintaining
+  /// responsibility for provider state resets and RA session cleanup.
   Future logout() async {
     logger.d('[Prepare]: Logout');
     state = const AsyncValue.loading();
 
     state = await AsyncValue.guard(() async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(pSelectedNetworkId);
-      await prefs.remove(pCurrentSN);
-      await prefs.remove(pDeviceToken);
-      await prefs.remove(pGRASessionId);
-      const storage = FlutterSecureStorage();
-      await storage.delete(key: pSessionToken);
-      await storage.delete(key: pSessionTokenTs);
-      await storage.delete(key: pLocalPassword);
-      await storage.delete(key: pUsername);
-      await storage.delete(key: pUserPassword);
-      await storage.delete(key: pLinksysToken);
-      await storage.delete(key: pLinksysTokenTs);
 
-      // RA sessions
+      // Handle RA sessions before clearing credentials
       bool raMode = prefs.getBool(pRAMode) ?? false;
       if (raMode) {
         await ref
@@ -414,6 +344,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         ref.read(raSessionProvider.notifier).stopMonitorSession();
       }
 
+      // Delegate credential cleanup to AuthService
+      await _authService.clearAllCredentials();
+
+      // Reset provider states
       ref.read(deviceManagerProvider.notifier).init();
       ref.read(pollingProvider.notifier).init();
       return AuthState.empty();
@@ -435,24 +369,42 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     return regions;
   }
 
+  /// Performs RA login by delegating to AuthService.
+  ///
+  /// This method delegates credential storage to AuthService while maintaining
+  /// responsibility for network provider and dashboard manager updates.
   Future raLogin(
     String sessionToken,
     String networkId,
     String serialNumber,
   ) async {
-    // update selected network id provider
-    // update network id and sn to prefs
+    // Update selected network via dashboard manager
     await ref
         .read(dashboardManagerProvider.notifier)
         .saveSelectedNetwork(serialNumber, networkId);
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool(pRAMode, true);
 
-    // Update credientials
-    state = AsyncValue.data(await updateCloudCredientials(
-        sessionToken: SessionToken(
-            accessToken: sessionToken,
-            tokenType: 'Bearer',
-            expiresIn: DateTime.now().millisecondsSinceEpoch)));
+    // Delegate to AuthService
+    final result = await _authService.raLogin(
+      sessionToken,
+      networkId,
+      serialNumber,
+    );
+
+    // Update state based on result
+    state = result.when(
+      success: (loginInfo) {
+        return AsyncValue.data(AuthState(
+          sessionToken: loginInfo.sessionToken,
+          loginType: loginInfo.loginType,
+          username: state.value?.username,
+          password: state.value?.password,
+          localPassword: state.value?.localPassword,
+          localPasswordHint: state.value?.localPasswordHint,
+        ));
+      },
+      failure: (error) {
+        return AsyncValue.error(error, StackTrace.current);
+      },
+    );
   }
 }

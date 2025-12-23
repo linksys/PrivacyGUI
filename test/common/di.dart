@@ -5,9 +5,11 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 import '../mocks/jnap_service_supported_mocks.dart';
 
 void mockDependencyRegister() {
-  if (!getIt.isRegistered<ServiceHelper>()) {
-    getIt.registerSingleton<ServiceHelper>(MockServiceHelper());
+  // Unregister if already exists to allow fresh mock setup
+  if (getIt.isRegistered<ServiceHelper>()) {
+    getIt.unregister<ServiceHelper>();
   }
+  getIt.registerSingleton<ServiceHelper>(MockServiceHelper());
 
   // Use ThemeJsonConfig to match testableRouter themes for consistent rendering
   final config = ThemeJsonConfig.defaultConfig();

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
@@ -37,7 +36,7 @@ class _Ipv6PortServiceListViewState
   String? _portRangeError;
 
   // Track which rule is being edited to avoid reinitializing controllers
-  IPv6FirewallRule? _editingRule;
+  IPv6PortServiceRuleUI? _editingRule;
   bool _isInitializing = false;
   StateSetter? _sheetStateSetter;
 
@@ -67,7 +66,7 @@ class _Ipv6PortServiceListViewState
     final state = ref.watch(ipv6PortServiceListProvider);
     final isAddEnabled = !_notifier.isExceedMax();
 
-    return AppDataTable<IPv6FirewallRule>(
+    return AppDataTable<IPv6PortServiceRuleUI>(
       data: state.current.rules,
       columns: _buildColumns(context),
       totalRows: state.current.rules.length,
@@ -78,11 +77,11 @@ class _Ipv6PortServiceListViewState
       emptyMessage: loc(context).noIPv6PortService,
       // New Add Row API
       showAddButton: isAddEnabled,
-      onCreateTemplate: () => IPv6FirewallRule(
-        isEnabled: true,
+      onCreateTemplate: () => const IPv6PortServiceRuleUI(
+        enabled: true,
         description: '',
         ipv6Address: '',
-        portRanges: [PortRange(protocol: 'Both', firstPort: 0, lastPort: 0)],
+        portRanges: [PortRangeUI(protocol: 'Both', firstPort: 0, lastPort: 0)],
       ),
       onAdd: _handleAdd,
       onDelete: _handleDelete,
@@ -104,16 +103,17 @@ class _Ipv6PortServiceListViewState
     _clearControllers();
   }
 
-  Future<bool> _handleDelete(IPv6FirewallRule rule) async {
+  Future<bool> _handleDelete(IPv6PortServiceRuleUI rule) async {
     _notifier.deleteRule(rule);
     _clearControllers();
     return true;
   }
 
-  List<AppTableColumn<IPv6FirewallRule>> _buildColumns(BuildContext context) {
+  List<AppTableColumn<IPv6PortServiceRuleUI>> _buildColumns(
+      BuildContext context) {
     return [
       // Column 0: Application Name
-      AppTableColumn<IPv6FirewallRule>(
+      AppTableColumn<IPv6PortServiceRuleUI>(
         label: loc(context).applicationName,
         cellBuilder: (_, rule) => Text(rule.description),
         editBuilder: (_, rule, setSheetState) {
@@ -146,7 +146,7 @@ class _Ipv6PortServiceListViewState
       ),
 
       // Column 1: Protocol
-      AppTableColumn<IPv6FirewallRule>(
+      AppTableColumn<IPv6PortServiceRuleUI>(
         label: loc(context).protocol,
         cellBuilder: (_, rule) => Text(
           getProtocolTitle(
@@ -181,7 +181,7 @@ class _Ipv6PortServiceListViewState
       ),
 
       // Column 2: Device IP (IPv6)
-      AppTableColumn<IPv6FirewallRule>(
+      AppTableColumn<IPv6PortServiceRuleUI>(
         label: loc(context).deviceIP,
         cellBuilder: (_, rule) => Text(rule.ipv6Address),
         editBuilder: (_, rule, setSheetState) {
@@ -212,7 +212,7 @@ class _Ipv6PortServiceListViewState
       ),
 
       // Column 3: Start/End Ports
-      AppTableColumn<IPv6FirewallRule>(
+      AppTableColumn<IPv6PortServiceRuleUI>(
         label: loc(context).startEndPorts,
         cellBuilder: (_, rule) => Text(
           '${rule.portRanges.firstOrNull?.firstPort ?? 0} ${loc(context).to} ${rule.portRanges.firstOrNull?.lastPort ?? 0}',
@@ -376,7 +376,7 @@ class _Ipv6PortServiceListViewState
     }
   }
 
-  Future<bool> _handleAdd(IPv6FirewallRule templateRule) async {
+  Future<bool> _handleAdd(IPv6PortServiceRuleUI templateRule) async {
     // Validate before saving
     _validateAll();
     if (!_isValid()) {
@@ -395,7 +395,7 @@ class _Ipv6PortServiceListViewState
 
   // --- Save Handler ---
 
-  Future<bool> _handleSave(IPv6FirewallRule originalRule) async {
+  Future<bool> _handleSave(IPv6PortServiceRuleUI originalRule) async {
     // Validate before saving
     _validateAll();
     if (!_isValid()) {
@@ -449,7 +449,8 @@ class _Ipv6PortServiceListViewState
   }
 
   /// Build a new rule from controller values
-  IPv6FirewallRule _buildRuleFromControllers(IPv6FirewallRule template) {
+  IPv6PortServiceRuleUI _buildRuleFromControllers(
+      IPv6PortServiceRuleUI template) {
     final firstPort = int.tryParse(_firstPortTextController.text) ?? 0;
     final lastPort = int.tryParse(_lastPortTextController.text) ?? 0;
 
@@ -457,7 +458,7 @@ class _Ipv6PortServiceListViewState
       description: _applicationTextController.text,
       ipv6Address: _ipAddressTextController.text,
       portRanges: [
-        PortRange(
+        PortRangeUI(
           protocol: template.portRanges.firstOrNull?.protocol ?? 'Both',
           firstPort: firstPort,
           lastPort: lastPort,

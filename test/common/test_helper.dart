@@ -244,7 +244,7 @@ class TestHelper {
 
   void _setupServiceHelper() {
     mockDependencyRegister();
-    mockServiceHelper = getIt.get<ServiceHelper>();
+    mockServiceHelper = getIt.get<ServiceHelper>() as MockServiceHelper;
     when(mockServiceHelper.isSupportGuestNetwork()).thenReturn(true);
     when(mockServiceHelper.isSupportLedMode()).thenReturn(true);
     when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);

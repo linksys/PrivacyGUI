@@ -2,54 +2,14 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-
-class NamedStaticRouteEntryList extends Equatable {
-  final List<NamedStaticRouteEntry> entries;
-
-  const NamedStaticRouteEntryList({required this.entries});
-
-  @override
-  List<Object> get props => [entries];
-
-  NamedStaticRouteEntryList copyWith({
-    List<NamedStaticRouteEntry>? entries,
-  }) {
-    return NamedStaticRouteEntryList(
-      entries: entries ?? this.entries,
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'entries': entries.map((x) => x.toMap()).toList(),
-    };
-  }
-
-  factory NamedStaticRouteEntryList.fromMap(Map<String, dynamic> map) {
-    return NamedStaticRouteEntryList(
-      entries: List<NamedStaticRouteEntry>.from(
-        map['entries']?.map<NamedStaticRouteEntry>(
-              (x) => NamedStaticRouteEntry.fromMap(x as Map<String, dynamic>),
-            ) ??
-            [],
-      ),
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory NamedStaticRouteEntryList.fromJson(String source) =>
-      NamedStaticRouteEntryList.fromMap(
-          json.decode(source) as Map<String, dynamic>);
-}
 
 class StaticRoutingSettings extends Equatable {
   final bool isNATEnabled;
   final bool isDynamicRoutingEnabled;
-  final NamedStaticRouteEntryList entries;
+  final List<StaticRouteEntryUIModel> entries;
 
   const StaticRoutingSettings({
     required this.isNATEnabled,
@@ -63,7 +23,7 @@ class StaticRoutingSettings extends Equatable {
   StaticRoutingSettings copyWith({
     bool? isNATEnabled,
     bool? isDynamicRoutingEnabled,
-    NamedStaticRouteEntryList? entries,
+    List<StaticRouteEntryUIModel>? entries,
   }) {
     return StaticRoutingSettings(
       isNATEnabled: isNATEnabled ?? this.isNATEnabled,
@@ -77,7 +37,7 @@ class StaticRoutingSettings extends Equatable {
     return <String, dynamic>{
       'isNATEnabled': isNATEnabled,
       'isDynamicRoutingEnabled': isDynamicRoutingEnabled,
-      'entries': entries.toMap(),
+      'entries': entries.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -85,10 +45,20 @@ class StaticRoutingSettings extends Equatable {
     return StaticRoutingSettings(
       isNATEnabled: map['isNATEnabled'] as bool,
       isDynamicRoutingEnabled: map['isDynamicRoutingEnabled'] as bool,
-      entries: NamedStaticRouteEntryList.fromMap(
-          map['entries'] as Map<String, dynamic>),
+      entries: List<StaticRouteEntryUIModel>.from(
+        map['entries']?.map<StaticRouteEntryUIModel>(
+              (x) => StaticRouteEntryUIModel.fromMap(x as Map<String, dynamic>),
+            ) ??
+            [],
+      ),
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory StaticRoutingSettings.fromJson(String source) =>
+      StaticRoutingSettings.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }
 
 class StaticRoutingStatus extends Equatable {
@@ -133,6 +103,11 @@ class StaticRoutingStatus extends Equatable {
       subnetMask: map['subnetMask'] ?? '',
     );
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory StaticRoutingStatus.fromJson(String source) =>
+      StaticRoutingStatus.fromMap(json.decode(source) as Map<String, dynamic>);
 }
 
 class StaticRoutingState
@@ -147,12 +122,12 @@ class StaticRoutingState
             original: const StaticRoutingSettings(
               isNATEnabled: false,
               isDynamicRoutingEnabled: false,
-              entries: NamedStaticRouteEntryList(entries: []),
+              entries: [],
             ),
             current: const StaticRoutingSettings(
               isNATEnabled: false,
               isDynamicRoutingEnabled: false,
-              entries: NamedStaticRouteEntryList(entries: []),
+              entries: [],
             )),
         status: const StaticRoutingStatus(
           maxStaticRouteEntries: 0,
@@ -194,6 +169,9 @@ class StaticRoutingState
 
   factory StaticRoutingState.fromJson(String source) =>
       StaticRoutingState.fromMap(json.decode(source) as Map<String, dynamic>);
+
+  @override
+  String toJson() => json.encode(toMap());
 
   @override
   bool get stringify => true;

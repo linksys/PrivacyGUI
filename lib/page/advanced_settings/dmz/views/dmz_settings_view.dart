@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_provider.dart';
@@ -180,7 +179,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                                 onChanged: (value) {
                                   final sourceSettings = state
                                           .settings.current.sourceRestriction ??
-                                      const DMZSourceRestriction(
+                                      const DMZSourceRestrictionUI(
                                           firstIPAddress: '',
                                           lastIPAddress: '');
                                   ref
@@ -211,7 +210,7 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                                 onChanged: (value) {
                                   final sourceSettings = state
                                           .settings.current.sourceRestriction ??
-                                      const DMZSourceRestriction(
+                                      const DMZSourceRestrictionUI(
                                           firstIPAddress: '',
                                           lastIPAddress: '');
                                   ref

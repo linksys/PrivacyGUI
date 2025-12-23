@@ -4,12 +4,90 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/management_settings.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
+/// UI Model for Management Settings in the Administration feature.
+///
+/// This model represents wireless and remote management capabilities
+/// without any dependency on JNAP data models.
+class ManagementSettingsUIModel extends Equatable {
+  final bool canManageUsingHTTP;
+  final bool canManageUsingHTTPS;
+  final bool isManageWirelesslySupported;
+  final bool? canManageWirelessly;
+  final bool canManageRemotely;
+
+  const ManagementSettingsUIModel({
+    required this.canManageUsingHTTP,
+    required this.canManageUsingHTTPS,
+    required this.isManageWirelesslySupported,
+    this.canManageWirelessly,
+    required this.canManageRemotely,
+  });
+
+  ManagementSettingsUIModel copyWith({
+    bool? canManageUsingHTTP,
+    bool? canManageUsingHTTPS,
+    bool? isManageWirelesslySupported,
+    bool? canManageWirelessly,
+    bool? canManageRemotely,
+  }) {
+    return ManagementSettingsUIModel(
+      canManageUsingHTTP: canManageUsingHTTP ?? this.canManageUsingHTTP,
+      canManageUsingHTTPS: canManageUsingHTTPS ?? this.canManageUsingHTTPS,
+      isManageWirelesslySupported:
+          isManageWirelesslySupported ?? this.isManageWirelesslySupported,
+      canManageWirelessly: canManageWirelessly ?? this.canManageWirelessly,
+      canManageRemotely: canManageRemotely ?? this.canManageRemotely,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'canManageUsingHTTP': canManageUsingHTTP,
+      'canManageUsingHTTPS': canManageUsingHTTPS,
+      'isManageWirelesslySupported': isManageWirelesslySupported,
+      'canManageWirelessly': canManageWirelessly,
+      'canManageRemotely': canManageRemotely,
+    };
+  }
+
+  factory ManagementSettingsUIModel.fromMap(Map<String, dynamic> map) {
+    return ManagementSettingsUIModel(
+      canManageUsingHTTP: map['canManageUsingHTTP'] as bool,
+      canManageUsingHTTPS: map['canManageUsingHTTPS'] as bool,
+      isManageWirelesslySupported: map['isManageWirelesslySupported'] as bool,
+      canManageWirelessly: map['canManageWirelessly'] != null
+          ? map['canManageWirelessly'] as bool
+          : null,
+      canManageRemotely: map['canManageRemotely'] as bool,
+    );
+  }
+
+  String toJson() => json.encode(toMap());
+
+  factory ManagementSettingsUIModel.fromJson(String source) =>
+      ManagementSettingsUIModel.fromMap(
+          json.decode(source) as Map<String, dynamic>);
+
+  @override
+  bool get stringify => true;
+
+  @override
+  List<Object?> get props {
+    return [
+      canManageUsingHTTP,
+      canManageUsingHTTPS,
+      isManageWirelesslySupported,
+      canManageWirelessly,
+      canManageRemotely,
+    ];
+  }
+}
+
 class AdministrationSettings extends Equatable {
-  final ManagementSettings managementSettings;
+  final ManagementSettingsUIModel managementSettings;
   final bool enabledALG;
   final bool isExpressForwardingSupported;
   final bool enabledExpressForwarfing;
@@ -42,7 +120,7 @@ class AdministrationSettings extends Equatable {
       ];
 
   AdministrationSettings copyWith({
-    ManagementSettings? managementSettings,
+    ManagementSettingsUIModel? managementSettings,
     bool? enabledALG,
     bool? isExpressForwardingSupported,
     bool? enabledExpressForwarfing,
@@ -83,7 +161,7 @@ class AdministrationSettings extends Equatable {
 
   factory AdministrationSettings.fromMap(Map<String, dynamic> map) {
     return AdministrationSettings(
-      managementSettings: ManagementSettings.fromMap(
+      managementSettings: ManagementSettingsUIModel.fromMap(
           map['managementSettings'] as Map<String, dynamic>),
       enabledALG: map['enabledALG'] as bool,
       isExpressForwardingSupported: map['isExpressForwardingSupported'] as bool,

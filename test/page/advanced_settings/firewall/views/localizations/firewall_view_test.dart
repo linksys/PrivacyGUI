@@ -8,7 +8,6 @@ import 'package:privacy_gui/route/route_model.dart';
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
-import '../../../../../test_data/firewall_settings_test_state.dart';
 import '../../../../../test_data/ipv6_port_service_list_test_state.dart';
 
 /// Helper to switch tabs by index using TabController
@@ -48,15 +47,6 @@ void main() {
 
   setUp(() {
     testHelper.setup();
-    when(testHelper.mockFirewallNotifier.fetch())
-        .thenAnswer((realInvocation) async {
-      await Future.delayed(const Duration(seconds: 1));
-      return FirewallState.fromMap(firewallSettingsTestState);
-    });
-    when(testHelper.mockIpv6PortServiceListNotifier.fetch())
-        .thenAnswer((realInvocation) async {
-      return Ipv6PortServiceListState.fromMap(ipv6PortServiceListTestState);
-    });
   });
 
   // Test ID: FWS-FW_INIT

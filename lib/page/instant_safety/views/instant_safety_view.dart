@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
@@ -141,9 +142,10 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
           if (!mounted) return;
           showChangesSavedSnackBar();
         });
+      } else if (error is UnexpectedError) {
+        showFailedSnackBar(error.message ?? 'Unknown error');
       } else {
-        showFailedSnackBar(
-            (error as SafeBrowsingError?)?.message ?? 'Unknown error');
+        showFailedSnackBar('Unknown error');
       }
     });
   }

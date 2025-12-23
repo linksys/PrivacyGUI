@@ -1,0 +1,130 @@
+name: PrivacyGUI CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  # schedule:
+  #   - cron: '0 0 * * *' # Nightly run at midnight UTC
+
+# Cancel previous runs if a new commit is pushed to the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ========================================================================
+  # STAGE A: Pull Request Checks (Fast Fail)
+  # ------------------------------------------------------------------------
+  # Focus: Logic, Syntax, Compilation
+  # Trigger: Pull Request
+  # ========================================================================
+  pr_quality_check:
+    name: 🛡️ Quality & Logic (PR)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # 1. Static Analysis (Linter)
+      - name: 🔍 Flutter Analyze
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      # 2. Formatting Check
+      - name: 🎨 Dart Format Check
+        run: dart format --output=none --set-exit-if-changed .
+
+      # 3. Unit Tests (Pure Logic)
+      - name: 🧪 Unit Tests
+        run: sh run_tests.sh
+
+      # 4. Smoke Build (Web)
+      - name: 🏗️ Smoke Build (Web)
+        run: flutter build web --release --no-pub
+
+  # ========================================================================
+  # STAGE B: Main Branch Baseline
+  # ------------------------------------------------------------------------
+  # Focus: Generate Goldens for record (No Diff Verification)
+  # Trigger: Push to Main
+  # ========================================================================
+  main_snapshot_baseline:
+    name: 📸 Generate Baseline Snapshots (Main)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Note: If pixel-perfect consistency with local Mac dev is required, 
+    # change this to 'macos-latest'. Keeping ubuntu-latest for cost efficiency.
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # Generate new snapshots (No failure on diff, just generation)
+      - name: 📸 Generate Localization Snapshots
+        run: sh run_generate_loc_snapshots.sh
+
+      # Save the generated snapshots as artifacts
+      - name: 💾 Upload Snapshot Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: privacygui-goldens-main
+          path: snapshots/
+          retention-days: 7
+
+  # ========================================================================
+  # STAGE C: Nightly Deep Check (Commented Out)
+  # ------------------------------------------------------------------------
+  # Focus: Full Golden Diff, Heavy Integration Tests
+  # Trigger: Schedule
+  # ========================================================================
+  # nightly_deep_check:
+  #   name: 🦉 Nightly Deep Check
+  #   if: github.event_name == 'schedule'
+  #   # Recommended: Use macOS for consistent font rendering with local dev
+  #   runs-on: macos-latest 
+  #   timeout-minutes: 60
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Setup Flutter
+  #       uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: 'stable'
+  #         cache: true
+  #
+  #     - name: Install Dependencies
+  #       run: flutter pub get
+  #
+  #     # Run Full Screenshot Tests with Diff Verification
+  #     - name: 🖼️ Run Full Golden Tests
+  #       # Assuming tools/run_screenshot_tests.dart or similar is used here
+  #       run: dart tools/run_screenshot_tests.dart
+  #
+  #     - name: 🚨 Upload Failure Diffs
+  #       if: failure()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: golden-failures
+  #         path: failures/ # Adjust path based on your script output

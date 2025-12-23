@@ -5,7 +5,7 @@ const ipv6PortServiceListTestState = {
         {
           "description": "rule1",
           "ipv6Address": "1111:1111:1111:1111:1111:1111:1111:ffff",
-          "isEnabled": true,
+          "enabled": true,
           "portRanges": [
             {"protocol": "Both", "firstPort": 1223, "lastPort": 1235}
           ]
@@ -13,7 +13,7 @@ const ipv6PortServiceListTestState = {
         {
           "description": "rule2",
           "ipv6Address": "2223:3333:3333:3333:2222:2233:3333:ffff",
-          "isEnabled": true,
+          "enabled": true,
           "portRanges": [
             {"protocol": "Both", "firstPort": 1, "lastPort": 2}
           ]
@@ -25,7 +25,7 @@ const ipv6PortServiceListTestState = {
         {
           "description": "rule1",
           "ipv6Address": "1111:1111:1111:1111:1111:1111:1111:ffff",
-          "isEnabled": true,
+          "enabled": true,
           "portRanges": [
             {"protocol": "Both", "firstPort": 1223, "lastPort": 1235}
           ]
@@ -33,7 +33,7 @@ const ipv6PortServiceListTestState = {
         {
           "description": "rule2",
           "ipv6Address": "2223:3333:3333:3333:2222:2233:3333:ffff",
-          "isEnabled": true,
+          "enabled": true,
           "portRanges": [
             {"protocol": "Both", "firstPort": 1, "lastPort": 2}
           ]

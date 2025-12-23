@@ -142,3 +142,29 @@ doc/tests/output/*
 
 # FVM Version Cache
 .fvm/
+
+# AI Assistant Configuration & Tools
+.claude/commands/
+.gemini/commands/
+.specify/scripts/bash/
+.specify/templates/
+.metadata
+
+# Integration Test Data
+integration_test/input/
+
+# Tools
+tools/translated.json
+
+# Macros
+macros/
+
+# macOS specific
+macos/
+
+# AI Project Documentation
+# Keep .claude/CLAUDE.md tracked as project documentation
+# Keep .specify/memory/ tracked for project constitution
+# Untrack auto-generated CLAUDE.md in project root
+CLAUDE.md
+.mcp.json

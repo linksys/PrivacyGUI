@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
@@ -66,7 +65,7 @@ void main() {
             find.text(testHelper.loc(context).dynamicRouting), findsOneWidget);
 
         expect(
-            find.byType(AppDataTable<NamedStaticRouteEntry>), findsOneWidget);
+            find.byType(AppDataTable<StaticRouteEntryUIModel>), findsOneWidget);
         expect(
             find.text(testHelper.loc(context).noStaticRoutes), findsOneWidget);
         expect(
@@ -96,7 +95,7 @@ void main() {
         // Screenshot test - visual verification only
         expect(find.byKey(const Key('settingNetwork')), findsOneWidget);
         expect(
-            find.byType(AppDataTable<NamedStaticRouteEntry>), findsOneWidget);
+            find.byType(AppDataTable<StaticRouteEntryUIModel>), findsOneWidget);
       },
       goldenFilename: 'SROUTE-EMPTY-01-initial-mobile',
       screens: mobileScreens,
@@ -121,9 +120,9 @@ void main() {
 
         expect(
             find.text(testHelper.loc(context).advancedRouting), findsOneWidget);
-        final firstRule = state.current.entries.entries.first;
+        final firstRule = state.current.entries.first;
         expect(find.text(firstRule.name), findsOneWidget);
-        expect(find.text(firstRule.settings.destinationLAN), findsOneWidget);
+        expect(find.text(firstRule.destinationIP), findsOneWidget);
       },
       goldenFilename: 'SROUTE-NAT-01-initial',
       screens: screens,
@@ -140,11 +139,11 @@ void main() {
             original: StaticRoutingSettings(
                 isNATEnabled: false,
                 isDynamicRoutingEnabled: true,
-                entries: NamedStaticRouteEntryList(entries: [])),
+                entries: []),
             current: StaticRoutingSettings(
                 isNATEnabled: false,
                 isDynamicRoutingEnabled: true,
-                entries: NamedStaticRouteEntryList(entries: [])),
+                entries: []),
           ),
         );
         when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
@@ -179,11 +178,11 @@ void main() {
             original: StaticRoutingSettings(
                 isNATEnabled: false,
                 isDynamicRoutingEnabled: true,
-                entries: NamedStaticRouteEntryList(entries: [])),
+                entries: []),
             current: StaticRoutingSettings(
                 isNATEnabled: false,
                 isDynamicRoutingEnabled: true,
-                entries: NamedStaticRouteEntryList(entries: [])),
+                entries: []),
           ),
         );
         when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
@@ -263,7 +262,7 @@ void main() {
         // Test ID: SROUTE-EDIT-RULE
         testHelper.disableAnimations = false;
         final state = StaticRoutingState.fromMap(staticRoutingTestState);
-        final rule = state.current.entries.entries.first;
+        final rule = state.current.entries.first;
         when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
         when(testHelper.mockStaticRoutingRuleNotifier.isRuleValid())
             .thenReturn(true);
@@ -290,20 +289,17 @@ void main() {
             .widget<AppTextField>(find.byKey(const Key('destinationIP')))
             .controller
             ?.text;
-        expect(destinationIp, rule.settings.destinationLAN);
+        expect(destinationIp, rule.destinationIP);
         final subnetMask = tester
             .widget<AppTextField>(find.byKey(const Key('subnetMask')))
             .controller
             ?.text;
-        expect(
-            subnetMask,
-            NetworkUtils.prefixLengthToSubnetMask(
-                rule.settings.networkPrefixLength));
+        expect(subnetMask, rule.subnetMask);
         final gatewayIp = tester
             .widget<AppTextField>(find.byKey(const Key('gateway')))
             .controller
             ?.text;
-        expect(gatewayIp, rule.settings.gateway);
+        expect(gatewayIp, rule.gateway);
       },
       goldenFilename: 'SROUTE-EDIT-RULE-01-initial_desktop',
       screens: desktopScreens,
@@ -336,8 +332,8 @@ void main() {
         // expect(
         //     find.text(testHelper.loc(context).theNameMustNotBeEmpty), findsOneWidget);
       },
-      goldenFilename: 'SROUTE-VAL-NAME-01-error_mobile',
-      screens: mobileScreens,
+      goldenFilename: 'SROUTE-VAL-NAME-01-error_desktop',
+      screens: desktopScreens,
       helper: testHelper,
     );
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/get_routing_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
@@ -35,7 +36,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
   final TextEditingController _gatewayController = TextEditingController();
 
   // Editing state
-  NamedStaticRouteEntry? _editingRule;
+  StaticRouteEntryUIModel? _editingRule;
   RoutingSettingInterface _selectedInterface = RoutingSettingInterface.lan;
   bool _isInitializing = false;
   StateSetter? _sheetStateSetter;
@@ -125,23 +126,22 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
   }
 
   Widget _buildDataTable(StaticRoutingState state, bool isAddEnabled) {
-    return AppDataTable<NamedStaticRouteEntry>(
-      data: state.current.entries.entries,
+    return AppDataTable<StaticRouteEntryUIModel>(
+      data: state.current.entries,
       columns: _buildColumns(context),
-      totalRows: state.current.entries.entries.length,
+      totalRows: state.current.entries.length,
       currentPage: 1,
       rowsPerPage: 50,
       onPageChanged: (_) {},
       onSave: _handleSave,
       emptyMessage: loc(context).noStaticRoutes,
       showAddButton: isAddEnabled,
-      onCreateTemplate: () => NamedStaticRouteEntry(
+      onCreateTemplate: () => const StaticRouteEntryUIModel(
         name: '',
-        settings: StaticRouteEntry(
-          destinationLAN: '',
-          interface: 'LAN',
-          networkPrefixLength: 24,
-        ),
+        destinationIP: '',
+        subnetMask: '255.255.255.0',
+        gateway: '',
+        interface: 'LAN',
       ),
       onAdd: _handleAdd,
       onDelete: _handleDelete,
@@ -157,11 +157,11 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     );
   }
 
-  List<AppTableColumn<NamedStaticRouteEntry>> _buildColumns(
+  List<AppTableColumn<StaticRouteEntryUIModel>> _buildColumns(
       BuildContext context) {
     return [
       // Column 0: Route Name
-      AppTableColumn<NamedStaticRouteEntry>(
+      AppTableColumn<StaticRouteEntryUIModel>(
         label: loc(context).routeName,
         cellBuilder: (_, rule) => AppText.bodyMedium(rule.name),
         editBuilder: (_, rule, setSheetState) {
@@ -177,10 +177,9 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       ),
 
       // Column 1: Destination IP
-      AppTableColumn<NamedStaticRouteEntry>(
+      AppTableColumn<StaticRouteEntryUIModel>(
         label: loc(context).destinationIPAddress,
-        cellBuilder: (_, rule) =>
-            AppText.bodyMedium(rule.settings.destinationLAN),
+        cellBuilder: (_, rule) => AppText.bodyMedium(rule.destinationIP),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
             key: const Key('destinationIP'),
@@ -192,11 +191,9 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       ),
 
       // Column 2: Subnet Mask
-      AppTableColumn<NamedStaticRouteEntry>(
+      AppTableColumn<StaticRouteEntryUIModel>(
         label: loc(context).subnetMask,
-        cellBuilder: (_, rule) => AppText.bodyMedium(
-            NetworkUtils.prefixLengthToSubnetMask(
-                rule.settings.networkPrefixLength)),
+        cellBuilder: (_, rule) => AppText.bodyMedium(rule.subnetMask),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
             key: const Key('subnetMask'),
@@ -208,10 +205,10 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       ),
 
       // Column 3: Gateway
-      AppTableColumn<NamedStaticRouteEntry>(
+      AppTableColumn<StaticRouteEntryUIModel>(
         label: loc(context).gateway,
         cellBuilder: (_, rule) =>
-            AppText.bodyMedium(rule.settings.gateway ?? '--'),
+            AppText.bodyMedium(rule.gateway.isEmpty ? '--' : rule.gateway),
         editBuilder: (_, rule, setSheetState) {
           return AppTextField(
             key: const Key('gateway'),
@@ -223,10 +220,10 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
       ),
 
       // Column 4: Interface
-      AppTableColumn<NamedStaticRouteEntry>(
+      AppTableColumn<StaticRouteEntryUIModel>(
         label: loc(context).labelInterface,
         cellBuilder: (_, rule) =>
-            AppText.bodyMedium(_getInterfaceTitle(rule.settings.interface)),
+            AppText.bodyMedium(_getInterfaceTitle(rule.interface)),
         editBuilder: (_, rule, setSheetState) {
           final interfaceDisplayMap = {
             RoutingSettingInterface.lan: _getInterfaceTitle('LAN'),
@@ -254,20 +251,38 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     ];
   }
 
-  void _initEditingState(NamedStaticRouteEntry rule) {
+  void _initEditingState(StaticRouteEntryUIModel rule) {
     if (_editingRule != rule) {
       _isInitializing = true;
       try {
         _editingRule = rule;
         final state = ref.read(staticRoutingProvider);
 
-        // Initialize provider
+        // Initialize provider - convert to StaticRoutingRuleUIModel
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
+          final ruleUIModel = StaticRoutingRuleUIModel(
+            name: rule.name,
+            destinationIP: rule.destinationIP,
+            networkPrefixLength:
+                NetworkUtils.subnetMaskToPrefixLength(rule.subnetMask),
+            gateway: rule.gateway.isEmpty ? null : rule.gateway,
+            interface: rule.interface,
+          );
+          final rulesUIModels = state.current.entries
+              .map((e) => StaticRoutingRuleUIModel(
+                    name: e.name,
+                    destinationIP: e.destinationIP,
+                    networkPrefixLength:
+                        NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
+                    gateway: e.gateway.isEmpty ? null : e.gateway,
+                    interface: e.interface,
+                  ))
+              .toList();
           ref.read(staticRoutingRuleProvider.notifier).init(
-                state.current.entries.entries,
-                rule,
-                state.current.entries.entries.indexOf(rule),
+                rulesUIModels,
+                ruleUIModel,
+                state.current.entries.indexOf(rule),
                 state.status.routerIp,
                 state.status.subnetMask,
               );
@@ -275,12 +290,10 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
 
         // Set controller values
         _routerNameController.text = rule.name;
-        _destinationIPController.text = rule.settings.destinationLAN;
-        _subnetMaskController.text = NetworkUtils.prefixLengthToSubnetMask(
-            rule.settings.networkPrefixLength);
-        _gatewayController.text = rule.settings.gateway ?? '';
-        _selectedInterface =
-            RoutingSettingInterface.resolve(rule.settings.interface);
+        _destinationIPController.text = rule.destinationIP;
+        _subnetMaskController.text = rule.subnetMask;
+        _gatewayController.text = rule.gateway;
+        _selectedInterface = RoutingSettingInterface.resolve(rule.interface);
 
         // Clear errors
         _nameError = null;
@@ -311,10 +324,8 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     final ruleNotifier = ref.read(staticRoutingRuleProvider.notifier);
     final currentRule = ref.read(staticRoutingRuleProvider).rule;
     if (currentRule != null) {
-      ruleNotifier.updateRule(currentRule.copyWith(
-        settings: currentRule.settings
-            .copyWith(destinationLAN: _destinationIPController.text),
-      ));
+      ruleNotifier.updateRule(
+          currentRule.copyWith(destinationIP: _destinationIPController.text));
     }
     _validateAll();
   }
@@ -325,10 +336,8 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     final currentRule = ref.read(staticRoutingRuleProvider).rule;
     if (currentRule != null) {
       ruleNotifier.updateRule(currentRule.copyWith(
-        settings: currentRule.settings.copyWith(
-          networkPrefixLength:
-              NetworkUtils.subnetMaskToPrefixLength(_subnetMaskController.text),
-        ),
+        networkPrefixLength:
+            NetworkUtils.subnetMaskToPrefixLength(_subnetMaskController.text),
       ));
     }
     _validateAll();
@@ -340,8 +349,8 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     final currentRule = ref.read(staticRoutingRuleProvider).rule;
     if (currentRule != null) {
       ruleNotifier.updateRule(currentRule.copyWith(
-        settings: currentRule.settings
-            .copyWith(gateway: () => _gatewayController.text),
+        gateway:
+            _gatewayController.text.isEmpty ? null : _gatewayController.text,
       ));
     }
     _validateAll();
@@ -352,10 +361,8 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     final ruleNotifier = ref.read(staticRoutingRuleProvider.notifier);
     final currentRule = ref.read(staticRoutingRuleProvider).rule;
     if (currentRule != null) {
-      ruleNotifier.updateRule(currentRule.copyWith(
-        settings:
-            currentRule.settings.copyWith(interface: _selectedInterface.value),
-      ));
+      ruleNotifier.updateRule(
+          currentRule.copyWith(interface: _selectedInterface.value));
     }
     _validateAll();
   }
@@ -386,7 +393,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
           : loc(context).invalidSubnetMask;
 
       // Validate gateway (depends on interface)
-      final isLan = (currentRule?.settings.interface ?? 'LAN') == 'LAN';
+      final isLan = (currentRule?.interface ?? 'LAN') == 'LAN';
       _gatewayError =
           ruleNotifier.isValidIpAddress(_gatewayController.text, isLan)
               ? null
@@ -409,7 +416,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
         NetworkUtils.subnetMaskToPrefixLength(_subnetMaskController.text);
     if (!ruleNotifier.isValidSubnetMask(prefixLength)) return false;
 
-    final isLan = (currentRule?.settings.interface ?? 'LAN') == 'LAN';
+    final isLan = (currentRule?.interface ?? 'LAN') == 'LAN';
     if (!ruleNotifier.isValidIpAddress(_gatewayController.text, isLan)) {
       return false;
     }
@@ -438,17 +445,34 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     _clearControllers();
   }
 
-  Future<bool> _handleDelete(NamedStaticRouteEntry rule) async {
+  Future<bool> _handleDelete(StaticRouteEntryUIModel rule) async {
     _notifier.deleteRule(rule);
     _clearControllers();
     return true;
   }
 
-  Future<bool> _handleAdd(NamedStaticRouteEntry templateRule) async {
+  Future<bool> _handleAdd(StaticRouteEntryUIModel templateRule) async {
     final state = ref.read(staticRoutingProvider);
+    final ruleUIModel = StaticRoutingRuleUIModel(
+      name: '',
+      destinationIP: '',
+      networkPrefixLength: 24,
+      gateway: null,
+      interface: 'LAN',
+    );
+    final rulesUIModels = state.current.entries
+        .map((e) => StaticRoutingRuleUIModel(
+              name: e.name,
+              destinationIP: e.destinationIP,
+              networkPrefixLength:
+                  NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
+              gateway: e.gateway.isEmpty ? null : e.gateway,
+              interface: e.interface,
+            ))
+        .toList();
     ref.read(staticRoutingRuleProvider.notifier).init(
-          state.current.entries.entries,
-          templateRule,
+          rulesUIModels,
+          ruleUIModel,
           -1,
           state.status.routerIp,
           state.status.subnetMask,
@@ -467,7 +491,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     return true;
   }
 
-  Future<bool> _handleSave(NamedStaticRouteEntry originalRule) async {
+  Future<bool> _handleSave(StaticRouteEntryUIModel originalRule) async {
     _validateAll();
     if (!_isValid()) {
       return false;
@@ -475,7 +499,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
 
     final editedRule = _buildRuleFromControllers(originalRule);
     final state = ref.read(staticRoutingProvider);
-    final index = state.current.entries.entries.indexOf(originalRule);
+    final index = state.current.entries.indexOf(originalRule);
 
     if (index >= 0) {
       _notifier.editRule(index, editedRule);
@@ -486,17 +510,14 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     return true;
   }
 
-  NamedStaticRouteEntry _buildRuleFromControllers(
-      NamedStaticRouteEntry template) {
+  StaticRouteEntryUIModel _buildRuleFromControllers(
+      StaticRouteEntryUIModel template) {
     return template.copyWith(
       name: _routerNameController.text,
-      settings: template.settings.copyWith(
-        destinationLAN: _destinationIPController.text,
-        networkPrefixLength:
-            NetworkUtils.subnetMaskToPrefixLength(_subnetMaskController.text),
-        gateway: () => _gatewayController.text,
-        interface: _selectedInterface.value,
-      ),
+      destinationIP: _destinationIPController.text,
+      subnetMask: _subnetMaskController.text,
+      gateway: _gatewayController.text,
+      interface: _selectedInterface.value,
     );
   }
 
