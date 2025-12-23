@@ -325,8 +325,9 @@ void main() {
         final gatewayInputFinder = find.byKey(const ValueKey('gateway'));
         await tester.enterText(gatewayInputFinder, 'not.a.valid.address');
         await tester.pumpAndSettle();
-        final tunneledUserInputFinder =
-            find.byKey(const ValueKey('tunneledUser'));
+        final tunneledUserInputFinder = find.descendant(
+            of: find.byKey(const ValueKey('tunneledUser')),
+            matching: find.byType(EditableText));
         await tester.enterText(tunneledUserInputFinder, '');
         await tester.pumpAndSettle();
       },
@@ -447,6 +448,8 @@ void main() {
           locale: screen.locale,
         );
 
+        when(testHelper.mockVPNNotifier.testVPNConnection())
+            .thenAnswer((_) async => VPNTestState.testResultState);
         final testAgainButtonFinder = find.byKey(const ValueKey('testAgain'));
         await tester.tap(testAgainButtonFinder);
         await tester.pumpAndSettle();
