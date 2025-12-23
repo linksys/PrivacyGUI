@@ -7,7 +7,7 @@ import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 
-import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/_widgets.dart';
@@ -97,7 +97,7 @@ class _PortRangeForwardingContentViewState
   Widget _mobildSettingsView(PortRangeForwardingListState state,
       List<String> submaskToken, String prefixIP) {
     // return Center();
-    return EditableCardListsettingsView<PortRangeForwardingRule>(
+    return EditableCardListsettingsView<PortRangeForwardingRuleUIModel>(
         title: loc(context).portRangeForwarding,
         emptyMessage: loc(context).noPortRangeForwarding,
         addEnabled: !_notifier.isExceedMax(),
@@ -153,7 +153,7 @@ class _PortRangeForwardingContentViewState
 
   Widget _desktopSettingsView(PortRangeForwardingListState state,
       List<String> submaskToken, String prefixIP) {
-    return AppEditableTableSettingsView<PortRangeForwardingRule>(
+    return AppEditableTableSettingsView<PortRangeForwardingRuleUIModel>(
       title: loc(context).portRangeForwarding,
       addEnabled: !_notifier.isExceedMax(),
       emptyMessage: loc(context).noPortRangeForwarding,
@@ -340,7 +340,7 @@ class _PortRangeForwardingContentViewState
           _ => null,
         };
       },
-      createNewItem: () => PortRangeForwardingRule(
+      createNewItem: () => PortRangeForwardingRuleUIModel(
           isEnabled: true,
           firstExternalPort: 0,
           protocol: 'Both',

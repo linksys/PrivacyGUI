@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -59,8 +59,8 @@ class _AddRuleContentViewState
     final state = ref.read(portRangeForwardingListProvider);
     final routerIp = state.status.routerIp;
     final subnetMask = state.status.subnetMask;
-    final List<PortRangeForwardingRule> rules = widget.args['items'] ?? [];
-    var rule = widget.args['edit'] as PortRangeForwardingRule?;
+    final List<PortRangeForwardingRuleUIModel> rules = widget.args['items'] ?? [];
+    var rule = widget.args['edit'] as PortRangeForwardingRuleUIModel?;
     int? index;
 
     if (rule != null) {
@@ -77,7 +77,7 @@ class _AddRuleContentViewState
       final prefixIp = NetworkUtils.getIpPrefix(
           state.status.routerIp, state.status.subnetMask);
       _deviceIpAddressController.text = prefixIp.replaceAll('.0', '');
-      rule = PortRangeForwardingRule(
+      rule = PortRangeForwardingRuleUIModel(
         isEnabled: true,
         firstExternalPort: 0,
         protocol: 'Both',

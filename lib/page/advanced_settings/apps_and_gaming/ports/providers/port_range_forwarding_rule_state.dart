@@ -3,12 +3,11 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
-
-import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_forwarding_rule_ui_model.dart';
 
 class PortRangeForwardingRuleState extends Equatable {
-  final List<PortRangeForwardingRule> rules;
-  final PortRangeForwardingRule? rule;
+  final List<PortRangeForwardingRuleUIModel> rules;
+  final PortRangeForwardingRuleUIModel? rule;
   final int? editIndex;
   final String routerIp;
   final String subnetMask;
@@ -33,8 +32,8 @@ class PortRangeForwardingRuleState extends Equatable {
   }
 
   PortRangeForwardingRuleState copyWith({
-    List<PortRangeForwardingRule>? rules,
-    ValueGetter<PortRangeForwardingRule?>? rule,
+    List<PortRangeForwardingRuleUIModel>? rules,
+    ValueGetter<PortRangeForwardingRuleUIModel?>? rule,
     ValueGetter<int?>? editIndex,
     String? routerIp,
     String? subnetMask,
@@ -60,10 +59,10 @@ class PortRangeForwardingRuleState extends Equatable {
 
   factory PortRangeForwardingRuleState.fromMap(Map<String, dynamic> map) {
     return PortRangeForwardingRuleState(
-      rules: List<PortRangeForwardingRule>.from(
-          map['rules']?.map((x) => PortRangeForwardingRule.fromMap(x))),
+      rules: List<PortRangeForwardingRuleUIModel>.from(
+          map['rules']?.map((x) => PortRangeForwardingRuleUIModel.fromMap(x))),
       rule: map['rule'] != null
-          ? PortRangeForwardingRule.fromMap(map['rule'])
+          ? PortRangeForwardingRuleUIModel.fromMap(map['rule'])
           : null,
       editIndex: map['editIndex']?.toInt(),
       routerIp: map['routerIp'] ?? '',

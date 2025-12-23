@@ -1,11 +1,10 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
-
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/models/_models.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/providers/empty_status.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
@@ -13,7 +12,7 @@ import 'package:privacy_gui/providers/preservable.dart';
 class AppsAndGamingSettings extends Equatable {
   final DDNSSettingsUIModel ddnsSettings;
   final SinglePortForwardingRuleList singlePortForwardingList;
-  final PortRangeForwardingRuleList portRangeForwardingList;
+  final PortRangeForwardingRuleListUIModel portRangeForwardingList;
   final PortRangeTriggeringRuleList portRangeTriggeringList;
 
   const AppsAndGamingSettings({
@@ -34,7 +33,7 @@ class AppsAndGamingSettings extends Equatable {
   AppsAndGamingSettings copyWith({
     DDNSSettingsUIModel? ddnsSettings,
     SinglePortForwardingRuleList? singlePortForwardingList,
-    PortRangeForwardingRuleList? portRangeForwardingList,
+    PortRangeForwardingRuleListUIModel? portRangeForwardingList,
     PortRangeTriggeringRuleList? portRangeTriggeringList,
   }) {
     return AppsAndGamingSettings(
@@ -63,7 +62,7 @@ class AppsAndGamingSettings extends Equatable {
           map['ddnsSettings'] as Map<String, dynamic>),
       singlePortForwardingList: SinglePortForwardingRuleList.fromMap(
           map['singlePortForwardingList'] as Map<String, dynamic>),
-      portRangeForwardingList: PortRangeForwardingRuleList.fromMap(
+      portRangeForwardingList: PortRangeForwardingRuleListUIModel.fromMap(
           map['portRangeForwardingList'] as Map<String, dynamic>),
       portRangeTriggeringList: PortRangeTriggeringRuleList.fromMap(
           map['portRangeTriggeringList'] as Map<String, dynamic>),

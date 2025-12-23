@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_util_mixin.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 
@@ -16,8 +16,8 @@ class PortRangeForwardingRuleNotifier
       routerIp: '192.168.1.1', subnetMask: '255.255.255.0');
 
   void init(
-    List<PortRangeForwardingRule> rules,
-    PortRangeForwardingRule? rule,
+    List<PortRangeForwardingRuleUIModel> rules,
+    PortRangeForwardingRuleUIModel? rule,
     int? index,
     String routerIp,
     String subnetMask,
@@ -31,7 +31,7 @@ class PortRangeForwardingRuleNotifier
     );
   }
 
-  void updateRule(PortRangeForwardingRule? rule) {
+  void updateRule(PortRangeForwardingRuleUIModel? rule) {
     state = state.copyWith(rule: () => rule);
   }
 
