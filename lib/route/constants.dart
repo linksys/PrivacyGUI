@@ -45,7 +45,6 @@ class RoutePath {
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
-  static const settingsStaticRoutingRule = "staticRoutingRule";
 
   static const settingsVPN = "vpnSettings";
 
@@ -178,7 +177,6 @@ class RouteNamed {
   static const settingsDMZ = 'dmz';
   static const settingsAdministration = "administration";
   static const settingsStaticRouting = "staticRouting";
-  static const settingsStaticRoutingRule = "staticRoutingRule";
 
   static const settingsVPN = "vpnSettings";
 

@@ -99,7 +99,7 @@ final advancedSettings = [
             builder: (context, state) => Ipv6PortServiceListView(
                   args: state.extra as Map<String, dynamic>? ?? {},
                 ),
-            routes: []),
+            routes: const []),
       ]),
   LinksysRoute(
     name: RouteNamed.settingsDMZ,
@@ -136,17 +136,5 @@ final advancedSettings = [
     builder: (context, state) => StaticRoutingView(
       args: state.extra as Map<String, dynamic>? ?? {},
     ),
-    routes: [
-      LinksysRoute(
-        name: RouteNamed.settingsStaticRoutingRule,
-        path: RoutePath.settingsStaticRoutingRule,
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 6),
-        ),
-        builder: (context, state) => StaticRoutingRuleView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-    ],
   ),
 ];

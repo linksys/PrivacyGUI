@@ -1,8 +1,0 @@
-{
-    "name": "Incredible WiFi - Advanced and MAC Filtering",
-    "target": "integration_test/incredible_wifi_advanced_and_mac_filtering_test.dart",
-    "description": "Test all the switches on the Advanced tab, MLO alert, and MAC filtering functionalities",
-    "setUp":  ["factory_reset", "skip_setup"],
-    "tearDown": [],
-    "tags": ["wifi", "menu"]
-}

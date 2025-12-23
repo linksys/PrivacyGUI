@@ -2,7 +2,6 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 
 class WiFiItem extends Equatable {
   final WifiRadioBand radioID;
@@ -36,40 +35,6 @@ class WiFiItem extends Equatable {
     required this.availableChannels,
     required this.numOfDevices,
   });
-
-  factory WiFiItem.fromRadio(RouterRadio radio, {int numOfDevices = 0}) {
-    return WiFiItem(
-      radioID: WifiRadioBand.getByValue(radio.radioID),
-      ssid: radio.settings.ssid,
-      password: radio.settings.wpaPersonalSettings?.passphrase ?? '',
-      securityType: WifiSecurityType.getByValue(radio.settings.security),
-      wirelessMode: WifiWirelessMode.getByValue(radio.settings.mode),
-      defaultMixedMode: radio.defaultMixedMode != null
-          ? WifiWirelessMode.getByValue(radio.defaultMixedMode!)
-          : null,
-      channelWidth: WifiChannelWidth.getByValue(radio.settings.channelWidth),
-      channel: radio.settings.channel,
-      isBroadcast: radio.settings.broadcastSSID,
-      isEnabled: radio.settings.isEnabled,
-      availableSecurityTypes: radio.supportedSecurityTypes
-          .map((e) => WifiSecurityType.getByValue(e))
-          //Remove "WEP" and "WPA-Enterprise" types from UI for now
-          .where((e) => e.isOpenVariant || e.isWpaPersonalVariant)
-          .toList(),
-      availableWirelessModes: radio.supportedModes
-          .map((e) => WifiWirelessMode.getByValue(e))
-          .toList(),
-      availableChannels:
-          Map.fromIterable(radio.supportedChannelsForChannelWidths, key: (e) {
-        final channelWidth =
-            (e as SupportedChannelsForChannelWidths).channelWidth;
-        return WifiChannelWidth.getByValue(channelWidth);
-      }, value: ((e) {
-        return (e as SupportedChannelsForChannelWidths).channels;
-      })),
-      numOfDevices: numOfDevices,
-    );
-  }
 
   WiFiItem copyWith({
     WifiType? wifiType,

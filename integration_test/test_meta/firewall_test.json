@@ -1,8 +1,0 @@
-{
-    "name": "Advanced Settings - Firewall",
-    "target": "integration_test/firewall_test.dart",
-    "description": "Test the switches of Firewall, VPN Passthrough, and Internet Filters, as well as IPv6 Port Service management",
-    "setUp":  ["factory_reset", "skip_setup"],
-    "tearDown": [],
-    "tags": ["firewall", "advanced_settings", "menu"]
-}

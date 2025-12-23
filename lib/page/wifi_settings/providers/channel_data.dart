@@ -1371,8 +1371,3 @@ class ChannelDataInfo extends Equatable {
     ];
   }
 }
-
-ChannelDataInfo lookupChannelDataInfoByChannel(int channel, String band) {
-  return ChannelDataInfo.fromMap(channelData.firstWhere(
-      (element) => element['band'] == band && element['channel'] == channel));
-}

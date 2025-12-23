@@ -11,7 +11,7 @@ class RegionCode extends Equatable {
     return _flagCodes[countryCode] ?? '';
   }
 
-  RegionCode({
+  const RegionCode({
     required this.countryCode,
     required this.countryName,
     required this.countryCallingCode,

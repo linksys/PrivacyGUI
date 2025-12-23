@@ -12,7 +12,6 @@ extension AssetService on LinksysHttpClient {
     final endpoint = combineUrl(kFetchLinkup);
     final header = defaultHeader
       ..[HttpHeaders.authorizationHeader] = wrapSessionToken(token);
-    ;
 
     return this.get(Uri.parse(endpoint), headers: header);
   }

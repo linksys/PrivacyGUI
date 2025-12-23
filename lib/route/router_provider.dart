@@ -18,7 +18,6 @@ import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
 
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';

@@ -5,15 +5,17 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/screen.dart';
-import '../../../common/test_helper.dart';
+import '../../../common/test_helper_v2.dart';
 import '../../../common/test_responsive_widget.dart';
 
 // View ID: DSUP
 // Implementation: lib/page/support/faq_list_view.dart
-// Summary:
-// - DSUP-DESKTOP: Default desktop view renders FAQ headers and CTA.
-// - DSUP-MOBILE: Mobile view toggles menu to reveal CTA text.
-// - DSUP-EXPAND: Expands every category to reveal FAQ entries.
+//
+// | Test ID        | Description                                           |
+// | :------------- | :---------------------------------------------------- |
+// | `DSUP-DESKTOP` | Default desktop view renders FAQ headers and CTA.     |
+// | `DSUP-MOBILE`  | Mobile view toggles menu to reveal CTA text.          |
+// | `DSUP-EXPAND`  | Expands every category to reveal FAQ entries.         |
 
 final _expandedScreens = [
   ...responsiveMobileScreens.map(
@@ -25,7 +27,7 @@ final _expandedScreens = [
 ];
 
 void main() {
-  final testHelper = TestHelper();
+  final testHelper = TestHelperV2();
 
   setUp(() {
     testHelper.setup();
@@ -48,7 +50,7 @@ void main() {
   }
 
   // Test ID: DSUP-DESKTOP
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard support view - default desktop layout',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
@@ -65,7 +67,7 @@ void main() {
   );
 
   // Test ID: DSUP-MOBILE
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard support view - default mobile layout',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
@@ -90,7 +92,7 @@ void main() {
   );
 
   // Test ID: DSUP-EXPAND
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard support view - expanded all categories',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);

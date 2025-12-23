@@ -2,7 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
@@ -12,21 +12,26 @@ import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/_index.dart';
-import '../../../common/test_helper.dart';
+import '../../../common/test_helper_v2.dart';
 import '../../../test_data/dashboard_home_test_state.dart';
 import '../../../test_data/instant_privacy_test_state.dart';
 import '../../../test_data/safe_browsing_test_state.dart';
 
 // View ID: DMENU
 // Implementation: lib/page/dashboard/views/dashboard_menu_view.dart
-// Summary:
-// - DMENU-BASE: Default grid renders all core cards.
-// - DMENU-MOBILE_MENU: Mobile overflow menu shows restart option.
-// - DMENU-MOBILE_RESTART / DMENU-DESKTOP_RESTART: Confirm dialog appears from restart action.
-// - DMENU-SAFETY / DMENU-PRIVACY: Instant safety/privacy cards show status & beta label.
-// - DMENU-BRIDGE: Bridge mode disables safety card.
-// - DMENU-SPEED_INTERNAL / DMENU-SPEED_EXTERNAL: Speed test cards appear when supported.
-// - DMENU-VPN: VPN card appears when service helper allows it.
+//
+// | Test ID                | Description                                                                 |
+// | :--------------------- | :-------------------------------------------------------------------------- |
+// | `DMENU-BASE`           | Default grid renders all core cards.                                        |
+// | `DMENU-MOBILE_MENU`    | Mobile overflow menu shows restart option.                                  |
+// | `DMENU-MOBILE_RESTART` | Confirm dialog appears from restart action via mobile.                        |
+// | `DMENU-DESKTOP_RESTART`| Confirm dialog appears from restart action via desktop.                       |
+// | `DMENU-SAFETY`         | Instant safety card shows status indicator.                                 |
+// | `DMENU-PRIVACY`        | Instant privacy card shows beta label.                                      |
+// | `DMENU-BRIDGE`         | Bridge mode disables safety card.                                           |
+// | `DMENU-SPEED_INTERNAL` | Speed test card (internal module) appears when supported.                   |
+// | `DMENU-SPEED_EXTERNAL` | Speed test card (external module) appears when supported.                   |
+// | `DMENU-VPN`            | VPN card appears when service helper allows it.                             |
 
 final _menuMobileScreens = responsiveMobileScreens
     .map((screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1440))
@@ -36,7 +41,7 @@ final _menuDesktopScreens = responsiveDesktopScreens
     .toList();
 
 void main() {
-  final testHelper = TestHelper();
+  final testHelper = TestHelperV2();
 
   setUp(() {
     testHelper.setup();
@@ -59,19 +64,17 @@ void main() {
   }
 
   Future<void> openMoreMenu(WidgetTester tester) async {
-    // After UI Kit migration, menu icon changed from AppFontIcons.moreHoriz to Icons.menu
     final moreFinder = find.byIcon(Icons.menu).last;
     await tester.tap(moreFinder);
     await tester.pumpAndSettle();
   }
 
   // Test ID: DMENU-BASE
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - default layout',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
       final loc = testHelper.loc(context);
-      // Inspect the menu options that will always be present
       expect(find.text(loc.menu), findsWidgets);
       expect(find.text(loc.incredibleWiFi), findsOneWidget);
       expect(find.text(loc.instantAdmin), findsOneWidget);
@@ -88,7 +91,7 @@ void main() {
   );
 
   // Test ID: DMENU-MOBILE_MENU
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - mobile open sheet',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -103,14 +106,14 @@ void main() {
   );
 
   // Test ID: DMENU-MOBILE_RESTART
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - restart dialog via mobile',
     (tester, screen) async {
+      testHelper.disableAnimations = false;
       final context = await pumpMenu(tester, screen);
       final loc = testHelper.loc(context);
       await openMoreMenu(tester);
-      // Tap on the restart option by text instead of icon to avoid off-screen tap issues
-      await tester.tap(find.text(loc.restartNetwork));
+      await tester.tap(find.text(loc.restartNetwork), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(find.text(loc.alertExclamation), findsOneWidget);
       expect(find.text(loc.menuRestartNetworkMessage), findsOneWidget);
@@ -121,7 +124,7 @@ void main() {
   );
 
   // Test ID: DMENU-DESKTOP_RESTART
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - restart dialog via desktop',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -137,10 +140,10 @@ void main() {
   );
 
   // Test ID: DMENU-SAFETY
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - instant safety status indicator',
     (tester, screen) async {
-      when(testHelper.mockInstantSafetyNotifier.build()).thenReturn(
+      when(() => testHelper.mockInstantSafetyNotifier.build()).thenReturn(
         InstantSafetyState.fromMap(instantSafetyTestState2),
       );
       final context = await pumpMenu(tester, screen);
@@ -160,10 +163,10 @@ void main() {
   );
 
   // Test ID: DMENU-PRIVACY
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - instant privacy beta label',
     (tester, screen) async {
-      when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
+      when(() => testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
         InstantPrivacyState.fromMap(instantPrivacyEnabledTestState),
       );
       final context = await pumpMenu(tester, screen);
@@ -177,10 +180,10 @@ void main() {
   );
 
   // Test ID: DMENU-BRIDGE
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - bridge mode disables safety',
     (tester, screen) async {
-      when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
+      when(() => testHelper.mockDashboardHomeNotifier.build()).thenReturn(
         DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
             .copyWith(wanType: () => 'Bridge'),
       );
@@ -201,10 +204,10 @@ void main() {
   );
 
   // Test ID: DMENU-SPEED_INTERNAL
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - internal speed test card',
     (tester, screen) async {
-      when(testHelper.mockHealthCheckProvider.build()).thenReturn(
+      when(() => testHelper.mockHealthCheckProvider.build()).thenReturn(
         const HealthCheckState(healthCheckModules: ['SpeedTest']),
       );
       final context = await pumpMenu(tester, screen);
@@ -217,13 +220,13 @@ void main() {
   );
 
   // Test ID: DMENU-SPEED_EXTERNAL
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - external speed test card',
     (tester, screen) async {
-      when(testHelper.mockHealthCheckProvider.build()).thenReturn(
+      when(() => testHelper.mockHealthCheckProvider.build()).thenReturn(
         const HealthCheckState(),
       );
-      when(testHelper.mockConnectivityNotifier.build()).thenReturn(
+      when(() => testHelper.mockConnectivityNotifier.build()).thenReturn(
         const ConnectivityState(
           hasInternet: true,
           connectivityInfo: ConnectivityInfo(
@@ -242,10 +245,10 @@ void main() {
   );
 
   // Test ID: DMENU-VPN
-  testLocalizationsV2(
+  testLocalizationsV3(
     'dashboard menu view - vpn card shown when supported',
     (tester, screen) async {
-      when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
+      when(() => testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
       final context = await pumpMenu(tester, screen);
       final loc = testHelper.loc(context);
       await scrollUntil(tester, find.text(loc.vpn));

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
@@ -8,28 +8,11 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
-import '../../../common/test_helper.dart';
+import '../../../common/test_helper_v2.dart';
 import '../../../common/test_responsive_widget.dart';
 
-/// View ID: PNPA
-/// Implementation file under test: lib/page/instant_setup/pnp_admin_view.dart
-///
-/// This file contains screenshot tests for the `PnpAdminView` widget,
-/// covering various `PnpFlowStatus` states and user interactions.
-///
-/// | Test ID                  | Description                                                                 |
-/// | :----------------------- | :-------------------------------------------------------------------------- |
-/// | `PNPA-INIT`              | Verifies loading spinner and "Initializing Admin" message on startup.       |
-/// | `PNPA-NETCHK`            | Verifies "Checking Internet Connection" message while network is being checked. |
-/// | `PNPA-NETOK`             | Verifies "Internet Connected" message and continue button when online.      |
-/// | `PNPA-UNCONF`            | Verifies unconfigured router view with "Start Setup" button.                |
-/// | `PNPA-PASSWD`            | Verifies admin password prompt with login and "Where is it?" buttons.       |
-/// | `PNPA-PASSWD_LOGGING_IN` | Verifies login button is disabled and processing state is shown when logging in. |
-/// | `PNPA-PASSWD_LOGIN_FAILED` | Verifies "Incorrect Password" error message after a failed login attempt.   |
-/// | `PNPA-ERROR`             | Verifies generic error page with a "Try Again" button.                      |
-/// | `PNPA-PASSWD_MODAL`      | Verifies "Where is it?" modal appears when button is tapped on password screen. |
 void main() {
-  final testHelper = TestHelper();
+  final testHelper = TestHelperV2();
   final screens = responsiveAllScreens;
   final deviceInfo = PnpDeviceInfoUIModel(
     modelName: 'LN16',
@@ -40,17 +23,15 @@ void main() {
 
   setUp(() {
     testHelper.setup();
-    // Mock the entry point of the PnP flow to prevent real logic execution
-    // during these isolated view tests.
-    when(testHelper.mockPnpNotifier.startPnpFlow(any)).thenAnswer((_) async {});
+    when(() => testHelper.mockPnpNotifier.startPnpFlow(any())).thenAnswer((_) async {});
   });
 
   group('PnpAdminView screenshot tests based on PnpFlowStatus', () {
     // Test ID: PNPA-INIT
-    testLocalizations(
+    testLocalizationsV3(
         'Verify loading spinner and "Initializing Admin" message on startup',
-        (tester, locale) async {
-      when(testHelper.mockPnpNotifier.build()).thenReturn(
+        (tester, screen) async {
+      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminInitializing,
         ),
@@ -63,19 +44,19 @@ void main() {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
+        locale: screen.locale,
       );
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.byType(AppLoader), findsOneWidget);
       expect(find.text(testHelper.loc(context).processing), findsOneWidget);
-    }, screens: screens, goldenFilename: 'PNPA-INIT_01-initial_state');
+    }, screens: screens, goldenFilename: 'PNPA-INIT_01-initial_state', helper: testHelper);
 
     // Test ID: PNPA-NETCHK
-    testLocalizations(
+    testLocalizationsV3(
         'Verify "Checking Internet Connection" message while network is being checked',
-        (tester, locale) async {
-      when(testHelper.mockPnpNotifier.build()).thenReturn(
+        (tester, screen) async {
+      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminCheckingInternet,
         ),
@@ -88,7 +69,7 @@ void main() {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
+        locale: screen.locale,
       );
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -97,13 +78,13 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-NETCHK_01-checking_internet_screen');
+        goldenFilename: 'PNPA-NETCHK_01-checking_internet_screen', helper: testHelper);
 
     // Test ID: PNPA-NETOK
-    testLocalizations(
+    testLocalizationsV3(
         'Verify "Internet Connected" message and continue button when online',
-        (tester, locale) async {
-      when(testHelper.mockPnpNotifier.build()).thenReturn(
+        (tester, screen) async {
+      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminInternetConnected,
         ),
@@ -116,7 +97,7 @@ void main() {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
+        locale: screen.locale,
       );
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -125,13 +106,13 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-NETOK_01-internet_connected_screen');
+        goldenFilename: 'PNPA-NETOK_01-internet_connected_screen', helper: testHelper);
 
     // Test ID: PNPA-UNCONF
-    testLocalizations(
+    testLocalizationsV3(
         'Verify unconfigured router view with "Start Setup" button',
-        (tester, locale) async {
-      when(testHelper.mockPnpNotifier.build()).thenReturn(
+        (tester, screen) async {
+      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminUnconfigured,
           deviceInfo: deviceInfo,
@@ -145,11 +126,10 @@ void main() {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
+        locale: screen.locale,
         preCacheCustomImages: [deviceInfo.image],
       );
 
-      // expect image display matched
       expect(find.image(Assets.images.devicesXl.routerLn12.provider()),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpFactoryResetTitle),
@@ -161,13 +141,13 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-UNCONF_01-unconfigured_router_screen');
+        goldenFilename: 'PNPA-UNCONF_01-unconfigured_router_screen', helper: testHelper);
 
     // Test ID: PNPA-PASSWD
-    testLocalizations(
+    testLocalizationsV3(
         'Verify admin password prompt with login and "Where is it?" buttons',
-        (tester, locale) async {
-      when(testHelper.mockPnpNotifier.build()).thenReturn(
+        (tester, screen) async {
+      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminAwaitingPassword,
           deviceInfo: deviceInfo,
@@ -181,11 +161,10 @@ void main() {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
+        locale: screen.locale,
         preCacheCustomImages: [deviceInfo.image],
       );
 
-      // expect image display matched
       expect(find.image(Assets.images.devicesXl.routerLn12.provider()),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).welcome), findsOneWidget);
@@ -206,13 +185,13 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-PASSWD_01-password_prompt_screen');
+        goldenFilename: 'PNPA-PASSWD_01-password_prompt_screen', helper: testHelper);
 
     // Test ID: PNPA-LOGIN_IN
-    testLocalizations(
+    testLocalizationsV3(
         'Verify login button is disabled and processing state is shown when logging in',
-        (tester, locale) async {
-      when(testHelper.mockPnpNotifier.build()).thenReturn(
+        (tester, screen) async {
+      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminLoggingIn,
           deviceInfo: deviceInfo,
@@ -226,10 +205,9 @@ void main() {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
+        locale: screen.locale,
         preCacheCustomImages: [deviceInfo.image],
       );
-      // expect image display matched
       expect(find.image(Assets.images.devicesXl.routerLn12.provider()),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).welcome), findsOneWidget);
@@ -246,21 +224,19 @@ void main() {
           find.widgetWithText(
               AppButton, testHelper.loc(context).pnpRouterLoginWhereIsIt),
           findsOneWidget);
-      // next button should be disabled
       expect(find.widgetWithText(AppButton, testHelper.loc(context).login),
           findsOneWidget);
-      // After UI Kit migration, there may be multiple AppButton widgets, so find the specific login button
       final widget = tester.widget(
           find.widgetWithText(AppButton, testHelper.loc(context).login));
       expect(widget, isA<AppButton>());
       expect((widget as AppButton).onTap, null);
-    }, screens: screens, goldenFilename: 'PNPA-LOGIN_IN_01-logging_in_screen');
+    }, screens: screens, goldenFilename: 'PNPA-LOGIN_IN_01-logging_in_screen', helper: testHelper);
 
     // Test ID: PNPA-LOGIN_FAIL
-    testLocalizations(
+    testLocalizationsV3(
         'Verify "Incorrect Password" error message after a failed login attempt',
-        (tester, locale) async {
-      when(testHelper.mockPnpNotifier.build()).thenReturn(
+        (tester, screen) async {
+      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminLoginFailed,
           deviceInfo: deviceInfo,
@@ -275,11 +251,10 @@ void main() {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
+        locale: screen.locale,
         preCacheCustomImages: [deviceInfo.image],
       );
 
-      // expect image display matched
       expect(find.image(Assets.images.devicesXl.routerLn12.provider()),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).welcome), findsOneWidget);
@@ -302,12 +277,12 @@ void main() {
           find.text(testHelper.loc(context).incorrectPassword), findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-LOGIN_FAIL_01-failed_login_screen');
+        goldenFilename: 'PNPA-LOGIN_FAIL_01-failed_login_screen', helper: testHelper);
 
     // Test ID: PNPA-ERROR
-    testLocalizations('Verify generic error page with a "Try Again" button',
-        (tester, locale) async {
-      when(testHelper.mockPnpNotifier.build()).thenReturn(
+    testLocalizationsV3('Verify generic error page with a "Try Again" button',
+        (tester, screen) async {
+      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminError,
           error: Exception('mock error'),
@@ -321,7 +296,7 @@ void main() {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
+        locale: screen.locale,
         preCacheCustomImages: [deviceInfo.image],
       );
       await tester.pumpAndSettle();
@@ -330,13 +305,13 @@ void main() {
 
       expect(find.widgetWithText(AppButton, testHelper.loc(context).tryAgain),
           findsOneWidget);
-    }, screens: screens, goldenFilename: 'PNPA-ERROR_01-generic_error_screen');
+    }, screens: screens, goldenFilename: 'PNPA-ERROR_01-generic_error_screen', helper: testHelper);
 
     // Test ID: PNPA-PASS_MOD
-    testLocalizations(
+    testLocalizationsV3(
         'Verify "Where is it?" modal appears when button is tapped on password screen',
-        (tester, locale) async {
-      when(testHelper.mockPnpNotifier.build()).thenReturn(
+        (tester, screen) async {
+      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminAwaitingPassword,
           deviceInfo: deviceInfo,
@@ -350,7 +325,7 @@ void main() {
           noNaviRail: true,
         ),
         child: const PnpAdminView(),
-        locale: locale,
+        locale: screen.locale,
         preCacheCustomImages: [deviceInfo.image],
       );
 
@@ -375,9 +350,7 @@ void main() {
       await tester.tap(btnFinder);
       await tester.pumpAndSettle();
 
-      // Verify that the AppDialog is displayed after tapping the button
       expect(find.byType(AppDialog), findsOneWidget);
-      // Find the title text specifically within the AppDialog to avoid ambiguity
       expect(
           find.descendant(
             of: find.byType(AppDialog),
@@ -388,6 +361,6 @@ void main() {
           findsOneWidget);
       expect(find.widgetWithText(AppButton, testHelper.loc(context).close),
           findsOneWidget);
-    }, screens: screens, goldenFilename: 'PNPA-PASS_MOD_01-where_is_it_modal');
+    }, screens: screens, goldenFilename: 'PNPA-PASS_MOD_01-where_is_it_modal', helper: testHelper);
   });
 }

@@ -10,6 +10,8 @@ import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
+import 'package:privacy_gui/page/wifi_settings/services/wifi_settings_mapper.dart';
+import 'package:privacy_gui/page/wifi_settings/services/wifi_settings_service.dart';
 import 'package:privacy_gui/page/wifi_settings/views/mac_filtering_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_advanced_settings_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
@@ -88,7 +90,9 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
         useMainPadding: true,
         bottomBar: UiKitBottomBarConfig(
           isPositiveEnabled: bundleState.isDirty &&
-              bundleState.current.wifiList.isSettingsValid(),
+              ref
+                  .read(wifiSettingsServiceProvider)
+                  .validateWifiListSettings(bundleState.current.wifiList),
           onPositiveTap: () async {
             if (_tabController.index == 0) {
               // if current tab is wifi list settings, show save confirm modal
@@ -158,7 +162,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
   Future<bool> _showSaveConfirmModal() async {
     final newState = ref.read(wifiBundleProvider);
     final wifiListSettings = newState.current.wifiList.isSimpleMode
-        ? newState.current.wifiList.getMainWifiItemsWithSimpleSettings()
+        ? WifiSettingsMapper.toSimpleModeWifiItems(newState.current.wifiList)
         : newState.current.wifiList.mainWiFi;
     final previewState =
         newState.current.wifiList.copyWith(mainWiFi: wifiListSettings);
@@ -256,7 +260,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
     final isMLOEnabled =
         ref.read(wifiBundleProvider).current.advanced.isMLOEnabled ?? false;
     return ref
-            .read(wifiBundleProvider.notifier)
+            .read(wifiSettingsServiceProvider)
             .checkingMLOSettingsConflicts(radios, isMloEnabled: isMLOEnabled)
         ? [
             AppGap.md(),

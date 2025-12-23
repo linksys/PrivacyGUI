@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/providers/mock_pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 
 void main() {

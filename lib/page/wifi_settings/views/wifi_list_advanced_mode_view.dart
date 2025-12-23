@@ -40,7 +40,8 @@ class AdvancedModeView extends ConsumerWidget {
         .where((e) => e.isEnabled)
         .length;
     final canDisableAllMainWiFi = state.status.wifiList.canDisableMainWiFi;
-    final canBeDisabled = enabledWiFiCount > 1 || canDisableAllMainWiFi;
+    // Condition to allow disabling an enabled wifi
+    final canDisableMore = enabledWiFiCount > 1 || canDisableAllMainWiFi;
 
     // Better Approach: Flatten list and chunk it
     final allItems = [
@@ -58,9 +59,12 @@ class AdvancedModeView extends ConsumerWidget {
           final item = chunk[j];
           final isLast = j == columnCount - 1;
           if (item.isMain) {
+            // Fix: Can toggle if it's currently disabled (to turn ON)
+            // OR if it's enabled and we are allowed to disable more.
+            final canToggle = !item.main!.isEnabled || canDisableMore;
             rowChildren.add(MainWiFiCard(
                 radio: item.main!,
-                canBeDisable: canBeDisabled,
+                canBeDisable: canToggle,
                 lastInRow: isLast));
           } else {
             rowChildren

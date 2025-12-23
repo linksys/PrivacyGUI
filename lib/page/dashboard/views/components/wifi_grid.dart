@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,7 +19,6 @@ import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:super_tooltip/super_tooltip.dart';
 
 class DashboardWiFiGrid extends ConsumerStatefulWidget {
   const DashboardWiFiGrid({super.key});
@@ -31,15 +28,7 @@ class DashboardWiFiGrid extends ConsumerStatefulWidget {
 }
 
 class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
-  Map<String, SuperTooltipController> toolTipControllers = {};
-
-  @override
-  void dispose() {
-    toolTipControllers.forEach((key, value) {
-      value.dispose();
-    });
-    super.dispose();
-  }
+  Map<String, bool> toolTipVisible = {};
 
   @override
   Widget build(BuildContext context) {
@@ -80,24 +69,25 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
               itemBuilder: (context, index) {
                 createWiFiCard() {
                   final item = items[index];
-                  final controllerKey =
+                  final visibilityKey =
                       '${item.ssid}${item.radios.join()}${item.isGuest}';
 
-                  SuperTooltipController? controller;
-                  controller = toolTipControllers[controllerKey] ??
-                      SuperTooltipController();
-                  toolTipControllers[controllerKey] = controller;
+                  final isVisible = toolTipVisible[visibilityKey] ?? false;
                   return WiFiCard(
-                    toolTipController: controller,
+                    tooltipVisible: isVisible,
                     item: item,
                     index: index,
                     canBeDisabled: canBeDisabled,
-                    beforeShowWiFiTip: () async {
-                      for (var ctrl in toolTipControllers.values) {
-                        if (ctrl.isVisible) {
-                          await ctrl.hideTooltip();
+                    onTooltipVisibilityChanged: (visible) {
+                      setState(() {
+                        // Hide all other tooltips when showing one
+                        if (visible) {
+                          for (var key in toolTipVisible.keys) {
+                            toolTipVisible[key] = false;
+                          }
                         }
-                      }
+                        toolTipVisible[visibilityKey] = visible;
+                      });
                     },
                   );
                 }
@@ -117,16 +107,16 @@ class WiFiCard extends ConsumerStatefulWidget {
   final DashboardWiFiItem item;
   final int index;
   final bool canBeDisabled;
-  final Future<void> Function()? beforeShowWiFiTip;
-  final SuperTooltipController? toolTipController;
+  final bool tooltipVisible;
+  final ValueChanged<bool>? onTooltipVisibilityChanged;
 
   const WiFiCard({
     Key? key,
     required this.item,
     required this.index,
     required this.canBeDisabled,
-    this.beforeShowWiFiTip,
-    this.toolTipController,
+    this.tooltipVisible = false,
+    this.onTooltipVisibilityChanged,
   }) : super(key: key);
 
   @override
@@ -134,21 +124,7 @@ class WiFiCard extends ConsumerStatefulWidget {
 }
 
 class _WiFiCardState extends ConsumerState<WiFiCard> {
-  SuperTooltipController? _toolTipController;
   final qrBtnKey = GlobalKey();
-  Completer? _completer;
-
-  @override
-  void initState() {
-    super.initState();
-    _toolTipController = widget.toolTipController;
-  }
-
-  @override
-  void dispose() {
-    // _toolTipController?.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -221,14 +197,12 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
   }
 
   Widget _buildTooltip(BuildContext context) {
-    return SuperTooltip(
-      arrowTipDistance: 0,
-      popupDirection: TooltipDirection.left,
-      overlayDimensions: EdgeInsets.zero,
-      bubbleDimensions: EdgeInsets.zero,
-      showBarrier: false,
-      controller: _toolTipController,
-      showOnTap: false,
+    return AppTooltip(
+      position: AxisDirection.left,
+      visible: widget.item.isEnabled ? widget.tooltipVisible : false,
+      maxWidth: 200,
+      maxHeight: 200,
+      padding: EdgeInsets.zero,
       content: Container(
         color: Colors.white,
         height: 200,
@@ -242,32 +216,10 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
         ),
       ),
       child: MouseRegion(
-        onHover: (e) async {
-          if (!widget.item.isEnabled) {
-            return;
-          }
-
-          await _completer?.future;
-          final widgetPosition = _getWidgetPosition();
-          final rect = Rect.fromCenter(
-              center: widgetPosition + const Offset(20, 20),
-              width: 40,
-              height: 40);
-
-          if (_toolTipController?.isVisible == false &&
-              rect.contains(e.position)) {
-            _completer = Completer();
-            await widget.beforeShowWiFiTip?.call();
-            await _toolTipController?.showTooltip();
-            _completer?.complete();
-          }
-        },
-        onExit: (e) async {
-          await _completer?.future;
-          if (_toolTipController?.isVisible == true) {
-            await _toolTipController?.hideTooltip();
-          }
-        },
+        onEnter: widget.item.isEnabled
+            ? (_) => widget.onTooltipVisibilityChanged?.call(true)
+            : null,
+        onExit: (_) => widget.onTooltipVisibilityChanged?.call(false),
         child: SizedBox(
           width: 80,
           child: Row(
@@ -414,11 +366,5 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                 });
               }),
         ]);
-  }
-
-  Offset _getWidgetPosition() {
-    final RenderBox renderBox =
-        qrBtnKey.currentContext?.findRenderObject() as RenderBox;
-    return renderBox.localToGlobal(Offset.zero);
   }
 }

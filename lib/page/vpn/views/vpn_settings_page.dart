@@ -206,7 +206,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          vpnStatus(context, status),
+          Expanded(child: vpnStatus(context, status)),
           AppButton.text(
             key: const ValueKey('testAgain'),
             label: loc(context).testAgain,
@@ -292,7 +292,7 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
             ],
           ),
         ),
-        AppGap.xxl(),
+        AppGap.gutter(),
         SizedBox(
           width: context.colWidth(6),
           child: Column(
