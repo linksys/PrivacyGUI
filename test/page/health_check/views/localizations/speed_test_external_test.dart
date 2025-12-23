@@ -21,7 +21,7 @@ void main() {
   });
 
   // Test ID: STEXT-INIT
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the initial state of the external speed test view',
     (tester, screen) async {
       await testHelper.pumpView(

@@ -60,7 +60,7 @@ void main() {
   }
 
   // Test ID: IPRV-BASE
-  testLocalizationsV2(
+  testLocalizations(
     'instant privacy view - disabled state',
     (tester, screen) async {
       final context = await pumpPrivacy(tester, screen);
@@ -75,7 +75,7 @@ void main() {
   );
 
   // Test ID: IPRV-WARNING
-  testLocalizationsV2(
+  testLocalizations(
     'instant privacy view - mac filtering warning',
     (tester, screen) async {
       final context = await pumpPrivacy(
@@ -92,7 +92,7 @@ void main() {
   );
 
   // Test ID: IPRV-ENABLED
-  testLocalizationsV2(
+  testLocalizations(
     'instant privacy view - enabled device list',
     (tester, screen) async {
       final context = await pumpPrivacy(
@@ -111,7 +111,7 @@ void main() {
   );
 
   // Test ID: IPRV-ENABLE_MODAL
-  testLocalizationsV2(
+  testLocalizations(
     'instant privacy view - enable confirmation dialog',
     (tester, screen) async {
       final context = await pumpPrivacy(tester, screen);
@@ -127,7 +127,7 @@ void main() {
   );
 
   // Test ID: IPRV-DISABLE_MODAL
-  testLocalizationsV2(
+  testLocalizations(
     'instant privacy view - disable confirmation dialog',
     (tester, screen) async {
       final context = await pumpPrivacy(
@@ -147,7 +147,7 @@ void main() {
   );
 
   // Test ID: IPRV-DELETE
-  testLocalizationsV2(
+  testLocalizations(
     'instant privacy view - delete device confirmation',
     (tester, screen) async {
       final context = await pumpPrivacy(
@@ -169,7 +169,7 @@ void main() {
   );
 
   // Test ID: IPRV-DELETE_SELF
-  testLocalizationsV2(
+  testLocalizations(
     'instant privacy view - delete self alert',
     (tester, screen) async {
       await pumpPrivacy(

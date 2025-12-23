@@ -34,7 +34,7 @@ void main() async {
   });
 
   // Test ID: PNPWM-FULL_FLOW
-  testLocalizationsV2(
+  testLocalizations(
     'Verify waiting modem full flow',
     (tester, localizedScreen) async {
       final context = await testHelper.pumpShellView(

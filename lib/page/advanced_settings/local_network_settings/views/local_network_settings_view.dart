@@ -213,24 +213,17 @@ class _LocalNetworkSettingsViewState
     );
   }
 
-  Widget _viewLayout({double? col, required Widget child}) {
-    col = col ?? context.colWidth(12);
+  Widget _viewLayout({required Widget child}) {
     return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-            horizontal:
-                context.isMobileLayout ? AppSpacing.lg : AppSpacing.xxl),
-        child: context.isMobileLayout
-            ? child
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: col,
-                    child: child,
-                  ),
-                ],
-              ),
+      child: AppResponsiveLayout(
+        mobile: (context) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: child,
+        ),
+        desktop: (context) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+          child: child,
+        ),
       ),
     );
   }

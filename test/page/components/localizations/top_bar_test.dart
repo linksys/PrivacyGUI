@@ -39,7 +39,7 @@ void main() async {
   });
 
   // Test ID: GENSET-SYS_LOGGED
-  testLocalizationsV2(
+  testLocalizations(
     'General Settings - popup with system theme when logged in',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -69,7 +69,7 @@ void main() async {
   );
 
   // Test ID: GENSET-LGT_LOGGED
-  testLocalizationsV2(
+  testLocalizations(
     'General Settings - popup with light theme when logged in',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -102,7 +102,7 @@ void main() async {
   );
 
   // Test ID: GENSET-DRK_LOGGED
-  testLocalizationsV2(
+  testLocalizations(
     'General Settings - popup with dark theme when logged in',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -132,7 +132,7 @@ void main() async {
   );
 
   // Test ID: GENSET-SYS_GUEST
-  testLocalizationsV2(
+  testLocalizations(
     'General Settings - popup with system theme when not log in yet',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -164,7 +164,7 @@ void main() async {
   );
 
   // Test ID: GENSET-LGT_GUEST
-  testLocalizationsV2(
+  testLocalizations(
     'General Settings - popup with light theme when not log in yet',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -194,7 +194,7 @@ void main() async {
   );
 
   // Test ID: GENSET-DRK_GUEST
-  testLocalizationsV2(
+  testLocalizations(
     'General Settings - popup with dark theme when not log in yet',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -224,7 +224,7 @@ void main() async {
   );
 
   // Test ID: GENSET-LANG_SEL
-  testLocalizationsV2('General Settings - Language selection dialog',
+  testLocalizations('General Settings - Language selection dialog',
       (tester, screen) async {
     testHelper.disableAnimations = false;
     await testHelper.pumpView(

@@ -35,7 +35,7 @@ void main() async {
     testHelper.setup();
   });
 
-  testLocalizationsV2(
+  testLocalizations(
     'Verify initial view with instructions and blue light description',
     (tester, screen) async {
       // Test ID: ADDND-INIT
@@ -69,7 +69,7 @@ void main() async {
     helper: testHelper,
   );
 
-  testLocalizationsV2(
+  testLocalizations(
     'Verify "Light is a different color" modal dialog',
     (tester, screen) async {
       // Test ID: ADDND-DIFF_COL
@@ -106,7 +106,7 @@ void main() async {
     helper: testHelper,
   );
 
-  testLocalizationsV2(
+  testLocalizations(
     'Verify searching nodes loading state',
     (tester, screen) async {
       // Test ID: ADDND-SEARCH
@@ -138,7 +138,7 @@ void main() async {
     helper: testHelper,
   );
 
-  testLocalizationsV2(
+  testLocalizations(
     'Verify onboarding nodes loading state',
     (tester, screen) async {
       // Test ID: ADDND-ONBOARD
@@ -170,7 +170,7 @@ void main() async {
     helper: testHelper,
   );
 
-  testLocalizationsV2(
+  testLocalizations(
     'Verify result view when no nodes are found',
     (tester, screen) async {
       // Test ID: ADDND-NO_NODES
@@ -210,7 +210,7 @@ void main() async {
     helper: testHelper,
   );
 
-  testLocalizationsV2(
+  testLocalizations(
     'Verify troubleshooting modal with numbered steps',
     (tester, screen) async {
       // Test ID: ADDND-TRBL_MODAL
@@ -258,7 +258,7 @@ void main() async {
     helper: testHelper,
   );
 
-  testLocalizationsV2(
+  testLocalizations(
     'Verify result view displaying multiple discovered nodes',
     (tester, screen) async {
       // Test ID: ADDND-RESULTS

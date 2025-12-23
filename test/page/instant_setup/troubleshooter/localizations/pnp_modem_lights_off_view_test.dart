@@ -25,7 +25,7 @@ void main() async {
   });
 
   // Test ID: PNPM-INIT
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the initial state of the modem lights off troubleshooter and the tips modal',
     (tester, screen) async {
       final context = await testHelper.pumpView(

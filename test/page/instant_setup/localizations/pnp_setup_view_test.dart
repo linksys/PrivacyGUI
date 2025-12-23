@@ -180,7 +180,7 @@ void main() {
 
   group('PnpSetupView screenshot tests based on PnpFlowStatus', () {
     // Test ID: PNPS-WIZ_INIT
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the initial loading screen of the wizard',
       (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
@@ -208,7 +208,7 @@ void main() {
 
     group('status: wizardConfiguring', () {
       // Test ID: PNPS-STEP1_WIFI
-      testLocalizationsV2(
+      testLocalizations(
         'Verify interactions on the "Personal WiFi" step',
         (tester, screen) async {
           final fakeNotifier = FakePnpNotifier(
@@ -263,7 +263,7 @@ void main() {
       );
 
       // Test ID: PNPS-STEP2_GST
-      testLocalizationsV2(
+      testLocalizations(
         'Verify interactions on the "Guest WiFi" step',
         (tester, screen) async {
           final fakeNotifier = FakePnpNotifier(
@@ -319,7 +319,7 @@ void main() {
       );
 
       // Test ID: PNPS-STEP3_NIT
-      testLocalizationsV2(
+      testLocalizations(
         'Verify interactions on the "Night Mode" step',
         (tester, screen) async {
           final fakeNotifier = FakePnpNotifier(
@@ -359,7 +359,7 @@ void main() {
       );
 
       // Test ID: PNPS-STEP4_NET
-      testLocalizationsV2(
+      testLocalizations(
         'Verify the "Your Network" step with no child nodes',
         (tester, screen) async {
           final initialState = getDefaultPnpState(
@@ -398,7 +398,7 @@ void main() {
       );
 
       // Test ID: PNPS-NET_CHILD
-      testLocalizationsV2(
+      testLocalizations(
         'Verify the "Your Network" step with child nodes displayed',
         (tester, screen) async {
           final childNodes = [
@@ -448,7 +448,7 @@ void main() {
     });
 
     // Test ID: PNPS-WIZ_SAVE
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the "Saving" screen',
       (tester, screen) async {
         final fakeNotifier =
@@ -475,7 +475,7 @@ void main() {
     );
 
     // Test ID: PNPS-WIZ_SAVED
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the "Saved" confirmation screen',
       (tester, screen) async {
         final fakeNotifier =
@@ -502,7 +502,7 @@ void main() {
     );
 
     // Test ID: PNPS-WIZ_RECONN
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the "Needs Reconnect" screen',
       (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
@@ -537,7 +537,7 @@ void main() {
     );
 
     // Test ID: PNPS-WIZ_TST_REC
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the "Testing Reconnect" screen',
       (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
@@ -564,7 +564,7 @@ void main() {
     );
 
     // Test ID: PNPS-WIZ_FW_CHK
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the "Checking Firmware" screen',
       (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
@@ -595,7 +595,7 @@ void main() {
     );
 
     // Test ID: PNPS-WIZ_FW_UPD
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the "Updating Firmware" screen',
       (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
@@ -626,7 +626,7 @@ void main() {
     );
 
     // Test ID: PNPS-WIZ_RDY
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the "WiFi Ready" screen',
       (tester, screen) async {
         final fakeNotifier =
@@ -657,7 +657,7 @@ void main() {
     );
 
     // Test ID: PNPS-INIT_FAIL
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the wizard initialization failure screen',
       (tester, screen) async {
         final fakeNotifier =
@@ -686,7 +686,7 @@ void main() {
     );
 
     // Test ID: PNPS-SAVE_FAIL
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the wizard save failure screen',
       (tester, screen) async {
         final fakeNotifier =

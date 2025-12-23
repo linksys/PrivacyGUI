@@ -253,53 +253,55 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
 
   void _initEditingState(StaticRouteEntryUIModel rule) {
     if (_editingRule != rule) {
-      _isInitializing = true;
-      try {
-        _editingRule = rule;
-        final state = ref.read(staticRoutingProvider);
+      _editingRule = rule;
+      Future.microtask(() {
+        _isInitializing = true;
+        try {
+          final state = ref.read(staticRoutingProvider);
 
-        // Initialize provider - convert to StaticRoutingRuleUIModel
-        final ruleUIModel = StaticRoutingRuleUIModel(
-          name: rule.name,
-          destinationIP: rule.destinationIP,
-          networkPrefixLength:
-              NetworkUtils.subnetMaskToPrefixLength(rule.subnetMask),
-          gateway: rule.gateway.isEmpty ? null : rule.gateway,
-          interface: rule.interface,
-        );
-        final rulesUIModels = state.current.entries
-            .map((e) => StaticRoutingRuleUIModel(
-                  name: e.name,
-                  destinationIP: e.destinationIP,
-                  networkPrefixLength:
-                      NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
-                  gateway: e.gateway.isEmpty ? null : e.gateway,
-                  interface: e.interface,
-                ))
-            .toList();
-        ref.read(staticRoutingRuleProvider.notifier).init(
-              rulesUIModels,
-              ruleUIModel,
-              state.current.entries.indexOf(rule),
-              state.status.routerIp,
-              state.status.subnetMask,
-            );
+          // Initialize provider - convert to StaticRoutingRuleUIModel
+          final ruleUIModel = StaticRoutingRuleUIModel(
+            name: rule.name,
+            destinationIP: rule.destinationIP,
+            networkPrefixLength:
+                NetworkUtils.subnetMaskToPrefixLength(rule.subnetMask),
+            gateway: rule.gateway.isEmpty ? null : rule.gateway,
+            interface: rule.interface,
+          );
+          final rulesUIModels = state.current.entries
+              .map((e) => StaticRoutingRuleUIModel(
+                    name: e.name,
+                    destinationIP: e.destinationIP,
+                    networkPrefixLength:
+                        NetworkUtils.subnetMaskToPrefixLength(e.subnetMask),
+                    gateway: e.gateway.isEmpty ? null : e.gateway,
+                    interface: e.interface,
+                  ))
+              .toList();
+          ref.read(staticRoutingRuleProvider.notifier).init(
+                rulesUIModels,
+                ruleUIModel,
+                state.current.entries.indexOf(rule),
+                state.status.routerIp,
+                state.status.subnetMask,
+              );
 
-        // Set controller values
-        _routerNameController.text = rule.name;
-        _destinationIPController.text = rule.destinationIP;
-        _subnetMaskController.text = rule.subnetMask;
-        _gatewayController.text = rule.gateway;
-        _selectedInterface = RoutingSettingInterface.resolve(rule.interface);
+          // Set controller values
+          _routerNameController.text = rule.name;
+          _destinationIPController.text = rule.destinationIP;
+          _subnetMaskController.text = rule.subnetMask;
+          _gatewayController.text = rule.gateway;
+          _selectedInterface = RoutingSettingInterface.resolve(rule.interface);
 
-        // Clear errors
-        _nameError = null;
-        _destIpError = null;
-        _subnetError = null;
-        _gatewayError = null;
-      } finally {
-        _isInitializing = false;
-      }
+          // Clear errors
+          _nameError = null;
+          _destIpError = null;
+          _subnetError = null;
+          _gatewayError = null;
+        } finally {
+          _isInitializing = false;
+        }
+      });
     }
   }
 

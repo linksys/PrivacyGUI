@@ -28,7 +28,7 @@ void main() {
 
   group('PnpAdminView screenshot tests based on PnpFlowStatus', () {
     // Test ID: PNPA-INIT
-    testLocalizationsV2(
+    testLocalizations(
         'Verify loading spinner and "Initializing Admin" message on startup',
         (tester, screen) async {
       when(testHelper.mockPnpNotifier.build()).thenReturn(
@@ -56,7 +56,7 @@ void main() {
         helper: testHelper);
 
     // Test ID: PNPA-NETCHK
-    testLocalizationsV2(
+    testLocalizations(
         'Verify "Checking Internet Connection" message while network is being checked',
         (tester, screen) async {
       when(testHelper.mockPnpNotifier.build()).thenReturn(
@@ -85,7 +85,7 @@ void main() {
         helper: testHelper);
 
     // Test ID: PNPA-NETOK
-    testLocalizationsV2(
+    testLocalizations(
         'Verify "Internet Connected" message and continue button when online',
         (tester, screen) async {
       when(testHelper.mockPnpNotifier.build()).thenReturn(
@@ -114,7 +114,7 @@ void main() {
         helper: testHelper);
 
     // Test ID: PNPA-UNCONF
-    testLocalizationsV2(
+    testLocalizations(
         'Verify unconfigured router view with "Start Setup" button',
         (tester, screen) async {
       when(testHelper.mockPnpNotifier.build()).thenReturn(
@@ -150,7 +150,7 @@ void main() {
         helper: testHelper);
 
     // Test ID: PNPA-PASSWD
-    testLocalizationsV2(
+    testLocalizations(
         'Verify admin password prompt with login and "Where is it?" buttons',
         (tester, screen) async {
       when(testHelper.mockPnpNotifier.build()).thenReturn(
@@ -195,7 +195,7 @@ void main() {
         helper: testHelper);
 
     // Test ID: PNPA-LOGIN_IN
-    testLocalizationsV2(
+    testLocalizations(
         'Verify login button is disabled and processing state is shown when logging in',
         (tester, screen) async {
       when(testHelper.mockPnpNotifier.build()).thenReturn(
@@ -243,7 +243,7 @@ void main() {
         helper: testHelper);
 
     // Test ID: PNPA-LOGIN_FAIL
-    testLocalizationsV2(
+    testLocalizations(
         'Verify "Incorrect Password" error message after a failed login attempt',
         (tester, screen) async {
       when(testHelper.mockPnpNotifier.build()).thenReturn(
@@ -291,7 +291,7 @@ void main() {
         helper: testHelper);
 
     // Test ID: PNPA-ERROR
-    testLocalizationsV2('Verify generic error page with a "Try Again" button',
+    testLocalizations('Verify generic error page with a "Try Again" button',
         (tester, screen) async {
       when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
@@ -322,7 +322,7 @@ void main() {
         helper: testHelper);
 
     // Test ID: PNPA-PASS_MOD
-    testLocalizationsV2(
+    testLocalizations(
         'Verify "Where is it?" modal appears when button is tapped on password screen',
         (tester, screen) async {
       when(testHelper.mockPnpNotifier.build()).thenReturn(

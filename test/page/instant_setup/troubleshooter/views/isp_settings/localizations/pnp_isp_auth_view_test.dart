@@ -25,7 +25,7 @@ void main() async {
   });
 
   // Test ID: PNP-ISP-AUTH_FULL-FLOW
-  testLocalizationsV2(
+  testLocalizations(
     'Verify ISP Auth view UI flow and error handling',
     (tester, localizedScreen) async {
       final context = await testHelper.pumpView(

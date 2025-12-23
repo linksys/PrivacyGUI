@@ -49,7 +49,7 @@ void main() {
   });
 
   // Test ID: DHCPR-EMPTY
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view when there are no devices or reservations',
     (tester, screen) async {
       // Enable animations to allow UI to fully render
@@ -80,7 +80,7 @@ void main() {
   );
 
   // Test ID: DHCPR-NO_RES
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view with a list of un-reserved devices',
     (tester, screen) async {
       when(testHelper.mockDHCPReservationsNotifier.build())
@@ -111,7 +111,7 @@ void main() {
   );
 
   // Test ID: DHCPR-SOME_RES
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view with a mix of reserved and un-reserved devices',
     (tester, screen) async {
       final state = DHCPReservationState.fromMap(dhcpReservationTestState);
@@ -156,7 +156,7 @@ void main() {
   );
 
   // Test ID: DHCPR-ALL_RES
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view when all devices are reserved',
     (tester, screen) async {
       final state = DHCPReservationState.fromMap(dhcpReservationTestState);
@@ -188,7 +188,7 @@ void main() {
   );
 
   // Test ID: DHCPR-CONFLICT
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view when a device has a conflicting IP',
     (tester, screen) async {
       final state = DHCPReservationState.fromMap(dhcpReservationTestState);
@@ -222,7 +222,7 @@ void main() {
   );
 
   // Test ID: DHCPR-ADD_MODAL
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the "manually add reservation" dialog',
     (tester, screen) async {
       // Enable animations to allow UI to fully render
@@ -253,7 +253,7 @@ void main() {
   );
 
   // Test ID: DHCPR-EDIT_MODAL
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the "edit reservation" dialog',
     (tester, screen) async {
       final state = DHCPReservationState.fromMap(dhcpReservationTestState);
@@ -295,7 +295,7 @@ void main() {
   );
 
   // Test ID: DHCPR-MOB_FILTER
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the device filter dialog on mobile',
     (tester, screen) async {
       when(testHelper.mockDHCPReservationsNotifier.build())

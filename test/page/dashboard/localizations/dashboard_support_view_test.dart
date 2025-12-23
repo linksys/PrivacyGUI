@@ -50,7 +50,8 @@ void main() {
   }
 
   // Test ID: DSUP-DESKTOP
-  testLocalizationsV2(
+  // Desktop screens (>905px) should show sidebar with menu content directly visible.
+  testLocalizations(
     'dashboard support view - default desktop layout',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
@@ -61,13 +62,13 @@ void main() {
       expect(find.text(loc.faqVisitLinksysSupport), findsOneWidget);
       expect(find.byType(AppExpansionPanel), findsNWidgets(5));
     },
-    screens: responsiveDesktopScreens,
+    screens: [device1080w, device1280w, device1440w],
     goldenFilename: 'DSUP-DESKTOP_01_base',
     helper: testHelper,
   );
 
   // Test ID: DSUP-MOBILE
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard support view - default mobile layout',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
@@ -91,8 +92,33 @@ void main() {
     helper: testHelper,
   );
 
+  // Test ID: DSUP-TABLET
+  // Tablet (744w) falls in tablet breakpoint (600-905px), sidebar should NOT display.
+  // Behavior should match mobile: menu must be triggered via AppIconButton.
+  testLocalizations(
+    'dashboard support view - tablet layout (no sidebar)',
+    (tester, screen) async {
+      final context = await pumpFaq(tester, screen);
+      final loc = testHelper.loc(context);
+
+      expect(find.text(loc.faqs), findsOneWidget);
+      expect(find.byType(AppExpansionPanel), findsNWidgets(5));
+
+      // On tablet, sidebar should NOT be visible - must tap menu button
+      final menuButton = find.byType(AppIconButton);
+      expect(menuButton, findsOneWidget);
+      await tester.tap(menuButton);
+      await tester.pumpAndSettle();
+      expect(find.text(loc.faqLookingFor), findsOneWidget);
+      expect(find.text(loc.faqVisitLinksysSupport), findsOneWidget);
+    },
+    screens: [device744w],
+    goldenFilename: 'DSUP-TABLET_01_menu',
+    helper: testHelper,
+  );
+
   // Test ID: DSUP-EXPAND
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard support view - expanded all categories',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);

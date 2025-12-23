@@ -28,7 +28,7 @@ void main() async {
   });
 
   // Test ID: PNPNI-NO_SSID
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the no internet connection view without a specific SSID',
     (tester, localizedScreen) async {
       final context = await testHelper.pumpView(
@@ -74,7 +74,7 @@ void main() async {
   );
 
   // Test ID: PNPNI-HAS_SSID
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the no internet connection view with a specific SSID',
     (tester, localizedScreen) async {
       const ssid = 'AwesomeSSID';

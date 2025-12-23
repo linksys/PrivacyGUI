@@ -71,7 +71,7 @@ void main() {
 
   group('SelectDeviceView', () {
     // Test ID: IDSDV-MULTI
-    testLocalizationsV2(
+    testLocalizations(
       'should display devices in multiple selection mode',
       (tester, screen) async {
         final context = await testHelper.pumpView(
@@ -104,7 +104,7 @@ void main() {
     );
 
     // Test ID: IDSDV-SINGLE
-    testLocalizationsV2(
+    testLocalizations(
       'should display devices in single selection mode and pop on tap',
       (tester, screen) async {
         await testHelper.pumpView(
@@ -130,7 +130,7 @@ void main() {
     );
 
     // Test ID: IDSDV-SELECT
-    testLocalizationsV2(
+    testLocalizations(
       'should allow selecting and deselecting items',
       (tester, screen) async {
         final context = await testHelper.pumpView(
@@ -177,7 +177,7 @@ void main() {
     );
 
     // Test ID: IDSDV-ONLINE
-    testLocalizationsV2(
+    testLocalizations(
       'should show only online devices when onlineOnly is true',
       (tester, screen) async {
         final context = await testHelper.pumpView(
@@ -203,7 +203,7 @@ void main() {
     );
 
     // Test ID: IDSDV-WIRED
-    testLocalizationsV2(
+    testLocalizations(
       'should show only wired devices when connection is wired',
       (tester, screen) async {
         await testHelper.pumpView(
@@ -232,7 +232,7 @@ void main() {
     );
 
     // Test ID: IDSDV-IPMAC
-    testLocalizationsV2(
+    testLocalizations(
       'should show IP and MAC addresses',
       (tester, screen) async {
         await testHelper.pumpView(
@@ -255,7 +255,7 @@ void main() {
     );
 
     // Test ID: IDSDV-UNSELECT
-    testLocalizationsV2(
+    testLocalizations(
       'should show unselectable items as disabled',
       (tester, screen) async {
         await testHelper.pumpView(

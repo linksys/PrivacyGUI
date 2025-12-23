@@ -36,7 +36,8 @@ import '../../../test_data/safe_browsing_test_state.dart';
 final _menuMobileScreens = responsiveMobileScreens
     .map((screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1440))
     .toList();
-final _menuDesktopScreens = responsiveDesktopScreens
+// Desktop screens exclude 744w (tablet size: 600-905px) where sidebar is not shown
+final _menuDesktopScreens = [device1080w, device1280w, device1440w]
     .map((screen) => screen.copyWith(name: '${screen.name}-Tall', height: 900))
     .toList();
 
@@ -70,7 +71,7 @@ void main() {
   }
 
   // Test ID: DMENU-BASE
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - default layout',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -91,7 +92,7 @@ void main() {
   );
 
   // Test ID: DMENU-MOBILE_MENU
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - mobile open sheet',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -106,7 +107,7 @@ void main() {
   );
 
   // Test ID: DMENU-MOBILE_RESTART
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - restart dialog via mobile',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -124,7 +125,7 @@ void main() {
   );
 
   // Test ID: DMENU-DESKTOP_RESTART
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - restart dialog via desktop',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -139,8 +140,27 @@ void main() {
     helper: testHelper,
   );
 
+  // Test ID: DMENU-TABLET_RESTART
+  // Tablet (744w) has no sidebar - must use mobile flow (menu button + sheet)
+  testLocalizations(
+    'dashboard menu view - restart dialog via tablet (no sidebar)',
+    (tester, screen) async {
+      testHelper.disableAnimations = false;
+      final context = await pumpMenu(tester, screen);
+      final loc = testHelper.loc(context);
+      await openMoreMenu(tester);
+      await tester.tap(find.text(loc.restartNetwork), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.text(loc.alertExclamation), findsOneWidget);
+      expect(find.text(loc.menuRestartNetworkMessage), findsOneWidget);
+    },
+    screens: [device744w.copyWith(name: 'Device744w-Tall', height: 900)],
+    goldenFilename: 'DMENU-TABLET_RESTART_01_dialog',
+    helper: testHelper,
+  );
+
   // Test ID: DMENU-SAFETY
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - instant safety status indicator',
     (tester, screen) async {
       when(testHelper.mockInstantSafetyNotifier.build()).thenReturn(
@@ -163,7 +183,7 @@ void main() {
   );
 
   // Test ID: DMENU-PRIVACY
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - instant privacy beta label',
     (tester, screen) async {
       when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
@@ -180,7 +200,7 @@ void main() {
   );
 
   // Test ID: DMENU-BRIDGE
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - bridge mode disables safety',
     (tester, screen) async {
       when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
@@ -204,7 +224,7 @@ void main() {
   );
 
   // Test ID: DMENU-SPEED_INTERNAL
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - internal speed test card',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -220,7 +240,7 @@ void main() {
   );
 
   // Test ID: DMENU-SPEED_EXTERNAL
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - external speed test card',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -245,7 +265,7 @@ void main() {
   );
 
   // Test ID: DMENU-VPN
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard menu view - vpn card shown when supported',
     (tester, screen) async {
       when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);

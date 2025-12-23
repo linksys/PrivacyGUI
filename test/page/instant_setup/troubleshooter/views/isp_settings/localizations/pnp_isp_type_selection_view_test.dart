@@ -40,7 +40,7 @@ void main() async {
   });
 
   // Test ID: PNP-ISP-SEL_DEFAULT
-  testLocalizationsV2(
+  testLocalizations(
     'Verify ISP type selection view default state',
     (tester, localizedScreen) async {
       final mockInternetSettingsState =
@@ -78,7 +78,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-ALERT
-  testLocalizationsV2(
+  testLocalizations(
     'Verify ISP type selection DHCP alert dialog',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
@@ -124,7 +124,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-GENERIC
-  testLocalizationsV2(
+  testLocalizations(
     'Verify generic JNAPError during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
@@ -178,7 +178,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-NO-INTERNET
-  testLocalizationsV2(
+  testLocalizations(
     'Verify no internet connection error during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
@@ -232,7 +232,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-SUCCESS
-  testLocalizationsV2(
+  testLocalizations(
     'Verify JNAPSideEffectError with JNAPSuccess during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
@@ -289,7 +289,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-OTHER
-  testLocalizationsV2(
+  testLocalizations(
     'Verify JNAPSideEffectError without JNAPSuccess during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =

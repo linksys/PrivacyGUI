@@ -63,7 +63,7 @@ void main() {
   }
 
   // Test ID: IADM-BASE
-  testLocalizationsV2(
+  testLocalizations(
     'instant admin view - base layout',
     (tester, screen) async {
       final context = await pumpInstantAdmin(tester, screen);
@@ -80,7 +80,7 @@ void main() {
   );
 
   // Test ID: IADM-PASSWORD
-  testLocalizationsV2(
+  testLocalizations(
     'instant admin view - router password modal',
     (tester, screen) async {
       final context = await pumpInstantAdmin(tester, screen);
@@ -115,7 +115,7 @@ void main() {
   );
 
   // Test ID: IADM-TIMEZONE
-  testLocalizationsV2(
+  testLocalizations(
     'instant admin view - timezone detail view',
     (tester, screen) async {
       when(testHelper.mockTimezoneNotifier.build()).thenReturn(
@@ -140,7 +140,7 @@ void main() {
   );
 
   // Test ID: IADM-TRANSMIT_CARD
-  testLocalizationsV2(
+  testLocalizations(
     'instant admin view - transmit region card visible',
     (tester, screen) async {
       when(testHelper.mockPowerTableNotifier.build()).thenReturn(
@@ -158,7 +158,7 @@ void main() {
   );
 
   // Test ID: IADM-TRANSMIT_DIALOG
-  testLocalizationsV2(
+  testLocalizations(
     'instant admin view - transmit region picker dialog',
     (tester, screen) async {
       when(testHelper.mockPowerTableNotifier.build()).thenReturn(

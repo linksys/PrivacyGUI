@@ -33,7 +33,7 @@ import '../../../../../test_data/static_routing_state.dart';
 
 void main() {
   final testHelper = TestHelper();
-  final screens = responsiveAllScreens;
+  final screens = responsiveAllScreens.where((s) => s.width != 744).toList();
   final desktopScreens = responsiveDesktopScreens;
   final mobileScreens = responsiveMobileScreens;
 
@@ -42,7 +42,7 @@ void main() {
   });
 
   group('StaticRoutingView', () {
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the view in its empty state with no static routes.',
       (tester, screen) async {
         // Test ID: SROUTE-EMPTY
@@ -76,7 +76,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the view in its empty state with no static routes.',
       (tester, screen) async {
         // Test ID: SROUTE-EMPTY
@@ -102,7 +102,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
       'Verifies the view with NAT enabled and a list of static routes.',
       (tester, screen) async {
         // Test ID: SROUTE-NAT
@@ -129,7 +129,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
       'Verifies the view with Dynamic Routing (RIP) enabled.',
       (tester, screen) async {
         // Test ID: SROUTE-RIP
@@ -168,7 +168,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
       'Verifies the view with Dynamic Routing (RIP) enabled.',
       (tester, screen) async {
         // Test ID: SROUTE-RIP
@@ -207,7 +207,7 @@ void main() {
     );
 
     // SKIPPED: SROUTE-ADD-RULE - requires inline editing interaction that differs between desktop and mobile
-    testLocalizationsV2(
+    testLocalizations(
       'Verifies the add static route rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-ADD-RULE
@@ -252,11 +252,61 @@ void main() {
         expect(gatewayIp, isEmpty);
       },
       goldenFilename: 'SROUTE-ADD-RULE-01-initial_desktop',
-      screens: desktopScreens,
+      screens: desktopScreens.where((s) => s.width != 744).toList(),
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
+      'Verifies the add static route rule view (Tablet).',
+      (tester, screen) async {
+        // Test ID: SROUTE-ADD-RULE-TABLET
+        testHelper.disableAnimations = false;
+        final state = StaticRoutingState.fromMap(staticRoutingTestState);
+        when(testHelper.mockStaticRoutingNotifier.build()).thenReturn(state);
+        when(testHelper.mockStaticRoutingRuleNotifier.isRuleValid())
+            .thenReturn(false);
+
+        await testHelper.pumpShellView(
+          tester,
+          locale: screen.locale,
+          child: const StaticRoutingView(),
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('appDataTable_addButton')));
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        final nameController = tester
+            .widget<AppTextField>(find.byKey(const Key('routeName')))
+            .controller;
+        expect(nameController?.text, isEmpty);
+
+        final destinationIp = tester
+            .widget<AppTextField>(find.byKey(const Key('destinationIP')))
+            .controller
+            ?.text;
+        expect(destinationIp, isEmpty);
+
+        final subnetMask = tester
+            .widget<AppTextField>(find.byKey(const Key('subnetMask')))
+            .controller
+            ?.text;
+        expect(subnetMask, '255.255.255.0');
+
+        final gatewayIp = tester
+            .widget<AppTextField>(find.byKey(const Key('gateway')))
+            .controller
+            ?.text;
+        expect(gatewayIp, isEmpty);
+      },
+      goldenFilename: 'SROUTE-ADD-RULE-01-initial_tablet',
+      screens: [device744w],
+      helper: testHelper,
+    );
+
+    testLocalizations(
       'Verifies the edit static route rule view with pre-filled data.',
       (tester, screen) async {
         // Test ID: SROUTE-EDIT-RULE
@@ -306,7 +356,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
       'Verifies the validation for an empty route name in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-NAME
@@ -337,7 +387,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
       'Verifies the validation for an invalid destination IP in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-DEST
@@ -376,7 +426,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
       'Verifies the validation for an invalid subnet mask in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-SUBNET
@@ -414,7 +464,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
       'Verifies the validation for an invalid gateway IP in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-GATEWAY
@@ -452,7 +502,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizationsV2(
+    testLocalizations(
       "Verifies the 'Interface' dropdown menu in the rule view.",
       (tester, screen) async {
         // Test ID: SROUTE-DROPDOWN

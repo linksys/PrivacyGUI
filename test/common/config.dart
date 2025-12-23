@@ -14,9 +14,9 @@ final responsiveAllScreens = [
 final responsiveMobileScreens = [
   // device320w,
   device480w,
-  device744w,
 ];
 final responsiveDesktopScreens = [
+  device744w,
   device1080w,
   device1280w,
   device1440w,
@@ -29,9 +29,9 @@ final responsiveAllVariants = ValueVariant<ScreenSize>({
 final responsiveMobileVariants = ValueVariant<ScreenSize>({
   // device320w,
   device480w,
-  device744w,
 });
 final responsiveDesktopVariants = ValueVariant<ScreenSize>({
+  device744w,
   device1080w,
   device1280w,
   device1440w,

@@ -69,7 +69,7 @@ void main() {
   }
 
   // Test ID: LRRP-INIT
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - initial layout',
     (tester, screen) async {
       final context = await testHelper.pumpView(
@@ -104,7 +104,7 @@ void main() {
   );
 
   // Test ID: LRRP-EDIT
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - editing password and hint',
     (tester, screen) async {
       await testHelper.pumpView(
@@ -126,7 +126,7 @@ void main() {
   );
 
   // Test ID: LRRP-VALID
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - save button enabled on valid state',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
@@ -153,7 +153,7 @@ void main() {
   );
 
   // Test ID: LRRP-SUCCESS
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - successful reset dialog',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
@@ -184,7 +184,7 @@ void main() {
   );
 
   // Test ID: LRRP-FAIL
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - failure dialog',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(

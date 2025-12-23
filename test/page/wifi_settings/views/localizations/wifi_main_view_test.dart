@@ -58,7 +58,7 @@ void main() {
 
   group('Incredible-WiFi - WiFi Advanced settings view', () {
     // Test ID: WIFIS-ADV_VIEW
-    testLocalizationsV2('It should render the advanced settings view correctly',
+    testLocalizations('It should render the advanced settings view correctly',
         (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
@@ -84,7 +84,7 @@ void main() {
     ], goldenFilename: 'WIFIS-ADV_VIEW-01-initial_state');
 
     // Test ID: WIFIS-MLO_WARN
-    testLocalizationsV2(
+    testLocalizations(
         'It should display the MLO warning in the advanced settings view',
         (tester, screen) async {
       when(testHelper.mockWiFiBundleNotifier.checkingMLOSettingsConflicts(any,
@@ -108,7 +108,7 @@ void main() {
     ], goldenFilename: 'WIFIS-MLO_WARN-01-warning_shown');
 
     // Test ID: WIFIS-DFS_WARN
-    testLocalizationsV2(
+    testLocalizations(
         'It should display the DFS warning modal when saving advanced settings',
         (tester, screen) async {
       final context = await testHelper.pumpShellView(
@@ -134,7 +134,7 @@ void main() {
 
   group('Incredible-WiFi - MAC Filtering view', () {
     // Test ID: WIFIS-MAC_VIEW
-    testLocalizationsV2('It should render the MAC filtering view correctly',
+    testLocalizations('It should render the MAC filtering view correctly',
         (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
@@ -153,7 +153,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_VIEW-01-initial_state');
 
     // Test ID: WIFIS-MAC_ENABLED
-    testLocalizationsV2(
+    testLocalizations(
         'It should render the MAC filtering view in an enabled state',
         (tester, screen) async {
       final wifiBundleTestStateInitialState =
@@ -180,7 +180,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_ENABLED-01-initial_state');
 
     // Test ID: WIFIS-MAC_ON_ALERT
-    testLocalizationsV2(
+    testLocalizations(
         'It should display an alert when turning on MAC filtering',
         (tester, screen) async {
       final wifiBundleTestStateInitialState =
@@ -212,7 +212,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_ON_ALERT-01-alert_shown');
 
     // Test ID: WIFIS-MAC_OFF_ALERT
-    testLocalizationsV2(
+    testLocalizations(
         'It should display an alert when turning off MAC filtering',
         (tester, screen) async {
       final wifiBundleTestStateInitialState =
@@ -244,7 +244,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_OFF_ALERT-01-alert_shown');
 
     // Test ID: WIFIS-IP_DIS_WARN
-    testLocalizationsV2(
+    testLocalizations(
         'It should display a warning when Instant Privacy is disabled',
         (tester, screen) async {
       final wifiBundleTestStateInitialState = getWifiBundleTestState(
@@ -269,7 +269,7 @@ void main() {
         goldenFilename: 'WIFIS-IP_DIS_WARN-01-warning_shown');
 
     // Test ID: WIFIS-MAC_DEV_VIEW
-    testLocalizationsV2(
+    testLocalizations(
         'It should render the MAC filtering devices view correctly',
         (tester, screen) async {
       when(testHelper.mockInstantPrivacyNotifier.build())
@@ -291,7 +291,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_DEV_VIEW-01-initial_state');
 
     // Test ID: WIFIS-MAC_ADD_MAN
-    testLocalizationsV2('It should allow manually adding a MAC address',
+    testLocalizations('It should allow manually adding a MAC address',
         (tester, screen) async {
       await testHelper.pumpShellView(
         tester,
@@ -309,7 +309,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_ADD_MAN-01-dialog_shown');
 
     // Test ID: WIFIS-MAC_SEL_DEV
-    testLocalizationsV2('It should allow selecting devices for MAC filtering',
+    testLocalizations('It should allow selecting devices for MAC filtering',
         (tester, screen) async {
       final context = await testHelper.pumpView(
         tester,
@@ -331,7 +331,7 @@ void main() {
 
   group('Incredible-WiFi Views', () {
     // Test ID: WIFIS-MAIN_VIEW
-    testLocalizationsV2('It should render the main view with tabs correctly',
+    testLocalizations('It should render the main view with tabs correctly',
         (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
@@ -350,7 +350,7 @@ void main() {
     ], goldenFilename: 'WIFIS-MAIN_VIEW-01-initial_state');
 
     // Test ID: WIFIS-DIRTY_STATE
-    testLocalizationsV2(
+    testLocalizations(
         'It should mark the state as dirty when a setting is edited',
         (tester, screen) async {
       final dirtyState = getWifiBundleTestState(

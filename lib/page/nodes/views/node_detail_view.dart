@@ -100,27 +100,37 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           },
         ),
       ],
-      child: (context, constraints) => Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: context.colWidth(4),
-                child: infoTab(state),
-              ),
-              AppGap.gutter(),
-              SizedBox(
-                width: context.colWidth(8),
-                child: deviceTab(
-                  state.deviceId,
-                  filteredDeviceList,
-                  isOnlineFilter,
+      child: (context, constraints) => PageLayoutScope(
+        overrideMaxColumns: 12,
+        useContentPadding:
+            PageLayoutScope.of(context)?.useContentPadding ?? true,
+        contentWidth: constraints.maxWidth,
+        child: Builder(
+          builder: (ctx) {
+            return Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: ctx.colWidth(4),
+                      child: infoTab(state),
+                    ),
+                    AppGap.gutter(),
+                    SizedBox(
+                      width: ctx.colWidth(8),
+                      child: deviceTab(
+                        state.deviceId,
+                        filteredDeviceList,
+                        isOnlineFilter,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            );
+          },
+        ),
       ),
     );
   }

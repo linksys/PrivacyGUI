@@ -115,7 +115,6 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
     );
   }
 
-  /// 使用 AppTopology 直接建構拓撲視圖 - Expanded Mode with Menu
   Widget _buildInstantTopology(BuildContext context, WidgetRef ref) {
     final topologyState = ref.watch(instantTopologyProvider);
     final meshTopology = TopologyAdapter.convert([topologyState.root]);

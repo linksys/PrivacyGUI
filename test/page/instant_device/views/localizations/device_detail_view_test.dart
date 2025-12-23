@@ -77,7 +77,7 @@ void main() {
   }
 
   // Test ID: IDDV-ONLINE — verify layout for online wireless device
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - online wireless summary',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(tester, screen);
@@ -106,7 +106,7 @@ void main() {
   );
 
   // Test ID: IDDV-EDIT — edit modal validation states
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - edit modal validations',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(tester, screen);
@@ -137,7 +137,7 @@ void main() {
   );
 
   // Test ID: IDDV-RESERVE — reserve IP dialog
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - reserve ip dialog',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(tester, screen);
@@ -156,7 +156,7 @@ void main() {
   );
 
   // Test ID: IDDV-RELEASE — release IP dialog for reserved clients
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - release ip dialog',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(
@@ -179,7 +179,7 @@ void main() {
   );
 
   // Test ID: IDDV-MLO — show MLO CTA and modal
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - mlo capable modal',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(

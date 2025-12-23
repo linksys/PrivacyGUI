@@ -74,7 +74,7 @@ void main() {
   }
 
   // Test ID: IVER-INFO — validate base Instant Info tab layout
-  testLocalizationsV2(
+  testLocalizations(
     'instant verify view - instant info layout',
     (tester, screen) async {
       final context = await pumpInstantVerify(tester, screen);
@@ -91,7 +91,7 @@ void main() {
   );
 
   // Test ID: IVER-TOPOLOGY — switch tab renders InstantTopologyView
-  testLocalizationsV2(
+  testLocalizations(
     'instant verify view - instant topology tab',
     (tester, screen) async {
       // Enable animations to allow tab switching to work properly
@@ -115,7 +115,7 @@ void main() {
   );
 
   // Test ID: IVER-MULTI_DNS — connectivity card with multiple DNS servers
-  testLocalizationsV2(
+  testLocalizations(
     'instant verify view - connectivity multi dns',
     (tester, screen) async {
       final context = await pumpInstantVerify(
@@ -136,7 +136,7 @@ void main() {
   );
 
   // Test ID: IVER-SPEEDTEST — internal health-check speed test widget
-  testLocalizationsV2(
+  testLocalizations(
     'instant verify view - internal speed test widget',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -152,7 +152,7 @@ void main() {
   );
 
   // Test ID: IVER-SPEEDTEST_INIT — idle modules still show speed test card
-  testLocalizationsV2(
+  testLocalizations(
     'instant verify view - speed test modules idle state',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -167,7 +167,7 @@ void main() {
   );
 
   // Test ID: IVER-PING — tapping ping card opens modal
-  testLocalizationsV2(
+  testLocalizations(
     'instant verify view - ping dialog',
     (tester, screen) async {
       await pumpInstantVerify(tester, screen);
@@ -184,7 +184,7 @@ void main() {
   );
 
   // Test ID: IVER-TRACEROUTE — tapping traceroute card opens modal
-  testLocalizationsV2(
+  testLocalizations(
     'instant verify view - traceroute dialog',
     (tester, screen) async {
       await pumpInstantVerify(tester, screen);

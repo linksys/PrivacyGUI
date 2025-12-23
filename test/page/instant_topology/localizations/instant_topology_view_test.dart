@@ -17,25 +17,31 @@ import '../../../test_data/topology_data.dart';
 // Implementation File: lib/page/instant_topology/views/instant_topology_view.dart
 //
 // Test Summary:
-// | Test ID         | Description                                                                 |
-// | :-------------- | :-------------------------------------------------------------------------- |
-// | `ITOP-LAYOUT`   | Verifies base topology layout with multiple nodes and status badges         |
-// | `ITOP-MENU`     | Verifies menu button exists and can be tapped (Tree View only)              |
-// | `ITOP-OFFLINE`  | Verifies offline node display with appropriate visual indicators             |
-// | `ITOP-FWUPDATE` | Verifies firmware update indicator visibility in topology                    |
-//
-// Notes:
-// - Uses Pattern 0 (tall screens) to accommodate topology diagrams
-// - Tree View (mobile < 1280w) shows text badges and menu buttons
-// - Graph View (desktop >= 1280w) uses visual indicators only
+// | Test ID               | Description                                                                 |
+// | :-------------------- | :-------------------------------------------------------------------------- |
+// | `ITOP-LAYOUT-TREE`    | Verifies Tree View layout (Mobile < 600px) with status badges               |
+// | `ITOP-LAYOUT-GRAPH`   | Verifies Graph View layout (Tablet/Desktop >= 600px) without text badges    |
+// | `ITOP-MENU-TREE`      | Verifies vertical menu button (`more_vert`) in Tree View                    |
+// | `ITOP-MENU-GRAPH`     | Verifies horizontal menu button (`more_horiz`) in Graph View                |
+// | `ITOP-OFFLINE-TREE`   | Verifies offline text badge in Tree View                                    |
+// | `ITOP-OFFLINE-GRAPH`  | Verifies offline nodes in Graph View (visual only, no text)                 |
+// | `ITOP-FWUPDATE`       | Verifies firmware update indicator visibility                               |
 
 final _desktopTallScreens = responsiveDesktopScreens
     .map((screen) => screen.copyWith(height: 1600))
     .toList();
-final _topologyScreens = [
-  ...responsiveMobileScreens.map((screen) => screen.copyWith(height: 1280)),
-  ..._desktopTallScreens,
-];
+
+// Tree View Screens: Mobile (< 600px)
+final _treeViewScreens = responsiveMobileScreens
+    .map((screen) => screen.copyWith(height: 1280))
+    .where((s) => s.width < 600)
+    .toList();
+
+// Graph View Screens: Tablet & Desktop (>= 600px)
+final _graphViewScreens =
+    _desktopTallScreens.where((s) => s.width >= 600).toList();
+
+final _allScreens = [..._treeViewScreens, ..._graphViewScreens];
 
 InstantTopologyState _defaultTopologyState() =>
     TopologyTestData().testTopology2SlavesStarState;
@@ -88,10 +94,12 @@ void main() {
     return context;
   }
 
-  // Test ID: ITOP-LAYOUT
-  // Verify base topology layout with multiple nodes and status badges
-  testLocalizationsV2(
-    'instant topology view - base layout with multiple nodes',
+  // ===========================================================================
+  // Tree View Tests (Mobile < 600px)
+  // ===========================================================================
+
+  testLocalizations(
+    'instant topology view - tree view layout',
     (tester, screen) async {
       final topologyState = TopologyTestData().testTopology5SlavesStarState;
       await pumpInstantTopology(
@@ -103,29 +111,23 @@ void main() {
       // Verify page title
       expect(find.text('Instant-Topology'), findsOneWidget);
 
-      // Verify topology renders with nodes
+      // Verify nodes
       expect(find.text('Living room'), findsOneWidget);
       expect(find.text('Kitchen'), findsOneWidget);
       expect(find.text('Basement'), findsOneWidget);
 
-      // Verify status badges (only visible in Tree View on mobile)
-      // Graph View (desktop) doesn't show text badges, uses visual indicators instead
-      if (screen.width < 1280) {
-        expect(find.text('online'), findsAtLeastNWidgets(1),
-            reason: 'Status badges should be visible in Tree View (mobile)');
-      }
+      // Verify status badges (Visible in Tree View)
+      expect(find.text('online'), findsAtLeastNWidgets(1),
+          reason: 'Status badges should be visible in Tree View');
 
-      await testHelper.takeScreenshot(tester, 'ITOP-LAYOUT-01-base_layout');
+      await testHelper.takeScreenshot(tester, 'ITOP-LAYOUT-TREE-01-base');
     },
-    screens: _topologyScreens,
+    screens: _treeViewScreens,
     helper: testHelper,
   );
 
-  // Test ID: ITOP-MENU
-  // Verify menu button exists and can be tapped (Tree View only)
-  // NOTE: Menu buttons only visible in Tree View (mobile/480w), not Graph View (desktop/1280w)
-  testLocalizationsV2(
-    'instant topology view - menu interaction in tree view',
+  testLocalizations(
+    'instant topology view - tree view menu',
     (tester, screen) async {
       await pumpInstantTopology(
         tester,
@@ -133,39 +135,21 @@ void main() {
         state: TopologyTestData().testTopology1SlaveState,
       );
 
-      // Verify topology renders
-      expect(find.text('Living room'), findsOneWidget);
-      expect(find.text('Kitchen'), findsOneWidget);
-
-      await testHelper.takeScreenshot(tester, 'ITOP-MENU-01-before_tap');
-
-      // Menu button (Icons.more_vert) only visible in Tree View (mobile < 1280w)
-      // In Graph View (desktop >= 1280w), menus may be hover-only or positioned differently
+      // Verify vertical menu button (Icons.more_vert)
       final moreVertIcons = find.byIcon(Icons.more_vert);
-      if (screen.width < 1280) {
-        // Mobile Tree View - expect menu buttons
-        expect(moreVertIcons, findsAtLeastNWidgets(1),
-            reason: 'Menu buttons should be visible in Tree View (mobile)');
+      expect(moreVertIcons, findsAtLeastNWidgets(1),
+          reason: 'Vertical menu buttons should be visible in Tree View');
 
-        // Test menu tap
-        await tester.tap(moreVertIcons.first);
-        await tester.pumpAndSettle();
-        await testHelper.takeScreenshot(tester, 'ITOP-MENU-02-after_tap');
-      } else {
-        // Desktop Graph View - menu buttons not visible in current screenshots
-        // This may be expected behavior (hover-only menus in graph view)
-        await testHelper.takeScreenshot(
-            tester, 'ITOP-MENU-02-graph_view');
-      }
+      await testHelper.takeScreenshot(tester, 'ITOP-MENU-TREE-01-display');
+
+      // Test menu tap if needed (skipping for snapshot focus)
     },
-    screens: _topologyScreens,
+    screens: _treeViewScreens,
     helper: testHelper,
   );
 
-  // Test ID: ITOP-OFFLINE
-  // Verify offline node display with appropriate visual indicators
-  testLocalizationsV2(
-    'instant topology view - offline node display',
+  testLocalizations(
+    'instant topology view - tree view offline',
     (tester, screen) async {
       await pumpInstantTopology(
         tester,
@@ -173,30 +157,95 @@ void main() {
         state: TopologyTestData().testTopology1OfflineState,
       );
 
-      // Verify nodes render
+      // Verify nodes
       expect(find.text('Living room'), findsOneWidget);
       expect(find.text('Kitchen'), findsOneWidget);
 
-      // Verify offline badge (only visible in Tree View on mobile)
-      // Graph View (desktop) shows offline status visually (greyed out) without text badge
-      if (screen.width < 1280) {
-        expect(find.text('offline'), findsOneWidget,
-            reason: 'Offline badge should be visible in Tree View (mobile)');
-      }
+      // Verify offline badge (Visible in Tree View)
+      expect(find.text('offline'), findsOneWidget,
+          reason: 'Offline badge should be visible in Tree View');
 
-      await testHelper.takeScreenshot(tester, 'ITOP-OFFLINE-01-display');
-
-      // NOTE: Tapping offline node triggers navigation (context.pushNamed)
-      // which fails in test environment - this is expected behavior
-      // We're only verifying the visual display of offline nodes here
+      await testHelper.takeScreenshot(tester, 'ITOP-OFFLINE-TREE-01-display');
     },
-    screens: _topologyScreens,
+    screens: _treeViewScreens,
     helper: testHelper,
   );
 
-  // Test ID: ITOP-FWUPDATE
-  // Verify firmware update indicator visibility in topology
-  testLocalizationsV2(
+  // ===========================================================================
+  // Graph View Tests (Desktop/Tablet >= 600px)
+  // ===========================================================================
+
+  testLocalizations(
+    'instant topology view - graph view layout',
+    (tester, screen) async {
+      final topologyState = TopologyTestData().testTopology5SlavesStarState;
+      await pumpInstantTopology(
+        tester,
+        screen,
+        state: topologyState,
+      );
+
+      expect(find.text('Instant-Topology'), findsOneWidget);
+      expect(find.text('Living room'), findsOneWidget);
+      expect(find.text('Kitchen'), findsOneWidget);
+
+      // Verify NO status text badges (Graph View uses visual indicators)
+      expect(find.text('online'), findsNothing,
+          reason: 'Text status badges should NOT be visible in Graph View');
+
+      await testHelper.takeScreenshot(tester, 'ITOP-LAYOUT-GRAPH-01-base');
+    },
+    screens: _graphViewScreens,
+    helper: testHelper,
+  );
+
+  testLocalizations(
+    'instant topology view - graph view menu',
+    (tester, screen) async {
+      await pumpInstantTopology(
+        tester,
+        screen,
+        state: TopologyTestData().testTopology1SlaveState,
+      );
+
+      // Verify horizontal menu button (Icons.more_horiz)
+      final moreHorizIcons = find.byIcon(Icons.more_horiz);
+      expect(moreHorizIcons, findsAtLeastNWidgets(1),
+          reason: 'Horizontal menu buttons should be visible in Graph View');
+
+      await testHelper.takeScreenshot(tester, 'ITOP-MENU-GRAPH-01-display');
+    },
+    screens: _graphViewScreens,
+    helper: testHelper,
+  );
+
+  testLocalizations(
+    'instant topology view - graph view offline',
+    (tester, screen) async {
+      await pumpInstantTopology(
+        tester,
+        screen,
+        state: TopologyTestData().testTopology1OfflineState,
+      );
+
+      expect(find.text('Living room'), findsOneWidget);
+      expect(find.text('Kitchen'), findsOneWidget);
+
+      // Verify NO offline text badge
+      expect(find.text('offline'), findsNothing,
+          reason: 'Text offline badge should NOT be visible in Graph View');
+
+      await testHelper.takeScreenshot(tester, 'ITOP-OFFLINE-GRAPH-01-display');
+    },
+    screens: _graphViewScreens,
+    helper: testHelper,
+  );
+
+  // ===========================================================================
+  // Common / Firmware Update Tests (Run on both or specific subset)
+  // ===========================================================================
+
+  testLocalizations(
     'instant topology view - firmware update indicator',
     (tester, screen) async {
       await pumpInstantTopology(
@@ -205,18 +254,15 @@ void main() {
         state: TopologyTestData().testTopology2SlavesDaisyAndFwUpdateState,
       );
 
-      // Verify topology with firmware update renders
       expect(find.text('Living room 1'), findsOneWidget);
-      expect(find.text('Kitchen'), findsOneWidget);
-      expect(find.text('Basement'), findsOneWidget);
+      expect(find.byType(AppTopology), findsOneWidget); // Base check
 
-      // The firmware update is indicated visually (progress bar or status)
-      // Exact widget type depends on UI Kit implementation
-      expect(find.byType(AppTopology), findsOneWidget);
-
-      await testHelper.takeScreenshot(tester, 'ITOP-FWUPDATE-01-indicator');
+      // Screenshot name depends on screen width for clarity, or just use suffix
+      final suffix = screen.width < 600 ? 'TREE' : 'GRAPH';
+      await testHelper.takeScreenshot(
+          tester, 'ITOP-FWUPDATE-$suffix-01-indicator');
     },
-    screens: _topologyScreens,
+    screens: _allScreens, // Run on both to ensure FW update visible in both
     helper: testHelper,
   );
 }

@@ -44,7 +44,7 @@ void main() {
   }
 
   // Test ID: ISAF-OFF
-  testLocalizationsV2(
+  testLocalizations(
     'instant safety view - safe browsing off',
     (tester, screen) async {
       final context = await pumpView(tester, screen);
@@ -59,7 +59,7 @@ void main() {
   );
 
   // Test ID: ISAF-ON-FORTINET
-  testLocalizationsV2(
+  testLocalizations(
     'instant safety view - safe browsing enabled Fortinet provider',
     (tester, screen) async {
       final context = await pumpView(
@@ -79,7 +79,7 @@ void main() {
   );
 
   // Test ID: ISAF-ON-OPENDNS
-  testLocalizationsV2(
+  testLocalizations(
     'instant safety view - safe browsing enabled openDNS provider',
     (tester, screen) async {
       final context = await pumpView(
