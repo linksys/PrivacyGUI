@@ -5,7 +5,7 @@ import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
 import 'package:privacy_gui/route/route_model.dart';
 
 import '../../../../common/config.dart';
-import '../../../../common/test_helper_v2.dart';
+import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../test_data/vpn_test_state.dart';
 
@@ -32,7 +32,7 @@ import '../../../../test_data/vpn_test_state.dart';
 // | `VPN-TOAST_FAILED`    | Failed toast after connection test.                   |
 
 void main() {
-  final testHelper = TestHelperV2();
+  final testHelper = TestHelper();
 
   setUp(() {
     testHelper.setup();
@@ -57,7 +57,7 @@ void main() {
 
   group('VPN Settings Page Screenshots', () {
     // Test ID: VPN-DEFAULT
-    testLocalizationsV3(
+    testLocalizationsV2(
       'Default VPN State',
       (tester, screen) async {
         await testHelper.pumpView(
@@ -76,7 +76,7 @@ void main() {
     );
 
     // Test ID: VPN-DISCONNECTED
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Disconnected State',
       (tester, screen) async {
         when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.disconnectedState);
@@ -101,7 +101,7 @@ void main() {
     );
 
     // Test ID: VPN-FAILED
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Failed Connection State',
       (tester, screen) async {
         when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.failedState);
@@ -126,7 +126,7 @@ void main() {
     );
 
     // Test ID: VPN-CONNECTING
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Connecting State',
       (tester, screen) async {
         when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.connectingState);
@@ -151,7 +151,7 @@ void main() {
     );
 
     // Test ID: VPN-SUCCESS
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Test Result Success State',
       (tester, screen) async {
         when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.testResultState);
@@ -176,7 +176,7 @@ void main() {
     );
 
     // Test ID: VPN-TEST_FAILED
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Test Result Failed State',
       (tester, screen) async {
         when(() => testHelper.mockVPNNotifier.build())
@@ -202,7 +202,7 @@ void main() {
     );
 
     // Test ID: VPN-CERT_AUTH
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Certificate Auth State',
       (tester, screen) async {
         when(() => testHelper.mockVPNNotifier.build())
@@ -228,7 +228,7 @@ void main() {
     );
 
     // Test ID: VPN-DISABLED
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Service Disabled State',
       (tester, screen) async {
         when(() => testHelper.mockVPNNotifier.build())
@@ -254,7 +254,7 @@ void main() {
     );
 
     // Test ID: VPN-EDITING
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Editing Credentials State',
       (tester, screen) async {
         final editingState = VPNTestState.defaultState.copyWith(
@@ -284,7 +284,7 @@ void main() {
     );
 
     // Test ID: VPN-INV_GATEWAY
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Invalid Gateway Address State',
       (tester, screen) async {
         final invalidGatewayState = VPNTestState.disconnectedState.copyWith(
@@ -326,7 +326,7 @@ void main() {
     );
 
     // Test ID: VPN-INV_CRED
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Invalid Credentials State',
       (tester, screen) async {
         final invalidCredentialsState = VPNTestState.disconnectedState.copyWith(
@@ -371,7 +371,7 @@ void main() {
     );
 
     // Test ID: VPN-TUNNEL_IP
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Tunneled User IP Address State',
       (tester, screen) async {
         final invalidDNSState = VPNTestState.disconnectedState.copyWith(
@@ -407,7 +407,7 @@ void main() {
     );
 
     // Test ID: VPN-RETEST
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Test Connection when settings changes',
       (tester, screen) async {
         final invalidDNSState = VPNTestState.disconnectedState.copyWith(
@@ -446,7 +446,7 @@ void main() {
     );
 
     // Test ID: VPN-RETEST_INV
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Test Connection when settings are invalid',
       (tester, screen) async {
         final invalidDNSState = VPNTestState.disconnectedState.copyWith(
@@ -491,7 +491,7 @@ void main() {
     );
 
     // Test ID: VPN-TOAST_SUCCESS
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Test Connection Success toast',
       (tester, screen) async {
         when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.testResultState);
@@ -524,7 +524,7 @@ void main() {
     );
 
     // Test ID: VPN-TOAST_FAILED
-    testLocalizationsV3(
+    testLocalizationsV2(
       'VPN Test Connection Failed toast',
       (tester, screen) async {
         when(() => testHelper.mockVPNNotifier.build())

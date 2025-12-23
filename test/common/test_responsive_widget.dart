@@ -9,7 +9,6 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'config.dart';
 import 'screen.dart';
 import 'test_helper.dart';
-import 'test_helper_v2.dart';
 import 'theme_data.dart';
 
 extension ScreenSizeManager on WidgetTester {
@@ -136,61 +135,6 @@ void testLocalizationsV2(
   bool semanticsEnabled = true,
   Future<void> Function(WidgetTester tester)? onCompleted,
   TestHelper? helper,
-}) async {
-  final envLocales = targetLocales;
-  final envScreens = targetScreens;
-
-  final supportedLocales = (locales ?? AppLocalizations.supportedLocales)
-      .toSet()
-      .where((element) => envLocales.toSet().contains(element))
-      .toList();
-  final supportedDevices = (screens ?? responsiveAllScreens)
-      .toSet()
-      .where(
-          (element) => envScreens.toSet().any((e) => e.width == element.width))
-      .toList();
-  final isScreenIncluded = supportedDevices.isNotEmpty;
-  final set = supportedLocales
-      .map((locale) => supportedDevices.map((device) =>
-          LocalizedScreen.fromScreenSize(locale: locale, screen: device)))
-      .expand((list) => list)
-      .toSet();
-  final variants = ValueVariant(set);
-  testResponsiveWidgets(
-    name,
-    (tester) async {
-      await loadTestFonts();
-      final current = variants.currentValue!;
-      helper?.current = current;
-      await tester.setScreenSize(current);
-      await testMain(tester, current);
-    },
-    goldenFilename: goldenFilename,
-    goldenCallback: (name, tester) async {
-      final actualFinder = find.byWidgetPredicate((w) => true).first;
-      await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
-    },
-    onCompleted: onCompleted,
-    variants: !isScreenIncluded ? null : variants,
-    skip: (skip ?? false) || !isScreenIncluded,
-    timeout: timeout,
-    semanticsEnabled: semanticsEnabled,
-    tags: ['loc'],
-  );
-}
-
-@isTest
-void testLocalizationsV3(
-  String name,
-  FutureOr<void> Function(WidgetTester, LocalizedScreen) testMain, {
-  String? goldenFilename,
-  List<Locale>? locales,
-  List<ScreenSize>? screens,
-  bool? skip,
-  Timeout? timeout,
-  bool semanticsEnabled = true,
-  Future<void> Function(WidgetTester tester)? onCompleted,
-  TestHelperV2? helper,
 }) async {
   final envLocales = targetLocales;
   final envScreens = targetScreens;

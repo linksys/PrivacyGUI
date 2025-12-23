@@ -12,7 +12,7 @@ import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/_index.dart';
-import '../../../common/test_helper_v2.dart';
+import '../../../common/test_helper.dart';
 import '../../../test_data/dashboard_home_test_state.dart';
 import '../../../test_data/instant_privacy_test_state.dart';
 import '../../../test_data/safe_browsing_test_state.dart';
@@ -41,7 +41,7 @@ final _menuDesktopScreens = responsiveDesktopScreens
     .toList();
 
 void main() {
-  final testHelper = TestHelperV2();
+  final testHelper = TestHelper();
 
   setUp(() {
     testHelper.setup();
@@ -70,7 +70,7 @@ void main() {
   }
 
   // Test ID: DMENU-BASE
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - default layout',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -91,7 +91,7 @@ void main() {
   );
 
   // Test ID: DMENU-MOBILE_MENU
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - mobile open sheet',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -106,7 +106,7 @@ void main() {
   );
 
   // Test ID: DMENU-MOBILE_RESTART
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - restart dialog via mobile',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -124,7 +124,7 @@ void main() {
   );
 
   // Test ID: DMENU-DESKTOP_RESTART
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - restart dialog via desktop',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -140,7 +140,7 @@ void main() {
   );
 
   // Test ID: DMENU-SAFETY
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - instant safety status indicator',
     (tester, screen) async {
       when(() => testHelper.mockInstantSafetyNotifier.build()).thenReturn(
@@ -163,7 +163,7 @@ void main() {
   );
 
   // Test ID: DMENU-PRIVACY
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - instant privacy beta label',
     (tester, screen) async {
       when(() => testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
@@ -180,7 +180,7 @@ void main() {
   );
 
   // Test ID: DMENU-BRIDGE
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - bridge mode disables safety',
     (tester, screen) async {
       when(() => testHelper.mockDashboardHomeNotifier.build()).thenReturn(
@@ -204,7 +204,7 @@ void main() {
   );
 
   // Test ID: DMENU-SPEED_INTERNAL
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - internal speed test card',
     (tester, screen) async {
       when(() => testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -220,7 +220,7 @@ void main() {
   );
 
   // Test ID: DMENU-SPEED_EXTERNAL
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - external speed test card',
     (tester, screen) async {
       when(() => testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -245,7 +245,7 @@ void main() {
   );
 
   // Test ID: DMENU-VPN
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard menu view - vpn card shown when supported',
     (tester, screen) async {
       when(() => testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);

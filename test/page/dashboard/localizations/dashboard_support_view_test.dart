@@ -5,7 +5,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/screen.dart';
-import '../../../common/test_helper_v2.dart';
+import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 
 // View ID: DSUP
@@ -27,7 +27,7 @@ final _expandedScreens = [
 ];
 
 void main() {
-  final testHelper = TestHelperV2();
+  final testHelper = TestHelper();
 
   setUp(() {
     testHelper.setup();
@@ -50,7 +50,7 @@ void main() {
   }
 
   // Test ID: DSUP-DESKTOP
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard support view - default desktop layout',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
@@ -67,7 +67,7 @@ void main() {
   );
 
   // Test ID: DSUP-MOBILE
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard support view - default mobile layout',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
@@ -92,7 +92,7 @@ void main() {
   );
 
   // Test ID: DSUP-EXPAND
-  testLocalizationsV3(
+  testLocalizationsV2(
     'dashboard support view - expanded all categories',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
