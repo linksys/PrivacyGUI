@@ -79,7 +79,7 @@ bool _localeConfigured = false;
 bool get hasLocaleConfig => _localeConfigured;
 
 List<Locale> get targetLocales {
-  const value = String.fromEnvironment('locales', defaultValue: 'all');
+  const value = String.fromEnvironment('locales', defaultValue: 'en');
   const allLocales = AppLocalizations.supportedLocales;
   if (value == 'all') {
     _localeConfigured = false;
