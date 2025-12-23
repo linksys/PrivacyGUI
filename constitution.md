@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2025-12-17
+**Last Amended:** 2025-12-22
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -60,6 +60,8 @@ Tests MUST be organized as follows:
 * Unit tests:
   - Service tests: `test/page/[feature]/services/`
   - Provider tests: `test/page/[feature]/providers/`
+  - State tests: `test/page/[feature]/providers/` (與 Provider 測試同目錄)
+  - UI Model tests: `test/page/[feature]/models/` (僅當有獨立 UI Model 類別時)
 * Mock classes: Created inline in test files or in `test/mocks/` for shared mocks
 * Test data builders: `test/mocks/test_data/[feature_name]_test_data.dart`
 * Screenshot tests: `test/page/[feature]/localizations/*_test.dart` (tool uses pattern `localizations/.*_test.dart`)
@@ -187,6 +189,13 @@ void main() {
 }
 ```
 
+**Section 1.7: State Class and UI Model Testing**
+
+Provider 所使用的 State class 及 UI Model 類別**必須**有獨立的測試檔案
+
+**說明**：
+* State class 的測試與 Provider 測試放在同一個 `providers/` 目錄
+* 只有獨立建立的 UI Model class（名稱以 `UIModel` 結尾）才需要放在獨立的 `models/` 目錄
 
 ---
 

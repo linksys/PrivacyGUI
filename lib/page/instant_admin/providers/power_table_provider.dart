@@ -1,12 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/power_table_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
+import 'package:privacy_gui/page/instant_admin/services/power_table_service.dart';
 
 enum PowerTableCountries {
   chn,
@@ -49,7 +46,8 @@ enum PowerTableCountries {
         PowerTableCountries.twn => loc(context).asiaTaiwan,
         PowerTableCountries.tha => loc(context).asiaThailand,
         PowerTableCountries.xah => loc(context).asiaRest,
-        PowerTableCountries.aus => '${loc(context).australia}/${loc(context).newZealand}',
+        PowerTableCountries.aus =>
+          '${loc(context).australia}/${loc(context).newZealand}',
         PowerTableCountries.can => loc(context).canada,
         PowerTableCountries.eee => loc(context).europe,
         PowerTableCountries.lam => loc(context).latinAmerica,
@@ -62,7 +60,8 @@ enum PowerTableCountries {
         PowerTableCountries.tur => loc(context).middleEastTurkey,
         PowerTableCountries.are => loc(context).middleEastUnitedArabEmirates,
         PowerTableCountries.xme => loc(context).middleEast,
-        PowerTableCountries.nzl => '${loc(context).australia}/${loc(context).newZealand}',
+        PowerTableCountries.nzl =>
+          '${loc(context).australia}/${loc(context).newZealand}',
         PowerTableCountries.usa => loc(context).unitedState,
       };
 
@@ -106,38 +105,28 @@ final powerTableProvider =
 class PowerTableNotifier extends Notifier<PowerTableState> {
   @override
   PowerTableState build() {
-    final results = ref.watch(pollingProvider).value?.data ?? {};
+    final service = ref.read(powerTableServiceProvider);
+    final pollingData = ref.watch(pollingProvider).value?.data ?? {};
 
-    final powerTableSettings = JNAPTransactionSuccessWrap.getResult(
-        JNAPAction.getPowerTableSettings, results);
-    if (powerTableSettings == null) {
+    final powerTableState = service.parsePowerTableSettings(pollingData);
+    if (powerTableState == null) {
       return PowerTableState(
-          isPowerTableSelectable: false, supportedCountries: const []);
+        isPowerTableSelectable: false,
+        supportedCountries: const [],
+      );
     }
-    final powerTable = PowerTableSettings.fromMap(powerTableSettings.output);
-    return PowerTableState(
-        isPowerTableSelectable: powerTable.isPowerTableSelectable,
-        supportedCountries: List.from(
-          powerTable.supportedCountries.map(
-            (e) => PowerTableCountries.resolve(e),
-          ),
-        )..sort((a, b) => a.compareTo(b)),
-        country: PowerTableCountries.resolve(powerTable.country ?? ''));
+
+    return powerTableState;
   }
 
-  Future<PowerTableState> save(PowerTableCountries country) {
+  Future<PowerTableState> save(PowerTableCountries country) async {
+    final service = ref.read(powerTableServiceProvider);
+
     ref.read(pollingProvider.notifier).stopPolling();
-    return ref
-        .read(routerRepositoryProvider)
-        .send(
-          JNAPAction.setPowerTableSettings,
-          data: {'country': country.name.toUpperCase()},
-          auth: true,
-        )
-        .then((_) => ref.read(pollingProvider.notifier).startPolling())
-        .then((_) => ref.read(pollingProvider.notifier).forcePolling())
-        .then(
-          (_) => state.copyWith(country: country),
-        );
+    await service.savePowerTableCountry(country);
+    await ref.read(pollingProvider.notifier).startPolling();
+    await ref.read(pollingProvider.notifier).forcePolling();
+
+    return state.copyWith(country: country);
   }
 }
