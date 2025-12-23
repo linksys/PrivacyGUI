@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
@@ -23,7 +23,7 @@ void main() {
 
   setUp(() {
     testHelper.setup();
-    when(() => testHelper.mockPnpNotifier.startPnpFlow(any())).thenAnswer((_) async {});
+    when(testHelper.mockPnpNotifier.startPnpFlow(any)).thenAnswer((_) async {});
   });
 
   group('PnpAdminView screenshot tests based on PnpFlowStatus', () {
@@ -31,7 +31,7 @@ void main() {
     testLocalizationsV2(
         'Verify loading spinner and "Initializing Admin" message on startup',
         (tester, screen) async {
-      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
+      when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminInitializing,
         ),
@@ -50,13 +50,16 @@ void main() {
 
       expect(find.byType(AppLoader), findsOneWidget);
       expect(find.text(testHelper.loc(context).processing), findsOneWidget);
-    }, screens: screens, goldenFilename: 'PNPA-INIT_01-initial_state', helper: testHelper);
+    },
+        screens: screens,
+        goldenFilename: 'PNPA-INIT_01-initial_state',
+        helper: testHelper);
 
     // Test ID: PNPA-NETCHK
     testLocalizationsV2(
         'Verify "Checking Internet Connection" message while network is being checked',
         (tester, screen) async {
-      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
+      when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminCheckingInternet,
         ),
@@ -78,13 +81,14 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-NETCHK_01-checking_internet_screen', helper: testHelper);
+        goldenFilename: 'PNPA-NETCHK_01-checking_internet_screen',
+        helper: testHelper);
 
     // Test ID: PNPA-NETOK
     testLocalizationsV2(
         'Verify "Internet Connected" message and continue button when online',
         (tester, screen) async {
-      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
+      when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminInternetConnected,
         ),
@@ -106,13 +110,14 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-NETOK_01-internet_connected_screen', helper: testHelper);
+        goldenFilename: 'PNPA-NETOK_01-internet_connected_screen',
+        helper: testHelper);
 
     // Test ID: PNPA-UNCONF
     testLocalizationsV2(
         'Verify unconfigured router view with "Start Setup" button',
         (tester, screen) async {
-      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
+      when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminUnconfigured,
           deviceInfo: deviceInfo,
@@ -141,13 +146,14 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-UNCONF_01-unconfigured_router_screen', helper: testHelper);
+        goldenFilename: 'PNPA-UNCONF_01-unconfigured_router_screen',
+        helper: testHelper);
 
     // Test ID: PNPA-PASSWD
     testLocalizationsV2(
         'Verify admin password prompt with login and "Where is it?" buttons',
         (tester, screen) async {
-      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
+      when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminAwaitingPassword,
           deviceInfo: deviceInfo,
@@ -185,13 +191,14 @@ void main() {
           findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-PASSWD_01-password_prompt_screen', helper: testHelper);
+        goldenFilename: 'PNPA-PASSWD_01-password_prompt_screen',
+        helper: testHelper);
 
     // Test ID: PNPA-LOGIN_IN
     testLocalizationsV2(
         'Verify login button is disabled and processing state is shown when logging in',
         (tester, screen) async {
-      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
+      when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminLoggingIn,
           deviceInfo: deviceInfo,
@@ -230,13 +237,16 @@ void main() {
           find.widgetWithText(AppButton, testHelper.loc(context).login));
       expect(widget, isA<AppButton>());
       expect((widget as AppButton).onTap, null);
-    }, screens: screens, goldenFilename: 'PNPA-LOGIN_IN_01-logging_in_screen', helper: testHelper);
+    },
+        screens: screens,
+        goldenFilename: 'PNPA-LOGIN_IN_01-logging_in_screen',
+        helper: testHelper);
 
     // Test ID: PNPA-LOGIN_FAIL
     testLocalizationsV2(
         'Verify "Incorrect Password" error message after a failed login attempt',
         (tester, screen) async {
-      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
+      when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminLoginFailed,
           deviceInfo: deviceInfo,
@@ -277,12 +287,13 @@ void main() {
           find.text(testHelper.loc(context).incorrectPassword), findsOneWidget);
     },
         screens: screens,
-        goldenFilename: 'PNPA-LOGIN_FAIL_01-failed_login_screen', helper: testHelper);
+        goldenFilename: 'PNPA-LOGIN_FAIL_01-failed_login_screen',
+        helper: testHelper);
 
     // Test ID: PNPA-ERROR
     testLocalizationsV2('Verify generic error page with a "Try Again" button',
         (tester, screen) async {
-      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
+      when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminError,
           error: Exception('mock error'),
@@ -305,13 +316,16 @@ void main() {
 
       expect(find.widgetWithText(AppButton, testHelper.loc(context).tryAgain),
           findsOneWidget);
-    }, screens: screens, goldenFilename: 'PNPA-ERROR_01-generic_error_screen', helper: testHelper);
+    },
+        screens: screens,
+        goldenFilename: 'PNPA-ERROR_01-generic_error_screen',
+        helper: testHelper);
 
     // Test ID: PNPA-PASS_MOD
     testLocalizationsV2(
         'Verify "Where is it?" modal appears when button is tapped on password screen',
         (tester, screen) async {
-      when(() => testHelper.mockPnpNotifier.build()).thenReturn(
+      when(testHelper.mockPnpNotifier.build()).thenReturn(
         PnpState(
           status: PnpFlowStatus.adminAwaitingPassword,
           deviceInfo: deviceInfo,
@@ -361,6 +375,9 @@ void main() {
           findsOneWidget);
       expect(find.widgetWithText(AppButton, testHelper.loc(context).close),
           findsOneWidget);
-    }, screens: screens, goldenFilename: 'PNPA-PASS_MOD_01-where_is_it_modal', helper: testHelper);
+    },
+        screens: screens,
+        goldenFilename: 'PNPA-PASS_MOD_01-where_is_it_modal',
+        helper: testHelper);
   });
 }

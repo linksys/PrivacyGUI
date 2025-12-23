@@ -5,7 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/services/wifi_settings_service.dart';
+
 import 'package:ui_kit_library/ui_kit.dart';
 
 class WifiAdvancedSettingsView extends ConsumerWidget {
@@ -134,7 +134,7 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
         wifiBundleProvider.select((s) => s.settings.current.wifiList.mainWiFi));
     // This logic might need to be moved to the notifier itself to be a derived state (status)
     bool showMLOWarning = ref
-        .read(wifiSettingsServiceProvider)
+        .read(wifiBundleProvider.notifier)
         .checkingMLOSettingsConflicts(
             Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
     return AppCard(

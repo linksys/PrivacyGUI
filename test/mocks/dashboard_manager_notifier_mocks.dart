@@ -193,15 +193,15 @@ class MockDashboardManagerNotifier extends _i2.Notifier<_i3.DashboardManagerStat
         )),
       ) as _i12.Future<_i4.NodeDeviceInfo>);
 
-  @override
-  bool isHealthCheckModuleSupported(String? module) => (super.noSuchMethod(
-        Invocation.method(
-          #isHealthCheckModuleSupported,
-          [module],
-        ),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
+  // @override
+  // bool isHealthCheckModuleSupported(String? module) => (super.noSuchMethod(
+  //       Invocation.method(
+  //         #isHealthCheckModuleSupported,
+  //         [module],
+  //       ),
+  //       returnValue: false,
+  //       returnValueForMissingStub: false,
+  //     ) as bool);
 
   @override
   bool updateShouldNotify(

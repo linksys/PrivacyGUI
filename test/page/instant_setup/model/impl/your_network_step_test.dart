@@ -7,6 +7,8 @@ import 'package:privacy_gui/page/instant_setup/providers/mock_pnp_providers.dart
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart'; // Restored
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart'; // Corrected for StepViewStatus
 
+import '../../../../common/theme_data.dart';
+
 void main() {
   group('YourNetworkStep Corrected Widget Tests', () {
     late ProviderContainer container;
@@ -35,6 +37,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            theme: mockLightThemeData,
             home: Scaffold(
               body: Consumer(builder: (context, ref, child) {
                 capturedRef = ref; // Capture the ref

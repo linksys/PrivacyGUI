@@ -2,7 +2,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
@@ -143,7 +143,7 @@ void main() {
   testLocalizationsV2(
     'dashboard menu view - instant safety status indicator',
     (tester, screen) async {
-      when(() => testHelper.mockInstantSafetyNotifier.build()).thenReturn(
+      when(testHelper.mockInstantSafetyNotifier.build()).thenReturn(
         InstantSafetyState.fromMap(instantSafetyTestState2),
       );
       final context = await pumpMenu(tester, screen);
@@ -166,7 +166,7 @@ void main() {
   testLocalizationsV2(
     'dashboard menu view - instant privacy beta label',
     (tester, screen) async {
-      when(() => testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
+      when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
         InstantPrivacyState.fromMap(instantPrivacyEnabledTestState),
       );
       final context = await pumpMenu(tester, screen);
@@ -183,7 +183,7 @@ void main() {
   testLocalizationsV2(
     'dashboard menu view - bridge mode disables safety',
     (tester, screen) async {
-      when(() => testHelper.mockDashboardHomeNotifier.build()).thenReturn(
+      when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
         DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
             .copyWith(wanType: () => 'Bridge'),
       );
@@ -207,7 +207,7 @@ void main() {
   testLocalizationsV2(
     'dashboard menu view - internal speed test card',
     (tester, screen) async {
-      when(() => testHelper.mockHealthCheckProvider.build()).thenReturn(
+      when(testHelper.mockHealthCheckProvider.build()).thenReturn(
         const HealthCheckState(healthCheckModules: ['SpeedTest']),
       );
       final context = await pumpMenu(tester, screen);
@@ -223,10 +223,10 @@ void main() {
   testLocalizationsV2(
     'dashboard menu view - external speed test card',
     (tester, screen) async {
-      when(() => testHelper.mockHealthCheckProvider.build()).thenReturn(
+      when(testHelper.mockHealthCheckProvider.build()).thenReturn(
         const HealthCheckState(),
       );
-      when(() => testHelper.mockConnectivityNotifier.build()).thenReturn(
+      when(testHelper.mockConnectivityNotifier.build()).thenReturn(
         const ConnectivityState(
           hasInternet: true,
           connectivityInfo: ConnectivityInfo(
@@ -248,7 +248,7 @@ void main() {
   testLocalizationsV2(
     'dashboard menu view - vpn card shown when supported',
     (tester, screen) async {
-      when(() => testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
+      when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
       final context = await pumpMenu(tester, screen);
       final loc = testHelper.loc(context);
       await scrollUntil(tester, find.text(loc.vpn));

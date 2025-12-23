@@ -8,7 +8,6 @@ import 'dart:async' as _i8;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart' as _i4;
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart'
     as _i5;
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
@@ -43,17 +42,6 @@ class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
 class _FakeDeviceManagerState_1 extends _i1.SmartFake
     implements _i3.DeviceManagerState {
   _FakeDeviceManagerState_1(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
-}
-
-class _FakeNodeLightSettings_2 extends _i1.SmartFake
-    implements _i4.NodeLightSettings {
-  _FakeNodeLightSettings_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -228,41 +216,6 @@ class MockDeviceManagerNotifier extends _i2.Notifier<_i3.DeviceManagerState>
             #isLocation: isLocation,
             #icon: icon,
           },
-        ),
-        returnValue: _i8.Future<void>.value(),
-        returnValueForMissingStub: _i8.Future<void>.value(),
-      ) as _i8.Future<void>);
-
-  @override
-  _i8.Future<_i4.NodeLightSettings> getLEDLight() => (super.noSuchMethod(
-        Invocation.method(
-          #getLEDLight,
-          [],
-        ),
-        returnValue:
-            _i8.Future<_i4.NodeLightSettings>.value(_FakeNodeLightSettings_2(
-          this,
-          Invocation.method(
-            #getLEDLight,
-            [],
-          ),
-        )),
-        returnValueForMissingStub:
-            _i8.Future<_i4.NodeLightSettings>.value(_FakeNodeLightSettings_2(
-          this,
-          Invocation.method(
-            #getLEDLight,
-            [],
-          ),
-        )),
-      ) as _i8.Future<_i4.NodeLightSettings>);
-
-  @override
-  _i8.Future<void> setLEDLight(_i4.NodeLightSettings? settings) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #setLEDLight,
-          [settings],
         ),
         returnValue: _i8.Future<void>.value(),
         returnValueForMissingStub: _i8.Future<void>.value(),

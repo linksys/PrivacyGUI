@@ -414,4 +414,23 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
         currentSettings.privacy.copyWith(denyMacAddresses: macAddressList);
     _updateSettings(currentSettings.copyWith(privacy: newPrivacy));
   }
+
+  // --- Delegate methods for service layer ---
+
+  /// Validates the current WiFi list settings.
+  /// Delegates to [WifiSettingsService.validateWifiListSettings].
+  bool validateWifiListSettings(WiFiListSettings settings) {
+    return ref
+        .read(wifiSettingsServiceProvider)
+        .validateWifiListSettings(settings);
+  }
+
+  /// Checks for MLO settings conflicts.
+  /// Delegates to [WifiSettingsService.checkingMLOSettingsConflicts].
+  bool checkingMLOSettingsConflicts(Map<WifiRadioBand, WiFiItem> radios,
+      {bool? isMloEnabled}) {
+    return ref
+        .read(wifiSettingsServiceProvider)
+        .checkingMLOSettingsConflicts(radios, isMloEnabled: isMloEnabled);
+  }
 }

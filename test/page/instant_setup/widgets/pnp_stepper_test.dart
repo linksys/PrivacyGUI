@@ -11,6 +11,8 @@ import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart'
     hide ControlsWidgetBuilder, ControlsDetails;
 
+import '../../../common/theme_data.dart';
+
 // A simple mock PnpStep for testing the stepper's logic.
 class MockPnpStep extends PnpStep {
   bool onInitCalled = false;
@@ -91,6 +93,7 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
+            theme: mockLightThemeData,
             home: Scaffold(
               body: AppResponsiveLayout(
                 mobile: (ctx) => PnpStepper(

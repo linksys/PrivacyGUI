@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/services/wifi_settings_mapper.dart';
-import 'package:privacy_gui/page/wifi_settings/services/wifi_settings_service.dart';
+
 import 'package:privacy_gui/page/wifi_settings/views/mac_filtering_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_advanced_settings_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
@@ -91,7 +91,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
         bottomBar: UiKitBottomBarConfig(
           isPositiveEnabled: bundleState.isDirty &&
               ref
-                  .read(wifiSettingsServiceProvider)
+                  .read(wifiBundleProvider.notifier)
                   .validateWifiListSettings(bundleState.current.wifiList),
           onPositiveTap: () async {
             if (_tabController.index == 0) {
@@ -260,7 +260,7 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
     final isMLOEnabled =
         ref.read(wifiBundleProvider).current.advanced.isMLOEnabled ?? false;
     return ref
-            .read(wifiSettingsServiceProvider)
+            .read(wifiBundleProvider.notifier)
             .checkingMLOSettingsConflicts(radios, isMloEnabled: isMLOEnabled)
         ? [
             AppGap.md(),

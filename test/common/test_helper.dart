@@ -317,6 +317,10 @@ class TestHelper {
     when(mockWiFiBundleNotifier.state)
         .thenReturn(wifiBundleTestStateInitialState);
     when(mockWiFiBundleNotifier.isDirty()).thenReturn(false);
+    when(mockWiFiBundleNotifier.validateWifiListSettings(any)).thenReturn(true);
+    when(mockWiFiBundleNotifier.checkingMLOSettingsConflicts(any,
+            isMloEnabled: anyNamed('isMloEnabled')))
+        .thenReturn(false);
     when(mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
     when(mockHealthCheckProvider.build())

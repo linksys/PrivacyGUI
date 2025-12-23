@@ -7,7 +7,6 @@ import 'dart:async' as _i6;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart' as _i4;
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart'
     as _i5;
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart'
@@ -40,16 +39,6 @@ class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
 class _FakeHealthCheckState_1 extends _i1.SmartFake
     implements _i3.HealthCheckState {
   _FakeHealthCheckState_1(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
-}
-
-class _FakeJNAPResult_2 extends _i1.SmartFake implements _i4.JNAPResult {
-  _FakeJNAPResult_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -130,46 +119,6 @@ class MockHealthCheckProvider extends _i2.Notifier<_i3.HealthCheckState> with _i
         returnValue: _i6.Future<void>.value(),
         returnValueForMissingStub: _i6.Future<void>.value(),
       ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<_i4.JNAPResult> getHealthCheckResults(
-    _i5.Module? module,
-    int? numberOfMostRecentResults,
-    int? resultId,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getHealthCheckResults,
-          [
-            module,
-            numberOfMostRecentResults,
-            resultId,
-          ],
-        ),
-        returnValue: _i6.Future<_i4.JNAPResult>.value(_FakeJNAPResult_2(
-          this,
-          Invocation.method(
-            #getHealthCheckResults,
-            [
-              module,
-              numberOfMostRecentResults,
-              resultId,
-            ],
-          ),
-        )),
-        returnValueForMissingStub:
-            _i6.Future<_i4.JNAPResult>.value(_FakeJNAPResult_2(
-          this,
-          Invocation.method(
-            #getHealthCheckResults,
-            [
-              module,
-              numberOfMostRecentResults,
-              resultId,
-            ],
-          ),
-        )),
-      ) as _i6.Future<_i4.JNAPResult>);
 
   @override
   _i6.Future<void> stopHealthCheck() => (super.noSuchMethod(

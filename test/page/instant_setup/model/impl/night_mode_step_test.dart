@@ -8,6 +8,8 @@ import 'package:privacy_gui/page/instant_setup/providers/mock_pnp_providers.dart
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../../../../common/theme_data.dart';
+
 // A wrapper widget to correctly handle the lifecycle of the onInit call.
 class InitOnceWrapper extends ConsumerStatefulWidget {
   final NightModeStep step;
@@ -59,6 +61,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            theme: mockLightThemeData,
             home: AppResponsiveLayout(
               mobile: (ctx) => Scaffold(
                 body: Consumer(builder: (context, ref, child) {

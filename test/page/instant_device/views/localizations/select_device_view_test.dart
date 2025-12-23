@@ -7,7 +7,6 @@ import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../../common/screen.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 

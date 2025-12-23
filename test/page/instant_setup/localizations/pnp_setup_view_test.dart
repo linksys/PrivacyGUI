@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
@@ -133,12 +132,12 @@ void main() {
   final testHelper = TestHelper();
   final screens = responsiveAllScreens;
 
-  final _tallDesktopScreens = responsiveDesktopScreens
+  final tallDesktopScreens = responsiveDesktopScreens
       .map((screen) => screen.copyWith(height: 1080))
       .toList();
-  final _tallScreens = [
+  final tallScreens = [
     ...responsiveMobileScreens,
-    ..._tallDesktopScreens,
+    ...tallDesktopScreens,
   ];
 
   PnpState getDefaultPnpState(PnpFlowStatus status,
@@ -258,7 +257,7 @@ void main() {
           await tester.enterText(passwordField, 'MyTestPassword123');
           await tester.pumpAndSettle();
         },
-        screens: _tallScreens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-STEP1_WIFI_04-final_state',
         helper: testHelper,
       );
@@ -314,7 +313,7 @@ void main() {
           await tester.tap(guestSwitch);
           await tester.pumpAndSettle();
         },
-        screens: _tallScreens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-STEP2_GST_04-final_state',
         helper: testHelper,
       );
@@ -354,7 +353,7 @@ void main() {
           await tester.tap(nightModeSwitch);
           await tester.pumpAndSettle();
         },
-        screens: _tallScreens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-STEP3_NIT_02-final_state',
         helper: testHelper,
       );
@@ -393,7 +392,7 @@ void main() {
           expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
-        screens: _tallScreens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-STEP4_NET_01-final_state',
         helper: testHelper,
       );
@@ -442,7 +441,7 @@ void main() {
           expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
-        screens: _tallScreens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-NET_CHILD_01-final_state',
         helper: testHelper,
       );

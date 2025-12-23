@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
 import 'package:privacy_gui/route/route_model.dart';
 
@@ -36,18 +36,23 @@ void main() {
 
   setUp(() {
     testHelper.setup();
-    when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.defaultState);
-    when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+    when(testHelper.mockVPNNotifier.build())
+        .thenReturn(VPNTestState.defaultState);
+    when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
       await Future.delayed(const Duration(seconds: 1));
       return VPNTestState.defaultState;
     });
-    when(() => testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
+    when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
     // Stub Future<void> methods to prevent null return error
-    when(() => testHelper.mockVPNNotifier.setVPNGateway(any())).thenAnswer((_) async {});
-    when(() => testHelper.mockVPNNotifier.setTunneledUser(any())).thenAnswer((_) async {});
-    when(() => testHelper.mockVPNNotifier.setVPNUser(any())).thenAnswer((_) async {});
-    when(() => testHelper.mockVPNNotifier.setVPNService(any())).thenAnswer((_) async {});
-    when(() => testHelper.mockVPNNotifier.setEditingCredentials(any())).thenAnswer((_) async {});
+    when(testHelper.mockVPNNotifier.setVPNGateway(any))
+        .thenAnswer((_) async {});
+    when(testHelper.mockVPNNotifier.setTunneledUser(any))
+        .thenAnswer((_) async {});
+    when(testHelper.mockVPNNotifier.setVPNUser(any)).thenAnswer((_) async {});
+    when(testHelper.mockVPNNotifier.setVPNService(any))
+        .thenAnswer((_) async {});
+    when(testHelper.mockVPNNotifier.setEditingCredentials(any))
+        .thenAnswer((_) async {});
   });
 
   final screens = [
@@ -79,8 +84,9 @@ void main() {
     testLocalizationsV2(
       'VPN Disconnected State',
       (tester, screen) async {
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.disconnectedState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build())
+            .thenReturn(VPNTestState.disconnectedState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return VPNTestState.disconnectedState;
         });
@@ -104,8 +110,9 @@ void main() {
     testLocalizationsV2(
       'VPN Failed Connection State',
       (tester, screen) async {
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.failedState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build())
+            .thenReturn(VPNTestState.failedState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return VPNTestState.failedState;
         });
@@ -129,8 +136,9 @@ void main() {
     testLocalizationsV2(
       'VPN Connecting State',
       (tester, screen) async {
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.connectingState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build())
+            .thenReturn(VPNTestState.connectingState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return VPNTestState.connectingState;
         });
@@ -154,8 +162,9 @@ void main() {
     testLocalizationsV2(
       'VPN Test Result Success State',
       (tester, screen) async {
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.testResultState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build())
+            .thenReturn(VPNTestState.testResultState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return VPNTestState.testResultState;
         });
@@ -179,9 +188,9 @@ void main() {
     testLocalizationsV2(
       'VPN Test Result Failed State',
       (tester, screen) async {
-        when(() => testHelper.mockVPNNotifier.build())
+        when(testHelper.mockVPNNotifier.build())
             .thenReturn(VPNTestState.failedTestResultState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return VPNTestState.failedTestResultState;
         });
@@ -205,9 +214,9 @@ void main() {
     testLocalizationsV2(
       'VPN Certificate Auth State',
       (tester, screen) async {
-        when(() => testHelper.mockVPNNotifier.build())
+        when(testHelper.mockVPNNotifier.build())
             .thenReturn(VPNTestState.certificateAuthState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return VPNTestState.certificateAuthState;
         });
@@ -231,9 +240,9 @@ void main() {
     testLocalizationsV2(
       'VPN Service Disabled State',
       (tester, screen) async {
-        when(() => testHelper.mockVPNNotifier.build())
+        when(testHelper.mockVPNNotifier.build())
             .thenReturn(VPNTestState.serviceDisabledState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return VPNTestState.serviceDisabledState;
         });
@@ -262,8 +271,8 @@ void main() {
             isEditingCredentials: true,
           ),
         );
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(editingState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build()).thenReturn(editingState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return editingState;
         });
@@ -296,8 +305,9 @@ void main() {
             isEditingCredentials: true,
           ),
         );
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(invalidGatewayState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build())
+            .thenReturn(invalidGatewayState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return invalidGatewayState;
         });
@@ -339,8 +349,9 @@ void main() {
             isEditingCredentials: true,
           ),
         );
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(invalidCredentialsState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build())
+            .thenReturn(invalidCredentialsState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return invalidCredentialsState;
         });
@@ -380,8 +391,8 @@ void main() {
             isEditingCredentials: false,
           ),
         );
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(invalidDNSState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build()).thenReturn(invalidDNSState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return invalidDNSState;
         });
@@ -416,8 +427,8 @@ void main() {
             isEditingCredentials: false,
           ),
         );
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(invalidDNSState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build()).thenReturn(invalidDNSState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return invalidDNSState.copyWith(
             settings: invalidDNSState.settings.copyWith(
@@ -455,8 +466,8 @@ void main() {
             isEditingCredentials: false,
           ),
         );
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(invalidDNSState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build()).thenReturn(invalidDNSState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return invalidDNSState.copyWith(
             settings: invalidDNSState.settings.copyWith(
@@ -494,12 +505,14 @@ void main() {
     testLocalizationsV2(
       'VPN Test Connection Success toast',
       (tester, screen) async {
-        when(() => testHelper.mockVPNNotifier.build()).thenReturn(VPNTestState.testResultState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.build())
+            .thenReturn(VPNTestState.testResultState);
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return VPNTestState.testResultState;
         });
-        when(() => testHelper.mockVPNNotifier.testVPNConnection()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.testVPNConnection())
+            .thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 2));
           return VPNTestState.testResultState;
         });
@@ -527,13 +540,14 @@ void main() {
     testLocalizationsV2(
       'VPN Test Connection Failed toast',
       (tester, screen) async {
-        when(() => testHelper.mockVPNNotifier.build())
+        when(testHelper.mockVPNNotifier.build())
             .thenReturn(VPNTestState.failedTestResultState);
-        when(() => testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.fetch()).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 1));
           return VPNTestState.failedTestResultState;
         });
-        when(() => testHelper.mockVPNNotifier.testVPNConnection()).thenAnswer((_) async {
+        when(testHelper.mockVPNNotifier.testVPNConnection())
+            .thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 2));
           return VPNTestState.failedTestResultState;
         });
