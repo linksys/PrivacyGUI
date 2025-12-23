@@ -55,7 +55,8 @@ class _FakeDashboardHomeState_1 extends _i1.SmartFake
 /// A class which mocks [DashboardHomeNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDashboardHomeNotifier extends _i2.Notifier<_i3.DashboardHomeState> with _i1.Mock
+class MockDashboardHomeNotifier extends _i2.Notifier<_i3.DashboardHomeState>
+    with _i1.Mock
     implements _i4.DashboardHomeNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DashboardHomeState> get ref =>

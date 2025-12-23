@@ -56,7 +56,8 @@ void main(List<String> args) {
   //     .writeAsStringSync(JsonEncoder.withIndent('  ').convert(resultObj));
 
   final htmlReport = generateHTMLReport(resultObj, version);
-  final reportHTMLFile = File('$folderStr/screenshot_test_reports_$version.html');
+  final reportHTMLFile =
+      File('$folderStr/screenshot_test_reports_$version.html');
   if (!reportHTMLFile.existsSync()) {
     reportHTMLFile.createSync(recursive: true);
   }

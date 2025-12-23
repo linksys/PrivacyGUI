@@ -76,7 +76,8 @@ class TestNotifier extends Notifier<TestState>
   @override
   TestState build() {
     return const TestState(
-      settings: Preservable(original: TestSettings('initial'), current: TestSettings('initial')),
+      settings: Preservable(
+          original: TestSettings('initial'), current: TestSettings('initial')),
       status: TestStatus(),
     );
   }
@@ -113,7 +114,8 @@ void main() {
       expect(state.isDirty, isFalse);
     }, tags: 'dirty-guard-framework');
 
-    test('isDirty should be true after update() is called with different data', () {
+    test('isDirty should be true after update() is called with different data',
+        () {
       final state = Preservable(original: initialData, current: initialData);
       final newState = state.update(updatedData);
       expect(newState.isDirty, isTrue);
@@ -134,7 +136,8 @@ void main() {
 
     setUp(() {
       container = ProviderContainer();
-      final provider = NotifierProvider<TestNotifier, TestState>(TestNotifier.new);
+      final provider =
+          NotifierProvider<TestNotifier, TestState>(TestNotifier.new);
       notifier = container.read(provider.notifier);
     });
 
@@ -182,7 +185,8 @@ void main() {
       expect(notifier.state.settings.current.value, 'fetched');
     }, tags: 'dirty-guard-framework');
 
-    test('save() calls performSave, marks state as saved, and then fetches', () async {
+    test('save() calls performSave, marks state as saved, and then fetches',
+        () async {
       notifier.updateValue('new value');
       expect(notifier.isDirty(), isTrue);
 

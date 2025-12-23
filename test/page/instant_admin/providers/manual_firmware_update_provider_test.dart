@@ -112,7 +112,8 @@ void main() {
           isA<ManualUpdateInstalling>());
     });
 
-    test('manualFirmwareUpdate calls pollingProvider.notifier.stopPolling', () async {
+    test('manualFirmwareUpdate calls pollingProvider.notifier.stopPolling',
+        () async {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
       final fileName = 'firmware.img';
       final bytes = Uint8List.fromList([1, 2, 3]);
@@ -127,7 +128,8 @@ void main() {
       verify(mockPollingNotifier.stopPolling()).called(1);
     });
 
-    test('manualFirmwareUpdate sets status to installing on service success', () async {
+    test('manualFirmwareUpdate sets status to installing on service success',
+        () async {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
       final fileName = 'firmware.img';
       final bytes = Uint8List.fromList([1, 2, 3]);
@@ -144,7 +146,8 @@ void main() {
           isA<ManualUpdateInstalling>());
     });
 
-    test('manualFirmwareUpdate sets status to null on service failure', () async {
+    test('manualFirmwareUpdate sets status to null on service failure',
+        () async {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
       final fileName = 'firmware.img';
       final bytes = Uint8List.fromList([1, 2, 3]);
@@ -160,7 +163,8 @@ void main() {
       expect(container.read(manualFirmwareUpdateProvider).status, isNull);
     });
 
-    test('waitForRouterBackOnline calls pollingProvider.notifier.startPolling', () async {
+    test('waitForRouterBackOnline calls pollingProvider.notifier.startPolling',
+        () async {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
       when(mockSideEffectNotifier.manualDeviceRestart())
           .thenAnswer((_) async => {});
@@ -170,7 +174,9 @@ void main() {
       verify(mockPollingNotifier.startPolling()).called(1);
     });
 
-    test('waitForRouterBackOnline calls sideEffectNotifier and sets status to rebooting', () async {
+    test(
+        'waitForRouterBackOnline calls sideEffectNotifier and sets status to rebooting',
+        () async {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
       when(mockSideEffectNotifier.manualDeviceRestart())
           .thenAnswer((_) async => {});
@@ -184,4 +190,3 @@ void main() {
     });
   });
 }
-

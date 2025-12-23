@@ -52,10 +52,10 @@ class TransactionHttpCommand
             dataResult["data"] = (entry.value as JNAPSuccess).toJson();
             cache.data[entry.key.actionValue] = dataResult;
           });
-          
+
           if (serialNumber != null) {
             logger.d(
-              '[CacheManager] save JNAP<${spec.action}> data to $serialNumber');
+                '[CacheManager] save JNAP<${spec.action}> data to $serialNumber');
             cache.saveCache(serialNumber);
           }
         }

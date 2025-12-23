@@ -50,7 +50,8 @@ class _FakeHealthCheckState_1 extends _i1.SmartFake
 /// A class which mocks [HealthCheckProvider].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockHealthCheckProvider extends _i2.Notifier<_i3.HealthCheckState> with _i1.Mock
+class MockHealthCheckProvider extends _i2.Notifier<_i3.HealthCheckState>
+    with _i1.Mock
     implements _i5.HealthCheckProvider {
   @override
   _i2.NotifierProviderRef<_i3.HealthCheckState> get ref => (super.noSuchMethod(

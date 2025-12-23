@@ -74,7 +74,7 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
       modelNumber: sortedDeviceList.firstOrNull?.model.modelNumber ?? '',
       hardwareVersion: sortedDeviceList.firstOrNull?.model.hardwareVersion,
     );
-    
+
     final deviceInfo = dashboardManagerState.deviceInfo;
     final horizontalPortLayout = isHorizontalPorts(
         modelNumber: deviceInfo?.modelNumber ?? '',

@@ -200,7 +200,8 @@ void main() {
     test('rejects route name exceeding 32 characters', () {
       // Arrange
       final invalidEntry = StaticRouteEntryUIModel(
-        name: 'This is a very long route name that exceeds thirty two characters',
+        name:
+            'This is a very long route name that exceeds thirty two characters',
         destinationIP: '10.0.0.0',
         subnetMask: '255.255.255.0',
         gateway: '192.168.1.1',

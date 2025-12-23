@@ -391,7 +391,6 @@ void main() {
   testLocalizations(
     'dashboard home view - qr hover tooltip',
     (tester, screen) async {
-      
       when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
         FirmwareUpdateState.fromMap(firmwareUpdateHasFirmwarePinnacleTestState),
       );

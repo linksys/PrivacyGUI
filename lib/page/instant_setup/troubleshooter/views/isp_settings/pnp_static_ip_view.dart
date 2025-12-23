@@ -143,7 +143,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 isDataValidate();
               }
             },
-            child: AppIpv4TextField(key: const Key('pnpStaticIp_ipAddress'),
+            child: AppIpv4TextField(
+              key: const Key('pnpStaticIp_ipAddress'),
               label: loc(context).ipAddress,
               controller: _ipController,
               errorText: _ipError,
@@ -162,7 +163,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 isDataValidate();
               }
             },
-            child: AppIpv4TextField(key: const Key('pnpStaticIp_subnetMask'),
+            child: AppIpv4TextField(
+              key: const Key('pnpStaticIp_subnetMask'),
               label: loc(context).subnetMask,
               controller: _subnetController,
               errorText: _subnetError,
@@ -181,7 +183,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 isDataValidate();
               }
             },
-            child: AppIpv4TextField(key: const Key('pnpStaticIp_gateway'),
+            child: AppIpv4TextField(
+              key: const Key('pnpStaticIp_gateway'),
               label: loc(context).defaultGateway,
               controller: _gatewayController,
               errorText: _gatewayError,
@@ -206,7 +209,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                 isDataValidate();
               }
             },
-            child: AppIpv4TextField(key: const Key('pnpStaticIp_dns1'),
+            child: AppIpv4TextField(
+              key: const Key('pnpStaticIp_dns1'),
               label: loc(context).dns1,
               controller: _dns1Controller,
               errorText: _dns1Error,
@@ -249,7 +253,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
                     isDataValidate();
                   }
                 },
-                child: AppIpv4TextField(key: const Key('pnpStaticIp_dns2'),
+                child: AppIpv4TextField(
+                  key: const Key('pnpStaticIp_dns2'),
                   label: loc(context).dns2Optional,
                   controller: _dns2Controller,
                   errorText: _dns2Error,
@@ -259,7 +264,7 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
           ),
           AppGap.xxxl(),
           AppButton(
-          key: const Key('pnpStaticIp_nextButton'),
+            key: const Key('pnpStaticIp_nextButton'),
             label: loc(context).next,
             variant: SurfaceVariant.highlight,
             onTap: isDataValidate() ? onNext : null,

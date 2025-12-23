@@ -8,9 +8,7 @@ final cloudLoginRoute = LinksysRoute(
       args: state.extra as Map<String, dynamic>? ?? {}
         ..addAll(state.extra as Map<String, dynamic>? ?? <String, dynamic>{})
         ..addAll(state.uri.queryParameters)),
-  routes: [
-    
-  ],
+  routes: [],
 );
 
 final cloudLoginAuthRoute = LinksysRoute(

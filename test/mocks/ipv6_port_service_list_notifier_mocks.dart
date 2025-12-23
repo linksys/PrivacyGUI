@@ -53,7 +53,10 @@ class _FakeIpv6PortServiceListState_1 extends _i1.SmartFake
 /// A class which mocks [Ipv6PortServiceListNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockIpv6PortServiceListNotifier extends _i2.Notifier<_i3.Ipv6PortServiceListState> with _i1.Mock implements _i4.Ipv6PortServiceListNotifier {
+class MockIpv6PortServiceListNotifier
+    extends _i2.Notifier<_i3.Ipv6PortServiceListState>
+    with _i1.Mock
+    implements _i4.Ipv6PortServiceListNotifier {
   @override
   _i2.NotifierProviderRef<_i3.Ipv6PortServiceListState> get ref =>
       (super.noSuchMethod(

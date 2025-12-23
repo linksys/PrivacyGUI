@@ -136,7 +136,8 @@ void main() {
       );
       container.read(staticRoutingProvider.notifier).state = newState;
 
-      final newRoute = StaticRoutingTestData.createRouteEntryUIModel(name: 'Test Route');
+      final newRoute =
+          StaticRoutingTestData.createRouteEntryUIModel(name: 'Test Route');
 
       // Act
       notifier.addRule(newRoute);
@@ -188,7 +189,8 @@ void main() {
       );
       container.read(staticRoutingProvider.notifier).state = newState;
 
-      final route = StaticRoutingTestData.createRouteEntryUIModel(name: 'To Delete');
+      final route =
+          StaticRoutingTestData.createRouteEntryUIModel(name: 'To Delete');
       notifier.addRule(route);
 
       // Act
@@ -259,7 +261,7 @@ void main() {
         notifier.addRule(
           StaticRoutingTestData.createRouteEntryUIModel(
             name: 'Route $i',
-            destinationIP: '10.${i + 10}.0.0',  // Avoid default 10.0.0.0
+            destinationIP: '10.${i + 10}.0.0', // Avoid default 10.0.0.0
           ),
         );
       }
@@ -282,12 +284,14 @@ void main() {
       );
       container.read(staticRoutingProvider.notifier).state = newState;
 
-      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 1', destinationIP: '10.1.0.0'));
-      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 2', destinationIP: '10.2.0.0'));
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(
+          name: 'Route 1', destinationIP: '10.1.0.0'));
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(
+          name: 'Route 2', destinationIP: '10.2.0.0'));
 
       // Act
-      final editedRoute =
-          StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 2 Edited', destinationIP: '10.2.0.0');
+      final editedRoute = StaticRoutingTestData.createRouteEntryUIModel(
+          name: 'Route 2 Edited', destinationIP: '10.2.0.0');
       notifier.editRule(1, editedRoute);
 
       // Assert
@@ -333,12 +337,15 @@ void main() {
       container.read(staticRoutingProvider.notifier).state = newState;
 
       // Add 2 routes to reach limit
-      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 1', destinationIP: '10.1.0.0'));
-      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 2', destinationIP: '10.2.0.0'));
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(
+          name: 'Route 1', destinationIP: '10.1.0.0'));
+      notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(
+          name: 'Route 2', destinationIP: '10.2.0.0'));
 
       // Act & Assert - third route should fail
       expect(
-        () => notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: 'Route 3', destinationIP: '10.3.0.0')),
+        () => notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(
+            name: 'Route 3', destinationIP: '10.3.0.0')),
         throwsException,
       );
     });
@@ -357,7 +364,8 @@ void main() {
 
       // Act & Assert - empty name should fail
       expect(
-        () => notifier.addRule(StaticRoutingTestData.createRouteEntryUIModel(name: '')),
+        () => notifier
+            .addRule(StaticRoutingTestData.createRouteEntryUIModel(name: '')),
         throwsException,
       );
 
@@ -365,7 +373,8 @@ void main() {
       expect(
         () => notifier.addRule(
           StaticRoutingTestData.createRouteEntryUIModel(
-            name: 'This is a very long route name that exceeds thirty two characters',
+            name:
+                'This is a very long route name that exceeds thirty two characters',
           ),
         ),
         throwsException,

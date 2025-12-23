@@ -160,7 +160,8 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                   child: Container(
                     decoration: _selectedMACs.contains(device.macAddress)
                         ? BoxDecoration(
-                            color: Theme.of(context).colorScheme.primaryContainer,
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer,
                             border: Border.all(
                               color: Theme.of(context).colorScheme.primary,
                             ),
@@ -185,7 +186,8 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                           if (_isEdit) ...[
                             IgnorePointer(
                               child: AppCheckbox(
-                                value: _selectedMACs.contains(device.macAddress),
+                                value:
+                                    _selectedMACs.contains(device.macAddress),
                                 onChanged: (value) {},
                               ),
                             ),

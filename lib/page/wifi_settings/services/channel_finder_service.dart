@@ -17,8 +17,8 @@ class ChannelFinderService {
   ChannelFinderService(this._repo);
 
   Future<List<SelectedChannels>> getSelectedChannels() async {
-    final response = await _repo
-        .send(JNAPAction.getSelectedChannels, cacheLevel: CacheLevel.noCache);
+    final response = await _repo.send(JNAPAction.getSelectedChannels,
+        cacheLevel: CacheLevel.noCache);
     if (response.output['isRunning'] == true) {
       throw const JNAPError(result: 'already Running');
     } else if (response.output['selectedChannels'] != null) {
@@ -65,8 +65,8 @@ class ChannelFinderService {
     int pollingCount = 1;
     while (pollingCount <= maxPollingCount) {
       logger.d('Check channel selection running count : $pollingCount');
-      final result = await _repo
-          .send(JNAPAction.getSelectedChannels, cacheLevel: CacheLevel.noCache);
+      final result = await _repo.send(JNAPAction.getSelectedChannels,
+          cacheLevel: CacheLevel.noCache);
       if (result.output['isRunning'] ||
           List.from(result.output['selectedChannels']).length <
               previousChannelCount) {
@@ -102,10 +102,10 @@ class ChannelFinderService {
     var oldChannelDeviceID = oldChannel.deviceID;
     var foundDevice = newChannels
         .firstWhere((element) => element.deviceID == oldChannelDeviceID);
-    
+
     // Fix bug: Channel is immutable
     List<Channel> mappedChannels = List.from(oldChannel.channels);
-    
+
     var device =
         devices.firstWhere((element) => element.deviceID == oldChannelDeviceID);
 
@@ -114,7 +114,7 @@ class ChannelFinderService {
             .equals(oldChannel.channels, foundDevice.channels)) {
       for (var i = 0; i < oldChannel.channels.length; i++) {
         if (oldChannel.channels[i].channel != foundDevice.channels[i].channel) {
-             mappedChannels[i] = mappedChannels[i].copyWith(
+          mappedChannels[i] = mappedChannels[i].copyWith(
               optimizedChannel: foundDevice.channels[i].channel,
               isOptimized: true);
         }

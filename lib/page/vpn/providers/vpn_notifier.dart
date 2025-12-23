@@ -22,16 +22,17 @@ class VPNNotifier extends Notifier<VPNState> {
       // final tunneledUserIP =
       //     serviceSettings.enabled ? await service.getTunneledUser() : null;
 
-      
       state = state.copyWith(
-        settings: statusOnly ? state.settings : state.settings.copyWith(
-          userCredentials: userCredentials,
-          gatewaySettings: gatewaySettings,
-          serviceSettings: VPNServiceSetSettings(
-              enabled: serviceSettings.enabled,
-              autoConnect: serviceSettings.autoConnect),
-          // tunneledUserIP: tunneledUserIP,
-        ),
+        settings: statusOnly
+            ? state.settings
+            : state.settings.copyWith(
+                userCredentials: userCredentials,
+                gatewaySettings: gatewaySettings,
+                serviceSettings: VPNServiceSetSettings(
+                    enabled: serviceSettings.enabled,
+                    autoConnect: serviceSettings.autoConnect),
+                // tunneledUserIP: tunneledUserIP,
+              ),
         status: state.status.copyWith(
           statistics: serviceSettings.statistics,
           tunnelStatus: serviceSettings.tunnelStatus,

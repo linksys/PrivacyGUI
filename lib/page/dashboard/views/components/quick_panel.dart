@@ -58,7 +58,9 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                     value: privacyState.status.mode == MacFilterMode.allow,
                     leading: AppBadge(
                       label: 'BETA',
-                      color: Theme.of(context).extension<AppColorScheme>()!.semanticWarning,
+                      color: Theme.of(context)
+                          .extension<AppColorScheme>()!
+                          .semanticWarning,
                     ),
                     onTap: () {
                       context.pushNamed(RouteNamed.menuInstantPrivacy);

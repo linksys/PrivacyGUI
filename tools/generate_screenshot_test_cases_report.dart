@@ -19,7 +19,8 @@ class TestCaseInfo {
   final String id; // This will be the base Test ID (e.g., PNPS-STEP1_WIFI)
   final String description; // Main test description
   final String filePath;
-  final List<GoldenFileInfo> goldenFiles; // List of all golden files for this test case
+  final List<GoldenFileInfo>
+      goldenFiles; // List of all golden files for this test case
 
   TestCaseInfo({
     required this.id,
@@ -56,7 +57,8 @@ Future<void> main(List<String> arguments) async {
     // 1. Get Git remote URL
     final remoteUrl = await _getGitRemoteUrl(projectRoot);
     if (remoteUrl == null) {
-      print('Error: Could not determine Git remote URL. Make sure this is a Git repository with a remote named "origin".');
+      print(
+          'Error: Could not determine Git remote URL. Make sure this is a Git repository with a remote named "origin".');
       exit(1);
     }
     if (debugMode) {
@@ -73,50 +75,38 @@ Future<void> main(List<String> arguments) async {
       print('Found ${testFiles.length} test files.');
     }
 
-        // 3. Parse files to extract test case info
+    // 3. Parse files to extract test case info
 
-        final allTestCases = <TestCaseInfo>[];
+    final allTestCases = <TestCaseInfo>[];
 
-        for (final file in testFiles) {
+    for (final file in testFiles) {
+      if (debugMode) {
+        print('Parsing file: ${file.path}');
+      }
 
-          if (debugMode) {
+      final testCases = await _parseTestFile(file, debugMode);
 
-            print('Parsing file: ${file.path}');
+      allTestCases.addAll(testCases);
+    }
 
-          }
+    print('Extracted ${allTestCases.length} total test cases.');
 
-          final testCases = await _parseTestFile(file, debugMode);
+    // Consolidate test cases by ID
 
-          allTestCases.addAll(testCases);
+    final consolidatedMap = <String, List<TestCaseInfo>>{};
 
-        }
+    for (final testCase in allTestCases) {
+      consolidatedMap.putIfAbsent(testCase.id, () => []).add(testCase);
+    }
 
-        print('Extracted ${allTestCases.length} total test cases.');
+    // 4. Generate Markdown content
 
-    
-
-        // Consolidate test cases by ID
-
-        final consolidatedMap = <String, List<TestCaseInfo>>{};
-
-        for (final testCase in allTestCases) {
-
-          consolidatedMap.putIfAbsent(testCase.id, () => []).add(testCase);
-
-        }
-
-    
-
-        // 4. Generate Markdown content
-
-        final markdownContent =
-
-            _generateMarkdown(consolidatedMap, remoteUrl, projectRoot);
+    final markdownContent =
+        _generateMarkdown(consolidatedMap, remoteUrl, projectRoot);
 
     // 5. Write to output file
     await outputFile.writeAsString(markdownContent);
     print('Successfully generated report at ${outputFile.path}');
-
   } catch (e) {
     print('An error occurred: $e');
     exit(1);
@@ -125,7 +115,8 @@ Future<void> main(List<String> arguments) async {
 
 /// Finds the HTTPS URL for the 'origin' remote.
 Future<String?> _getGitRemoteUrl(String projectRoot) async {
-  final result = await Process.run('git', ['remote', '-v'], workingDirectory: projectRoot);
+  final result =
+      await Process.run('git', ['remote', '-v'], workingDirectory: projectRoot);
   if (result.exitCode != 0) {
     return null;
   }
@@ -168,7 +159,8 @@ Future<List<File>> _findTestFiles(Directory startDir) async {
     return files;
   }
 
-  await for (final entity in startDir.list(recursive: true, followLinks: false)) {
+  await for (final entity
+      in startDir.list(recursive: true, followLinks: false)) {
     if (entity is File && pattern.hasMatch(entity.path)) {
       files.add(entity);
     }
@@ -183,10 +175,15 @@ Future<List<TestCaseInfo>> _parseTestFile(File file, bool debugMode) async {
 
   final idRegex = RegExp(r'// Test ID: ([A-Z0-9-]+)');
   // Regex to find the test function call and its arguments block
-  final testFunctionCallRegex = RegExp(r"(testLocalizations|testLocalizationsV2)\s*\((.*?)\);", multiLine: true, dotAll: true);
+  final testFunctionCallRegex = RegExp(
+      r"(testLocalizations|testLocalizationsV2)\s*\((.*?)\);",
+      multiLine: true,
+      dotAll: true);
   final goldenFilenameParamRegex = RegExp(r"goldenFilename:\s*'([^']*)'");
   // Corrected to use lowercase 't' for testHelper
-  final takeScreenshotRegex = RegExp(r"(\w+)\.takeScreenshot\(\s*(\w+),\s*'([^']*)'\s*\)", dotAll: true);
+  final takeScreenshotRegex = RegExp(
+      r"(\w+)\.takeScreenshot\(\s*(\w+),\s*'([^']*)'\s*\)",
+      dotAll: true);
 
   final idMatches = idRegex.allMatches(content).toList();
 
@@ -195,7 +192,8 @@ Future<List<TestCaseInfo>> _parseTestFile(File file, bool debugMode) async {
     final baseId = idMatch.group(1)!.trim();
 
     final start = idMatch.end;
-    final end = (i + 1 < idMatches.length) ? idMatches[i + 1].start : content.length;
+    final end =
+        (i + 1 < idMatches.length) ? idMatches[i + 1].start : content.length;
     final testBlock = content.substring(start, end);
 
     String? mainDescription;
@@ -212,7 +210,9 @@ Future<List<TestCaseInfo>> _parseTestFile(File file, bool debugMode) async {
     }
 
     if (mainDescription == null) {
-      if (debugMode) print('    No main description found for Test ID: $baseId in file ${file.path}, skipping test case.');
+      if (debugMode)
+        print(
+            '    No main description found for Test ID: $baseId in file ${file.path}, skipping test case.');
       continue; // Skip if no description found
     }
 
@@ -220,7 +220,8 @@ Future<List<TestCaseInfo>> _parseTestFile(File file, bool debugMode) async {
     final goldenFilenameMatch = goldenFilenameParamRegex.firstMatch(testBlock);
     if (goldenFilenameMatch != null) {
       final goldenFilename = goldenFilenameMatch.group(1)!.trim();
-      goldenFiles.add(GoldenFileInfo(filename: goldenFilename, description: 'Final State'));
+      goldenFiles.add(
+          GoldenFileInfo(filename: goldenFilename, description: 'Final State'));
     }
 
     // Find all takeScreenshot calls
@@ -229,12 +230,17 @@ Future<List<TestCaseInfo>> _parseTestFile(File file, bool debugMode) async {
       final screenshotFilename = match.group(3)!.trim();
       // Create a description from the filename, e.g., "ID_01_initial_state" -> "initial state"
       final descParts = screenshotFilename.split('_');
-      final desc = descParts.length > 2 ? descParts.sublist(2).join(' ').replaceAll(RegExp(r'\.png$'), '') : 'Intermediate State';
-      goldenFiles.add(GoldenFileInfo(filename: screenshotFilename, description: desc));
+      final desc = descParts.length > 2
+          ? descParts.sublist(2).join(' ').replaceAll(RegExp(r'\.png$'), '')
+          : 'Intermediate State';
+      goldenFiles
+          .add(GoldenFileInfo(filename: screenshotFilename, description: desc));
     }
 
     if (goldenFiles.isEmpty) {
-      if (debugMode) print('    No golden files found for Test ID: $baseId in file ${file.path}, skipping test case.');
+      if (debugMode)
+        print(
+            '    No golden files found for Test ID: $baseId in file ${file.path}, skipping test case.');
       continue;
     }
 
@@ -258,458 +264,151 @@ Future<List<TestCaseInfo>> _parseTestFile(File file, bool debugMode) async {
   return testCases;
 }
 
-
 /// Generates the final Markdown string from the collected test cases.
 
-
 String _generateMarkdown(Map<String, List<TestCaseInfo>> consolidatedMap,
-
-
     String remoteUrl, String projectRoot) {
-
-
   final buffer = StringBuffer();
-
-
-
-
 
   buffer.writeln('# Test Case Documentation');
 
-
   buffer.writeln();
 
-
   buffer.writeln(
-
-
       'This document lists all screenshot test cases found in the project.');
 
-
   buffer.writeln(
-
-
       'It is auto-generated by `tools/generate_screenshot_test_cases_report.dart`.');
 
-
   buffer.writeln();
-
-
-
-
 
   // Sort by ID for consistent ordering
 
-
   final sortedIds = consolidatedMap.keys.toList()..sort();
 
-
-
-
-
   for (final id in sortedIds) {
-
-
     final testCasesForId = consolidatedMap[id]!;
-
-
-
-
 
     buffer.writeln('## `$id`');
 
-
     buffer.writeln();
-
-
-
-
 
     // Handle file paths
 
-
     final filePaths = testCasesForId.map((c) => c.filePath).toSet();
 
-
     if (filePaths.length == 1) {
-
-
       final relativePath =
-
-
           p.relative(filePaths.first, from: projectRoot).replaceAll('\\', '/');
-
 
       final fileUrl = '$remoteUrl/blob/main/$relativePath';
 
-
       final fileName = p.basename(relativePath);
-
 
       buffer.writeln('**File**: [`$fileName`]($fileUrl)');
 
-
       buffer.writeln();
-
-
     }
 
-
-
-
-
     for (final testCase in testCasesForId) {
-
-
       buffer.writeln('- **Description**: ${testCase.description}');
 
-
-
-
-
       if (filePaths.length > 1) {
-
-
-        final relativePath =
-
-
-            p.relative(testCase.filePath, from: projectRoot).replaceAll('\\', '/');
-
+        final relativePath = p
+            .relative(testCase.filePath, from: projectRoot)
+            .replaceAll('\\', '/');
 
         final fileUrl = '$remoteUrl/blob/main/$relativePath';
 
-
         final fileName = p.basename(relativePath);
 
-
         buffer.writeln('  - **File**: [`$fileName`]($fileUrl)');
-
-
       }
-
-
-
-
 
       if (testCase.goldenFiles.isNotEmpty) {
-
-
         buffer.writeln('  - **Golden Files:**');
 
-
         for (final goldenFile in testCase.goldenFiles) {
-
-
           buffer.writeln(
-
-
               '    - `${goldenFile.filename}`: ${goldenFile.description}');
-
-
         }
-
-
       }
-
-
     }
 
-
     buffer.writeln();
-
 
     buffer.writeln('---'); // Separator for each test case
 
-
     buffer.writeln();
-
-
   }
-
-
-
-
 
   buffer.writeln('## Test Case Summary Table');
 
-
   buffer.writeln();
-
 
   buffer.writeln('| Test ID | Description | File | Golden Files |');
 
-
   buffer.writeln('|---|---|---|---|');
 
+  for (final id in sortedIds) {
+    final testCasesForId = consolidatedMap[id]!;
 
+    // Determine if all test cases for this ID share the same file path
 
+    final allFilesAreSame =
+        testCasesForId.map((c) => c.filePath).toSet().length == 1;
 
+    bool firstEntryForId = true;
 
-    for (final id in sortedIds) {
+    for (final testCase in testCasesForId) {
+      final currentIdCell = firstEntryForId
+          ? '`$id`'
+          : ''; // Only show ID for the first row of a group
 
+      final descriptionContent = '- ${testCase.description}';
 
+      String filesContent;
 
-
-
-      final testCasesForId = consolidatedMap[id]!;
-
-
-
-
-
-  
-
-
-
-
-
-      // Determine if all test cases for this ID share the same file path
-
-
-
-
-
-      final allFilesAreSame =
-
-
-
-
-
-          testCasesForId.map((c) => c.filePath).toSet().length == 1;
-
-
-
-
-
-  
-
-
-
-
-
-      bool firstEntryForId = true;
-
-
-
-
-
-      for (final testCase in testCasesForId) {
-
-
-
-
-
-        final currentIdCell =
-
-
-
-
-
-            firstEntryForId ? '`$id`' : ''; // Only show ID for the first row of a group
-
-
-
-
-
-  
-
-
-
-
-
-        final descriptionContent = '- ${testCase.description}';
-
-
-
-
-
-  
-
-
-
-
-
-        String filesContent;
-
-
-
-
-
-        if (allFilesAreSame) {
-
-
-
-
-
-          filesContent = firstEntryForId
-
-
-
-
-
-              ? testCasesForId.map((c) {
-
-
-
-
-
+      if (allFilesAreSame) {
+        filesContent = firstEntryForId
+            ? testCasesForId
+                .map((c) {
                   final relativePath = p
-
-
-
-
-
                       .relative(c.filePath, from: projectRoot)
-
-
-
-
-
                       .replaceAll('\\', '/');
-
-
-
-
 
                   final fileUrl = '$remoteUrl/blob/main/$relativePath';
 
-
-
-
-
                   final fileName = p.basename(relativePath);
 
-
-
-
-
                   return '[`$fileName`]($fileUrl)';
+                })
+                .toSet()
+                .join('<br>')
+            : ''; // Show files only once if all are same
+      } else {
+        // If files differ, show file for each entry
 
+        final relativePath = p
+            .relative(testCase.filePath, from: projectRoot)
+            .replaceAll('\\', '/');
 
+        final fileUrl = '$remoteUrl/blob/main/$relativePath';
 
+        final fileName = p.basename(relativePath);
 
-
-                }).toSet().join('<br>')
-
-
-
-
-
-              : ''; // Show files only once if all are same
-
-
-
-
-
-        } else {
-
-
-
-
-
-          // If files differ, show file for each entry
-
-
-
-
-
-          final relativePath = p
-
-
-
-
-
-              .relative(testCase.filePath, from: projectRoot)
-
-
-
-
-
-              .replaceAll('\\', '/');
-
-
-
-
-
-          final fileUrl = '$remoteUrl/blob/main/$relativePath';
-
-
-
-
-
-          final fileName = p.basename(relativePath);
-
-
-
-
-
-          filesContent = '[`$fileName`]($fileUrl)';
-
-
-
-
-
-        }
-
-
-
-
-
-  
-
-
-
-
-
-        final goldenFilesContent =
-
-
-
-
-
-            testCase.goldenFiles.map((gf) => '`${gf.filename}`').join(', ');
-
-
-
-
-
-  
-
-
-
-
-
-        buffer.writeln(
-
-
-
-
-
-            '| $currentIdCell | $descriptionContent | $filesContent | $goldenFilesContent |');
-
-
-
-
-
-        firstEntryForId = false;
-
-
-
-
-
+        filesContent = '[`$fileName`]($fileUrl)';
       }
 
+      final goldenFilesContent =
+          testCase.goldenFiles.map((gf) => '`${gf.filename}`').join(', ');
 
+      buffer.writeln(
+          '| $currentIdCell | $descriptionContent | $filesContent | $goldenFilesContent |');
 
-
-
+      firstEntryForId = false;
     }
-
-
-
-
+  }
 
   return buffer.toString();
-
-
 }

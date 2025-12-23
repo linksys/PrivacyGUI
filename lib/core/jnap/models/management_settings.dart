@@ -27,7 +27,8 @@ class ManagementSettings extends Equatable {
     return ManagementSettings(
       canManageUsingHTTP: canManageUsingHTTP ?? this.canManageUsingHTTP,
       canManageUsingHTTPS: canManageUsingHTTPS ?? this.canManageUsingHTTPS,
-      isManageWirelesslySupported: isManageWirelesslySupported ?? this.isManageWirelesslySupported,
+      isManageWirelesslySupported:
+          isManageWirelesslySupported ?? this.isManageWirelesslySupported,
       canManageWirelessly: canManageWirelessly ?? this.canManageWirelessly,
       canManageRemotely: canManageRemotely ?? this.canManageRemotely,
     );
@@ -48,14 +49,17 @@ class ManagementSettings extends Equatable {
       canManageUsingHTTP: map['canManageUsingHTTP'] as bool,
       canManageUsingHTTPS: map['canManageUsingHTTPS'] as bool,
       isManageWirelesslySupported: map['isManageWirelesslySupported'] as bool,
-      canManageWirelessly: map['canManageWirelessly'] != null ? map['canManageWirelessly'] as bool : null,
+      canManageWirelessly: map['canManageWirelessly'] != null
+          ? map['canManageWirelessly'] as bool
+          : null,
       canManageRemotely: map['canManageRemotely'] as bool,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory ManagementSettings.fromJson(String source) => ManagementSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory ManagementSettings.fromJson(String source) =>
+      ManagementSettings.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
@@ -71,7 +75,7 @@ class ManagementSettings extends Equatable {
     ];
   }
 
-    Map<String, dynamic> toSetSettingsMap() {
+  Map<String, dynamic> toSetSettingsMap() {
     return <String, dynamic>{
       'canManageUsingHTTP': canManageUsingHTTP,
       'canManageUsingHTTPS': canManageUsingHTTPS,

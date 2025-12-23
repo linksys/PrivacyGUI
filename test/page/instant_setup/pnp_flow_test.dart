@@ -17,7 +17,8 @@ void main() {
     });
 
     // --- Unconfigured Router (Factory Reset) ---
-    test('Unconfigured Flow: startPnpFlow transitions to adminUnconfigured', () async {
+    test('Unconfigured Flow: startPnpFlow transitions to adminUnconfigured',
+        () async {
       final pnpNotifier = container.read(unconfiguredPnpProvider.notifier);
 
       await pnpNotifier.startPnpFlow(null);
@@ -27,7 +28,9 @@ void main() {
       expect(pnpNotifier.state.attachedPassword, isNotNull);
     });
 
-    test('Unconfigured Flow: continueFromUnconfigured transitions to wizardInitializing', () async {
+    test(
+        'Unconfigured Flow: continueFromUnconfigured transitions to wizardInitializing',
+        () async {
       final pnpNotifier = container.read(unconfiguredPnpProvider.notifier);
 
       // Simulate initial state
@@ -39,7 +42,9 @@ void main() {
       expect(pnpNotifier.state.status, PnpFlowStatus.wizardInitializing);
     });
 
-    test('Unconfigured Flow: savePnpSettings transitions to wizardNeedsReconnect', () async {
+    test(
+        'Unconfigured Flow: savePnpSettings transitions to wizardNeedsReconnect',
+        () async {
       final pnpNotifier = container.read(unconfiguredPnpProvider.notifier);
 
       // Simulate initial state and wizard initialization
@@ -54,7 +59,8 @@ void main() {
     });
 
     // --- Configured Router (Standard Flow) ---
-    test('Configured Flow: startPnpFlow transitions to adminAwaitingPassword', () async {
+    test('Configured Flow: startPnpFlow transitions to adminAwaitingPassword',
+        () async {
       final pnpNotifier = container.read(configuredPnpProvider.notifier);
 
       await pnpNotifier.startPnpFlow(null);
@@ -63,7 +69,9 @@ void main() {
       expect(pnpNotifier.state.isRouterUnConfigured, isFalse);
     });
 
-    test('Configured Flow: submitPassword with correct password transitions to wizardInitializing', () async {
+    test(
+        'Configured Flow: submitPassword with correct password transitions to wizardInitializing',
+        () async {
       final pnpNotifier = container.read(configuredPnpProvider.notifier);
 
       // Simulate initial state
@@ -75,7 +83,9 @@ void main() {
       expect(pnpNotifier.state.status, PnpFlowStatus.wizardInitializing);
     });
 
-    test('Configured Flow: submitPassword with incorrect password transitions to adminLoginFailed', () async {
+    test(
+        'Configured Flow: submitPassword with incorrect password transitions to adminLoginFailed',
+        () async {
       final pnpNotifier = container.read(configuredPnpProvider.notifier);
 
       // Simulate initial state
@@ -88,7 +98,8 @@ void main() {
       expect(pnpNotifier.state.error, isA<ExceptionInvalidAdminPassword>());
     });
 
-    test('Configured Flow: savePnpSettings transitions to wizardWifiReady', () async {
+    test('Configured Flow: savePnpSettings transitions to wizardWifiReady',
+        () async {
       final pnpNotifier = container.read(configuredPnpProvider.notifier);
 
       // Simulate initial state and wizard initialization
@@ -103,7 +114,9 @@ void main() {
     });
 
     // --- Mandatory Firmware Update ---
-    test('FW Update Flow: savePnpSettings simulates firmware update and transitions to wizardWifiReady', () async {
+    test(
+        'FW Update Flow: savePnpSettings simulates firmware update and transitions to wizardWifiReady',
+        () async {
       final pnpNotifier = container.read(fwUpdatePnpProvider.notifier);
 
       // Simulate initial state and wizard initialization
@@ -118,8 +131,11 @@ void main() {
     });
 
     // --- Unconfigured Router with Mandatory Firmware Update ---
-    test('Unconfigured FW Update Flow: savePnpSettings simulates firmware update and transitions to wizardNeedsReconnect', () async {
-      final pnpNotifier = container.read(unconfiguredFwUpdatePnpProvider.notifier);
+    test(
+        'Unconfigured FW Update Flow: savePnpSettings simulates firmware update and transitions to wizardNeedsReconnect',
+        () async {
+      final pnpNotifier =
+          container.read(unconfiguredFwUpdatePnpProvider.notifier);
 
       // Simulate initial state and wizard initialization
       await pnpNotifier.startPnpFlow(null);
@@ -133,7 +149,9 @@ void main() {
     });
 
     // --- No Internet Connection ---
-    test('No Internet Flow: continueFromUnconfigured transitions to adminNeedsInternetTroubleshooting', () async {
+    test(
+        'No Internet Flow: continueFromUnconfigured transitions to adminNeedsInternetTroubleshooting',
+        () async {
       final pnpNotifier = container.read(noInternetPnpProvider.notifier);
 
       // Simulate initial state
@@ -142,12 +160,14 @@ void main() {
 
       await pnpNotifier.continueFromUnconfigured();
 
-      expect(pnpNotifier.state.status, PnpFlowStatus.adminNeedsInternetTroubleshooting);
+      expect(pnpNotifier.state.status,
+          PnpFlowStatus.adminNeedsInternetTroubleshooting);
       expect(pnpNotifier.state.error, isA<ExceptionNoInternetConnection>());
     });
 
     // --- Admin Error Flow ---
-    test('Admin Error Flow: fetchDeviceInfo failure transitions to adminError', () async {
+    test('Admin Error Flow: fetchDeviceInfo failure transitions to adminError',
+        () async {
       final pnpNotifier = container.read(adminErrorPnpProvider.notifier);
 
       await pnpNotifier.startPnpFlow(null);
@@ -157,7 +177,9 @@ void main() {
     });
 
     // --- Wizard Init Failed Flow ---
-    test('Wizard Init Failed Flow: initializeWizard failure transitions to wizardInitFailed', () async {
+    test(
+        'Wizard Init Failed Flow: initializeWizard failure transitions to wizardInitFailed',
+        () async {
       final pnpNotifier = container.read(wizardInitFailedPnpProvider.notifier);
 
       // Simulate initial state
@@ -171,7 +193,9 @@ void main() {
     });
 
     // --- Wizard Save Failed Flow ---
-    test('Wizard Save Failed Flow: savePnpSettings failure transitions to wizardSaveFailed', () async {
+    test(
+        'Wizard Save Failed Flow: savePnpSettings failure transitions to wizardSaveFailed',
+        () async {
       final pnpNotifier = container.read(wizardSaveFailedPnpProvider.notifier);
 
       // Simulate initial state and wizard initialization
@@ -186,14 +210,17 @@ void main() {
     });
 
     // --- Reconnect Failed Flow ---
-    test('Reconnect Failed Flow: testPnpReconnect failure transitions to wizardNeedsReconnect', () async {
+    test(
+        'Reconnect Failed Flow: testPnpReconnect failure transitions to wizardNeedsReconnect',
+        () async {
       final pnpNotifier = container.read(reconnectFailedPnpProvider.notifier);
 
       // Simulate initial state and wizard initialization
       await pnpNotifier.startPnpFlow(null);
       await pnpNotifier.initializeWizard();
       // Simulate being in wizardNeedsReconnect state
-      pnpNotifier.state = pnpNotifier.state.copyWith(status: PnpFlowStatus.wizardNeedsReconnect);
+      pnpNotifier.state = pnpNotifier.state
+          .copyWith(status: PnpFlowStatus.wizardNeedsReconnect);
 
       await pnpNotifier.testPnpReconnect();
 
@@ -202,7 +229,9 @@ void main() {
     });
 
     // --- Internet Connected Flow (Direct to Wizard) ---
-    test('Internet Connected Flow: startPnpFlow directly transitions to adminInternetConnected', () async {
+    test(
+        'Internet Connected Flow: startPnpFlow directly transitions to adminInternetConnected',
+        () async {
       final pnpNotifier = container.read(internetConnectedPnpProvider.notifier);
 
       await pnpNotifier.startPnpFlow(null);

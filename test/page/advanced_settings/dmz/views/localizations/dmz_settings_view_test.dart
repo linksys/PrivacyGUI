@@ -284,8 +284,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-DEST_MAC
-  testLocalizations(
-      'DMZ settings view - enabled with mac address destination',
+  testLocalizations('DMZ settings view - enabled with mac address destination',
       (tester, screen) async {
     const settings = DMZUISettings(
         isDMZEnabled: true,
@@ -457,8 +456,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-SAVE_FAIL
-  testLocalizations('DMZ settings view - Save failed',
-      (tester, screen) async {
+  testLocalizations('DMZ settings view - Save failed', (tester, screen) async {
     final settings = DMZUISettings(
         isDMZEnabled: true,
         sourceType: DMZSourceType.auto,

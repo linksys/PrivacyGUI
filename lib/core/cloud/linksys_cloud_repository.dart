@@ -264,7 +264,6 @@ class LinksysCloudRepository {
         .then((response) => CloudLinkUpModel.fromJson(response.body));
   }
 
-
   Future<void> associateSmartDevice({
     required String linksysToken,
     required String serialNumber,

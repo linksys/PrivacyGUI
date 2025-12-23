@@ -86,13 +86,12 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
       scrollable: true,
       child: (context, constraints) => Center(
         child: AppCard(
-          child: _isLoading
-              ? const CircularProgressIndicator()
-              : SizedBox(
-                  width: context.colWidth(4),
-                  child: _error != null ? _errorView() : _mainView(),
-                )
-        ),
+            child: _isLoading
+                ? const CircularProgressIndicator()
+                : SizedBox(
+                    width: context.colWidth(4),
+                    child: _error != null ? _errorView() : _mainView(),
+                  )),
       ),
     );
   }
@@ -128,11 +127,11 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
       children: [
         Image(
           image: DeviceImageHelper.getRouterImage(
-                routerIconTestByModel(
-                  modelNumber: _sessionInfo?.modelNumber ?? 'LN12',
-                ),
-                xl: true,
-              ),
+            routerIconTestByModel(
+              modelNumber: _sessionInfo?.modelNumber ?? 'LN12',
+            ),
+            xl: true,
+          ),
           height: 120,
           width: 120,
           fit: BoxFit.contain,

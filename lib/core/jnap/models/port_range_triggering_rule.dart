@@ -75,7 +75,7 @@ class PortRangeTriggeringRule extends Equatable {
       description: json['description'],
     );
   }
-    
+
   String toJson() => json.encode(toMap());
 
   factory PortRangeTriggeringRule.fromJson(String source) =>
@@ -109,8 +109,9 @@ class PortRangeTriggeringRuleList extends Equatable {
     return PortRangeTriggeringRuleList(
       rules: List<PortRangeTriggeringRule>.from(
         map['rules']?.map<PortRangeTriggeringRule>(
-          (x) => PortRangeTriggeringRule.fromMap(x as Map<String, dynamic>),
-        ) ?? [],
+              (x) => PortRangeTriggeringRule.fromMap(x as Map<String, dynamic>),
+            ) ??
+            [],
       ),
     );
   }
@@ -118,5 +119,6 @@ class PortRangeTriggeringRuleList extends Equatable {
   String toJson() => json.encode(toMap());
 
   factory PortRangeTriggeringRuleList.fromJson(String source) =>
-      PortRangeTriggeringRuleList.fromMap(json.decode(source) as Map<String, dynamic>);
+      PortRangeTriggeringRuleList.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }

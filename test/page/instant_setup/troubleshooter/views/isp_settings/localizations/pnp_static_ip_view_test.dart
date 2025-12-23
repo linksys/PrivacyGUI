@@ -133,7 +133,11 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppButton>(find.byKey(const Key('pnpStaticIp_nextButton'))).onTap, isNotNull);
+            tester
+                .widget<AppButton>(
+                    find.byKey(const Key('pnpStaticIp_nextButton')))
+                .onTap,
+            isNotNull);
         await testHelper.takeScreenshot(
             tester, 'PNP-STATIC-IP-UI_01_fully_input');
 
@@ -242,7 +246,11 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppButton>(find.byKey(const Key('pnpStaticIp_nextButton'))).onTap, isNotNull);
+            tester
+                .widget<AppButton>(
+                    find.byKey(const Key('pnpStaticIp_nextButton')))
+                .onTap,
+            isNotNull);
 
         await tester.tap(find.byKey(const Key('pnpStaticIp_nextButton')));
         await tester.pumpAndSettle();
@@ -285,7 +293,11 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppButton>(find.byKey(const Key('pnpStaticIp_nextButton'))).onTap, isNotNull);
+            tester
+                .widget<AppButton>(
+                    find.byKey(const Key('pnpStaticIp_nextButton')))
+                .onTap,
+            isNotNull);
 
         await tester.tap(find.byKey(const Key('pnpStaticIp_nextButton')));
         await tester.pumpAndSettle();
@@ -331,7 +343,11 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppButton>(find.byKey(const Key('pnpStaticIp_nextButton'))).onTap, isNotNull);
+            tester
+                .widget<AppButton>(
+                    find.byKey(const Key('pnpStaticIp_nextButton')))
+                .onTap,
+            isNotNull);
 
         await tester.tap(find.byKey(const Key('pnpStaticIp_nextButton')));
         await tester.pumpAndSettle();
@@ -374,7 +390,11 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppButton>(find.byKey(const Key('pnpStaticIp_nextButton'))).onTap, isNotNull);
+            tester
+                .widget<AppButton>(
+                    find.byKey(const Key('pnpStaticIp_nextButton')))
+                .onTap,
+            isNotNull);
 
         await tester.tap(find.byKey(const Key('pnpStaticIp_nextButton')));
         await tester.pumpAndSettle();
@@ -417,7 +437,11 @@ void main() async {
 
         // expect button onTap is not null
         expect(
-            tester.widget<AppButton>(find.byKey(const Key('pnpStaticIp_nextButton'))).onTap, isNotNull);
+            tester
+                .widget<AppButton>(
+                    find.byKey(const Key('pnpStaticIp_nextButton')))
+                .onTap,
+            isNotNull);
 
         await tester.tap(find.byKey(const Key('pnpStaticIp_nextButton')));
         await tester.pumpAndSettle();

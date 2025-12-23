@@ -32,7 +32,7 @@ void main() {
       final manager = FernetManager();
       const serialNumber = 'my-test-serial-number-12345';
       const plainText = 'This is a secret message for testing.';
-      
+
       // Act: Update key and encrypt
       manager.updateKeyFromSerial(serialNumber);
       final encryptedText = manager.encrypt(plainText);

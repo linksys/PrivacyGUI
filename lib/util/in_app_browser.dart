@@ -18,26 +18,20 @@ class MoabInAppBrowser extends InAppBrowser {
   }
 
   @override
-  Future onBrowserCreated() async {
-  }
+  Future onBrowserCreated() async {}
 
   @override
-  Future onLoadStart(url) async {
-  }
+  Future onLoadStart(url) async {}
 
   @override
-  Future onLoadStop(url) async {
-  }
+  Future onLoadStop(url) async {}
 
   @override
-  void onLoadError(url, code, message) {
-  }
+  void onLoadError(url, code, message) {}
 
   @override
-  void onProgressChanged(progress) {
-  }
+  void onProgressChanged(progress) {}
 
   @override
-  void onExit() {
-  }
+  void onExit() {}
 }

@@ -91,10 +91,8 @@ class WifiSettingsMapper {
     return SetRadioSettings(radios: radioSettings);
   }
 
-  static SetGuestRadioSettings mergeGuestSettings(
-      GuestRadioSettings original,
-      GuestWiFiItem guestItem,
-      List<WiFiItem> mainRadios) {
+  static SetGuestRadioSettings mergeGuestSettings(GuestRadioSettings original,
+      GuestWiFiItem guestItem, List<WiFiItem> mainRadios) {
     final newGuestRadios = original.radios
         .map(
           (e) => e.copyWith(

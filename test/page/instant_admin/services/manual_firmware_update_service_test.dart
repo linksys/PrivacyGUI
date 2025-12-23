@@ -57,7 +57,8 @@ void main() {
       // Simulate ErrorResponse with 500 error code
       when(mockHttpClient.upload(any, any,
               headers: anyNamed('headers'), fields: anyNamed('fields')))
-          .thenAnswer((_) async => throw ErrorResponse(status: 500, code: '500', errorMessage: 'Error'));
+          .thenAnswer((_) async => throw ErrorResponse(
+              status: 500, code: '500', errorMessage: 'Error'));
 
       // Expect throw ManualFirmwareUpdateException
       final result =

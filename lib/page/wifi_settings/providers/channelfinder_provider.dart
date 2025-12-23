@@ -29,4 +29,3 @@ class ChannelFinderNotifier extends Notifier<ChannelFinderState> {
     }
   }
 }
-

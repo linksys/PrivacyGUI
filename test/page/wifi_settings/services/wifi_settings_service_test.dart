@@ -55,11 +55,11 @@ void main() {
     service = WifiSettingsService(mockRepo);
 
     // Default transaction stub
-    when(() => mockRepo.transaction(any(),
+    when(() =>
+        mockRepo.transaction(any(),
             fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel')))
-        .thenAnswer(
-            (_) async => JNAPTransactionSuccessWrap(result: 'OK', data: const []));
+            cacheLevel: any(named: 'cacheLevel'))).thenAnswer(
+        (_) async => JNAPTransactionSuccessWrap(result: 'OK', data: const []));
   });
 
   group('WifiSettingsService', () {
@@ -435,14 +435,16 @@ void main() {
               JNAPSuccess(result: 'OK', output: const {'isEnabled': true})),
           MapEntry(
               JNAPAction.getMLOSettings,
-              JNAPSuccess(
-                  result: 'OK',
-                  output: const {'isMLOSupported': true, 'isMLOEnabled': true})),
+              JNAPSuccess(result: 'OK', output: const {
+                'isMLOSupported': true,
+                'isMLOEnabled': true
+              })),
           MapEntry(
               JNAPAction.getDFSSettings,
-              JNAPSuccess(
-                  result: 'OK',
-                  output: const {'isDFSSupported': true, 'isDFSEnabled': false})),
+              JNAPSuccess(result: 'OK', output: const {
+                'isDFSSupported': true,
+                'isDFSEnabled': false
+              })),
           MapEntry(
               JNAPAction.getAirtimeFairnessSettings,
               JNAPSuccess(result: 'OK', output: const {
@@ -456,8 +458,10 @@ void main() {
                 'maxMACAddresses': 32,
                 'macAddresses': ['11:11:11:11:11:11']
               })),
-          MapEntry(JNAPAction.getSTABSSIDs,
-              JNAPSuccess(result: 'OK', output: const {'staBSSIDs': <String>[]}))
+          MapEntry(
+              JNAPAction.getSTABSSIDs,
+              JNAPSuccess(
+                  result: 'OK', output: const {'staBSSIDs': <String>[]}))
         ];
 
         when(() => mockRepo.transaction(any(),
@@ -508,9 +512,10 @@ void main() {
         final responses = <MapEntry<JNAPAction, JNAPResult>>[
           MapEntry(
               JNAPAction.getRadioInfo,
-              JNAPSuccess(
-                  result: 'OK',
-                  output: const {'isBandSteeringSupported': false, 'radios': []})),
+              JNAPSuccess(result: 'OK', output: const {
+                'isBandSteeringSupported': false,
+                'radios': []
+              })),
           MapEntry(
               JNAPAction.getMACFilterSettings,
               JNAPSuccess(result: 'OK', output: const {
@@ -563,22 +568,22 @@ void main() {
                 fetchRemote: any(named: 'fetchRemote'),
                 cacheLevel: any(
                     named: 'cacheLevel'))) // Stub specifically to catch call
-            .thenAnswer(
-                (_) async => JNAPTransactionSuccessWrap(result: 'OK', data: const [
-                      MapEntry(
-                          JNAPAction.getRadioInfo,
-                          JNAPSuccess(result: 'OK', output: {
-                            'isBandSteeringSupported': false,
-                            'radios': []
-                          })),
-                      MapEntry(
-                          JNAPAction.getMACFilterSettings,
-                          JNAPSuccess(result: 'OK', output: {
-                            'macFilterMode': 'Deny',
-                            'macAddresses': [],
-                            'maxMACAddresses': 32
-                          })),
-                    ]));
+            .thenAnswer((_) async =>
+                JNAPTransactionSuccessWrap(result: 'OK', data: const [
+                  MapEntry(
+                      JNAPAction.getRadioInfo,
+                      JNAPSuccess(result: 'OK', output: {
+                        'isBandSteeringSupported': false,
+                        'radios': []
+                      })),
+                  MapEntry(
+                      JNAPAction.getMACFilterSettings,
+                      JNAPSuccess(result: 'OK', output: {
+                        'macFilterMode': 'Deny',
+                        'macAddresses': [],
+                        'maxMACAddresses': 32
+                      })),
+                ]));
 
         await service.fetchBundleSettings(
           serviceHelper: mockHelper,
@@ -623,46 +628,46 @@ void main() {
           (_) async => throw Exception('Fail'),
         );
 
-        when(() => mockRepo.transaction(any(),
+        when(() =>
+            mockRepo.transaction(any(),
                 fetchRemote: any(named: 'fetchRemote'),
-                cacheLevel: any(named: 'cacheLevel')))
-            .thenAnswer(
-                (_) async => JNAPTransactionSuccessWrap(result: 'OK', data: const [
-                      MapEntry(
-                          JNAPAction.getRadioInfo,
-                          JNAPSuccess(result: 'OK', output: {
-                            'isBandSteeringSupported': false,
-                            'radios': [
-                              {
-                                'radioID': 'RADIO_2.4GHz',
-                                'physicalRadioID': '1',
-                                'band': '2.4GHz',
-                                'bssid': '00:00:00:00:00:00',
-                                'supportedModes': ['802.11mixed'],
-                                'supportedChannelsForChannelWidths': [],
-                                'supportedSecurityTypes': ['None'],
-                                'maxRADIUSSharedKeyLength': 64,
-                                'settings': {
-                                  'ssid': 'Main',
-                                  'password': 'p',
-                                  'security': 'None',
-                                  'mode': '802.11mixed',
-                                  'channelWidth': 'Auto',
-                                  'channel': 1,
-                                  'broadcastSSID': true,
-                                  'isEnabled': true
-                                }
-                              }
-                            ]
-                          })),
-                      MapEntry(
-                          JNAPAction.getMACFilterSettings,
-                          JNAPSuccess(result: 'OK', output: {
-                            'macFilterMode': 'Deny',
-                            'macAddresses': [],
-                            'maxMACAddresses': 32
-                          })),
-                    ]));
+                cacheLevel: any(named: 'cacheLevel'))).thenAnswer(
+            (_) async => JNAPTransactionSuccessWrap(result: 'OK', data: const [
+                  MapEntry(
+                      JNAPAction.getRadioInfo,
+                      JNAPSuccess(result: 'OK', output: {
+                        'isBandSteeringSupported': false,
+                        'radios': [
+                          {
+                            'radioID': 'RADIO_2.4GHz',
+                            'physicalRadioID': '1',
+                            'band': '2.4GHz',
+                            'bssid': '00:00:00:00:00:00',
+                            'supportedModes': ['802.11mixed'],
+                            'supportedChannelsForChannelWidths': [],
+                            'supportedSecurityTypes': ['None'],
+                            'maxRADIUSSharedKeyLength': 64,
+                            'settings': {
+                              'ssid': 'Main',
+                              'password': 'p',
+                              'security': 'None',
+                              'mode': '802.11mixed',
+                              'channelWidth': 'Auto',
+                              'channel': 1,
+                              'broadcastSSID': true,
+                              'isEnabled': true
+                            }
+                          }
+                        ]
+                      })),
+                  MapEntry(
+                      JNAPAction.getMACFilterSettings,
+                      JNAPSuccess(result: 'OK', output: {
+                        'macFilterMode': 'Deny',
+                        'macAddresses': [],
+                        'maxMACAddresses': 32
+                      })),
+                ]));
 
         final dev1 = MockLinksysDevice();
         // Mock connection to make isOnline() true
@@ -850,8 +855,8 @@ void main() {
       when(() => mockRepo.transaction(any(),
               fetchRemote: any(named: 'fetchRemote'),
               cacheLevel: any(named: 'cacheLevel')))
-          .thenAnswer(
-              (_) async => JNAPTransactionSuccessWrap(result: 'OK', data: const []));
+          .thenAnswer((_) async =>
+              JNAPTransactionSuccessWrap(result: 'OK', data: const []));
 
       await service.saveWifiListSettings(settings, true);
 

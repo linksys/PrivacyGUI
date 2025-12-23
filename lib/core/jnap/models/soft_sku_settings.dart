@@ -31,7 +31,8 @@ class SoftSKUSettings extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory SoftSKUSettings.fromJson(String source) => SoftSKUSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory SoftSKUSettings.fromJson(String source) =>
+      SoftSKUSettings.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

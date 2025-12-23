@@ -135,8 +135,6 @@ class StaticRouteEntry extends Equatable {
     required this.networkPrefixLength,
   });
 
-
-
   Map<String, dynamic> toMap() {
     return {
       'destinationLAN': destinationLAN,
@@ -157,13 +155,15 @@ class StaticRouteEntry extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory StaticRouteEntry.fromJson(String source) => StaticRouteEntry.fromMap(json.decode(source));
+  factory StaticRouteEntry.fromJson(String source) =>
+      StaticRouteEntry.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;
 
   @override
-  List<Object?> get props => [destinationLAN, gateway, interface, networkPrefixLength];
+  List<Object?> get props =>
+      [destinationLAN, gateway, interface, networkPrefixLength];
 
   StaticRouteEntry copyWith({
     String? destinationLAN,

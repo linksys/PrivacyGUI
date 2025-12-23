@@ -16,7 +16,7 @@ enum MacFilterMode {
         'deny' => MacFilterMode.deny,
         _ => MacFilterMode.disabled,
       };
-  
+
   bool get isEnabled => this != MacFilterMode.disabled;
 }
 

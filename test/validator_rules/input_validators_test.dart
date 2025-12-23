@@ -267,7 +267,7 @@ void main() {
           () {
         expect(rule.validate(':2001:db8:a0b:12f0::'), isFalse);
       });
-      
+
       test('should return false for the unspecified address (::)', () {
         // This is by implementation
         expect(rule.validate('::'), isFalse);

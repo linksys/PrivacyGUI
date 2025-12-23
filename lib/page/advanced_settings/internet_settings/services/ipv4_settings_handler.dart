@@ -14,5 +14,6 @@ abstract class Ipv4SettingsHandler {
   MapEntry<JNAPAction, Map<String, dynamic>>? getAdditionalSetting();
 
   // For updating state based on UI input (copyWith logic)
-  Ipv4Setting updateIpv4Setting(Ipv4Setting currentSetting, Ipv4Setting newValues);
+  Ipv4Setting updateIpv4Setting(
+      Ipv4Setting currentSetting, Ipv4Setting newValues);
 }

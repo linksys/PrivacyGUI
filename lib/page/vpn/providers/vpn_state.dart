@@ -145,7 +145,8 @@ class VPNState extends Equatable {
         settings = const VPNSettings(
           userCredentials: null,
           gatewaySettings: null,
-          serviceSettings: VPNServiceSetSettings(enabled: false, autoConnect: false),
+          serviceSettings:
+              VPNServiceSetSettings(enabled: false, autoConnect: false),
           tunneledUserIP: null,
         );
 

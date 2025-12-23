@@ -58,10 +58,9 @@ void main() {
       when(mockPnpIspService.verifyNewSettings(WanType.dhcp))
           .thenAnswer((_) async => true);
 
-      when(mockPnpService.checkInternetConnection(any))
-          .thenAnswer((_) async {
-            return true;
-          });
+      when(mockPnpService.checkInternetConnection(any)).thenAnswer((_) async {
+        return true;
+      });
 
       // ACT
       await container
@@ -92,10 +91,9 @@ void main() {
           .thenAnswer((_) async {});
       when(mockPnpIspService.verifyNewSettings(WanType.dhcp))
           .thenAnswer((_) async => false); // Simulate verification failure
-      when(mockPnpService.checkInternetConnection(any))
-          .thenAnswer((_) async {
-            return false;
-          }); // This should not be called
+      when(mockPnpService.checkInternetConnection(any)).thenAnswer((_) async {
+        return false;
+      }); // This should not be called
 
       // ACT
       final future = container
@@ -128,8 +126,8 @@ void main() {
           .thenAnswer((_) async {});
       when(mockPnpIspService.verifyNewSettings(WanType.dhcp))
           .thenAnswer((_) async => true);
-      when(mockPnpService.checkInternetConnection(any))
-          .thenThrow(ExceptionNoInternetConnection()); // Simulate internet check failure
+      when(mockPnpService.checkInternetConnection(any)).thenThrow(
+          ExceptionNoInternetConnection()); // Simulate internet check failure
 
       // ACT
       final future = container
@@ -150,8 +148,7 @@ void main() {
         ipv4Setting: const Ipv4Setting(ipv4ConnectionType: 'DHCP', mtu: 1500),
       );
       final exception = Exception('Save failed');
-      when(mockInternetSettingsNotifier.savePnpIpv4(any))
-          .thenThrow(exception);
+      when(mockInternetSettingsNotifier.savePnpIpv4(any)).thenThrow(exception);
 
       // ACT
       final future = container

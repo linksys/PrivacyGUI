@@ -375,7 +375,8 @@ void main() {
       expect(result['attemptsRemaining'], 0);
     });
 
-    test('throws ServiceError when JNAP call fails with unknown error', () async {
+    test('throws ServiceError when JNAP call fails with unknown error',
+        () async {
       // Arrange
       final jnapError = RouterPasswordTestData.createGenericError(
         errorCode: 'ErrorNetworkFailure',

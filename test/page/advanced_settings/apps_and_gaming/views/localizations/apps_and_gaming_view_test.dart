@@ -413,8 +413,7 @@ void main() {
     }, screens: screens, goldenFilename: 'APPGAM-SPF_DATA-01-with_data');
 
     // Test ID: APPGAM-SPF_EMPTY
-    testLocalizations('Single port forwarding - empty',
-        (tester, screen) async {
+    testLocalizations('Single port forwarding - empty', (tester, screen) async {
       when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
           SinglePortForwardingListState.fromMap(
               singlePortForwardingEmptyListTestState));
@@ -650,8 +649,7 @@ void main() {
     }, screens: screens, goldenFilename: 'APPGAM-PRF_DATA-01-with_data');
 
     // Test ID: APPGAM-PRF_EMPTY
-    testLocalizations('Port range forwarding - empty',
-        (tester, screen) async {
+    testLocalizations('Port range forwarding - empty', (tester, screen) async {
       when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
           PortRangeForwardingListState.fromMap(
               portRangeForwardingEmptyListTestState));
@@ -1003,8 +1001,7 @@ void main() {
     }, screens: screens, goldenFilename: 'APPGAM-PRT_DATA-01-with_data');
 
     // Test ID: APPGAM-PRT_EMPTY
-    testLocalizations('Port range triggerring - empty',
-        (tester, screen) async {
+    testLocalizations('Port range triggerring - empty', (tester, screen) async {
       when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
           PortRangeTriggeringListState.fromMap(
               portRangeTriggerEmptyListTestState));

@@ -134,7 +134,8 @@ void main() {
       // Arrange
       container = createContainer();
       const serviceError = UnexpectedError(message: 'ErrorNetworkTimeout');
-      when(() => mockService.fetchPasswordConfiguration()).thenThrow(serviceError);
+      when(() => mockService.fetchPasswordConfiguration())
+          .thenThrow(serviceError);
 
       // Act & Assert
       expect(

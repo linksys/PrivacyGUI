@@ -103,6 +103,7 @@ class IPv6PortServiceListService {
       rethrow;
     }
   }
+
   /// Fetches IPv6 port service rules from JNAP and transforms to UI models.
   ///
   /// Transformation pipeline:
@@ -136,11 +137,15 @@ class IPv6PortServiceListService {
 
       if (rules.isEmpty) {
         logger.d('Empty IPv6 port service rules list');
-        return (IPv6PortServiceRuleUIList(rules: const []), const EmptyStatus());
+        return (
+          IPv6PortServiceRuleUIList(rules: const []),
+          const EmptyStatus()
+        );
       }
 
       // Transform rules with partial success handling
-      final (validRules, failedIndices) = _transformRuleListToUIWithErrors(rules);
+      final (validRules, failedIndices) =
+          _transformRuleListToUIWithErrors(rules);
 
       // Log failures if any occurred
       if (failedIndices.isNotEmpty) {
@@ -156,8 +161,12 @@ class IPv6PortServiceListService {
         return (null, null);
       }
 
-      logger.d('Successfully transformed ${validRules.length}/${rules.length} IPv6 port service rules');
-      return (IPv6PortServiceRuleUIList(rules: validRules), const EmptyStatus());
+      logger.d(
+          'Successfully transformed ${validRules.length}/${rules.length} IPv6 port service rules');
+      return (
+        IPv6PortServiceRuleUIList(rules: validRules),
+        const EmptyStatus()
+      );
     } catch (e, stackTrace) {
       logger.e('Error fetching IPv6 port service rules',
           error: e, stackTrace: stackTrace);
@@ -341,7 +350,6 @@ class IPv6PortServiceListService {
   }
 }
 
-final ipv6PortServiceListServiceProvider =
-    Provider<IPv6PortServiceListService>(
+final ipv6PortServiceListServiceProvider = Provider<IPv6PortServiceListService>(
   (ref) => IPv6PortServiceListService(),
 );

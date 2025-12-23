@@ -11,7 +11,8 @@ import 'administration_settings_service_test_data.dart';
 // Mock classes using mocktail
 class MockRouterRepository extends Mock implements RouterRepository {}
 
-class _FakeJNAPTransactionBuilder extends Fake implements JNAPTransactionBuilder {}
+class _FakeJNAPTransactionBuilder extends Fake
+    implements JNAPTransactionBuilder {}
 
 void main() {
   setUpAll(() {
@@ -35,7 +36,8 @@ void main() {
       final mockRef = createMockRef();
 
       // Arrange
-      final mockResponse = AdministrationSettingsTestData.createSuccessfulTransaction(
+      final mockResponse =
+          AdministrationSettingsTestData.createSuccessfulTransaction(
         managementSettings: {
           'canManageUsingHTTP': true,
           'canManageUsingHTTPS': true,
@@ -78,7 +80,8 @@ void main() {
     test('parses ManagementSettings correctly', () async {
       final mockRef = createMockRef();
 
-      final mockResponse = AdministrationSettingsTestData.createSuccessfulTransaction(
+      final mockResponse =
+          AdministrationSettingsTestData.createSuccessfulTransaction(
         managementSettings: {
           'canManageUsingHTTP': true,
           'canManageUsingHTTPS': false,
@@ -102,7 +105,8 @@ void main() {
     test('parses UPnPSettings correctly', () async {
       final mockRef = createMockRef();
 
-      final mockResponse = AdministrationSettingsTestData.createSuccessfulTransaction(
+      final mockResponse =
+          AdministrationSettingsTestData.createSuccessfulTransaction(
         upnpSettings: {
           'isUPnPEnabled': true,
           'canUsersConfigure': false,
@@ -125,7 +129,8 @@ void main() {
     test('parses ALGSettings correctly', () async {
       final mockRef = createMockRef();
 
-      final mockResponse = AdministrationSettingsTestData.createSuccessfulTransaction(
+      final mockResponse =
+          AdministrationSettingsTestData.createSuccessfulTransaction(
         algSettings: {
           'isSIPEnabled': true,
         },
@@ -144,7 +149,8 @@ void main() {
     test('parses ExpressForwardingSettings correctly', () async {
       final mockRef = createMockRef();
 
-      final mockResponse = AdministrationSettingsTestData.createSuccessfulTransaction(
+      final mockResponse =
+          AdministrationSettingsTestData.createSuccessfulTransaction(
         expressForwardingSettings: {
           'isExpressForwardingSupported': true,
           'isExpressForwardingEnabled': true,
@@ -165,7 +171,8 @@ void main() {
     test('throws error if any JNAP action fails', () async {
       final mockRef = createMockRef();
 
-      final mockResponse = AdministrationSettingsTestData.createPartialErrorTransaction(
+      final mockResponse =
+          AdministrationSettingsTestData.createPartialErrorTransaction(
         errorAction: JNAPAction.getUPnPSettings,
         errorMessage: 'Failed to fetch UPnP settings',
       );
@@ -186,7 +193,8 @@ void main() {
     test('includes action context in error message', () async {
       final mockRef = createMockRef();
 
-      final mockResponse = AdministrationSettingsTestData.createPartialErrorTransaction(
+      final mockResponse =
+          AdministrationSettingsTestData.createPartialErrorTransaction(
         errorAction: JNAPAction.getManagementSettings,
         errorMessage: 'Device unreachable',
       );

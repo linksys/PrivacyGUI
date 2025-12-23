@@ -41,6 +41,7 @@ void main() {
     final services =
         List<String>.from(jsonDecode(testDeviceInfo)['output']['services']);
     buildBetterActions(services);
-    expect('http://linksys.com/jnap/router/GetWANSettings5', JNAPAction.getWANSettings.actionValue);
+    expect('http://linksys.com/jnap/router/GetWANSettings5',
+        JNAPAction.getWANSettings.actionValue);
   });
 }

@@ -110,8 +110,9 @@ class PortRangeForwardingRuleList extends Equatable {
     return PortRangeForwardingRuleList(
       rules: List<PortRangeForwardingRule>.from(
         map['rules']?.map<PortRangeForwardingRule>(
-          (x) => PortRangeForwardingRule.fromMap(x as Map<String, dynamic>),
-        ) ?? [],
+              (x) => PortRangeForwardingRule.fromMap(x as Map<String, dynamic>),
+            ) ??
+            [],
       ),
     );
   }
@@ -119,5 +120,6 @@ class PortRangeForwardingRuleList extends Equatable {
   String toJson() => json.encode(toMap());
 
   factory PortRangeForwardingRuleList.fromJson(String source) =>
-      PortRangeForwardingRuleList.fromMap(json.decode(source) as Map<String, dynamic>);
+      PortRangeForwardingRuleList.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }

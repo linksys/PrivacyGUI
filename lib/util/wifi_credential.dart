@@ -1,4 +1,3 @@
-
 enum SecurityType { wpa, wep, none }
 
 class WiFiCredential {
@@ -22,7 +21,7 @@ class WiFiCredential {
     SecurityType type = SecurityType.none;
 
     RegExp regex =
-    RegExp(r"([(?=S|T|P|H):]{1}:[\S\s]*?(?=;T:|;H:|;P:|;S:|;$|;;$))");
+        RegExp(r"([(?=S|T|P|H):]{1}:[\S\s]*?(?=;T:|;H:|;P:|;S:|;$|;;$))");
     regex.allMatches(raw).forEach((element) {
       final data = element.group(0) ?? "";
       RegExp regex = RegExp(r"([(?=S|T|P|H):]{1}):([\S\s]*)");
@@ -33,7 +32,7 @@ class WiFiCredential {
             break;
           case 'T':
             type = SecurityType.values.firstWhere(
-                    (e) => e.toString() == (element.group(2) ?? 'none'),
+                (e) => e.toString() == (element.group(2) ?? 'none'),
                 orElse: () => SecurityType.none);
             break;
           case 'P':

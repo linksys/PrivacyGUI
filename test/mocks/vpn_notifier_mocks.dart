@@ -49,7 +49,9 @@ class _FakeVPNState_1 extends _i1.SmartFake implements _i3.VPNState {
 /// A class which mocks [VPNNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockVPNNotifier extends _i2.Notifier<_i3.VPNState> with _i1.Mock implements _i4.VPNNotifier {
+class MockVPNNotifier extends _i2.Notifier<_i3.VPNState>
+    with _i1.Mock
+    implements _i4.VPNNotifier {
   @override
   _i2.NotifierProviderRef<_i3.VPNState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),
@@ -108,7 +110,9 @@ class MockVPNNotifier extends _i2.Notifier<_i3.VPNState> with _i1.Mock implement
       ) as _i3.VPNState);
 
   @override
-  _i5.Future<_i3.VPNState> fetch([bool? force = false, bool? statusOnly = false]) => (super.noSuchMethod(
+  _i5.Future<_i3.VPNState> fetch(
+          [bool? force = false, bool? statusOnly = false]) =>
+      (super.noSuchMethod(
         Invocation.method(
           #fetch,
           [force, statusOnly],

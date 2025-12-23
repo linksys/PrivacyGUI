@@ -63,9 +63,7 @@ class AdvancedModeView extends ConsumerWidget {
             // OR if it's enabled and we are allowed to disable more.
             final canToggle = !item.main!.isEnabled || canDisableMore;
             rowChildren.add(MainWiFiCard(
-                radio: item.main!,
-                canBeDisable: canToggle,
-                lastInRow: isLast));
+                radio: item.main!, canBeDisable: canToggle, lastInRow: isLast));
           } else {
             rowChildren
                 .add(GuestWiFiCard(state: item.guest!, lastInRow: isLast));

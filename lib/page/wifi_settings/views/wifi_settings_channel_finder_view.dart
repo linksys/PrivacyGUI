@@ -78,7 +78,8 @@ class _WifiSettingsChannelFinderViewState
     return Row(
       children: [
         AppImage.provider(
-          imageProvider: DeviceImageHelper.getRouterImage(channel.deviceIcon!, xl: false),
+          imageProvider:
+              DeviceImageHelper.getRouterImage(channel.deviceIcon!, xl: false),
           width: 40,
           height: 40,
         ),

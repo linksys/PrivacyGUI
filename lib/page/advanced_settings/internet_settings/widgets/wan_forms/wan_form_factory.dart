@@ -12,7 +12,6 @@ class WanFormFactory {
     required WanType type,
     required bool isEditing,
   }) {
-    
     switch (type) {
       case WanType.pppoe:
         return PppoeForm(

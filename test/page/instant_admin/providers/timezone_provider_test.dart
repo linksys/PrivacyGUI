@@ -44,7 +44,8 @@ void main() {
   });
 
   group('TimezoneNotifier - performFetch()', () {
-    test('calls service.fetchTimezoneSettings with forceRemote false by default',
+    test(
+        'calls service.fetchTimezoneSettings with forceRemote false by default',
         () async {
       // Arrange
       container = createContainer();
@@ -77,7 +78,8 @@ void main() {
           .called(1);
     });
 
-    test('calls service.fetchTimezoneSettings with forceRemote true when specified',
+    test(
+        'calls service.fetchTimezoneSettings with forceRemote true when specified',
         () async {
       // Arrange
       container = createContainer();
@@ -104,7 +106,8 @@ void main() {
     test('returns true when timezone matches current selection', () async {
       // Arrange
       container = createContainer();
-      when(() => mockService.fetchTimezoneSettings(forceRemote: any(named: 'forceRemote')))
+      when(() => mockService
+              .fetchTimezoneSettings(forceRemote: any(named: 'forceRemote')))
           .thenAnswer((_) async => (
                 const TimezoneSettings(
                   timezoneId: 'PST8',
@@ -141,7 +144,8 @@ void main() {
     test('returns true when current timezone supports DST', () async {
       // Arrange
       container = createContainer();
-      when(() => mockService.fetchTimezoneSettings(forceRemote: any(named: 'forceRemote')))
+      when(() => mockService
+              .fetchTimezoneSettings(forceRemote: any(named: 'forceRemote')))
           .thenAnswer((_) async => (
                 const TimezoneSettings(
                   timezoneId: 'PST8',
@@ -169,7 +173,8 @@ void main() {
     test('returns false when current timezone does not support DST', () async {
       // Arrange
       container = createContainer();
-      when(() => mockService.fetchTimezoneSettings(forceRemote: any(named: 'forceRemote')))
+      when(() => mockService
+              .fetchTimezoneSettings(forceRemote: any(named: 'forceRemote')))
           .thenAnswer((_) async => (
                 const TimezoneSettings(
                   timezoneId: 'JST-9',
@@ -210,7 +215,8 @@ void main() {
     test('updates current settings with selected timezone', () async {
       // Arrange
       container = createContainer();
-      when(() => mockService.fetchTimezoneSettings(forceRemote: any(named: 'forceRemote')))
+      when(() => mockService
+              .fetchTimezoneSettings(forceRemote: any(named: 'forceRemote')))
           .thenAnswer((_) async => (
                 const TimezoneSettings(
                   timezoneId: 'PST8',

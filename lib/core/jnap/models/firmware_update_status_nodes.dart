@@ -27,9 +27,14 @@ class NodesFirmwareUpdateStatus extends FirmwareUpdateStatus {
       deviceUUID: deviceUUID ?? this.deviceUUID,
       lastSuccessfulCheckTime:
           lastSuccessfulCheckTime ?? super.lastSuccessfulCheckTime,
-      availableUpdate: availableUpdate != null ? availableUpdate() : super.availableUpdate,
-      pendingOperation: pendingOperation != null ? pendingOperation() : super.pendingOperation,
-      lastOperationFailure: lastOperationFailure != null ? lastOperationFailure() : super.lastOperationFailure,
+      availableUpdate:
+          availableUpdate != null ? availableUpdate() : super.availableUpdate,
+      pendingOperation: pendingOperation != null
+          ? pendingOperation()
+          : super.pendingOperation,
+      lastOperationFailure: lastOperationFailure != null
+          ? lastOperationFailure()
+          : super.lastOperationFailure,
     );
   }
 

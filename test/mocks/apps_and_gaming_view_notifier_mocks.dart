@@ -52,7 +52,9 @@ class _FakeAppsAndGamingViewState_1 extends _i1.SmartFake
 /// A class which mocks [AppsAndGamingViewNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAppsAndGamingViewNotifier extends _i2.Notifier<_i3.AppsAndGamingViewState> with _i1.Mock
+class MockAppsAndGamingViewNotifier
+    extends _i2.Notifier<_i3.AppsAndGamingViewState>
+    with _i1.Mock
     implements _i4.AppsAndGamingViewNotifier {
   @override
   _i2.NotifierProviderRef<_i3.AppsAndGamingViewState> get ref =>

@@ -31,7 +31,8 @@ void main() {
       };
 
       if (includeWanConnection) {
-        output['wanConnection'] = { // Corrected key from 'wanConnections' to 'wanConnection'
+        output['wanConnection'] = {
+          // Corrected key from 'wanConnections' to 'wanConnection'
           'wanType': 'DHCP',
           'ipAddress': ipAddress,
           'networkPrefixLength': 24,
@@ -108,7 +109,8 @@ void main() {
       // ARRANGE
       final nonMatchingResult = JNAPSuccess(
         result: jnapResultOk,
-        output: _baseWanStatusOutput(wanStatus: 'Connecting'), // Not 'Connected'
+        output:
+            _baseWanStatusOutput(wanStatus: 'Connecting'), // Not 'Connected'
       );
 
       when(mockRouterRepository.scheduledCommand(
@@ -120,10 +122,9 @@ void main() {
         auth: anyNamed('auth'),
       )).thenAnswer((invocation) {
         // Simulate the onCompleted callback being called with exceedMaxRetry = true
-        final onCompleted =
-            invocation.namedArguments[const Symbol('onCompleted')]
-                as Function(bool);
-        
+        final onCompleted = invocation
+            .namedArguments[const Symbol('onCompleted')] as Function(bool);
+
         // This needs to be async to allow the stream to be listened to first
         Future(() => onCompleted(true));
 
@@ -159,9 +160,8 @@ void main() {
         onCompleted: anyNamed('onCompleted'),
         auth: anyNamed('auth'),
       )).thenAnswer((invocation) {
-        final onCompleted =
-            invocation.namedArguments[const Symbol('onCompleted')]
-                as Function(bool);
+        final onCompleted = invocation
+            .namedArguments[const Symbol('onCompleted')] as Function(bool);
         Future(() => onCompleted(true));
         return Stream.value(nonMatchingResult);
       });

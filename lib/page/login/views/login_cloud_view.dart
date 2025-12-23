@@ -58,7 +58,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
         _handleError(next.error, next.stackTrace!);
       }
     });
-    
+
     return _isLoading
         ? const AppFullScreenLoader()
         : UiKitPageView(
@@ -67,88 +67,87 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
             scrollable: true,
             pageFooter: const BottomBar(),
             child: (context, constraints) => Center(
-              child: SizedBox(
-                width: context.colWidth(4),
-                child: AppCard(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 36.0, vertical: 40.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                          AppText.headlineSmall(loc(context).login),
-                          AppGap.xxxl(),
-                          Focus(
-                            onFocusChange: (value) {
-                              setState(() {
-                                _isValidEmail = _emailValidator
-                                    .validate(_usernameController.text);
-                              });
-                            },
-                            child: AppTextFormField(
-                              controller: _usernameController,
-                              label: loc(context).username,
-                              onChanged: _checkFilledInfo,
-                            ),
-                          ),
-                          if (!(_isValidEmail ?? true))
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: AppText.bodySmall(
-                                'Invalid Email format',
-                                color: Theme.of(context).colorScheme.error,
+                  child: SizedBox(
+                    width: context.colWidth(4),
+                    child: AppCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 36.0, vertical: 40.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppText.headlineSmall(loc(context).login),
+                            AppGap.xxxl(),
+                            Focus(
+                              onFocusChange: (value) {
+                                setState(() {
+                                  _isValidEmail = _emailValidator
+                                      .validate(_usernameController.text);
+                                });
+                              },
+                              child: AppTextFormField(
+                                controller: _usernameController,
+                                label: loc(context).username,
+                                onChanged: _checkFilledInfo,
                               ),
                             ),
-                          AppGap.lg(),
-                          AppPasswordInput(
-                            controller: _passwordController,
-                            hint: loc(context).password,
-                            errorText: errorCodeHelper(context, _error),
-                            onSubmitted: (_) {
-                              _cloudLogin();
-                            },
-                            onChanged: (value) {
-                              setState(() {
-                                _error = '';
-                              });
-                            },
-                          ),
-                          AppGap.xxxl(),
-                          if (BuildConfig.isEnableEnvPicker &&
-                              BuildConfig.forceCommandType !=
-                                  ForceCommand.local)
-                            Align(
-                              alignment: Alignment.bottomRight,
-                              child: AppButton.text(
-                                label: 'Select Env',
-                                onTap: () async {
-                                  final _ = await showModalBottomSheet(
-                                    enableDrag: false,
-                                    context: context,
-                                    builder: (context) => _createEnvPicker(),
-                                  );
-                                  setState(() {});
-                                },
+                            if (!(_isValidEmail ?? true))
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: AppText.bodySmall(
+                                  'Invalid Email format',
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
                               ),
+                            AppGap.lg(),
+                            AppPasswordInput(
+                              controller: _passwordController,
+                              hint: loc(context).password,
+                              errorText: errorCodeHelper(context, _error),
+                              onSubmitted: (_) {
+                                _cloudLogin();
+                              },
+                              onChanged: (value) {
+                                setState(() {
+                                  _error = '';
+                                });
+                              },
                             ),
-                          AppButton(
-                            label: 'Log in',
-                            variant: SurfaceVariant.highlight,
-                            onTap: _isValidEmail ?? true
-                                ? () {
-                                    _cloudLogin();
-                                  }
-                                : null,
-                          ),
-                        ],
+                            AppGap.xxxl(),
+                            if (BuildConfig.isEnableEnvPicker &&
+                                BuildConfig.forceCommandType !=
+                                    ForceCommand.local)
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: AppButton.text(
+                                  label: 'Select Env',
+                                  onTap: () async {
+                                    final _ = await showModalBottomSheet(
+                                      enableDrag: false,
+                                      context: context,
+                                      builder: (context) => _createEnvPicker(),
+                                    );
+                                    setState(() {});
+                                  },
+                                ),
+                              ),
+                            AppButton(
+                              label: 'Log in',
+                              variant: SurfaceVariant.highlight,
+                              onTap: _isValidEmail ?? true
+                                  ? () {
+                                      _cloudLogin();
+                                    }
+                                  : null,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              )
-            );
+                ));
   }
 
   Widget _createEnvPicker() {

@@ -59,7 +59,7 @@ class ManualUpdateRebooting implements ManualUpdateStatus {
 
   @override
   void stop() {}
-   @override
+  @override
   Map<String, dynamic> toMap() => {'type': 'rebooting'};
 }
 
@@ -137,7 +137,9 @@ class ManualFirmwareUpdateState extends Equatable {
   factory ManualFirmwareUpdateState.fromMap(Map<String, dynamic> map) {
     return ManualFirmwareUpdateState(
       file: map['file'] != null ? FileInfo.fromMap(map['file']) : null,
-      status: map['status'] != null ? ManualUpdateStatus.fromMap(map['status']) : null,
+      status: map['status'] != null
+          ? ManualUpdateStatus.fromMap(map['status'])
+          : null,
     );
   }
 

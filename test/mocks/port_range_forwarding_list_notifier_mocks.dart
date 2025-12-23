@@ -51,7 +51,10 @@ class _FakePortRangeForwardingListState_1 extends _i1.SmartFake
 /// A class which mocks [PortRangeForwardingListNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPortRangeForwardingListNotifier extends _i2.Notifier<_i3.PortRangeForwardingListState> with _i1.Mock implements _i3.PortRangeForwardingListNotifier {
+class MockPortRangeForwardingListNotifier
+    extends _i2.Notifier<_i3.PortRangeForwardingListState>
+    with _i1.Mock
+    implements _i3.PortRangeForwardingListNotifier {
   @override
   _i2.NotifierProviderRef<_i3.PortRangeForwardingListState> get ref =>
       (super.noSuchMethod(

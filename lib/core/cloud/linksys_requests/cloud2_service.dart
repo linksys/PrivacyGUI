@@ -5,8 +5,6 @@ import 'package:privacy_gui/constants/cloud_const.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 
 extension Cloud2Service on LinksysHttpClient {
-  
-
   Future<Response> associateSmartDevice({
     required String linksysToken,
     required String serialNumber,

@@ -589,7 +589,8 @@ void main() {
         );
 
         // Act
-        final result = await service.fetchPortServiceRules([validRule, invalidRule]);
+        final result =
+            await service.fetchPortServiceRules([validRule, invalidRule]);
 
         // Assert - should return valid rule despite one failing
         expect(result.$1, isNotNull);
@@ -672,8 +673,7 @@ void main() {
         mockRepo = MockRouterRepository();
         mockRef = MockRef();
 
-        when(() => mockRef.read(routerRepositoryProvider))
-            .thenReturn(mockRepo);
+        when(() => mockRef.read(routerRepositoryProvider)).thenReturn(mockRepo);
       });
 
       group('fetchRulesFromDevice', () {
@@ -702,11 +702,12 @@ void main() {
           };
 
           when(() => mockRepo.send(
-                JNAPAction.getIPv6FirewallRules,
-                auth: true,
-                fetchRemote: false,
-              )).thenAnswer(
-              (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
+                    JNAPAction.getIPv6FirewallRules,
+                    auth: true,
+                    fetchRemote: false,
+                  ))
+              .thenAnswer(
+                  (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
 
           // Act
           final result = await service.fetchRulesFromDevice(mockRef);
@@ -745,11 +746,12 @@ void main() {
           };
 
           when(() => mockRepo.send(
-                JNAPAction.getIPv6FirewallRules,
-                auth: true,
-                fetchRemote: true,
-              )).thenAnswer(
-              (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
+                    JNAPAction.getIPv6FirewallRules,
+                    auth: true,
+                    fetchRemote: true,
+                  ))
+              .thenAnswer(
+                  (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
 
           // Act
           final result =
@@ -787,11 +789,12 @@ void main() {
           final jnapResponse = {'rules': []};
 
           when(() => mockRepo.send(
-                JNAPAction.getIPv6FirewallRules,
-                auth: true,
-                fetchRemote: false,
-              )).thenAnswer(
-              (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
+                    JNAPAction.getIPv6FirewallRules,
+                    auth: true,
+                    fetchRemote: false,
+                  ))
+              .thenAnswer(
+                  (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
 
           // Act
           final result = await service.fetchRulesFromDevice(mockRef);
@@ -831,11 +834,12 @@ void main() {
           };
 
           when(() => mockRepo.send(
-                JNAPAction.getIPv6FirewallRules,
-                auth: true,
-                fetchRemote: false,
-              )).thenAnswer(
-              (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
+                    JNAPAction.getIPv6FirewallRules,
+                    auth: true,
+                    fetchRemote: false,
+                  ))
+              .thenAnswer(
+                  (_) async => JNAPSuccess(result: 'OK', output: jnapResponse));
 
           // Act
           final result = await service.fetchRulesFromDevice(mockRef);
@@ -871,12 +875,13 @@ void main() {
           ];
 
           when(() => mockRepo.send(
-                JNAPAction.setIPv6FirewallRules,
-                auth: true,
-                fetchRemote: true,
-                data: any(named: 'data'),
-              )).thenAnswer(
-              (_) async => const JNAPSuccess(result: 'OK', output: {}));
+                    JNAPAction.setIPv6FirewallRules,
+                    auth: true,
+                    fetchRemote: true,
+                    data: any(named: 'data'),
+                  ))
+              .thenAnswer(
+                  (_) async => const JNAPSuccess(result: 'OK', output: {}));
 
           // Act
           await service.saveRulesToDevice(mockRef, uiRules);
@@ -901,12 +906,13 @@ void main() {
         test('saves empty rules list successfully', () async {
           // Arrange
           when(() => mockRepo.send(
-                JNAPAction.setIPv6FirewallRules,
-                auth: true,
-                fetchRemote: true,
-                data: any(named: 'data'),
-              )).thenAnswer(
-              (_) async => const JNAPSuccess(result: 'OK', output: {}));
+                    JNAPAction.setIPv6FirewallRules,
+                    auth: true,
+                    fetchRemote: true,
+                    data: any(named: 'data'),
+                  ))
+              .thenAnswer(
+                  (_) async => const JNAPSuccess(result: 'OK', output: {}));
 
           // Act
           await service.saveRulesToDevice(mockRef, []);
@@ -975,12 +981,13 @@ void main() {
           ];
 
           when(() => mockRepo.send(
-                JNAPAction.setIPv6FirewallRules,
-                auth: true,
-                fetchRemote: true,
-                data: any(named: 'data'),
-              )).thenAnswer(
-              (_) async => const JNAPSuccess(result: 'OK', output: {}));
+                    JNAPAction.setIPv6FirewallRules,
+                    auth: true,
+                    fetchRemote: true,
+                    data: any(named: 'data'),
+                  ))
+              .thenAnswer(
+                  (_) async => const JNAPSuccess(result: 'OK', output: {}));
 
           // Act
           await service.saveRulesToDevice(mockRef, uiRules);

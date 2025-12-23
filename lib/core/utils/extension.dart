@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+
 /// An extension on the `Map` class providing additional utility methods.
 extension MapExt on Map {
   /// Retrieves a value from a nested map structure using a dot-separated path.
@@ -28,7 +29,8 @@ extension StringExt on String {
   /// Capitalizes the first letter of the string.
   ///
   /// Example: 'word' becomes 'Word'.
-  String capitalize() => isNotEmpty ? '${this[0].toUpperCase()}${substring(1)}' : this;
+  String capitalize() =>
+      isNotEmpty ? '${this[0].toUpperCase()}${substring(1)}' : this;
 
   /// Capitalizes the first letter of each word in a space-separated string,
   /// preserving the original casing of other letters.
