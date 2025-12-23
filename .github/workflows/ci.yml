@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev-*" ]
   # schedule:
   #   - cron: '0 0 * * *' # Nightly run at midnight UTC
 
