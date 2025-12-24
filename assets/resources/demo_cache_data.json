@@ -1,0 +1,2818 @@
+{
+    "http://linksys.com/jnap/core/IsAdminPasswordDefault": {
+        "target": "http://linksys.com/jnap/core/IsAdminPasswordDefault",
+        "cachedAt": 1766560099456,
+        "data": {
+            "result": "OK",
+            "output": {
+                "isAdminPasswordDefault": false
+            }
+        }
+    },
+    "http://linksys.com/jnap/nodes/setup/IsAdminPasswordSetByUser": {
+        "target": "http://linksys.com/jnap/nodes/setup/IsAdminPasswordSetByUser",
+        "cachedAt": 1766560099456,
+        "data": {
+            "result": "OK",
+            "output": {
+                "isAdminPasswordSetByUser": true
+            }
+        }
+    },
+    "http://linksys.com/jnap/core/GetDeviceInfo": {
+        "target": "http://linksys.com/jnap/core/GetDeviceInfo",
+        "cachedAt": 1766560099659,
+        "data": {
+            "result": "OK",
+            "output": {
+                "manufacturer": "Linksys",
+                "modelNumber": "LN16",
+                "hardwareVersion": "1",
+                "description": "Linksys Velop Micro Mesh 7",
+                "serialNumber": "65G10M2CE00107",
+                "firmwareVersion": "1.0.10.216621",
+                "firmwareDate": "2025-05-19T01:22:58Z",
+                "services": [
+                    "http://linksys.com/jnap/bornon/BornOn",
+                    "http://linksys.com/jnap/core/Core",
+                    "http://linksys.com/jnap/core/Core2",
+                    "http://linksys.com/jnap/core/Core3",
+                    "http://linksys.com/jnap/core/Core4",
+                    "http://linksys.com/jnap/core/Core5",
+                    "http://linksys.com/jnap/core/Core6",
+                    "http://linksys.com/jnap/core/Core7",
+                    "http://linksys.com/jnap/core/Core8",
+                    "http://linksys.com/jnap/core/Core9",
+                    "http://linksys.com/jnap/ddns/DDNS",
+                    "http://linksys.com/jnap/ddns/DDNS2",
+                    "http://linksys.com/jnap/ddns/DDNS3",
+                    "http://linksys.com/jnap/ddns/DDNS4",
+                    "http://linksys.com/jnap/devicelist/DeviceList",
+                    "http://linksys.com/jnap/devicelist/DeviceList2",
+                    "http://linksys.com/jnap/devicelist/DeviceList4",
+                    "http://linksys.com/jnap/devicelist/DeviceList5",
+                    "http://linksys.com/jnap/devicelist/DeviceList6",
+                    "http://linksys.com/jnap/devicelist/DeviceList7",
+                    "http://linksys.com/jnap/devicepreauthorization/DevicePreauthorization",
+                    "http://linksys.com/jnap/diagnostics/Diagnostics",
+                    "http://linksys.com/jnap/diagnostics/Diagnostics10",
+                    "http://linksys.com/jnap/diagnostics/Diagnostics2",
+                    "http://linksys.com/jnap/diagnostics/Diagnostics3",
+                    "http://linksys.com/jnap/diagnostics/Diagnostics6",
+                    "http://linksys.com/jnap/diagnostics/Diagnostics7",
+                    "http://linksys.com/jnap/diagnostics/Diagnostics8",
+                    "http://linksys.com/jnap/diagnostics/Diagnostics9",
+                    "http://linksys.com/jnap/diagnostics/Reliability",
+                    "http://linksys.com/jnap/dynamicportforwarding/DynamicPortForwarding",
+                    "http://linksys.com/jnap/dynamicportforwarding/DynamicPortForwarding2",
+                    "http://linksys.com/jnap/dynamicsession/DynamicSession",
+                    "http://linksys.com/jnap/dynamicsession/DynamicSession2",
+                    "http://linksys.com/jnap/firewall/Firewall",
+                    "http://linksys.com/jnap/firewall/Firewall2",
+                    "http://linksys.com/jnap/firmwareupdate/FirmwareUpdate",
+                    "http://linksys.com/jnap/firmwareupdate/FirmwareUpdate2",
+                    "http://linksys.com/jnap/guestnetwork/GuestNetwork",
+                    "http://linksys.com/jnap/guestnetwork/GuestNetwork2",
+                    "http://linksys.com/jnap/guestnetwork/GuestNetwork3",
+                    "http://linksys.com/jnap/guestnetwork/GuestNetwork4",
+                    "http://linksys.com/jnap/guestnetwork/GuestNetwork5",
+                    "http://linksys.com/jnap/guestnetwork/GuestNetworkAuthentication",
+                    "http://linksys.com/jnap/httpproxy/HttpProxy",
+                    "http://linksys.com/jnap/httpproxy/HttpProxy2",
+                    "http://linksys.com/jnap/locale/Locale",
+                    "http://linksys.com/jnap/locale/Locale2",
+                    "http://linksys.com/jnap/locale/Locale3",
+                    "http://linksys.com/jnap/macfilter/MACFilter",
+                    "http://linksys.com/jnap/macfilter/MACFilter2",
+                    "http://linksys.com/jnap/networkconnections/NetworkConnections",
+                    "http://linksys.com/jnap/networkconnections/NetworkConnections2",
+                    "http://linksys.com/jnap/networkconnections/NetworkConnections3",
+                    "http://linksys.com/jnap/nodes/autoonboarding/AutoOnboarding",
+                    "http://linksys.com/jnap/nodes/autoonboarding/AutoOnboarding2",
+                    "http://linksys.com/jnap/nodes/autoonboarding/AutoOnboarding3",
+                    "http://linksys.com/jnap/nodes/bluetooth/Bluetooth",
+                    "http://linksys.com/jnap/nodes/bluetooth/Bluetooth2",
+                    "http://linksys.com/jnap/nodes/bluetooth/Bluetooth3",
+                    "http://linksys.com/jnap/nodes/btsmartconnect/BTSmartConnect",
+                    "http://linksys.com/jnap/nodes/btsmartconnect/BTSmartConnect2",
+                    "http://linksys.com/jnap/nodes/btsmartconnect/BTSmartConnect3",
+                    "http://linksys.com/jnap/nodes/diagnostics/Diagnostics",
+                    "http://linksys.com/jnap/nodes/diagnostics/Diagnostics2",
+                    "http://linksys.com/jnap/nodes/diagnostics/Diagnostics3",
+                    "http://linksys.com/jnap/nodes/diagnostics/Diagnostics5",
+                    "http://linksys.com/jnap/nodes/diagnostics/Diagnostics6",
+                    "http://linksys.com/jnap/nodes/firmwareupdate/FirmwareUpdate",
+                    "http://linksys.com/jnap/nodes/networkconnections/NodesNetworkConnections",
+                    "http://linksys.com/jnap/nodes/networkconnections/NodesNetworkConnections2",
+                    "http://linksys.com/jnap/nodes/notification/Notification",
+                    "http://linksys.com/jnap/nodes/setup/Setup",
+                    "http://linksys.com/jnap/nodes/setup/Setup10",
+                    "http://linksys.com/jnap/nodes/setup/Setup11",
+                    "http://linksys.com/jnap/nodes/setup/Setup2",
+                    "http://linksys.com/jnap/nodes/setup/Setup3",
+                    "http://linksys.com/jnap/nodes/setup/Setup4",
+                    "http://linksys.com/jnap/nodes/setup/Setup5",
+                    "http://linksys.com/jnap/nodes/setup/Setup6",
+                    "http://linksys.com/jnap/nodes/setup/Setup7",
+                    "http://linksys.com/jnap/nodes/setup/Setup8",
+                    "http://linksys.com/jnap/nodes/setup/Setup9",
+                    "http://linksys.com/jnap/nodes/smartconnect/SmartConnect",
+                    "http://linksys.com/jnap/nodes/smartconnect/SmartConnect2",
+                    "http://linksys.com/jnap/nodes/smartconnect/SmartConnect3",
+                    "http://linksys.com/jnap/nodes/smartconnect/SmartConnect4",
+                    "http://linksys.com/jnap/nodes/smartmode/SmartMode",
+                    "http://linksys.com/jnap/nodes/smartmode/SmartMode2",
+                    "http://linksys.com/jnap/nodes/topologyoptimization/TopologyOptimization",
+                    "http://linksys.com/jnap/nodes/topologyoptimization/TopologyOptimization2",
+                    "http://linksys.com/jnap/ownednetwork/OwnedNetwork",
+                    "http://linksys.com/jnap/ownednetwork/OwnedNetwork2",
+                    "http://linksys.com/jnap/ownednetwork/OwnedNetwork3",
+                    "http://linksys.com/jnap/parentalcontrol/ParentalControl",
+                    "http://linksys.com/jnap/parentalcontrol/ParentalControl2",
+                    "http://linksys.com/jnap/pgui/PGUI",
+                    "http://linksys.com/jnap/powertable/PowerTable",
+                    "http://linksys.com/jnap/product/Product",
+                    "http://linksys.com/jnap/qos/QoS",
+                    "http://linksys.com/jnap/qos/QoS2",
+                    "http://linksys.com/jnap/qos/QoS3",
+                    "http://linksys.com/jnap/qos/calibration/Calibration",
+                    "http://linksys.com/jnap/router/Router",
+                    "http://linksys.com/jnap/router/Router10",
+                    "http://linksys.com/jnap/router/Router11",
+                    "http://linksys.com/jnap/router/Router12",
+                    "http://linksys.com/jnap/router/Router13",
+                    "http://linksys.com/jnap/router/Router3",
+                    "http://linksys.com/jnap/router/Router4",
+                    "http://linksys.com/jnap/router/Router5",
+                    "http://linksys.com/jnap/router/Router6",
+                    "http://linksys.com/jnap/router/Router7",
+                    "http://linksys.com/jnap/router/Router8",
+                    "http://linksys.com/jnap/router/Router9",
+                    "http://linksys.com/jnap/routerleds/RouterLEDs",
+                    "http://linksys.com/jnap/routerleds/RouterLEDs2",
+                    "http://linksys.com/jnap/routerleds/RouterLEDs3",
+                    "http://linksys.com/jnap/routerleds/RouterLEDs4",
+                    "http://linksys.com/jnap/routerlog/RouterLog",
+                    "http://linksys.com/jnap/routerlog/RouterLog2",
+                    "http://linksys.com/jnap/routermanagement/RouterManagement",
+                    "http://linksys.com/jnap/routermanagement/RouterManagement2",
+                    "http://linksys.com/jnap/routermanagement/RouterManagement3",
+                    "http://linksys.com/jnap/routerstatus/RouterStatus",
+                    "http://linksys.com/jnap/routerstatus/RouterStatus2",
+                    "http://linksys.com/jnap/routerupnp/RouterUPnP",
+                    "http://linksys.com/jnap/routerupnp/RouterUPnP2",
+                    "http://linksys.com/jnap/smartconnect/SmartConnectClient",
+                    "http://linksys.com/jnap/smartconnect/SmartConnectClient2",
+                    "http://linksys.com/jnap/ui/Settings",
+                    "http://linksys.com/jnap/ui/Settings2",
+                    "http://linksys.com/jnap/ui/Settings3",
+                    "http://linksys.com/jnap/wirelessap/AdvancedWirelessAP",
+                    "http://linksys.com/jnap/wirelessap/AdvancedWirelessAP2",
+                    "http://linksys.com/jnap/wirelessap/AirtimeFairness",
+                    "http://linksys.com/jnap/wirelessap/DynamicFrequencySelection",
+                    "http://linksys.com/jnap/wirelessap/MultiLinkOperation",
+                    "http://linksys.com/jnap/wirelessap/WPSServer",
+                    "http://linksys.com/jnap/wirelessap/WPSServer2",
+                    "http://linksys.com/jnap/wirelessap/WPSServer3",
+                    "http://linksys.com/jnap/wirelessap/WPSServer4",
+                    "http://linksys.com/jnap/wirelessap/WPSServer5",
+                    "http://linksys.com/jnap/wirelessap/WirelessAP",
+                    "http://linksys.com/jnap/wirelessap/WirelessAP2",
+                    "http://linksys.com/jnap/wirelessap/WirelessAP4",
+                    "http://linksys.com/jnap/wirelessap/WirelessAP5",
+                    "http://linksys.com/jnap/wirelessap/qualcomm/AdvancedQualcomm",
+                    "http://linksys.com/jnap/wirelessap/ssidprioritization/SSIDPrioritization",
+                    "http://linksys.com/jnap/wirelessscheduler/WirelessScheduler",
+                    "http://linksys.com/jnap/wirelessscheduler/WirelessScheduler2",
+                    "http://linksys.com/jnap/xconnect/XConnect"
+                ]
+            }
+        }
+    },
+    "http://linksys.com/jnap/nodes/smartmode/GetDeviceMode": {
+        "target": "http://linksys.com/jnap/nodes/smartmode/GetDeviceMode",
+        "cachedAt": 1766559864757,
+        "data": {
+            "result": "OK",
+            "output": {
+                "mode": "Master"
+            }
+        }
+    },
+    "http://linksys.com/jnap/macfilter/GetMACFilterSettings": {
+        "target": "http://linksys.com/jnap/macfilter/GetMACFilterSettings",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "macFilterMode": "Disabled",
+                "macAddresses": [],
+                "maxMACAddresses": 56
+            }
+        }
+    },
+    "http://linksys.com/jnap/macfilter/GetSTABSSIDS": {
+        "target": "http://linksys.com/jnap/macfilter/GetSTABSSIDS",
+        "cachedAt": 1766559865023,
+        "data": {
+            "result": "OK",
+            "output": {
+                "staBSSIDS": []
+            }
+        }
+    },
+    "http://linksys.com/jnap/devicelist/GetLocalDevice": {
+        "target": "http://linksys.com/jnap/devicelist/GetLocalDevice",
+        "cachedAt": 1766559865468,
+        "data": {
+            "result": "OK",
+            "output": {
+                "deviceID": "b9b753cc-71ae-44a5-b196-6e6db758b3f3"
+            }
+        }
+    },
+    "http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections2": {
+        "target": "http://linksys.com/jnap/nodes/networkconnections/GetNodesWirelessNetworkConnections2",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "nodeWirelessConnections": [
+                    {
+                        "deviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98",
+                        "connections": [
+                            {
+                                "macAddress": "1A:C0:2D:04:D7:AA",
+                                "negotiatedMbps": 286800,
+                                "timestamp": "2025-12-24T05:47:03Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:99",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_2.4GHz",
+                                    "band": "2.4GHz",
+                                    "signalDecibels": -53,
+                                    "txRate": 152738,
+                                    "rxRate": 100914,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "B8:F8:62:EB:50:8C",
+                                "negotiatedMbps": 200000,
+                                "timestamp": "2025-12-14T06:23:03Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:99",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_2.4GHz",
+                                    "band": "2.4GHz",
+                                    "signalDecibels": -36,
+                                    "txRate": 1000,
+                                    "rxRate": 52990,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "20:1F:3B:74:0B:F0",
+                                "negotiatedMbps": 433300,
+                                "timestamp": "2025-12-20T05:13:28Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:9A",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz",
+                                    "band": "5GHz",
+                                    "signalDecibels": -50,
+                                    "txRate": 0,
+                                    "rxRate": 0,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "38:B4:D3:AF:0C:7E",
+                                "negotiatedMbps": 433300,
+                                "timestamp": "2025-12-19T01:50:16Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:9A",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz",
+                                    "band": "5GHz",
+                                    "signalDecibels": -74,
+                                    "txRate": 264063,
+                                    "rxRate": 261786,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "A4:36:C7:64:49:80",
+                                "negotiatedMbps": 86500,
+                                "timestamp": "2025-12-04T21:54:19Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:99",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_2.4GHz",
+                                    "band": "2.4GHz",
+                                    "signalDecibels": -41,
+                                    "txRate": 1000,
+                                    "rxRate": 16000,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "E2:AF:EC:F6:51:5F",
+                                "negotiatedMbps": 866700,
+                                "timestamp": "2025-12-20T14:37:45Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:9A",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz",
+                                    "band": "5GHz",
+                                    "signalDecibels": -63,
+                                    "txRate": 520000,
+                                    "rxRate": 141862,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "B8:16:5F:F7:9F:D9",
+                                "negotiatedMbps": 86500,
+                                "timestamp": "2025-12-16T05:25:47Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:99",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_2.4GHz",
+                                    "band": "2.4GHz",
+                                    "signalDecibels": -33,
+                                    "txRate": 43300,
+                                    "rxRate": 1000,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "D4:43:8A:A8:DA:FC",
+                                "negotiatedMbps": 200000,
+                                "timestamp": "2025-12-22T04:42:33Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:99",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_2.4GHz",
+                                    "band": "2.4GHz",
+                                    "signalDecibels": -55,
+                                    "txRate": 90000,
+                                    "rxRate": 2117,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "A8:16:9D:D6:1A:3A",
+                                "negotiatedMbps": 866700,
+                                "timestamp": "2025-12-19T13:14:48Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:9A",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz",
+                                    "band": "5GHz",
+                                    "signalDecibels": -49,
+                                    "txRate": 0,
+                                    "rxRate": 0,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "6A:2C:C1:AC:14:9E",
+                                "negotiatedMbps": 1201000,
+                                "timestamp": "2025-12-21T19:38:52Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:9A",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz",
+                                    "band": "5GHz",
+                                    "signalDecibels": -61,
+                                    "txRate": 835788,
+                                    "rxRate": 626571,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "FE:23:B0:AE:E9:7D",
+                                "negotiatedMbps": 1201000,
+                                "timestamp": "2025-12-24T01:50:40Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:BB:7E:9A",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz",
+                                    "band": "5GHz",
+                                    "signalDecibels": -51,
+                                    "txRate": 0,
+                                    "rxRate": 0,
+                                    "isMLOCapable": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "deviceID": "78705b46-ca02-8be2-af38-80691a202892",
+                        "connections": [
+                            {
+                                "macAddress": "2C:1B:3A:94:F9:A2",
+                                "negotiatedMbps": 1,
+                                "timestamp": "2025-12-22T17:31:52Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:20:28:93",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_2.4GHz",
+                                    "band": "2.4GHz",
+                                    "signalDecibels": -64,
+                                    "txRate": 0,
+                                    "rxRate": 0,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "3C:A6:F6:51:87:B2",
+                                "negotiatedMbps": 144,
+                                "timestamp": "2025-12-05T11:50:08Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:20:28:94",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz",
+                                    "band": "5GHz",
+                                    "signalDecibels": -59,
+                                    "txRate": 0,
+                                    "rxRate": 0,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "B8:88:80:68:CD:2E",
+                                "negotiatedMbps": 1,
+                                "timestamp": "2025-12-23T19:30:13Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:20:28:93",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_2.4GHz",
+                                    "band": "2.4GHz",
+                                    "signalDecibels": -71,
+                                    "txRate": 0,
+                                    "rxRate": 0,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "E0:EF:BF:A4:F5:87",
+                                "negotiatedMbps": 216,
+                                "timestamp": "2025-12-22T17:40:01Z",
+                                "wireless": {
+                                    "bssid": "80:69:1A:20:28:94",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz",
+                                    "band": "5GHz",
+                                    "signalDecibels": -65,
+                                    "txRate": 0,
+                                    "rxRate": 0,
+                                    "isMLOCapable": false
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "deviceID": "8cf4c9d0-3cda-88a0-cda4-e89f80e10f50",
+                        "connections": [
+                            {
+                                "macAddress": "C2:EE:5A:F5:D4:02",
+                                "negotiatedMbps": 680,
+                                "timestamp": "2025-12-24T05:37:25Z",
+                                "wireless": {
+                                    "bssid": "E8:9F:80:E1:0F:53",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz_2",
+                                    "band": "5GHz",
+                                    "signalDecibels": -60,
+                                    "txRate": 0,
+                                    "rxRate": 0,
+                                    "isMLOCapable": false
+                                }
+                            },
+                            {
+                                "macAddress": "EE:13:9A:FF:31:3D",
+                                "negotiatedMbps": 34,
+                                "timestamp": "2025-12-22T17:57:02Z",
+                                "wireless": {
+                                    "bssid": "E8:9F:80:E1:0F:53",
+                                    "isGuest": false,
+                                    "radioID": "RADIO_5GHz_2",
+                                    "band": "5GHz",
+                                    "signalDecibels": -77,
+                                    "txRate": 0,
+                                    "rxRate": 0,
+                                    "isMLOCapable": false
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "http://linksys.com/jnap/networkconnections/GetNetworkConnections2": {
+        "target": "http://linksys.com/jnap/networkconnections/GetNetworkConnections2",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "connections": [
+                    {
+                        "macAddress": "1A:C0:2D:04:D7:AA",
+                        "negotiatedMbps": 172,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:99",
+                            "isGuest": false,
+                            "radioID": "RADIO_2.4GHz",
+                            "band": "2.4GHz",
+                            "signalDecibels": -54
+                        }
+                    },
+                    {
+                        "macAddress": "20:1F:3B:74:0B:F0",
+                        "negotiatedMbps": 292,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:9A",
+                            "isGuest": false,
+                            "radioID": "RADIO_5GHz",
+                            "band": "5GHz",
+                            "signalDecibels": -46
+                        }
+                    },
+                    {
+                        "macAddress": "38:B4:D3:AF:0C:7E",
+                        "negotiatedMbps": 260,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:9A",
+                            "isGuest": false,
+                            "radioID": "RADIO_5GHz",
+                            "band": "5GHz",
+                            "signalDecibels": -72
+                        }
+                    },
+                    {
+                        "macAddress": "6A:2C:C1:AC:14:9E",
+                        "negotiatedMbps": 6,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:9A",
+                            "isGuest": false,
+                            "radioID": "RADIO_5GHz",
+                            "band": "5GHz",
+                            "signalDecibels": -58
+                        }
+                    },
+                    {
+                        "macAddress": "86:69:1A:20:28:95",
+                        "negotiatedMbps": 1201,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:9A",
+                            "isGuest": false,
+                            "radioID": "RADIO_5GHz",
+                            "band": "5GHz",
+                            "signalDecibels": -47
+                        }
+                    },
+                    {
+                        "macAddress": "A4:36:C7:64:49:80",
+                        "negotiatedMbps": 1,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:99",
+                            "isGuest": false,
+                            "radioID": "RADIO_2.4GHz",
+                            "band": "2.4GHz",
+                            "signalDecibels": -46
+                        }
+                    },
+                    {
+                        "macAddress": "A8:16:9D:D6:1A:3A",
+                        "negotiatedMbps": 6,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:9A",
+                            "isGuest": false,
+                            "radioID": "RADIO_5GHz",
+                            "band": "5GHz",
+                            "signalDecibels": -47
+                        }
+                    },
+                    {
+                        "macAddress": "B8:16:5F:F7:9F:D9",
+                        "negotiatedMbps": 1,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:99",
+                            "isGuest": false,
+                            "radioID": "RADIO_2.4GHz",
+                            "band": "2.4GHz",
+                            "signalDecibels": -43
+                        }
+                    },
+                    {
+                        "macAddress": "B8:88:80:68:CD:2E",
+                        "negotiatedMbps": 0,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:99",
+                            "isGuest": false,
+                            "radioID": "RADIO_2.4GHz",
+                            "band": "2.4GHz",
+                            "signalDecibels": -84
+                        }
+                    },
+                    {
+                        "macAddress": "B8:F8:62:EB:50:8C",
+                        "negotiatedMbps": 72,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:99",
+                            "isGuest": false,
+                            "radioID": "RADIO_2.4GHz",
+                            "band": "2.4GHz",
+                            "signalDecibels": -34
+                        }
+                    },
+                    {
+                        "macAddress": "D4:43:8A:A8:DA:FC",
+                        "negotiatedMbps": 1,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:99",
+                            "isGuest": false,
+                            "radioID": "RADIO_2.4GHz",
+                            "band": "2.4GHz",
+                            "signalDecibels": -53
+                        }
+                    },
+                    {
+                        "macAddress": "E2:AF:EC:F6:51:5F",
+                        "negotiatedMbps": 585,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:9A",
+                            "isGuest": false,
+                            "radioID": "RADIO_5GHz",
+                            "band": "5GHz",
+                            "signalDecibels": -46
+                        }
+                    },
+                    {
+                        "macAddress": "FE:23:B0:AE:E9:7D",
+                        "negotiatedMbps": 1201,
+                        "wireless": {
+                            "bssid": "80:69:1A:BB:7E:9A",
+                            "isGuest": false,
+                            "radioID": "RADIO_5GHz",
+                            "band": "5GHz",
+                            "signalDecibels": -57
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "http://linksys.com/jnap/wirelessap/GetRadioInfo3": {
+        "target": "http://linksys.com/jnap/wirelessap/GetRadioInfo3",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "isBandSteeringSupported": false,
+                "radios": [
+                    {
+                        "radioID": "RADIO_2.4GHz",
+                        "physicalRadioID": "ath0",
+                        "bssid": "80:69:1A:BB:7E:99",
+                        "band": "2.4GHz",
+                        "supportedModes": [
+                            "802.11bg",
+                            "802.11bgn",
+                            "802.11bgnax",
+                            "802.11mixed"
+                        ],
+                        "defaultMixedMode": "802.11mixed",
+                        "supportedChannelsForChannelWidths": [
+                            {
+                                "channelWidth": "Auto",
+                                "channels": [
+                                    0,
+                                    1,
+                                    2,
+                                    3,
+                                    4,
+                                    5,
+                                    6,
+                                    7,
+                                    8,
+                                    9,
+                                    10,
+                                    11,
+                                    12,
+                                    13
+                                ]
+                            },
+                            {
+                                "channelWidth": "Standard",
+                                "channels": [
+                                    0,
+                                    1,
+                                    2,
+                                    3,
+                                    4,
+                                    5,
+                                    6,
+                                    7,
+                                    8,
+                                    9,
+                                    10,
+                                    11,
+                                    12,
+                                    13
+                                ]
+                            }
+                        ],
+                        "supportedSecurityTypes": [
+                            "Enhanced-Open+None",
+                            "Enhanced-Open-Only",
+                            "None",
+                            "WPA2-Personal",
+                            "WPA2/WPA3-Mixed-Personal",
+                            "WPA3-Personal"
+                        ],
+                        "maxRADIUSSharedKeyLength": 64,
+                        "settings": {
+                            "isEnabled": true,
+                            "mode": "802.11mixed",
+                            "ssid": "HAO-9F-2.4G",
+                            "broadcastSSID": true,
+                            "channelWidth": "Auto",
+                            "channel": 7,
+                            "security": "WPA2/WPA3-Mixed-Personal",
+                            "wpaPersonalSettings": {
+                                "passphrase": "0975280250"
+                            }
+                        }
+                    },
+                    {
+                        "radioID": "RADIO_5GHz",
+                        "physicalRadioID": "ath10",
+                        "bssid": "80:69:1A:BB:7E:9A",
+                        "band": "5GHz",
+                        "supportedModes": [
+                            "802.11a",
+                            "802.11an",
+                            "802.11anac",
+                            "802.11anacax",
+                            "802.11anacaxbe"
+                        ],
+                        "defaultMixedMode": "802.11anacaxbe",
+                        "supportedChannelsForChannelWidths": [
+                            {
+                                "channelWidth": "Auto",
+                                "channels": [
+                                    0,
+                                    36,
+                                    40,
+                                    44,
+                                    48,
+                                    149,
+                                    153,
+                                    157,
+                                    161,
+                                    165
+                                ]
+                            },
+                            {
+                                "channelWidth": "Standard",
+                                "channels": [
+                                    0,
+                                    36,
+                                    40,
+                                    44,
+                                    48,
+                                    149,
+                                    153,
+                                    157,
+                                    161,
+                                    165
+                                ]
+                            },
+                            {
+                                "channelWidth": "Wide",
+                                "channels": [
+                                    0,
+                                    36,
+                                    40,
+                                    44,
+                                    48,
+                                    149,
+                                    153,
+                                    157,
+                                    161
+                                ]
+                            }
+                        ],
+                        "supportedSecurityTypes": [
+                            "Enhanced-Open+None",
+                            "Enhanced-Open-Only",
+                            "None",
+                            "WPA2-Personal",
+                            "WPA2/WPA3-Mixed-Personal",
+                            "WPA3-Personal"
+                        ],
+                        "maxRADIUSSharedKeyLength": 64,
+                        "settings": {
+                            "isEnabled": true,
+                            "mode": "802.11anacaxbe",
+                            "ssid": "HAO-9F",
+                            "broadcastSSID": true,
+                            "channelWidth": "Auto",
+                            "channel": 0,
+                            "security": "WPA2/WPA3-Mixed-Personal",
+                            "wpaPersonalSettings": {
+                                "passphrase": "0975280250"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "http://linksys.com/jnap/guestnetwork/GetGuestRadioSettings2": {
+        "target": "http://linksys.com/jnap/guestnetwork/GetGuestRadioSettings2",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "isGuestNetworkACaptivePortal": false,
+                "isGuestNetworkEnabled": true,
+                "radios": [
+                    {
+                        "radioID": "RADIO_2.4GHz",
+                        "isEnabled": true,
+                        "broadcastGuestSSID": true,
+                        "guestSSID": "Linksys00107-guest",
+                        "guestWPAPassphrase": "BeMyGuest",
+                        "canEnableRadio": true
+                    },
+                    {
+                        "radioID": "RADIO_5GHz",
+                        "isEnabled": true,
+                        "broadcastGuestSSID": true,
+                        "guestSSID": "Linksys00107-guest",
+                        "guestWPAPassphrase": "BeMyGuest",
+                        "canEnableRadio": true
+                    }
+                ]
+            }
+        }
+    },
+    "http://linksys.com/jnap/devicelist/GetDevices3": {
+        "target": "http://linksys.com/jnap/devicelist/GetDevices3",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "revision": 38818,
+                "devices": [
+                    {
+                        "deviceID": "8cf4c9d0-3cda-88a0-cda4-e89f80e10f50",
+                        "lastChangeRevision": 38817,
+                        "model": {
+                            "deviceType": "Infrastructure",
+                            "manufacturer": "Linksys",
+                            "modelNumber": "MX42",
+                            "hardwareVersion": "1",
+                            "description": "Velop AX4200 WiFi 6 System"
+                        },
+                        "unit": {
+                            "serialNumber": "38U10M33B16420",
+                            "firmwareVersion": "1.0.13.216602",
+                            "firmwareDate": "2022-04-13T23:49:52Z"
+                        },
+                        "isAuthority": false,
+                        "nodeType": "Slave",
+                        "isHomeKitSupported": false,
+                        "friendlyName": "Linksys16420",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "F6:9F:80:E1:0F:51",
+                                "interfaceType": "Unknown"
+                            },
+                            {
+                                "macAddress": "EE:9F:80:E1:0F:53",
+                                "interfaceType": "Unknown"
+                            },
+                            {
+                                "macAddress": "E8:9F:80:E1:0F:50",
+                                "interfaceType": "Unknown"
+                            },
+                            {
+                                "macAddress": "EE:9F:80:E1:0F:52",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "E8:9F:80:E1:0F:50",
+                                "ipAddress": "192.168.1.20",
+                                "ipv6Address": "fe80:0000:0000:0000:ea9f:80ff:fee1:0f50"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "85613401-2e4f-4138-aa47-bef57c315763",
+                        "lastChangeRevision": 38647,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "LGE_DHUM2_open",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "B8:16:5F:F7:9F:D9",
+                                "interfaceType": "Wireless",
+                                "band": "2.4GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "B8:16:5F:F7:9F:D9",
+                                "ipAddress": "192.168.1.226",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "3a006806-5576-45b1-ac35-047f929531ca",
+                        "lastChangeRevision": 38639,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "B8F862EB508C",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "B8:F8:62:EB:50:8C",
+                                "interfaceType": "Wireless",
+                                "band": "2.4GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "B8:F8:62:EB:50:8C",
+                                "ipAddress": "192.168.1.243",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "654243c9-7ab5-48ff-aed3-730e648c2e17",
+                        "lastChangeRevision": 38818,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "Living Room display",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "20:1F:3B:74:0B:F0",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "20:1F:3B:74:0B:F0",
+                                "ipAddress": "192.168.1.145",
+                                "ipv6Address": "fe80:0000:0000:0000:603f:011b:f5b1:7580",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "ba51729f-62cc-4b31-8164-153ed25d7284",
+                        "lastChangeRevision": 38757,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Android_22fc8ae11cd34a4e941a9cfcf927bbc7",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "6A:2C:C1:AC:14:9E",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "6A:2C:C1:AC:14:9E",
+                                "ipAddress": "192.168.1.131",
+                                "ipv6Address": "fe80:0000:0000:0000:682c:c1ff:feac:149e",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "17633e54-8065-4ace-a48b-676ec26a50e8",
+                        "lastChangeRevision": 38638,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "2C:1B:3A:94:F9:A2",
+                                "interfaceType": "Wireless",
+                                "band": "2.4GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "2C:1B:3A:94:F9:A2",
+                                "ipAddress": "192.168.1.151",
+                                "parentDeviceID": "78705b46-ca02-8be2-af38-80691a202892"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "031221ee-8a06-407b-9237-9ac79400aafc",
+                        "lastChangeRevision": 37539,
+                        "model": {
+                            "deviceType": "Infrastructure",
+                            "manufacturer": "Linksys",
+                            "modelNumber": "LN16",
+                            "hardwareVersion": "1",
+                            "description": "Linksys Velop Micro Mesh 7"
+                        },
+                        "unit": {
+                            "serialNumber": "65G10M2CE00107",
+                            "firmwareVersion": "1.0.10.216621",
+                            "firmwareDate": "2025-05-19T01:22:58Z",
+                            "operatingSystem": "macOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "ASTWP-028312",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "E2:AF:EC:F6:51:5F",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "E2:AF:EC:F6:51:5F",
+                                "ipAddress": "192.168.1.227",
+                                "ipv6Address": "fe80:0000:0000:0000:1060:f832:5cac:70f5",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "1da86bc0-f9f8-43a8-9456-5ba5cbe94ef3",
+                        "lastChangeRevision": 38646,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "LGE_AIR2_open",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "A4:36:C7:64:49:80",
+                                "interfaceType": "Wireless",
+                                "band": "2.4GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "A4:36:C7:64:49:80",
+                                "ipAddress": "192.168.1.137",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "942b8df9-57bf-4ea3-bd98-657fa4fe65d6",
+                        "lastChangeRevision": 38814,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "xiaomi_vacuum",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "D4:43:8A:A8:DA:FC",
+                                "interfaceType": "Wireless",
+                                "band": "2.4GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "D4:43:8A:A8:DA:FC",
+                                "ipAddress": "192.168.1.22",
+                                "ipv6Address": "fe80:0000:0000:0000:d643:8aff:fea8:dafc",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "b9b753cc-71ae-44a5-b196-6e6db758b3f3",
+                        "lastChangeRevision": 38813,
+                        "model": {
+                            "deviceType": "Infrastructure",
+                            "manufacturer": "Linksys",
+                            "modelNumber": "LN16",
+                            "hardwareVersion": "1",
+                            "description": "Linksys Velop Micro Mesh 7"
+                        },
+                        "unit": {
+                            "serialNumber": "65G10M2CE00107",
+                            "firmwareVersion": "1.0.10.216621",
+                            "firmwareDate": "2025-05-19T01:22:58Z"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "MacBook Pro",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "FE:23:B0:AE:E9:7D",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "FE:23:B0:AE:E9:7D",
+                                "ipAddress": "192.168.1.163",
+                                "ipv6Address": "fe80:0000:0000:0000:1045:1b9a:65d3:105f",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "78705b46-ca02-8be2-af38-80691a202892",
+                        "lastChangeRevision": 38815,
+                        "model": {
+                            "deviceType": "Infrastructure",
+                            "manufacturer": "Linksys",
+                            "modelNumber": "MX42",
+                            "hardwareVersion": "1",
+                            "description": "Velop AX4200 WiFi 6 System"
+                        },
+                        "unit": {
+                            "serialNumber": "38U10M5AC03045",
+                            "firmwareVersion": "1.0.13.216602",
+                            "firmwareDate": "2022-04-13T23:49:52Z"
+                        },
+                        "isAuthority": false,
+                        "nodeType": "Slave",
+                        "isHomeKitSupported": false,
+                        "friendlyName": "Linksys03045",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "86:69:1A:20:28:95",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            },
+                            {
+                                "macAddress": "80:69:1A:20:28:92",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "86:69:1A:20:28:95",
+                                "ipAddress": "192.168.1.115",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            },
+                            {
+                                "macAddress": "80:69:1A:20:28:92",
+                                "ipAddress": "192.168.1.115",
+                                "ipv6Address": "fe80:0000:0000:0000:8269:1aff:fe20:2892"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "04281dda-4859-4b7a-9146-5f0be5a01549",
+                        "lastChangeRevision": 38714,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "chuangmi_camera_077ac1",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "B8:88:80:68:CD:2E",
+                                "interfaceType": "Wireless",
+                                "band": "2.4GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "B8:88:80:68:CD:2E",
+                                "ipAddress": "192.168.1.86",
+                                "parentDeviceID": "78705b46-ca02-8be2-af38-80691a202892"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "9a6f8d51-2b2d-4be3-8c7a-79cf5e8e5e28",
+                        "lastChangeRevision": 38812,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Android_C2BZAQXQ",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "1A:C0:2D:04:D7:AA",
+                                "interfaceType": "Wireless",
+                                "band": "2.4GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "1A:C0:2D:04:D7:AA",
+                                "ipAddress": "192.168.1.234",
+                                "ipv6Address": "fe80:0000:0000:0000:18c0:2dff:fe04:d7aa",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "6b5d78d0-28d5-46fc-b32e-3d0b25b07846",
+                        "lastChangeRevision": 38499,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "HomeApplianceDiscovery",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "EE:13:9A:FF:31:3D",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "EE:13:9A:FF:31:3D",
+                                "ipAddress": "192.168.1.143",
+                                "ipv6Address": "fe80:0000:0000:0000:ec13:9aff:feff:313d",
+                                "parentDeviceID": "8cf4c9d0-3cda-88a0-cda4-e89f80e10f50"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "883f60df-73ea-4e37-b609-bd8989436c4f",
+                        "lastChangeRevision": 38816,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Android_HBBCLCZD",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "C2:EE:5A:F5:D4:02",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "C2:EE:5A:F5:D4:02",
+                                "ipAddress": "192.168.1.190",
+                                "ipv6Address": "fe80:0000:0000:0000:c0ee:5aff:fef5:d402",
+                                "parentDeviceID": "8cf4c9d0-3cda-88a0-cda4-e89f80e10f50"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "858ecca6-29cd-479c-8189-bc64d9b4977f",
+                        "lastChangeRevision": 38476,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "E0:EF:BF:A4:F5:87",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "E0:EF:BF:A4:F5:87",
+                                "ipAddress": "192.168.1.72",
+                                "ipv6Address": "fe80:0000:0000:0000:e2ef:bfff:fea4:f587",
+                                "parentDeviceID": "78705b46-ca02-8be2-af38-80691a202892"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "72a690ef-831c-479c-a2ff-364b4fcee297",
+                        "lastChangeRevision": 38514,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "bosch-dishwasher-012100522899000500",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "38:B4:D3:AF:0C:7E",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "38:B4:D3:AF:0C:7E",
+                                "ipAddress": "192.168.1.28",
+                                "ipv6Address": "fe80:0000:0000:0000:3ab4:d3ff:feaf:0c7e",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "618425a1-43d9-4d16-8589-76635afe8bc5",
+                        "lastChangeRevision": 38789,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "unknown",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "C2:4B:A3:5E:CB:9D",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [
+                            {
+                                "name": "userDeviceOS",
+                                "value": "Android 15"
+                            },
+                            {
+                                "name": "userDeviceManufacturer",
+                                "value": "Samsung"
+                            },
+                            {
+                                "name": "userDeviceModelNumber",
+                                "value": "SM-S9260"
+                            }
+                        ],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "cdd1025d-d009-41d3-98bf-8f65f11592fd",
+                        "lastChangeRevision": 38707,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "10F TV",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "48:9E:9D:1C:AD:39",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "f02b4bbf-dee4-488b-b324-129732bf3744",
+                        "lastChangeRevision": 38397,
+                        "model": {
+                            "deviceType": "Mobile",
+                            "manufacturer": "Microsoft Corporation",
+                            "modelNumber": "Windows Media Player",
+                            "description": "Media Renderer"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "GoogleTV1713",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "A8:16:9D:D6:1A:3A",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "A8:16:9D:D6:1A:3A",
+                                "ipAddress": "192.168.1.68",
+                                "ipv6Address": "fe80:0000:0000:0000:3769:2d23:c5b2:f68d",
+                                "parentDeviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98",
+                        "lastChangeRevision": 38630,
+                        "model": {
+                            "deviceType": "Infrastructure",
+                            "manufacturer": "Linksys",
+                            "modelNumber": "LN16",
+                            "hardwareVersion": "1",
+                            "description": "Linksys Velop Micro Mesh 7"
+                        },
+                        "unit": {
+                            "serialNumber": "65G10M2CE00107",
+                            "firmwareVersion": "1.0.10.216621",
+                            "firmwareDate": "2025-05-19T01:22:58Z"
+                        },
+                        "isAuthority": true,
+                        "nodeType": "Master",
+                        "isHomeKitSupported": false,
+                        "friendlyName": "Linksys00107",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "80:69:1A:BB:7E:98",
+                                "interfaceType": "Wired"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "80:69:1A:BB:7E:98",
+                                "ipAddress": "192.168.1.1"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "ceaa3004-db28-490c-8fad-6bfb740b0e95",
+                        "lastChangeRevision": 38261,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "dreame_vacuum_p2114a",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "70:C9:32:2D:71:CD",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "0b2d50fc-94b9-4841-ac46-f6b290af5cc2",
+                        "lastChangeRevision": 37421,
+                        "model": {
+                            "deviceType": "Infrastructure",
+                            "manufacturer": "Linksys",
+                            "modelNumber": "LN16",
+                            "hardwareVersion": "1",
+                            "description": "Linksys Velop Micro Mesh 7"
+                        },
+                        "unit": {
+                            "serialNumber": "65G10M2CE00107",
+                            "firmwareVersion": "1.0.7.216520",
+                            "firmwareDate": "2025-02-17T22:24:18Z",
+                            "operatingSystem": "macOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Natalie's MacBook Air",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "3C:22:FB:E4:4F:18",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "0bc43db8-ad3c-4d9b-9866-c95279fe07f4",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "D8:1F:12:38:9B:F6",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "52383afc-da16-4cc4-829c-dad9efaad57f",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Android_EJZXUT7G",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "EE:0F:F6:EE:AE:29",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "104fc891-b465-4ff9-a352-b2340a58dea0",
+                        "lastChangeRevision": 37789,
+                        "model": {
+                            "deviceType": "Computer",
+                            "manufacturer": "Apple Inc.",
+                            "modelNumber": "MacBook Air"
+                        },
+                        "unit": {
+                            "operatingSystem": "macOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Natalie's MacBook Air",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "3C:A6:F6:51:87:B2",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "e9165410-04f8-4b4c-9725-29d7c859161d",
+                        "lastChangeRevision": 37911,
+                        "model": {
+                            "deviceType": "Computer"
+                        },
+                        "unit": {
+                            "operatingSystem": "Windows"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "DESKTOP-MOB04KQ",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "44:E5:17:06:9D:5C",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "9c08e232-2a00-4f93-8b45-3689e05b3f61",
+                        "lastChangeRevision": 38377,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "SM-R960",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "42:2F:54:84:A1:9C",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "b546cdfa-3ba3-459f-8b49-7cd06c869248",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Android_f23e96c804c74801b1988ba2bad85779",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "66:D1:08:EA:C8:F3",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "655300fd-017d-461d-9d7b-491d046ea45a",
+                        "lastChangeRevision": 3940,
+                        "model": {
+                            "deviceType": "",
+                            "manufacturer": "Nintendo Co., Ltd."
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "5C:52:1E:5C:20:66",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "811394a4-a141-4293-a25d-20289682bb7e",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "jia-hao-de-S24",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "D2:D4:5E:69:AA:46",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "b1873b4f-a0e7-4f04-99d1-ace7f84d954c",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "PS5-A5A6D9",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "1C:98:C1:8D:F4:C8",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "14c19eee-a92f-49d6-977e-31c606630df2",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Phone",
+                            "manufacturer": "Apple Inc.",
+                            "modelNumber": "iPhone"
+                        },
+                        "unit": {
+                            "operatingSystem": "iOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "iPhone",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "02:EF:50:55:29:1C",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "5292131c-9cb5-4e06-928d-050ab11bd827",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "bosch-dishwasher-012120522899010831",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "C8:D7:78:59:C9:82",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "7d4bc396-ea11-4b67-bc1c-e1c50c34eaa1",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Android-2",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "3E:95:A1:A0:E8:A5",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "86b26a56-b186-4d9c-9ec1-8841aeda5357",
+                        "lastChangeRevision": 37790,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Android_b568a8e42977415f91c203e7ee9a11f4",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "9E:04:16:86:FF:0F",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "4e16ec7e-2007-43f1-b1f3-716127be4cde",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "C2:B3:8D:83:41:31",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "b9b8e67e-d45b-40ae-95a3-53f9d6901f20",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "B6:A3:67:07:10:49",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "28e67058-15b9-4ed3-a73b-8a538c3350ed",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Computer",
+                            "manufacturer": "Apple Inc.",
+                            "modelNumber": "MacBook Pro"
+                        },
+                        "unit": {
+                            "operatingSystem": "macOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "ASTWP-29134",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "8E:21:38:0E:BA:3C",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "7129768d-bc57-4095-801b-da5311f9d237",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "C2:40:2A:3B:F0:30",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "94eb8907-65a4-43b0-979c-4b960292bb85",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "F6:82:53:8B:2C:08",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "7e8b1456-49c9-49c4-9482-7add0d5175f1",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Phone",
+                            "manufacturer": "Apple Inc.",
+                            "modelNumber": "iPhone"
+                        },
+                        "unit": {
+                            "operatingSystem": "iOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "0bed0da9-7b5a-464b-aa67-ca56f30fca37",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "62:89:01:CD:E4:C2",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "c480e5bc-b0f9-495d-808b-748436a20dda",
+                        "lastChangeRevision": 37909,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "F6:80:A0:45:50:F1",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "b4ff1c44-bf0d-494f-a007-78d843904227",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Phone",
+                            "manufacturer": "Apple Inc.",
+                            "modelNumber": "iPhone"
+                        },
+                        "unit": {
+                            "operatingSystem": "iOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Austins-iPhone",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "4A:C4:6C:49:40:D8",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "67eca8cf-b07d-4c51-a72b-07d30be9ab9d",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Phone",
+                            "manufacturer": "Apple Inc.",
+                            "modelNumber": "iPhone"
+                        },
+                        "unit": {
+                            "operatingSystem": "iOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "iPhone",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "92:29:61:F5:D3:00",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "7d0ccb66-d505-48e6-b7c5-895f64151353",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "Watch",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "AE:6F:F9:6B:38:24",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "d57e9396-8854-469f-b95d-986cb076d002",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Phone",
+                            "manufacturer": "Apple Inc.",
+                            "modelNumber": "iPhone"
+                        },
+                        "unit": {
+                            "operatingSystem": "iOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "iPhone",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "22:81:93:86:9B:38",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "eba918bc-d96f-4f85-9bcb-41ab54422f08",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "D2:52:A0:92:06:88",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "adce14af-5431-451a-a13a-8c765d4305b8",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Tablet",
+                            "manufacturer": "Apple Inc.",
+                            "modelNumber": "iPad"
+                        },
+                        "unit": {
+                            "operatingSystem": "iOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Emily's iPad",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "FA:53:57:E7:6E:39",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "fdb41e4f-d8a0-4736-bc93-f16acae227e8",
+                        "lastChangeRevision": 38612,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Pixel-7",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "5E:DB:E6:51:9B:97",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "3b499d56-dfe2-4d59-82d1-ff02deeb3d57",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": "Tablet",
+                            "manufacturer": "Apple Inc.",
+                            "modelNumber": "iPad"
+                        },
+                        "unit": {
+                            "operatingSystem": "iOS"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "Emily's iPad",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "56:E1:FD:30:2F:07",
+                                "interfaceType": "Wireless"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "9a7b66a1-b800-464b-ac8e-59a8f098106e",
+                        "lastChangeRevision": 37600,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "WING-Austin",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "48:90:2F:CD:33:FB",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "545bcc93-7789-4db6-9c93-95945b4593a2",
+                        "lastChangeRevision": 0,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "12:5F:40:8C:1F:D4",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "be92a241-8fd9-46a2-bbe8-c15684e06ac1",
+                        "lastChangeRevision": 38636,
+                        "model": {
+                            "deviceType": "Mobile"
+                        },
+                        "unit": {
+                            "operatingSystem": "Android"
+                        },
+                        "isAuthority": false,
+                        "friendlyName": "SM-R960",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "62:92:65:B0:E5:C9",
+                                "interfaceType": "Unknown"
+                            }
+                        ],
+                        "connections": [
+                            {
+                                "macAddress": "62:92:65:B0:E5:C9",
+                                "ipv6Address": "fe80:0000:0000:0000:6092:65ff:feb0:e5c9",
+                                "parentDeviceID": "78705b46-ca02-8be2-af38-80691a202892"
+                            }
+                        ],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    },
+                    {
+                        "deviceID": "ccfb46a0-de12-46d8-b015-5f6b85bf3e06",
+                        "lastChangeRevision": 37442,
+                        "model": {
+                            "deviceType": ""
+                        },
+                        "unit": {},
+                        "isAuthority": false,
+                        "friendlyName": "MACBOOK-PRO",
+                        "knownInterfaces": [
+                            {
+                                "macAddress": "5C:9B:A6:69:9F:F4",
+                                "interfaceType": "Wireless",
+                                "band": "5GHz"
+                            }
+                        ],
+                        "connections": [],
+                        "properties": [],
+                        "maxAllowedProperties": 16
+                    }
+                ]
+            }
+        }
+    },
+    "http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateSettings": {
+        "target": "http://linksys.com/jnap/firmwareupdate/GetFirmwareUpdateSettings",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "updatePolicy": "AutomaticallyCheckAndInstall",
+                "autoUpdateWindow": {
+                    "startMinute": 0,
+                    "durationMinutes": 240
+                }
+            }
+        }
+    },
+    "http://linksys.com/jnap/nodes/diagnostics/GetBackhaulInfo2": {
+        "target": "http://linksys.com/jnap/nodes/diagnostics/GetBackhaulInfo2",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "backhaulDevices": [
+                    {
+                        "deviceUUID": "8cf4c9d0-3cda-88a0-cda4-e89f80e10f50",
+                        "ipAddress": "192.168.1.20",
+                        "parentIPAddress": "192.168.1.115",
+                        "connectionType": "Wireless",
+                        "wirelessConnectionInfo": {
+                            "radioID": "5GL",
+                            "channel": 48,
+                            "apRSSI": -86,
+                            "stationRSSI": -77,
+                            "apBSSID": "80:69:1A:20:28:94",
+                            "stationBSSID": "EE:9F:80:E1:0F:52",
+                            "isMultiLinkOperation": false
+                        },
+                        "speedMbps": "28.813",
+                        "timestamp": "2025-12-24T06:55:13Z"
+                    },
+                    {
+                        "deviceUUID": "78705b46-ca02-8be2-af38-80691a202892",
+                        "ipAddress": "192.168.1.115",
+                        "parentIPAddress": "192.168.1.1",
+                        "connectionType": "Wireless",
+                        "wirelessConnectionInfo": {
+                            "radioID": "5GH",
+                            "channel": 149,
+                            "apRSSI": -37,
+                            "stationRSSI": -38,
+                            "apBSSID": "80:69:1A:BB:7E:9A",
+                            "stationBSSID": "86:69:1A:20:28:95",
+                            "txRate": 1200990,
+                            "rxRate": 1201000,
+                            "isMultiLinkOperation": false
+                        },
+                        "speedMbps": "211.866",
+                        "timestamp": "2025-12-24T06:55:06Z"
+                    }
+                ]
+            }
+        }
+    },
+    "http://linksys.com/jnap/router/GetWANStatus3": {
+        "target": "http://linksys.com/jnap/router/GetWANStatus3",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "supportedWANTypes": [
+                    "DHCP",
+                    "Static",
+                    "PPPoE",
+                    "PPTP",
+                    "L2TP",
+                    "Bridge"
+                ],
+                "supportedIPv6WANTypes": [
+                    "Automatic",
+                    "PPPoE",
+                    "Pass-through"
+                ],
+                "supportedWANCombinations": [
+                    {
+                        "wanType": "DHCP",
+                        "wanIPv6Type": "Automatic"
+                    },
+                    {
+                        "wanType": "Static",
+                        "wanIPv6Type": "Automatic"
+                    },
+                    {
+                        "wanType": "PPPoE",
+                        "wanIPv6Type": "Automatic"
+                    },
+                    {
+                        "wanType": "L2TP",
+                        "wanIPv6Type": "Automatic"
+                    },
+                    {
+                        "wanType": "PPTP",
+                        "wanIPv6Type": "Automatic"
+                    },
+                    {
+                        "wanType": "Bridge",
+                        "wanIPv6Type": "Automatic"
+                    },
+                    {
+                        "wanType": "DHCP",
+                        "wanIPv6Type": "Pass-through"
+                    },
+                    {
+                        "wanType": "PPPoE",
+                        "wanIPv6Type": "PPPoE"
+                    }
+                ],
+                "isDetectingWANType": false,
+                "detectedWANType": "DHCP",
+                "wanStatus": "Connected",
+                "wanConnection": {
+                    "wanType": "DHCP",
+                    "ipAddress": "192.168.15.2",
+                    "networkPrefixLength": 24,
+                    "gateway": "192.168.15.1",
+                    "mtu": 0,
+                    "dhcpLeaseMinutes": 4320,
+                    "dnsServer1": "192.168.15.1"
+                },
+                "wanIPv6Status": "Connecting",
+                "linkLocalIPv6Address": "fe80:0000:0000:0000:8269:1aff:febb:7e98",
+                "macAddress": "80:69:1A:BB:7E:98"
+            }
+        }
+    },
+    "http://linksys.com/jnap/router/GetEthernetPortConnections": {
+        "target": "http://linksys.com/jnap/router/GetEthernetPortConnections",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "wanPortConnection": "1Gbps",
+                "lanPortConnections": []
+            }
+        }
+    },
+    "http://linksys.com/jnap/diagnostics/GetSystemStats2": {
+        "target": "http://linksys.com/jnap/diagnostics/GetSystemStats2",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "uptimeSeconds": 2870497,
+                "CPULoad": "",
+                "MemoryLoad": "0.79"
+            }
+        }
+    },
+    "http://linksys.com/jnap/powertable/GetPowerTableSettings": {
+        "target": "http://linksys.com/jnap/powertable/GetPowerTableSettings",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "isPowerTableSelectable": true,
+                "country": "SGP",
+                "supportedCountries": [
+                    "USA",
+                    "CAN",
+                    "EEE",
+                    "HKG",
+                    "SGP",
+                    "TWN",
+                    "AUS",
+                    "LAM"
+                ]
+            }
+        }
+    },
+    "http://linksys.com/jnap/locale/GetLocalTime": {
+        "target": "http://linksys.com/jnap/locale/GetLocalTime",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "currentTime": "2025-12-24T15:04:27+0800"
+            }
+        }
+    },
+    "http://linksys.com/jnap/nodes/setup/GetInternetConnectionStatus": {
+        "target": "http://linksys.com/jnap/nodes/setup/GetInternetConnectionStatus",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "connectionStatus": "InternetConnected"
+            }
+        }
+    },
+    "http://linksys.com/jnap/nodes/firmwareupdate/GetFirmwareUpdateStatus": {
+        "target": "http://linksys.com/jnap/nodes/firmwareupdate/GetFirmwareUpdateStatus",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "firmwareUpdateStatus": [
+                    {
+                        "deviceUUID": "4a8bfcbf-6fa5-4383-9a26-80691abb7e98",
+                        "lastSuccessfulCheckTime": "2025-12-24T07:01:55Z",
+                        "pendingOperation": {
+                            "operation": "Checking",
+                            "progressPercent": 0
+                        }
+                    },
+                    {
+                        "deviceUUID": "78705b46-ca02-8be2-af38-80691a202892",
+                        "lastSuccessfulCheckTime": "2025-12-24T07:01:54Z",
+                        "pendingOperation": {
+                            "operation": "Checking",
+                            "progressPercent": 50
+                        }
+                    },
+                    {
+                        "deviceUUID": "8cf4c9d0-3cda-88a0-cda4-e89f80e10f50",
+                        "lastSuccessfulCheckTime": "2025-12-24T07:04:27Z"
+                    }
+                ]
+            }
+        }
+    },
+    "http://linksys.com/jnap/product/GetSoftSKUSettings": {
+        "target": "http://linksys.com/jnap/product/GetSoftSKUSettings",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "modelNumber": "LN16-AH"
+            }
+        }
+    },
+    "http://linksys.com/jnap/routerleds/GetLedNightModeSetting": {
+        "target": "http://linksys.com/jnap/routerleds/GetLedNightModeSetting",
+        "cachedAt": 1766559868105,
+        "data": {
+            "result": "OK",
+            "output": {
+                "Enable": false
+            }
+        }
+    },
+    "http://linksys.com/jnap/nodes/topologyoptimization/GetTopologyOptimizationSettings2": {
+        "target": "http://linksys.com/jnap/nodes/topologyoptimization/GetTopologyOptimizationSettings2",
+        "cachedAt": 1766559752535,
+        "data": {
+            "result": "OK",
+            "output": {
+                "isClientSteeringEnabled": true,
+                "isNodeSteeringEnabled": true
+            }
+        }
+    },
+    "http://linksys.com/jnap/wirelessap/GetMLOSettings": {
+        "target": "http://linksys.com/jnap/wirelessap/GetMLOSettings",
+        "cachedAt": 1766559752535,
+        "data": {
+            "result": "OK",
+            "output": {
+                "isMLOSupported": true,
+                "isMLOEnabled": false
+            }
+        }
+    },
+    "http://linksys.com/jnap/wirelessap/GetDFSSettings": {
+        "target": "http://linksys.com/jnap/wirelessap/GetDFSSettings",
+        "cachedAt": 1766559752535,
+        "data": {
+            "result": "OK",
+            "output": {
+                "isDFSSupported": true,
+                "isDFSEnabled": false
+            }
+        }
+    },
+    "http://linksys.com/jnap/wirelessap/GetAirtimeFairnessSettings": {
+        "target": "http://linksys.com/jnap/wirelessap/GetAirtimeFairnessSettings",
+        "cachedAt": 1766559752535,
+        "data": {
+            "result": "OK",
+            "output": {
+                "isAirtimeFairnessSupported": false
+            }
+        }
+    },
+    "http://linksys.com/jnap/router/GetLANSettings": {
+        "target": "http://linksys.com/jnap/router/GetLANSettings",
+        "cachedAt": 1766559770320,
+        "data": {
+            "result": "OK",
+            "output": {
+                "ipAddress": "192.168.1.1",
+                "networkPrefixLength": 24,
+                "minNetworkPrefixLength": 16,
+                "maxNetworkPrefixLength": 30,
+                "hostName": "Linksys00107",
+                "minAllowedDHCPLeaseMinutes": 1,
+                "maxAllowedDHCPLeaseMinutes": 525600,
+                "maxDHCPReservationDescriptionLength": 63,
+                "isDHCPEnabled": true,
+                "dhcpSettings": {
+                    "leaseMinutes": 1440,
+                    "firstClientIPAddress": "192.168.1.10",
+                    "lastClientIPAddress": "192.168.1.254",
+                    "reservations": []
+                }
+            }
+        }
+    },
+    "http://linksys.com/jnap/locale/GetTimeSettings": {
+        "target": "http://linksys.com/jnap/locale/GetTimeSettings",
+        "cachedAt": 1766559772184,
+        "data": {
+            "result": "OK",
+            "output": {
+                "timeZoneID": "SGT-8-NO-DST",
+                "autoAdjustForDST": false,
+                "supportedTimeZones": [
+                    {
+                        "timeZoneID": "GMT0-NO-DST",
+                        "utcOffsetMinutes": 0,
+                        "observesDST": false,
+                        "description": "(GMT) Gambia, Liberia, Morocco"
+                    },
+                    {
+                        "timeZoneID": "GST-4-NO-DST",
+                        "utcOffsetMinutes": 240,
+                        "observesDST": false,
+                        "description": "(GMT+04:00) Armenia"
+                    },
+                    {
+                        "timeZoneID": "EST5-NO-DST",
+                        "utcOffsetMinutes": -300,
+                        "observesDST": false,
+                        "description": "(GMT-05:00) Indiana East, Colombia, Panama"
+                    },
+                    {
+                        "timeZoneID": "AEST-10",
+                        "utcOffsetMinutes": 600,
+                        "observesDST": true,
+                        "description": "(GMT+10:00) Australia"
+                    },
+                    {
+                        "timeZoneID": "MST7-NO-DST",
+                        "utcOffsetMinutes": -420,
+                        "observesDST": false,
+                        "description": "(GMT-07:00) Arizona"
+                    },
+                    {
+                        "timeZoneID": "PKT-5-NO-DST",
+                        "utcOffsetMinutes": 300,
+                        "observesDST": false,
+                        "description": "(GMT+05:00) Pakistan, Russia"
+                    },
+                    {
+                        "timeZoneID": "ALMT-6-NO-DST",
+                        "utcOffsetMinutes": 360,
+                        "observesDST": false,
+                        "description": "(GMT+06:00) Bangladesh, Russia"
+                    },
+                    {
+                        "timeZoneID": "NST03:30",
+                        "utcOffsetMinutes": -210,
+                        "observesDST": true,
+                        "description": "(GMT-03:30) Newfoundland"
+                    },
+                    {
+                        "timeZoneID": "BRT3",
+                        "utcOffsetMinutes": -180,
+                        "observesDST": true,
+                        "description": "(GMT-03:00) Brazil East, Greenland"
+                    },
+                    {
+                        "timeZoneID": "HST10-NO-DST",
+                        "utcOffsetMinutes": -600,
+                        "observesDST": false,
+                        "description": "(GMT-10:00) Hawaii"
+                    },
+                    {
+                        "timeZoneID": "CST6",
+                        "utcOffsetMinutes": -360,
+                        "observesDST": true,
+                        "description": "(GMT-06:00) Central Time (USA &amp; Canada)"
+                    },
+                    {
+                        "timeZoneID": "PST8",
+                        "utcOffsetMinutes": -480,
+                        "observesDST": true,
+                        "description": "(GMT-08:00) Pacific Time (USA &amp; Canada)"
+                    },
+                    {
+                        "timeZoneID": "JST-9-NO-DST",
+                        "utcOffsetMinutes": 540,
+                        "observesDST": false,
+                        "description": "(GMT+09:00) Japan, Korea"
+                    },
+                    {
+                        "timeZoneID": "EST5",
+                        "utcOffsetMinutes": -300,
+                        "observesDST": true,
+                        "description": "(GMT-05:00) Eastern Time (USA &amp; Canada)"
+                    },
+                    {
+                        "timeZoneID": "ICT-7-NO-DST",
+                        "utcOffsetMinutes": 420,
+                        "observesDST": false,
+                        "description": "(GMT+07:00) Thailand, Russia"
+                    },
+                    {
+                        "timeZoneID": "HKT-8-NO-DST",
+                        "utcOffsetMinutes": 480,
+                        "observesDST": false,
+                        "description": "(GMT+08:00) China, Hong Kong, Australia Western"
+                    },
+                    {
+                        "timeZoneID": "WST11-NO-DST",
+                        "utcOffsetMinutes": -660,
+                        "observesDST": false,
+                        "description": "(GMT-11:00) Midway Island, Samoa"
+                    },
+                    {
+                        "timeZoneID": "SBT-11-NO-DST",
+                        "utcOffsetMinutes": 660,
+                        "observesDST": false,
+                        "description": "(GMT+11:00) Solomon Islands"
+                    },
+                    {
+                        "timeZoneID": "FJT-12-NO-DST",
+                        "utcOffsetMinutes": 720,
+                        "observesDST": false,
+                        "description": "(GMT+12:00) Fiji"
+                    },
+                    {
+                        "timeZoneID": "NZST-12",
+                        "utcOffsetMinutes": 720,
+                        "observesDST": true,
+                        "description": "(GMT+12:00) New Zealand"
+                    },
+                    {
+                        "timeZoneID": "GST-10-NO-DST",
+                        "utcOffsetMinutes": 600,
+                        "observesDST": false,
+                        "description": "(GMT+10:00) Guam, Russia"
+                    },
+                    {
+                        "timeZoneID": "CET-1-NO-DST",
+                        "utcOffsetMinutes": 60,
+                        "observesDST": false,
+                        "description": "(GMT+01:00) Tunisia"
+                    },
+                    {
+                        "timeZoneID": "MAT2-NO-DST",
+                        "utcOffsetMinutes": -120,
+                        "observesDST": false,
+                        "description": "(GMT-02:00) Mid-Atlantic"
+                    },
+                    {
+                        "timeZoneID": "MHT12-NO-DST",
+                        "utcOffsetMinutes": -720,
+                        "observesDST": false,
+                        "description": "(GMT-12:00) Kwajalein"
+                    },
+                    {
+                        "timeZoneID": "AZOT1",
+                        "utcOffsetMinutes": -60,
+                        "observesDST": true,
+                        "description": "(GMT-01:00) Azores"
+                    },
+                    {
+                        "timeZoneID": "CET-1",
+                        "utcOffsetMinutes": 60,
+                        "observesDST": true,
+                        "description": "(GMT+01:00) France, Germany, Italy"
+                    },
+                    {
+                        "timeZoneID": "ART3-NO-DST",
+                        "utcOffsetMinutes": -180,
+                        "observesDST": false,
+                        "description": "(GMT-03:00) Guyana"
+                    },
+                    {
+                        "timeZoneID": "IST-05:30-NO-DST",
+                        "utcOffsetMinutes": 330,
+                        "observesDST": false,
+                        "description": "(GMT+05:30) Bombay, Kalkutta, Madras, Neu Delhi"
+                    },
+                    {
+                        "timeZoneID": "VET4-NO-DST",
+                        "utcOffsetMinutes": -240,
+                        "observesDST": false,
+                        "description": "(GMT-04:00) Bolivia, Venezuela"
+                    },
+                    {
+                        "timeZoneID": "GMT0",
+                        "utcOffsetMinutes": 0,
+                        "observesDST": true,
+                        "description": "(GMT) England"
+                    },
+                    {
+                        "timeZoneID": "AST-3-NO-DST",
+                        "utcOffsetMinutes": 180,
+                        "observesDST": false,
+                        "description": "(GMT+03:00) Iraq, Jordan, Kuwait"
+                    },
+                    {
+                        "timeZoneID": "AKST9",
+                        "utcOffsetMinutes": -540,
+                        "observesDST": true,
+                        "description": "(GMT-09:00) Alaska"
+                    },
+                    {
+                        "timeZoneID": "MST7",
+                        "utcOffsetMinutes": -420,
+                        "observesDST": true,
+                        "description": "(GMT-07:00) Mountain Time (USA &amp; Canada)"
+                    },
+                    {
+                        "timeZoneID": "CLT4",
+                        "utcOffsetMinutes": -240,
+                        "observesDST": true,
+                        "description": "(GMT-04:00) Chile Time (Chile, Antarctica)"
+                    },
+                    {
+                        "timeZoneID": "SAST-2-NO-DST",
+                        "utcOffsetMinutes": 120,
+                        "observesDST": false,
+                        "description": "(GMT+02:00) South Africa"
+                    },
+                    {
+                        "timeZoneID": "EET-2",
+                        "utcOffsetMinutes": 120,
+                        "observesDST": true,
+                        "description": "(GMT+02:00) Greece, Ukraine, Romania, Turkey"
+                    },
+                    {
+                        "timeZoneID": "SGT-8-NO-DST",
+                        "utcOffsetMinutes": 480,
+                        "observesDST": false,
+                        "description": "(GMT+08:00) Singapore, Taiwan, Russia"
+                    },
+                    {
+                        "timeZoneID": "CST6-NO-DST",
+                        "utcOffsetMinutes": -360,
+                        "observesDST": false,
+                        "description": "(GMT-06:00) Mexico"
+                    },
+                    {
+                        "timeZoneID": "AST4",
+                        "utcOffsetMinutes": -240,
+                        "observesDST": true,
+                        "description": "(GMT-04:00) Atlantic Time (Canada, Greenland, Atlantic Islands)"
+                    }
+                ],
+                "currentTime": "2025-12-24T07:02:52Z"
+            }
+        }
+    },
+    "http://linksys.com/jnap/core/GetAdminPasswordHint": {
+        "target": "http://linksys.com/jnap/core/GetAdminPasswordHint",
+        "cachedAt": 1766559772281,
+        "data": {
+            "result": "OK",
+            "output": {
+                "passwordHint": "ve"
+            }
+        }
+    },
+    "http://linksys.com/jnap/router/GetWANExternal": {
+        "target": "http://linksys.com/jnap/router/GetWANExternal",
+        "cachedAt": 1766559803838,
+        "data": {
+            "result": "OK",
+            "output": {
+                "PublicWanIPv4": "111.240.93.175",
+                "PrivateWanIPv4": "192.168.15.2"
+            }
+        }
+    }
+}
