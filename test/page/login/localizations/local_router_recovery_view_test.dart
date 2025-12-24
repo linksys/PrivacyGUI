@@ -1,11 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_router_recovery_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/input_field/pin_code_input.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../test_data/_index.dart';
@@ -30,7 +28,7 @@ void main() {
       RouterPasswordState.fromMap(routerPasswordTestState1);
 
   // Test ID: LRRV-INIT
-  testLocalizationsV2(
+  testLocalizations(
     'local router recovery view - initial layout',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build())
@@ -47,9 +45,12 @@ void main() {
 
       expect(find.text(loc.forgotPassword), findsOneWidget);
       expect(find.text(loc.localRouterRecoveryDescription), findsOneWidget);
-      expect(find.byType(AppPinCodeInput), findsOneWidget);
-      final continueButton =
-          tester.widget<AppFilledButton>(find.byType(AppFilledButton));
+      expect(find.byType(AppPinInput), findsOneWidget);
+      // Use specific widget+text finder to avoid multiple AppButtons from page chrome
+      final continueButtonFinder =
+          find.widgetWithText(AppButton, loc.textContinue);
+      expect(continueButtonFinder, findsOneWidget);
+      final continueButton = tester.widget<AppButton>(continueButtonFinder);
       expect(continueButton.onTap, isNull);
     },
     goldenFilename: 'LRRV-INIT_01_initial_state',
@@ -57,29 +58,28 @@ void main() {
   );
 
   // Test ID: LRRV-PIN
-  testLocalizationsV2(
+  testLocalizations(
     'local router recovery view - enter recovery code',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build())
           .thenReturn(baseState());
 
-      await testHelper.pumpView(
+      final context = await testHelper.pumpView(
         tester,
         child: const LocalRouterRecoveryView(),
         locale: screen.locale,
         config: LinksysRouteConfig(noNaviRail: true),
       );
       await tester.pumpAndSettle();
+      final loc = testHelper.loc(context);
 
-      final fields = find.descendant(
-          of: find.byType(AppPinCodeInput), matching: find.byType(TextFormField));
-      for (var i = 0; i < fields.evaluate().length; i++) {
-        await tester.enterText(fields.at(i), '1');
-      }
+      await tester.enterText(find.byType(AppPinInput), '11111');
       await tester.pumpAndSettle();
 
-      final buttonFinder = find.byType(AppFilledButton);
-      final continueButton = tester.widget<AppFilledButton>(buttonFinder);
+      // Use specific widget+text finder to avoid multiple AppButtons from page chrome
+      final buttonFinder = find.widgetWithText(AppButton, loc.textContinue);
+      expect(buttonFinder, findsOneWidget);
+      final continueButton = tester.widget<AppButton>(buttonFinder);
       expect(continueButton.onTap, isNotNull);
     },
     goldenFilename: 'LRRV-PIN_01_code_entered',
@@ -87,7 +87,7 @@ void main() {
   );
 
   // Test ID: LRRV-ERR_WARN
-  testLocalizationsV2(
+  testLocalizations(
     'local router recovery view - warning with attempts remaining',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
@@ -114,7 +114,7 @@ void main() {
   );
 
   // Test ID: LRRV-ERR_LAST
-  testLocalizationsV2(
+  testLocalizations(
     'local router recovery view - last chance warning',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
@@ -141,7 +141,7 @@ void main() {
   );
 
   // Test ID: LRRV-ERR_LOCK
-  testLocalizationsV2(
+  testLocalizations(
     'local router recovery view - locked out state',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(

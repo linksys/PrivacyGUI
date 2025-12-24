@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class WifiSettingsChannelFinderView extends ArgumentsConsumerStatefulView {
   const WifiSettingsChannelFinderView({Key? key, super.args}) : super(key: key);
@@ -29,8 +28,12 @@ class _WifiSettingsChannelFinderViewState
   Widget build(BuildContext context) {
     final state = ref.watch(channelFinderProvider);
     return isLoading
-        ? const AppFullScreenSpinner()
-        : StyledAppPageView.withSliver(
+        ? Scaffold(
+            body: Center(
+              child: AppLoader(),
+            ),
+          )
+        : UiKitPageView.withSliver(
             title: 'Channel Finder',
             child: (context, constraints) => isShowButton
                 ? _channelFinderButton()
@@ -40,8 +43,9 @@ class _WifiSettingsChannelFinderViewState
 
   Widget _channelFinderButton() {
     return Center(
-      child: TextButton(
-        onPressed: () {
+      child: AppButton.primary(
+        label: 'Start Channel Finder',
+        onTap: () {
           setState(() {
             isLoading = true;
             isShowButton = false;
@@ -55,7 +59,6 @@ class _WifiSettingsChannelFinderViewState
             });
           });
         },
-        child: const Text('Start Channel Finder'),
       ),
     );
   }
@@ -67,19 +70,21 @@ class _WifiSettingsChannelFinderViewState
         itemBuilder: (context, index) => _listCell(state.result[index]),
       );
     } else {
-      return const Text('Your wifi already at the best performance');
+      return AppText.bodyMedium('Your wifi already at the best performance');
     }
   }
 
   Widget _listCell(OptimizedSelectedChannel channel) {
     return Row(
       children: [
-        Image(
-          image: CustomTheme.of(context).getRouterImage(channel.deviceIcon!),
-          semanticLabel: 'device image',
+        AppImage.provider(
+          imageProvider:
+              DeviceImageHelper.getRouterImage(channel.deviceIcon!, xl: false),
+          width: 40,
+          height: 40,
         ),
-        const AppGap.medium(),
-        Text(channel.deviceName!)
+        AppGap.lg(),
+        AppText.bodyMedium(channel.deviceName!)
       ],
     );
   }

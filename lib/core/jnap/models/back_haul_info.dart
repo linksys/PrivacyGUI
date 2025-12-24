@@ -62,7 +62,9 @@ class WirelessConnectionInfo extends Equatable {
       stationBSSID: stationBSSID ?? this.stationBSSID,
       txRate: txRate != null ? txRate() : this.txRate,
       rxRate: rxRate != null ? rxRate() : this.rxRate,
-      isMultiLinkOperation: isMultiLinkOperation != null ? isMultiLinkOperation() : this.isMultiLinkOperation,
+      isMultiLinkOperation: isMultiLinkOperation != null
+          ? isMultiLinkOperation()
+          : this.isMultiLinkOperation,
     );
   }
 
@@ -96,7 +98,8 @@ class WirelessConnectionInfo extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory WirelessConnectionInfo.fromJson(String source) => WirelessConnectionInfo.fromMap(json.decode(source));
+  factory WirelessConnectionInfo.fromJson(String source) =>
+      WirelessConnectionInfo.fromMap(json.decode(source));
 
   @override
   bool get stringify => true;

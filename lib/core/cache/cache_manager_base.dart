@@ -5,5 +5,6 @@ class FlutterCacheManager implements CacheManager {
   Future<String?> get() => throw UnimplementedError('Unsupported Platform!');
 
   @override
-  Future<void> set(String value)  => throw UnimplementedError('Unsupported Platform!');
+  Future<void> set(String value) =>
+      throw UnimplementedError('Unsupported Platform!');
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// A reusable widget for entering Wi-Fi passwords.
 ///
@@ -27,7 +26,7 @@ class WiFiPasswordField extends ConsumerWidget {
   final void Function(String value)? onSubmitted;
 
   /// A list of validation rules to apply to the password input.
-  final List<Validation>? validations;
+  final List<AppPasswordRule>? rules;
 
   const WiFiPasswordField({
     super.key,
@@ -37,20 +36,17 @@ class WiFiPasswordField extends ConsumerWidget {
     this.controller,
     this.onChanged,
     this.onSubmitted,
-    this.validations,
+    this.rules,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AppPasswordField.withValidator(
-      border: const OutlineInputBorder(),
-      headerText: label,
-      hintText: hint,
-      errorText: errorText,
+    return AppPasswordInput(
+      label: label ?? '',
       controller: controller,
       onChanged: onChanged,
       onSubmitted: onSubmitted,
-      validations: validations,
+      rules: rules,
     );
   }
 }

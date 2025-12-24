@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 while getopts l:s:f:c:v: flag
 do
     case "${flag}" in
@@ -22,7 +25,7 @@ echo "Locales: $locales"
 echo "Screens: $screens"
 echo "Version: $version"
 
-mkdir ./snapshots/
+mkdir -p ./snapshots/
 if [ -z "$file" ]; then
   locStr=${locales//,/_}
   screenStr=${screens//,/_}

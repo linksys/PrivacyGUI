@@ -84,7 +84,9 @@ class DynDNSSettings extends Equatable {
       mode: mode ?? this.mode,
       isMailExchangeEnabled:
           isMailExchangeEnabled ?? this.isMailExchangeEnabled,
-      mailExchangeSettings: mailExchangeSettings == null ? this.mailExchangeSettings : mailExchangeSettings.call(),
+      mailExchangeSettings: mailExchangeSettings == null
+          ? this.mailExchangeSettings
+          : mailExchangeSettings.call(),
     );
   }
 

@@ -2,20 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/displayed_mac_filtering_devices_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class FilteredDevicesView extends ArgumentsConsumerStatefulView {
   const FilteredDevicesView({super.key, super.args});
@@ -43,12 +39,12 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
   Widget build(BuildContext context) {
     final state = ref.watch(wifiBundleProvider);
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).filteredDevices,
       actions: [
-        AppTextButton(
-          loc(context).edit,
-          icon: LinksysIcons.edit,
+        AppButton.text(
+          label: loc(context).edit,
+          icon: AppIcon.font(AppFontIcons.edit),
           onTap: state.current.privacy.denyMacAddresses.isNotEmpty
               ? () {
                   _toggleEdit();
@@ -57,53 +53,56 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
         )
       ],
       bottomBar: _isEdit
-          ? InversePageBottomBar(
+          ? UiKitBottomBarConfig(
+              positiveLabel: loc(context).remove,
+              negativeLabel: loc(context).cancel,
               isPositiveEnabled: true,
+              isDestructive: true,
               onPositiveTap: () {
                 ref
                     .read(wifiBundleProvider.notifier)
                     .removeMacFilterSelection(_selectedMACs);
                 _toggleEdit();
               },
-              positiveLabel: loc(context).remove,
-              isNegitiveEnabled: true,
-              onNegitiveTap: () {
+              isNegativeEnabled: true,
+              onNegativeTap: () {
                 _toggleEdit();
               },
             )
-          : PageBottomBar(
+          : UiKitBottomBarConfig(
+              positiveLabel: loc(context).done,
               isPositiveEnabled: true,
               onPositiveTap: () {
                 context.pop();
               },
-              positiveLabel: loc(context).done),
+            ),
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppListCard(
             key: const Key('selectFromMyDeviceList'),
             title: AppText.labelLarge(loc(context).selectFromMyDeviceList),
-            trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
+            trailing: !_isEdit ? const AppIcon.font(AppFontIcons.add) : null,
             onTap: !_isEdit
                 ? () {
                     _pickDevices();
                   }
                 : null,
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           AppListCard(
             key: const Key('manuallyAddDevice'),
             title: AppText.labelLarge(loc(context).manuallyAddDevice),
-            trailing: !_isEdit ? const Icon(LinksysIcons.add) : null,
+            trailing: !_isEdit ? const AppIcon.font(AppFontIcons.add) : null,
             onTap: !_isEdit
                 ? () {
                     _showManuallyAddModal();
                   }
                 : null,
           ),
-          const AppGap.small2(),
+          AppGap.sm(),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
             child: AppText.labelLarge(loc(context).filteredDevices),
           ),
           _buildFilteredDevices(),
@@ -149,7 +148,7 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
             ),
           )
         : SizedBox(
-            height: 76.0 * state.length + Spacing.small2 * state.length,
+            height: 76.0 * state.length + AppSpacing.sm * state.length,
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -158,40 +157,62 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                 final device = state[index];
                 return SizedBox(
                   height: 76,
-                  child: AppSettingCard(
-                    color: _selectedMACs.contains(device.macAddress)
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : null,
-                    borderColor: _selectedMACs.contains(device.macAddress)
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
-                    onTap: _isEdit
-                        ? () {
-                            setState(() {
-                              if (_selectedMACs.contains(device.macAddress)) {
-                                _selectedMACs.remove(device.macAddress);
-                              } else {
-                                _selectedMACs.add(device.macAddress);
-                              }
-                            });
-                          }
-                        : null,
-                    leading: _isEdit
-                        ? IgnorePointer(
-                            child: AppCheckbox(
-                              value: _selectedMACs.contains(device.macAddress),
-                              onChanged: (value) {},
+                  child: Container(
+                    decoration: _selectedMACs.contains(device.macAddress)
+                        ? BoxDecoration(
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.primary,
                             ),
+                            borderRadius: BorderRadius.circular(8),
                           )
                         : null,
-                    title: device.name,
-                    description: device.macAddress,
+                    child: AppCard(
+                      onTap: _isEdit
+                          ? () {
+                              setState(() {
+                                if (_selectedMACs.contains(device.macAddress)) {
+                                  _selectedMACs.remove(device.macAddress);
+                                } else {
+                                  _selectedMACs.add(device.macAddress);
+                                }
+                              });
+                            }
+                          : null,
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Row(
+                        children: [
+                          if (_isEdit) ...[
+                            IgnorePointer(
+                              child: AppCheckbox(
+                                value:
+                                    _selectedMACs.contains(device.macAddress),
+                                onChanged: (value) {},
+                              ),
+                            ),
+                            AppGap.lg(),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                AppText.labelLarge(device.name),
+                                AppGap.xs(),
+                                AppText.bodyMedium(device.macAddress),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
               separatorBuilder: (BuildContext context, int index) {
                 if (index != state.length - 1) {
-                  return const AppGap.small2();
+                  return AppGap.sm();
                 } else {
                   return const Center();
                 }
@@ -210,22 +231,31 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       contentBuilder: (context, setState, onSubmit) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppTextField.macAddress(
-            key: const Key('macAddressTextField'),
-            semanticLabel: 'mac address',
-            border: const OutlineInputBorder(),
-            controller: controller,
-            errorText:
-                isValid && !isDuplicate ? null : loc(context).invalidMACAddress,
-            onChanged: (text) {
-              setState(() {
-                isValid = InputValidator([MACAddressRule()])
-                    .validate(controller.text);
-                isDuplicate = ref
-                    .read(macFilteringDeviceListProvider)
-                    .any((device) => device.macAddress == controller.text);
-              });
-            },
+          Column(
+            children: [
+              AppTextFormField(
+                key: const Key('macAddressTextField'),
+                controller: controller,
+                label: loc(context).macAddress,
+                onChanged: (text) {
+                  setState(() {
+                    isValid = InputValidator([MACAddressRule()])
+                        .validate(controller.text);
+                    isDuplicate = ref
+                        .read(macFilteringDeviceListProvider)
+                        .any((device) => device.macAddress == controller.text);
+                  });
+                },
+              ),
+              if (!isValid || isDuplicate)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: AppText.bodySmall(
+                    loc(context).invalidMACAddress,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+            ],
           )
         ],
       ),

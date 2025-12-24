@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
@@ -31,7 +30,8 @@ void main() {
 
       final stepState = pnpNotifier.getStepState(stepId);
       expect(stepState.data, testData);
-      expect(stepState.status, StepViewStatus.data); // Default status when data is set
+      // setStepData merges data but doesn't change status; default is loading
+      expect(stepState.status, StepViewStatus.loading);
     });
 
     test('setStepStatus updates PnpStepState status correctly', () {
@@ -55,11 +55,13 @@ void main() {
 
       final stepState = pnpNotifier.getStepState(stepId);
       expect(stepState.error, testError);
-      // Setting an error should not implicitly change the status, it should be set explicitly
-      expect(stepState.status, StepViewStatus.data); // Default status
+      // setStepError only sets error, doesn't change status; default is loading
+      expect(stepState.status, StepViewStatus.loading);
     });
 
-    test('setStepError and setStepStatus can be used together for validation failure', () {
+    test(
+        'setStepError and setStepStatus can be used together for validation failure',
+        () {
       const stepId = PnpStepId.personalWifi;
       final testError = Exception('Invalid SSID');
 
@@ -72,7 +74,8 @@ void main() {
     });
 
     // Test that initial step state is data and empty map
-    test('getStepState returns default PnpStepState for uninitialized step', () {
+    test('getStepState returns default PnpStepState for uninitialized step',
+        () {
       const stepId = PnpStepId.yourNetwork;
       final stepState = pnpNotifier.getStepState(stepId);
 

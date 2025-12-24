@@ -8,9 +8,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// A PnP (Plug and Play) step for configuring personal Wi-Fi settings.
 ///
@@ -107,7 +105,7 @@ class PersonalWiFiStep extends PnpStep {
             _checkForEnablingNext(ref);
           },
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         // Wi-Fi Password input field with validations.
         WiFiPasswordField(
           controller: _passwordEditController,
@@ -116,25 +114,25 @@ class PersonalWiFiStep extends PnpStep {
           onChanged: (value) {
             _checkForEnablingNext(ref);
           },
-          validations: [
-            Validation(
-                description: loc(context).wifiPasswordLimit,
-                validator: LengthRule(min: 8, max: 64).validate),
-            Validation(
-                description: loc(context).routerPasswordRuleStartEndWithSpace,
-                validator: NoSurroundWhitespaceRule().validate),
-            Validation(
-              description: loc(context).routerPasswordRuleUnsupportSpecialChar,
-              validator: (AsciiRule().validate),
+          rules: [
+            AppPasswordRule(
+                label: loc(context).wifiPasswordLimit,
+                validate: LengthRule(min: 8, max: 64).validate),
+            AppPasswordRule(
+                label: loc(context).routerPasswordRuleStartEndWithSpace,
+                validate: NoSurroundWhitespaceRule().validate),
+            AppPasswordRule(
+              label: loc(context).routerPasswordRuleUnsupportSpecialChar,
+              validate: AsciiRule().validate,
             ),
             if (_passwordEditController.text.length == 64)
-              Validation(
-                description: loc(context).wifiPasswordRuleHex,
-                validator: WiFiPSKRule().validate,
+              AppPasswordRule(
+                label: loc(context).wifiPasswordRuleHex,
+                validate: WiFiPSKRule().validate,
               ),
           ],
         ),
-        const AppGap.large5(),
+        AppGap.xxxl(),
         // Information section about personalizing Wi-Fi.
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -146,17 +144,15 @@ class PersonalWiFiStep extends PnpStep {
                 maxLines: 10,
               ),
             ),
-            AppIconButton.noPadding(
-              icon: LinksysIcons.infoCircle,
-              semanticLabel: 'info',
-              color: Theme.of(context).colorScheme.primary,
+            AppIconButton(
+              icon: AppIcon.font(AppFontIcons.infoCircle),
               onTap: () {
                 _showDefaultsInfoModal(context);
               },
             )
           ],
         ),
-        const AppGap.large5(),
+        AppGap.xxxl(),
       ],
     );
   }
@@ -186,8 +182,8 @@ class PersonalWiFiStep extends PnpStep {
               child: AppText.titleLarge(
                   loc(context).modalPnpWiFiDefaultsInfoTitle)),
           actions: [
-            AppTextButton(
-              loc(context).close,
+            AppButton.text(
+              label: loc(context).close,
               key: const Key('pnp_wifi_info_close_button'),
               onTap: () {
                 context.pop();
@@ -203,13 +199,13 @@ class PersonalWiFiStep extends PnpStep {
                 children: [
                   AppText.bodyMedium(
                       loc(context).modalPnpWiFiDefaultsInfoDesc1),
-                  const AppGap.medium(),
+                  AppGap.lg(),
                   AppText.bodyMedium(
                       loc(context).modalPnpWiFiDefaultsInfoDesc2),
-                  const AppGap.medium(),
+                  AppGap.lg(),
                   AppText.bodyMedium(
                       loc(context).modalPnpWiFiDefaultsInfoDesc3),
-                  const AppGap.medium(),
+                  AppGap.lg(),
                   AppText.bodyMedium(
                       loc(context).modalPnpWiFiDefaultsInfoDesc4),
                 ],

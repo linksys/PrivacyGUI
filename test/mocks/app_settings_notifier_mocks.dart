@@ -46,7 +46,8 @@ class _FakeAppSettings_1 extends _i1.SmartFake implements _i3.AppSettings {
 /// A class which mocks [AppSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAppSettingsNotifier extends _i2.Notifier<_i3.AppSettings> with _i1.Mock
+class MockAppSettingsNotifier extends _i2.Notifier<_i3.AppSettings>
+    with _i1.Mock
     implements _i4.AppSettingsNotifier {
   @override
   _i2.NotifierProviderRef<_i3.AppSettings> get ref => (super.noSuchMethod(

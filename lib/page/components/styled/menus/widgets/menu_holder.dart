@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/bottom_navigati
 import 'package:privacy_gui/page/components/styled/menus/widgets/top_navigation_menu.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 final menuController = Provider((ref) => MenuController());
 
@@ -72,9 +72,8 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
         displayType = MenuDisplay.none;
       } else {
         if (context.mounted) {
-          displayType = ResponsiveLayout.isMobileLayout(context)
-              ? MenuDisplay.bottom
-              : MenuDisplay.top;
+          displayType =
+              context.isMobileLayout ? MenuDisplay.bottom : MenuDisplay.top;
         } else {
           displayType = MenuDisplay.none;
         }
@@ -97,16 +96,17 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
                   _controller.select(_controller.items[index]);
                 },
               ),
-            MenuDisplay.bottom => AnimatedContainer(
+            MenuDisplay.bottom => AnimatedSize(
                 duration: const Duration(milliseconds: 200),
-                height: _controller.isVisible ? kBottomNavigationBarHeight : 0,
-                child: BottomNavigationMenu(
-                  items: _controller.items,
-                  selected: _controller.selected,
-                  onItemClick: (index) {
-                    _controller.select(_controller.items[index]);
-                  },
-                ),
+                child: _controller.isVisible
+                    ? BottomNavigationMenu(
+                        items: _controller.items,
+                        selected: _controller.selected,
+                        onItemClick: (index) {
+                          _controller.select(_controller.items[index]);
+                        },
+                      )
+                    : const SizedBox.shrink(),
               ),
           };
         });

@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
@@ -29,7 +28,7 @@ void main() async {
   });
 
   // Test ID: PNPNI-NO_SSID
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the no internet connection view without a specific SSID',
     (tester, localizedScreen) async {
       final context = await testHelper.pumpView(
@@ -47,7 +46,7 @@ void main() async {
           findsOneWidget);
 
       // Verify icon
-      expect(find.byIcon(LinksysIcons.publicOff), findsOneWidget);
+      expect(find.byIcon(AppFontIcons.publicOff), findsOneWidget);
 
       // Verify action cards
       expect(
@@ -58,8 +57,7 @@ void main() async {
           find.text(
               testHelper.loc(context).pnpNoInternetConnectionRestartModemDesc),
           findsOneWidget);
-      expect(
-          find.text(testHelper.loc(context).pnpNoInternetConnectionEnterISP),
+      expect(find.text(testHelper.loc(context).pnpNoInternetConnectionEnterISP),
           findsOneWidget);
       expect(
           find.text(
@@ -76,7 +74,7 @@ void main() async {
   );
 
   // Test ID: PNPNI-HAS_SSID
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the no internet connection view with a specific SSID',
     (tester, localizedScreen) async {
       const ssid = 'AwesomeSSID';
@@ -92,15 +90,14 @@ void main() async {
 
       // Verify title and description
       expect(
-          find.text(testHelper
-              .loc(context)
-              .noInternetConnectionWithSSIDTitle(ssid)),
+          find.text(
+              testHelper.loc(context).noInternetConnectionWithSSIDTitle(ssid)),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).noInternetConnectionDescription),
           findsOneWidget);
 
       // Verify icon
-      expect(find.byIcon(LinksysIcons.publicOff), findsOneWidget);
+      expect(find.byIcon(AppFontIcons.publicOff), findsOneWidget);
 
       // Verify action cards
       expect(
@@ -111,8 +108,7 @@ void main() async {
           find.text(
               testHelper.loc(context).pnpNoInternetConnectionRestartModemDesc),
           findsOneWidget);
-      expect(
-          find.text(testHelper.loc(context).pnpNoInternetConnectionEnterISP),
+      expect(find.text(testHelper.loc(context).pnpNoInternetConnectionEnterISP),
           findsOneWidget);
       expect(
           find.text(

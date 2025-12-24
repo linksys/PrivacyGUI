@@ -57,16 +57,6 @@ final advancedSettings = [
         ),
       ),
       LinksysRoute(
-        name: RouteNamed.singlePortForwardingRule,
-        path: RoutePath.singlePortForwardingRule,
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        builder: (context, state) => SinglePortForwardingRuleView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-      LinksysRoute(
         name: RouteNamed.portRangeForwardingList,
         path: RoutePath.portRangeForwardingList,
         config: LinksysRouteConfig(
@@ -77,32 +67,12 @@ final advancedSettings = [
         ),
       ),
       LinksysRoute(
-        name: RouteNamed.portRangeForwardingRule,
-        path: RoutePath.portRangeForwardingRule,
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        builder: (context, state) => PortRangeForwardingRuleView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-      LinksysRoute(
         name: RouteNamed.portRangeTriggeringList,
         path: RoutePath.portRangeTriggeringList,
         config: LinksysRouteConfig(
           column: ColumnGrid(column: 9),
         ),
         builder: (context, state) => PortRangeTriggeringListView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-      LinksysRoute(
-        name: RouteNamed.portRangeTriggeringRule,
-        path: RoutePath.protRangeTriggeringRule,
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 9),
-        ),
-        builder: (context, state) => PortRangeTriggeringRuleView(
           args: state.extra as Map<String, dynamic>? ?? {},
         ),
       ),
@@ -129,18 +99,7 @@ final advancedSettings = [
             builder: (context, state) => Ipv6PortServiceListView(
                   args: state.extra as Map<String, dynamic>? ?? {},
                 ),
-            routes: [
-              LinksysRoute(
-                name: RouteNamed.ipv6PortServiceRule,
-                path: RoutePath.ipv6PortServiceRule,
-                config: LinksysRouteConfig(
-                  column: ColumnGrid(column: 9),
-                ),
-                builder: (context, state) => Ipv6PortServiceRuleView(
-                  args: state.extra as Map<String, dynamic>? ?? {},
-                ),
-              ),
-            ]),
+            routes: const []),
       ]),
   LinksysRoute(
     name: RouteNamed.settingsDMZ,
@@ -177,17 +136,5 @@ final advancedSettings = [
     builder: (context, state) => StaticRoutingView(
       args: state.extra as Map<String, dynamic>? ?? {},
     ),
-    routes: [
-      LinksysRoute(
-        name: RouteNamed.settingsStaticRoutingRule,
-        path: RoutePath.settingsStaticRoutingRule,
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 6),
-        ),
-        builder: (context, state) => StaticRoutingRuleView(
-          args: state.extra as Map<String, dynamic>? ?? {},
-        ),
-      ),
-    ],
   ),
 ];

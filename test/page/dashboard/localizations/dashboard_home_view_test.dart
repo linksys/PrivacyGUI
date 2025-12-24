@@ -16,10 +16,8 @@ import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/config.dart';
 import '../../../common/screen.dart';
 import '../../../common/test_helper.dart';
@@ -91,8 +89,9 @@ void main() {
       overrides: overrides,
     );
     await tester.runAsync(() async {
+      // TODO
       await precacheImage(
-        CustomTheme.of(context).images.devices.routerLn12,
+        Assets.images.devices.routerLn12.provider(),
         context,
       );
     });
@@ -124,7 +123,7 @@ void main() {
   }
 
   // Test ID: DHOME-NOLAN_BASE
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - no lan ports base layout',
     (tester, screen) async {
       final context = await pumpDashboard(tester, screen);
@@ -141,7 +140,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_SIGNAL
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - mesh signal indicators',
     (tester, screen) async {
       when(testHelper.mockInstantTopologyNotifier.build())
@@ -156,13 +155,13 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_CHILD_OFFLINE
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - child node offline warning',
     (tester, screen) async {
       when(testHelper.mockInstantTopologyNotifier.build())
           .thenReturn(topologyTestData.testTopology3OfflineState);
       await pumpDashboard(tester, screen);
-      expect(find.byIcon(LinksysIcons.infoCircle), findsWidgets);
+      expect(find.byIcon(AppFontIcons.infoCircle), findsWidgets);
     },
     screens: _noLanScreens,
     goldenFilename: 'DHOME-NOLAN_CHILD_OFFLINE_01_offline',
@@ -170,7 +169,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_SPEED
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - display speed test results',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -186,7 +185,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_FW
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - firmware update available banner',
     (tester, screen) async {
       when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -206,7 +205,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_NIGHT
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - node night mode enabled',
     (tester, screen) async {
       when(testHelper.mockNodeLightSettingsNotifier.build()).thenReturn(
@@ -224,7 +223,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_PRIVACY
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - instant privacy enabled',
     (tester, screen) async {
       when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
@@ -242,7 +241,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_BASE
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - vertical ports layout',
     (tester, screen) async {
       await pumpDashboard(tester, screen);
@@ -255,9 +254,12 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_SPEED
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - vertical speed test success',
     (tester, screen) async {
+      when(testHelper.mockServiceHelper.isSupportHealthCheck())
+          .thenReturn(true);
+
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
         HealthCheckState.fromJson(healthCheckStateSuccessGood),
       );
@@ -272,11 +274,13 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_SPEED_INIT
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - vertical speed test init state',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
-        HealthCheckState.fromJson(healthCheckInitState),
+        HealthCheckState.fromJson(healthCheckStateSuccessGood).copyWith(
+          healthCheckModules: ['SpeedTest'],
+        ),
       );
       await pumpDashboard(tester, screen);
       expect(find.byType(DashboardHomePortAndSpeed), findsOneWidget);
@@ -287,7 +291,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_FW
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - vertical firmware update',
     (tester, screen) async {
       when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -307,12 +311,12 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_PRIVACY_ON
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - instant privacy enable modal',
     (tester, screen) async {
       await pumpDashboard(tester, screen);
       await toggleInstantPrivacy(tester);
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
     },
     screens: _verticalScreens,
     goldenFilename: 'DHOME-VERT_PRIVACY_ON_01_dialog',
@@ -320,7 +324,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_PRIVACY_OFF
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - instant privacy disable modal',
     (tester, screen) async {
       when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
@@ -328,7 +332,7 @@ void main() {
       );
       await pumpDashboard(tester, screen);
       await toggleInstantPrivacy(tester);
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
     },
     screens: _verticalScreens,
     goldenFilename: 'DHOME-VERT_PRIVACY_OFF_01_dialog',
@@ -336,7 +340,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_SHARE_WIFI
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - share wifi modal',
     (tester, screen) async {
       await pumpDashboard(tester, screen);
@@ -348,7 +352,7 @@ void main() {
       );
       await tester.tap(shareButton.first);
       await tester.pumpAndSettle();
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
     },
     screens: _verticalScreens,
     goldenFilename: 'DHOME-VERT_SHARE_WIFI_01_modal',
@@ -356,7 +360,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_OFFLINE
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - offline wan message',
     (tester, screen) async {
       when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
@@ -384,7 +388,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_QR
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - qr hover tooltip',
     (tester, screen) async {
       when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -401,7 +405,7 @@ void main() {
       addTearDown(gesture.removePointer);
       await gesture.addPointer(location: Offset.zero);
       await gesture.moveTo(tester.getCenter(
-        find.byIcon(LinksysIcons.qrCode).first,
+        find.byIcon(AppFontIcons.qrCode).first,
       ));
       await tester.pumpAndSettle();
       expect(find.byType(QrImageView), findsWidgets);
@@ -412,7 +416,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_VPN_CONNECTED
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - vpn connected state',
     (tester, screen) async {
       when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
@@ -429,7 +433,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_VPN_DISCONNECTED
-  testLocalizationsV2(
+  testLocalizations(
     'dashboard home view - vpn disconnected state',
     (tester, screen) async {
       when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);

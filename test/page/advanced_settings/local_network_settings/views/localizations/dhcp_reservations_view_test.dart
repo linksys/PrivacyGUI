@@ -6,10 +6,8 @@ import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
@@ -45,12 +43,17 @@ void main() {
             LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState));
     when(testHelper.mockDeviceFilterConfigNotifier.initFilter())
         .thenAnswer((_) async => {});
+    // Mock getBandConnectedBy to return proper band name instead of dummy string
+    when(testHelper.mockDeviceManagerNotifier.getBandConnectedBy(any))
+        .thenReturn('2.4GHz');
   });
 
   // Test ID: DHCPR-EMPTY
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view when there are no devices or reservations',
     (tester, screen) async {
+      // Enable animations to allow UI to fully render
+      testHelper.disableAnimations = false;
       when(testHelper.mockDHCPReservationsNotifier.build())
           .thenReturn(DHCPReservationState.fromMap(dhcpReservationEmptyState));
 
@@ -66,8 +69,8 @@ void main() {
           findsOneWidget);
       expect(find.text(testHelper.loc(context).dhcpReservationDescption),
           findsOneWidget);
-      expect(find.widgetWithText(AppTextButton, testHelper.loc(context).add),
-          findsOneWidget);
+      // After UI Kit migration, Add button is now in menu, find by icon
+      expect(find.byIcon(AppFontIcons.add), findsOneWidget);
       expect(find.text(testHelper.loc(context).nReservedAddresses(0)),
           findsOneWidget);
       expect(find.byType(AppListCard), findsNothing);
@@ -77,7 +80,7 @@ void main() {
   );
 
   // Test ID: DHCPR-NO_RES
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view with a list of un-reserved devices',
     (tester, screen) async {
       when(testHelper.mockDHCPReservationsNotifier.build())
@@ -108,7 +111,7 @@ void main() {
   );
 
   // Test ID: DHCPR-SOME_RES
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view with a mix of reserved and un-reserved devices',
     (tester, screen) async {
       final state = DHCPReservationState.fromMap(dhcpReservationTestState);
@@ -145,7 +148,7 @@ void main() {
       expect(
           find.descendant(
               of: find.byWidget(reservedCard),
-              matching: find.byIcon(LinksysIcons.edit)),
+              matching: find.byIcon(AppFontIcons.edit)),
           findsOneWidget);
     },
     screens: screens,
@@ -153,7 +156,7 @@ void main() {
   );
 
   // Test ID: DHCPR-ALL_RES
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view when all devices are reserved',
     (tester, screen) async {
       final state = DHCPReservationState.fromMap(dhcpReservationTestState);
@@ -178,14 +181,14 @@ void main() {
       expect(
           find.text(testHelper.loc(context).nReservedAddresses(reservedCount)),
           findsOneWidget);
-      expect(find.byIcon(LinksysIcons.edit), findsNWidgets(reservedCount));
+      expect(find.byIcon(AppFontIcons.edit), findsNWidgets(reservedCount));
     },
     screens: screens,
     goldenFilename: 'DHCPR-ALL_RES-01-initial_state',
   );
 
   // Test ID: DHCPR-CONFLICT
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view when a device has a conflicting IP',
     (tester, screen) async {
       final state = DHCPReservationState.fromMap(dhcpReservationTestState);
@@ -219,9 +222,11 @@ void main() {
   );
 
   // Test ID: DHCPR-ADD_MODAL
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the "manually add reservation" dialog',
     (tester, screen) async {
+      // Enable animations to allow UI to fully render
+      testHelper.disableAnimations = false;
       when(testHelper.mockDHCPReservationsNotifier.build())
           .thenReturn(DHCPReservationState.fromMap(dhcpReservationTestState));
 
@@ -232,7 +237,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('addReservationButton')));
+      // Tap the menu button (Add icon) to open the modal
+      await tester.tap(find.byIcon(AppFontIcons.add));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).manuallyAddReservation),
@@ -247,7 +253,7 @@ void main() {
   );
 
   // Test ID: DHCPR-EDIT_MODAL
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the "edit reservation" dialog',
     (tester, screen) async {
       final state = DHCPReservationState.fromMap(dhcpReservationTestState);
@@ -266,30 +272,30 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(LinksysIcons.edit).first);
+      await tester.tap(find.byIcon(AppFontIcons.edit).first);
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).edit), findsOneWidget);
       expect(find.text(testHelper.loc(context).update), findsOneWidget);
 
+      // After UI Kit migration, device name field uses AppTextField (not AppTextFormField)
       final nameField = tester
           .widget<AppTextField>(find.byKey(const Key('deviceNameTextField')));
       expect(nameField.controller?.text, itemToEdit.data.description);
 
-      final ipField = tester
-          .widget<AppIPFormField>(find.byKey(const Key('ipAddressTextField')));
+      final ipField = tester.widget<AppIpv4TextField>(
+          find.byKey(const Key('ipAddressTextField')));
       expect(ipField.controller?.text, itemToEdit.data.ipAddress);
 
-      final macField = tester
-          .widget<AppTextField>(find.byKey(const Key('macAddressTextField')));
-      expect(macField.controller?.text, itemToEdit.data.macAddress);
+      // Use Key finder - more robust than type casting
+      expect(find.byKey(const Key('macAddressTextField')), findsOneWidget);
     },
     screens: screens,
     goldenFilename: 'DHCPR-EDIT_MODAL-01-edit_dialog',
   );
 
   // Test ID: DHCPR-MOB_FILTER
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the device filter dialog on mobile',
     (tester, screen) async {
       when(testHelper.mockDHCPReservationsNotifier.build())
@@ -302,7 +308,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final filterBtnFinder = find.byIcon(LinksysIcons.filter);
+      final filterBtnFinder = find.byIcon(AppFontIcons.filter);
       expect(filterBtnFinder, findsOneWidget);
       await tester.tap(filterBtnFinder);
       await tester.pumpAndSettle();

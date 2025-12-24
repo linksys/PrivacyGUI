@@ -303,7 +303,6 @@ void main() {
             isMaster: true,
             lastSuccessfulCheckTime: ''),
       ];
-      final firmwareUpdateCandidates = <FirmwareUpdateUIModel>[];
 
       when(mockRouterRepository.send(any,
               auth: anyNamed('auth'),
@@ -323,8 +322,8 @@ void main() {
           .thenAnswer(
               (_) => Stream.value(JNAPSuccess(result: 'OK', output: const {})));
 
-      final resultStream = service.updateFirmware(
-          nodesStatus, (exceedMaxRetry) {});
+      final resultStream =
+          service.updateFirmware(nodesStatus, (exceedMaxRetry) {});
       final resultList = await resultStream.toList();
 
       expect(resultList.length, 1);
@@ -692,7 +691,6 @@ void main() {
                 lastSuccessfulCheckTime: e.lastSuccessfulCheckTime,
               ))
           .toList();
-      final firmwareUpdateCandidates = <FirmwareUpdateUIModel>[];
 
       when(mockRouterRepository.send(any,
               auth: anyNamed('auth'),
@@ -712,8 +710,8 @@ void main() {
           .thenAnswer(
               (_) => Stream.value(JNAPSuccess(result: 'OK', output: data)));
 
-      final resultStream = service.updateFirmware(
-          nodesStatus, (exceedMaxRetry) {});
+      final resultStream =
+          service.updateFirmware(nodesStatus, (exceedMaxRetry) {});
       final resultList = await resultStream.toList();
 
       expect(resultList.length, 1);

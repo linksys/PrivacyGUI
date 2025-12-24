@@ -37,7 +37,8 @@ class TracerouteStatus extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory TracerouteStatus.fromJson(String source) => TracerouteStatus.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory TracerouteStatus.fromJson(String source) =>
+      TracerouteStatus.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

@@ -7,8 +7,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// A PnP (Plug and Play) step for configuring Guest Wi-Fi settings.
 ///
@@ -118,16 +117,15 @@ class GuestWiFiStep extends PnpStep {
         children: [
           // Toggle switch for enabling/disabling Guest Wi-Fi.
           AppSwitch(
-            semanticLabel: 'pnp guest wifi',
             value: isEnabled,
             onChanged: (value) {
               pnp.setStepData(stepId, data: {'isEnabled': value});
               _check(ref);
             },
           ),
-          const AppGap.large3(),
+          AppGap.xxl(),
           AppText.bodyLarge(loc(context).pnpGuestWiFiDesc),
-          const AppGap.large3(),
+          AppGap.xxl(),
           // Display SSID and password fields only if Guest Wi-Fi is enabled.
           if (isEnabled) ...[
             WiFiSSIDField(
@@ -140,7 +138,7 @@ class GuestWiFiStep extends PnpStep {
                 _check(ref);
               },
             ),
-            const AppGap.medium(),
+            AppGap.lg(),
             WiFiPasswordField(
               controller: _passwordEditController,
               label: loc(context).guestWiFiPassword,
@@ -149,27 +147,25 @@ class GuestWiFiStep extends PnpStep {
                 pnp.setStepData(stepId, data: {'password': value});
                 _check(ref);
               },
-              validations: [
-                Validation(
-                    description: loc(context).wifiPasswordLimit,
-                    validator: LengthRule(min: 8, max: 64).validate),
-                Validation(
-                    description:
-                        loc(context).routerPasswordRuleStartEndWithSpace,
-                    validator: NoSurroundWhitespaceRule().validate),
-                Validation(
-                  description:
-                      loc(context).routerPasswordRuleUnsupportSpecialChar,
-                  validator: (AsciiRule().validate),
+              rules: [
+                AppPasswordRule(
+                    label: loc(context).wifiPasswordLimit,
+                    validate: LengthRule(min: 8, max: 64).validate),
+                AppPasswordRule(
+                    label: loc(context).routerPasswordRuleStartEndWithSpace,
+                    validate: NoSurroundWhitespaceRule().validate),
+                AppPasswordRule(
+                  label: loc(context).routerPasswordRuleUnsupportSpecialChar,
+                  validate: AsciiRule().validate,
                 ),
                 if (_passwordEditController?.text.length == 64)
-                  Validation(
-                    description: loc(context).wifiPasswordRuleHex,
-                    validator: WiFiPSKRule().validate,
+                  AppPasswordRule(
+                    label: loc(context).wifiPasswordRuleHex,
+                    validate: WiFiPSKRule().validate,
                   ),
               ],
             ),
-            const AppGap.medium(),
+            AppGap.lg(),
           ]
         ],
       ),
@@ -183,6 +179,7 @@ class GuestWiFiStep extends PnpStep {
   }
 
   @override
+
   /// Returns the localized title for the Guest Wi-Fi step.
   String title(BuildContext context) => loc(context).guestNetwork;
 

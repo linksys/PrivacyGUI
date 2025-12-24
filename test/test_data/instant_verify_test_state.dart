@@ -1398,7 +1398,6 @@ final instantVerifyInternetOffTestState = {
   }
 };
 
-
 final instantVerifyAllWiFiOffTestState = {
   "wanConnection": {
     "wanType": "DHCP",

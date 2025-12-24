@@ -10,8 +10,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_isp_settings_provider.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../../common/config.dart';
 import '../../../../../../common/test_helper.dart';
@@ -41,7 +40,7 @@ void main() async {
   });
 
   // Test ID: PNP-ISP-SEL_DEFAULT
-  testLocalizationsV2(
+  testLocalizations(
     'Verify ISP type selection view default state',
     (tester, localizedScreen) async {
       final mockInternetSettingsState =
@@ -58,7 +57,8 @@ void main() async {
             column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: localizedScreen.locale,
         overrides: [
-          pnpIspSettingsProvider.overrideWith(() => testHelper.mockPnpIspSettingsNotifier),
+          pnpIspSettingsProvider
+              .overrideWith(() => testHelper.mockPnpIspSettingsNotifier),
         ],
       );
       await tester.pumpAndSettle();
@@ -69,7 +69,7 @@ void main() async {
           find.descendant(
               of: find.widgetWithText(
                   ISPTypeCard, testHelper.loc(context).dhcpDefault),
-              matching: find.byIcon(LinksysIcons.check)),
+              matching: find.byIcon(AppFontIcons.check)),
           findsOneWidget);
     },
     helper: testHelper,
@@ -78,7 +78,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-ALERT
-  testLocalizationsV2(
+  testLocalizations(
     'Verify ISP type selection DHCP alert dialog',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
@@ -95,7 +95,8 @@ void main() async {
             column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
         locale: localizedScreen.locale,
         overrides: [
-          pnpIspSettingsProvider.overrideWith(() => testHelper.mockPnpIspSettingsNotifier),
+          pnpIspSettingsProvider
+              .overrideWith(() => testHelper.mockPnpIspSettingsNotifier),
         ],
       );
       await tester.pumpAndSettle();
@@ -104,7 +105,7 @@ void main() async {
           find.descendant(
               of: find.widgetWithText(
                   ISPTypeCard, testHelper.loc(context).dhcpDefault),
-              matching: find.byIcon(LinksysIcons.chevronRight)),
+              matching: find.byIcon(AppFontIcons.chevronRight)),
           findsOneWidget);
 
       final dhcpCardFinder =
@@ -123,7 +124,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-GENERIC
-  testLocalizationsV2(
+  testLocalizations(
     'Verify generic JNAPError during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
@@ -157,18 +158,19 @@ void main() async {
       await tester.tap(find.text(testHelper.loc(context).ok));
       await tester.pump(); // Show spinner
 
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Complete with generic JNAPError
       completer.completeError(JNAPError(result: '', error: 'generic error'));
       await tester.pumpAndSettle(); // Hide spinner, show error dialog
 
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text(testHelper.loc(context).error), findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
           findsOneWidget);
-      verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any)).called(1);
+      verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+          .called(1);
     },
     helper: testHelper,
     screens: screens,
@@ -176,7 +178,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-NO-INTERNET
-  testLocalizationsV2(
+  testLocalizations(
     'Verify no internet connection error during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
@@ -210,18 +212,19 @@ void main() async {
       await tester.tap(find.text(testHelper.loc(context).ok));
       await tester.pump(); // Show spinner
 
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Complete with ExceptionNoInternetConnection
       completer.completeError(ExceptionNoInternetConnection());
       await tester.pumpAndSettle(); // Hide spinner, show error dialog
 
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text(testHelper.loc(context).error), findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
           findsOneWidget);
-      verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any)).called(1);
+      verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+          .called(1);
     },
     helper: testHelper,
     screens: screens,
@@ -229,7 +232,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-SUCCESS
-  testLocalizationsV2(
+  testLocalizations(
     'Verify JNAPSideEffectError with JNAPSuccess during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
@@ -263,7 +266,7 @@ void main() async {
       await tester.tap(find.text(testHelper.loc(context).ok));
       await tester.pump(); // Show spinner
 
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Complete with JNAPSideEffectError with JNAPSuccess
       completer.completeError(const JNAPSideEffectError(
@@ -271,12 +274,13 @@ void main() async {
           JNAPSuccess(output: {}, result: 'success')));
       await tester.pumpAndSettle(); // Hide spinner, show error dialog
 
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text(testHelper.loc(context).error), findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpErrorForStaticIpAndDhcp),
           findsOneWidget);
-      verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any)).called(1);
+      verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+          .called(1);
     },
     helper: testHelper,
     screens: screens,
@@ -285,7 +289,7 @@ void main() async {
   );
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-OTHER
-  testLocalizationsV2(
+  testLocalizations(
     'Verify JNAPSideEffectError without JNAPSuccess during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
@@ -319,15 +323,16 @@ void main() async {
       await tester.tap(find.text(testHelper.loc(context).ok));
       await tester.pump(); // Show spinner
 
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Complete with JNAPSideEffectError without JNAPSuccess
       completer.completeError(const JNAPSideEffectError(
           JNAPSuccess(output: {}, result: 'success'), null));
       await tester.pumpAndSettle(); // Hide spinner, trigger navigation
 
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
-      verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any)).called(1);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
+      verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
+          .called(1);
     },
     helper: testHelper,
     screens: screens,

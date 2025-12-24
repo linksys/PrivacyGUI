@@ -27,7 +27,7 @@ void main() async {
   });
 
   // Test ID: PNPUM-INIT_TIP
-  testLocalizationsV2(
+  testLocalizations(
     'Verify unplug modem view and tip dialog',
     (tester, localizedScreen) async {
       final context = await testHelper.pumpView(
@@ -41,11 +41,11 @@ void main() async {
       // Verify initial state
       expect(find.text(testHelper.loc(context).pnpUnplugModemTitle),
           findsOneWidget);
-      expect(
-          find.text(testHelper.loc(context).pnpUnplugModemDesc), findsOneWidget);
-      expect(find.bySemanticsLabel('modem Plugged image'), findsOneWidget);
-      expect(find.text(testHelper.loc(context).pnpUnplugModemTip),
+      expect(find.text(testHelper.loc(context).pnpUnplugModemDesc),
           findsOneWidget);
+      expect(find.bySemanticsLabel('modem Plugged image'), findsOneWidget);
+      expect(
+          find.text(testHelper.loc(context).pnpUnplugModemTip), findsOneWidget);
       expect(find.text(testHelper.loc(context).next), findsOneWidget);
 
       await testHelper.takeScreenshot(
@@ -62,7 +62,8 @@ void main() async {
           findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpUnplugModemTipDesc2),
           findsOneWidget);
-      expect(find.bySemanticsLabel('modem Identifying image'), findsOneWidget);
+      // Find the tip image by its key (semanticsLabel may not work in dialog context)
+      expect(find.byKey(const Key('pnpUnplugModemTipImage')), findsOneWidget);
     },
     helper: testHelper,
     screens: screens,

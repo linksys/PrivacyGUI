@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/base_wan_form.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+
 import './connection_mode_form.dart';
 
 class PppoeForm extends BaseWanForm {
@@ -27,7 +26,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
   bool _usernameTouched = false;
   bool _passwordTouched = false;
 
-  static const inputPadding = EdgeInsets.symmetric(vertical: Spacing.small2);
+  static const inputPadding = EdgeInsets.symmetric(vertical: 8);
 
   @override
   void initState() {
@@ -115,6 +114,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
               if (!hasFocus) setState(() => _usernameTouched = true);
             },
             child: buildEditableField(
+              key: const ValueKey('pppoeUsername'),
               label: loc(context).username,
               controller: _usernameController,
               errorText:
@@ -136,6 +136,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
               if (!hasFocus) setState(() => _passwordTouched = true);
             },
             child: buildEditableField(
+              key: const ValueKey('pppoePassword'),
               label: loc(context).password,
               controller: _passwordController,
               obscureText: true,
@@ -153,19 +154,8 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
         ),
         Padding(
           padding: inputPadding,
-          child: AppTextField.minMaxNumber(
-            min: 5,
-            max: 4094,
-            acceptEmpty: true,
-            headerText: loc(context).vlanIdOptional,
-            controller: _vlanIdController,
-            border: const OutlineInputBorder(),
-            onChanged: (value) {
-              notifier.updateIpv4Settings(ipv4Setting.copyWith(
-                vlanId: () => value.isEmpty ? null : int.parse(value),
-              ));
-            },
-            onFocusChanged: (hasFocus) {
+          child: Focus(
+            onFocusChange: (hasFocus) {
               if (!hasFocus) {
                 final value = _vlanIdController.text;
                 if (value.isNotEmpty && int.parse(value) < 5) {
@@ -176,11 +166,25 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
                 }
               }
             },
+            child: AppMinMaxInput(
+              key: const ValueKey('pppoeVlanId'),
+              min: 5,
+              max: 4094,
+              label: loc(context).vlanIdOptional,
+              value: int.tryParse(_vlanIdController.text),
+              onChanged: (value) {
+                _vlanIdController.text = value?.toString() ?? '';
+                notifier.updateIpv4Settings(ipv4Setting.copyWith(
+                  vlanId: () => value,
+                ));
+              },
+            ),
           ),
         ),
         Padding(
           padding: inputPadding,
           child: buildEditableField(
+            key: const ValueKey('serviceName'),
             label: loc(context).serviceNameOptional,
             controller: _serviceNameController,
             onChanged: (value) {
@@ -190,7 +194,7 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
             },
           ),
         ),
-        const AppGap.small1(),
+        AppGap.xs(),
         const Divider(),
         const ConnectionModeForm(),
       ],

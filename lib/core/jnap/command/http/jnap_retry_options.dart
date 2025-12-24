@@ -1,6 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 class JNAPRetryOptions {
-  const JNAPRetryOptions( {
+  const JNAPRetryOptions({
     this.retries = 1,
     this.retryDelays = const [Duration(seconds: 3)],
   });
@@ -21,7 +21,7 @@ class JNAPRetryOptions {
   }) {
     return JNAPRetryOptions(
       retries: retries ?? this.retries,
-      retryDelays:  retryDelays ?? this.retryDelays,
+      retryDelays: retryDelays ?? this.retryDelays,
     );
   }
 }

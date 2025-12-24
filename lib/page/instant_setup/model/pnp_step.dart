@@ -1,13 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'
+    hide ControlsDetails, ControlsWidgetBuilder;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// Enum representing the UI status of a PnP step.
 enum StepViewStatus {
@@ -23,6 +23,12 @@ enum PnpStepId {
   nightMode,
   yourNetwork,
 }
+
+/// Builder for custom step controls.
+typedef ControlsWidgetBuilder = Widget Function(
+  BuildContext context,
+  ControlsDetails details,
+);
 
 /// An abstract class defining the contract for a single step in the PnP wizard.
 /// This follows the Strategy Pattern, where each concrete step implements this interface.
@@ -96,7 +102,8 @@ abstract class PnpStep {
 
   /// Triggered when an error occurs during the `onNext` or `save` flow.
   void onError(WidgetRef ref, Object? error, StackTrace stackTrace) {
-    logger.e('[PnP]: $runtimeType - Error occurred.', error: error, stackTrace: stackTrace);
+    logger.e('[PnP]: $runtimeType - Error occurred.',
+        error: error, stackTrace: stackTrace);
     pnp.setStepError(stepId, error: error);
   }
 
@@ -128,19 +135,20 @@ abstract class PnpStep {
             return Row(
               children: [
                 if (_canBack) ...[
-                  AppTextButton(
-                    previousLable(context),
+                  AppButton.text(
+                    label: previousLable(context),
                     onTap: (currentIndex == 0 ||
                             status == StepViewStatus.loading ||
                             !_canBack)
                         ? null
                         : details.onStepCancel,
                   ),
-                  const AppGap.medium(),
+                  AppGap.lg(),
                 ],
-                AppFilledButton(
+                AppButton(
                   key: const Key('pnp_stepper_next_button'),
-                  nextLable(context),
+                  label: nextLable(context),
+                  variant: SurfaceVariant.highlight,
                   onTap: status != StepViewStatus.data
                       ? null
                       : () {
@@ -174,7 +182,7 @@ abstract class PnpStep {
     return const SizedBox(
       height: 240,
       child: Center(
-        child: AppSpinner(),
+        child: AppLoader(),
       ),
     );
   }
@@ -198,33 +206,22 @@ abstract class PnpStep {
                       AppText.titleLarge(title(context)),
                     ],
                   ),
-                  const AppGap.large3(),
+                  AppGap.xxl(),
                   content(context: context, ref: ref, child: child),
                 ],
               );
       });
 
-  /// Resolves this step object into a [Step] widget for the Flutter Stepper.
-  Step resolveStep({
+  /// Resolves this step object into a [StepperStep] for the UI Kit AppStepper.
+  StepperStep resolveStep({
     required BuildContext context,
     required int currentIndex,
     required int stepIndex,
   }) =>
-      Step(
-        title: AppText.labelMedium(title(context)),
+      StepperStep(
+        id: stepId.name,
+        label: title(context),
         content: _contentWrapping(),
-        isActive: currentIndex == stepIndex,
-        state: checkState(currentIndex, stepIndex),
+        enabled: true,
       );
-
-  /// Determines the visual state of the step icon in the stepper.
-  StepState checkState(int currentIndex, int stepIndex) {
-    if (currentIndex == stepIndex) {
-      return StepState.editing;
-    } else if (currentIndex > stepIndex) {
-      return StepState.complete;
-    } else {
-      return StepState.indexed;
-    }
-  }
 }

@@ -8,34 +8,29 @@ sealed class PnpException implements Exception {
 
 /// Thrown when fetching the device info from the router fails.
 class ExceptionFetchDeviceInfo extends PnpException {
-  ExceptionFetchDeviceInfo()
-      : super(message: 'Failed to fetch device info!');
+  ExceptionFetchDeviceInfo() : super(message: 'Failed to fetch device info!');
 }
 
 /// Thrown when the provided admin password is incorrect.
 class ExceptionInvalidAdminPassword extends PnpException {
-  ExceptionInvalidAdminPassword()
-      : super(message: 'Invalid admin password');
+  ExceptionInvalidAdminPassword() : super(message: 'Invalid admin password');
 }
 
 /// Thrown when no active internet connection is detected.
 class ExceptionNoInternetConnection extends PnpException {
-  ExceptionNoInternetConnection()
-      : super(message: 'No internet connection');
+  ExceptionNoInternetConnection() : super(message: 'No internet connection');
 }
 
 /// Thrown when the router is detected to be in a factory default (unconfigured) state.
 /// This is often used to trigger a specific UI flow rather than as a hard error.
 class ExceptionRouterUnconfigured extends PnpException {
-  ExceptionRouterUnconfigured()
-      : super(message: 'The router is unconfigured');
+  ExceptionRouterUnconfigured() : super(message: 'The router is unconfigured');
 }
 
 /// Thrown when an error occurs during the final save operation.
 class ExceptionSavingChanges extends PnpException {
   final Object? error;
-  ExceptionSavingChanges(this.error)
-      : super(message: 'Saving changes error!');
+  ExceptionSavingChanges(this.error) : super(message: 'Saving changes error!');
 }
 
 /// Thrown when a network change (e.g., Wi-Fi settings updated) requires the user

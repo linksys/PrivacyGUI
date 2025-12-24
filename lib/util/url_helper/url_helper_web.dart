@@ -1,4 +1,3 @@
-import 'dart:html' as html;
+import 'package:web/web.dart';
 
-void openUrl(String url) =>
-    html.window.open(url, "_blank");
+void openUrl(String url) => window.open(url, "_blank");

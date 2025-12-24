@@ -41,7 +41,8 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
       await service.setPasswordWithResetCode(password, hint, code);
       state = state.copyWith(error: null);
     } on ServiceError catch (error) {
-      logger.e('[RouterPassword] ServiceError in setPasswordWithResetCode: $error');
+      logger.e(
+          '[RouterPassword] ServiceError in setPasswordWithResetCode: $error');
       rethrow;
     }
   }
@@ -60,7 +61,8 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
           .localLogin(pwd ?? '', guardError: false);
       await fetch(true);
     } on ServiceError catch (error) {
-      logger.e('[RouterPassword] ServiceError in setPasswordWithCredentials: $error');
+      logger.e(
+          '[RouterPassword] ServiceError in setPasswordWithCredentials: $error');
       rethrow;
     }
   }

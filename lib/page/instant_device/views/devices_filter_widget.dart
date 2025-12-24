@@ -8,11 +8,8 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/util/extensions.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
-import 'package:privacygui_widgets/widgets/panel/general_section.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class DevicesFilterWidget extends ConsumerStatefulWidget {
   final List<String>? preselectedNodeId;
@@ -64,7 +61,10 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
     });
     final wifiState = ref.watch(wifiBundleProvider);
     final wifiNames = [
-      ...wifiState.settings.current.wifiList.mainWiFi.map((e) => e.ssid).toList().unique(),
+      ...wifiState.settings.current.wifiList.mainWiFi
+          .map((e) => e.ssid)
+          .toList()
+          .unique(),
       wifiState.settings.current.wifiList.guestWiFi.ssid,
     ];
     final radios = (ref
@@ -144,13 +144,13 @@ class _FiltersWidget extends StatelessWidget {
     return Container(
       alignment: Alignment.bottomLeft,
       child: Padding(
-        padding: const EdgeInsets.all(Spacing.medium),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppGap.small2(),
+            AppGap.sm(),
             AppText.titleSmall(loc(context).filters),
-            const AppGap.medium(),
+            AppGap.lg(),
             FilteredChipsWidget<(String, bool)>(
                 title: loc(context).connectionStatus,
                 dataList: [
@@ -233,10 +233,10 @@ class _FiltersWidget extends StatelessWidget {
                         }
                       }
                     : null),
-            const AppGap.medium(),
-            AppTextButton.noPadding(
-              loc(context).resetFilters,
-              icon: LinksysIcons.restartAlt,
+            AppGap.lg(),
+            AppButton.text(
+              label: loc(context).resetFilters,
+              icon: AppIcon.font(AppFontIcons.restartAlt),
               onTap: () {
                 notifier.initFilter(
                     preselectedNodeId: widget.preselectedNodeId);
@@ -274,31 +274,39 @@ class _FilteredChipsWidgetState<T>
     extends ConsumerState<FilteredChipsWidget<T>> {
   @override
   Widget build(BuildContext context) {
-    return AppSection.withLabel(
-        title: widget.title,
-        content: Wrap(
-          alignment: WrapAlignment.start,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            ...widget.dataList.map((e) => MergeSemantics(
-                  child: Semantics(
-                    label: widget.checkIsSelected(e) ? 'enabled' : 'disabled',
-                    child: FilterChip(
-                      label: AppText.bodySmall(
-                        widget.chipName(e),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      onSelected: widget.onSelected != null
-                          ? (value) {
-                              widget.onSelected?.call(e, value);
-                            }
-                          : null,
-                      selected: widget.checkIsSelected(e),
-                    ),
-                  ),
-                ))
-          ],
-        ));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.titleSmall(widget.title),
+        AppGap.sm(),
+        AppChipGroup(
+          chips: widget.dataList
+              .map((e) => ChipItem(
+                    label: widget.chipName(e),
+                    enabled: true,
+                  ))
+              .toList(),
+          selectedIndices: widget.dataList
+              .asMap()
+              .entries
+              .where((entry) => widget.checkIsSelected(entry.value))
+              .map((entry) => entry.key)
+              .toSet(),
+          selectionMode: ChipSelectionMode.multiple,
+          onSelectionChanged: (selectedIndices) {
+            final allItems = widget.dataList.asMap();
+            for (var entry in allItems.entries) {
+              final isSelected = selectedIndices.contains(entry.key);
+              // FilteredChipsWidget 的 onSelected 是 (item, isSelected)
+              // 這裡需要模擬原本的行為：如果狀態改變了才觸發
+              if (widget.checkIsSelected(entry.value) != isSelected) {
+                widget.onSelected?.call(entry.value, isSelected);
+              }
+            }
+          },
+        ),
+        AppGap.md(),
+      ],
+    );
   }
 }

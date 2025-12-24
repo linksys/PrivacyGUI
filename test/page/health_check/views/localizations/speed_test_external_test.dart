@@ -23,11 +23,11 @@ void main() {
   // Test ID: STEXT-INIT
   testLocalizations(
     'Verify the initial state of the external speed test view',
-    (tester, locale) async {
+    (tester, screen) async {
       await testHelper.pumpView(
         tester,
         child: const SpeedTestExternalView(),
-        locale: locale,
+        locale: screen.locale,
       );
     },
     goldenFilename: 'STEXT-INIT-01-initial_state',

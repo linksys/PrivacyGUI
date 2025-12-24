@@ -4,8 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/wan_type_helper.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/base_widgets_mixin.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// A base widget for all IPv6 WAN form types.
 ///
@@ -32,14 +31,15 @@ abstract class BaseIPv6WanFormState<T extends BaseIPv6WanForm>
       children: [
         widget.isEditing
             ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: Spacing.small3),
-                child: AppDropdownButton<String>(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: AppDropdown<String>(
                   key: const ValueKey('ipv6ConnectionDropdown'),
-                  selected:
-                      state.settings.current.ipv6Setting.ipv6ConnectionType,
+                  value: state.settings.current.ipv6Setting.ipv6ConnectionType,
                   items: state.status.supportedIPv6ConnectionType,
-                  label: (item) => getWanConnectedTypeText(context, item),
+                  itemAsString: (item) =>
+                      getWanConnectedTypeText(context, item),
                   onChanged: (value) {
+                    if (value == null) return;
                     notifier.updateIpv6Settings(
                         state.settings.current.ipv6Setting.copyWith(
                       ipv6ConnectionType: value,

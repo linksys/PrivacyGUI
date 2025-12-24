@@ -63,7 +63,9 @@ class _FakeNodeDeviceInfo_2 extends _i1.SmartFake
 /// A class which mocks [DashboardManagerNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDashboardManagerNotifier extends _i2.Notifier<_i3.DashboardManagerState> with _i1.Mock
+class MockDashboardManagerNotifier
+    extends _i2.Notifier<_i3.DashboardManagerState>
+    with _i1.Mock
     implements _i10.DashboardManagerNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DashboardManagerState> get ref =>
@@ -193,15 +195,15 @@ class MockDashboardManagerNotifier extends _i2.Notifier<_i3.DashboardManagerStat
         )),
       ) as _i12.Future<_i4.NodeDeviceInfo>);
 
-  @override
-  bool isHealthCheckModuleSupported(String? module) => (super.noSuchMethod(
-        Invocation.method(
-          #isHealthCheckModuleSupported,
-          [module],
-        ),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
+  // @override
+  // bool isHealthCheckModuleSupported(String? module) => (super.noSuchMethod(
+  //       Invocation.method(
+  //         #isHealthCheckModuleSupported,
+  //         [module],
+  //       ),
+  //       returnValue: false,
+  //       returnValueForMissingStub: false,
+  //     ) as bool);
 
   @override
   bool updateShouldNotify(

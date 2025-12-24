@@ -325,7 +325,8 @@ const wifiListInvalidWirelessModeTestState = {
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11mixed",
       "defaultMixedMode": "802.11mixed",
-      "channelWidth": "Wide160c",
+      // Wide80 channel width - not supported by all 2.4GHz modes (802.11bg, 802.11bgn)
+      "channelWidth": "Wide80",
       "channel": 0,
       "isBroadcast": true,
       "isEnabled": true,
@@ -356,7 +357,9 @@ const wifiListInvalidWirelessModeTestState = {
       "securityType": "WPA2/WPA3-Mixed-Personal",
       "wirelessMode": "802.11anacaxbe",
       "defaultMixedMode": "802.11anacaxbe",
-      "channelWidth": "Auto",
+      // Wide160c channel width - 802.11a (wide20) and 802.11an (wide40) don't support this
+      // They will show wifiModeNotAvailable message via descriptionWidget
+      "channelWidth": "Wide160c",
       "channel": 0,
       "isBroadcast": true,
       "isEnabled": true,
@@ -429,7 +432,8 @@ const wifiListInvalidWirelessModeTestState = {
           132,
           136
         ],
-        "Wide80": [0, 36, 40, 44, 48, 100, 104, 108, 112, 116, 120, 124, 128]
+        "Wide80": [0, 36, 40, 44, 48, 100, 104, 108, 112, 116, 120, 124, 128],
+        "Wide160c": [0, 36, 100]
       },
       "numOfDevices": 1
     }

@@ -14,9 +14,9 @@ final responsiveAllScreens = [
 final responsiveMobileScreens = [
   // device320w,
   device480w,
-  device744w,
 ];
 final responsiveDesktopScreens = [
+  device744w,
   device1080w,
   device1280w,
   device1440w,
@@ -29,9 +29,9 @@ final responsiveAllVariants = ValueVariant<ScreenSize>({
 final responsiveMobileVariants = ValueVariant<ScreenSize>({
   // device320w,
   device480w,
-  device744w,
 });
 final responsiveDesktopVariants = ValueVariant<ScreenSize>({
+  device744w,
   device1080w,
   device1280w,
   device1440w,
@@ -79,7 +79,7 @@ bool _localeConfigured = false;
 bool get hasLocaleConfig => _localeConfigured;
 
 List<Locale> get targetLocales {
-  const value = String.fromEnvironment('locales', defaultValue: 'all');
+  const value = String.fromEnvironment('locales', defaultValue: 'en');
   const allLocales = AppLocalizations.supportedLocales;
   if (value == 'all') {
     _localeConfigured = false;
@@ -91,7 +91,7 @@ List<Locale> get targetLocales {
           .split(',')
           .map((e) => allLocales
               .firstWhereOrNull((locale) => locale.toLanguageTag() == e.trim()))
-          .whereNotNull()
+          .nonNulls
           .toList();
     } catch (e) {
       _localeConfigured = false;

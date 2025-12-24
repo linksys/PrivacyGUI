@@ -5,7 +5,7 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_ui_model.dart';
 import 'package:privacy_gui/page/firmware_update/views/firmware_update_detail_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
@@ -41,7 +41,7 @@ void main() {
     testHelper.setup();
   });
 
-  testLocalizationsV2('Firmware update detail view - 1 node with 1 update',
+  testLocalizations('Firmware update detail view - 1 node with 1 update',
       (tester, localizedScreen) async {
     // Test ID: FUDV-1_NODE_1_UPDATE
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -84,7 +84,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-1_NODE_1_UPDATE-01-initial_state');
 
-  testLocalizationsV2('Firmware update detail view - 2 node with 1 update',
+  testLocalizations('Firmware update detail view - 2 node with 1 update',
       (tester, localizedScreen) async {
     // Test ID: FUDV-2_NODE_1_UPDATE
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -132,7 +132,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-2_NODE_1_UPDATE-01-initial_state');
 
-  testLocalizationsV2(
+  testLocalizations(
       'Firmware update detail view - updating in 1 node with Checking',
       (tester, localizedScreen) async {
     // Test ID: FUDV-1_NODE_CHECKING
@@ -153,12 +153,8 @@ void main() {
     // Verify page title is not present
     expect(find.text(testHelper.loc(context).firmwareUpdate), findsNothing);
 
-    // Verify full screen spinner is present
-    expect(find.byType(AppFullScreenSpinner),
-        findsNothing); // It should not be AppFullScreenSpinner if there is an ongoing list
-
     // Verify progress indicator and texts
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(AppLoader), findsOneWidget);
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareDownloadingTitle),
         findsOneWidget); // 'Checking' maps to 'firmwareDownloadingTitle'
@@ -168,7 +164,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-1_NODE_CHECKING-01-initial_state');
 
-  testLocalizationsV2(
+  testLocalizations(
       'Firmware update detail view - updating in 1 node with Installing',
       (tester, localizedScreen) async {
     // Test ID: FUDV-1_NODE_INSTALLING
@@ -200,7 +196,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-1_NODE_INSTALLING-01-initial_state');
 
-  testLocalizationsV2(
+  testLocalizations(
       'Firmware update detail view - updating in 1 node with Rebooting',
       (tester, localizedScreen) async {
     // Test ID: FUDV-1_NODE_REBOOTING
@@ -222,7 +218,7 @@ void main() {
     expect(find.text(testHelper.loc(context).firmwareUpdate), findsNothing);
 
     // Verify progress indicator and texts
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(AppLoader), findsOneWidget);
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareRebootingTitle),
         findsOneWidget);
@@ -232,7 +228,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-1_NODE_REBOOTING-01-initial_state');
 
-  testLocalizationsV2('Firmware update detail view - 2 node with 2 updates',
+  testLocalizations('Firmware update detail view - 2 node with 2 updates',
       (tester, localizedScreen) async {
     // Test ID: FUDV-2_NODE_2_UPDATES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -278,7 +274,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-2_NODE_2_UPDATES-01-initial_state');
 
-  testLocalizationsV2('Firmware update detail view - updating in 2 nodes',
+  testLocalizations('Firmware update detail view - updating in 2 nodes',
       (tester, localizedScreen) async {
     // Test ID: FUDV-UPDATING_2_NODES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -302,7 +298,7 @@ void main() {
     expect(find.byType(GridView), findsOneWidget);
 
     // Verify progress indicators and texts for both nodes
-    expect(find.byType(CircularProgressIndicator), findsNWidgets(2));
+    expect(find.byType(AppLoader), findsNWidgets(2));
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareDownloadingTitle),
         findsNWidgets(2)); // Both 'Checking' and 'Downloading' map to this
@@ -314,7 +310,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-UPDATING_2_NODES-01-initial_state');
 
-  testLocalizationsV2('Firmware update detail view - updating in 3 nodes',
+  testLocalizations('Firmware update detail view - updating in 3 nodes',
       (tester, localizedScreen) async {
     // Test ID: FUDV-UPDATING_3_NODES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -338,7 +334,7 @@ void main() {
     expect(find.byType(GridView), findsOneWidget);
 
     // Verify progress indicators and texts for all three nodes
-    expect(find.byType(CircularProgressIndicator), findsNWidgets(3));
+    expect(find.byType(AppLoader), findsNWidgets(3));
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareDownloadingTitle),
         findsNWidgets(3)); // All 'Checking' and 'Downloading' map to this
@@ -350,7 +346,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-UPDATING_3_NODES-01-initial_state');
 
-  testLocalizationsV2('Firmware update detail view - updating in 4 nodes',
+  testLocalizations('Firmware update detail view - updating in 4 nodes',
       (tester, localizedScreen) async {
     // Test ID: FUDV-UPDATING_4_NODES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -374,7 +370,7 @@ void main() {
     expect(find.byType(GridView), findsOneWidget);
     await testHelper.takeScreenshot(tester, 'XXXXX-FUDV-UPDATING_4_NODES');
     // Verify progress indicators and texts for all four nodes
-    expect(find.byType(CircularProgressIndicator), findsNWidgets(4));
+    expect(find.byType(AppLoader), findsNWidgets(4));
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareDownloadingTitle),
         findsNWidgets(4)); // All 'Checking' and 'Downloading' map to this
@@ -386,7 +382,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-UPDATING_4_NODES-01-initial_state');
 
-  testLocalizationsV2('Firmware update detail view - 2 node with no updates',
+  testLocalizations('Firmware update detail view - 2 node with no updates',
       (tester, localizedScreen) async {
     // Test ID: FUDV-2_NODE_NO_UPDATES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(

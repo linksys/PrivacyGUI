@@ -9,19 +9,14 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class LoginLocalView extends ArgumentsConsumerStatefulView {
   const LoginLocalView({
@@ -124,9 +119,9 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     }, data: (state) {
       //Read password hint from the state
       _passwordHint = state.localPasswordHint;
-      return _p != null ? const AppFullScreenSpinner() : contentView();
+      return _p != null ? const AppFullScreenLoader() : contentView();
     }, loading: () {
-      return const AppFullScreenSpinner();
+      return const AppFullScreenLoader();
     });
   }
 
@@ -203,94 +198,78 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   bool _isTimerRunning() => _timer?.isActive ?? false;
 
-  StyledAppPageView contentView() {
+  UiKitPageView contentView() {
     MediaQuery.of(context);
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
+    return UiKitPageView(
+      appBarStyle: UiKitAppBarStyle.none,
       padding: EdgeInsets.zero,
       scrollable: true,
-      child: (context, constraints) => AppBasicLayout(
-        content: Center(
-          child: SizedBox(
-            width: 4.col,
-            child: AppCard(
-              excludeSemantics: false,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppText.headlineSmall(loc(context).login),
-                  const AppGap.large3(),
-                  SizedBox(
-                    child: AppPasswordField(
-                      border: const OutlineInputBorder(),
-                      controller: _passwordController,
-                      hintText: loc(context).routerPassword,
-                      onChanged: (value) {
-                        setState(() {
-                          _shouldEnableLoginButton();
-                        });
-                      },
-                      onSubmitted: (_) {
-                        if (_passwordController.text.isEmpty) {
-                          return;
-                        }
-                        _doLogin();
-                      },
-                      errorText: _errorMessage,
-                    ),
+      pageFooter: const BottomBar(),
+      child: (context, constraints) => Center(
+        child: SizedBox(
+          width: context.colWidth(4),
+          child: AppCard(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.headlineSmall(loc(context).login),
+                AppGap.xxxl(),
+                SizedBox(
+                  child: AppPasswordInput(
+                    controller: _passwordController,
+                    hint: loc(context).routerPassword,
+                    onChanged: (value) {
+                      setState(() {
+                        _shouldEnableLoginButton();
+                      });
+                    },
+                    onSubmitted: (_) {
+                      if (_passwordController.text.isEmpty) {
+                        return;
+                      }
+                      _doLogin();
+                    },
+                    errorText: _errorMessage,
                   ),
-                  if (_passwordHint != null &&
-                      _passwordHint?.isNotEmpty == true)
-                    Theme(
-                      data: Theme.of(context)
-                          .copyWith(dividerColor: Colors.transparent),
-                      child: SizedBox(
-                        width: 200,
-                        child: ExpansionTile(
-                          title: AppText.labelMedium(
-                            _showPassword
-                                ? loc(context).hideHint
-                                : loc(context).showHint,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          tilePadding: EdgeInsets.zero,
-                          backgroundColor: Colors.transparent,
-                          trailing: const SizedBox(),
-                          expandedAlignment: Alignment.centerLeft,
-                          expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                          onExpansionChanged: (value) {
-                            setState(() {
-                              _showPassword = value;
-                            });
-                          },
-                          children: [AppText.bodySmall(_passwordHint!)],
-                        ),
-                      ),
-                    ),
-                  const AppGap.small3(),
-                  AppTextButton.noPadding(
-                    loc(context).forgotPassword,
-                    onTap: () {
-                      context.pushNamed(RouteNamed.localRouterRecovery);
+                ),
+                if (_passwordHint != null && _passwordHint?.isNotEmpty == true)
+                  AppExpansionPanel.single(
+                    headerTitle: _showPassword
+                        ? loc(context).hideHint
+                        : loc(context).showHint,
+                    content: AppText.bodySmall(_passwordHint!),
+                    initiallyExpanded: _showPassword,
+                    onPanelToggled: (_) {
+                      setState(() {
+                        _showPassword = !_showPassword;
+                      });
                     },
                   ),
-                  const AppGap.large3(),
-                  AppFilledButton(
-                    loc(context).login,
-                    onTap: _shouldEnableLoginButton()
-                        ? () {
-                            _doLogin();
-                          }
-                        : null,
-                  ),
-                ],
-              ),
+                AppGap.md(),
+                AppButton.text(
+                  label: loc(context).forgotPassword,
+                  onTap: () {
+                    context.pushNamed(RouteNamed.localRouterRecovery);
+                  },
+                ),
+                AppGap.xxxl(),
+                AppButton(
+                  key: const Key('loginLocalView_loginButton'),
+                  label: loc(context).login,
+                  variant: SurfaceVariant.highlight,
+                  size: AppButtonSize.small,
+                  onTap: _shouldEnableLoginButton()
+                      ? () {
+                          _doLogin();
+                        }
+                      : null,
+                ),
+              ],
             ),
           ),
         ),
-        footer: const BottomBar(),
       ),
     );
   }

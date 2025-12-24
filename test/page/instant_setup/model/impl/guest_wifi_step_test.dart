@@ -6,12 +6,11 @@ import 'package:privacy_gui/page/instant_setup/model/impl/guest_wifi_step.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/providers/mock_pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
+
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart'; // NEW IMPORT
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart'; // NEW IMPORT
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/_index.dart';
 
@@ -63,13 +62,11 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             theme: mockLightThemeData,
-            home: CustomResponsive(
-              child: Scaffold(
-                body: Consumer(builder: (context, ref, child) {
-                  capturedRef = ref;
-                  return InitOnceWrapper(step: guestWiFiStep);
-                }),
-              ),
+            home: Scaffold(
+              body: Consumer(builder: (context, ref, child) {
+                capturedRef = ref;
+                return InitOnceWrapper(step: guestWiFiStep);
+              }),
             ),
           ),
         ),

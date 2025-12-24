@@ -1,8 +1,0 @@
-{
-    "name": "Advanced Settings - Apps and Gaming",
-    "target": "integration_test/apps_and_gaming_test.dart",
-    "description": "Test DDNS, Single Port Forwarding, Port Range Forwarding, and Port Range Triggering",
-    "setUp":  ["factory_reset", "skip_setup"],
-    "tearDown": [],
-    "tags": ["apps_and_gaming", "advanced_settings", "menu"]
-}

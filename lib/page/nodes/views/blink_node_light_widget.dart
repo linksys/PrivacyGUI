@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class BlinkNodeLightWidget extends ConsumerStatefulWidget {
   final int max;
@@ -47,19 +47,17 @@ class _BlinkNodeLightWidgetState extends ConsumerState<BlinkNodeLightWidget> {
     return Padding(
       padding: widget.padding ?? const EdgeInsets.all(4.0),
       child: _isBlinking
-          ? AppStyledText.link(
-              loc(context).nodeDetailBlinkingCounting(_count),
-              defaultTextStyle: Theme.of(context).textTheme.bodySmall!,
-              tags: const ['u'],
-              callbackTags: {
-                'u': (String? text, Map<String?, String?> attrs) {
+          ? AppStyledText(
+              text: loc(context).nodeDetailBlinkingCounting(_count),
+              onTapHandlers: {
+                'u': () {
                   _stopBlink();
-                }
+                },
               },
             )
-          : AppTextButton.noPadding(
+          : AppButton.text(
               key: const ValueKey('blinkNodeButton'),
-              loc(context).nodeDetailBlinkNodeLightBtn,
+              label: loc(context).nodeDetailBlinkNodeLightBtn,
               onTap: () {
                 _startBlink();
               },

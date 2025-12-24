@@ -14,9 +14,8 @@ import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/util/uuid.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/storage.dart';
 import 'core/utils/fernet_manager.dart';
@@ -269,7 +268,7 @@ extension MediaQueryUtils on Utils {
   }
 
   static double getTextScaleFactor(BuildContext context) {
-    return MediaQuery.of(context).textScaleFactor;
+    return MediaQuery.textScalerOf(context).scale(1.0);
   }
 
   static double getTopSafeAreaPadding(BuildContext context) {
@@ -619,18 +618,18 @@ extension WiFiUtils on Utils {
       BuildContext context, int? signalStrength) {
     switch (getWifiSignalLevel(signalStrength)) {
       case NodeSignalLevel.excellent:
-        return LinksysIcons.signalWifi4Bar;
+        return AppFontIcons.signalWifi4Bar;
       case NodeSignalLevel.good:
-        return LinksysIcons.networkWifi3Bar;
+        return AppFontIcons.networkWifi3Bar;
       case NodeSignalLevel.fair:
-        return LinksysIcons.networkWifi2Bar;
+        return AppFontIcons.networkWifi2Bar;
       case NodeSignalLevel.poor:
-        return LinksysIcons.networkWifi1Bar;
+        return AppFontIcons.networkWifi1Bar;
       case NodeSignalLevel.none:
-        return LinksysIcons.signalWifi0Bar;
+        return AppFontIcons.signalWifi0Bar;
 // Default
       case NodeSignalLevel.wired:
-        return LinksysIcons.ethernet;
+        return AppFontIcons.ethernet;
     }
   }
 }
@@ -648,9 +647,11 @@ extension NodeSignalLevelExt on NodeSignalLevel {
   }
 
   Color? resolveColor(BuildContext context) {
+    final appColorScheme = Theme.of(context).extension<AppColorScheme>();
     return switch (this) {
-      NodeSignalLevel.excellent => Theme.of(context).colorSchemeExt.green,
-      NodeSignalLevel.good => Theme.of(context).colorSchemeExt.green,
+      NodeSignalLevel.excellent =>
+        appColorScheme?.semanticSuccess ?? Colors.green,
+      NodeSignalLevel.good => appColorScheme?.semanticSuccess ?? Colors.green,
       NodeSignalLevel.poor => Theme.of(context).colorScheme.error,
       NodeSignalLevel.fair => Theme.of(context).colorScheme.error,
       NodeSignalLevel.wired => Theme.of(context).colorScheme.onSurface,

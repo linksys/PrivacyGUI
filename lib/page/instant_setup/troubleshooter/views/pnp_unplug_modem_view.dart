@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PnpUnplugModemView extends ConsumerStatefulWidget {
   const PnpUnplugModemView({Key? key}) : super(key: key);
@@ -30,7 +27,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).pnpUnplugModemTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
@@ -40,27 +37,26 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
           AppText.bodyLarge(
             loc(context).pnpUnplugModemDesc,
           ),
-          const AppGap.large3(),
-          const AppGap.small2(),
+          AppGap.xxl(),
+          AppGap.sm(),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SvgPicture(
-                  CustomTheme.of(context).images.modemPlugged,
+                Assets.images.modemPlugged.svg(
                   semanticsLabel: 'modem Plugged image',
                   fit: BoxFit.fitWidth,
                 ),
-                const AppGap.large3(),
-                const AppGap.large5(),
+                AppGap.xxl(),
+                AppGap.xxxl(),
               ],
             ),
           ),
           Wrap(
             children: [
-              AppTextButton.noPadding(
-                loc(context).pnpUnplugModemTip,
+              AppButton.text(
+                label: loc(context).pnpUnplugModemTip,
                 onTap: () {
                   showSimpleAppOkDialog(
                     context,
@@ -71,9 +67,10 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
               ),
             ],
           ),
-          const AppGap.large3(),
-          AppFilledButton(
-            loc(context).next,
+          AppGap.xxl(),
+          AppButton(
+            label: loc(context).next,
+            variant: SurfaceVariant.highlight,
             onTap: () {
               context.pushNamed(RouteNamed.pnpModemLightsOff);
             },
@@ -85,7 +82,7 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
 
   Widget _bottomSheetContent() {
     return Padding(
-      padding: const EdgeInsets.all(Spacing.large2),
+      padding: EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -93,20 +90,20 @@ class _PnpUnplugModemViewState extends ConsumerState<PnpUnplugModemView> {
           AppText.headlineSmall(
             loc(context).pnpUnplugModemTipTitle,
           ),
-          const AppGap.large2(),
+          AppGap.xl(),
           AppText.bodyMedium(
             loc(context).pnpUnplugModemTipDesc1,
           ),
-          const AppGap.large2(),
+          AppGap.xl(),
           AppText.bodyMedium(
             loc(context).pnpUnplugModemTipDesc2,
           ),
-          const AppGap.medium(),
-          const AppGap.large5(),
+          AppGap.lg(),
+          AppGap.xxxl(),
           Container(
+            key: const Key('pnpUnplugModemTipImage'),
             alignment: Alignment.center,
-            child: SvgPicture(
-              CustomTheme.of(context).images.modemIdentifying,
+            child: Assets.images.modemIdentifying.svg(
               semanticsLabel: 'modem Identifying image',
               fit: BoxFit.fitWidth,
             ),

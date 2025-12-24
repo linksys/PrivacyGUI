@@ -3,6 +3,9 @@
 *.log
 *.pyc
 *.swp
+*.bak
+*.backup
+*.txt
 .DS_Store
 .atom/
 .buildlog/
@@ -87,6 +90,8 @@ artifacts/webApp
 
 # Goldens
 test/**/goldens/*
+test/**/localizations/failures/
+
 # mock
 test/**/*.mocks.dart
 
@@ -121,3 +126,45 @@ lib/l10n/gen/app_localizations.dart
 
 ios/Flutter/flutter_export_environment.sh
 doc/tests/output/*
+
+# Environment files
+.env*
+*.env
+.envrc
+
+# Temporary files
+*.tmp
+*.temp
+
+# Migration backup files
+*_backup.dart
+*backup*.dart
+
+# FVM Version Cache
+.fvm/
+
+# AI Assistant Configuration & Tools
+.claude/commands/
+.gemini/commands/
+.specify/scripts/bash/
+.specify/templates/
+.metadata
+
+# Integration Test Data
+integration_test/input/
+
+# Tools
+tools/translated.json
+
+# Macros
+macros/
+
+# macOS specific
+macos/
+
+# AI Project Documentation
+# Keep .claude/CLAUDE.md tracked as project documentation
+# Keep .specify/memory/ tracked for project constitution
+# Untrack auto-generated CLAUDE.md in project root
+CLAUDE.md
+.mcp.json

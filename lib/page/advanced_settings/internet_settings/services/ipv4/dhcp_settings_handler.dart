@@ -18,8 +18,10 @@ class DhcpSettingsHandler implements Ipv4SettingsHandler {
 
   @override
   RouterWANSettings createWanSettings(Ipv4Setting ipv4Setting) {
-    final mtu = ipv4Setting.mtu; // Assuming MTU is handled by the notifier or a common utility
-    const diabledWanTaggingSettings = SinglePortVLANTaggingSettings(isEnabled: false);
+    final mtu = ipv4Setting
+        .mtu; // Assuming MTU is handled by the notifier or a common utility
+    const diabledWanTaggingSettings =
+        SinglePortVLANTaggingSettings(isEnabled: false);
     return RouterWANSettings.dhcp(
       mtu: mtu,
       wanTaggingSettings: diabledWanTaggingSettings,
@@ -32,7 +34,8 @@ class DhcpSettingsHandler implements Ipv4SettingsHandler {
   }
 
   @override
-  Ipv4Setting updateIpv4Setting(Ipv4Setting currentSetting, Ipv4Setting newValues) {
+  Ipv4Setting updateIpv4Setting(
+      Ipv4Setting currentSetting, Ipv4Setting newValues) {
     return currentSetting.copyWith(
       ipv4ConnectionType: newValues.ipv4ConnectionType,
     );

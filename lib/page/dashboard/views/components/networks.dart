@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_fancy_tree_view/flutter_fancy_tree_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -9,20 +8,16 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
+import 'package:privacy_gui/core/utils/topology_adapter.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
-import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 
 class DashboardNetworks extends ConsumerStatefulWidget {
   const DashboardNetworks({super.key});
@@ -32,122 +27,96 @@ class DashboardNetworks extends ConsumerStatefulWidget {
 }
 
 class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
-  late final TreeController<RouterTreeNode> treeController;
-
-  @override
-  void initState() {
-    super.initState();
-    treeController = TreeController<RouterTreeNode>(
-      // Provide the root nodes that will be used as a starting point when
-      // traversing your hierarchical data.
-      roots: [
-        OnlineTopologyNode(
-            data: const TopologyModel(isOnline: true, location: 'Internet'),
-            children: [])
-      ],
-      childrenProvider: (RouterTreeNode node) => node.children,
-    );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    treeController.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final uptimeInt =
-        ref.watch(dashboardHomeProvider.select((value) => value.uptime ?? 0));
-    final uptime =
-        DateFormatUtils.formatDuration(Duration(seconds: uptimeInt), null);
     final state = ref.watch(dashboardHomeProvider);
     final topologyState = ref.watch(instantTopologyProvider);
-    treeController.roots = topologyState.root.children;
-    treeController.expandAll();
+
+    // Convert topology data to ui_kit format
+    final meshTopology = TopologyAdapter.convert(topologyState.root.children);
+
     const topologyItemHeight = 96.0;
     const treeViewBaseHeight = 68.0;
     final routerLength =
         topologyState.root.children.firstOrNull?.toFlatList().length ?? 1;
-    final double nodeTopologyHeight = ResponsiveLayout.isMobileLayout(context)
+    final double nodeTopologyHeight = context.isMobileLayout
         ? routerLength * topologyItemHeight
         : min(routerLength * topologyItemHeight, 3 * topologyItemHeight);
     final hasLanPort =
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
-    final showAllTopology =
-        ResponsiveLayout.isMobileLayout(context) || routerLength <= 3;
+    final showAllTopology = context.isMobileLayout || routerLength <= 3;
     final isLoading =
         (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     return isLoading
         ? AppCard(
             padding: EdgeInsets.zero,
-            child: SizedBox(
-                width: double.infinity,
-                height: 256,
-                child: const LoadingTile()))
+            child: SizedBox(width: double.infinity, child: const LoadingTile()))
         : AppCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppGap.medium(),
-                ResponsiveLayout(
-                  desktop: !hasLanPort
+                AppGap.lg(),
+                AppResponsiveLayout(
+                  desktop: (ctx) => !hasLanPort
                       ? _mobile(context, ref)
                       : state.isHorizontalLayout
                           ? _desktopHorizontal(context, ref)
                           : _desktopVertical(context, ref),
-                  mobile: _mobile(context, ref),
+                  mobile: (ctx) => _mobile(context, ref),
                 ),
                 SizedBox(
-                    height: isLoading
-                        ? 188
-                        : nodeTopologyHeight + treeViewBaseHeight,
-                    child: TreeView<RouterTreeNode>(
-                      treeController: treeController,
-                      physics: showAllTopology
-                          ? NeverScrollableScrollPhysics()
-                          : ScrollPhysics(),
-                      shrinkWrap: true,
-                      nodeBuilder: (BuildContext context,
-                          TreeEntry<RouterTreeNode> entry) {
-                        return TreeIndentation(
-                          entry: entry,
-                          guide: IndentGuide.connectingLines(
-                            color: Theme.of(context).colorScheme.onBackground,
-                            indent: 24,
-                            thickness: 1,
-                            strokeJoin: StrokeJoin.miter,
-                            pathModifier: (path) => TopologyNodeItem.buildPath(
-                                path, entry.node, entry.node.data.isOnline),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
-                            child: TopologyNodeItem.simple(
-                              node: entry.node,
-                              actions: const [],
-                              extra: entry.node.data.isMaster
-                                  ? '${loc(context).uptime}: $uptime'
-                                  : null,
-                              onTap: entry.node.data.isOnline
-                                  ? () {
-                                      ref
-                                          .read(nodeDetailIdProvider.notifier)
-                                          .state = entry.node.data.deviceId;
-                                      if (entry.node.data.isOnline) {
-                                        // Update the current target Id for node state
-                                        context
-                                            .pushNamed(RouteNamed.nodeDetails);
-                                      }
-                                    }
-                                  : null,
-                            ),
-                          ),
-                        );
+                  height:
+                      isLoading ? 188 : nodeTopologyHeight + treeViewBaseHeight,
+                  child: AppTopology(
+                    topology: meshTopology,
+                    viewMode:
+                        TopologyViewMode.tree, // Force tree view for dashboard
+                    enableAnimation:
+                        !showAllTopology, // Disable animation for mobile/small screens
+                    onNodeTap: TopologyAdapter.wrapNodeTapCallback(
+                      topologyState.root.children,
+                      (RouterTreeNode node) {
+                        if (node.data.isOnline) {
+                          ref.read(nodeDetailIdProvider.notifier).state =
+                              node.data.deviceId;
+                          context.pushNamed(RouteNamed.nodeDetails);
+                        }
                       },
-                    ))
+                    ),
+                    indent: 16.0, // Reduced indentation
+                    treeConfig: TopologyTreeConfiguration(
+                      preferAnimationNode: false,
+                      showType: false,
+                      showStatusText: false,
+                      showStatusIndicator: true,
+                      titleBuilder: (meshNode) => meshNode.name,
+                      subtitleBuilder: (meshNode) {
+                        final originalNode = _findOriginalNode(
+                          topologyState.root.children,
+                          meshNode.id,
+                        );
+                        return originalNode?.data.model ?? '';
+                      },
+                    ),
+                  ),
+                ),
               ],
             ),
           );
+  }
+
+  /// Find the original RouterTreeNode by mesh node ID.
+  RouterTreeNode? _findOriginalNode(
+      List<RouterTreeNode> rootNodes, String nodeId) {
+    for (final rootNode in rootNodes) {
+      final flatNodes = rootNode.toFlatList();
+      for (final node in flatNodes) {
+        if (TopologyAdapter.getNodeId(node) == nodeId) {
+          return node;
+        }
+      }
+    }
+    return null;
   }
 
   Widget _desktopHorizontal(BuildContext context, WidgetRef ref) {
@@ -162,10 +131,10 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
       children: [
         AppText.titleSmall(loc(context).myNetwork),
         if (isOnline) ...[
-          const AppGap.medium(),
+          AppGap.lg(),
           _firmwareStatusWidget(context, newFirmware),
         ],
-        const AppGap.large2(),
+        AppGap.xxl(),
         Row(
           children: [
             Expanded(
@@ -175,7 +144,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                 topologyState,
               ),
             ),
-            const AppGap.gutter(),
+            AppGap.gutter(),
             Expanded(
               child: _devicesInfoTile(
                 context,
@@ -211,7 +180,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               _nodesInfoTile(context, ref, topologyState),
-              const AppGap.gutter(),
+              AppGap.gutter(),
               _devicesInfoTile(
                 context,
                 ref,
@@ -240,7 +209,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
             if (isOnline) _firmwareStatusWidget(context, newFirmware),
           ],
         ),
-        const AppGap.large2(),
+        AppGap.xxl(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -250,7 +219,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
               ref,
               topologyState,
             )),
-            const AppGap.gutter(),
+            AppGap.gutter(),
             Expanded(
               child: _devicesInfoTile(
                 context,
@@ -287,15 +256,16 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                 )
               : _firmwareUpdateToDateWidget(context),
           newFirmware
-              ? Icon(
-                  LinksysIcons.cloudDownload,
-                  semanticLabel: 'cloud Download',
+              ? AppIcon.font(
+                  AppFontIcons.cloudDownload,
                   color: Theme.of(context).colorScheme.primary,
                 )
-              : Icon(
-                  LinksysIcons.check,
-                  semanticLabel: 'check',
-                  color: Theme.of(context).colorSchemeExt.green,
+              : AppIcon.font(
+                  AppFontIcons.check,
+                  color: Theme.of(context)
+                          .extension<AppColorScheme>()
+                          ?.semanticSuccess ??
+                      Colors.green,
                 )
         ],
       ),
@@ -303,15 +273,9 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   }
 
   Widget _firmwareUpdateToDateWidget(BuildContext context) {
-    return AppStyledText(loc(context).dashboardFirmwareUpdateToDate,
-        styleTags: {
-          'span': Theme.of(context)
-              .textTheme
-              .bodySmall!
-              .copyWith(color: Theme.of(context).colorSchemeExt.green)
-        },
-        defaultTextStyle: Theme.of(context).textTheme.bodySmall,
-        callbackTags: const {});
+    return AppStyledText(
+      text: loc(context).dashboardFirmwareUpdateToDate,
+    );
   }
 
   Widget _nodesInfoTile(
@@ -319,8 +283,11 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     final nodes = state.root.children.firstOrNull?.toFlatList() ?? [];
     final hasOffline = nodes.any((element) => !element.data.isOnline);
     return _infoTile(
-      iconData: hasOffline ? LinksysIcons.infoCircle : LinksysIcons.networkNode,
-      iconColor: hasOffline ? Theme.of(context).colorScheme.error : null,
+      icon: hasOffline
+          ? AppIcon.font(AppFontIcons.infoCircle,
+              color: Theme.of(context).colorScheme.error)
+          : AppIcon.font(AppFontIcons.networkNode),
+      // iconColor is now handled inside the AppIcon or ignored if passed
       text: nodes.length == 1 ? loc(context).node : loc(context).nodes,
       count: nodes.length,
       onTap: () {
@@ -342,7 +309,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
       text:
           externalDeviceCount == 1 ? loc(context).device : loc(context).devices,
       count: externalDeviceCount,
-      iconData: LinksysIcons.devices,
+      icon: AppIcon.font(AppFontIcons.devices),
       onTap: () {
         context.pushNamed(RouteNamed.menuInstantDevices);
       },
@@ -352,15 +319,12 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   Widget _infoTile({
     required String text,
     required int count,
-    required IconData iconData,
-    Color? iconColor,
-    Widget? sub,
-    VoidCallback? onTap,
+    required Widget icon,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 112),
+    return InkWell(
+      onTap: onTap,
       child: AppCard(
-        onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -369,17 +333,11 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.titleSmall('$count'),
-                Icon(
-                  iconData,
-                  semanticLabel: 'info icon',
-                  size: 20,
-                  color: iconColor,
-                ),
-                if (sub != null) sub,
+                icon,
               ],
             ),
-            const AppGap.medium(),
-            AppText.titleSmall(text),
+            AppGap.lg(),
+            AppText.bodySmall(text),
           ],
         ),
       ),

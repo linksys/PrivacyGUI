@@ -2,7 +2,8 @@ import 'package:equatable/equatable.dart';
 
 // The Interface (The "What")
 // This defines the contract that LinksysRoute and the Mixin will check for.
-abstract class PreservableContract<TSettings extends Equatable, TStatus extends Equatable> {
+abstract class PreservableContract<TSettings extends Equatable,
+    TStatus extends Equatable> {
   void revert();
   bool isDirty();
 

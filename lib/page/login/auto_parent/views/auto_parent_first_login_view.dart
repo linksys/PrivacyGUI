@@ -5,17 +5,11 @@ import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/login/auto_parent/providers/auto_parent_first_login_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// This is the view that is shown when the user is logged in for the first time
 /// after auto parent login.
@@ -59,33 +53,27 @@ class _AutoParentFirstLoginViewState
       }
     });
 
-    return StyledAppPageView(
-      backState: StyledBackState.none,
+    return UiKitPageView(
+      backState: UiKitBackState.none,
       scrollable: true,
-      child: (context, constraints) => AppBasicLayout(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        content: Align(
-          alignment: AlignmentDirectional.topCenter,
-          child: SizedBox(
-            width: ResponsiveLayout.isMobileLayout(context) ? 4.col : 6.col,
-            child: AppCard(
-              color: Theme.of(context).colorScheme.background,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Center(child: AppSpinner()),
-                  AppText.titleLarge(loc(context).pnpFwUpdateTitle),
-                  const AppGap.medium(),
-                  AppText.bodyMedium(loc(context).pnpFwUpdateDesc),
-                  const AppGap.medium(),
-                ],
-              ),
+      child: (context, constraints) => Center(
+        child: SizedBox(
+          width: context.colWidth(4),
+          child: AppCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: AppLoader()),
+                AppText.titleLarge(loc(context).pnpFwUpdateTitle),
+                AppGap.lg(),
+                AppText.bodyMedium(loc(context).pnpFwUpdateDesc),
+                AppGap.lg(),
+              ],
             ),
           ),
         ),
-        footer: Row(),
       ),
     );
   }
@@ -104,7 +92,8 @@ class _AutoParentFirstLoginViewState
     if (isNewFwAvailable) {
       logger.i('[FirstTime]: Firmware Updateing...');
     } else {
-      logger.i('[FirstTime]: ${failCheck ? 'Fw check failed' : 'No available FW'}, ready to go.');
+      logger.i(
+          '[FirstTime]: ${failCheck ? 'Fw check failed' : 'No available FW'}, ready to go.');
       _finishFirstTimeLogin(failCheck);
     }
   }

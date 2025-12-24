@@ -126,7 +126,6 @@ class DashboardManagerState extends Equatable {
       DashboardManagerState.fromMap(
           json.decode(source) as Map<String, dynamic>);
 
-
   @override
   bool get stringify => true;
 }

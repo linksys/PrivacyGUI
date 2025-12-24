@@ -7,12 +7,17 @@ import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/_index.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../test_data/_index.dart';
+
+// Tall screens for tests that require bottom bar visibility (Pattern 0)
+final _tallScreens = [
+  ...responsiveMobileScreens.map((e) => e.copyWith(height: 1280)).toList(),
+  ...responsiveDesktopScreens.map((e) => e.copyWith(height: 1280)).toList(),
+];
 
 // View ID: WIFIS
 /// Implementation file under test: lib/page/wifi_settings/views/wifi_main_view.dart
@@ -42,6 +47,8 @@ void main() {
 
   setUp(() {
     testHelper.setup();
+    // Enable animations for Tab switching
+    testHelper.disableAnimations = false;
 
     final wifiBundleTestStateInitialState =
         getWifiBundleTestState(wifiListTestData: wifiListAdvancedModeTestState);
@@ -51,7 +58,7 @@ void main() {
 
   group('Incredible-WiFi - WiFi Advanced settings view', () {
     // Test ID: WIFIS-ADV_VIEW
-    testLocalizationsV2('It should render the advanced settings view correctly',
+    testLocalizations('It should render the advanced settings view correctly',
         (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
@@ -63,7 +70,7 @@ void main() {
       final tabFinder = find.byType(Tab);
       expect(tabFinder, findsNWidgets(3));
 
-      await tester.tap(tabFinder.at(1));
+      await tester.tap(find.byKey(const Key('advancedTab')));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).advanced), findsOneWidget);
@@ -77,7 +84,7 @@ void main() {
     ], goldenFilename: 'WIFIS-ADV_VIEW-01-initial_state');
 
     // Test ID: WIFIS-MLO_WARN
-    testLocalizationsV2(
+    testLocalizations(
         'It should display the MLO warning in the advanced settings view',
         (tester, screen) async {
       when(testHelper.mockWiFiBundleNotifier.checkingMLOSettingsConflicts(any,
@@ -91,8 +98,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.at(1));
+      await tester.tap(find.byKey(const Key('advancedTab')));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).mloWarning), findsOneWidget);
@@ -102,7 +108,7 @@ void main() {
     ], goldenFilename: 'WIFIS-MLO_WARN-01-warning_shown');
 
     // Test ID: WIFIS-DFS_WARN
-    testLocalizationsV2(
+    testLocalizations(
         'It should display the DFS warning modal when saving advanced settings',
         (tester, screen) async {
       final context = await testHelper.pumpShellView(
@@ -112,21 +118,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.at(1));
+      await tester.tap(find.byKey(const Key('advancedTab')));
       await tester.pumpAndSettle();
 
-      final saveButtonFinder = find.byKey(Key('pageBottomPositiveButton'));
+      final saveButtonFinder =
+          find.byKey(const Key('pageBottomPositiveButton'));
+      await tester.scrollUntilVisible(saveButtonFinder, 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).modalDFSDesc), findsOneWidget);
-    }, goldenFilename: 'WIFIS-DFS_WARN-01-modal_shown');
+    }, screens: _tallScreens, goldenFilename: 'WIFIS-DFS_WARN-01-modal_shown');
   });
 
   group('Incredible-WiFi - MAC Filtering view', () {
     // Test ID: WIFIS-MAC_VIEW
-    testLocalizationsV2('It should render the MAC filtering view correctly',
+    testLocalizations('It should render the MAC filtering view correctly',
         (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
@@ -135,8 +143,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).macFiltering), findsOneWidget);
@@ -146,7 +153,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_VIEW-01-initial_state');
 
     // Test ID: WIFIS-MAC_ENABLED
-    testLocalizationsV2(
+    testLocalizations(
         'It should render the MAC filtering view in an enabled state',
         (tester, screen) async {
       final wifiBundleTestStateInitialState =
@@ -161,8 +168,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
       final enableSwitchFinder =
@@ -174,7 +180,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_ENABLED-01-initial_state');
 
     // Test ID: WIFIS-MAC_ON_ALERT
-    testLocalizationsV2(
+    testLocalizations(
         'It should display an alert when turning on MAC filtering',
         (tester, screen) async {
       final wifiBundleTestStateInitialState =
@@ -189,22 +195,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
-      final saveButtonFinder = find.byKey(Key('pageBottomPositiveButton'));
+      final saveButtonFinder =
+          find.widgetWithText(AppButton, testHelper.loc(context).save);
+      await tester.scrollUntilVisible(saveButtonFinder, 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).turnOnMacFilteringDesc),
           findsOneWidget);
     },
-        screens: [...responsiveMobileScreens, ...responsiveDesktopScreens],
+        screens: _tallScreens,
         goldenFilename: 'WIFIS-MAC_ON_ALERT-01-alert_shown');
 
     // Test ID: WIFIS-MAC_OFF_ALERT
-    testLocalizationsV2(
+    testLocalizations(
         'It should display an alert when turning off MAC filtering',
         (tester, screen) async {
       final wifiBundleTestStateInitialState =
@@ -219,22 +227,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
-      final saveButtonFinder = find.byKey(Key('pageBottomPositiveButton'));
+      final saveButtonFinder =
+          find.widgetWithText(AppButton, testHelper.loc(context).save);
+      await tester.scrollUntilVisible(saveButtonFinder, 100,
+          scrollable: find.byType(Scrollable).last);
       await tester.tap(saveButtonFinder);
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).turnOffMacFilteringDesc),
           findsOneWidget);
     },
-        screens: [...responsiveMobileScreens, ...responsiveDesktopScreens],
+        screens: _tallScreens,
         goldenFilename: 'WIFIS-MAC_OFF_ALERT-01-alert_shown');
 
     // Test ID: WIFIS-IP_DIS_WARN
-    testLocalizationsV2(
+    testLocalizations(
         'It should display a warning when Instant Privacy is disabled',
         (tester, screen) async {
       final wifiBundleTestStateInitialState = getWifiBundleTestState(
@@ -249,8 +259,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final tabFinder = find.byType(Tab);
-      await tester.tap(tabFinder.last);
+      await tester.tap(find.byKey(const Key('macFilteringTab')));
       await tester.pumpAndSettle();
 
       expect(find.text(testHelper.loc(context).instantPrivacyDisableWarning),
@@ -260,7 +269,7 @@ void main() {
         goldenFilename: 'WIFIS-IP_DIS_WARN-01-warning_shown');
 
     // Test ID: WIFIS-MAC_DEV_VIEW
-    testLocalizationsV2(
+    testLocalizations(
         'It should render the MAC filtering devices view correctly',
         (tester, screen) async {
       when(testHelper.mockInstantPrivacyNotifier.build())
@@ -282,7 +291,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_DEV_VIEW-01-initial_state');
 
     // Test ID: WIFIS-MAC_ADD_MAN
-    testLocalizationsV2('It should allow manually adding a MAC address',
+    testLocalizations('It should allow manually adding a MAC address',
         (tester, screen) async {
       await testHelper.pumpShellView(
         tester,
@@ -300,7 +309,7 @@ void main() {
         goldenFilename: 'WIFIS-MAC_ADD_MAN-01-dialog_shown');
 
     // Test ID: WIFIS-MAC_SEL_DEV
-    testLocalizationsV2('It should allow selecting devices for MAC filtering',
+    testLocalizations('It should allow selecting devices for MAC filtering',
         (tester, screen) async {
       final context = await testHelper.pumpView(
         tester,
@@ -322,7 +331,7 @@ void main() {
 
   group('Incredible-WiFi Views', () {
     // Test ID: WIFIS-MAIN_VIEW
-    testLocalizationsV2('It should render the main view with tabs correctly',
+    testLocalizations('It should render the main view with tabs correctly',
         (tester, screen) async {
       final context = await testHelper.pumpShellView(
         tester,
@@ -341,7 +350,7 @@ void main() {
     ], goldenFilename: 'WIFIS-MAIN_VIEW-01-initial_state');
 
     // Test ID: WIFIS-DIRTY_STATE
-    testLocalizationsV2(
+    testLocalizations(
         'It should mark the state as dirty when a setting is edited',
         (tester, screen) async {
       final dirtyState = getWifiBundleTestState(
@@ -356,9 +365,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify that the save button is enabled
-      final saveButtonFinder = find.byType(AppFilledButton);
+      final saveButtonFinder = find.byType(AppButton);
       expect(saveButtonFinder, findsOneWidget);
-      final AppFilledButton button = tester.widget(saveButtonFinder);
+      final AppButton button = tester.widget(saveButtonFinder);
       expect(button.onTap, isNotNull);
     }, goldenFilename: 'WIFIS-DIRTY_STATE-01-save_button_enabled');
   });

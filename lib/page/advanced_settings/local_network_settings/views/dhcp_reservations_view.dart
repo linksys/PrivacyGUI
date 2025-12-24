@@ -4,25 +4,19 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 
 class DHCPReservationsView extends ArgumentsConsumerStatelessView {
   const DHCPReservationsView({super.key, super.args});
@@ -75,10 +69,10 @@ class _DHCPReservationsContentViewState
           .toList());
     });
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       scrollable: true,
       title: loc(context).dhcpReservations.capitalizeWords(),
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
           isPositiveEnabled: notifier.isDirty(),
           onPositiveTap: () {
             doSomethingWithSpinner(
@@ -89,34 +83,37 @@ class _DHCPReservationsContentViewState
               ref.read(dhcpReservationProvider.notifier).revert();
             });
           }),
-      actions: [
-        AppTextButton.noPadding(
-          loc(context).add,
-          key: Key('addReservationButton'),
-          icon: LinksysIcons.add,
-          onTap: () {
-            _showManualAddReservationModal();
-          },
-        )
-      ],
+      menu: UiKitMenuConfig(
+        title: '',
+        items: [
+          UiKitMenuItem(
+            label: loc(context).add,
+            icon: AppFontIcons.add,
+            onTap: () {
+              _showManualAddReservationModal();
+            },
+          ),
+        ],
+      ),
+      menuIcon: AppFontIcons.add,
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(loc(context).dhcpReservationDescption),
-          const AppGap.large2(),
+          AppGap.xxl(),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (ResponsiveLayout.isDesktopLayout(context))
+              if (!context.isMobileLayout)
                 SizedBox(
-                  width: 4.col,
+                  width: context.colWidth(4),
                   child: AppCard(
                     child: DevicesFilterWidget(
                       onlineOnly: true,
                     ),
                   ),
                 ),
-              const AppGap.gutter(),
+              AppGap.gutter(),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,9 +129,9 @@ class _DHCPReservationsContentViewState
                                 .length),
                           ),
                         ),
-                        if (ResponsiveLayout.isMobileLayout(context))
+                        if (context.isMobileLayout)
                           AppIconButton(
-                            icon: LinksysIcons.filter,
+                            icon: Icon(AppFontIcons.filter),
                             onTap: () {
                               showSimpleAppOkDialog(
                                 context,
@@ -148,7 +145,7 @@ class _DHCPReservationsContentViewState
                           )
                       ],
                     ),
-                    const AppGap.medium(),
+                    AppGap.lg(),
                     reservedAddresses(),
                   ],
                 ),
@@ -175,7 +172,6 @@ class _DHCPReservationsContentViewState
         ? SizedBox.shrink()
         : SizedBox(
             height: list.length * 108 + 16,
-            // height: constraint.maxHeight,
             child: ListView.separated(
               itemCount: list.length,
               itemBuilder: (context, index) {
@@ -195,7 +191,7 @@ class _DHCPReservationsContentViewState
                     leading: AppCheckbox(value: item.reserved),
                     trailing: item.reserved
                         ? AppIconButton(
-                            icon: LinksysIcons.edit,
+                            icon: Icon(AppFontIcons.edit),
                             onTap: () {
                               _showManualAddReservationModal(item);
                             },
@@ -219,10 +215,10 @@ class _DHCPReservationsContentViewState
                                 .where((e) => e.reserved)
                                 .length -
                             1)
-                    ? const Divider(
-                        height: Spacing.large2,
+                    ? Divider(
+                        height: AppSpacing.xxl,
                       )
-                    : const AppGap.medium();
+                    : AppGap.lg();
               },
             ),
           );
@@ -286,9 +282,8 @@ class _DHCPReservationsContentViewState
               children: [
                 AppTextField(
                   key: Key('deviceNameTextField'),
-                  headerText: loc(context).deviceName,
+                  hintText: loc(context).deviceName,
                   controller: deviceNameController,
-                  border: const OutlineInputBorder(),
                   errorText: !(isNameValid(deviceNameController.text))
                       ? loc(context).invalidCharacters
                       : null,
@@ -298,17 +293,16 @@ class _DHCPReservationsContentViewState
                     });
                   },
                 ),
-                const AppGap.large3(),
-                AppIPFormField(
+                AppGap.xl(),
+                AppIpv4TextField(
                   key: Key('ipAddressTextField'),
-                  header: AppText.bodySmall(loc(context).assignIpAddress),
-                  semanticLabel: 'assign ip address',
+                  label: loc(context).assignIpAddress,
                   controller: ipController,
-                  border: const OutlineInputBorder(),
-                  octet1ReadOnly: subnetToken[0] == '255',
-                  octet2ReadOnly: subnetToken[1] == '255',
-                  octet3ReadOnly: subnetToken[2] == '255',
-                  octet4ReadOnly: subnetToken[3] == '255',
+                  readOnly: SegmentReadOnly(
+                    segment1: subnetToken[0] == '255',
+                    segment2: subnetToken[1] == '255',
+                    segment3: subnetToken[2] == '255',
+                  ),
                   onChanged: (value) {
                     setState(() {
                       enableSave = updateEnableSave();
@@ -318,13 +312,12 @@ class _DHCPReservationsContentViewState
                       ? null
                       : loc(context).invalidIpOrSameAsHostIp,
                 ),
-                const AppGap.large3(),
-                AppTextField.macAddress(
-                  key: Key('macAddressTextField'),
-                  headerText: loc(context).macAddress,
-                  semanticLabel: 'mac address',
+                AppGap.xl(),
+                AppMacAddressTextField(
+                  key: const Key('macAddressTextField'),
+                  label: loc(context).macAddress,
+                  invalidFormatMessage: loc(context).invalidMACAddress,
                   controller: macController,
-                  border: const OutlineInputBorder(),
                   errorText: !isMacValid(macController.text)
                       ? loc(context).invalidMACAddress
                       : null,

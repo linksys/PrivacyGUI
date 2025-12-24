@@ -10,11 +10,9 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
-import 'package:privacy_gui/page/components/styled/status_label.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -25,15 +23,8 @@ import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
-import 'package:privacygui_widgets/widgets/label/status_label.dart';
-
-import 'package:privacygui_widgets/widgets/panel/general_section.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/models/app_section_item_data.dart';
 
 class DashboardMenuView extends ConsumerStatefulWidget {
   const DashboardMenuView({Key? key}) : super(key: key);
@@ -51,30 +42,18 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       scrollable: true,
-      backState: StyledBackState.none,
+      backState: UiKitBackState.none,
       title: loc(context).menu,
-      menu: PageMenu(title: loc(context).myNetwork, items: [
-        PageMenuItem(
-            label: loc(context).restartNetwork,
-            icon: LinksysIcons.restartAlt,
-            onTap: () {
-              _restartNetwork();
-            }),
-        PageMenuItem(
-            label: loc(context).menuSetupANewProduct,
-            icon: LinksysIcons.add,
-            onTap: () {
-              context.pushNamed(RouteNamed.addNodes);
-            })
-      ]),
+      menuView: _buildMenuView(context),
+      menuPosition: MenuPosition.left,
       child: (context, constraints) => Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildMenuGridView(createMenuItems()),
-          const AppGap.large2(),
+          AppGap.xxl(),
           // const Spacer(),
           // AppTextButton.noPadding('About Linksys', onTap: () {}),
         ],
@@ -83,25 +62,20 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   Widget _buildMenuGridView(List<AppSectionItemData> items) {
+    final isDesktop = !context.isMobileLayout;
     return Scrollbar(
       thickness: 0,
       child: SizedBox(
-        height: (items.length /
-                    (ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1)) *
-                (ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112) +
+        height: (items.length / (isDesktop ? 3 : 1)) * (isDesktop ? 152 : 112) +
             kDefaultToolbarHeight,
         child: GridView.builder(
           controller: Scrollable.maybeOf(context)?.widget.controller,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount:
-                ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
-            mainAxisSpacing: ResponsiveLayout.isOverMedimumLayout(context)
-                ? Spacing.medium
-                : Spacing.small2,
-            crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+            crossAxisCount: isDesktop ? 3 : 1,
+            mainAxisSpacing: isDesktop ? AppSpacing.md : AppSpacing.sm,
+            crossAxisSpacing: AppSpacing.lg,
             childAspectRatio: (205 / 152),
-            mainAxisExtent:
-                ResponsiveLayout.isOverMedimumLayout(context) ? 152 : 112,
+            mainAxisExtent: isDesktop ? 152 : 112,
           ),
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
@@ -133,6 +107,37 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     );
   }
 
+  PageMenuView _buildMenuView(BuildContext context) {
+    return PageMenuView(
+      icon: Icons.menu,
+      label: loc(context).myNetwork,
+      content: AppCard(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppListTile(
+              title: AppText.bodyMedium(loc(context).restartNetwork),
+              leading: const AppIcon.font(AppFontIcons.restartAlt),
+              onTap: () {
+                Navigator.of(context).maybePop();
+                _restartNetwork();
+              },
+            ),
+            AppListTile(
+              title: AppText.bodyMedium(loc(context).menuSetupANewProduct),
+              leading: const AppIcon.font(AppFontIcons.add),
+              onTap: () {
+                Navigator.of(context).maybePop();
+                context.pushNamed(RouteNamed.addNodes);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   List<AppSectionItemData> createMenuItems() {
     // final isCloudLogin =
     //     ref.watch(authProvider).value?.loginType == LoginType.remote;
@@ -150,28 +155,28 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
           description: loc(context).incredibleWiFiDesc,
-          iconData: LinksysIcons.wifi,
+          iconData: AppFontIcons.wifi,
           onTap: () {
             _navigateTo(RouteNamed.menuIncredibleWiFi);
           }),
       AppSectionItemData(
           title: loc(context).instantAdmin,
           description: loc(context).instantAdminDesc,
-          iconData: LinksysIcons.accountCircle,
+          iconData: AppFontIcons.accountCircle,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantAdmin);
           }),
       AppSectionItemData(
           title: loc(context).instantTopology,
           description: loc(context).instantTopologyDesc,
-          iconData: LinksysIcons.router,
+          iconData: AppFontIcons.router,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantTopology);
           }),
       AppSectionItemData(
           title: loc(context).instantSafety,
           description: loc(context).instantSafetyDesc,
-          iconData: LinksysIcons.encrypted,
+          iconData: AppFontIcons.encrypted,
           disabledOnBridge: true,
           status: safetyState.settings.current.safeBrowsingType ==
               InstantSafetyType.off,
@@ -181,7 +186,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       AppSectionItemData(
           title: loc(context).instantPrivacy,
           description: loc(context).instantPrivacyDesc,
-          iconData: LinksysIcons.smartLock,
+          iconData: AppFontIcons.smartLock,
           status: privacyState.status.mode != MacFilterMode.allow,
           isBeta: true,
           onTap: () {
@@ -190,20 +195,20 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       AppSectionItemData(
           title: loc(context).instantDevices,
           description: loc(context).instantDevicesDesc,
-          iconData: LinksysIcons.devices,
+          iconData: AppFontIcons.devices,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantDevices);
           }),
       AppSectionItemData(
           title: loc(context).advancedSettings,
-          iconData: LinksysIcons.settings,
+          iconData: AppFontIcons.settings,
           onTap: () {
             _navigateTo(RouteNamed.menuAdvancedSettings);
           }),
       AppSectionItemData(
           title: loc(context).instantVerify,
           description: loc(context).instantVerifyDesc,
-          iconData: LinksysIcons.technician,
+          iconData: AppFontIcons.technician,
           onTap: () {
             _navigateTo(RouteNamed.menuInstantVerify);
           }),
@@ -211,7 +216,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         AppSectionItemData(
             title: loc(context).vpn,
             description: loc(context).vpnDesc,
-            iconData: LinksysIcons.smartLock,
+            iconData: AppFontIcons.smartLock,
             onTap: () {
               _navigateTo(RouteNamed.settingsVPN);
             }),
@@ -219,7 +224,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         AppSectionItemData(
             title: loc(context).externalSpeedText,
             description: loc(context).speedTestInternetToDeviceDesc,
-            iconData: LinksysIcons.networkCheck,
+            iconData: AppFontIcons.networkCheck,
             onTap: () {
               _navigateTo(RouteNamed.speedTestExternal);
             }),
@@ -227,7 +232,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         AppSectionItemData(
             title: loc(context).speedTest,
             description: loc(context).speedTestInternetToRouterDesc,
-            iconData: LinksysIcons.networkCheck,
+            iconData: AppFontIcons.networkCheck,
             onTap: () {
               _navigateTo(RouteNamed.dashboardSpeedTest);
             }),
@@ -247,7 +252,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
   }
 
   void _restartNetwork() {
-    if (ResponsiveLayout.isMobileLayout(context)) {
+    if (context.isMobileLayout) {
       context.pop();
     }
     showMessageAppDialog(
@@ -256,8 +261,9 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
       title: loc(context).alertExclamation,
       message: loc(context).menuRestartNetworkMessage,
       actions: [
-        AppFilledButton(
-          loc(context).ok,
+        AppButton(
+          label: loc(context).ok,
+          variant: SurfaceVariant.highlight,
           onTap: () {
             context.pop();
 
@@ -281,8 +287,9 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             }, test: (error) => error is JNAPSideEffectError);
           },
         ),
-        AppOutlinedButton(
-          loc(context).cancel,
+        AppButton(
+          label: loc(context).cancel,
+          variant: SurfaceVariant.tonal,
           onTap: () {
             context.pop();
           },
@@ -299,8 +306,6 @@ class AppMenuCard extends StatelessWidget {
     this.title,
     this.description,
     this.onTap,
-    this.color,
-    this.borderColor,
     this.status,
     this.isBeta = false,
   });
@@ -309,8 +314,6 @@ class AppMenuCard extends StatelessWidget {
   final String? title;
   final String? description;
   final VoidCallback? onTap;
-  final Color? color;
-  final Color? borderColor;
   final bool? status;
   final bool isBeta;
 
@@ -318,10 +321,6 @@ class AppMenuCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       onTap: onTap,
-      color: color,
-      borderColor: borderColor,
-      explicitChildNodes: false,
-      identifier: 'now-menu-${title?.kebab()}',
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -331,43 +330,56 @@ class AppMenuCard extends StatelessWidget {
             children: [
               FittedBox(
                 fit: BoxFit.fill,
-                child: Icon(
-                  iconData,
-                  size: 24,
-                ),
+                child: iconData != null
+                    ? AppIcon.font(
+                        iconData!,
+                        size: 24,
+                      )
+                    : null,
               ),
               if (status != null)
-                AppStatusLabel(
-                  isOff: status!,
+                AppBadge(
+                  label: status! ? 'Off' : 'On',
+                  color: status!
+                      ? Theme.of(context).colorScheme.outline
+                      : Theme.of(context)
+                              .extension<AppColorScheme>()
+                              ?.semanticSuccess ??
+                          Colors.green,
                 )
             ],
           ),
           if (title != null)
             Padding(
-              padding: const EdgeInsets.only(top: Spacing.small2),
+              padding: EdgeInsets.only(top: AppSpacing.sm),
               child: Wrap(
                 crossAxisAlignment: WrapCrossAlignment.start,
-                spacing: Spacing.small2,
+                spacing: AppSpacing.sm,
                 children: [
-                  AppText.titleSmall(
-                    title ?? '',
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  AppText.titleSmall(title ?? ''),
                   if (isBeta) ...[
-                    betaLabel(),
+                    AppBadge(
+                      label: 'BETA',
+                      color: Theme.of(context)
+                              .extension<AppColorScheme>()
+                              ?.semanticWarning ??
+                          Colors.orange,
+                    ),
                   ],
                 ],
               ),
             ),
           if (description != null)
             Padding(
-              padding: const EdgeInsets.only(top: Spacing.small1),
+              padding: EdgeInsets.only(top: AppSpacing.xs),
               child: AppText.bodySmall(
                 description ?? '',
                 overflow: TextOverflow.ellipsis,
-                maxLines: ResponsiveLayout.isOverMedimumLayout(context) ? 3 : 1,
-                color:
-                    Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
+                maxLines: !context.isMobileLayout ? 3 : 1,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.5),
               ),
             ),
         ],

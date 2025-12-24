@@ -8,15 +8,11 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_isp_settings_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PnpIspTypeSelectionView extends ConsumerStatefulWidget {
   const PnpIspTypeSelectionView({
@@ -58,15 +54,14 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
           content:
               AppText.bodyMedium(loc(context).pnpIspTypeSelectionDhcpConfirm),
           actions: [
-            AppTextButton(
-              loc(context).cancel,
-              color: Theme.of(context).colorScheme.onSurface,
+            AppButton.text(
+              label: loc(context).cancel,
               onTap: () {
                 context.pop();
               },
             ),
-            AppTextButton(
-              loc(context).ok,
+            AppButton.text(
+              label: loc(context).ok,
               onTap: () {
                 logger.i('[PnP]: Troubleshooter -  Save to DHCP');
                 context.pop();
@@ -117,8 +112,8 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
         title: AppText.titleLarge(loc(context).error),
         content: AppText.bodyMedium(errorMessage!),
         actions: [
-          AppTextButton(
-            loc(context).ok,
+          AppButton.text(
+            label: loc(context).ok,
             onTap: () => context.pop(),
           ),
         ],
@@ -177,10 +172,10 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
         PnpIspSettingsStatus.error => loc(context).error,
         _ => loc(context).processing,
       };
-      return AppFullScreenSpinner(text: message);
+      return AppFullScreenLoader(title: message);
     }
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).pnpIspTypeSelectionTitle,
       child: (context, constraints) => ListView(
         shrinkWrap: true,
@@ -191,7 +186,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
             isCurrentlyApplying: wanType == WanType.dhcp,
             tapAction: wanType == WanType.dhcp ? null : _showDHCPAlert,
           ),
-          const AppGap.small1(),
+          AppGap.xs(),
           ISPTypeCard(
             title: loc(context).connectionTypeStatic,
             description: loc(context).pnpIspTypeSelectionStaticDesc,
@@ -201,7 +196,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
               context.goNamed(RouteNamed.pnpStaticIp);
             },
           ),
-          const AppGap.small1(),
+          AppGap.xs(),
           ISPTypeCard(
             title: loc(context).connectionTypePppoe,
             description: loc(context).pnpIspTypeSelectionPppoeDesc,
@@ -212,7 +207,7 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
                   .goNamed(RouteNamed.pnpPPPOE, extra: {'needVlanId': false});
             },
           ),
-          const AppGap.small1(),
+          AppGap.xs(),
           ISPTypeCard(
             title: loc(context).pppoeVlan,
             description: loc(context).pnpIspTypeSelectionPppoeVlanDesc,
@@ -256,15 +251,15 @@ class ISPTypeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText.labelLarge(title),
-                  const AppGap.small3(),
+                  AppGap.xs(),
                   AppText.bodyMedium(description),
                 ],
               ),
             ),
-            const AppGap.small2(),
+            AppGap.sm(),
             isCurrentlyApplying
-                ? const Icon(LinksysIcons.check)
-                : const Icon(LinksysIcons.chevronRight),
+                ? AppIcon.font(AppFontIcons.check)
+                : AppIcon.font(AppFontIcons.chevronRight),
           ],
         ),
       ),

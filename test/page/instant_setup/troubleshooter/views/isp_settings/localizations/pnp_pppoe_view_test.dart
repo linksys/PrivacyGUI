@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/_constants.dart';
@@ -11,9 +13,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../../../../common/config.dart';
 import '../../../../../../common/test_helper.dart';
 import '../../../../../../common/test_responsive_widget.dart';
@@ -55,7 +55,7 @@ void main() async {
   });
 
   // Test ID: PNP-PPPOE_UI-FLOW
-  testLocalizationsV2(
+  testLocalizations(
     'Verify PPPoE view UI flow (initial and VLAN toggle)',
     (tester, localizedScreen) async {
       final context = await testHelper.pumpView(
@@ -78,7 +78,7 @@ void main() async {
       await tester.pumpAndSettle();
       expect(
           find.widgetWithText(
-              AppTextField, testHelper.loc(context).vlanIdOptional),
+              AppTextFormField, testHelper.loc(context).vlanIdOptional),
           findsOneWidget);
       expect(find.text(testHelper.loc(context).pnpPppoeRemoveVlan),
           findsOneWidget);
@@ -89,7 +89,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-GENERIC
-  testLocalizationsV2(
+  testLocalizations(
     'Verify generic JNAPError during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
@@ -105,18 +105,18 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppFilledButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Complete the future with a generic JNAPError
       completer.completeError(JNAPError(result: '', error: 'generic error'));
       await tester.pumpAndSettle(); // Let the UI handle the error and rebuild.
 
       // Verify error message is displayed and spinner is gone
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
       expect(
           find.text(testHelper.loc(context).pnpErrorForPppoe), findsOneWidget);
       verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -128,7 +128,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-SPECIFIC-JNAP
-  testLocalizationsV2(
+  testLocalizations(
     'Verify specific JNAPError during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
@@ -144,11 +144,11 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppFilledButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Complete the future with a specific JNAPError
       completer.completeError(
@@ -156,7 +156,7 @@ void main() async {
       await tester.pumpAndSettle(); // Let the UI handle the error and rebuild.
 
       // Verify error message is displayed and spinner is gone
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
       expect(find.text(testHelper.loc(context).invalidGatewayIpAddress),
           findsOneWidget);
       verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -168,7 +168,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-NO-INTERNET
-  testLocalizationsV2(
+  testLocalizations(
     'Verify no internet connection error during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
@@ -184,18 +184,18 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppFilledButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Complete the future with ExceptionNoInternetConnection
       completer.completeError(ExceptionNoInternetConnection());
       await tester.pumpAndSettle(); // Let the UI handle the error and rebuild.
 
       // Verify error message is displayed and spinner is gone
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
       expect(
           find.text(testHelper.loc(context).pnpErrorForPppoe), findsOneWidget);
       verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -207,7 +207,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-SUCCESS
-  testLocalizationsV2(
+  testLocalizations(
     'Verify JNAPSideEffectError with JNAPSuccess during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
@@ -223,11 +223,11 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppFilledButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Complete the future with JNAPSideEffectError with JNAPSuccess
       completer.completeError(JNAPSideEffectError(
@@ -236,7 +236,7 @@ void main() async {
       await tester.pumpAndSettle(); // Let the UI handle the error and rebuild.
 
       // Verify error message is displayed and spinner is gone
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
       expect(
           find.text(testHelper.loc(context).pnpErrorForPppoe), findsOneWidget);
       verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -248,14 +248,14 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-OTHER
-  testLocalizationsV2(
+  testLocalizations(
     'Verify JNAPSideEffectError without JNAPSuccess during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
       when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
           .thenAnswer((_) => completer.future);
 
-      final context = await testHelper.pumpView(
+      await testHelper.pumpView(
         tester,
         child: const PnpPPPOEView(),
         locale: localizedScreen.locale,
@@ -264,18 +264,18 @@ void main() async {
       await tester.pumpAndSettle();
 
       // Tap next button to trigger the loading state
-      await tester.tap(find.byType(AppFilledButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Rebuild the widget to show the spinner.
 
       // Verify the spinner is displayed
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
       // Complete the future with JNAPSideEffectError without JNAPSuccess
       completer.completeError(JNAPSideEffectError(
           const JNAPSuccess(output: {}, result: 'Success')));
       await tester.pumpAndSettle(); // Hide spinner, trigger navigation
 
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
       verify(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
           .called(1);
     },
@@ -286,7 +286,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-PROGRESS
-  testLocalizationsV2(
+  testLocalizations(
     'Verify UI updates during save and verify progress',
     (tester, localizedScreen) async {
       // 1. Setup completers to control the flow
@@ -317,25 +317,25 @@ void main() async {
       await tester.pumpAndSettle();
 
       // 3. Trigger the save process
-      await tester.tap(find.byType(AppFilledButton));
+      await tester.tap(find.byKey(const Key('pnpPppoeNextButton')));
       await tester.pump(); // Let the state change to 'saving'
 
       // 4. Verify 'saving' state
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
       await testHelper.takeScreenshot(
           tester, 'PNP-PPPOE_SAVE-PROGRESS_01_saving');
 
       // 5. Move to 'checkSettings' state
       saveCompleter.complete();
       await tester.pump(); // Let the state change to 'checkSettings'
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
       await testHelper.takeScreenshot(
           tester, 'PNP-PPPOE_SAVE-PROGRESS_02_checking_settings');
 
       // 6. Move to 'checkInternetConnection' state
       verifySettingsCompleter.complete(true);
       await tester.pump(); // Let the state change to 'checkInternetConnection'
-      expect(find.byType(AppFullScreenSpinner), findsOneWidget);
+      expect(find.byType(AppFullScreenLoader), findsOneWidget);
       await testHelper.takeScreenshot(
           tester, 'PNP-PPPOE_SAVE-PROGRESS_03_checking_internet');
 
@@ -344,7 +344,7 @@ void main() async {
       await tester.pumpAndSettle(); // Let the UI handle success
 
       // Verify the spinner is gone
-      expect(find.byType(AppFullScreenSpinner), findsNothing);
+      expect(find.byType(AppFullScreenLoader), findsNothing);
     },
     helper: testHelper,
     screens: screens,

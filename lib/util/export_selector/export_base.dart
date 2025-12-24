@@ -8,7 +8,7 @@ Future<ShareResult?> exportFile(
         String? text,
         String? subject}) async =>
     throw UnimplementedError('Unsupported Platform!');
-    
+
 Future<ShareResult?> exportFileFromBytes(
         {required Uint8List utf8Bytes,
         required String fileName,

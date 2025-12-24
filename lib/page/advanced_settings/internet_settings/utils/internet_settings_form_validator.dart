@@ -3,12 +3,16 @@ import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 
 class InternetSettingsFormValidator {
   final InputValidator _macValidator = InputValidator([MACAddressRule()]);
-  final InputValidator _ipv6PrefixValidator = InputValidator([IPv6WithReservedRule()]);
-  final InputValidator _borderRelayValidator = InputValidator([IpAddressNoReservedRule()]);
-  final InputValidator _ipv4Validator = InputValidator([IpAddressNoReservedRule()]);
+  final InputValidator _ipv6PrefixValidator =
+      InputValidator([IPv6WithReservedRule()]);
+  final InputValidator _borderRelayValidator =
+      InputValidator([IpAddressNoReservedRule()]);
+  final InputValidator _ipv4Validator =
+      InputValidator([IpAddressNoReservedRule()]);
 
   ValidationError? validateMacAddress(String? value) {
-    if (value == null || value.isEmpty) return ValidationError.invalidMACAddress;
+    if (value == null || value.isEmpty)
+      return ValidationError.invalidMACAddress;
     if (_macValidator.validate(value)) {
       return null;
     } else {
@@ -35,7 +39,8 @@ class InternetSettingsFormValidator {
   }
 
   ValidationError? validateSubnetMask(String? value) {
-    if (value == null || value.isEmpty) return ValidationError.invalidSubnetMask;
+    if (value == null || value.isEmpty)
+      return ValidationError.invalidSubnetMask;
     final subnetMaskValidator = SubnetMaskValidator();
     if (subnetMaskValidator.validate(value)) {
       return null;
@@ -45,7 +50,8 @@ class InternetSettingsFormValidator {
   }
 
   ValidationError? validateIpAddress(String? value, [allowEmpty = false]) {
-    if (value == null || value.isEmpty) return allowEmpty ? null : ValidationError.invalidIpAddress;
+    if (value == null || value.isEmpty)
+      return allowEmpty ? null : ValidationError.invalidIpAddress;
     if (_ipv4Validator.validate(value)) {
       return null;
     } else {
@@ -54,7 +60,8 @@ class InternetSettingsFormValidator {
   }
 
   ValidationError? validateEmpty(String? value) {
-    if (value == null || value.isEmpty) return ValidationError.fieldCannotBeEmpty;
+    if (value == null || value.isEmpty)
+      return ValidationError.fieldCannotBeEmpty;
     return null;
   }
 }

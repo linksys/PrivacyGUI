@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
@@ -36,7 +35,10 @@ class MockFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
           lastSuccessfulCheckTime: DateTime.now().toIso8601String(),
           modelNumber: 'MX4200',
           currentFirmwareVersion: '1.0.0.1',
-          availableUpdate: const AvailableUpdateUIModel(version: '1.1.0.5', date: '2025-11-18', description: 'New features and bug fixes'),
+          availableUpdate: const AvailableUpdateUIModel(
+              version: '1.1.0.5',
+              date: '2025-11-18',
+              description: 'New features and bug fixes'),
         ),
         FirmwareUpdateUIModel(
           deviceId: '2',
@@ -54,7 +56,10 @@ class MockFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
           lastSuccessfulCheckTime: DateTime.now().toIso8601String(),
           modelNumber: 'MX4200',
           currentFirmwareVersion: '1.0.0.1',
-          availableUpdate: const AvailableUpdateUIModel(version: '1.1.0.5', date: '2025-11-18', description: 'New features and bug fixes'),
+          availableUpdate: const AvailableUpdateUIModel(
+              version: '1.1.0.5',
+              date: '2025-11-18',
+              description: 'New features and bug fixes'),
         ),
       ],
     );
@@ -63,9 +68,12 @@ class MockFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
   @override
   Future<void> updateFirmware() async {
     state = state.copyWith(isUpdating: true);
-    ref.read(firmwareUpdateCandidateProvider.notifier).state = state.nodesStatus;
+    ref.read(firmwareUpdateCandidateProvider.notifier).state =
+        state.nodesStatus;
 
-    final nodesToUpdate = state.nodesStatus?.where((n) => n.availableUpdate != null).toList() ?? [];
+    final nodesToUpdate =
+        state.nodesStatus?.where((n) => n.availableUpdate != null).toList() ??
+            [];
 
     // Simulate downloading
     for (var i = 0; i <= 100; i += 10) {
@@ -90,7 +98,7 @@ class MockFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
       }).toList();
       state = state.copyWith(nodesStatus: newStatus);
     }
-    
+
     // Simulate rebooting
     for (var i = 0; i <= 100; i += 5) {
       await Future.delayed(const Duration(milliseconds: 500));
@@ -121,7 +129,7 @@ class MockFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
       isUpdating: false,
       isWaitingChildrenAfterUpdating: true,
     );
-    
+
     await Future.delayed(const Duration(seconds: 5));
     state = state.copyWith(isWaitingChildrenAfterUpdating: false);
   }
@@ -131,10 +139,11 @@ class MockFirmwareUpdateNotifier extends FirmwareUpdateNotifier {
     // In mock, we don't need to fetch anything.
     return Future.value();
   }
-  
+
   @override
   int getAvailableUpdateNumber() {
-    return state.nodesStatus?.where((s) => s.availableUpdate != null).length ?? 0;
+    return state.nodesStatus?.where((s) => s.availableUpdate != null).length ??
+        0;
   }
 
   @override

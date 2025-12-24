@@ -4,12 +4,12 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/advanced_settings/advanced_settings_view.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/route/constants.dart';
+
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 
 import '../../../../common/config.dart';
-import '../../../../common/screen.dart';
+
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 import '../../../../test_data/dashboard_home_test_state.dart';
@@ -31,7 +31,7 @@ void main() {
   });
 
   // Test ID: ADVSET-INIT
-  testLocalizationsV2(
+  testLocalizations(
     'Verify initial state with all settings enabled',
     (tester, screen) async {
       when(testHelper.mockDashboardHomeNotifier.build())
@@ -56,7 +56,7 @@ void main() {
 
       final cardFinder = find.ancestor(
         of: find.text(loc.localNetwork),
-        matching: find.byType(AppSettingCard),
+        matching: find.byType(AppListCard),
       );
       final opacityFinder = find.ancestor(
         of: cardFinder,
@@ -71,7 +71,7 @@ void main() {
   );
 
   // Test ID: ADVSET-BRIDGE
-  testLocalizationsV2(
+  testLocalizations(
     'Verify bridge mode with most settings disabled',
     (tester, screen) async {
       when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
@@ -93,27 +93,27 @@ void main() {
       // Verify "Internet Settings" is enabled
       final internetCardFinder = find.ancestor(
         of: find.text(loc.internetSettings.capitalizeWords()),
-        matching: find.byType(AppSettingCard),
+        matching: find.byType(AppListCard),
       );
       final internetOpacityFinder = find.ancestor(
         of: internetCardFinder,
         matching: find.byType(Opacity),
       );
       expect(tester.widget<Opacity>(internetOpacityFinder).opacity, 1.0);
-      expect(tester.widget<AppSettingCard>(internetCardFinder).onTap, isNotNull);
+      expect(tester.widget<AppListCard>(internetCardFinder).onTap, isNotNull);
 
       // Verify "Local Network" is disabled
       final localNetworkCardFinder = find.ancestor(
         of: find.text(loc.localNetwork),
-        matching: find.byType(AppSettingCard),
+        matching: find.byType(AppListCard),
       );
       final localNetworkOpacityFinder = find.ancestor(
         of: localNetworkCardFinder,
         matching: find.byType(Opacity),
       );
-      expect(
-          tester.widget<Opacity>(localNetworkOpacityFinder).opacity, closeTo(0.3, 0.01));
-      expect(tester.widget<AppSettingCard>(localNetworkCardFinder).onTap, isNull);
+      expect(tester.widget<Opacity>(localNetworkOpacityFinder).opacity,
+          closeTo(0.3, 0.01));
+      expect(tester.widget<AppListCard>(localNetworkCardFinder).onTap, isNull);
     },
     goldenFilename: 'ADVSET-BRIDGE',
     screens: screens,

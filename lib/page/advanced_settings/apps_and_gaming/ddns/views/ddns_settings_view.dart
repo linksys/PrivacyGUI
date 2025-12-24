@@ -8,13 +8,9 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/_v
 
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 
 class DDNSSettingsView extends ArgumentsConsumerStatefulView {
   const DDNSSettingsView({
@@ -36,33 +32,32 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
   Widget build(BuildContext context) {
     final state = ref.watch(ddnsProvider);
     return SingleChildScrollView(
-      child: ResponsiveLayout(
-        desktop: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-                width: ResponsiveLayout.isOverMedimumLayout(context)
-                    ? 6.col
-                    : 4.col,
-                child: _ddnsProvideSelector(state)),
-            if (state.current.provider is! NoDDNSProviderUIModel) ...[
-              AppGap.gutter(),
-              SizedBox(
-                  width: ResponsiveLayout.isOverMedimumLayout(context)
-                      ? 6.col
-                      : 4.col,
-                  child: _buildStatusCell(state))
-            ],
-          ],
-        ),
-        mobile: Column(
-          children: [
-            _ddnsProvideSelector(state),
-            if (state.current.provider is! NoDDNSProviderUIModel)
-              _buildStatusCell(state)
-          ],
-        ),
-      ),
+      child: context.isMobileLayout
+          ? Column(
+              children: [
+                _ddnsProvideSelector(state),
+                if (state.current.provider is! NoDDNSProviderUIModel)
+                  _buildStatusCell(state)
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                    width: context.screenWidth >= 992
+                        ? context.colWidth(6)
+                        : context.colWidth(4),
+                    child: _ddnsProvideSelector(state)),
+                if (state.current.provider is! NoDDNSProviderUIModel) ...[
+                  AppGap.gutter(),
+                  SizedBox(
+                      width: context.screenWidth >= 992
+                          ? context.colWidth(6)
+                          : context.colWidth(4),
+                      child: _buildStatusCell(state))
+                ],
+              ],
+            ),
     );
   }
 
@@ -72,11 +67,11 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.titleMedium(loc(context).selectAProvider),
-            const AppGap.medium(),
-            AppDropdownButton<String>(
-              selected: state.current.provider.name,
+            AppGap.lg(),
+            AppDropdown<String>(
+              value: state.current.provider.name,
               items: state.status.supportedProviders,
-              label: (item) {
+              itemAsString: (item) {
                 if (item == dynDNSProviderName) {
                   return 'dyn.com';
                 } else if (item == noIPDNSProviderName) {
@@ -90,10 +85,11 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                 }
               },
               onChanged: (value) {
+                if (value == null) return;
                 ref.read(ddnsProvider.notifier).setProvider(value);
               },
             ),
-            const AppGap.medium(),
+            AppGap.lg(),
             _buildDNSForms(state),
           ],
         ),
@@ -173,8 +169,7 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                       AnimatedRefreshContainer(
                         builder: (controller) {
                           return AppIconButton(
-                            icon: LinksysIcons.refresh,
-                            color: Theme.of(context).colorScheme.primary,
+                            icon: Icon(AppFontIcons.refresh),
                             onTap: () {
                               controller.repeat();
                               ref
@@ -188,14 +183,14 @@ class _DDNSSettingsViewState extends ConsumerState<DDNSSettingsView> {
                         },
                       ),
                     ]),
-                const AppGap.large2(),
-                AppSettingCard.noBorder(
+                AppGap.xxl(),
+                AppListCard.settingNoBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).internetIPAddress,
                   description: state.status.ipAddress,
                 ),
-                const AppGap.large2(),
-                AppSettingCard.noBorder(
+                AppGap.xxl(),
+                AppListCard.settingNoBorder(
                   padding: EdgeInsets.zero,
                   title: loc(context).status,
                   description: state.status.status,

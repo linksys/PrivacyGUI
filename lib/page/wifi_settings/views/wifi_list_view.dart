@@ -5,9 +5,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class WiFiListView extends ArgumentsConsumerStatelessView {
   const WiFiListView({Key? key, super.args}) : super(key: key);
@@ -24,36 +22,32 @@ class WiFiListView extends ArgumentsConsumerStatelessView {
         .toList()
         .join(', ');
     return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _wifiDescription(context, wifiBands),
-            const AppGap.medium(),
-            _quickSetupSwitch(context, ref, wifiListState.isSimpleMode),
-            const AppGap.medium(),
-            wifiListState.isSimpleMode
-                ? SimpleModeView(
-                    onWifiNameEdited: (value) {
-                      notifier.setSimpleModeWifi(
-                          wifiListState.simpleModeWifi.copyWith(ssid: value));
-                    },
-                    onWifiPasswordEdited: (value) {
-                      final wifiItem = wifiListState.simpleModeWifi
-                          .copyWith(password: value);
-                      notifier.setSimpleModeWifi(wifiItem);
-                    },
-                    onSecurityTypeChanged: (value) {
-                      final wifiItem = wifiListState.simpleModeWifi
-                          .copyWith(securityType: value);
-                      notifier.setSimpleModeWifi(wifiItem);
-                    },
-                  )
-                : const AdvancedModeView(),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _wifiDescription(context, wifiBands),
+          AppGap.lg(),
+          _quickSetupSwitch(context, ref, wifiListState.isSimpleMode),
+          AppGap.lg(),
+          wifiListState.isSimpleMode
+              ? SimpleModeView(
+                  onWifiNameEdited: (value) {
+                    notifier.setSimpleModeWifi(
+                        wifiListState.simpleModeWifi.copyWith(ssid: value));
+                  },
+                  onWifiPasswordEdited: (value) {
+                    final wifiItem =
+                        wifiListState.simpleModeWifi.copyWith(password: value);
+                    notifier.setSimpleModeWifi(wifiItem);
+                  },
+                  onSecurityTypeChanged: (value) {
+                    final wifiItem = wifiListState.simpleModeWifi
+                        .copyWith(securityType: value);
+                    notifier.setSimpleModeWifi(wifiItem);
+                  },
+                )
+              : const AdvancedModeView(),
+        ],
       ),
     );
   }
@@ -62,12 +56,11 @@ class WiFiListView extends ArgumentsConsumerStatelessView {
     return AppCard(
       child: Row(
         children: [
-          Icon(
+          AppIcon.font(
             Icons.info_outline_rounded,
-            semanticLabel: 'info icon',
             color: Theme.of(context).colorScheme.primary,
           ),
-          const AppGap.medium(),
+          AppGap.md(),
           Expanded(
             child: AppText.bodySmall(
               loc(context).wifiListDescription(wifiBands),
@@ -85,20 +78,20 @@ class WiFiListView extends ArgumentsConsumerStatelessView {
     return AppCard(
       child: Row(
         children: [
-          Icon(
+          AppIcon.font(
             Icons.bolt_outlined,
             color: Theme.of(context).colorScheme.primary,
           ),
-          const AppGap.medium(),
+          AppGap.md(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppText.labelMedium(
+                AppText.labelLarge(
                   loc(context).quickSetup,
                 ),
-                const AppGap.small1(),
+                AppGap.xs(),
                 AppText.bodySmall(
                   loc(context).quickSetupDescription,
                 ),
@@ -106,7 +99,7 @@ class WiFiListView extends ArgumentsConsumerStatelessView {
             ),
           ),
           AppSwitch(
-            semanticLabel: 'quick setup switch',
+            key: const Key('quickSetupSwitch'),
             value: isSimpleMode,
             onChanged: (value) {
               notifier.setSimpleMode(value);

@@ -27,8 +27,7 @@ void main() {
         overrides: [
           firmwareUpdateServiceProvider
               .overrideWithValue(mockFirmwareUpdateService),
-          deviceManagerProvider
-              .overrideWith(() => mockDeviceManagerNotifier),
+          deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
           pollingProvider.overrideWith(() => mockPollingNotifier),
         ],
       );
@@ -37,25 +36,31 @@ void main() {
     test('build uses default settings when fwUpdateSettingsRaw is null', () {
       final notifier = container.read(firmwareUpdateProvider.notifier);
       // No specific mock for pollingProvider.select, so it will return null by default
-      expect(notifier.state.settings.updatePolicy, 'AutomaticallyCheckAndInstall');
+      expect(
+          notifier.state.settings.updatePolicy, 'AutomaticallyCheckAndInstall');
     });
 
-    test('build uses default settings when fwUpdateSettingsRaw is not JNAPSuccess', () {
+    test(
+        'build uses default settings when fwUpdateSettingsRaw is not JNAPSuccess',
+        () {
       final notifier = container.read(firmwareUpdateProvider.notifier);
       // Since pollingProvider.select is not mocked, it will return null by default,
       // which will lead to using default settings.
-      expect(notifier.state.settings.updatePolicy, 'AutomaticallyCheckAndInstall');
+      expect(
+          notifier.state.settings.updatePolicy, 'AutomaticallyCheckAndInstall');
     });
 
     test('initial state is correct', () {
       final notifier = container.read(firmwareUpdateProvider.notifier);
-      expect(notifier.state, FirmwareUpdateState(
-        settings: FirmwareUpdateSettings(
-          updatePolicy: 'AutomaticallyCheckAndInstall',
-          autoUpdateWindow: FirmwareAutoUpdateWindow.simple(),
-        ),
-        nodesStatus: const [],
-      ));
+      expect(
+          notifier.state,
+          FirmwareUpdateState(
+            settings: FirmwareUpdateSettings(
+              updatePolicy: 'AutomaticallyCheckAndInstall',
+              autoUpdateWindow: FirmwareAutoUpdateWindow.simple(),
+            ),
+            nodesStatus: const [],
+          ));
     });
 
     test('setFirmwareUpdatePolicy updates state on success', () async {
@@ -78,8 +83,8 @@ void main() {
               policy, notifier.state.settings))
           .thenThrow(Exception('Service Error'));
 
-      expect(
-          () => notifier.setFirmwareUpdatePolicy(policy), throwsA(isA<Exception>()));
+      expect(() => notifier.setFirmwareUpdatePolicy(policy),
+          throwsA(isA<Exception>()));
     });
 
     test('fetchAvailableFirmwareUpdates updates state on success', () async {
@@ -102,14 +107,15 @@ void main() {
       expect(notifier.state.nodesStatus, nodes);
     });
 
-    test('fetchAvailableFirmwareUpdates throws error when service fails', () async {
+    test('fetchAvailableFirmwareUpdates throws error when service fails',
+        () async {
       final notifier = container.read(firmwareUpdateProvider.notifier);
       when(mockFirmwareUpdateService.fetchAvailableFirmwareUpdates(
               notifier.state.nodesStatus, any))
           .thenThrow(Exception('Service Error'));
 
-      expect(
-          () => notifier.fetchAvailableFirmwareUpdates(), throwsA(isA<Exception>()));
+      expect(() => notifier.fetchAvailableFirmwareUpdates(),
+          throwsA(isA<Exception>()));
     });
 
     test('updateFirmware updates state during stream', () async {
@@ -133,13 +139,6 @@ void main() {
 
     test('updateFirmware updates state on stream error', () async {
       final notifier = container.read(firmwareUpdateProvider.notifier);
-      final nodes = [
-        const FirmwareUpdateUIModel(
-            deviceId: '1',
-            deviceName: 'd1',
-            isMaster: true,
-            lastSuccessfulCheckTime: ''),
-      ];
       when(mockFirmwareUpdateService.updateFirmware(
         notifier.state.nodesStatus,
         any,
@@ -192,8 +191,7 @@ void main() {
       when(mockFirmwareUpdateService.finishFirmwareUpdate())
           .thenThrow(Exception('Service Error'));
 
-      expect(
-          () => notifier.finishFirmwareUpdate(), throwsA(isA<Exception>()));
+      expect(() => notifier.finishFirmwareUpdate(), throwsA(isA<Exception>()));
     });
 
     test('getAvailableUpdateNumber calls service', () {

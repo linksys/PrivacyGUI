@@ -5,8 +5,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
@@ -24,6 +23,8 @@ void main() async {
 
   setUp(() {
     testHelper.setup();
+    // Enable animations for this test - required for countdown timer to work
+    testHelper.disableAnimations = false;
     when(testHelper.mockPnpNotifier.checkAdminPassword(null)).thenAnswer((_) {
       throw ExceptionInvalidAdminPassword();
     });
@@ -33,10 +34,10 @@ void main() async {
   });
 
   // Test ID: PNPWM-FULL_FLOW
-  testLocalizationsV2(
+  testLocalizations(
     'Verify waiting modem full flow',
     (tester, localizedScreen) async {
-      final context = await testHelper.pumpView(
+      final context = await testHelper.pumpShellView(
         tester,
         child: const PnpWaitingModemView(),
         config: LinksysRouteConfig(
@@ -48,13 +49,13 @@ void main() async {
       await tester.pump(const Duration(seconds: 3));
       expect(find.text(testHelper.loc(context).pnpWaitingModemTitle),
           findsOneWidget);
-      expect(
-          find.text(testHelper.loc(context).pnpWaitingModemDesc), findsOneWidget);
-      expect(find.byType(AppProgressBar), findsOneWidget);
+      expect(find.text(testHelper.loc(context).pnpWaitingModemDesc),
+          findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
       await testHelper.takeScreenshot(
           tester, 'PNPWM-FULL_FLOW_01_counting_down');
 
-      // 2. State: Plug your modem back in
+      // 2. State: Plug your modem back in (after 150 seconds countdown)
       await tester.pumpAndSettle(const Duration(seconds: 150));
       expect(find.text(testHelper.loc(context).pnpWaitingModemPlugBack),
           findsOneWidget);
@@ -76,10 +77,11 @@ void main() async {
           tester, 'PNPWM-FULL_FLOW_03_waiting_to_start');
 
       // 4. State: Checking for internet
-      await tester.pump(const Duration(seconds: 5)); // Trigger _isCheckingInternet
+      await tester
+          .pump(const Duration(seconds: 5)); // Trigger _isCheckingInternet
       expect(find.text(testHelper.loc(context).pnpWaitingModemCheckingInternet),
           findsOneWidget);
-      expect(find.byType(AppSpinner), findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
     },
     helper: testHelper,
     screens: screens,

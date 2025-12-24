@@ -1,8 +1,0 @@
-{
-    "name": "Advanced Settings - Administration",
-    "target": "integration_test/administration_test.dart",
-    "description": "Toggle each switch and checkbox component, then save the settings.",
-    "setUp":  ["factory_reset", "skip_setup"],
-    "tearDown": [],
-    "tags": ["administration", "advanced_settings", "menu"]
-}

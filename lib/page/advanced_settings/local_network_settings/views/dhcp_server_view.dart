@@ -2,12 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/components/composed/app_switch_trigger_tile.dart';
 
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
@@ -34,8 +30,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   final _dns2Controller = TextEditingController();
   final _dns3Controller = TextEditingController();
   final _winsController = TextEditingController();
-  final EdgeInsets inputPadding =
-      EdgeInsets.symmetric(vertical: Spacing.small3);
+  final EdgeInsets inputPadding = EdgeInsets.symmetric(vertical: AppSpacing.sm);
 
   @override
   void initState() {
@@ -81,7 +76,7 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
     });
 
     return AppCard(
-      padding: EdgeInsets.all(Spacing.large2),
+      padding: EdgeInsets.all(AppSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -114,11 +109,11 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   }
 
   Widget _divider() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(
-        vertical: Spacing.small3,
+        vertical: AppSpacing.sm,
       ),
-      child: Divider(),
+      child: const Divider(),
     );
   }
 
@@ -129,65 +124,55 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       children: [
         Padding(
           padding: inputPadding,
-          child: AppIPFormField(
-            semanticLabel: 'start Ip Address',
+          child: AppIpv4TextField(
             key: Key('startIpAddressTextField'),
-            header: AppText.bodySmall(loc(context).startIpAddress),
+            label: loc(context).startIpAddress,
             controller: _startIpAddressController,
-            border: const OutlineInputBorder(),
-            autoFocus: true,
+            readOnly: SegmentReadOnly(
+              segment1: true,
+              segment2: true,
+            ),
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
                 error: LocalNetworkErrorPrompt.resolve(state.status
                     .errorTextMap[LocalNetworkErrorPrompt.startIpAddress.name]),
                 ipAddress: state.settings.current.ipAddress,
                 subnetMask: state.settings.current.subnetMask),
-            octet1ReadOnly: true,
-            octet2ReadOnly: true,
             onChanged: (value) {
               _notifier.startIpChanged(context, value);
             },
           ),
         ),
-        const AppGap.small2(),
+        AppGap.sm(),
         Padding(
           padding: inputPadding,
-          child: AppTextField.minMaxNumber(
+          child: AppTextField(
             key: Key('maxUsersTextField'),
-            headerText: loc(context).maximumNumberOfUsers,
-            descriptionText:
-                '1 ${loc(context).to} ${state.status.maxUserLimit}',
-            min: 1,
-            max: state.status.maxUserLimit,
+            hintText: loc(context).maximumNumberOfUsers,
             controller: _maxUserAllowedController,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
                 error: LocalNetworkErrorPrompt.resolve(
                     state.status.errorTextMap[
                         LocalNetworkErrorPrompt.maxUserAllowed.name])),
-            border: const OutlineInputBorder(),
             onChanged: (value) {
               _notifier.maxUserAllowedChanged(context, value);
             },
           ),
         ),
-        const AppGap.small1(),
+        AppGap.xs(),
         _ipAddressRange(state),
-        const AppGap.large2(),
+        AppGap.xl(),
         Padding(
           padding: inputPadding,
-          child: AppTextField.minMaxNumber(
+          child: AppTextField(
             key: Key('clientLeaseTimeTextField'),
-            headerText: loc(context).clientLeaseTime,
-            min: state.status.minAllowDHCPLeaseMinutes,
-            max: state.status.maxAllowDHCPLeaseMinutes,
+            hintText: loc(context).clientLeaseTime,
             controller: _clientLeaseTimeController,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
                 error: LocalNetworkErrorPrompt.resolve(state.status
                     .errorTextMap[LocalNetworkErrorPrompt.leaseTime.name])),
-            border: const OutlineInputBorder(),
-            descriptionText: loc(context).minutes,
             onChanged: (value) {
               final result =
                   _notifier.clientLeaseFinished(value, state.settings.current);
@@ -199,13 +184,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             },
           ),
         ),
-        const AppGap.small1(),
+        AppGap.xs(),
         _dnsAndWinsInput(state),
         _divider(),
-        const AppGap.small3(),
+        AppGap.sm(),
         AppCard(
-          padding: const EdgeInsets.symmetric(
-              vertical: Spacing.medium, horizontal: Spacing.large2),
+          padding: EdgeInsets.symmetric(
+              vertical: AppSpacing.md, horizontal: AppSpacing.xl),
           child: Row(
             children: [
               Expanded(
@@ -213,8 +198,8 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
               ),
               const Spacer(),
               AppText.labelLarge("${state.status.dhcpReservationList.length}"),
-              const AppGap.medium(),
-              Icon(LinksysIcons.chevronRight),
+              AppGap.md(),
+              Icon(AppFontIcons.chevronRight),
             ],
           ),
           onTap: () {
@@ -237,13 +222,13 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           AppText.bodySmall(loc(context).ipAddressRange),
-          const AppGap.small3(),
+          AppGap.sm(),
           Row(
             children: [
               AppText.labelLarge(state.settings.current.firstIPAddress),
-              const AppGap.medium(),
+              AppGap.md(),
               AppText.bodyMedium(loc(context).to),
-              const AppGap.medium(),
+              AppGap.md(),
               AppText.labelLarge(state.settings.current.lastIPAddress),
             ],
           ),
@@ -259,18 +244,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       children: [
         Padding(
           padding: inputPadding,
-          child: AppIPFormField(
+          child: AppIpv4TextField(
             key: Key('dns1TextField'),
-            semanticLabel: 'static Dns 1',
-            header: AppText.bodySmall(
-              loc(context).staticDns1,
-            ),
+            label: loc(context).staticDns1,
             controller: _dns1Controller,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
                 error: LocalNetworkErrorPrompt.resolve(state
                     .status.errorTextMap[LocalNetworkErrorPrompt.dns1.name])),
-            border: const OutlineInputBorder(),
             onChanged: (value) {
               final result =
                   _notifier.staticDns1Finished(value, state.settings.current);
@@ -286,18 +267,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         Padding(
           padding: inputPadding,
-          child: AppIPFormField(
+          child: AppIpv4TextField(
             key: Key('dns2TextField'),
-            semanticLabel: 'static Dns 2',
-            header: AppText.bodySmall(
-              loc(context).staticDns2,
-            ),
+            label: loc(context).staticDns2,
             controller: _dns2Controller,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
                 error: LocalNetworkErrorPrompt.resolve(state
                     .status.errorTextMap[LocalNetworkErrorPrompt.dns2.name])),
-            border: const OutlineInputBorder(),
             onChanged: (value) {
               final result =
                   _notifier.staticDns2Finished(value, state.settings.current);
@@ -313,18 +290,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         Padding(
           padding: inputPadding,
-          child: AppIPFormField(
+          child: AppIpv4TextField(
             key: Key('dns3TextField'),
-            semanticLabel: 'static Dns 3',
-            header: AppText.bodySmall(
-              loc(context).staticDns3,
-            ),
+            label: loc(context).staticDns3,
             controller: _dns3Controller,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
                 error: LocalNetworkErrorPrompt.resolve(state
                     .status.errorTextMap[LocalNetworkErrorPrompt.dns3.name])),
-            border: const OutlineInputBorder(),
             onChanged: (value) {
               final result =
                   _notifier.staticDns3Finished(value, state.settings.current);
@@ -340,18 +313,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         Padding(
           padding: inputPadding,
-          child: AppIPFormField(
+          child: AppIpv4TextField(
             key: Key('winsTextField'),
-            semanticLabel: 'wins',
-            header: AppText.bodySmall(
-              loc(context).wins,
-            ),
+            label: loc(context).wins,
             controller: _winsController,
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,
                 error: LocalNetworkErrorPrompt.resolve(state
                     .status.errorTextMap[LocalNetworkErrorPrompt.wins.name])),
-            border: const OutlineInputBorder(),
             onChanged: (value) {
               final result =
                   _notifier.winsServerFinished(value, state.settings.current);
@@ -376,16 +345,14 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
       message:
           '${loc(context).saveLocalNetworkChangesDesc1}\n\n${loc(context).saveLocalNetworkChangesDesc2}\n\n${loc(context).doYouWantToSaveTheLocalNetworkSettings}',
       actions: [
-        AppTextButton(
-          loc(context).cancel,
-          color: Theme.of(context).colorScheme.onSurface,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () {
             context.pop();
           },
         ),
-        AppTextButton(
-          loc(context).save,
-          color: Theme.of(context).colorScheme.primary,
+        AppButton.text(
+          label: loc(context).save,
           onTap: () {
             context.pop();
             _notifier.save();

@@ -12,21 +12,14 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/timezone.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class InstantAdminView extends ArgumentsConsumerStatefulView {
   const InstantAdminView({
@@ -92,13 +85,12 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
         _buildTransmitRegionWidget(context, powerTableState),
     ];
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).instantAdmin,
-      scrollable: true,
       child: (context, constraints) => MasonryGridView.count(
-        crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
-        mainAxisSpacing: Spacing.small2,
-        crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+        crossAxisCount: MediaQuery.of(context).size.width < 600 ? 1 : 2,
+        mainAxisSpacing: AppSpacing.sm,
+        crossAxisSpacing: AppSpacing.lg,
         itemCount: widgets.length,
         itemBuilder: (context, index) => widgets[index],
         shrinkWrap: true,
@@ -107,53 +99,31 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     );
   }
 
-  AppCard _buildPasswordWidget(
+  Widget _buildPasswordWidget(
     BuildContext context,
     RouterPasswordState routerPasswordState,
   ) {
     return AppCard(
-      padding: const EdgeInsets.symmetric(
-        vertical: Spacing.medium,
-        horizontal: Spacing.large2,
+      padding: EdgeInsets.symmetric(
+        vertical: AppSpacing.lg,
+        horizontal: AppSpacing.xxl,
       ),
       child: Column(
         children: [
-          AppListCard(
+          _buildListRow(
             key: const Key('passwordCard'),
-            padding: EdgeInsets.zero,
-            showBorder: false,
-            title: AppText.bodyMedium(loc(context).routerPassword),
-            description: Theme(
-              data: Theme.of(context).copyWith(
-                  inputDecorationTheme: const InputDecorationTheme(
-                      isDense: true, contentPadding: EdgeInsets.zero)),
-              child: IntrinsicWidth(
-                  child: Semantics(
-                textField: false,
-                explicitChildNodes: true,
-                child: AppPasswordField(
-                  semanticLabel: 'admin Password',
-                  readOnly: true,
-                  border: InputBorder.none,
-                  controller: _passwordController
-                    ..text = routerPasswordState.adminPassword,
-                  suffixIconConstraints: const BoxConstraints(),
-                ),
-              )),
+            title: loc(context).routerPassword,
+            description: AppText.labelLarge(
+              '•' * (routerPasswordState.adminPassword.length.clamp(0, 16)),
             ),
-            trailing: const Icon(
-              LinksysIcons.edit,
-              semanticLabel: 'edit',
-            ),
+            trailing: AppIcon.font(AppFontIcons.edit),
             onTap: () {
               _showRouterPasswordModal(routerPasswordState.hint);
             },
           ),
           const Divider(),
-          AppListCard(
-            padding: EdgeInsets.zero,
-            showBorder: false,
-            title: AppText.bodySmall(loc(context).routerPasswordHint),
+          _buildListRow(
+            title: loc(context).routerPasswordHint,
             description: routerPasswordState.hint.isEmpty
                 ? AppText.labelLarge(loc(context).setOne)
                 : AppText.bodyMedium(routerPasswordState.hint),
@@ -163,20 +133,18 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     );
   }
 
-  AppCard _buildAutoFirmwareWidget(BuildContext context, bool isFwAutoUpdate) {
+  Widget _buildAutoFirmwareWidget(BuildContext context, bool isFwAutoUpdate) {
     return AppCard(
-      padding: const EdgeInsets.symmetric(
-        vertical: Spacing.medium,
-        horizontal: Spacing.large2,
+      padding: EdgeInsets.symmetric(
+        vertical: AppSpacing.lg,
+        horizontal: AppSpacing.xxl,
       ),
       child: Column(
         children: [
-          AppSwitchTriggerTile(
+          _buildSwitchTile(
+            title: loc(context).autoFirmwareUpdate,
             value: isFwAutoUpdate,
-            title: AppText.labelLarge(loc(context).autoFirmwareUpdate),
-            semanticLabel: 'auto firmware update',
-            onChanged: (value) {},
-            event: (value) async {
+            onChanged: (value) async {
               await ref
                   .read(firmwareUpdateProvider.notifier)
                   .setFirmwareUpdatePolicy(value
@@ -189,20 +157,20 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     );
   }
 
-  AppListCard _buildManualFirmwareWidget(
+  Widget _buildManualFirmwareWidget(
     BuildContext context,
     DashboardManagerState dashboardManagerState,
   ) {
     final firmwareVersion = dashboardManagerState.deviceInfo?.firmwareVersion;
-    return AppListCard(
-      title: AppText.bodyMedium(loc(context).manualFirmwareUpdate),
-      description: AppText.labelLarge(firmwareVersion ?? '--'),
+    return _buildListCard(
+      title: loc(context).manualFirmwareUpdate,
+      description: firmwareVersion ?? '--',
       trailing: Tooltip(
         message: BuildConfig.isRemote()
             ? loc(context).featureUnavailableInRemoteMode
             : '',
-        child: AppTextButton.noPadding(
-          loc(context).manualUpdate,
+        child: AppButton.text(
+          label: loc(context).manualUpdate,
           key: const Key('manualUpdateButton'),
           onTap: BuildConfig.isRemote()
               ? null
@@ -214,15 +182,15 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     );
   }
 
-  AppListCard _buildTimezoneWidget(
+  Widget _buildTimezoneWidget(
     BuildContext context,
     TimezoneState timezoneState,
   ) {
-    return AppListCard(
+    return _buildListCard(
       key: const Key('timezoneCard'),
-      title: AppText.bodyLarge(loc(context).timezone),
-      description: AppText.labelLarge(_getTimezone(timezoneState)),
-      trailing: const Icon(LinksysIcons.chevronRight),
+      title: loc(context).timezone,
+      description: _getTimezone(timezoneState),
+      trailing: AppIcon.font(AppFontIcons.chevronRight),
       onTap: () async {
         final result =
             await context.pushNamed<bool?>(RouteNamed.settingsTimeZone);
@@ -234,72 +202,166 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     );
   }
 
-  AppListCard _buildTransmitRegionWidget(
+  Widget _buildTransmitRegionWidget(
     BuildContext context,
     PowerTableState powerTableState,
   ) {
-    return AppListCard(
-      title: AppText.bodyLarge(loc(context).transmitRegion),
-      description: Column(
+    return _buildListCard(
+      title: loc(context).transmitRegion,
+      descriptionWidget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           AppText.labelLarge(
               powerTableState.country?.resolveDisplayText(context) ?? ''),
-          const AppGap.small2(),
+          AppGap.sm(),
           AppText.bodyMedium(
             loc(context).transmitRegionDesc,
             color: Theme.of(context).colorScheme.outline,
           ),
         ],
       ),
-      trailing: const Icon(LinksysIcons.chevronRight),
+      trailing: AppIcon.font(AppFontIcons.chevronRight),
       onTap: () {
         handleTransmitRegionTap(powerTableState);
       },
     );
   }
 
+  /// Composed ListCard replacing AppListCard
+  Widget _buildListCard({
+    Key? key,
+    required String title,
+    String? description,
+    Widget? descriptionWidget,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return AppCard(
+      key: key,
+      onTap: onTap,
+      padding: EdgeInsets.symmetric(
+        vertical: AppSpacing.lg,
+        horizontal: AppSpacing.xxl,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.bodyMedium(title),
+                AppGap.xs(),
+                if (descriptionWidget != null)
+                  descriptionWidget
+                else if (description != null)
+                  AppText.labelLarge(description),
+              ],
+            ),
+          ),
+          if (trailing != null) trailing,
+        ],
+      ),
+    );
+  }
+
+  /// Composed ListRow for inside card
+  Widget _buildListRow({
+    Key? key,
+    required String title,
+    Widget? description,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      key: key,
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyMedium(title),
+                  if (description != null) ...[
+                    AppGap.xs(),
+                    description,
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) trailing,
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Composed SwitchTile replacing AppSwitchTriggerTile
+  Widget _buildSwitchTile({
+    required String title,
+    required bool value,
+    required Future<void> Function(bool) onChanged,
+  }) {
+    return Row(
+      children: [
+        Expanded(child: AppText.labelLarge(title)),
+        AppSwitch(
+          value: value,
+          onChanged: (newValue) async {
+            await onChanged(newValue);
+          },
+        ),
+      ],
+    );
+  }
+
   void handleTransmitRegionTap(PowerTableState state) {
     var selected = state.country;
-    showSimpleAppDialog(context,
+    showSimpleAppDialog(context, title: loc(context).transmitRegion,
         content: StatefulBuilder(builder: (context, setState) {
-      return ListView.separated(
-          itemBuilder: (context, index) {
-            final country = state.supportedCountries[index];
-            return ListTile(
-              hoverColor:
-                  Theme.of(context).colorScheme.background.withOpacity(.5),
-              title: Semantics(
-                identifier: 'now-locale-item-${country.name}',
-                child: AppText.labelLarge(
-                  country.resolveDisplayText(context),
-                ),
-              ),
-              trailing: selected == country
-                  ? Semantics(
-                      identifier: 'now-country-item-checked',
-                      label: 'checked',
-                      child: const Icon(LinksysIcons.check))
-                  : null,
-              onTap: () {
-                setState(() {
-                  selected = country;
-                });
+      return SizedBox(
+          height: 300,
+          child: ListView.separated(
+              itemBuilder: (context, index) {
+                final country = state.supportedCountries[index];
+                return ListTile(
+                  hoverColor: Theme.of(context)
+                      .colorScheme
+                      .surface
+                      .withValues(alpha: 0.5),
+                  title: Semantics(
+                    identifier: 'now-locale-item-${country.name}',
+                    child: AppText.labelLarge(
+                      country.resolveDisplayText(context),
+                    ),
+                  ),
+                  trailing: selected == country
+                      ? Semantics(
+                          identifier: 'now-country-item-checked',
+                          label: 'checked',
+                          child: AppIcon.font(AppFontIcons.check))
+                      : null,
+                  onTap: () {
+                    setState(() {
+                      selected = country;
+                    });
+                  },
+                );
               },
-            );
-          },
-          separatorBuilder: (context, index) => Divider(),
-          itemCount: state.supportedCountries.length);
+              separatorBuilder: (context, index) => Divider(),
+              itemCount: state.supportedCountries.length));
     }), actions: [
-      AppTextButton(
-        loc(context).cancel,
+      AppButton.text(
+        label: loc(context).cancel,
         onTap: () {
           context.pop();
         },
       ),
-      AppTextButton(
-        loc(context).ok,
+      AppButton.text(
+        label: loc(context).ok,
         onTap: () {
           context.pop(selected);
         },
@@ -347,36 +409,41 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     TextEditingController hintController = TextEditingController()
       ..text = hint ?? '';
 
-    final hintNotContainPasswordValidator = Validation(
-        description: loc(context).routerPasswordRuleHintContainPassword,
-        validator: ((text) =>
-            !hintController.text.toLowerCase().contains(text.toLowerCase())));
+    AppPasswordRule hintNotContainPasswordRule(
+            TextEditingController controller) =>
+        AppPasswordRule(
+            label: loc(context).routerPasswordRuleHintContainPassword,
+            validate: ((text) => !hintController.text
+                .toLowerCase()
+                .contains(text.toLowerCase())));
     bool isPasswordValid = false;
     bool isHintNotContainPassword =
-        hintNotContainPasswordValidator.validator(controller.text);
-    final validations = [
-      Validation(
-          description: loc(context).routerPasswordRuleTenChars,
-          validator: ((text) => LengthRule().validate(text))),
-      Validation(
-          description: loc(context).routerPasswordRuleLowerUpper,
-          validator: ((text) => HybridCaseRule().validate(text))),
-      Validation(
-          description: loc(context).routerPasswordRuleOneNumber,
-          validator: ((text) => DigitalCheckRule().validate(text))),
-      Validation(
-          description: loc(context).routerPasswordRuleSpecialChar,
-          validator: ((text) => SpecialCharCheckRule().validate(text))),
-      Validation(
-          description: loc(context).routerPasswordRuleStartEndWithSpace,
-          validator: ((text) => NoSurroundWhitespaceRule().validate(text))),
-      Validation(
-          description: loc(context).routerPasswordRuleConsecutiveChar,
-          validator: ((text) => !ConsecutiveCharRule().validate(text))),
-      Validation(
-          description: loc(context).passwordsMustMatch,
-          validator: ((text) => confirmController.text == text)),
-    ];
+        hintNotContainPasswordRule(controller).validate(controller.text);
+
+    List<AppPasswordRule> rules(TextEditingController confirmController) => [
+          AppPasswordRule(
+              label: loc(context).routerPasswordRuleTenChars,
+              validate: ((text) => LengthRule().validate(text))),
+          AppPasswordRule(
+              label: loc(context).routerPasswordRuleLowerUpper,
+              validate: ((text) => HybridCaseRule().validate(text))),
+          AppPasswordRule(
+              label: loc(context).routerPasswordRuleOneNumber,
+              validate: ((text) => DigitalCheckRule().validate(text))),
+          AppPasswordRule(
+              label: loc(context).routerPasswordRuleSpecialChar,
+              validate: ((text) => SpecialCharCheckRule().validate(text))),
+          AppPasswordRule(
+              label: loc(context).routerPasswordRuleStartEndWithSpace,
+              validate: ((text) => NoSurroundWhitespaceRule().validate(text))),
+          AppPasswordRule(
+              label: loc(context).routerPasswordRuleConsecutiveChar,
+              validate: ((text) => !ConsecutiveCharRule().validate(text))),
+          AppPasswordRule(
+              label: loc(context).passwordsMustMatch,
+              validate: ((text) => confirmController.text == text)),
+        ];
+
     showSubmitAppDialog(
       context,
       scrollable: true,
@@ -385,75 +452,61 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       contentBuilder: (context, setState, onSubmit) {
         FocusNode hintFocusNode = FocusNode();
         FocusNode confirmFocusNode = FocusNode();
+        final passwordRules = rules(confirmController);
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppPasswordField(
+            AppPasswordInput(
               key: const Key('newPasswordField'),
-              border: const OutlineInputBorder(),
               controller: controller,
-              headerText: loc(context).routerPasswordNew,
-              validations: validations,
-              onValidationChanged: (isValid) {
-                setState(() {
-                  isPasswordValid = isValid;
-                });
-              },
+              label: loc(context).routerPasswordNew,
+              rules: passwordRules,
               onChanged: (value) {
                 setState(() {
-                  isHintNotContainPassword = hintNotContainPasswordValidator
-                      .validator(controller.text);
+                  isPasswordValid =
+                      !passwordRules.any((r) => !r.validate(controller.text));
+                  isHintNotContainPassword =
+                      hintNotContainPasswordRule(controller)
+                          .validate(controller.text);
                 });
               },
               onSubmitted: (_) {
                 FocusScope.of(context).requestFocus(confirmFocusNode);
               },
             ),
-            const AppGap.medium(),
-            AppPasswordField(
-              key: const Key('confirmPasswordField'),
-              border: const OutlineInputBorder(),
-              controller: confirmController,
-              headerText: loc(context).retypeRouterPassword,
+            AppGap.lg(),
+            Focus(
               focusNode: confirmFocusNode,
-              onChanged: (value) {
-                setState(() {
-                  isPasswordValid =
-                      !validations.any((v) => !v.validator(controller.text));
-                });
-              },
-              onSubmitted: (_) {
-                FocusScope.of(context).requestFocus(hintFocusNode);
-              },
+              child: AppPasswordInput(
+                key: const Key('confirmPasswordField'),
+                controller: confirmController,
+                label: loc(context).retypeRouterPassword,
+                onChanged: (value) {
+                  setState(() {
+                    isPasswordValid =
+                        !passwordRules.any((r) => !r.validate(controller.text));
+                  });
+                },
+                onSubmitted: (_) {
+                  FocusScope.of(context).requestFocus(hintFocusNode);
+                },
+              ),
             ),
-            const AppGap.large2(),
-            AppValidatorWidget(
-              validations: validations,
-              textToValidate: controller.text,
-            ),
-            const AppGap.large3(),
-            AppTextField(
-              key: const Key('hintTextField'),
-              border: const OutlineInputBorder(),
-              controller: hintController,
-              headerText: loc(context).routerPasswordHintOptional,
+            AppGap.xxxl(),
+            Focus(
               focusNode: hintFocusNode,
-              onChanged: (value) {
-                setState(() {
-                  isHintNotContainPassword = hintNotContainPasswordValidator
-                      .validator(controller.text);
-                });
-              },
-              onSubmitted: (_) {
-                if (isPasswordValid && isHintNotContainPassword) {
-                  onSubmit();
-                }
-              },
-            ),
-            const AppGap.large2(),
-            AppValidatorWidget(
-              validations: [hintNotContainPasswordValidator],
-              textToValidate: controller.text,
+              child: AppTextFormField(
+                key: const Key('hintTextField'),
+                controller: hintController,
+                label: loc(context).routerPasswordHintOptional,
+                onChanged: (value) {
+                  setState(() {
+                    isHintNotContainPassword =
+                        hintNotContainPasswordRule(controller)
+                            .validate(controller.text);
+                  });
+                },
+              ),
             ),
           ],
         );

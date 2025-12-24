@@ -1,11 +1,11 @@
-import 'dart:html';
+import 'package:web/web.dart';
 
 void setCookie(String cookie) {
   document.cookie = cookie;
 }
 
 String? getCookie(String key) {
-  final cookie = document.cookie ?? '';
+  final cookie = document.cookie;
   if (cookie.isEmpty) {
     return null;
   }

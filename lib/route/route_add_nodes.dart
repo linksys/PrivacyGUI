@@ -10,4 +10,3 @@ final addNodesRoute = LinksysRoute(
   ),
   routes: [],
 );
-

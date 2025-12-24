@@ -16,8 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_state.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'dart:typed_data';
 
 import '../../../../common/config.dart';
@@ -32,7 +31,7 @@ void main() {
     testHelper.setup();
   });
 
-  testLocalizationsV2('Manual firmware update - default',
+  testLocalizations('Manual firmware update - default',
       (tester, localizedScreen) async {
     // Test ID: MFUV-DEFAULT
     await testHelper.pumpShellView(
@@ -42,22 +41,47 @@ void main() {
     );
 
     // Verify page title
-    expect(find.text(testHelper.loc(tester.element(find.byType(ManualFirmwareUpdateView))).manualFirmwareUpdate), findsOneWidget);
+    expect(
+        find.text(testHelper
+            .loc(tester.element(find.byType(ManualFirmwareUpdateView)))
+            .manualFirmwareUpdate),
+        findsOneWidget);
 
     // Verify "Manual" title
-    expect(find.text(testHelper.loc(tester.element(find.byType(ManualFirmwareUpdateView))).manual), findsOneWidget);
+    expect(
+        find.text(testHelper
+            .loc(tester.element(find.byType(ManualFirmwareUpdateView)))
+            .manual),
+        findsOneWidget);
 
     // Verify "No file chosen" text
-    expect(find.text(testHelper.loc(tester.element(find.byType(ManualFirmwareUpdateView))).noFileChosen), findsOneWidget);
+    expect(
+        find.text(testHelper
+            .loc(tester.element(find.byType(ManualFirmwareUpdateView)))
+            .noFileChosen),
+        findsOneWidget);
 
     // Verify "Choose File" button
-    expect(find.text(testHelper.loc(tester.element(find.byType(ManualFirmwareUpdateView))).chooseFile), findsOneWidget);
+    expect(
+        find.text(testHelper
+            .loc(tester.element(find.byType(ManualFirmwareUpdateView)))
+            .chooseFile),
+        findsOneWidget);
 
-    // Verify "Start" button is disabled
-    expect(find.text(testHelper.loc(tester.element(find.byType(ManualFirmwareUpdateView))).start), findsOneWidget);
-    expect(tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap, isNull);
+    expect(
+        find.text(testHelper
+            .loc(tester.element(find.byType(ManualFirmwareUpdateView)))
+            .start),
+        findsOneWidget);
+    // Use widgetWithText to target the specific Start button (multiple AppButtons exist)
+    final startButton = tester.widget<AppButton>(find.widgetWithText(
+        AppButton,
+        testHelper
+            .loc(tester.element(find.byType(ManualFirmwareUpdateView)))
+            .start));
+    expect(startButton.onTap, isNull);
   }, screens: screens, goldenFilename: 'MFUV-DEFAULT-01-initial_state');
-  testLocalizationsV2('Manual firmware update - file selected',
+  testLocalizations('Manual firmware update - file selected',
       (tester, localizedScreen) async {
     // Test ID: MFUV-FILE_SELECTED
     when(testHelper.mockManualFirmwareUpdateNotifier.build()).thenReturn(
@@ -72,7 +96,8 @@ void main() {
     );
 
     // Verify page title
-    expect(find.text(testHelper.loc(context).manualFirmwareUpdate), findsOneWidget);
+    expect(find.text(testHelper.loc(context).manualFirmwareUpdate),
+        findsOneWidget);
 
     // Verify "Manual" title
     expect(find.text(testHelper.loc(context).manual), findsOneWidget);
@@ -85,10 +110,13 @@ void main() {
 
     // Verify "Start" button is enabled
     expect(find.text(testHelper.loc(context).start), findsOneWidget);
-    expect(tester.widget<AppFilledButton>(find.byType(AppFilledButton)).onTap, isNotNull);
+    // Use widgetWithText to target the specific Start button (multiple AppButtons exist)
+    final startButton = tester.widget<AppButton>(
+        find.widgetWithText(AppButton, testHelper.loc(context).start));
+    expect(startButton.onTap, isNotNull);
   }, screens: screens, goldenFilename: 'MFUV-FILE_SELECTED-01-initial_state');
 
-  testLocalizationsV2('Manual firmware update - installing status',
+  testLocalizations('Manual firmware update - installing status',
       (tester, localizedScreen) async {
     // Test ID: MFUV-INSTALLING
     when(testHelper.mockManualFirmwareUpdateNotifier.build()).thenReturn(
@@ -105,19 +133,23 @@ void main() {
     await tester.pump(Duration(seconds: 2));
 
     // Verify processing icon
-    expect(find.byIcon(LinksysIcons.cloudDownload), findsOneWidget);
+    expect(find.byIcon(AppFontIcons.cloudDownload), findsOneWidget);
 
     // Verify processing title
-    expect(find.text(testHelper.loc(context).firmwareInstallingTitle), findsOneWidget);
+    expect(find.text(testHelper.loc(context).firmwareInstallingTitle),
+        findsOneWidget);
 
     // Verify processing message
-    expect(find.text('${testHelper.loc(context).firmwareDownloadingMessage1}\n${testHelper.loc(context).firmwareDownloadingMessage2}\n${testHelper.loc(context).firmwareDownloadingMessage3}'), findsOneWidget);
+    expect(
+        find.text(
+            '${testHelper.loc(context).firmwareDownloadingMessage1}\n${testHelper.loc(context).firmwareDownloadingMessage2}\n${testHelper.loc(context).firmwareDownloadingMessage3}'),
+        findsOneWidget);
 
     // Verify LinearProgressIndicator
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   }, screens: screens, goldenFilename: 'MFUV-INSTALLING-01-initial_state');
 
-  testLocalizationsV2('Manual firmware update - rebooting status',
+  testLocalizations('Manual firmware update - rebooting status',
       (tester, localizedScreen) async {
     // Test ID: MFUV-REBOOTING
     when(testHelper.mockManualFirmwareUpdateNotifier.build()).thenReturn(
@@ -126,7 +158,8 @@ void main() {
                 name: 'FW_LN16_1.0.5.216445_release.img',
                 bytes: Uint8List.fromList('bytes'.codeUnits)),
             status: ManualUpdateRebooting()));
-    when(testHelper.mockManualFirmwareUpdateNotifier.manualFirmwareUpdate(any, any))
+    when(testHelper.mockManualFirmwareUpdateNotifier
+            .manualFirmwareUpdate(any, any))
         .thenAnswer((_) async {
       await Future.delayed(Duration(seconds: 2));
       return true;
@@ -139,12 +172,16 @@ void main() {
     await tester.pump(); // Ensure UI is settled after pump
 
     // Verify processing icon
-    expect(find.byIcon(LinksysIcons.restartAlt), findsOneWidget);
+    expect(find.byIcon(AppFontIcons.restartAlt), findsOneWidget);
 
     // Verify processing title
-    expect(find.text(testHelper.loc(context).firmwareRebootingTitle), findsOneWidget);
+    expect(find.text(testHelper.loc(context).firmwareRebootingTitle),
+        findsOneWidget);
 
     // Verify processing message
-    expect(find.text('${testHelper.loc(context).firmwareRestartingMessage1}\n${testHelper.loc(context).firmwareRestartingMessage2}\n${testHelper.loc(context).firmwareRestartingMessage3}'), findsOneWidget);
+    expect(
+        find.text(
+            '${testHelper.loc(context).firmwareRestartingMessage1}\n${testHelper.loc(context).firmwareRestartingMessage2}\n${testHelper.loc(context).firmwareRestartingMessage3}'),
+        findsOneWidget);
   }, screens: screens, goldenFilename: 'MFUV-REBOOTING-01-initial_state');
 }

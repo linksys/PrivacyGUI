@@ -43,7 +43,8 @@ class TZOSettings extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory TZOSettings.fromJson(String source) => TZOSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory TZOSettings.fromJson(String source) =>
+      TZOSettings.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

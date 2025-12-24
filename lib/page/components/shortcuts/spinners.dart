@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 OverlayEntry showFullScreenSpinner(
   BuildContext context, {
@@ -15,7 +15,7 @@ OverlayEntry showFullScreenSpinner(
       title: title,
       messages: messages,
       period: period);
-  
+
   Overlay.of(context).insert(entry);
   return entry;
 }
@@ -36,11 +36,34 @@ OverlayEntry _buildOverlayEntry({
         stream: stream,
         initialData: messages.firstOrNull,
         builder: (context, snapshot) {
-          return AppFullScreenSpinner(
-            background: background,
-            color: color,
-            title: title,
-            text: snapshot.data,
+          return Container(
+            color: background ?? Colors.black54,
+            width: double.infinity,
+            height: double.infinity,
+            child: Material(
+              color: Colors.transparent,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const AppLoader(),
+                  if (title != null) ...[
+                    AppGap.lg(),
+                    AppText.titleLarge(
+                      title,
+                      color: Colors.white,
+                    ),
+                  ],
+                  if (snapshot.data != null) ...[
+                    AppGap.md(),
+                    AppText.bodyMedium(
+                      snapshot.data!,
+                      color: Colors.white,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           );
         });
   });

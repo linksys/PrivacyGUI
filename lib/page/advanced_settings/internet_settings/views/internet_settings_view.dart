@@ -17,11 +17,11 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/views/ipv6_
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/release_and_renew_view.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
@@ -115,12 +115,12 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
       ),
     ];
     final isDirty = ref.read(internetSettingsProvider.notifier).isDirty();
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       padding: EdgeInsets.zero,
       useMainPadding: false,
       title: loc(context).internetSettings.capitalizeWords(),
       bottomBar: isEditing
-          ? PageBottomBar(
+          ? UiKitBottomBarConfig(
               isPositiveEnabled: isDirty &&
                   isIpv4FormValid &&
                   isIpv6FormValid &&
@@ -157,7 +157,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.bodyMedium('${loc(context).selectedCombinationNotValid}:'),
-            const AppGap.medium(),
+            AppGap.md(),
             Table(
               border: const TableBorder(),
               columnWidths: const {
@@ -165,7 +165,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
                 1: FlexColumnWidth(1),
               },
               children: [
-                const TableRow(children: [
+                TableRow(children: [
                   AppText.labelLarge('IPv4'),
                   AppText.labelLarge('IPv6'),
                 ]),
@@ -189,15 +189,14 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           title: AppText.titleLarge(loc(context).restartWifiAlertTitle),
           content: AppText.bodyMedium(loc(context).restartWifiAlertDesc),
           actions: [
-            AppTextButton(
-              loc(context).cancel,
-              color: Theme.of(context).colorScheme.onSurface,
+            AppButton.text(
+              label: loc(context).cancel,
               onTap: () {
                 context.pop();
               },
             ),
-            AppTextButton(
-              loc(context).restart,
+            AppButton.text(
+              label: loc(context).restart,
               onTap: () {
                 context.pop();
 

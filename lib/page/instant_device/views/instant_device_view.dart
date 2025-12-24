@@ -7,20 +7,13 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class InstantDeviceView extends ArgumentsConsumerStatefulView {
   const InstantDeviceView({
@@ -56,25 +49,21 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
       });
     }
 
-    return StyledAppPageView(
-      padding: const EdgeInsets.only(),
-      enableSliverAppBar: true,
+    return UiKitPageView.withSliver(
       title: loc(context).instantDevices,
       bottomBar: isOnlineFilter
           ? null
-          : InversePageBottomBar(
+          : UiKitBottomBarConfig(
               isPositiveEnabled: _selectedList.isNotEmpty,
               positiveLabel: loc(context).delete,
-              onPositiveTap: () {
-                _showConfirmDeleteDialog(_selectedList);
-              },
+              onPositiveTap: () => _showConfirmDeleteDialog(_selectedList),
             ),
       actions: [
         AnimatedRefreshContainer(
           builder: (controller) {
-            return AppTextButton.noPadding(
-              loc(context).refresh,
-              icon: LinksysIcons.refresh,
+            return AppButton.text(
+              label: loc(context).refresh,
+              icon: AppIcon.font(AppFontIcons.refresh),
               onTap: () {
                 controller.repeat();
                 ref.read(pollingProvider.notifier).forcePolling().then((value) {
@@ -85,51 +74,48 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
           },
         ),
       ],
-      child: (context, constraints) => ResponsiveLayout(
-        desktop: _desktopLayout(isOnlineFilter, filteredDeviceList),
-        mobile: _mobileLayout(isOnlineFilter, filteredDeviceList),
+      child: (context, constraints) => AppResponsiveLayout(
+        desktop: (ctx) =>
+            _desktopLayout(ctx, isOnlineFilter, filteredDeviceList),
+        mobile: (ctx) => _mobileLayout(ctx, isOnlineFilter, filteredDeviceList),
       ),
     );
   }
 
-  Widget _desktopLayout(
-      bool isOnlineFilter, List<DeviceListItem> filteredDeviceList) {
+  Widget _desktopLayout(BuildContext context, bool isOnlineFilter,
+      List<DeviceListItem> filteredDeviceList) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 4.col,
+          width: context.colWidth(4),
           child: AppCard(
-            padding: const EdgeInsets.all(Spacing.small2),
-            margin: const EdgeInsets.only(bottom: Spacing.small3),
-            color: Theme.of(context).colorScheme.background,
-            child: const DevicesFilterWidget(
-                // scrollable: false,
-                ),
+            padding: EdgeInsets.all(AppSpacing.sm),
+            child: const DevicesFilterWidget(),
           ),
         ),
-        const AppGap.gutter(),
+        AppGap.gutter(),
         SizedBox(
-          width: 8.col,
-          child: _deviceListView(isOnlineFilter, filteredDeviceList),
+          width: context.colWidth(8),
+          child: _deviceListView(context, isOnlineFilter, filteredDeviceList),
         ),
       ],
     );
   }
 
-  Widget _mobileLayout(
-      bool isOnlineFilter, List<DeviceListItem> filteredDeviceList) {
-    return _deviceListView(isOnlineFilter, filteredDeviceList);
+  Widget _mobileLayout(BuildContext context, bool isOnlineFilter,
+      List<DeviceListItem> filteredDeviceList) {
+    return _deviceListView(context, isOnlineFilter, filteredDeviceList);
   }
 
-  Widget _deviceListView(
-      bool isOnlineFilter, List<DeviceListItem> filteredDeviceList) {
+  Widget _deviceListView(BuildContext context, bool isOnlineFilter,
+      List<DeviceListItem> filteredDeviceList) {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: Spacing.medium),
-          child: ResponsiveLayout(
-            desktop: Column(
+          padding: EdgeInsets.only(bottom: AppSpacing.lg),
+          child: AppResponsiveLayout(
+            desktop: (ctx) => Column(
               children: [
                 Row(
                   children: [
@@ -137,27 +123,26 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
                       loc(context).nDevices(filteredDeviceList.length),
                     ),
                     const Spacer(),
-                    _editButton(isOnlineFilter, filteredDeviceList),
+                    _editButton(context, isOnlineFilter, filteredDeviceList),
                   ],
                 ),
               ],
             ),
-            mobile: Column(
+            mobile: (ctx) => Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText.labelLarge(
                   loc(context).nDevices(filteredDeviceList.length),
                 ),
-                const AppGap.medium(),
+                AppGap.lg(),
                 Row(
                   children: [
-                    _editButton(isOnlineFilter, filteredDeviceList),
+                    _editButton(context, isOnlineFilter, filteredDeviceList),
                     const Spacer(),
-                    AppTextButton.noPadding(
-                      loc(context).filters,
-                      icon: LinksysIcons.filter,
-                      color: Theme.of(context).colorScheme.primary,
+                    AppButton.text(
+                      label: loc(context).filters,
+                      icon: AppIcon.font(AppFontIcons.filter),
                       onTap: () {
                         showModalBottomSheet(
                           context: context,
@@ -165,7 +150,7 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
                           useRootNavigator: true,
                           showDragHandle: true,
                           builder: (context) => Container(
-                            padding: const EdgeInsets.all(Spacing.large2),
+                            padding: EdgeInsets.all(AppSpacing.xxl),
                             width: double.infinity,
                             child: const DevicesFilterWidget(),
                           ),
@@ -205,16 +190,13 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
     );
   }
 
-  Widget _editButton(
-      bool isOnlineFilter, List<DeviceListItem> filteredDeviceList) {
-    return AppTextButton.noPadding(
-      loc(context).selectAll,
-      icon: filteredDeviceList.length == _selectedList.length
-          ? LinksysIcons.checkBox
-          : LinksysIcons.checkBoxOutlineBlank,
-      color: isOnlineFilter
-          ? Theme.of(context).colorScheme.onSurface.withOpacity(0.12)
-          : Theme.of(context).colorScheme.primary,
+  Widget _editButton(BuildContext context, bool isOnlineFilter,
+      List<DeviceListItem> filteredDeviceList) {
+    return AppButton.text(
+      label: loc(context).selectAll,
+      icon: AppIcon.font(filteredDeviceList.length == _selectedList.length
+          ? AppFontIcons.checkBox
+          : AppFontIcons.checkBoxOutlineBlank),
       onTap: isOnlineFilter
           ? null
           : () {
@@ -236,16 +218,14 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
       content: AppText.bodyLarge(
           loc(context).nDevicesDeleteDevicesDescription(selectedList.length)),
       actions: [
-        AppTextButton(
-          loc(context).cancel,
-          color: Theme.of(context).colorScheme.onSurface,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () {
             context.pop();
           },
         ),
-        AppTextButton(
-          loc(context).delete,
-          color: Theme.of(context).colorScheme.error,
+        AppButton.text(
+          label: loc(context).delete,
           onTap: () {
             _removeDevices(selectedList);
             context.pop();
@@ -283,16 +263,14 @@ class _InstantDeviceViewState extends ConsumerState<InstantDeviceView> {
       title: loc(context).disconnectClient,
       content: AppText.bodyLarge(''),
       actions: [
-        AppTextButton(
-          loc(context).cancel,
-          color: Theme.of(context).colorScheme.onSurface,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () {
             context.pop();
           },
         ),
-        AppTextButton(
-          loc(context).disconnect,
-          color: Theme.of(context).colorScheme.error,
+        AppButton.text(
+          label: loc(context).disconnect,
           onTap: () {
             context.pop();
             doSomethingWithSpinner(

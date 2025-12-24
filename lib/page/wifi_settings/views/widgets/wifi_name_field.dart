@@ -3,7 +3,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/validators.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class WifiNameField extends StatefulWidget {
   final TextEditingController controller;
@@ -28,12 +28,16 @@ class _WifiNameFieldState extends State<WifiNameField> {
 
   @override
   Widget build(BuildContext context) {
-    return AppTextField(
-      semanticLabel: widget.semanticLabel,
+    return AppTextFormField(
+      label: widget.semanticLabel.isNotEmpty
+          ? widget.semanticLabel
+          : loc(context).wifiName,
       controller: widget.controller,
-      border: const OutlineInputBorder(),
+      errorDisplayMode: AppErrorDisplayMode.text,
+      // border: const OutlineInputBorder(), // UI Kit handles border
       onChanged: widget.onChanged,
-      errorText: () {
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: (value) {
         final errorKeys = wifiSSIDValidator
             .validateDetail(widget.controller.text, onlyFailed: true);
         if (errorKeys.isEmpty) {
@@ -48,8 +52,8 @@ class _WifiNameFieldState extends State<WifiNameField> {
         } else {
           return null;
         }
-      }(),
-      onSubmitted: widget.onSubmitted,
+      },
+      // onSubmitted: widget.onSubmitted, // Not supported in AppTextFormField
     );
   }
 }

@@ -5,8 +5,7 @@ import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 enum FirmwareUpdateStep {
   checking,
@@ -69,16 +68,14 @@ class _FirmwareUpdateProcessViewState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Center(
-            child:
-                AppSpinner(semanticLabel: 'Firmware Update Process spinner')),
-        const AppGap.large3(),
+        const Center(child: AppLoader()),
+        AppGap.lg(),
         if (percent != null) ...[
           AppText.labelLarge(
               '${widget.current?.$1.getDeviceName() ?? ''} - $percent%'),
-          const AppGap.large3(),
+          AppGap.lg(),
           AppText.titleSmall(step.getTitle(context)),
-          const AppGap.large3(),
+          AppGap.lg(),
           ...step.getMessages(context).map((e) => AppText.bodySmall(e)),
         ],
       ],

@@ -17,8 +17,5 @@ const dmzSettingsTestState = {
       "destinationType": "ip"
     }
   },
-  "status": {
-    "ipAddress": "10.137.1.1",
-    "subnetMask": "255.255.255.0"
-  }
+  "status": {"ipAddress": "10.137.1.1", "subnetMask": "255.255.255.0"}
 };

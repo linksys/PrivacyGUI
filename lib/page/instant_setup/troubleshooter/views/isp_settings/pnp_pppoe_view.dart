@@ -8,16 +8,13 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_isp_settings_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PnpPPPOEView extends ArgumentsConsumerStatefulView {
   const PnpPPPOEView({
@@ -104,10 +101,10 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
         PnpIspSettingsStatus.error => loc(context).error,
         _ => loc(context).savingChanges,
       };
-      return AppFullScreenSpinner(text: message);
+      return AppFullScreenLoader(title: message);
     }
 
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).pnpPppoeTitle,
       child: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,26 +112,25 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
           AppText.bodyLarge(
             loc(context).pnpPppoeDesc,
           ),
-          const AppGap.large3(),
-          const AppGap.small2(),
+          AppGap.xxl(),
+          AppGap.sm(),
           if (errorMessage != null)
             Padding(
-              padding: const EdgeInsets.only(
-                bottom: Spacing.large3 + Spacing.small2,
+              padding: EdgeInsets.only(
+                bottom: AppSpacing.xxl + AppSpacing.sm,
               ),
               child: AppText.bodyLarge(
                 errorMessage!,
                 color: Theme.of(context).colorScheme.error,
               ),
             ),
-          AppTextField.outline(
-            headerText: loc(context).accountName,
+          AppTextFormField(
+            label: loc(context).accountName,
             controller: _accountNameController,
           ),
-          const AppGap.large2(),
-          AppTextField.outline(
-            secured: true,
-            headerText: loc(context).password,
+          AppGap.xl(),
+          AppPasswordInput(
+            label: loc(context).password,
             controller: _passwordController,
           ),
           Visibility(
@@ -142,10 +138,10 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
             replacement: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppGap.large5(),
-                AppTextButton.noPadding(
-                  loc(context).pnpPppoeAddVlan,
-                  icon: LinksysIcons.add,
+                AppGap.xxxl(),
+                AppButton.text(
+                  label: loc(context).pnpPppoeAddVlan,
+                  icon: AppIcon.font(AppFontIcons.add),
                   onTap: () {
                     setState(() {
                       hasVlanID = true;
@@ -157,16 +153,15 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppGap.large2(),
-                AppTextField.outline(
-                  headerText: loc(context).vlanIdOptional,
+                AppGap.xl(),
+                AppTextFormField(
+                  label: loc(context).vlanIdOptional,
                   controller: _vlanController,
-                  inputType: TextInputType.number,
                 ),
-                const AppGap.large5(),
-                AppTextButton.noPadding(
-                  loc(context).pnpPppoeRemoveVlan,
-                  icon: LinksysIcons.remove,
+                AppGap.xxxl(),
+                AppButton.text(
+                  label: loc(context).pnpPppoeRemoveVlan,
+                  icon: AppIcon.font(AppFontIcons.remove),
                   onTap: () {
                     setState(() {
                       hasVlanID = false;
@@ -176,10 +171,12 @@ class _PnpPPPOEViewState extends ConsumerState<PnpPPPOEView> {
               ],
             ),
           ),
-          const AppGap.large3(),
-          const AppGap.small2(),
-          AppFilledButton(
-            loc(context).next,
+          AppGap.xxl(),
+          AppGap.sm(),
+          AppButton(
+            key: const Key('pnpPppoeNextButton'),
+            label: loc(context).next,
+            variant: SurfaceVariant.highlight,
             onTap: _onNext,
           ),
         ],

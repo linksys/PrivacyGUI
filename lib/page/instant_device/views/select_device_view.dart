@@ -2,14 +2,11 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
-import 'package:privacygui_widgets/widgets/page/layout/group_list_layout.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../providers/device_list_state.dart';
 
@@ -119,78 +116,105 @@ class _SelectDeviceViewState extends ConsumerState<SelectDeviceView> {
         .toList();
     final offlineDevices =
         state.devices.where((device) => !device.isOnline).toList();
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).selectDevices,
       bottomBar: _selectMode == SelectMode.multiple
-          ? PageBottomBar(
+          ? UiKitBottomBarConfig(
               isPositiveEnabled: selected.isNotEmpty,
               positiveLabel: loc(context).nAdd(selected.length - _extraCount),
               onPositiveTap: () {
                 context.pop(selected);
               })
           : null,
-      child: (context, constraints) => GroupList<DeviceListItem>(
-          groups: [
-            if (onlineDevices.isNotEmpty)
-              GroupItem(
-                key: const ObjectKey('online'),
-                label: loc(context).onlineDevices,
-                items: onlineDevices,
+      child: (context, constraints) => _buildDeviceGroups(
+        onlineDevices: onlineDevices,
+        offlineDevices: offlineDevices,
+      ),
+    );
+  }
+
+  /// Composed GroupList replacing AppGroupListLayout
+  Widget _buildDeviceGroups({
+    required List<DeviceListItem> onlineDevices,
+    required List<DeviceListItem> offlineDevices,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (onlineDevices.isNotEmpty) ...[
+          AppText.titleSmall(loc(context).onlineDevices),
+          AppGap.md(),
+          ...onlineDevices.map((item) => Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _buildDeviceCard(item),
+              )),
+          AppGap.lg(),
+        ],
+        if (!_onlineOnly && offlineDevices.isNotEmpty) ...[
+          AppText.titleSmall(loc(context).offlineDevices),
+          AppGap.md(),
+          ...offlineDevices.map((item) => Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _buildDeviceCard(item),
+              )),
+        ],
+      ],
+    );
+  }
+
+  /// Composed ListCard replacing AppListCard
+  Widget _buildDeviceCard(DeviceListItem item) {
+    final value = _subMessage(item);
+    final selectable = _selectable(item);
+    final isSelected = selected.any((element) => element == item);
+
+    return Opacity(
+      opacity: _selectMode == SelectMode.multiple
+          ? 1
+          : selectable
+              ? 1
+              : 0.3,
+      child: AppCard(
+        onTap: _selectMode == SelectMode.multiple
+            ? selectable
+                ? () => onChecked(item)
+                : null
+            : selectable
+                ? () => context.pop([item])
+                : null,
+        child: Row(
+          children: [
+            if (_selectMode == SelectMode.multiple)
+              Padding(
+                padding: EdgeInsets.only(right: AppSpacing.lg),
+                child: Opacity(
+                  opacity: selectable ? 1 : 0.3,
+                  child: AbsorbPointer(
+                    absorbing: !selectable,
+                    child: AppCheckbox(
+                      value: isSelected,
+                      onChanged: (value) {
+                        onChecked(item);
+                      },
+                    ),
+                  ),
+                ),
               ),
-            if (!_onlineOnly && offlineDevices.isNotEmpty)
-              GroupItem(
-                key: const ObjectKey('offline'),
-                label: loc(context).offlineDevices,
-                items: offlineDevices,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelMedium(item.name),
+                  if (selectable && value != null) ...[
+                    AppGap.xs(),
+                    AppText.bodyMedium(value),
+                  ],
+                ],
               ),
+            ),
           ],
-          itemBuilder: (item) {
-            final value = _subMessage(item);
-            final selectable = _selectable(item);
-            return Opacity(
-              opacity: _selectMode == SelectMode.multiple
-                  ? 1
-                  : selectable
-                      ? 1
-                      : 0.3,
-              child: AppListCard(
-                color: selected.any((element) => element == item)
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : null,
-                borderColor: selected.any((element) => element == item)
-                    ? Theme.of(context).colorScheme.primary
-                    : null,
-                title: AppText.labelMedium(item.name),
-                leading: _selectMode == SelectMode.multiple
-                    ? Opacity(
-                        opacity: selectable ? 1 : 0.3,
-                        child: AbsorbPointer(
-                          absorbing: !selectable,
-                          child: AppCheckbox(
-                            value: selected.any((element) => element == item),
-                            onChanged: (value) {
-                              onChecked(item);
-                            },
-                          ),
-                        ),
-                      )
-                    : null,
-                description:
-                    selectable ? AppText.bodyMedium(value ?? '') : null,
-                onTap: _selectMode == SelectMode.multiple
-                    ? selectable
-                        ? () {
-                            onChecked(item);
-                          }
-                        : null
-                    : selectable
-                        ? () {
-                            context.pop([item]);
-                          }
-                        : null,
-              ),
-            );
-          }),
+        ),
+      ),
     );
   }
 

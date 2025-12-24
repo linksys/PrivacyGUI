@@ -139,8 +139,9 @@ class IPv6FirewallRuleList extends Equatable {
     return IPv6FirewallRuleList(
       rules: List<IPv6FirewallRule>.from(
         map['rules']?.map<IPv6FirewallRule>(
-          (x) => IPv6FirewallRule.fromMap(x as Map<String, dynamic>),
-        ) ?? [],
+              (x) => IPv6FirewallRule.fromMap(x as Map<String, dynamic>),
+            ) ??
+            [],
       ),
     );
   }

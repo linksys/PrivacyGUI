@@ -4,13 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 enum ShareWifiOption {
   clipboard(displayTitle: 'Copy to clipboard', iconId: 'copyDefault'),
@@ -57,7 +52,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _wifiInfoSection(),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppCard(child: _qrcodeSection()),
       ],
     );
@@ -73,18 +68,18 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
           Align(
             alignment: Alignment.center,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.medium),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: AppText.labelLarge(loc(context).wifiShareQRScan),
             ),
           ),
           const Divider(),
-          const AppGap.large2(),
+          AppGap.xl(),
           RepaintBoundary(
             key: globalKey,
             child: Container(
               color: Colors.white,
-              height: ResponsiveLayout.isMobileLayout(context) ? 240 : 200,
-              width: ResponsiveLayout.isMobileLayout(context) ? 240 : 200,
+              height: context.isMobileLayout ? 240 : 200,
+              width: context.isMobileLayout ? 240 : 200,
               child: QrImageView(
                 data: WiFiCredential(
                   ssid: widget.ssid,
@@ -94,7 +89,7 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
               ),
             ),
           ),
-          const AppGap.large2(),
+          AppGap.xl(),
         ],
       ),
     );
@@ -127,21 +122,40 @@ class _WiFiShareDetailViewState extends ConsumerState<WiFiShareDetailView>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppSettingCard(
-          title: loc(context).wifiName,
-          description: widget.ssid,
+        AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText.bodyMedium(loc(context).wifiName),
+              AppGap.xs(),
+              AppText.labelLarge(widget.ssid),
+            ],
+          ),
         ),
-        const AppGap.small3(),
-        AppSettingCard(
-          title: loc(context).wifiPassword,
-          description: widget.password,
-          trailing: AppIconButton(
-            icon: LinksysIcons.fileCopy,
-            semanticLabel: 'file copy',
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: widget.password))
-                  .then((value) => showSharedCopiedSnackBar());
-            },
+        AppGap.sm(),
+        AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.bodyMedium(loc(context).wifiPassword),
+                    AppGap.xs(),
+                    AppText.labelLarge(widget.password),
+                  ],
+                ),
+              ),
+              AppIconButton(
+                icon: AppIcon.font(AppFontIcons.fileCopy),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: widget.password))
+                      .then((value) => showSharedCopiedSnackBar());
+                },
+              ),
+            ],
           ),
         ),
         // AppText.labelLarge('${widget.numOfDevices} devices connected'),

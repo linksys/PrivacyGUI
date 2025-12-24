@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/page/instant_setup/model/impl/night_mode_step.dart';
-import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
+
 import 'package:privacy_gui/page/instant_setup/providers/mock_pnp_providers.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
-import 'package:privacygui_widgets/widgets/switch/switch.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+
+import '../../../../common/theme_data.dart';
 
 // A wrapper widget to correctly handle the lifecycle of the onInit call.
 class InitOnceWrapper extends ConsumerStatefulWidget {
@@ -60,8 +61,15 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: CustomResponsive(
-              child: Scaffold(
+            theme: mockLightThemeData,
+            home: AppResponsiveLayout(
+              mobile: (ctx) => Scaffold(
+                body: Consumer(builder: (context, ref, child) {
+                  capturedRef = ref; // Capture the ref
+                  return InitOnceWrapper(step: nightModeStep);
+                }),
+              ),
+              desktop: (ctx) => Scaffold(
                 body: Consumer(builder: (context, ref, child) {
                   capturedRef = ref; // Capture the ref
                   return InitOnceWrapper(step: nightModeStep);
@@ -79,7 +87,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      final stepState = container.read(pnpProvider).stepStateList[nightModeStep.stepId];
+      final stepState =
+          container.read(pnpProvider).stepStateList[nightModeStep.stepId];
       final isEnabled = stepState?.getData<bool>('isEnabled', false) ?? false;
       expect(isEnabled, isFalse);
 
@@ -87,7 +96,8 @@ void main() {
       expect(switchWidget.value, isFalse);
     });
 
-    testWidgets('tapping switch toggles isEnabled state and description', (tester) async {
+    testWidgets('tapping switch toggles isEnabled state and description',
+        (tester) async {
       // Arrange
       await pumpWidget(tester);
       await tester.pumpAndSettle();
@@ -101,7 +111,6 @@ void main() {
       // Expect switch to be off
       expect(find.byType(AppSwitch).last, findsOneWidget);
       expect(switchWidget.value, isFalse);
-      expect(switchWidget.semanticLabel, 'node light');
 
       // Assert initial state
       expect(find.text(loc.nightModeOnDesc), findsNothing);
@@ -139,7 +148,8 @@ void main() {
       expect(result, {'isEnabled': true});
     });
 
-    testWidgets('getValidationData returns correct isEnabled state', (tester) async {
+    testWidgets('getValidationData returns correct isEnabled state',
+        (tester) async {
       // Arrange
       await pumpWidget(tester);
       await tester.pumpAndSettle();

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'
+    hide ControlsWidgetBuilder, ControlsDetails;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
@@ -7,8 +8,10 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart'
+    hide ControlsWidgetBuilder, ControlsDetails;
+
+import '../../../common/theme_data.dart';
 
 // A simple mock PnpStep for testing the stepper's logic.
 class MockPnpStep extends PnpStep {
@@ -35,12 +38,12 @@ class MockPnpStep extends PnpStep {
     return (context, details) {
       return Row(
         children: [
-          AppFilledButton(
-            'Cancel',
+          AppButton(
+            label: 'Cancel',
             onTap: details.onStepCancel,
           ),
-          AppFilledButton(
-            'Continue',
+          AppButton(
+            label: 'Continue',
             onTap: details.onStepContinue,
           ),
         ],
@@ -90,9 +93,14 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
+            theme: mockLightThemeData,
             home: Scaffold(
-              body: CustomResponsive(
-                child: PnpStepper(
+              body: AppResponsiveLayout(
+                mobile: (ctx) => PnpStepper(
+                  steps: steps,
+                  onLastStep: onLastStep,
+                ),
+                desktop: (ctx) => PnpStepper(
                   steps: steps,
                   onLastStep: onLastStep,
                 ),
@@ -147,7 +155,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Act
-      await tester.tap(find.widgetWithText(AppFilledButton, 'Continue'));
+      await tester.tap(find.widgetWithText(AppButton, 'Continue'));
       await tester.pumpAndSettle();
 
       // Assert
@@ -163,14 +171,14 @@ void main() {
       mockNotifier.setStatus(PnpFlowStatus.wizardConfiguring);
       await pumpStepper(tester, [step1, step2]);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(AppFilledButton, 'Continue'));
+      await tester.tap(find.widgetWithText(AppButton, 'Continue'));
       await tester.pumpAndSettle();
 
       // Pre-condition check
       expect(find.text('Content for guestWifi'), findsOneWidget);
 
       // Act
-      await tester.tap(find.widgetWithText(AppFilledButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
       await tester.pumpAndSettle();
 
       // Assert
@@ -191,7 +199,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Act
-      await tester.tap(find.widgetWithText(AppFilledButton, 'Continue'));
+      await tester.tap(find.widgetWithText(AppButton, 'Continue'));
       await tester.pumpAndSettle();
 
       // Assert

@@ -1,4 +1,3 @@
-
 void config() {}
 
 void platformPrint() {}

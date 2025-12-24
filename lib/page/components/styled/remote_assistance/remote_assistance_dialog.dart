@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/timer_countdown_widget.dart';
 import 'package:privacy_gui/page/dashboard/views/components/remote_assistance_animation.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -40,8 +40,8 @@ void showRemoteAssistanceDialog(BuildContext context, WidgetRef ref) {
               );
             }),
             actions: [
-              AppFilledButton(
-                loc(context).close,
+              AppButton.primary(
+                label: loc(context).close,
                 onTap: () {
                   ref.read(remoteClientProvider.notifier).endRemoteAssistance();
                   // Resume polling
@@ -74,18 +74,12 @@ Widget _buildRemoteAssistanceDialog(WidgetRef ref, BuildContext context) {
 }
 
 Widget _buildInitiateWidget(BuildContext context) {
-  return AppStyledText.link(
-    loc(context).remoteAssistanceInitiateMessage,
-    color: Theme.of(context).colorScheme.primary,
-    defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-    tags: const ['a'],
-    callbackTags: {
-      'a': (tag, data) {
-        final url = data['href'];
-        if (url != null) {
-          launchUrl(Uri.parse(url));
-        }
-      }
+  return AppStyledText(
+    text: loc(context).remoteAssistanceInitiateMessage,
+    onTapHandlers: {
+      'a': () {
+        launchUrl(Uri.parse('http://www.linksys.com/support'));
+      },
     },
   );
 }
@@ -97,9 +91,9 @@ Widget _buildPendingWidget(RemoteClientState state, BuildContext context) {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       AppText.labelLarge(loc(context).remoteAssistancePinCode),
-      AppGap.large1(),
+      AppGap.lg(),
       Center(child: AppText.displayLarge(state.pin ?? '')),
-      AppGap.large2(),
+      AppGap.xl(),
       TimerCountdownWidget(
         initialSeconds: initialSeconds,
         title: 'Pin code',
@@ -125,7 +119,7 @@ Widget _buildCountingWidget(RemoteClientState state, BuildContext context) {
     children: [
       const RemoteAssistanceAnimation(),
       AppText.labelLarge(loc(context).remoteAssistanceSessionActive),
-      AppGap.large2(),
+      AppGap.xl(),
       TimerCountdownWidget(
         initialSeconds: initialSeconds,
         title: 'Session',

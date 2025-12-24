@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/util/extensions.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class LanguageTile extends ConsumerStatefulWidget {
   final void Function(Locale locale)? onSelected;
@@ -19,7 +18,7 @@ class LanguageTile extends ConsumerStatefulWidget {
     this.onSelected,
     this.onTap,
     required this.locale,
-    this.icon = LinksysIcons.language,
+    this.icon = AppFontIcons.language,
     this.showAbbr = false,
   });
 
@@ -57,7 +56,7 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(widget.icon),
-              const AppGap.medium(),
+              AppGap.lg(),
               Flexible(child: AppText.labelMedium(locale.displayText)),
             ],
           );
@@ -66,6 +65,8 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
   // NEED TO revisit
   Widget _localeList() {
     const localeList = AppLocalizations.supportedLocales;
+    // Calculate height based on number of items (56px per ListTile, capped at 400px)
+    final listHeight = (localeList.length * 56.0).clamp(100.0, 400.0);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -73,27 +74,31 @@ class _LanguageTileState extends ConsumerState<LanguageTile> {
         identifier: 'now-locale-list',
         label: 'locale list',
         explicitChildNodes: true,
-        child: ListView.builder(
-            itemCount: localeList.length,
-            itemBuilder: (context, index) {
-              final locale = localeList[index];
-              return ListTile(
-                hoverColor:
-                    Theme.of(context).colorScheme.background.withOpacity(.5),
-                title: Semantics(
-                    identifier: 'now-locale-item-${locale.toLanguageTag()}',
-                    child: AppText.labelLarge(locale.displayText)),
-                trailing: widget.locale == locale
-                    ? Semantics(
-                        identifier: 'now-locale-item-checked',
-                        label: 'checked',
-                        child: const Icon(LinksysIcons.check))
-                    : null,
-                onTap: () {
-                  context.pop(locale);
-                },
-              );
-            }),
+        child: SizedBox(
+          height: listHeight,
+          child: ListView.builder(
+              itemCount: localeList.length,
+              itemBuilder: (context, index) {
+                final locale = localeList[index];
+                final isSelected = widget.locale == locale;
+                return AppListTile(
+                  key: Key('locale_item_${locale.toLanguageTag()}'),
+                  selected: isSelected,
+                  title: Semantics(
+                      identifier: 'now-locale-item-${locale.toLanguageTag()}',
+                      child: AppText.labelLarge(locale.displayText)),
+                  trailing: isSelected
+                      ? Semantics(
+                          identifier: 'now-locale-item-checked',
+                          label: 'checked',
+                          child: const AppIcon.font(AppFontIcons.check))
+                      : null,
+                  onTap: () {
+                    context.pop(locale);
+                  },
+                );
+              }),
+        ),
       ),
     );
   }

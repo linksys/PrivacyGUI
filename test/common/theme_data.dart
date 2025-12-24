@@ -5,12 +5,14 @@ import 'dart:ui';
 import 'package:golden_toolkit/golden_toolkit.dart';
 
 import 'package:flutter/material.dart';
-import 'package:privacygui_widgets/theme/material/theme_data.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
 
-final mockLightThemeData =
-    linksysLightThemeData.copyWith(textTheme: mockLinksysDarkTextTheme);
-final mockDarkThemeData =
-    linksysDarkThemeData.copyWith(textTheme: mockLinksysLightTextTheme);
+final mockLightThemeData = ThemeJsonConfig.defaultConfig()
+    .createLightTheme()
+    .copyWith(textTheme: mockLinksysDarkTextTheme);
+final mockDarkThemeData = ThemeJsonConfig.defaultConfig()
+    .createDarkTheme()
+    .copyWith(textTheme: mockLinksysLightTextTheme);
 
 ///
 /// This is used to help to generate snapshots with localizations
@@ -321,7 +323,6 @@ final mockLinksysDarkTextTheme = TextTheme(
   ),
 );
 final List<String> _fallbackFontFamily = List.from(_testFonts.keys);
-
 
 ///
 /// Add fonts here is there has more fonts needed.

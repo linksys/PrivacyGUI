@@ -19,7 +19,8 @@ class ShouldRetryException implements Exception {
   final String message;
   final dynamic result;
 
-  ShouldRetryException(this.result) : message = 'Should retry check failed! $result';
+  ShouldRetryException(this.result)
+      : message = 'Should retry check failed! $result';
 }
 
 abstract class RetryStrategy {

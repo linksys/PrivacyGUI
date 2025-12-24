@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
 import 'theme_data.dart';
@@ -16,23 +16,33 @@ Widget testableWidget({
   ThemeData? theme,
   ThemeData? darkTheme,
   Locale? locale,
-}) =>
-    ProviderScope(
-      overrides: overrides,
-      parent: parent,
-      child: MaterialApp(
-        navigatorKey: globalKey,
-        theme: theme ?? mockLightThemeData,
-        darkTheme: darkTheme ?? mockDarkThemeData,
-        locale: locale,
-        themeMode: themeMode,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: CustomResponsive(
-            child: child,
-          ),
+}) {
+  Widget result = ProviderScope(
+    overrides: overrides,
+    child: MaterialApp(
+      navigatorKey: globalKey,
+      theme: theme ?? mockLightThemeData,
+      darkTheme: darkTheme ?? mockDarkThemeData,
+      locale: locale,
+      themeMode: themeMode,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: AppResponsiveLayout(
+          mobile: (ctx) => child,
+          desktop: (ctx) => child,
         ),
       ),
+    ),
+  );
+
+  if (parent != null) {
+    result = UncontrolledProviderScope(
+      container: parent,
+      child: result,
     );
+  }
+
+  return result;
+}

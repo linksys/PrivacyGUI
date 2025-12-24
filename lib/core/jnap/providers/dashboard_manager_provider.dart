@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
@@ -41,17 +40,24 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
 
     final result = pollingResult?.data;
     if (result != null) {
-      getDeviceInfoData = (result[JNAPAction.getDeviceInfo] as JNAPSuccess?)?.output;
-      getRadioInfoData = (result[JNAPAction.getRadioInfo] as JNAPSuccess?)?.output;
-      getGuestRadioSettingsData = (result[JNAPAction.getGuestRadioSettings] as JNAPSuccess?)?.output;
-      getSystemStats = (result[JNAPAction.getSystemStats] as JNAPSuccess?)?.output;
-      getEthernetPortConnections = (result[JNAPAction.getEthernetPortConnections] as JNAPSuccess?)?.output;
+      getDeviceInfoData =
+          (result[JNAPAction.getDeviceInfo] as JNAPSuccess?)?.output;
+      getRadioInfoData =
+          (result[JNAPAction.getRadioInfo] as JNAPSuccess?)?.output;
+      getGuestRadioSettingsData =
+          (result[JNAPAction.getGuestRadioSettings] as JNAPSuccess?)?.output;
+      getSystemStats =
+          (result[JNAPAction.getSystemStats] as JNAPSuccess?)?.output;
+      getEthernetPortConnections =
+          (result[JNAPAction.getEthernetPortConnections] as JNAPSuccess?)
+              ?.output;
       getLocalTime = (result[JNAPAction.getLocalTime] as JNAPSuccess?)?.output;
     }
 
     var newState = const DashboardManagerState();
     if (getDeviceInfoData != null) {
-      newState = newState.copyWith(deviceInfo: NodeDeviceInfo.fromJson(getDeviceInfoData));
+      newState = newState.copyWith(
+          deviceInfo: NodeDeviceInfo.fromJson(getDeviceInfoData));
     }
     if (getRadioInfoData != null) {
       newState = _getMainRadioList(newState, getRadioInfoData);
@@ -59,18 +65,21 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     if (getGuestRadioSettingsData != null) {
       newState = _getGuestRadioList(newState, getGuestRadioSettingsData);
     }
-    
+
     if (getSystemStats != null) {
       final uptimeSeconds = getSystemStats['uptimeSeconds'];
       final cpuLoad = getSystemStats['CPULoad'];
       final memoryLoad = getSystemStats['MemoryLoad'];
-      newState = newState.copyWith(uptimes: uptimeSeconds, cpuLoad: cpuLoad, memoryLoad: memoryLoad);
+      newState = newState.copyWith(
+          uptimes: uptimeSeconds, cpuLoad: cpuLoad, memoryLoad: memoryLoad);
     }
 
     if (getEthernetPortConnections != null) {
-      final lanPortConnections = List<String>.from(getEthernetPortConnections['lanPortConnections']);
+      final lanPortConnections =
+          List<String>.from(getEthernetPortConnections['lanPortConnections']);
       final wanPortConnection = getEthernetPortConnections['wanPortConnection'];
-      newState = newState.copyWith(lanConnections: lanPortConnections, wanConnection: wanPortConnection);
+      newState = newState.copyWith(
+          lanConnections: lanPortConnections, wanConnection: wanPortConnection);
     }
 
     String? timeString;
@@ -84,7 +93,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
         ?.millisecondsSinceEpoch;
     newState = newState.copyWith(localTime: localTime);
 
-    final softSKUSettings = JNAPTransactionSuccessWrap.getResult(JNAPAction.getSoftSKUSettings, result ?? {});
+    final softSKUSettings = JNAPTransactionSuccessWrap.getResult(
+        JNAPAction.getSoftSKUSettings, result ?? {});
     if (softSKUSettings != null) {
       final settings = SoftSKUSettings.fromMap(softSKUSettings.output);
       newState = newState.copyWith(skuModelNumber: settings.modelNumber);
@@ -94,7 +104,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   }
 
   // ... (other methods remain the same)
-  Future<void> saveSelectedNetwork(String serialNumber, String networkId) async {
+  Future<void> saveSelectedNetwork(
+      String serialNumber, String networkId) async {
     logger.i('[Prepare]: saveSelectedNetwork - $networkId, $serialNumber');
     final pref = await SharedPreferences.getInstance();
     logger.d('[Prepare]: save selected network - $serialNumber, $networkId');
@@ -107,10 +118,12 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   Future<NodeDeviceInfo> checkRouterIsBack() async {
     NodeDeviceInfo? nodeDeviceInfo;
     final routerRepository = ref.read(routerRepositoryProvider);
-    final result = await routerRepository.send(JNAPAction.getDeviceInfo, fetchRemote: true, retries: 0);
+    final result = await routerRepository.send(JNAPAction.getDeviceInfo,
+        fetchRemote: true, retries: 0);
     nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     final prefs = await SharedPreferences.getInstance();
-    final currentSN = prefs.getString(pCurrentSN) ?? prefs.getString(pPnpConfiguredSN);
+    final currentSN =
+        prefs.getString(pCurrentSN) ?? prefs.getString(pPnpConfiguredSN);
     if (currentSN == nodeDeviceInfo.serialNumber) {
       return nodeDeviceInfo;
     } else {
@@ -125,7 +138,8 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
     NodeDeviceInfo? nodeDeviceInfo = state.deviceInfo;
     if (nodeDeviceInfo == null) {
       final routerRepository = ref.read(routerRepositoryProvider);
-      final result = await routerRepository.send(JNAPAction.getDeviceInfo, retries: 0, timeoutMs: 3000);
+      final result = await routerRepository.send(JNAPAction.getDeviceInfo,
+          retries: 0, timeoutMs: 3000);
       nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
     }
     benchMark.end();
@@ -136,14 +150,18 @@ class DashboardManagerNotifier extends Notifier<DashboardManagerState> {
   //   return state.healthCheckModules.contains(module);
   // }
 
-  DashboardManagerState _getMainRadioList(DashboardManagerState state, Map<String, dynamic> data) {
+  DashboardManagerState _getMainRadioList(
+      DashboardManagerState state, Map<String, dynamic> data) {
     final getRadioInfoData = GetRadioInfo.fromMap(data);
     return state.copyWith(mainRadios: getRadioInfoData.radios);
   }
 
-  DashboardManagerState _getGuestRadioList(DashboardManagerState state, Map<String, dynamic> data) {
+  DashboardManagerState _getGuestRadioList(
+      DashboardManagerState state, Map<String, dynamic> data) {
     final guestRadioSettings = GuestRadioSettings.fromMap(data);
-    return state.copyWith(guestRadios: guestRadioSettings.radios, isGuestNetworkEnabled: guestRadioSettings.isGuestNetworkEnabled);
+    return state.copyWith(
+        guestRadios: guestRadioSettings.radios,
+        isGuestNetworkEnabled: guestRadioSettings.isGuestNetworkEnabled);
   }
 }
 

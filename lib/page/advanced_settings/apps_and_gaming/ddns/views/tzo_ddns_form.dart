@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/models/_models.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_text_field.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class TzoDNSForm extends StatefulWidget {
   final TzoDNSProviderUIModel? value;
@@ -46,37 +45,59 @@ class _TzoDNSFormState extends State<TzoDNSForm> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        AppTextField.outline(
-          headerText: loc(context).username,
-          controller: _usernameController,
-          errorText: _usernameController.text.isEmpty
-              ? loc(context).invalidUsername
-              : null,
-          onChanged: (value) {
-            widget.onFormChanged.call(widget.value?.copyWith(username: value));
-          },
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.labelLarge(loc(context).username),
+            AppGap.xs(),
+            AppTextField(
+              controller: _usernameController,
+              errorText: _usernameController.text.isEmpty
+                  ? loc(context).invalidUsername
+                  : null,
+              onChanged: (value) {
+                widget.onFormChanged
+                    .call(widget.value?.copyWith(username: value));
+              },
+            ),
+          ],
         ),
-        const AppGap.medium(),
-        AppTextField.outline(
-          headerText: loc(context).password,
-          controller: _passwordController,
-          errorText: _passwordController.text.isEmpty
-              ? loc(context).invalidPassword
-              : null,
-          onChanged: (value) {
-            widget.onFormChanged.call(widget.value?.copyWith(password: value));
-          },
+        AppGap.lg(),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.labelLarge(loc(context).password),
+            AppGap.xs(),
+            AppTextField(
+              controller: _passwordController,
+              obscureText: true,
+              errorText: _passwordController.text.isEmpty
+                  ? loc(context).invalidPassword
+                  : null,
+              onChanged: (value) {
+                widget.onFormChanged
+                    .call(widget.value?.copyWith(password: value));
+              },
+            ),
+          ],
         ),
-        const AppGap.medium(),
-        AppTextField.outline(
-          headerText: loc(context).hostName,
-          controller: _hostnameController,
-          errorText: _hostnameController.text.isEmpty
-              ? loc(context).invalidHostname
-              : null,
-          onChanged: (value) {
-            widget.onFormChanged.call(widget.value?.copyWith(hostName: value));
-          },
+        AppGap.lg(),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.labelLarge(loc(context).hostName),
+            AppGap.xs(),
+            AppTextField(
+              controller: _hostnameController,
+              errorText: _hostnameController.text.isEmpty
+                  ? loc(context).invalidHostname
+                  : null,
+              onChanged: (value) {
+                widget.onFormChanged
+                    .call(widget.value?.copyWith(hostName: value));
+              },
+            ),
+          ],
         )
       ],
     );

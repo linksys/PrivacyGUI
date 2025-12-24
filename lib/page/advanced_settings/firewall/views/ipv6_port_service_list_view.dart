@@ -1,23 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/ipv6_firewall_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_card_list_settings_view.dart';
-import 'package:privacy_gui/page/components/settings_view/editable_table_settings_view.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/input_field/ipv6_form_field.dart';
-
-import '../../apps_and_gaming/ports/views/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class Ipv6PortServiceListView extends ArgumentsConsumerStatefulView {
   const Ipv6PortServiceListView({super.key, super.args});
@@ -30,361 +20,450 @@ class Ipv6PortServiceListView extends ArgumentsConsumerStatefulView {
 class _Ipv6PortServiceListViewState
     extends ConsumerState<Ipv6PortServiceListView> {
   late final Ipv6PortServiceListNotifier _notifier;
-  // Ipv6PortServiceListState? preservedState;
-  // Fro Edit table settings
-  final TextEditingController applicationTextController =
+
+  // Controllers for edit mode
+  final TextEditingController _applicationTextController =
       TextEditingController();
-  final TextEditingController firstPortTextController = TextEditingController();
-  final TextEditingController lastPortTextController = TextEditingController();
-  final TextEditingController ipAddressTextController = TextEditingController();
-  bool _isEditRuleValid = false;
+  final TextEditingController _firstPortTextController =
+      TextEditingController();
+  final TextEditingController _lastPortTextController = TextEditingController();
+  final TextEditingController _ipAddressTextController =
+      TextEditingController();
+
+  // Validation state
+  String? _nameError;
+  String? _ipError;
+  String? _portRangeError;
+
+  // Track which rule is being edited to avoid reinitializing controllers
+  IPv6PortServiceRuleUI? _editingRule;
+  bool _isInitializing = false;
+  StateSetter? _sheetStateSetter;
 
   @override
   void initState() {
     _notifier = ref.read(ipv6PortServiceListProvider.notifier);
-    // doSomethingWithSpinner(
-    //   context,
-    //   _notifier.fetch(),
-    // ).then((state) {
-    //   setState(() {
-    //     preservedState = state;
-    //   });
-    // });
+    _applicationTextController.addListener(_onApplicationNameChanged);
+    _firstPortTextController.addListener(_onStartPortChanged);
+    _lastPortTextController.addListener(_onEndPortChanged);
     super.initState();
   }
 
   @override
   void dispose() {
+    _applicationTextController.removeListener(_onApplicationNameChanged);
+    _firstPortTextController.removeListener(_onStartPortChanged);
+    _lastPortTextController.removeListener(_onEndPortChanged);
+    _applicationTextController.dispose();
+    _firstPortTextController.dispose();
+    _lastPortTextController.dispose();
+    _ipAddressTextController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ipv6PortServiceListProvider);
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AppGap.large2(),
-          ResponsiveLayout(
-              desktop: _desktopSettingsView(state),
-              mobile: _mobildSettingsView(state)),
-        ],
+    final isAddEnabled = !_notifier.isExceedMax();
+
+    return AppDataTable<IPv6PortServiceRuleUI>(
+      data: state.current.rules,
+      columns: _buildColumns(context),
+      totalRows: state.current.rules.length,
+      currentPage: 1,
+      rowsPerPage: 50,
+      onPageChanged: (_) {},
+      onSave: _handleSave,
+      emptyMessage: loc(context).noIPv6PortService,
+      // New Add Row API
+      showAddButton: isAddEnabled,
+      onCreateTemplate: () => const IPv6PortServiceRuleUI(
+        enabled: true,
+        description: '',
+        ipv6Address: '',
+        portRanges: [PortRangeUI(protocol: 'Both', firstPort: 0, lastPort: 0)],
+      ),
+      onAdd: _handleAdd,
+      onDelete: _handleDelete,
+      onCancel: _handleCancel,
+      localization: AppTableLocalization(
+        edit: loc(context).edit,
+        save: loc(context).save,
+        delete: loc(context).delete,
+        cancel: loc(context).cancel,
+        actions: loc(context).action,
+        add: loc(context).add,
       ),
     );
   }
 
-  Widget _mobildSettingsView(Ipv6PortServiceListState state) {
-    return EditableCardListsettingsView<IPv6FirewallRule>(
-        title: loc(context).ipv6PortServices,
-        emptyMessage: loc(context).noIPv6PortService,
-        addEnabled: !_notifier.isExceedMax(),
-        addLabel: loc(context).add,
-        itemCardBuilder: (context, rule) => EditableListItem(
-              title: rule.description,
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Table(
-                    children: [
-                      TableRow(
-                        children: [
-                          AppSettingCard.noBorder(
-                            padding: EdgeInsets.only(bottom: Spacing.medium),
-                            title: loc(context).startPort,
-                            description: getProtocolTitle(
-                                context,
-                                rule.portRanges.firstOrNull?.protocol ??
-                                    'Both'),
-                          ),
-                          AppSettingCard.noBorder(
-                            padding: EdgeInsets.only(bottom: Spacing.medium),
-                            title: loc(context).endPort,
-                            description:
-                                '${rule.portRanges.firstOrNull?.firstPort ?? 0} ${loc(context).to} ${rule.portRanges.firstOrNull?.lastPort ?? 0}',
-                          )
-                        ],
-                      ),
-                    ],
-                  ),
-                  Table(
-                    children: [
-                      TableRow(
-                        children: [
-                          AppSettingCard.noBorder(
-                            padding: EdgeInsets.only(bottom: Spacing.medium),
-                            title: loc(context).ipAddress,
-                            description: rule.ipv6Address,
-                          )
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-        editRoute: RouteNamed.ipv6PortServiceRule,
-        dataList: state.current.rules,
-        onSave: (index, rule) {
-          if (index >= 0) {
-            _notifier.editRule(index, rule);
-          } else {
-            _notifier.addRule(rule);
-          }
-        },
-        onDelete: (index, rule) {
-          _notifier.deleteRule(rule);
-        });
+  void _handleCancel() {
+    _editingRule = null;
+    _sheetStateSetter = null;
+    _clearControllers();
   }
 
-  Widget _desktopSettingsView(Ipv6PortServiceListState state) {
-    return AppEditableTableSettingsView<IPv6FirewallRule>(
-      title: loc(context).ipv6PortServices,
-      addEnabled: !_notifier.isExceedMax(),
-      emptyMessage: loc(context).noIPv6PortService,
-      onStartEdit: (index, rule) {
-        ref
-            .read(ipv6PortServiceRuleProvider.notifier)
-            .init(state.current.rules, rule, index);
-        // Edit
-        applicationTextController.text = rule?.description ?? '';
-        firstPortTextController.text =
-            '${rule?.portRanges.firstOrNull?.firstPort ?? 0}';
-        lastPortTextController.text =
-            '${rule?.portRanges.firstOrNull?.lastPort ?? 0}';
-        ipAddressTextController.text = rule?.ipv6Address ?? '';
-        _validateInputData();
-      },
-      headers: [
-        loc(context).applicationName,
-        loc(context).protocol,
-        loc(context).deviceIP,
-        loc(context).startEndPorts,
-      ],
-      columnWidths: ResponsiveLayout.isOverLargeLayout(context)
-          ? const {
-              0: FractionColumnWidth(.2),
-              1: FractionColumnWidth(.2),
-              2: FractionColumnWidth(.35),
-              3: FractionColumnWidth(.15),
-            }
-          : const {
-              0: FractionColumnWidth(.2),
-              1: FractionColumnWidth(.2),
-              2: FractionColumnWidth(.35),
-              3: FractionColumnWidth(.15),
-            },
-      dataList: [...state.current.rules],
-      editRowIndex: 0,
-      cellBuilder: (context, ref, index, rule) {
-        return switch (index) {
-          0 => AppText.bodySmall(rule.description),
-          1 => AppText.bodySmall(getProtocolTitle(
-              context, rule.portRanges.firstOrNull?.protocol ?? 'Both')),
-          2 => AppText.bodySmall(rule.ipv6Address),
-          3 => AppText.bodySmall(
-              '${rule.portRanges.firstOrNull?.firstPort ?? 0} ${loc(context).to} ${rule.portRanges.firstOrNull?.lastPort ?? 0}'),
-          _ => AppText.bodySmall(''),
-        };
-      },
-      editCellBuilder: (context, index, controller) {
-        final stateRule = ref.watch(ipv6PortServiceRuleProvider).rule;
+  Future<bool> _handleDelete(IPv6PortServiceRuleUI rule) async {
+    _notifier.deleteRule(rule);
+    _clearControllers();
+    return true;
+  }
 
-        return switch (index) {
-          0 => AppTextField.outline(
-              key: const Key('ruleName'),
-              controller: applicationTextController,
-              onChanged: (value) {
-                ref
-                    .read(ipv6PortServiceRuleProvider.notifier)
-                    .updateRule(stateRule?.copyWith(description: value));
-                _validateInputData();
-              },
-            ),
-          1 => AppDropdownButton(
-              key: const Key('protocol'),
-              initial: stateRule?.portRanges.firstOrNull?.protocol ?? 'Both',
-              items: const ['TCP', 'UDP', 'Both'],
-              label: (e) => getProtocolTitle(context, e),
-              onChanged: (value) {
-                final portRanges = stateRule?.portRanges ?? [];
-                final portRange = portRanges.firstOrNull;
-                ref.read(ipv6PortServiceRuleProvider.notifier).updateRule(
-                      stateRule?.copyWith(
-                        portRanges: portRange == null
-                            ? null
-                            : [portRange.copyWith(protocol: value)],
-                      ),
-                    );
-                _validateInputData();
-              },
-            ),
-          2 => Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Expanded(
-                  child: AppIPv6FormField(
-                    key: const Key('ipAddress'),
-                    controller: ipAddressTextController,
-                    border: const OutlineInputBorder(),
-                    autovalidateMode: AutovalidateMode.disabled,
-                    suffixIcon: AppIconButton.noPadding(
-                      icon: LinksysIcons.devices,
-                      onTap: () async {
-                        final result =
-                            await context.pushNamed<List<DeviceListItem>?>(
-                          RouteNamed.devicePicker,
-                          extra: {'type': 'ipv6', 'selectMode': 'single'},
-                        );
-                        if (result != null) {
-                          final selectedIpv6Address = result.first.ipv6Address;
-                          ipAddressTextController.text = selectedIpv6Address;
-                          ref
-                              .read(ipv6PortServiceRuleProvider.notifier)
-                              .updateRule(stateRule?.copyWith(
-                                  ipv6Address: selectedIpv6Address));
-                          _validateInputData();
-                        }
-                        controller.validate(index);
-                      },
-                    ),
-                    onChanged: (value) {
-                      ref
-                          .read(ipv6PortServiceRuleProvider.notifier)
-                          .updateRule(stateRule?.copyWith(ipv6Address: value));
-                      _validateInputData();
-                    },
-                  ),
+  List<AppTableColumn<IPv6PortServiceRuleUI>> _buildColumns(
+      BuildContext context) {
+    return [
+      // Column 0: Application Name
+      AppTableColumn<IPv6PortServiceRuleUI>(
+        label: loc(context).applicationName,
+        cellBuilder: (_, rule) => Text(rule.description),
+        editBuilder: (_, rule, setSheetState) {
+          // Store the sheet's StateSetter for validation updates
+          _sheetStateSetter = setSheetState;
+          // Only initialize when starting to edit a new rule
+          if (_editingRule != rule) {
+            _isInitializing = true;
+            try {
+              _editingRule = rule;
+              _applicationTextController.text = rule.description;
+              _firstPortTextController.text =
+                  '${rule.portRanges.firstOrNull?.firstPort ?? 0}';
+              _lastPortTextController.text =
+                  '${rule.portRanges.firstOrNull?.lastPort ?? 0}';
+              _ipAddressTextController.text = rule.ipv6Address;
+              _nameError = null;
+              _portRangeError = null;
+            } finally {
+              _isInitializing = false;
+            }
+          }
+          return AppTextField(
+            key: const Key('ruleName'),
+            controller: _applicationTextController,
+            hintText: loc(context).applicationName,
+            errorText: _nameError,
+          );
+        },
+      ),
+
+      // Column 1: Protocol
+      AppTableColumn<IPv6PortServiceRuleUI>(
+        label: loc(context).protocol,
+        cellBuilder: (_, rule) => Text(
+          getProtocolTitle(
+              context, rule.portRanges.firstOrNull?.protocol ?? 'Both'),
+        ),
+        editBuilder: (_, rule, setSheetState) {
+          final currentProtocol =
+              rule.portRanges.firstOrNull?.protocol ?? 'Both';
+          // Map protocol values to display names
+          final protocolDisplayMap = {
+            'TCP': getProtocolTitle(context, 'TCP'),
+            'UDP': getProtocolTitle(context, 'UDP'),
+            'Both': getProtocolTitle(context, 'Both'),
+          };
+          return AppDropdown<String>(
+            key: const Key('protocol'),
+            items: protocolDisplayMap.values.toList(),
+            value: protocolDisplayMap[currentProtocol],
+            hint: loc(context).protocol,
+            onChanged: (displayValue) {
+              if (displayValue != null) {
+                // Reverse map: find protocol key by display value
+                final protocolKey = protocolDisplayMap.entries
+                    .firstWhere((e) => e.value == displayValue,
+                        orElse: () => const MapEntry('Both', 'Both'))
+                    .key;
+                _updateProtocol(protocolKey);
+              }
+            },
+          );
+        },
+      ),
+
+      // Column 2: Device IP (IPv6)
+      AppTableColumn<IPv6PortServiceRuleUI>(
+        label: loc(context).deviceIP,
+        cellBuilder: (_, rule) => Text(rule.ipv6Address),
+        editBuilder: (_, rule, setSheetState) {
+          // Controller is initialized in column 0's editBuilder
+          return Row(
+            children: [
+              Expanded(
+                child: AppIPv6TextField(
+                  key: const Key('ipAddress'),
+                  label: loc(context).ipAddress,
+                  controller: _ipAddressTextController,
+                  invalidFormatMessage: loc(context).invalidIpAddress,
+                  errorText: _ipError,
+                  onChanged: (value) {
+                    _updateIpAddress(value);
+                    _validateAll();
+                  },
                 ),
-              ],
-            ),
-          3 => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Expanded(
-                      child: AppTextField.minMaxNumber(
-                        key: const Key('firstPort'),
-                        min: 0,
-                        max: 65535,
-                        border: OutlineInputBorder(),
-                        controller: firstPortTextController,
-                        onChanged: (value) {
-                          final portRanges = stateRule?.portRanges ?? [];
-                          final portRange = portRanges.firstOrNull;
-                          ref
-                              .read(ipv6PortServiceRuleProvider.notifier)
-                              .updateRule(
-                                stateRule?.copyWith(
-                                  portRanges: portRange == null
-                                      ? null
-                                      : [
-                                          portRange.copyWith(
-                                              firstPort:
-                                                  int.tryParse(value) ?? 0)
-                                        ],
-                                ),
-                              );
-                          _validateInputData();
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(
-                          left: Spacing.small1, right: Spacing.small1),
-                      child: AppText.bodySmall(loc(context).to),
-                    ),
-                    Expanded(
-                      child: AppTextField.minMaxNumber(
-                        key: const Key('lastPort'),
-                        min: 0,
-                        max: 65535,
-                        border: OutlineInputBorder(),
-                        controller: lastPortTextController,
-                        onChanged: (value) {
-                          final portRanges = stateRule?.portRanges ?? [];
-                          final portRange = portRanges.firstOrNull;
-                          ref
-                              .read(ipv6PortServiceRuleProvider.notifier)
-                              .updateRule(
-                                stateRule?.copyWith(
-                                  portRanges: portRange == null
-                                      ? null
-                                      : [
-                                          portRange.copyWith(
-                                              lastPort:
-                                                  int.tryParse(value) ?? 0)
-                                        ],
-                                ),
-                              );
-                          _validateInputData();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          _ => AppText.bodyLarge(''),
-        };
-      },
-      onValidate: (index) {
-        final notifier = ref.read(ipv6PortServiceRuleProvider.notifier);
-        final ruleState = ref.watch(ipv6PortServiceRuleProvider);
-        return switch (index) {
-          0 => notifier.isRuleNameValidate(applicationTextController.text)
-              ? null
-              : loc(context).notBeEmptyAndLessThanThirtyThree,
-          2 => notifier.isDeviceIpValidate(ipAddressTextController.text)
-              ? null
-              : loc(context).invalidIpAddress,
-          3 => notifier.isPortRangeValid(
-                  int.tryParse(firstPortTextController.text) ?? 0,
-                  int.tryParse(lastPortTextController.text) ?? 0)
-              ? !notifier.isPortConflict(
-                      int.tryParse(firstPortTextController.text) ?? 0,
-                      int.tryParse(lastPortTextController.text) ?? 0,
-                      ruleState.rule?.portRanges.firstOrNull?.protocol ??
-                          'Both')
-                  ? null
-                  : loc(context).rulesOverlapError
-              : loc(context).portRangeError,
-          _ => null,
-        };
-      },
-      createNewItem: () => const IPv6FirewallRule(
-          isEnabled: true,
-          description: '',
-          ipv6Address: '',
-          portRanges: [PortRange(protocol: 'Both', firstPort: 0, lastPort: 0)]),
-      onSaved: (index, rule) {
-        final stateRule = ref.read(ipv6PortServiceRuleProvider).rule;
-        if (stateRule == null) {
-          return;
-        }
-        if (index == null) {
-          // add
-          ref.read(ipv6PortServiceListProvider.notifier).addRule(stateRule);
-        } else {
-          // edit
-          ref
-              .read(ipv6PortServiceListProvider.notifier)
-              .editRule(index, stateRule);
-        }
-      },
-      onDeleted: (index, rule) {
-        ref.read(ipv6PortServiceListProvider.notifier).deleteRule(rule);
-      },
-      isEditingDataValid: _isEditRuleValid,
+              ),
+              AppGap.sm(),
+              AppIconButton(
+                icon: Icon(AppFontIcons.devices),
+                onTap: () => _openDevicePicker(context),
+              ),
+            ],
+          );
+        },
+      ),
+
+      // Column 3: Start/End Ports
+      AppTableColumn<IPv6PortServiceRuleUI>(
+        label: loc(context).startEndPorts,
+        cellBuilder: (_, rule) => Text(
+          '${rule.portRanges.firstOrNull?.firstPort ?? 0} ${loc(context).to} ${rule.portRanges.firstOrNull?.lastPort ?? 0}',
+        ),
+        editBuilder: (_, rule, setSheetState) {
+          // Controllers are initialized in column 0's editBuilder
+          return AppRangeInput(
+            key: const Key('portRange'),
+            startKey: const Key('firstPort'),
+            endKey: const Key('lastPort'),
+            startController: _firstPortTextController,
+            endController: _lastPortTextController,
+            startLabel: loc(context).startPort,
+            endLabel: loc(context).endPort,
+            errorText: _portRangeError,
+          );
+        },
+      ),
+    ];
+  }
+
+  // --- Update Methods ---
+
+  void _updateRuleName(String value) {
+    final ruleNotifier = ref.read(ipv6PortServiceRuleProvider.notifier);
+    final currentRule = ref.read(ipv6PortServiceRuleProvider).rule;
+    ruleNotifier.updateRule(currentRule?.copyWith(description: value));
+  }
+
+  void _updateProtocol(String value) {
+    final ruleNotifier = ref.read(ipv6PortServiceRuleProvider.notifier);
+    final currentRule = ref.read(ipv6PortServiceRuleProvider).rule;
+    final portRanges = currentRule?.portRanges ?? [];
+    final portRange = portRanges.firstOrNull;
+    ruleNotifier.updateRule(
+      currentRule?.copyWith(
+        portRanges:
+            portRange == null ? null : [portRange.copyWith(protocol: value)],
+      ),
     );
   }
 
-  void _validateInputData() {
+  void _updateIpAddress(String value) {
+    final ruleNotifier = ref.read(ipv6PortServiceRuleProvider.notifier);
+    final currentRule = ref.read(ipv6PortServiceRuleProvider).rule;
+    ruleNotifier.updateRule(currentRule?.copyWith(ipv6Address: value));
+  }
+
+  void _updateFirstPort(String value) {
+    final ruleNotifier = ref.read(ipv6PortServiceRuleProvider.notifier);
+    final currentRule = ref.read(ipv6PortServiceRuleProvider).rule;
+    final portRanges = currentRule?.portRanges ?? [];
+    final portRange = portRanges.firstOrNull;
+    ruleNotifier.updateRule(
+      currentRule?.copyWith(
+        portRanges: portRange == null
+            ? null
+            : [portRange.copyWith(firstPort: int.tryParse(value) ?? 0)],
+      ),
+    );
+  }
+
+  void _updateLastPort(String value) {
+    final ruleNotifier = ref.read(ipv6PortServiceRuleProvider.notifier);
+    final currentRule = ref.read(ipv6PortServiceRuleProvider).rule;
+    final portRanges = currentRule?.portRanges ?? [];
+    final portRange = portRanges.firstOrNull;
+    ruleNotifier.updateRule(
+      currentRule?.copyWith(
+        portRanges: portRange == null
+            ? null
+            : [portRange.copyWith(lastPort: int.tryParse(value) ?? 0)],
+      ),
+    );
+  }
+
+  // --- Validation ---
+
+  void _onApplicationNameChanged() {
+    if (_isInitializing) return;
+    _updateRuleName(_applicationTextController.text);
+    _validateAll();
+  }
+
+  void _onStartPortChanged() {
+    if (_isInitializing) return;
+    _updateFirstPort(_firstPortTextController.text);
+    _validateAll();
+  }
+
+  void _onEndPortChanged() {
+    if (_isInitializing) return;
+    _updateLastPort(_lastPortTextController.text);
+    _validateAll();
+  }
+
+  void _validateAll() {
+    final ruleNotifier = ref.read(ipv6PortServiceRuleProvider.notifier);
+    final ruleState = ref.read(ipv6PortServiceRuleProvider);
+
     setState(() {
-      _isEditRuleValid =
-          ref.read(ipv6PortServiceRuleProvider.notifier).isRuleValid();
+      // Validate rule name
+      _nameError =
+          ruleNotifier.isRuleNameValidate(_applicationTextController.text)
+              ? null
+              : loc(context).notBeEmptyAndLessThanThirtyThree;
+
+      // Validate IPv6 address
+      _ipError = ruleNotifier.isDeviceIpValidate(_ipAddressTextController.text)
+          ? null
+          : loc(context).invalidIpAddress;
+
+      // Validate port range
+      final firstPortText = _firstPortTextController.text;
+      final lastPortText = _lastPortTextController.text;
+
+      if (firstPortText.isEmpty || lastPortText.isEmpty) {
+        _portRangeError = loc(context).portRangeError;
+      } else {
+        final firstPort = int.tryParse(firstPortText) ?? 0;
+        final lastPort = int.tryParse(lastPortText) ?? 0;
+        final protocol =
+            ruleState.rule?.portRanges.firstOrNull?.protocol ?? 'Both';
+
+        if (!ruleNotifier.isPortRangeValid(firstPort, lastPort)) {
+          _portRangeError = loc(context).portRangeError;
+        } else if (ruleNotifier.isPortConflict(firstPort, lastPort, protocol)) {
+          _portRangeError = loc(context).rulesOverlapError;
+        } else {
+          _portRangeError = null;
+        }
+      }
     });
+    // Also update bottom sheet state if available (for mobile)
+    _sheetStateSetter?.call(() {});
+  }
+
+  void _clearControllers() {
+    _applicationTextController.clear();
+    _firstPortTextController.clear();
+    _lastPortTextController.clear();
+    _ipAddressTextController.clear();
+    _nameError = null;
+    _ipError = null;
+    _portRangeError = null;
+    setState(() {});
+  }
+
+  // --- Device Picker ---
+
+  Future<void> _openDevicePicker(BuildContext context) async {
+    final result = await context.pushNamed<List<DeviceListItem>?>(
+      RouteNamed.devicePicker,
+      extra: {'type': 'ipv6', 'selectMode': 'single'},
+    );
+    if (result != null && result.isNotEmpty) {
+      final selectedIpv6Address = result.first.ipv6Address;
+      _ipAddressTextController.text = selectedIpv6Address;
+      _updateIpAddress(selectedIpv6Address);
+      _validateAll();
+    }
+  }
+
+  Future<bool> _handleAdd(IPv6PortServiceRuleUI templateRule) async {
+    // Validate before saving
+    _validateAll();
+    if (!_isValid()) {
+      return false; // Don't add if validation fails
+    }
+
+    // Build new rule from controller values
+    final newRule = _buildRuleFromControllers(templateRule);
+    _notifier.addRule(newRule);
+
+    // Clear editing state
+    _editingRule = null;
+    _clearControllers();
+    return true;
+  }
+
+  // --- Save Handler ---
+
+  Future<bool> _handleSave(IPv6PortServiceRuleUI originalRule) async {
+    // Validate before saving
+    _validateAll();
+    if (!_isValid()) {
+      return false; // Don't save if validation fails
+    }
+
+    // Build edited rule from controller values
+    final editedRule = _buildRuleFromControllers(originalRule);
+
+    // Find index of original rule in the list
+    final state = ref.read(ipv6PortServiceListProvider);
+    final index = state.current.rules.indexOf(originalRule);
+
+    if (index >= 0) {
+      // Edit existing rule
+      _notifier.editRule(index, editedRule);
+    }
+
+    // Clear editing state
+    _editingRule = null;
+    _clearControllers();
+    return true;
+  }
+
+  /// Check if current form state is valid
+  bool _isValid() {
+    final ruleNotifier = ref.read(ipv6PortServiceRuleProvider.notifier);
+
+    // Check name
+    if (!ruleNotifier.isRuleNameValidate(_applicationTextController.text)) {
+      return false;
+    }
+
+    // Check IPv6 address
+    if (!ruleNotifier.isDeviceIpValidate(_ipAddressTextController.text)) {
+      return false;
+    }
+
+    // Check port range
+    if (_firstPortTextController.text.isEmpty ||
+        _lastPortTextController.text.isEmpty) {
+      return false;
+    }
+    final firstPort = int.tryParse(_firstPortTextController.text) ?? 0;
+    final lastPort = int.tryParse(_lastPortTextController.text) ?? 0;
+    if (!ruleNotifier.isPortRangeValid(firstPort, lastPort)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Build a new rule from controller values
+  IPv6PortServiceRuleUI _buildRuleFromControllers(
+      IPv6PortServiceRuleUI template) {
+    final firstPort = int.tryParse(_firstPortTextController.text) ?? 0;
+    final lastPort = int.tryParse(_lastPortTextController.text) ?? 0;
+
+    return template.copyWith(
+      description: _applicationTextController.text,
+      ipv6Address: _ipAddressTextController.text,
+      portRanges: [
+        PortRangeUI(
+          protocol: template.portRanges.firstOrNull?.protocol ?? 'Both',
+          firstPort: firstPort,
+          lastPort: lastPort,
+        ),
+      ],
+    );
   }
 }

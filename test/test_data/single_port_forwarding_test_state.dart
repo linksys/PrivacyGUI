@@ -51,12 +51,8 @@ const singlePortForwardingListTestState = {
 
 const singlePortForwardingEmptyListTestState = {
   "settings": {
-    "original": {
-      "rules": []
-    },
-    "current": {
-      "rules": []
-    }
+    "original": {"rules": []},
+    "current": {"rules": []}
   },
   "status": {
     "maxRules": 50,

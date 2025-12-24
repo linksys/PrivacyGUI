@@ -1050,12 +1050,14 @@ void main() {
       FernetManager().resetForTest();
     });
 
-    test('should encrypt the JNAP authorization password when key is available', () {
+    test('should encrypt the JNAP authorization password when key is available',
+        () {
       // Arrange
       FernetManager().updateKeyFromSerial('a-test-serial');
-      const rawLog = 'Some log line... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... some other log';
+      const rawLog =
+          'Some log line... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... some other log';
       const originalPassword = 'YWRtaW46VmVsb3BAMTIzNA==';
-      
+
       // Act
       final processedLog = Utils.encryptJNAPAuth(rawLog);
 
@@ -1063,14 +1065,18 @@ void main() {
       expect(processedLog, isNot(contains(originalPassword)));
       expect(processedLog, contains('X-JNAP-Authorization: Basic '));
       // The encrypted string will be long
-      expect(processedLog.length, greaterThan(rawLog.length)); 
+      expect(processedLog.length, greaterThan(rawLog.length));
     });
 
-    test('should mask the JNAP authorization password when key is NOT available', () {
+    test(
+        'should mask the JNAP authorization password when key is NOT available',
+        () {
       // Arrange
       // Key is not set, because of setUp call
-      const rawLog = 'Another log... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... end of log';
-      const expectedLog = 'Another log... X-JNAP-Authorization: Basic ************ ... end of log';
+      const rawLog =
+          'Another log... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... end of log';
+      const expectedLog =
+          'Another log... X-JNAP-Authorization: Basic ************ ... end of log';
 
       // Act
       final processedLog = Utils.encryptJNAPAuth(rawLog);

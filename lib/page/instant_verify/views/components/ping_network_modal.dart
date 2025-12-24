@@ -7,8 +7,8 @@ import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PingNetworkModal extends ConsumerStatefulWidget {
   const PingNetworkModal({
@@ -47,25 +47,17 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppText.bodySmall(loc(context).ipAddress),
-        const AppGap.small2(),
-        Opacity(
-          opacity: isRunning ? .5 : 1,
-          child: AbsorbPointer(
-            absorbing: isRunning ? true : false,
-            child: AppIPFormField(
-              semanticLabel: 'dns ip address',
-              border: const OutlineInputBorder(),
-              controller: _controller,
-              onChanged: (value) {
-                setState(() {
-                  _validIP = IpAddressValidator().validate(value);
-                });
-              },
-            ),
-          ),
+        AppIpv4TextField(
+          label: loc(context).ipAddress,
+          controller: _controller,
+          enabled: !isRunning,
+          onChanged: (value) {
+            setState(() {
+              _validIP = IpAddressValidator().validate(value);
+            });
+          },
         ),
-        const AppGap.large1(),
+        AppGap.xl(),
         if (isRunning && _pingLog.isEmpty)
           Center(
               child: SizedBox(
@@ -79,15 +71,15 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            AppTextButton(
-              loc(context).close,
+            AppButton.text(
+              label: loc(context).close,
               onTap: () {
                 ref.read(instantVerifyProvider.notifier).stopPing();
                 context.pop();
               },
             ),
-            AppTextButton(
-              loc(context).execute,
+            AppButton.text(
+              label: loc(context).execute,
               onTap: isRunning || !_validIP
                   ? null
                   : () {

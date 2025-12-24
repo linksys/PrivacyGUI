@@ -22,10 +22,15 @@ class FirmwareUpdateStatus extends Equatable {
     ValueGetter<String?>? lastOperationFailure,
   }) {
     return FirmwareUpdateStatus(
-      lastSuccessfulCheckTime: lastSuccessfulCheckTime ?? this.lastSuccessfulCheckTime,
-      availableUpdate: availableUpdate != null ? availableUpdate() : this.availableUpdate,
-      pendingOperation: pendingOperation != null ? pendingOperation() : this.pendingOperation,
-      lastOperationFailure: lastOperationFailure != null ? lastOperationFailure() : this.lastOperationFailure,
+      lastSuccessfulCheckTime:
+          lastSuccessfulCheckTime ?? this.lastSuccessfulCheckTime,
+      availableUpdate:
+          availableUpdate != null ? availableUpdate() : this.availableUpdate,
+      pendingOperation:
+          pendingOperation != null ? pendingOperation() : this.pendingOperation,
+      lastOperationFailure: lastOperationFailure != null
+          ? lastOperationFailure()
+          : this.lastOperationFailure,
     );
   }
 
@@ -41,21 +46,35 @@ class FirmwareUpdateStatus extends Equatable {
   factory FirmwareUpdateStatus.fromMap(Map<String, dynamic> map) {
     return FirmwareUpdateStatus(
       lastSuccessfulCheckTime: map['lastSuccessfulCheckTime'] as String? ?? '',
-      availableUpdate: map['availableUpdate'] != null ? FirmwareUpdateData.fromMap(map['availableUpdate'] as Map<String,dynamic>) : null,
-      pendingOperation: map['pendingOperation'] != null ? FirmwareUpdateOperationStatus.fromMap(map['pendingOperation'] as Map<String,dynamic>) : null,
-      lastOperationFailure: map['lastOperationFailure'] != null ? map['lastOperationFailure'] as String : null,
+      availableUpdate: map['availableUpdate'] != null
+          ? FirmwareUpdateData.fromMap(
+              map['availableUpdate'] as Map<String, dynamic>)
+          : null,
+      pendingOperation: map['pendingOperation'] != null
+          ? FirmwareUpdateOperationStatus.fromMap(
+              map['pendingOperation'] as Map<String, dynamic>)
+          : null,
+      lastOperationFailure: map['lastOperationFailure'] != null
+          ? map['lastOperationFailure'] as String
+          : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory FirmwareUpdateStatus.fromJson(String source) => FirmwareUpdateStatus.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory FirmwareUpdateStatus.fromJson(String source) =>
+      FirmwareUpdateStatus.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
 
   @override
-  List<Object?> get props => [lastSuccessfulCheckTime, availableUpdate, pendingOperation, lastOperationFailure];
+  List<Object?> get props => [
+        lastSuccessfulCheckTime,
+        availableUpdate,
+        pendingOperation,
+        lastOperationFailure
+      ];
 }
 
 class FirmwareUpdateData extends Equatable {
@@ -92,13 +111,15 @@ class FirmwareUpdateData extends Equatable {
     return FirmwareUpdateData(
       firmwareVersion: map['firmwareVersion'] as String,
       firmwareDate: map['firmwareDate'] as String,
-      description: map['description'] != null ? map['description'] as String : null,
+      description:
+          map['description'] != null ? map['description'] as String : null,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory FirmwareUpdateData.fromJson(String source) => FirmwareUpdateData.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory FirmwareUpdateData.fromJson(String source) =>
+      FirmwareUpdateData.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
@@ -141,7 +162,9 @@ class FirmwareUpdateOperationStatus extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory FirmwareUpdateOperationStatus.fromJson(String source) => FirmwareUpdateOperationStatus.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory FirmwareUpdateOperationStatus.fromJson(String source) =>
+      FirmwareUpdateOperationStatus.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;

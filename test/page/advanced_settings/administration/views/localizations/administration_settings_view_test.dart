@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:privacy_gui/page/components/composed/app_switch_trigger_tile.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/config.dart';
 import '../../../../../common/test_helper.dart';
@@ -29,7 +29,7 @@ void main() {
   });
 
   // Test ID: ADMIN-INIT
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the initial state of the administration settings view',
     (tester, screen) async {
       when(testHelper.mockAdministrationSettingsNotifier.build()).thenReturn(
@@ -99,7 +99,7 @@ void main() {
   );
 
   // Test ID: ADMIN-NO_WIFI
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view when wireless management is not allowed',
     (tester, screen) async {
       final state =
@@ -130,7 +130,7 @@ void main() {
   );
 
   // Test ID: ADMIN-UPNP_OFF
-  testLocalizationsV2(
+  testLocalizations(
     'Verifies the view when UPnP is disabled',
     (tester, screen) async {
       final stateMap =
