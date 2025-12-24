@@ -66,7 +66,8 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
     return Scrollbar(
       thickness: 0,
       child: SizedBox(
-        height: (items.length / (isDesktop ? 3 : 1)) * (isDesktop ? 152 : 112) +
+        height: (items.length / (isDesktop ? 3 : 1)).ceil() *
+                (isDesktop ? 152 : 112) +
             kDefaultToolbarHeight,
         child: GridView.builder(
           controller: Scrollable.maybeOf(context)?.widget.controller,
