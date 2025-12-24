@@ -12,5 +12,6 @@ abstract class Ipv6SettingsHandler {
   SetIPv6Settings createSetIPv6Settings(Ipv6Setting ipv6Setting);
 
   // For updating state based on UI input (copyWith logic)
-  Ipv6Setting updateIpv6Setting(Ipv6Setting currentSetting, Ipv6Setting newValues);
+  Ipv6Setting updateIpv6Setting(
+      Ipv6Setting currentSetting, Ipv6Setting newValues);
 }

@@ -3,15 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/models/app_section_item_data.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/setting_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/panel/general_section.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class AdvancedSettingsView extends ConsumerStatefulWidget {
   const AdvancedSettingsView({Key? key}) : super(key: key);
@@ -31,15 +28,15 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
   @override
   Widget build(BuildContext context) {
     advancedSettings = _initAdvancedSettingsItems();
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).advancedSettings,
       scrollable: true,
-      child: (context, constraints) => ResponsiveLayout(
-        desktop: GridView.builder(
+      child: (context, constraints) => AppResponsiveLayout(
+        desktop: (ctx) => GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            mainAxisSpacing: Spacing.medium,
-            crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+            mainAxisSpacing: AppSpacing.lg,
+            crossAxisSpacing: AppSpacing.lg,
             childAspectRatio: (430 / 56),
             mainAxisExtent: 56,
           ),
@@ -50,14 +47,14 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
           },
           shrinkWrap: true,
         ),
-        mobile: ListView.separated(
+        mobile: (ctx) => ListView.separated(
           itemCount: advancedSettings.length,
           shrinkWrap: true,
           itemBuilder: (context, index) {
             return _advancedSettingCard(index);
           },
           separatorBuilder: (BuildContext context, int index) {
-            return const AppGap.small2();
+            return AppGap.sm();
           },
         ),
       ),
@@ -107,9 +104,9 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
     final disabled = item.disabledOnBridge && isBridge;
     return Opacity(
       opacity: disabled ? .3 : 1,
-      child: AppSettingCard(
+      child: AppListCard.setting(
         title: item.title,
-        trailing: const Icon(LinksysIcons.chevronRight),
+        trailing: AppIcon.font(AppFontIcons.chevronRight),
         onTap: disabled ? null : item.onTap,
       ),
     );

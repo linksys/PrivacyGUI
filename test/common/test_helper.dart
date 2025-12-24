@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/node_wan_status_provider.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
@@ -53,7 +55,7 @@ import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:privacy_gui/localization/localization_hook.dart' as hook;
 
@@ -61,10 +63,8 @@ import '../mocks/_index.dart';
 import '../mocks/connectivity_notifier_mocks.dart';
 import '../mocks/dhcp_reservations_notifier_mocks.dart';
 import '../mocks/instant_verify_notifier_mocks.dart';
-import '../mocks/manual_firmware_update_notifier_mocks.dart';
 import '../mocks/pnp_isp_service_notifier_mocks.dart';
 import '../mocks/pnp_notifier_mocks.dart' as Mock;
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_isp_settings_provider.dart';
 import '../mocks/pnp_isp_settings_notifier_mocks.dart';
 import '../mocks/pnp_service_mocks.dart';
 import '../mocks/power_table_notifier_mocks.dart';
@@ -155,6 +155,9 @@ class TestHelper {
   // Screen Size
   LocalizedScreen? current;
 
+  // Animation control - disable by default for stable golden tests
+  bool disableAnimations = true;
+
   AppLocalizations loc(BuildContext context) {
     return hook.loc(context);
   }
@@ -215,8 +218,28 @@ class TestHelper {
 
     SharedPreferences.setMockInitialValues({});
 
+    // Mock PackageInfo plugin to prevent MissingPluginException
+    _setupPackageInfoMock();
+
     _setupServiceHelper();
     _setupDefaultData();
+  }
+
+  void _setupPackageInfoMock() {
+    // Mock the PackageInfo method channel
+    const channel = MethodChannel('dev.fluttercommunity.plus/package_info');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      if (methodCall.method == 'getAll') {
+        return <String, dynamic>{
+          'appName': 'Privacy GUI Test',
+          'packageName': 'com.linksys.privacygui.test',
+          'version': '2.0.0',
+          'buildNumber': '1',
+        };
+      }
+      return null;
+    });
   }
 
   void _setupServiceHelper() {
@@ -294,6 +317,10 @@ class TestHelper {
     when(mockWiFiBundleNotifier.state)
         .thenReturn(wifiBundleTestStateInitialState);
     when(mockWiFiBundleNotifier.isDirty()).thenReturn(false);
+    when(mockWiFiBundleNotifier.validateWifiListSettings(any)).thenReturn(true);
+    when(mockWiFiBundleNotifier.checkingMLOSettingsConflicts(any,
+            isMloEnabled: anyNamed('isMloEnabled')))
+        .thenReturn(false);
     when(mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
     when(mockHealthCheckProvider.build())
@@ -441,6 +468,7 @@ class TestHelper {
           forceOverride ? overrides : [...defaultOverrides, ...overrides],
       themeMode: themeMode,
       locale: locale,
+      disableAnimations: disableAnimations,
     ));
     final context = tester.element(find.byType(baseViewType));
     await tester.runAsync(() async {
@@ -448,8 +476,7 @@ class TestHelper {
         await precacheImage(image, context);
       }
       for (final image in preCacheCustomImages) {
-        await precacheImage(
-            CustomTheme.of(context).getRouterImage(image), context);
+        await precacheImage(DeviceImageHelper.getRouterImage(image), context);
       }
     });
     return context;
@@ -475,6 +502,7 @@ class TestHelper {
             forceOverride ? overrides : [...defaultOverrides, ...overrides],
         themeMode: themeMode,
         navigatorKey: navigatorKey,
+        disableAnimations: disableAnimations,
         child: child,
       ),
     );
@@ -484,8 +512,7 @@ class TestHelper {
         await precacheImage(image, context);
       }
       for (final image in preCacheCustomImages) {
-        await precacheImage(
-            CustomTheme.of(context).getRouterImage(image), context);
+        await precacheImage(DeviceImageHelper.getRouterImage(image), context);
       }
     });
     return context;
@@ -508,6 +535,7 @@ class TestHelper {
         config: config ?? LinksysRouteConfig(column: ColumnGrid(column: 9)),
         locale: locale,
         themeMode: themeMode,
+        disableAnimations: disableAnimations,
         overrides:
             forceOverride ? overrides : [...defaultOverrides, ...overrides],
         child: child,
@@ -519,8 +547,7 @@ class TestHelper {
         await precacheImage(image, context);
       }
       for (final image in preCacheCustomImages) {
-        await precacheImage(
-            CustomTheme.of(context).getRouterImage(image), context);
+        await precacheImage(DeviceImageHelper.getRouterImage(image), context);
       }
     });
     return context;

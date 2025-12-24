@@ -69,8 +69,7 @@ void main() {
 
       expect(updated.isPowerTableSelectable, true);
       expect(updated.supportedCountries.length, 2);
-      expect(updated.supportedCountries,
-          contains(PowerTableCountries.twn));
+      expect(updated.supportedCountries, contains(PowerTableCountries.twn));
       expect(updated.country, PowerTableCountries.usa);
     });
 

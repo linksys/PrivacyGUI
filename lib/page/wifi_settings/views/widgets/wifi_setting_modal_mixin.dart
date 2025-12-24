@@ -7,9 +7,7 @@ import 'package:privacy_gui/page/wifi_settings/views/widgets/validators.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_name_field.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_password_field.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
   void showWiFiNameModal(
@@ -24,7 +22,8 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
         mainAxisSize: MainAxisSize.min,
         children: [
           WifiNameField(
-            semanticLabel: 'wifi name',
+            key: const Key('wifiNameInput'),
+            semanticLabel: loc(context).wifiName,
             controller: controller,
             onChanged: (value) {
               setState(() {
@@ -63,7 +62,7 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
           mainAxisSize: MainAxisSize.min,
           children: [
             WifiPasswordField(
-              semanticLabel: 'wifi password',
+              semanticLabel: loc(context).wifiPassword,
               key: ValueKey('wifi password input'),
               controller: controller,
               isLength64: isLength64,
@@ -102,37 +101,33 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
     WifiSecurityType selected = type;
     final result = await showSimpleAppDialog<WifiSecurityType?>(context,
         title: loc(context).securityMode,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppRadioList<WifiSecurityType>(
-              initial: type,
-              mainAxisSize: MainAxisSize.min,
-              itemHeight: 56,
-              items: list
-                  .map((e) => AppRadioListItem(
-                        title: getWifiSecurityTypeTitle(context, e),
-                        value: e,
-                      ))
-                  .toList(),
-              onChanged: (index, selectedType) {
-                if (selectedType != null) {
-                  selected = selectedType;
-                }
-              },
-            ),
-          ],
+        content: StatefulBuilder(
+          builder: (context, setState) => AppRadioList<WifiSecurityType>(
+            selected: selected,
+            items: list
+                .map((e) => AppRadioListItem<WifiSecurityType>(
+                      title: getWifiSecurityTypeTitle(context, e),
+                      value: e,
+                    ))
+                .toList(),
+            onChanged: (index, value) {
+              if (value != null) {
+                setState(() {
+                  selected = value;
+                });
+              }
+            },
+          ),
         ),
         actions: [
-          AppTextButton(
-            loc(context).cancel,
+          AppButton.text(
+            label: loc(context).cancel,
             onTap: () {
               context.pop();
             },
           ),
-          AppTextButton(
-            loc(context).ok,
+          AppButton.text(
+            label: loc(context).ok,
             onTap: () {
               context.pop(selected);
             },
@@ -154,44 +149,42 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
     WifiWirelessMode selected = mode;
     final result = await showSimpleAppDialog<WifiWirelessMode?>(context,
         title: loc(context).wifiMode,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppRadioList<WifiWirelessMode>(
-              initial: mode,
-              itemHeight: 56,
-              mainAxisSize: MainAxisSize.min,
-              items: list
-                  .map((e) => AppRadioListItem(
-                        title: getWifiWirelessModeTitle(
-                            context, e, defaultMixedMode),
-                        value: e,
-                        subTitleWidget: !availablelist.contains(e)
-                            ? AppText.bodySmall(
-                                loc(context).wifiModeNotAvailable,
-                                color: Theme.of(context).colorScheme.error,
-                              )
-                            : null,
-                      ))
-                  .toList(),
-              onChanged: (index, selectedType) {
-                if (selectedType != null) {
-                  selected = selectedType;
-                }
-              },
-            ),
-          ],
+        content: StatefulBuilder(
+          builder: (context, setState) => AppRadioList<WifiWirelessMode>(
+            selected: selected,
+            items: list
+                .map((e) => AppRadioListItem<WifiWirelessMode>(
+                      title: getWifiWirelessModeTitle(
+                          context, e, defaultMixedMode),
+                      value: e,
+                      enabled: availablelist.contains(e),
+                      // Use descriptionWidget for unavailable message (always visible)
+                      descriptionWidget: !availablelist.contains(e)
+                          ? AppText.bodySmall(
+                              loc(context).wifiModeNotAvailable,
+                              color: Theme.of(context).colorScheme.error,
+                            )
+                          : null,
+                    ))
+                .toList(),
+            onChanged: (index, value) {
+              if (value != null) {
+                setState(() {
+                  selected = value;
+                });
+              }
+            },
+          ),
         ),
         actions: [
-          AppTextButton(
-            loc(context).cancel,
+          AppButton.text(
+            label: loc(context).cancel,
             onTap: () {
               context.pop();
             },
           ),
-          AppTextButton(
-            loc(context).ok,
+          AppButton.text(
+            label: loc(context).ok,
             onTap: () {
               context.pop(selected);
             },
@@ -212,39 +205,35 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
     int selected = channel;
     final result = await showSimpleAppDialog<int?>(context,
         title: loc(context).channel,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppRadioList<int>(
-                initial: channel,
-                itemHeight: 56,
-                mainAxisSize: MainAxisSize.min,
-                items: list
-                    .map((e) => AppRadioListItem(
-                          title: getWifiChannelTitle(context, e, band),
-                          value: e,
-                        ))
-                    .toList(),
-                onChanged: (index, selectedType) {
-                  if (selectedType != null) {
-                    selected = selectedType;
-                  }
-                },
-              ),
-            ],
+        content: StatefulBuilder(
+          builder: (context, setState) => SingleChildScrollView(
+            child: AppRadioList<int>(
+              selected: selected,
+              items: list
+                  .map((e) => AppRadioListItem<int>(
+                        title: getWifiChannelTitle(context, e, band),
+                        value: e,
+                      ))
+                  .toList(),
+              onChanged: (index, value) {
+                if (value != null) {
+                  setState(() {
+                    selected = value;
+                  });
+                }
+              },
+            ),
           ),
         ),
         actions: [
-          AppTextButton(
-            loc(context).cancel,
+          AppButton.text(
+            label: loc(context).cancel,
             onTap: () {
               context.pop();
             },
           ),
-          AppTextButton(
-            loc(context).ok,
+          AppButton.text(
+            label: loc(context).ok,
             onTap: () {
               context.pop(selected);
             },
@@ -265,43 +254,38 @@ mixin WifiSettingModalMixin<T extends StatefulWidget> on State<T> {
     WifiChannelWidth selected = channelWidth;
     final result = await showSimpleAppDialog<WifiChannelWidth?>(context,
         title: loc(context).channelWidth,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppRadioList<WifiChannelWidth>(
-                initial: channelWidth,
-                itemHeight: 56,
-                mainAxisSize: MainAxisSize.min,
-                items: list
-                    .map((e) => AppRadioListItem(
-                          title: getWifiChannelWidthTitle(
-                            context,
-                            e,
-                          ),
-                          value: e,
-                          enabled: validList.contains(e),
-                        ))
-                    .toList(),
-                onChanged: (index, selectedType) {
-                  if (selectedType != null) {
-                    selected = selectedType;
-                  }
-                },
-              ),
-            ],
+        content: StatefulBuilder(
+          builder: (context, setState) => SingleChildScrollView(
+            child: AppRadioList<WifiChannelWidth>(
+              selected: selected,
+              items: list
+                  .map((e) => AppRadioListItem<WifiChannelWidth>(
+                        title: getWifiChannelWidthTitle(context, e),
+                        value: e,
+                        enabled: validList.contains(e),
+                        // Note: No descriptionWidget for channel width - only visual disabled state
+                        // because there's no appropriate localization key for this case
+                      ))
+                  .toList(),
+              onChanged: (index, value) {
+                if (value != null) {
+                  setState(() {
+                    selected = value;
+                  });
+                }
+              },
+            ),
           ),
         ),
         actions: [
-          AppTextButton(
-            loc(context).cancel,
+          AppButton.text(
+            label: loc(context).cancel,
             onTap: () {
               context.pop();
             },
           ),
-          AppTextButton(
-            loc(context).ok,
+          AppButton.text(
+            label: loc(context).ok,
             onTap: () {
               context.pop(selected);
             },

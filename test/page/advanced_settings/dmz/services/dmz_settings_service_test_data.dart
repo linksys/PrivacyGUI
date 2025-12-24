@@ -17,8 +17,21 @@ class DMZSettingsTestData {
       JNAPSuccess(
         result: 'ok',
         output: {
-          'ipAddress': ipAddress,
+          'minNetworkPrefixLength': 16,
+          'maxNetworkPrefixLength': 30,
+          'minAllowedDHCPLeaseMinutes': 1,
+          'maxAllowedDHCPLeaseMinutes': 525600,
+          'dhcpSettings': {
+            'firstClientIPAddress': '192.168.1.10',
+            'lastClientIPAddress': '192.168.1.254',
+            'leaseMinutes': 1440,
+            'reservations': [],
+          },
+          'hostName': 'Linksys00001',
+          'maxDHCPReservationDescriptionLength': 63,
+          'isDHCPEnabled': true,
           'networkPrefixLength': networkPrefixLength,
+          'ipAddress': ipAddress,
         },
       );
 

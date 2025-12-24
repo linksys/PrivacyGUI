@@ -6,12 +6,9 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_setting_modal_mixin.dart';
 import 'package:privacy_gui/page/wifi_settings/views/wifi_term_titles.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/guest_wifi_card.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_list_tile.dart';
+import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_password_field.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class SimpleModeView extends ConsumerStatefulWidget {
   const SimpleModeView({
@@ -54,7 +51,7 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
     final state = ref.watch(wifiBundleProvider);
     final simpleWifi = state.current.wifiList.simpleModeWifi;
 
-    final isMobile = ResponsiveLayout.isMobileLayout(context);
+    final isMobile = context.isMobileLayout;
 
     final Map<int, TableColumnWidth> columnWidths;
     final List<TableRow> children;
@@ -88,7 +85,7 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
         TableRow(
           children: [
             _settingsView(simpleWifi),
-            const AppGap.medium(),
+            AppGap.lg(),
             GuestWiFiCard(
                 state: state.settings.current.wifiList.guestWiFi,
                 lastInRow: true),
@@ -108,8 +105,9 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
   Widget _settingsView(WiFiItem simpleWifi) {
     return AppCard(
       padding: const EdgeInsets.symmetric(
-          vertical: Spacing.small2, horizontal: Spacing.large2),
+          vertical: AppSpacing.sm, horizontal: AppSpacing.xxl),
       child: Column(
+        mainAxisSize: MainAxisSize.min, // 關鍵：讓 Column 使用最小高度
         children: [
           _simpleWiFiNameCard(simpleWifi.ssid),
           const Divider(),
@@ -121,14 +119,11 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
     );
   }
 
-  Widget _simpleWiFiNameCard(String ssid) => AppListCard(
-        showBorder: false,
+  Widget _simpleWiFiNameCard(String ssid) => WifiListTile(
         title: AppText.bodyMedium(loc(context).wifiName),
         description: AppText.labelLarge(ssid),
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        trailing: const Icon(
-          LinksysIcons.edit,
-          semanticLabel: 'edit',
+        trailing: const AppIcon.font(
+          AppFontIcons.edit,
         ),
         onTap: () {
           showWiFiNameModal(ssid, (value) {
@@ -142,47 +137,34 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
     return Opacity(
       opacity: securityType.isOpenVariant ? .5 : 1,
       child: IgnorePointer(
-        ignoring: securityType.isOpenVariant ? true : false,
-        child: AppListCard(
-          showBorder: false,
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
+        ignoring: securityType.isOpenVariant,
+        child: WifiListTile(
           title: AppText.bodyMedium(
             loc(context).wifiPassword,
             color: !securityType.isOpenVariant && password.isEmpty
                 ? Theme.of(context).colorScheme.error
                 : Theme.of(context).colorScheme.onSurface,
           ),
-          description: IntrinsicWidth(
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                  inputDecorationTheme: const InputDecorationTheme(
-                      isDense: true, contentPadding: EdgeInsets.zero)),
-              child: securityType.isOpenVariant
-                  ? Semantics(
-                      textField: false,
-                      explicitChildNodes: true,
-                      child: AppTextField(
-                        readOnly: true,
-                        border: InputBorder.none,
-                        controller: _passwordController,
-                      ),
-                    )
-                  : Semantics(
-                      textField: false,
-                      explicitChildNodes: true,
-                      child: AppPasswordField(
-                        readOnly: true,
-                        border: InputBorder.none,
-                        controller: _passwordController,
-                        suffixIconConstraints: const BoxConstraints(),
-                      ),
-                    ),
-            ),
+          description: WifiPasswordField(
+            controller: _passwordController,
+            readOnly: true,
+            showLabel: false,
+            // Assuming isLength64 logic matches MainWiFiCard, but SimpleMode doesn't show validations anyway.
           ),
-          trailing: const Icon(LinksysIcons.edit),
+          trailing: const AppIcon.font(AppFontIcons.edit),
           onTap: () {
             showWifiPasswordModal(password, (value) {
               widget.onWifiPasswordEdited?.call(value);
+              // Controller update handled in setState below if needed,
+              // but showWifiPasswordModal callback usually means value saved.
+              // However, simpler to just update controller text here to reflect change immediately?
+              // The original code did:
+              /*
+              setState(() {
+                  _passwordController.text = value;
+                });
+              */
+              // We should preserve that behavior if possible, but setState handles it.
               setState(() {
                 _passwordController.text = value;
               });
@@ -196,14 +178,11 @@ class _SimpleModeViewState extends ConsumerState<SimpleModeView>
   Widget _simpleWiFiSecurityTypeCard(WiFiItem simpleWifi) {
     final securityTypeTitle =
         getWifiSecurityTypeTitle(context, simpleWifi.securityType);
-    return AppListCard(
-      showBorder: false,
+    return WifiListTile(
       title: AppText.bodyMedium(loc(context).securityMode),
       description: AppText.labelLarge(securityTypeTitle),
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      trailing: const Icon(
-        LinksysIcons.edit,
-        semanticLabel: 'edit',
+      trailing: const AppIcon.font(
+        AppFontIcons.edit,
       ),
       onTap: () {
         showSecurityModeModal(

@@ -5,12 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/device_list_card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class DeviceListWidget extends ConsumerStatefulWidget {
   final List<DeviceListItem> devices;
@@ -57,7 +52,7 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
           (context, index) => _buildCell(index, widget.devices),
       separatorBuilder: (BuildContext context, int index) {
         if (index != widget.devices.length - 1) {
-          return const AppGap.small2();
+          return AppGap.sm();
         } else {
           return const SizedBox.shrink();
         }
@@ -69,51 +64,64 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
     return _buildDeviceCell(deviceList[index]);
   }
 
+  /// Composed DeviceListCard replacing AppDeviceListCard
   Widget _buildDeviceCell(DeviceListItem item) {
-    return AppDeviceListCard(
-      color: (widget.isItemSelected?.call(item) ?? false)
-          ? Theme.of(context).colorScheme.primaryContainer
-          : item.isOnline
-              ? null
-              : Theme.of(context).colorScheme.surfaceVariant,
-      borderColor: (widget.isItemSelected?.call(item) ?? false)
-          ? Theme.of(context).colorScheme.primary
-          : item.isOnline
-              ? null
-              : Theme.of(context).colorScheme.outlineVariant,
-      isSelected: widget.isItemSelected?.call(item) ?? false,
-      title: item.name,
-      description: item.isOnline
-          ? AppText.bodyMedium(
-              item.ipv4Address.isNotEmpty ? item.ipv4Address : item.ipv6Address)
-          : AppText.bodyMedium(loc(context).offline),
-      band: _connectionInfo(item),
-      leading: IconDeviceCategoryExt.resolveByName(item.icon),
-      trailing: _trailing(item),
-      onSelected: widget.isEdit
-          ? (value) {
-              widget.onItemSelected?.call(value, item);
-            }
-          : null,
-      onTap: () {
-        widget.onItemClick?.call(item);
-      },
+    final isSelected = widget.isItemSelected?.call(item) ?? false;
+
+    return AppCard(
+      onTap: () => widget.onItemClick?.call(item),
+      child: Row(
+        children: [
+          if (widget.isEdit)
+            Padding(
+              padding: EdgeInsets.only(right: AppSpacing.lg),
+              child: Checkbox(
+                value: isSelected,
+                onChanged: (value) {
+                  widget.onItemSelected?.call(value ?? false, item);
+                },
+              ),
+            ),
+          AppIcon.font(
+            IconDeviceCategoryExt.resolveByName(item.icon),
+            size: 24,
+          ),
+          AppGap.lg(),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(item.name),
+                AppGap.xs(),
+                item.isOnline
+                    ? AppText.bodyMedium(item.ipv4Address.isNotEmpty
+                        ? item.ipv4Address
+                        : item.ipv6Address)
+                    : AppText.bodyMedium(loc(context).offline),
+              ],
+            ),
+          ),
+          _connectionInfo(item),
+          AppGap.lg(),
+          _trailing(item),
+        ],
+      ),
     );
   }
 
   Widget _connectionInfo(DeviceListItem device) {
     return device.isOnline
-        ? ResponsiveLayout(
-            desktop: AppText.bodyMedium(device.isWired
+        ? AppResponsiveLayout(
+            desktop: (ctx) => AppText.bodyMedium(device.isWired
                 ? loc(context).ethernet
                 : '${device.ssid}  •  ${device.band}'),
-            mobile: device.isWired
+            mobile: (ctx) => device.isWired
                 ? AppText.bodyMedium(loc(context).ethernet)
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       AppText.bodyMedium(device.ssid),
-                      const AppGap.small1(),
+                      AppGap.xs(),
                       AppText.bodyMedium(device.band),
                     ],
                   ),
@@ -133,22 +141,24 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
         if (widget.enableDeauth &&
             !device.isWired &&
             serviceHelper.isSupportClientDeauth()) ...[
-          const AppGap.medium(),
-          AppIconButton.noPadding(
-            icon: LinksysIcons.bidirectional,
-            semanticLabel: 'deauth',
-            color: Theme.of(context).colorScheme.primary,
+          AppGap.lg(),
+          AppIconButton(
+            icon: AppIcon.font(
+              AppFontIcons.bidirectional,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             onTap: () {
               widget.onItemDeauth?.call(device);
             },
           ),
         ],
         if (widget.enableDelete) ...[
-          const AppGap.medium(),
-          AppIconButton.noPadding(
-            icon: LinksysIcons.delete,
-            semanticLabel: 'delete',
-            color: Theme.of(context).colorScheme.error,
+          AppGap.lg(),
+          AppIconButton(
+            icon: AppIcon.font(
+              AppFontIcons.delete,
+              color: Theme.of(context).colorScheme.error,
+            ),
             onTap: () {
               widget.onItemDelete?.call(device);
             },

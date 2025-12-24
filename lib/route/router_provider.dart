@@ -16,9 +16,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
+
 import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
-import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
@@ -37,8 +36,6 @@ import 'package:privacy_gui/page/login/views/login_cloud_auth_view.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
-import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
-import 'package:privacy_gui/page/otp_flow/views/_views.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
@@ -76,7 +73,6 @@ part 'route_local_login.dart';
 part 'route_dashboard.dart';
 part 'route_settings.dart';
 part 'route_advanced_settings.dart';
-part 'route_otp.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';
 part 'route_menu.dart';
@@ -152,9 +148,6 @@ class RouterNotifier extends ChangeNotifier {
     //     notifyListeners();
     //   }
     // });
-    _ref.listen(otpProvider.select((value) => value.step), (_, __) {
-      notifyListeners();
-    });
   }
 
   @override

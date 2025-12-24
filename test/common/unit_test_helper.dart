@@ -28,7 +28,8 @@ class UnitTestHelper {
   }) {
     final mockRef = _MockRef(
       routerRepository,
-      dashboardState: dashboardState ?? const DashboardHomeState(lanPortConnections: []),
+      dashboardState:
+          dashboardState ?? const DashboardHomeState(lanPortConnections: []),
     );
     return mockRef;
   }

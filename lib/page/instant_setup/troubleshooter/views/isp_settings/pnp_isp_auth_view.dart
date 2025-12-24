@@ -5,13 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/_providers.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PnpIspAuthView extends ArgumentsConsumerStatefulView {
   const PnpIspAuthView({
@@ -77,16 +75,15 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
   @override
   Widget build(BuildContext context) {
     return _isLoading
-        ? AppFullScreenSpinner(text: _spinnerText)
-        : StyledAppPageView.withSliver(
+        ? AppFullScreenLoader(title: _spinnerText)
+        : UiKitPageView.withSliver(
             title: loc(context).pnpIspSettingsAuthTitle,
             child: (context, constraints) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppGap.large2(),
-                AppPasswordField(
-                  border: OutlineInputBorder(),
-                  headerText: loc(context).password,
+                AppGap.xl(),
+                AppPasswordInput(
+                  label: loc(context).password,
                   controller: _passwordController,
                   onSubmitted: (_) {
                     _login(_passwordController.text);
@@ -94,8 +91,8 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
                 ),
                 if (_inputPasswordError != null)
                   Padding(
-                    padding: const EdgeInsets.only(
-                      top: Spacing.medium,
+                    padding: EdgeInsets.only(
+                      top: AppSpacing.lg,
                     ),
                     child: AppText.bodyLarge(
                       _inputPasswordError!,
@@ -103,18 +100,19 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
                     ),
                   ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: Spacing.large3 + Spacing.small2,
+                  padding: EdgeInsets.symmetric(
+                    vertical: AppSpacing.xxl + AppSpacing.sm,
                   ),
-                  child: AppTextButton.noPadding(
-                    loc(context).pnpRouterLoginWhereIsIt,
+                  child: AppButton.text(
+                    label: loc(context).pnpRouterLoginWhereIsIt,
                     onTap: () {
                       _showRouterPasswordModal();
                     },
                   ),
                 ),
-                AppFilledButton(
-                  loc(context).next,
+                AppButton(
+                  label: loc(context).next,
+                  variant: SurfaceVariant.highlight,
                   onTap: () {
                     setState(() {
                       _isLoading = true;
@@ -134,8 +132,8 @@ class _PnpIspAuthViewState extends ConsumerState<PnpIspAuthView> {
           return AlertDialog(
             title: AppText.titleLarge(loc(context).routerPassword),
             actions: [
-              AppTextButton(
-                loc(context).close,
+              AppButton.text(
+                label: loc(context).close,
                 onTap: () {
                   context.pop();
                 },

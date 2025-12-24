@@ -51,7 +51,9 @@ class _FakeFirewallState_1 extends _i1.SmartFake implements _i3.FirewallState {
 /// A class which mocks [FirewallNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockFirewallNotifier extends _i2.Notifier<_i3.FirewallState> with _i1.Mock implements _i4.FirewallNotifier {
+class MockFirewallNotifier extends _i2.Notifier<_i3.FirewallState>
+    with _i1.Mock
+    implements _i4.FirewallNotifier {
   @override
   _i2.NotifierProviderRef<_i3.FirewallState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),

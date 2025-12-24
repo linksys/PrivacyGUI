@@ -72,7 +72,9 @@ class _FakeTimezoneStatus_3 extends _i1.SmartFake
 /// A class which mocks [TimezoneNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockTimezoneNotifier extends _i2.Notifier<_i3.TimezoneState> with _i1.Mock implements _i4.TimezoneNotifier {
+class MockTimezoneNotifier extends _i2.Notifier<_i3.TimezoneState>
+    with _i1.Mock
+    implements _i4.TimezoneNotifier {
   @override
   _i2.NotifierProviderRef<_i3.TimezoneState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),

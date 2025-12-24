@@ -1,0 +1,80 @@
+{
+  "ar": {
+    "wifiModeNotAvailable": "يؤدي تغيير الوضع إلى إعادة ضبط عرض القناة إلى تلقائي."
+  },
+  "da": {
+    "wifiModeNotAvailable": "Ændring af tilstand nulstiller kanalbredden til automatisk."
+  },
+  "de": {
+    "wifiModeNotAvailable": "Moduswechsel setzt Kanalbreite auf „Automatisch“ zurück."
+  },
+  "el": {
+    "wifiModeNotAvailable": "Η αλλαγή λειτουργίας επαναφέρει το εύρος καναλιού σε αυτόματο."
+  },
+  "en": {
+    "wifiModeNotAvailable": "Mode change resets channel width to auto."
+  },
+  "es": {
+    "wifiModeNotAvailable": "El cambio de modo restablece el ancho del canal a automático."
+  },
+  "es-AR": {
+    "wifiModeNotAvailable": "El cambio de modo restablece el ancho del canal a automático."
+  },
+  "fi": {
+    "wifiModeNotAvailable": "Tilamuutos nollaa kanavan leveyden automaattiseksi."
+  },
+  "fr": {
+    "wifiModeNotAvailable": "Le changement de mode réinitialise la largeur du canal sur auto."
+  },
+  "fr-CA": {
+    "wifiModeNotAvailable": "Le changement de mode réinitialise la largeur du canal à auto."
+  },
+  "id": {
+    "wifiModeNotAvailable": "Perubahan mode mengatur ulang lebar saluran ke otomatis."
+  },
+  "it": {
+    "wifiModeNotAvailable": "La modifica della modalità reimposta la larghezza del canale su automatico."
+  },
+  "ja": {
+    "wifiModeNotAvailable": "モードを変更すると、チャンネル幅が自動にリセットされます。"
+  },
+  "ko": {
+    "wifiModeNotAvailable": "모드 변경 시 채널 너비가 자동으로 재설정됩니다."
+  },
+  "nb": {
+    "wifiModeNotAvailable": "Modusendring tilbakestiller kanalbredden til automatisk."
+  },
+  "nl": {
+    "wifiModeNotAvailable": "Modus wijzigen stelt de kanaalbreedte opnieuw in op automatisch."
+  },
+  "pl": {
+    "wifiModeNotAvailable": "Zmiana trybu resetuje szerokość kanału do wartości automatycznej."
+  },
+  "pt": {
+    "wifiModeNotAvailable": "A alteração do modo redefine a largura do canal para automático."
+  },
+  "pt-PT": {
+    "wifiModeNotAvailable": "A alteração do modo repõe a largura do canal para automático."
+  },
+  "ru": {
+    "wifiModeNotAvailable": "Изменение режима сбрасывает ширину канала на «Авто»."
+  },
+  "sv": {
+    "wifiModeNotAvailable": "Lägesändring återställer kanalbredden till automatisk."
+  },
+  "th": {
+    "wifiModeNotAvailable": "การเปลี่ยนโหมดจะรีเซ็ตความกว้างของช่องสัญญาณเป็นอัตโนมัติ"
+  },
+  "tr": {
+    "wifiModeNotAvailable": "Mod değişikliği, kanal genişliğini otomatik olarak sıfırlar."
+  },
+  "vi": {
+    "wifiModeNotAvailable": "Thay đổi chế độ sẽ đặt lại chiều rộng kênh thành tự động."
+  },
+  "zh": {
+    "wifiModeNotAvailable": "更改模式会将信道宽度重置为自动。"
+  },
+  "zh-TW": {
+    "wifiModeNotAvailable": "變更模式會將頻道寬度重設為自動。"
+  }
+}

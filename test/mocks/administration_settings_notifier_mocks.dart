@@ -52,7 +52,9 @@ class _FakeAdministrationSettingsState_1 extends _i1.SmartFake
 /// A class which mocks [AdministrationSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAdministrationSettingsNotifier extends _i2.Notifier<_i3.AdministrationSettingsState> with _i1.Mock
+class MockAdministrationSettingsNotifier
+    extends _i2.Notifier<_i3.AdministrationSettingsState>
+    with _i1.Mock
     implements _i4.AdministrationSettingsNotifier {
   @override
   _i2.NotifierProviderRef<_i3.AdministrationSettingsState> get ref =>

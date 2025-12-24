@@ -20,3 +20,10 @@ Use `@/openspec/SCREENSHOT_TESTING.md` to learn:
 Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->
+
+## Active Technologies
+- Dart 3.0+, Flutter 3.3+ + ui_kit_library (Git), privacygui_widgets (local plugin), flutter_riverpod, go_router (001-ui-kit-migration)
+- Local preferences, shared_preferences, flutter_secure_storage (001-ui-kit-migration)
+
+## Recent Changes
+- 001-ui-kit-migration: Added Dart 3.0+, Flutter 3.3+ + ui_kit_library (Git), privacygui_widgets (local plugin), flutter_riverpod, go_router

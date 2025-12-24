@@ -115,8 +115,8 @@ void main() {
 
       when(() => mockAuthService.validateSessionToken())
           .thenAnswer((_) async => const AuthSuccess(null));
-      when(() => mockAuthService.getStoredCredentials()).thenAnswer(
-          (_) async => const AuthFailure(StorageError()));
+      when(() => mockAuthService.getStoredCredentials())
+          .thenAnswer((_) async => const AuthFailure(StorageError()));
       when(() => mockAuthService.getStoredLoginType())
           .thenAnswer((_) async => const AuthSuccess(LoginType.none));
 
@@ -262,8 +262,8 @@ void main() {
       const wrongPassword = 'wrongpass';
 
       when(() => mockAuthService.localLogin(wrongPassword, pnp: false))
-          .thenAnswer((_) async =>
-              const AuthFailure(UnexpectedError(message: 'ErrorInvalidPassword')));
+          .thenAnswer((_) async => const AuthFailure(
+              UnexpectedError(message: 'ErrorInvalidPassword')));
 
       // Act
       await container.read(authProvider.notifier).localLogin(wrongPassword);

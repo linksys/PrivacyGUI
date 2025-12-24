@@ -15,7 +15,8 @@ class DefaultIpv6SettingsHandler implements Ipv6SettingsHandler {
   Ipv6Setting getIpv6Setting(GetIPv6Settings? ipv6Settings) {
     return Ipv6Setting(
       ipv6ConnectionType: _wanType.type,
-      isIPv6AutomaticEnabled: ipv6Settings?.ipv6AutomaticSettings?.isIPv6AutomaticEnabled ?? false,
+      isIPv6AutomaticEnabled:
+          ipv6Settings?.ipv6AutomaticSettings?.isIPv6AutomaticEnabled ?? false,
     );
   }
 
@@ -25,7 +26,8 @@ class DefaultIpv6SettingsHandler implements Ipv6SettingsHandler {
   }
 
   @override
-  Ipv6Setting updateIpv6Setting(Ipv6Setting currentSetting, Ipv6Setting newValues) {
+  Ipv6Setting updateIpv6Setting(
+      Ipv6Setting currentSetting, Ipv6Setting newValues) {
     return currentSetting.copyWith(
       ipv6ConnectionType: newValues.ipv6ConnectionType,
     );

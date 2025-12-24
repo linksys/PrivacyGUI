@@ -53,7 +53,6 @@ final dashboardRoute = ShellRoute(
           path: RoutePath.faqList,
           builder: (context, state) => const FaqListView(),
         ),
-        
       ],
     ),
   ],

@@ -226,7 +226,8 @@ void main() {
         );
 
         // Act
-        final (uiSettings, status) = await service.fetchFirewallSettings(mockRef);
+        final (uiSettings, status) =
+            await service.fetchFirewallSettings(mockRef);
 
         // Assert
         expect(uiSettings, isNull);
@@ -249,7 +250,8 @@ void main() {
         );
 
         // Act
-        final (uiSettings, status) = await service.fetchFirewallSettings(mockRef);
+        final (uiSettings, status) =
+            await service.fetchFirewallSettings(mockRef);
 
         // Assert
         expect(uiSettings, isNull);
@@ -269,7 +271,8 @@ void main() {
         );
 
         // Act
-        final (uiSettings, status) = await service.fetchFirewallSettings(mockRef);
+        final (uiSettings, status) =
+            await service.fetchFirewallSettings(mockRef);
 
         // Assert
         expect(uiSettings, isNull);
@@ -289,7 +292,8 @@ void main() {
         );
 
         // Act
-        final (uiSettings, status) = await service.fetchFirewallSettings(mockRef);
+        final (uiSettings, status) =
+            await service.fetchFirewallSettings(mockRef);
 
         // Assert
         expect(uiSettings, isNull);

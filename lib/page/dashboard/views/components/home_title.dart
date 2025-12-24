@@ -10,11 +10,9 @@ import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 
 class DashboardHomeTitle extends ConsumerWidget {
   const DashboardHomeTitle({super.key});
@@ -42,9 +40,10 @@ class DashboardHomeTitle extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: AppText.titleLarge(
+                    child: Text(
                       helloString(context, localTime),
                       overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
                   InkWell(
@@ -59,13 +58,19 @@ class DashboardHomeTitle extends ConsumerWidget {
                     child: Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(LinksysIcons.calendar,
+                        AppIcon.font(AppFontIcons.calendar,
                             color: Theme.of(context).colorScheme.onSurface),
                         Padding(
-                          padding: const EdgeInsets.only(left: Spacing.small2),
-                          child: AppText.bodyMedium(
+                          padding: EdgeInsets.only(left: AppSpacing.sm),
+                          child: Text(
                             loc(context).formalDateTime(localTime, localTime),
-                            color: Theme.of(context).colorScheme.onSurface,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -87,7 +92,7 @@ class DashboardHomeTitle extends ConsumerWidget {
       ),
       child: AppListCard(
         title: AppText.labelLarge(loc(context).troubleshoot),
-        trailing: const Icon(LinksysIcons.chevronRight),
+        trailing: AppIcon.font(AppFontIcons.chevronRight),
         onTap: () {
           ref
               .read(pnpTroubleshooterProvider.notifier)

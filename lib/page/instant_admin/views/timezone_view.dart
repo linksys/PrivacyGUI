@@ -5,15 +5,10 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/instant_admin/providers/timezone_provider.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/util/timezone.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class TimezoneView extends ArgumentsConsumerStatefulView {
   const TimezoneView({
@@ -39,31 +34,31 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
       _notifier.fetch(),
     ).onError((error, stackTrace) {
       showErrorMessageSnackBar(error);
+      return null;
     });
   }
 
   @override
   void dispose() {
     super.dispose();
-    // _notifier.fetch(); // No need to fetch on dispose, as state is managed by Riverpod
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(timezoneProvider);
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       title: loc(context).timezone,
-      scrollable: true,
       onBackTap: _notifier.isDirty()
           ? () async {
               final goBack = await showUnsavedAlert(context);
               if (goBack == true) {
-                _notifier.revert(); // Use notifier's revert
+                if (!mounted) return;
+                _notifier.revert();
                 context.pop();
               }
             }
           : null,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
           isPositiveEnabled: _notifier.isDirty(),
           onPositiveTap: () {
             doSomethingWithSpinner(
@@ -76,6 +71,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
                 showChangesSavedSnackBar();
               }
             }).onError((error, stackTrace) {
+              if (!mounted) return;
               showErrorMessageSnackBar(error);
             });
           }),
@@ -83,9 +79,8 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppCard(
-            child: AppSwitchTriggerTile(
-              title: AppText.labelLarge(loc(context).daylightSavingsTime),
-              semanticLabel: 'daylight savings time',
+            child: _buildSwitchTile(
+              title: loc(context).daylightSavingsTime,
               value: state.settings.current.isDaylightSaving,
               onChanged: _notifier.isSupportDaylightSaving()
                   ? (value) {
@@ -94,7 +89,7 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
                   : null,
             ),
           ),
-          const AppGap.medium(),
+          AppGap.lg(),
           SizedBox(
             height: (70.0) * state.status.supportedTimezones.length +
                 17 * (state.status.supportedTimezones.length - 1),
@@ -107,30 +102,21 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
                   constraints: const BoxConstraints(minHeight: 70.0),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: AppListCard(
-                        showBorder: false,
-                        padding: EdgeInsets.zero,
-                        title: AppText.labelLarge(
-                          getTimeZoneRegionName(
-                              context,
-                              state
-                                  .status.supportedTimezones[index].timeZoneID),
-                          color: _notifier.isSelectedTimezone(index)
-                              ? Theme.of(context).colorScheme.primary
-                              : null,
-                        ),
-                        description: AppText.bodyMedium(
-                          getTimezoneGMT(state
-                              .status.supportedTimezones[index].description),
-                          color: _notifier.isSelectedTimezone(index)
-                              ? Theme.of(context).colorScheme.primary
-                              : null,
-                        ),
+                    child: _buildListRow(
+                        title: getTimeZoneRegionName(context,
+                            state.status.supportedTimezones[index].timeZoneID),
+                        titleColor: _notifier.isSelectedTimezone(index)
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                        description: getTimezoneGMT(
+                            state.status.supportedTimezones[index].description),
+                        descriptionColor: _notifier.isSelectedTimezone(index)
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
                         trailing: _notifier.isSelectedTimezone(index)
-                            ? Icon(
-                                LinksysIcons.check,
+                            ? AppIcon.font(
+                                AppFontIcons.check,
                                 color: Theme.of(context).colorScheme.primary,
-                                semanticLabel: 'check icon',
                               )
                             : null,
                         onTap: () {
@@ -151,6 +137,57 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
     );
   }
 
+  /// Composed SwitchTile
+  Widget _buildSwitchTile({
+    required String title,
+    required bool value,
+    void Function(bool)? onChanged,
+  }) {
+    return Row(
+      children: [
+        Expanded(child: AppText.labelLarge(title)),
+        AppSwitch(
+          value: value,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  /// Composed ListRow
+  Widget _buildListRow({
+    required String title,
+    Color? titleColor,
+    String? description,
+    Color? descriptionColor,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.zero,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.labelLarge(title, color: titleColor),
+                  if (description != null) ...[
+                    AppGap.xs(),
+                    AppText.bodyMedium(description, color: descriptionColor),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null) trailing,
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<bool?> showUnsavedAlert(BuildContext context,
       {String? title, String? message}) {
     return showMessageAppDialog<bool>(
@@ -158,16 +195,14 @@ class _TimezoneContentViewState extends ConsumerState<TimezoneView>
       title: title ?? loc(context).unsavedChangesTitle,
       message: message ?? loc(context).unsavedChangesDesc,
       actions: [
-        AppTextButton(
-          loc(context).goBack,
-          color: Theme.of(context).colorScheme.onSurface,
+        AppButton.text(
+          label: loc(context).goBack,
           onTap: () {
             context.pop();
           },
         ),
-        AppTextButton(
-          loc(context).discardChanges,
-          color: Theme.of(context).colorScheme.error,
+        AppButton.text(
+          label: loc(context).discardChanges,
           onTap: () {
             context.pop(true);
           },

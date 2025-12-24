@@ -4,8 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/screen.dart';
@@ -78,7 +77,7 @@ void main() {
   }
 
   // Test ID: IDDV-ONLINE — verify layout for online wireless device
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - online wireless summary',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(tester, screen);
@@ -99,7 +98,7 @@ void main() {
       expect(find.text(loc.ipAddress), findsOneWidget);
       expect(find.text(item.ipv4Address), findsOneWidget);
       expect(find.text(loc.reserveIp), findsOneWidget);
-      expect(find.byIcon(LinksysIcons.edit), findsOneWidget);
+      expect(find.byIcon(AppFontIcons.edit), findsOneWidget);
     },
     screens: _deviceDetailScreens,
     goldenFilename: 'IDDV-ONLINE-01-layout',
@@ -107,16 +106,16 @@ void main() {
   );
 
   // Test ID: IDDV-EDIT — edit modal validation states
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - edit modal validations',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(tester, screen);
       final loc = testHelper.loc(context);
 
-      await tester.tap(find.byIcon(LinksysIcons.edit));
+      await tester.tap(find.byIcon(AppFontIcons.edit));
       await tester.pumpAndSettle();
 
-      final inputFinder = find.byType(AppTextField).first;
+      final inputFinder = find.byType(AppTextFormField).first;
       await tester.enterText(inputFinder, '');
       await tester.pumpAndSettle();
       expect(find.text(loc.theNameMustNotBeEmpty), findsOneWidget);
@@ -138,7 +137,7 @@ void main() {
   );
 
   // Test ID: IDDV-RESERVE — reserve IP dialog
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - reserve ip dialog',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(tester, screen);
@@ -157,7 +156,7 @@ void main() {
   );
 
   // Test ID: IDDV-RELEASE — release IP dialog for reserved clients
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - release ip dialog',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(
@@ -180,7 +179,7 @@ void main() {
   );
 
   // Test ID: IDDV-MLO — show MLO CTA and modal
-  testLocalizationsV2(
+  testLocalizations(
     'device detail view - mlo capable modal',
     (tester, screen) async {
       final context = await pumpDeviceDetailView(

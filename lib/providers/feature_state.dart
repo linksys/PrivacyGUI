@@ -8,7 +8,8 @@ import 'preservable.dart';
 ///
 /// [TSettings] is the type for user-configurable data.
 /// [TStatus] is the type for read-only system status data.
-abstract class FeatureState<TSettings extends Equatable, TStatus extends Equatable> extends Equatable {
+abstract class FeatureState<TSettings extends Equatable,
+    TStatus extends Equatable> extends Equatable {
   final Preservable<TSettings> settings;
   final TStatus status;
 
@@ -16,7 +17,7 @@ abstract class FeatureState<TSettings extends Equatable, TStatus extends Equatab
 
   /// Checks if the settings have been modified.
   bool get isDirty => settings.isDirty;
-  
+
   TSettings get current => settings.current;
 
   /// Creates a copy of this state but with the given fields replaced with the new values.

@@ -10,7 +10,8 @@ import 'package:privacy_gui/page/advanced_settings/administration/services/admin
 class MockAdministrationSettingsService extends Mock
     implements AdministrationSettingsService {}
 
-class _FakeAdministrationSettings extends Fake implements AdministrationSettings {}
+class _FakeAdministrationSettings extends Fake
+    implements AdministrationSettings {}
 
 class _FakeRef extends Fake implements Ref {}
 
@@ -27,13 +28,17 @@ void main() {
       final container = ProviderContainer();
       final notifier = container.read(administrationSettingsProvider.notifier);
 
-      expect(notifier.state.settings.current.managementSettings.canManageUsingHTTP,
+      expect(
+          notifier.state.settings.current.managementSettings.canManageUsingHTTP,
           false);
-      expect(notifier.state.settings.current.managementSettings.canManageUsingHTTPS,
+      expect(
+          notifier
+              .state.settings.current.managementSettings.canManageUsingHTTPS,
           false);
       expect(notifier.state.settings.current.isUPnPEnabled, false);
       expect(notifier.state.settings.current.enabledALG, false);
-      expect(notifier.state.settings.current.isExpressForwardingSupported, false);
+      expect(
+          notifier.state.settings.current.isExpressForwardingSupported, false);
     });
 
     /// T029: Test that performFetch method exists and has correct signature
@@ -56,13 +61,15 @@ void main() {
       final notifier = container.read(administrationSettingsProvider.notifier);
 
       // Initial state
-      expect(notifier.state.current.managementSettings.canManageWirelessly, null);
+      expect(
+          notifier.state.current.managementSettings.canManageWirelessly, null);
 
       // Act
       notifier.setManagementSettings(true);
 
       // Assert
-      expect(notifier.state.current.managementSettings.canManageWirelessly, true);
+      expect(
+          notifier.state.current.managementSettings.canManageWirelessly, true);
     });
 
     /// T031: Test setUPnPEnabled updates current state
@@ -144,12 +151,14 @@ void main() {
       final container = ProviderContainer();
       final notifier = container.read(administrationSettingsProvider.notifier);
 
-      final originalIsUPnPEnabled = notifier.state.settings.original.isUPnPEnabled;
+      final originalIsUPnPEnabled =
+          notifier.state.settings.original.isUPnPEnabled;
 
       notifier.setUPnPEnabled(true);
 
       // Original should remain unchanged
-      expect(notifier.state.settings.original.isUPnPEnabled, originalIsUPnPEnabled);
+      expect(notifier.state.settings.original.isUPnPEnabled,
+          originalIsUPnPEnabled);
       // Current should be updated
       expect(notifier.state.current.isUPnPEnabled, true);
     });
@@ -242,8 +251,10 @@ void main() {
       await notifier.fetch();
 
       // Assert
-      expect(notifier.state.current.managementSettings.canManageUsingHTTP, true);
-      expect(notifier.state.current.managementSettings.canManageUsingHTTPS, true);
+      expect(
+          notifier.state.current.managementSettings.canManageUsingHTTP, true);
+      expect(
+          notifier.state.current.managementSettings.canManageUsingHTTPS, true);
       expect(notifier.state.current.isUPnPEnabled, true);
       expect(notifier.state.current.enabledALG, false);
 

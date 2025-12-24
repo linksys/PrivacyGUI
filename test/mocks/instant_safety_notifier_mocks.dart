@@ -51,7 +51,8 @@ class _FakeInstantSafetyState_1 extends _i1.SmartFake
 /// A class which mocks [InstantSafetyNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockInstantSafetyNotifier extends _i2.Notifier<_i3.InstantSafetyState> with _i1.Mock
+class MockInstantSafetyNotifier extends _i2.Notifier<_i3.InstantSafetyState>
+    with _i1.Mock
     implements _i4.InstantSafetyNotifier {
   @override
   _i2.NotifierProviderRef<_i3.InstantSafetyState> get ref =>

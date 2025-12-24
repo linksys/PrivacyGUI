@@ -4,8 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 import '../../../test_data/_index.dart';
@@ -43,20 +42,24 @@ void main() {
     required String password,
     String? confirm,
   }) async {
-    final passwordFinder = find.byType(AppPasswordField);
+    final passwordFinder = find.byType(AppPasswordInput);
     await tester.enterText(passwordFinder.at(0), password);
     await tester.enterText(passwordFinder.at(1), confirm ?? password);
     await tester.pumpAndSettle();
   }
 
   Future<void> fillHint(WidgetTester tester, String hint) async {
-    final hintField = find.byType(AppTextField).last;
+    final hintField = find.byType(AppTextFormField).last;
     await tester.enterText(hintField, hint);
     await tester.pumpAndSettle();
   }
 
-  Future<void> scrollToSave(WidgetTester tester) async {
-    final saveFinder = find.byType(AppFilledButton);
+  Future<void> scrollToSave(
+    WidgetTester tester,
+    String saveText,
+  ) async {
+    // Use specific finder for Save button to avoid multiple AppButtons
+    final saveFinder = find.widgetWithText(AppButton, saveText);
     await tester.scrollUntilVisible(
       saveFinder,
       200,
@@ -66,7 +69,7 @@ void main() {
   }
 
   // Test ID: LRRP-INIT
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - initial layout',
     (tester, screen) async {
       final context = await testHelper.pumpView(
@@ -86,10 +89,14 @@ void main() {
         find.text(loc.localResetRouterPasswordDescription),
         findsOneWidget,
       );
-      expect(find.byType(AppTextField), findsNWidgets(3));
-      expect(find.byType(AppPasswordField), findsNWidgets(2));
-      final saveButton =
-          tester.widget<AppFilledButton>(find.byType(AppFilledButton));
+      // After UI Kit migration: 2 AppPasswordInput + 1 AppTextFormField (hint)
+      expect(find.byType(AppTextFormField), findsNWidgets(1));
+      expect(find.byType(AppPasswordInput), findsNWidgets(2));
+      // Use specific widget+text finder for Save button
+      final saveButtonFinder =
+          find.byKey(const Key('localResetPassword_saveButton'));
+      expect(saveButtonFinder, findsOneWidget);
+      final saveButton = tester.widget<AppButton>(saveButtonFinder);
       expect(saveButton.onTap, isNull);
     },
     goldenFilename: 'LRRP-INIT_01_initial_state',
@@ -97,7 +104,7 @@ void main() {
   );
 
   // Test ID: LRRP-EDIT
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - editing password and hint',
     (tester, screen) async {
       await testHelper.pumpView(
@@ -109,7 +116,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await fillPasswords(tester, password: 'Linksys123!', confirm: 'Linksys!');
-      final visibilityFinder = find.byIcon(LinksysIcons.visibility).first;
+      final visibilityFinder = find.byIcon(AppFontIcons.visibility).first;
       await tester.tap(visibilityFinder);
       await tester.pumpAndSettle();
       await fillHint(tester, 'Home Wifi');
@@ -119,23 +126,26 @@ void main() {
   );
 
   // Test ID: LRRP-VALID
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - save button enabled on valid state',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
         baseState().copyWith(isValid: true),
       );
-      await testHelper.pumpView(
+      final context = await testHelper.pumpView(
         tester,
         child: const LocalResetRouterPasswordView(),
         config: LinksysRouteConfig(noNaviRail: true),
         locale: screen.locale,
       );
+      final loc = testHelper.loc(context);
       await tester.pumpAndSettle();
-      await scrollToSave(tester);
+      await scrollToSave(tester, loc.save);
 
-      final saveButton =
-          tester.widget<AppFilledButton>(find.byType(AppFilledButton));
+      final saveButtonFinder =
+          find.byKey(const Key('localResetPassword_saveButton'));
+      expect(saveButtonFinder, findsOneWidget);
+      final saveButton = tester.widget<AppButton>(saveButtonFinder);
       expect(saveButton.onTap, isNotNull);
     },
     goldenFilename: 'LRRP-VALID_01_save_enabled',
@@ -143,7 +153,7 @@ void main() {
   );
 
   // Test ID: LRRP-SUCCESS
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - successful reset dialog',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
@@ -161,8 +171,8 @@ void main() {
 
       await fillPasswords(tester, password: 'Linksys123!');
       await fillHint(tester, 'Home Wifi');
-      await scrollToSave(tester);
-      await tester.tap(find.byType(AppFilledButton));
+      await scrollToSave(tester, loc.save);
+      await tester.tap(find.byKey(const Key('localResetPassword_saveButton')));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('resetSavedDialog')), findsOneWidget);
@@ -174,7 +184,7 @@ void main() {
   );
 
   // Test ID: LRRP-FAIL
-  testLocalizationsV2(
+  testLocalizations(
     'local reset router password view - failure dialog',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
@@ -199,8 +209,8 @@ void main() {
 
       await fillPasswords(tester, password: 'Linksys123!');
       await fillHint(tester, 'Office Wifi');
-      await scrollToSave(tester);
-      await tester.tap(find.byType(AppFilledButton));
+      await scrollToSave(tester, loc.save);
+      await tester.tap(find.byKey(const Key('localResetPassword_saveButton')));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('resetSavedDialog')), findsOneWidget);

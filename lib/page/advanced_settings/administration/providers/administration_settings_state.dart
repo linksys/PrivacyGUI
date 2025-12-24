@@ -155,7 +155,8 @@ class AdministrationSettings extends Equatable {
       'isUPnPEnabled': isUPnPEnabled,
       'canUsersConfigure': canUsersConfigure,
       'canUsersDisableWANAccess': canUsersDisableWANAccess,
-      'canDisAllowLocalMangementWirelessly': canDisAllowLocalMangementWirelessly,
+      'canDisAllowLocalMangementWirelessly':
+          canDisAllowLocalMangementWirelessly,
     };
   }
 
@@ -177,7 +178,8 @@ class AdministrationSettings extends Equatable {
   String toJson() => json.encode(toMap());
 
   factory AdministrationSettings.fromJson(String source) =>
-      AdministrationSettings.fromMap(json.decode(source) as Map<String, dynamic>);
+      AdministrationSettings.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }
 
 class AdministrationStatus extends Equatable {
@@ -204,9 +206,8 @@ class AdministrationStatus extends Equatable {
       AdministrationStatus.fromMap(json.decode(source) as Map<String, dynamic>);
 }
 
-class AdministrationSettingsState extends FeatureState<
-    AdministrationSettings,
-    AdministrationStatus> {
+class AdministrationSettingsState
+    extends FeatureState<AdministrationSettings, AdministrationStatus> {
   const AdministrationSettingsState({
     required super.settings,
     required super.status,
@@ -235,10 +236,10 @@ class AdministrationSettingsState extends FeatureState<
     return AdministrationSettingsState(
       settings: Preservable.fromMap(
           map['settings'] as Map<String, dynamic>,
-          (valueMap) => AdministrationSettings.fromMap(
-              valueMap as Map<String, dynamic>)),
-      status: AdministrationStatus.fromMap(
-          map['status'] as Map<String, dynamic>),
+          (valueMap) =>
+              AdministrationSettings.fromMap(valueMap as Map<String, dynamic>)),
+      status:
+          AdministrationStatus.fromMap(map['status'] as Map<String, dynamic>),
     );
   }
 
@@ -254,4 +255,3 @@ class AdministrationSettingsState extends FeatureState<
     return [settings, status];
   }
 }
-

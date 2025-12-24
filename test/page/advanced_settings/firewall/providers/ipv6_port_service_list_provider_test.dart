@@ -892,8 +892,8 @@ void main() {
             )
           ]);
 
-          when(() => mockService.fetchRulesFromDevice(any(),
-                  forceRemote: false))
+          when(() =>
+                  mockService.fetchRulesFromDevice(any(), forceRemote: false))
               .thenAnswer((_) async => (testRules, const EmptyStatus()));
 
           // Act
@@ -906,8 +906,9 @@ void main() {
           expect(state.settings.current.rules[1].description, 'Another Rule');
           expect(state.settings.original, state.settings.current);
 
-          verify(() => mockService.fetchRulesFromDevice(any(),
-              forceRemote: false)).called(1);
+          verify(() =>
+                  mockService.fetchRulesFromDevice(any(), forceRemote: false))
+              .called(1);
         });
 
         test('fetches with forceRemote parameter', () async {
@@ -923,8 +924,7 @@ void main() {
             )
           ]);
 
-          when(() =>
-                  mockService.fetchRulesFromDevice(any(), forceRemote: true))
+          when(() => mockService.fetchRulesFromDevice(any(), forceRemote: true))
               .thenAnswer((_) async => (testRules, const EmptyStatus()));
 
           // Act
@@ -937,27 +937,31 @@ void main() {
           expect(state.settings.current.rules, hasLength(1));
           expect(state.settings.current.rules.first.description, 'Remote Rule');
 
-          verify(() => mockService.fetchRulesFromDevice(any(),
-              forceRemote: true)).called(1);
+          verify(() =>
+                  mockService.fetchRulesFromDevice(any(), forceRemote: true))
+              .called(1);
         });
 
         test('handles fetch failure gracefully', () async {
           // Arrange
-          when(() => mockService.fetchRulesFromDevice(any(),
-                  forceRemote: false))
+          when(() =>
+                  mockService.fetchRulesFromDevice(any(), forceRemote: false))
               .thenAnswer((_) async => (null, null));
 
-          // Act & Assert
-          expect(
-            () => container.read(ipv6PortServiceListProvider.notifier).fetch(),
-            throwsException,
-          );
+          // Act
+          final result = await container
+              .read(ipv6PortServiceListProvider.notifier)
+              .fetch();
+
+          // Assert - provider returns current (empty) state instead of throwing
+          expect(result.settings.current.rules, isEmpty);
+          expect(result.settings.original.rules, isEmpty);
         });
 
         test('handles service exception', () async {
           // Arrange
-          when(() => mockService.fetchRulesFromDevice(any(),
-                  forceRemote: false))
+          when(() =>
+                  mockService.fetchRulesFromDevice(any(), forceRemote: false))
               .thenThrow(Exception('Service error'));
 
           // Act & Assert

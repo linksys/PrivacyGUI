@@ -4,26 +4,19 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/otp_flow/_otp_flow.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/components/composed/app_panel_with_value_check.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginCloudView extends ArgumentsConsumerStatefulView {
@@ -65,114 +58,105 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
         _handleError(next.error, next.stackTrace!);
       }
     });
-    ref.listen(otpProvider.select((value) => (value.step, value.extras)),
-        (previous, next) {
-      if (next.$1 == previous?.$1) {
-        return;
-      }
-      if (next.$1 == OtpStep.finish) {
-        logger.d('Login password: Otp pass! $next');
-        ref.read(authProvider.notifier).cloudLogin(
-              username: _usernameController.text,
-              password: _passwordController.text,
-              sessionToken: SessionToken.fromJson(next.$2),
-            );
-      }
-    });
+
     return _isLoading
-        ? const AppFullScreenSpinner()
-        : StyledAppPageView(
-            appBarStyle: AppBarStyle.none,
+        ? const AppFullScreenLoader()
+        : UiKitPageView(
+            appBarStyle: UiKitAppBarStyle.none,
             padding: EdgeInsets.zero,
             scrollable: true,
-            child: (context, constraints) => AppBasicLayout(
-              content: Center(
-                child: SizedBox(
-                  width: 4.col,
-                  child: AppCard(
-                    margin: EdgeInsets.zero,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 36.0, vertical: 40.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AppText.headlineSmall(loc(context).login),
-                          const AppGap.large3(),
-                          AppTextField(
-                            border: const OutlineInputBorder(),
-                            controller: _usernameController,
-                            hintText: loc(context).username,
-                            onChanged: _checkFilledInfo,
-                            errorText: _isValidEmail ?? true
-                                ? null
-                                : 'Invalid Email format',
-                            onFocusChanged: (value) {
-                              setState(() {
-                                _isValidEmail = _emailValidator
-                                    .validate(_usernameController.text);
-                              });
-                            },
-                            inputType: TextInputType.emailAddress,
-                            autofillHints: const [AutofillHints.username],
-                          ),
-                          const AppGap.medium(),
-                          AppPasswordField(
-                            border: const OutlineInputBorder(),
-                            controller: _passwordController,
-                            hintText: loc(context).password,
-                            errorText: errorCodeHelper(context, _error),
-                            onSubmitted: (_) {
-                              _cloudLogin();
-                            },
-                            onChanged: (value) {
-                              setState(() {
-                                _error = '';
-                              });
-                            },
-                          ),
-                          const AppGap.large3(),
-                          if (BuildConfig.isEnableEnvPicker &&
-                              BuildConfig.forceCommandType !=
-                                  ForceCommand.local)
-                            Align(
+            pageFooter: const BottomBar(),
+            child: (context, constraints) => Center(
+                  child: SizedBox(
+                    width: context.colWidth(4),
+                    child: AppCard(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 36.0, vertical: 40.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppText.headlineSmall(loc(context).login),
+                            AppGap.xxxl(),
+                            Focus(
+                              onFocusChange: (value) {
+                                setState(() {
+                                  _isValidEmail = _emailValidator
+                                      .validate(_usernameController.text);
+                                });
+                              },
+                              child: AppTextFormField(
+                                controller: _usernameController,
+                                label: loc(context).username,
+                                onChanged: _checkFilledInfo,
+                              ),
+                            ),
+                            if (!(_isValidEmail ?? true))
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: AppText.bodySmall(
+                                  'Invalid Email format',
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                            AppGap.lg(),
+                            AppPasswordInput(
+                              controller: _passwordController,
+                              hint: loc(context).password,
+                              errorText: errorCodeHelper(context, _error),
+                              onSubmitted: (_) {
+                                _cloudLogin();
+                              },
+                              onChanged: (value) {
+                                setState(() {
+                                  _error = '';
+                                });
+                              },
+                            ),
+                            AppGap.xxxl(),
+                            if (BuildConfig.isEnableEnvPicker &&
+                                BuildConfig.forceCommandType !=
+                                    ForceCommand.local)
+                              Align(
                                 alignment: Alignment.bottomRight,
-                                child: AppTextButton.noPadding('Select Env',
-                                    onTap: () async {
-                                  final _ = await showModalBottomSheet(
+                                child: AppButton.text(
+                                  label: 'Select Env',
+                                  onTap: () async {
+                                    final _ = await showModalBottomSheet(
                                       enableDrag: false,
                                       context: context,
-                                      builder: (context) => _createEnvPicker());
-                                  setState(() {});
-                                })),
-                          AppFilledButton(
-                            'Log in',
-                            onTap: _isValidEmail ?? true
-                                ? () {
-                                    _cloudLogin();
-                                  }
-                                : null,
-                          ),
-                        ],
+                                      builder: (context) => _createEnvPicker(),
+                                    );
+                                    setState(() {});
+                                  },
+                                ),
+                              ),
+                            AppButton(
+                              label: 'Log in',
+                              variant: SurfaceVariant.highlight,
+                              onTap: _isValidEmail ?? true
+                                  ? () {
+                                      _cloudLogin();
+                                    }
+                                  : null,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              footer: const BottomBar(),
-            ),
-          );
+                ));
   }
 
   Widget _createEnvPicker() {
     bool isLoading = false;
     return StatefulBuilder(builder: (context, setState) {
       return isLoading
-          ? AppFullScreenSpinner(text: loc(context).processing)
+          ? AppFullScreenLoader()
           : Padding(
-              padding: const EdgeInsets.all(Spacing.medium),
+              padding: EdgeInsets.all(AppSpacing.md),
               child: Column(
                 children: [
                   ListView.builder(
@@ -181,8 +165,8 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                       itemCount: CloudEnvironment.values.length,
                       itemBuilder: (context, index) => InkWell(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: Spacing.medium),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md),
                               child: AppPanelWithValueCheck(
                                 title: CloudEnvironment.values[index].name,
                                 valueText: '',
@@ -197,8 +181,9 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                             },
                           )),
                   const Spacer(),
-                  AppFilledButton(
-                    'Save',
+                  AppButton(
+                    label: 'Save',
+                    variant: SurfaceVariant.highlight,
                     onTap: () async {
                       setState(() {
                         isLoading = true;
@@ -215,7 +200,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                       }
                     },
                   ),
-                  const AppGap.medium(),
+                  AppGap.lg(),
                 ],
               ),
             );

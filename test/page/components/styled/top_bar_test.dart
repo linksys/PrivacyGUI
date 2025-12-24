@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg_test/flutter_svg_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
-import 'package:privacy_gui/page/components/styled/top_bar.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_responsive_widget.dart';
@@ -36,8 +33,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => StyledAppPageView(
-                    child: (context, constraints) => Center()))
+                builder: (context, state) =>
+                    UiKitPageView(child: (context, constraints) => Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -45,10 +42,8 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.local));
       await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(LinksysIcons.person);
+      final settingsFinder = find.byIcon(AppFontIcons.person);
       expect(settingsFinder, findsOneWidget);
-      // final notificationsFinder = find.byIcon(LinksysIcons.notifications);
-      // expect(notificationsFinder, findsOneWidget);
     },
   );
 
@@ -64,8 +59,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => StyledAppPageView(
-                    child: (context, constraints) => Center()))
+                builder: (context, state) =>
+                    UiKitPageView(child: (context, constraints) => Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -89,8 +84,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => StyledAppPageView(
-                    child: (context, constraints) => Center()))
+                builder: (context, state) =>
+                    UiKitPageView(child: (context, constraints) => Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -98,7 +93,7 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.none));
       await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(LinksysIcons.person);
+      final settingsFinder = find.byIcon(AppFontIcons.person);
       await tester.tap(settingsFinder);
       await tester.pumpAndSettle();
 
@@ -119,8 +114,8 @@ void main() async {
           router: GoRouter(routes: [
             LinksysRoute(
                 path: '/',
-                builder: (context, state) => StyledAppPageView(
-                    child: (context, constraints) => Center()))
+                builder: (context, state) =>
+                    UiKitPageView(child: (context, constraints) => Center()))
           ], initialLocation: '/'),
         ),
       );
@@ -128,8 +123,9 @@ void main() async {
           const AsyncData(AuthState(loginType: LoginType.local));
       await tester.pumpAndSettle();
 
-      final settingsFinder = find.byIcon(LinksysIcons.person);
+      final settingsFinder = find.byIcon(AppFontIcons.person);
       await tester.tap(settingsFinder);
+
       await tester.pumpAndSettle();
 
       final logoutFinder = find.text('Log out');

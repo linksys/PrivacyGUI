@@ -65,8 +65,9 @@ class DMZSettings extends Equatable {
   }) {
     return DMZSettings(
       isDMZEnabled: isDMZEnabled ?? this.isDMZEnabled,
-      sourceRestriction:
-          sourceRestriction != null ? sourceRestriction() : this.sourceRestriction,
+      sourceRestriction: sourceRestriction != null
+          ? sourceRestriction()
+          : this.sourceRestriction,
       destinationIPAddress: destinationIPAddress != null
           ? destinationIPAddress()
           : this.destinationIPAddress,

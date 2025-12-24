@@ -7,20 +7,14 @@ import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/timer_countdown_widget.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacygui_widgets/hook/icon_hooks.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/page/components/composed/app_panel_with_value_check.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginCloudAuthView extends ArgumentsConsumerStatefulView {
@@ -86,19 +80,18 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
+    return UiKitPageView(
+      appBarStyle: UiKitAppBarStyle.none,
       padding: EdgeInsets.zero,
       scrollable: true,
-      child: (context, constraints) => AppBasicLayout(
-        content: Center(
-            child: AppCard(
-                child: _isLoading
-                    ? const AppSpinner()
-                    : SizedBox(
-                        width: 4.col,
-                        child: _error != null ? _errorView() : _mainView(),
-                      ))),
+      child: (context, constraints) => Center(
+        child: AppCard(
+            child: _isLoading
+                ? const CircularProgressIndicator()
+                : SizedBox(
+                    width: context.colWidth(4),
+                    child: _error != null ? _errorView() : _mainView(),
+                  )),
       ),
     );
   }
@@ -109,7 +102,7 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
       mainAxisSize: MainAxisSize.min,
       children: [
         AppText.labelLarge(_handleError()),
-        AppGap.large1(),
+        AppGap.xl(),
       ],
     );
   }
@@ -133,23 +126,24 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Image(
-          image: CustomTheme.of(context).images.devices.getByName(
-                routerIconTestByModel(
-                  modelNumber: _sessionInfo?.modelNumber ?? 'LN12',
-                ),
-              ),
+          image: DeviceImageHelper.getRouterImage(
+            routerIconTestByModel(
+              modelNumber: _sessionInfo?.modelNumber ?? 'LN12',
+            ),
+            xl: true,
+          ),
           height: 120,
           width: 120,
           fit: BoxFit.contain,
         ),
-        const AppGap.medium(),
+        AppGap.lg(),
         AppText.titleLarge(loc(context).login),
-        const AppGap.medium(),
+        AppGap.lg(),
         canProceed
             ? AppText.labelLarge(loc(context)
                 .loginWithAccessTokenMessage(_sessionInfo?.serialNumber ?? ''))
             : AppText.labelLarge(loc(context).notEnoughInfoToLogin),
-        AppGap.medium(),
+        AppGap.lg(),
         if (_sessionInfo != null) ...[
           AppText.bodyMedium(
               '${loc(context).status}: ${_sessionInfo?.status.toValue()}'),
@@ -158,13 +152,13 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
             title: 'Session',
           ),
         ],
-        const AppGap.large3(),
+        AppGap.xxxl(),
         if (BuildConfig.isEnableEnvPicker &&
             BuildConfig.forceCommandType != ForceCommand.local)
           Align(
             alignment: Alignment.bottomRight,
-            child: AppTextButton.noPadding(
-              loc(context).selectEnv,
+            child: AppButton.text(
+              label: loc(context).selectEnv,
               onTap: () async {
                 final _ = await showModalBottomSheet(
                     enableDrag: false,
@@ -174,8 +168,9 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
               },
             ),
           ),
-        AppFilledButton(
-          loc(context).proceed,
+        AppButton(
+          label: loc(context).proceed,
+          variant: SurfaceVariant.highlight,
           onTap: _sessionInfo?.status == GRASessionStatus.active && canProceed
               ? () {
                   _cloudLogin(_token!, _session!);
@@ -190,9 +185,18 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
     bool isLoading = false;
     return StatefulBuilder(builder: (context, setState) {
       return isLoading
-          ? AppFullScreenSpinner(text: loc(context).processing)
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  AppGap.lg(),
+                  AppText.bodyMedium(loc(context).processing),
+                ],
+              ),
+            )
           : Padding(
-              padding: const EdgeInsets.all(Spacing.medium),
+              padding: EdgeInsets.all(AppSpacing.md),
               child: Column(
                 children: [
                   ListView.builder(
@@ -201,8 +205,8 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
                       itemCount: CloudEnvironment.values.length,
                       itemBuilder: (context, index) => InkWell(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: Spacing.medium),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md),
                               child: AppPanelWithValueCheck(
                                 title: CloudEnvironment.values[index].name,
                                 valueText: '',
@@ -217,8 +221,9 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
                             },
                           )),
                   const Spacer(),
-                  AppFilledButton(
-                    loc(context).save,
+                  AppButton(
+                    label: loc(context).save,
+                    variant: SurfaceVariant.highlight,
                     onTap: () async {
                       setState(() {
                         isLoading = true;
@@ -235,7 +240,7 @@ class _LoginCloudAuthViewState extends ConsumerState<LoginCloudAuthView> {
                       }
                     },
                   ),
-                  const AppGap.medium(),
+                  AppGap.lg(),
                 ],
               ),
             );

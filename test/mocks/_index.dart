@@ -45,4 +45,3 @@ export 'timezone_notifier_mocks.dart';
 export 'instant_topology_notifier_mocks.dart';
 export 'vpn_notifier_mocks.dart';
 export 'wifi_bundle_settings_notifier_mocks.dart';
-

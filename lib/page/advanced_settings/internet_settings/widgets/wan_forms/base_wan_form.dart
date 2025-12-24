@@ -5,9 +5,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/utils/wan_type_helper.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/base_widgets_mixin.dart';
-import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-
+import 'package:ui_kit_library/ui_kit.dart';
 
 abstract class BaseWanForm extends ConsumerStatefulWidget {
   final bool isEditing;
@@ -18,9 +16,8 @@ abstract class BaseWanForm extends ConsumerStatefulWidget {
   }) : super(key: key);
 }
 
-abstract class BaseWanFormState<T extends BaseWanForm>
-    extends ConsumerState<T> with BaseWidgetsMixin {
-
+abstract class BaseWanFormState<T extends BaseWanForm> extends ConsumerState<T>
+    with BaseWidgetsMixin {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(internetSettingsProvider);
@@ -31,14 +28,15 @@ abstract class BaseWanFormState<T extends BaseWanForm>
       children: [
         widget.isEditing
             ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: Spacing.small3),
-                child: AppDropdownButton<String>(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: AppDropdown<String>(
                   key: const ValueKey('ipv4ConnectionDropdown'),
-                  selected:
-                      state.settings.current.ipv4Setting.ipv4ConnectionType,
+                  value: state.settings.current.ipv4Setting.ipv4ConnectionType,
                   items: state.status.supportedIPv4ConnectionType,
-                  label: (item) => getWanConnectedTypeText(context, item),
+                  itemAsString: (item) =>
+                      getWanConnectedTypeText(context, item),
                   onChanged: (value) {
+                    if (value == null) return;
                     notifier.updateIpv4Settings(
                         state.settings.current.ipv4Setting.copyWith(
                       ipv4ConnectionType: value,

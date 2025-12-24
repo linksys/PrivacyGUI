@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// A reusable widget for entering Wi-Fi SSID.
 ///
@@ -37,14 +37,10 @@ class WiFiSSIDField extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AppTextField(
-      border: const OutlineInputBorder(),
-      headerText: label,
-      hintText: hint,
-      errorText: errorText,
+    return AppTextFormField(
+      label: label ?? '',
       controller: controller,
       onChanged: onChanged,
-      onSubmitted: onSubmitted,
     );
   }
 }

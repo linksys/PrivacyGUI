@@ -210,8 +210,7 @@ class DeviceManagerState extends Equatable {
   }
 
   LinksysDevice get masterDevice {
-    return nodeDevices.firstWhere(
-        (device) => device.isMaster);
+    return nodeDevices.firstWhere((device) => device.isMaster);
   }
 
   List<LinksysDevice> get slaveDevices {

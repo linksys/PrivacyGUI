@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/login/auto_parent/providers/auto_parent_first_login_provider.dart';
 import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../../common/test_helper.dart';
 import '../../../../../common/test_responsive_widget.dart';
@@ -27,7 +27,7 @@ void main() {
     mockAutoParentFirstLoginNotifier = MockAutoParentFirstLoginNotifier();
   });
 
-  testLocalizationsV2(
+  testLocalizations(
     'Verify initial view for auto parent first login',
     (tester, screen) async {
       // Test ID: APFLV-INIT
@@ -49,7 +49,7 @@ void main() {
 
       await tester.pump(); // pump for initState to call _doFirmwareUpdateCheck
 
-      expect(find.byType(AppSpinner), findsOneWidget);
+      expect(find.byType(AppLoader), findsOneWidget);
       expect(
           find.text(testHelper.loc(context).pnpFwUpdateTitle), findsOneWidget);
       expect(

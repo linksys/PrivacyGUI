@@ -64,7 +64,9 @@ class _FakeLocalNetworkSettings_2 extends _i1.SmartFake
 /// A class which mocks [LocalNetworkSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockLocalNetworkSettingsNotifier extends _i2.Notifier<_i3.LocalNetworkSettingsState> with _i1.Mock
+class MockLocalNetworkSettingsNotifier
+    extends _i2.Notifier<_i3.LocalNetworkSettingsState>
+    with _i1.Mock
     implements _i4.LocalNetworkSettingsNotifier {
   @override
   set state(_i3.LocalNetworkSettingsState? newState) => super.noSuchMethod(

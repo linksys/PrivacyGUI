@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 enum MenuDisplay {
   none,
@@ -22,9 +22,9 @@ enum NaviType {
         NaviType.support => loc(context).support,
       };
   IconData resolveIcon() => switch (this) {
-        NaviType.home => LinksysIcons.home,
-        NaviType.menu => LinksysIcons.menu,
-        NaviType.support => LinksysIcons.help,
+        NaviType.home => AppFontIcons.home,
+        NaviType.menu => AppFontIcons.menu,
+        NaviType.support => AppFontIcons.help,
       };
 
   String resolvePath() => switch (this) {

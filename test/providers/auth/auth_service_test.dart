@@ -819,8 +819,8 @@ void main() {
       expect(networkResult.isFailure, true);
       final networkError = (networkResult as AuthFailure).error;
       expect(networkError, isA<NetworkError>());
-      expect(
-          (networkError as NetworkError).message, contains('Connection timeout'));
+      expect((networkError as NetworkError).message,
+          contains('Connection timeout'));
     });
   });
 

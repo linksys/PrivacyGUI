@@ -27,6 +27,7 @@ class LinksysRoute extends GoRoute {
               if (!await onExit(context, state)) {
                 return false; // Custom logic blocked navigation.
               }
+              if (!context.mounted) return true;
             }
 
             // If dirty checking is enabled and a provider is given...
@@ -36,6 +37,7 @@ class LinksysRoute extends GoRoute {
 
               if (currentState.isDirty) {
                 final bool? confirmed = await showUnsavedAlert(context);
+                if (!context.mounted) return true;
                 if (confirmed != true) {
                   return false; // User cancelled, block navigation.
                 }

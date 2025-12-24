@@ -1,21 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PnpNoInternetConnectionView extends ArgumentsConsumerStatefulView {
   const PnpNoInternetConnectionView({
@@ -45,9 +39,9 @@ class _PnpNoInternetConnectionState
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
-      backState: StyledBackState.none,
+    return UiKitPageView(
+      appBarStyle: UiKitAppBarStyle.none,
+      backState: UiKitBackState.none,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
       child: (context, constraints) => _contentView(context),
     );
@@ -56,23 +50,22 @@ class _PnpNoInternetConnectionState
   Widget _contentView(BuildContext context) {
     return Center(
       child: AppCard(
-        padding: const EdgeInsets.all(Spacing.large3),
+        padding: EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
-              LinksysIcons.publicOff,
-              semanticLabel: 'public Off icon',
+            AppIcon.font(
+              AppFontIcons.publicOff,
               size: 48,
             ),
-            const AppGap.large3(),
+            AppGap.xxl(),
             _titleView(context),
-            const AppGap.medium(),
+            AppGap.lg(),
             AppText.bodyLarge(
               loc(context).noInternetConnectionDescription,
             ),
-            const AppGap.large3(),
+            AppGap.xxl(),
             AppCard(
               onTap: () {
                 goRoute(RouteNamed.pnpUnplugModem);
@@ -86,18 +79,18 @@ class _PnpNoInternetConnectionState
                         AppText.labelLarge(
                           loc(context).pnpNoInternetConnectionRestartModem,
                         ),
-                        const AppGap.small3(),
+                        AppGap.xs(),
                         AppText.bodyMedium(
                           loc(context).pnpNoInternetConnectionRestartModemDesc,
                         ),
                       ],
                     ),
                   ),
-                  const Icon(LinksysIcons.chevronRight),
+                  AppIcon.font(AppFontIcons.chevronRight),
                 ],
               ),
             ),
-            const AppGap.small2(),
+            AppGap.sm(),
             AppCard(
               onTap: () async {
                 // Fetch device info and update better actions before start.
@@ -141,30 +134,31 @@ class _PnpNoInternetConnectionState
                         AppText.labelLarge(
                           loc(context).pnpNoInternetConnectionEnterISP,
                         ),
-                        const AppGap.small3(),
+                        AppGap.xs(),
                         AppText.bodyMedium(
                           loc(context).pnpNoInternetConnectionEnterISPDesc,
                         ),
                       ],
                     ),
                   ),
-                  const Icon(LinksysIcons.chevronRight),
+                  AppIcon.font(AppFontIcons.chevronRight),
                 ],
               ),
             ),
-            const AppGap.large3(),
+            AppGap.xxl(),
             if (!_fromDashboard) ...[
-              AppTextButton.noPadding(
-                loc(context).logIntoRouter,
+              AppButton.text(
+                label: loc(context).logIntoRouter,
                 onTap: () {
                   ref.read(pnpProvider.notifier).setForceLogin(true);
                   goRoute(RouteNamed.pnpConfig, true);
                 },
               ),
-              const AppGap.large3(),
+              AppGap.xxl(),
             ],
-            AppFilledButton(
-              loc(context).tryAgain,
+            AppButton(
+              label: loc(context).tryAgain,
+              variant: SurfaceVariant.highlight,
               onTap: () {
                 logger.d('[PnP Troubleshooter]: Try again internet connection');
                 goRoute(RouteNamed.pnp, true);

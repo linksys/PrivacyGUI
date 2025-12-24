@@ -3,7 +3,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class BottomNavigationMenu extends StatefulWidget {
   final List<NaviType> items;
@@ -23,18 +23,19 @@ class BottomNavigationMenu extends StatefulWidget {
 class _BottomNavigationMenuState extends State<BottomNavigationMenu> {
   static const menuItemsMap = {
     NaviType.home: DashboardNaviItem(
-        icon: LinksysIcons.home,
+        icon: AppFontIcons.home,
         type: NaviType.home,
         rootPath: RouteNamed.dashboardHome),
     NaviType.menu: DashboardNaviItem(
-        icon: LinksysIcons.menu,
+        icon: AppFontIcons.menu,
         type: NaviType.menu,
         rootPath: RouteNamed.dashboardMenu),
     NaviType.support: DashboardNaviItem(
-        icon: LinksysIcons.help,
+        icon: AppFontIcons.help,
         type: NaviType.support,
         rootPath: RouteNamed.dashboardSupport),
   };
+
   @override
   void initState() {
     super.initState();
@@ -42,30 +43,27 @@ class _BottomNavigationMenuState extends State<BottomNavigationMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
+    final navItems = widget.items
+        .map((e) => menuItemsMap[e])
+        .nonNulls
+        .map((e) => _createNavItem(e))
+        .toList();
+
+    // Force dark theme for AppNavigationBar
+    final darkTheme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
     return Theme(
-      data: theme.copyWith(),
-      child: NavigationBar(
-        selectedIndex: widget.items.indexOf(widget.selected ?? NaviType.home),
-        destinations: widget.items.map((e) => menuItemsMap[e]).nonNulls.map((e) => _bottomSheetIconView(e)).toList(),
-        onDestinationSelected: widget.onItemClick,
-        indicatorColor: Theme.of(context).colorScheme.primary,
-        elevation: 0,
+      data: darkTheme,
+      child: AppNavigationBar(
+        currentIndex: widget.items.indexOf(widget.selected ?? NaviType.home),
+        items: navItems,
+        onTap: (index) => widget.onItemClick?.call(index),
       ),
     );
   }
 
-  NavigationDestination _bottomSheetIconView(DashboardNaviItem item) {
-    return NavigationDestination(
-      icon: Icon(
-        item.icon,
-        semanticLabel: item.type.resloveLabel(context),
-      ),
-      selectedIcon: Icon(
-        item.icon,
-        semanticLabel: 'selected ${item.type.resloveLabel(context)}',
-        color: Theme.of(context).colorScheme.onPrimary,
-      ),
+  AppNavigationItem _createNavItem(DashboardNaviItem item) {
+    return AppNavigationItem(
+      icon: Icon(item.icon),
       label: item.type.resloveLabel(context),
     );
   }

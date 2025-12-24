@@ -7,13 +7,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/optional_settings_form.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/wan_form_factory.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class Ipv4ConnectionView extends StatelessWidget {
   final bool isEditing;
@@ -36,37 +30,36 @@ class Ipv4ConnectionView extends StatelessWidget {
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
-        child: ResponsiveLayout(
-          desktop: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(
-                child: _infoCard(context),
+            horizontal: context.isMobileLayout ? 16.0 : 40.0),
+        child: context.isMobileLayout
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _infoCard(context),
+                  AppGap.xl(),
+                  OptionalSettingsForm(
+                    isEditing: isEditing,
+                    isBridgeMode: isBridgeMode,
+                  ),
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: _infoCard(context),
+                  ),
+                  AppGap.gutter(),
+                  Expanded(
+                    child: OptionalSettingsForm(
+                      isEditing: isEditing,
+                      isBridgeMode: isBridgeMode,
+                    ),
+                  ),
+                ],
               ),
-              const AppGap.gutter(),
-              Expanded(
-                child: OptionalSettingsForm(
-                  isEditing: isEditing,
-                  isBridgeMode: isBridgeMode,
-                ),
-              ),
-            ],
-          ),
-          mobile: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _infoCard(context),
-              AppGap.large4(),
-              OptionalSettingsForm(
-                isEditing: isEditing,
-                isBridgeMode: isBridgeMode,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -75,8 +68,8 @@ class Ipv4ConnectionView extends StatelessWidget {
     final infoCards = _buildInfoCards(context);
     return AppCard(
       padding: const EdgeInsets.symmetric(
-        vertical: Spacing.small3,
-        horizontal: Spacing.large2,
+        vertical: AppSpacing.md,
+        horizontal: AppSpacing.lg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -84,7 +77,7 @@ class Ipv4ConnectionView extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(
-              vertical: Spacing.small3,
+              vertical: AppSpacing.md,
             ),
             child: Row(
               children: [
@@ -105,9 +98,12 @@ class Ipv4ConnectionView extends StatelessWidget {
     final isRemote = BuildConfig.isRemote();
     return Tooltip(
         message: isRemote ? loc(context).featureUnavailableInRemoteMode : '',
-        child: AppIconButton.noPadding(
-          icon: isEditing ? LinksysIcons.close : LinksysIcons.edit,
-          color: isEditing ? null : Theme.of(context).colorScheme.primary,
+        child: AppIconButton(
+          key: const Key('ipv4EditButton'),
+          icon: Icon(
+            isEditing ? AppFontIcons.close : AppFontIcons.edit,
+            color: isEditing ? null : Theme.of(context).colorScheme.primary,
+          ),
           onTap: isRemote ? null : onEditToggle,
         ));
   }

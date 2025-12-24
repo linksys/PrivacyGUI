@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
@@ -18,7 +17,7 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/page/select_network/providers/select_network_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrepareDashboardView extends ArgumentsConsumerStatefulView {
@@ -39,8 +38,18 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      AppFullScreenSpinner(text: loc(context).processing);
+  Widget build(BuildContext context) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              AppGap.lg(),
+              AppText.bodyMedium(loc(context).processing),
+            ],
+          ),
+        ),
+      );
 
   _checkSelfNetworks() async {
     final router = GoRouter.of(context);

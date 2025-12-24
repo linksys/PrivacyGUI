@@ -1,6 +1,5 @@
 import 'package:http/http.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
-import 'package:http_parser/http_parser.dart';
 
 import '../../../constants/_constants.dart';
 

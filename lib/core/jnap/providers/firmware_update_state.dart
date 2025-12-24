@@ -41,7 +41,8 @@ class FirmwareUpdateState extends Equatable {
       nodesStatus: nodesStatus ?? this.nodesStatus,
       isUpdating: isUpdating ?? this.isUpdating,
       isRetryMaxReached: isRetryMaxReached ?? this.isRetryMaxReached,
-      isWaitingChildrenAfterUpdating: isWaitingChildrenAfterUpdating ?? this.isWaitingChildrenAfterUpdating,
+      isWaitingChildrenAfterUpdating:
+          isWaitingChildrenAfterUpdating ?? this.isWaitingChildrenAfterUpdating,
     );
   }
 

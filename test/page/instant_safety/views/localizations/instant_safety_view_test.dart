@@ -4,7 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/screen.dart';
@@ -44,7 +44,7 @@ void main() {
   }
 
   // Test ID: ISAF-OFF
-  testLocalizationsV2(
+  testLocalizations(
     'instant safety view - safe browsing off',
     (tester, screen) async {
       final context = await pumpView(tester, screen);
@@ -59,7 +59,7 @@ void main() {
   );
 
   // Test ID: ISAF-ON-FORTINET
-  testLocalizationsV2(
+  testLocalizations(
     'instant safety view - safe browsing enabled Fortinet provider',
     (tester, screen) async {
       final context = await pumpView(
@@ -79,7 +79,7 @@ void main() {
   );
 
   // Test ID: ISAF-ON-OPENDNS
-  testLocalizationsV2(
+  testLocalizations(
     'instant safety view - safe browsing enabled openDNS provider',
     (tester, screen) async {
       final context = await pumpView(

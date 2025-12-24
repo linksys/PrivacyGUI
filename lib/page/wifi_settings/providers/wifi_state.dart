@@ -62,43 +62,6 @@ class WiFiListSettings extends Equatable {
       simpleModeWifi: WiFiItem.fromMap(map['simpleModeWifi'] ?? {}),
     );
   }
-
-  List<WiFiItem> getMainWifiItemsWithSimpleSettings() {
-    return mainWiFi.map((wifiItem) {
-      final isEnabled = isSimpleMode ? true : wifiItem.isEnabled;
-      final ssid = isSimpleMode ? simpleModeWifi.ssid : wifiItem.ssid;
-      final security = isSimpleMode
-          // Handle security type for 6G band
-          ? wifiItem.radioID == WifiRadioBand.radio_6
-              ? simpleModeWifi.securityType.isOpenVariant
-                  ? WifiSecurityType.enhancedOpenOnly
-                  : WifiSecurityType.wpa3Personal
-              : simpleModeWifi.securityType
-          : wifiItem.securityType;
-      final password =
-          isSimpleMode ? simpleModeWifi.password : wifiItem.password;
-
-      return wifiItem.copyWith(
-        isEnabled: isEnabled,
-        ssid: ssid,
-        securityType: security,
-        password: password,
-      );
-    }).toList();
-  }
-
-  bool isSettingsValid() {
-    // Password verify
-    if (isSimpleMode) {
-      final emptyPassword = !simpleModeWifi.securityType.isOpenVariant &&
-          simpleModeWifi.password.isEmpty;
-      return !emptyPassword;
-    } else {
-      final hasEmptyPassword = mainWiFi
-          .any((e) => !e.securityType.isOpenVariant && e.password.isEmpty);
-      return !hasEmptyPassword;
-    }
-  }
 }
 
 class WiFiListStatus extends Equatable {

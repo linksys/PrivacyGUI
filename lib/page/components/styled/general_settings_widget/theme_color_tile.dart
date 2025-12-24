@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/gap/gap.dart';
-import 'package:privacygui_widgets/widgets/text/app_text.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class ThemeColorTile extends ConsumerStatefulWidget {
   const ThemeColorTile({
@@ -19,19 +17,23 @@ class _ThemeColorTileState extends ConsumerState<ThemeColorTile> {
     return InkWell(
       onTap: () {
         final appSettings = ref.read(appSettingsProvider);
+        // Use AppPalette.brandPrimary as default color
         ref.read(appSettingsProvider.notifier).update(appSettings.copyWith(
             themeColor: () =>
-                (color == Color(primaryTonal.get(40)) ? null : color)));
+                (color == AppPalette.brandPrimary ? null : color)));
       },
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-              color: selected ? Theme.of(context).colorScheme.outline : color,
-              width: 2.0),
-          color: color,
+      child: AppSurface(
+        padding: EdgeInsets.zero,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: selected ? Theme.of(context).colorScheme.outline : color,
+                width: 2.0),
+            color: color,
+          ),
+          width: 24,
+          height: 24,
         ),
-        width: 24,
-        height: 24,
       ),
     );
   }
@@ -44,12 +46,12 @@ class _ThemeColorTileState extends ConsumerState<ThemeColorTile> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.labelMedium('Theme Color'),
-        const AppGap.medium(),
+        AppGap.lg(),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _colorRect(Color(primaryTonal.get(40)),
-                themeColor == Color(primaryTonal.get(40))),
+            _colorRect(AppPalette.brandPrimary,
+                themeColor == null || themeColor == AppPalette.brandPrimary),
             _colorRect(Colors.amber, themeColor == Colors.amber),
             _colorRect(Colors.deepPurple, themeColor == Colors.deepPurple),
             _colorRect(Colors.tealAccent, themeColor == Colors.tealAccent),

@@ -47,12 +47,12 @@ class BluetoothCommandWrap {
     final services = await device.discoverServices();
     if (services.isEmpty) {
       // No service found
-      throw BTNoServicesFoundError(device.id.id);
+      throw BTNoServicesFoundError(device.remoteId.str);
     }
     final service = services
         .firstWhereOrNull((element) => element.uuid.toString() == _jnapService);
     if (service == null) {
-      throw BTJNAPServiceNotFoundError(device.id.id);
+      throw BTJNAPServiceNotFoundError(device.remoteId.str);
     }
     logger.d('BT: start find characteristics with service: $service');
     await _findCharacteristics(service);
@@ -80,7 +80,8 @@ class BluetoothCommandWrap {
     //   logger.d('JNAP Notify changed: ${String.fromCharCodes(value)}');
     // });
     await _ctrlCharacteristic?.setNotifyValue(true);
-    _ctrlSubscription = _ctrlCharacteristic?.value.listen(_processFlow);
+    _ctrlSubscription =
+        _ctrlCharacteristic?.lastValueStream.listen(_processFlow);
   }
 
   _unsubscribe() async {

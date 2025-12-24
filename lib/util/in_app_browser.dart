@@ -18,32 +18,20 @@ class MoabInAppBrowser extends InAppBrowser {
   }
 
   @override
-  Future onBrowserCreated() async {
-    print("Browser Created!");
-  }
+  Future onBrowserCreated() async {}
 
   @override
-  Future onLoadStart(url) async {
-    print("Started $url");
-  }
+  Future onLoadStart(url) async {}
 
   @override
-  Future onLoadStop(url) async {
-    print("Stopped $url");
-  }
+  Future onLoadStop(url) async {}
 
   @override
-  void onLoadError(url, code, message) {
-    print("Can't load $url.. Error: $message");
-  }
+  void onLoadError(url, code, message) {}
 
   @override
-  void onProgressChanged(progress) {
-    print("Progress: $progress");
-  }
+  void onProgressChanged(progress) {}
 
   @override
-  void onExit() {
-    print("Browser closed!");
-  }
+  void onExit() {}
 }

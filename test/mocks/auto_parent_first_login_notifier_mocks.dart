@@ -51,7 +51,9 @@ class _FakeAutoParentFirstLoginState_1 extends _i1.SmartFake
 /// A class which mocks [AutoParentFirstLoginNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAutoParentFirstLoginNotifier extends _i2.AutoDisposeNotifier<_i3.AutoParentFirstLoginState> with _i1.Mock
+class MockAutoParentFirstLoginNotifier
+    extends _i2.AutoDisposeNotifier<_i3.AutoParentFirstLoginState>
+    with _i1.Mock
     implements _i4.AutoParentFirstLoginNotifier {
   @override
   _i2.AutoDisposeNotifierProviderRef<_i3.AutoParentFirstLoginState> get ref =>

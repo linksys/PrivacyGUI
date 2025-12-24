@@ -5,7 +5,7 @@ import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// A PnP (Plug and Play) step for configuring Night Mode settings.
 ///
@@ -83,7 +83,6 @@ class NightModeStep extends PnpStep {
           children: [
             // Toggle switch for Night Mode.
             AppSwitch(
-              semanticLabel: 'node light',
               value: isEnabled,
               onChanged: (value) {
                 // Update the step data and re-validate when the switch changes.
@@ -91,10 +90,10 @@ class NightModeStep extends PnpStep {
                 pnp.validateStep(this);
               },
             ),
-            const AppGap.large3(),
+            AppGap.xxl(),
             // Display the description text.
             AppText.bodyLarge(desc),
-            const AppGap.medium(),
+            AppGap.lg(),
           ],
         ),
       ),

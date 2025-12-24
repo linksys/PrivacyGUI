@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/validators.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacygui_widgets/widgets/input_field/app_password_field.dart';
-import 'package:privacygui_widgets/widgets/input_field/validator_widget.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class WifiPasswordField extends StatefulWidget {
   final TextEditingController controller;
@@ -13,6 +12,9 @@ class WifiPasswordField extends StatefulWidget {
   final Function(bool)? onValidationChanged;
   final Function(String)? onSubmitted;
 
+  final bool readOnly;
+  final bool showLabel;
+
   const WifiPasswordField({
     super.key,
     required this.controller,
@@ -21,6 +23,8 @@ class WifiPasswordField extends StatefulWidget {
     this.onChanged,
     this.onValidationChanged,
     this.onSubmitted,
+    this.readOnly = false,
+    this.showLabel = true,
   });
 
   @override
@@ -32,37 +36,56 @@ class _WifiPasswordFieldState extends State<WifiPasswordField> {
 
   @override
   Widget build(BuildContext context) {
-    return AppPasswordField.withValidator(
-      semanticLabel: widget.semanticLabel,
-      autofocus: true,
+    return AppPasswordInput(
+      label: widget.showLabel
+          ? (widget.semanticLabel.isNotEmpty
+              ? widget.semanticLabel
+              : loc(context).wifiPassword)
+          : null,
       controller: widget.controller,
-      border: const OutlineInputBorder(),
-      validations: [
-        Validation(
-          description: loc(context).wifiPasswordLimit,
-          validator: ((text) =>
-              wifiPasswordValidator.getRuleByIndex(0)?.validate(text) ?? false),
-        ),
-        Validation(
-          description: loc(context).routerPasswordRuleStartEndWithSpace,
-          validator: ((text) =>
-              wifiPasswordValidator.getRuleByIndex(1)?.validate(text) ?? false),
-        ),
-        Validation(
-          description: loc(context).routerPasswordRuleUnsupportSpecialChar,
-          validator: ((text) =>
-              wifiPasswordValidator.getRuleByIndex(2)?.validate(text) ?? false),
-        ),
-        if (widget.isLength64)
-          Validation(
-            description: loc(context).wifiPasswordRuleHex,
-            validator: ((text) =>
-                wifiPasswordValidator.getRuleByIndex(3)?.validate(text) ??
-                false),
-          ),
-      ],
+      readOnly: widget.readOnly,
+      rules: widget.readOnly
+          ? []
+          : [
+              AppPasswordRule(
+                label: loc(context).wifiPasswordLimit,
+                validate: ((text) => text.isNotEmpty
+                    ? (wifiPasswordValidator
+                            .getRuleByIndex(0)
+                            ?.validate(text) ??
+                        false)
+                    : false),
+              ),
+              AppPasswordRule(
+                label: loc(context).routerPasswordRuleStartEndWithSpace,
+                validate: ((text) => text.isNotEmpty
+                    ? (wifiPasswordValidator
+                            .getRuleByIndex(1)
+                            ?.validate(text) ??
+                        false)
+                    : false),
+              ),
+              AppPasswordRule(
+                label: loc(context).routerPasswordRuleUnsupportSpecialChar,
+                validate: ((text) => text.isNotEmpty
+                    ? (wifiPasswordValidator
+                            .getRuleByIndex(2)
+                            ?.validate(text) ??
+                        false)
+                    : false),
+              ),
+              if (widget.isLength64)
+                AppPasswordRule(
+                  label: loc(context).wifiPasswordRuleHex,
+                  validate: ((text) => text.isNotEmpty
+                      ? (wifiPasswordValidator
+                              .getRuleByIndex(3)
+                              ?.validate(text) ??
+                          false)
+                      : false),
+                ),
+            ],
       onChanged: widget.onChanged,
-      onValidationChanged: widget.onValidationChanged,
       onSubmitted: widget.onSubmitted,
     );
   }

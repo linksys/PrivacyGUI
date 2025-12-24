@@ -81,8 +81,7 @@ String getTimeZoneRegionName(BuildContext context, timezoneId) {
     case 'CLT4':
       return loc(context).timezoneChileTimeChileAntarctica;
     case 'AST4':
-      return loc(context)
-          .timezoneAtlanticTimeCanadaGreenlandAtlanticIslands;
+      return loc(context).timezoneAtlanticTimeCanadaGreenlandAtlanticIslands;
     case 'NST03:30':
       return loc(context).timezoneNewfoundland;
     case 'EET-2':

@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-class AutoParentFirstLoginState extends Equatable{
+class AutoParentFirstLoginState extends Equatable {
   @override
   List<Object?> get props => [];
-
 }

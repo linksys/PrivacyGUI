@@ -25,23 +25,13 @@ const portRangeTriggerListTestState = {
       ]
     }
   },
-  "status": {
-    "maxRules": 25,
-    "maxDescriptionLength": 32
-  }
+  "status": {"maxRules": 25, "maxDescriptionLength": 32}
 };
 
 const portRangeTriggerEmptyListTestState = {
   "settings": {
-    "original": {
-      "rules": []
-    },
-    "current": {
-      "rules": []
-    }
+    "original": {"rules": []},
+    "current": {"rules": []}
   },
-  "status": {
-    "maxRules": 25,
-    "maxDescriptionLength": 32
-  }
+  "status": {"maxRules": 25, "maxDescriptionLength": 32}
 };

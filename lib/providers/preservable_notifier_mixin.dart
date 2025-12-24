@@ -78,7 +78,8 @@ mixin PreservableNotifierMixin<
 mixin PreservableAutoDisposeNotifierMixin<
         TSettings extends Equatable,
         TStatus extends Equatable,
-        TState extends FeatureState<TSettings, TStatus>> on AutoDisposeNotifier<TState>
+        TState extends FeatureState<TSettings, TStatus>>
+    on AutoDisposeNotifier<TState>
     implements PreservableContract<TSettings, TStatus> {
   // --- Public Template Methods (Called by UI) ---
 

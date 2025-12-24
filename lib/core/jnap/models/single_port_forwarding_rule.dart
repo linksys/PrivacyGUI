@@ -103,8 +103,10 @@ class SinglePortForwardingRuleList extends Equatable {
     return SinglePortForwardingRuleList(
       rules: List<SinglePortForwardingRule>.from(
         map['rules']?.map<SinglePortForwardingRule>(
-          (x) => SinglePortForwardingRule.fromMap(x as Map<String, dynamic>),
-        ) ?? [],
+              (x) =>
+                  SinglePortForwardingRule.fromMap(x as Map<String, dynamic>),
+            ) ??
+            [],
       ),
     );
   }
@@ -112,5 +114,6 @@ class SinglePortForwardingRuleList extends Equatable {
   String toJson() => json.encode(toMap());
 
   factory SinglePortForwardingRuleList.fromJson(String source) =>
-      SinglePortForwardingRuleList.fromMap(json.decode(source) as Map<String, dynamic>);
+      SinglePortForwardingRuleList.fromMap(
+          json.decode(source) as Map<String, dynamic>);
 }

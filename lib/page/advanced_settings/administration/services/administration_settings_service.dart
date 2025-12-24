@@ -71,7 +71,8 @@ class AdministrationSettingsService {
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
 
     // Transform JNAP ManagementSettings to UI Model
-    final managementSettingsUI = _transformManagementSettingsToUI(managementSettings);
+    final managementSettingsUI =
+        _transformManagementSettingsToUI(managementSettings);
 
     // Aggregate all settings into AdministrationSettings
     return AdministrationSettings(
@@ -226,8 +227,7 @@ class AdministrationSettingsService {
       commands: [
         MapEntry(
           JNAPAction.setManagementSettings,
-          jnapManagementSettings.toMap()
-            ..remove('isManageWirelesslySupported'),
+          jnapManagementSettings.toMap()..remove('isManageWirelesslySupported'),
         ),
         MapEntry(
           JNAPAction.setUPnPSettings,

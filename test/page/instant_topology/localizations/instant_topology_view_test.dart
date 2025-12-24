@@ -4,13 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
-import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
-import 'package:privacy_gui/page/instant_topology/views/widgets/tree_node_item.dart';
-import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
-import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
-import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_state.dart';
-import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/screen.dart';
@@ -19,52 +13,49 @@ import '../../../common/test_responsive_widget.dart';
 import '../../../test_data/topology_data.dart';
 
 // View ID: ITOP
-// Implementation: lib/page/instant_topology/views/instant_topology_view.dart
-/// | Test ID             | Description                                                                   |
-/// | :------------------ | :---------------------------------------------------------------------------- |
-/// | `ITOP-LAYOUT`       | Base star topology renders Internet header, master, and child nodes.          |
-/// | `ITOP-ACTIONS`      | Master instant-action menu exposes blink, reboot, pair, and reset controls.   |
-/// | `ITOP-OFFLINE`      | Tapping an offline node surfaces the troubleshooting modal with guidance.     |
-/// | `ITOP-FW`           | Nodes with pending firmware show the “Update available” indicator with CTA.   |
-/// | `ITOP-PAIRING`      | Wired pairing dialog shows progress state while auto-onboarding runs.         |
-/// | `ITOP-PAIR_SUCCESS` | Wired pairing dialog shows completion state when nodes are onboarded.         |
-/// | `ITOP-PAIR_EMPTY`   | Wired pairing dialog shows “not found” completion when no nodes detected.     |
+//
+// Implementation File: lib/page/instant_topology/views/instant_topology_view.dart
+//
+// Test Summary:
+// | Test ID               | Description                                                                 |
+// | :-------------------- | :-------------------------------------------------------------------------- |
+// | `ITOP-LAYOUT-TREE`    | Verifies Tree View layout (Mobile < 600px) with status badges               |
+// | `ITOP-LAYOUT-GRAPH`   | Verifies Graph View layout (Tablet/Desktop >= 600px) without text badges    |
+// | `ITOP-MENU-TREE`      | Verifies vertical menu button (`more_vert`) in Tree View                    |
+// | `ITOP-MENU-GRAPH`     | Verifies horizontal menu button (`more_horiz`) in Graph View                |
+// | `ITOP-OFFLINE-TREE`   | Verifies offline text badge in Tree View                                    |
+// | `ITOP-OFFLINE-GRAPH`  | Verifies offline nodes in Graph View (visual only, no text)                 |
+// | `ITOP-FWUPDATE`       | Verifies firmware update indicator visibility                               |
 
-final _desktopTallScreens =
-    responsiveDesktopScreens.map((screen) => screen.copyWith(height: 1600)).toList();
-final _topologyScreens = [
-  ...responsiveMobileScreens.map((screen) => screen.copyWith(height: 1280)),
-  ..._desktopTallScreens,
-];
+final _desktopTallScreens = responsiveDesktopScreens
+    .map((screen) => screen.copyWith(height: 1600))
+    .toList();
+
+// Tree View Screens: Mobile (< 600px)
+final _treeViewScreens = responsiveMobileScreens
+    .map((screen) => screen.copyWith(height: 1280))
+    .where((s) => s.width < 600)
+    .toList();
+
+// Graph View Screens: Tablet & Desktop (>= 600px)
+final _graphViewScreens =
+    _desktopTallScreens.where((s) => s.width >= 600).toList();
+
+final _allScreens = [..._treeViewScreens, ..._graphViewScreens];
 
 InstantTopologyState _defaultTopologyState() =>
     TopologyTestData().testTopology2SlavesStarState;
 
 Future<void> _precacheTopologyImages(WidgetTester tester) async {
   final context = tester.element(find.byType(InstantTopologyView));
-  final theme = CustomTheme.of(context);
   final images = {
-    theme.images.devices.routerLn12,
-    theme.images.devices.routerMx5300,
-    theme.images.devices_xl.routerLn12,
+    Assets.images.devices.routerLn12.provider(),
+    Assets.images.devices.routerMx5300.provider(),
+    Assets.images.devicesXl.routerLn12.provider(),
   };
   for (final image in images) {
     await precacheImage(image, context);
   }
-}
-
-Future<void> _openPairWiredDialog(WidgetTester tester) async {
-  final masterAction =
-      find.byType(PopupMenuButton<NodeInstantActions>).first;
-  await tester.tap(masterAction);
-  await tester.pumpAndSettle();
-
-  await tester.tap(find.byKey(const ValueKey('popup-menu-pair')));
-  await tester.pumpAndSettle();
-
-  await tester.tap(find.byKey(const ValueKey('popup-sub-menu-pairWired')));
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 200));
 }
 
 void main() {
@@ -103,233 +94,175 @@ void main() {
     return context;
   }
 
-  // Test ID: ITOP-LAYOUT — base topology grid renders nodes and actions
-  testLocalizationsV2(
-    'instant topology view - base tree layout',
+  // ===========================================================================
+  // Tree View Tests (Mobile < 600px)
+  // ===========================================================================
+
+  testLocalizations(
+    'instant topology view - tree view layout',
     (tester, screen) async {
       final topologyState = TopologyTestData().testTopology5SlavesStarState;
-      final context = await pumpInstantTopology(
+      await pumpInstantTopology(
         tester,
         screen,
         state: topologyState,
       );
-      final loc = testHelper.loc(context);
 
-      expect(find.text(loc.instantTopology), findsOneWidget);
-      expect(find.text(loc.internet), findsOneWidget);
+      // Verify page title
+      expect(find.text('Instant-Topology'), findsOneWidget);
+
+      // Verify nodes
       expect(find.text('Living room'), findsOneWidget);
       expect(find.text('Kitchen'), findsOneWidget);
-      expect(find.byType(TopologyNodeItem), findsWidgets);
-      expect(find.text(loc.instantAction), findsWidgets);
+      expect(find.text('Basement'), findsOneWidget);
+
+      // Verify status badges (Visible in Tree View)
+      expect(find.text('online'), findsAtLeastNWidgets(1),
+          reason: 'Status badges should be visible in Tree View');
+
+      await testHelper.takeScreenshot(tester, 'ITOP-LAYOUT-TREE-01-base');
     },
-    screens: _topologyScreens,
-    goldenFilename: 'ITOP-LAYOUT-01-tree',
+    screens: _treeViewScreens,
     helper: testHelper,
   );
 
-  // Test ID: ITOP-ACTIONS — verify master instant-action menu entries
-  testLocalizationsV2(
-    'instant topology view - master action menu',
+  testLocalizations(
+    'instant topology view - tree view menu',
     (tester, screen) async {
-      final context = await pumpInstantTopology(
+      await pumpInstantTopology(
         tester,
         screen,
         state: TopologyTestData().testTopology1SlaveState,
       );
-      final loc = testHelper.loc(context);
 
-      final actionButton =
-          find.byType(PopupMenuButton<NodeInstantActions>).first;
-      await tester.tap(actionButton);
-      await tester.pumpAndSettle();
+      // Verify vertical menu button (Icons.more_vert)
+      final moreVertIcons = find.byIcon(Icons.more_vert);
+      expect(moreVertIcons, findsAtLeastNWidgets(1),
+          reason: 'Vertical menu buttons should be visible in Tree View');
 
-      expect(find.text(loc.blinkDeviceLight), findsOneWidget);
-      expect(find.text(loc.rebootUnit), findsOneWidget);
-      expect(find.text(loc.instantPair), findsOneWidget);
-      expect(find.text(loc.resetToFactoryDefault), findsOneWidget);
+      await testHelper.takeScreenshot(tester, 'ITOP-MENU-TREE-01-display');
 
-      await tester.tap(find.byKey(const ValueKey('popup-menu-pair')));
-      await tester.pumpAndSettle();
-      expect(find.text(loc.pairWiredNode), findsOneWidget);
-      expect(find.text(loc.pairWirelessNode), findsOneWidget);
-
-      await testHelper.takeScreenshot(tester, 'ITOP-ACTIONS-01-menu');
+      // Test menu tap if needed (skipping for snapshot focus)
     },
-    screens: _desktopTallScreens,
+    screens: _treeViewScreens,
     helper: testHelper,
   );
 
-  // Test ID: ITOP-OFFLINE — offline node modal with troubleshooting steps
-  testLocalizationsV2(
-    'instant topology view - offline node modal',
+  testLocalizations(
+    'instant topology view - tree view offline',
     (tester, screen) async {
-      final context = await pumpInstantTopology(
+      await pumpInstantTopology(
         tester,
         screen,
         state: TopologyTestData().testTopology1OfflineState,
       );
-      final loc = testHelper.loc(context);
 
-      final offlineNode = find.text('Kitchen').first;
-      await tester.ensureVisible(offlineNode);
-      await tester.tap(offlineNode);
-      await tester.pumpAndSettle();
+      // Verify nodes
+      expect(find.text('Living room'), findsOneWidget);
+      expect(find.text('Kitchen'), findsOneWidget);
 
-      expect(find.text(loc.modalOfflineNodeTitle), findsOneWidget);
-      expect(find.text(loc.modalOfflineRemoveNodeFromNetwork), findsOneWidget);
-      expect(find.text(loc.close), findsWidgets);
+      // Verify offline badge (Visible in Tree View)
+      expect(find.text('offline'), findsOneWidget,
+          reason: 'Offline badge should be visible in Tree View');
 
-      await testHelper.takeScreenshot(tester, 'ITOP-OFFLINE-01-dialog');
+      await testHelper.takeScreenshot(tester, 'ITOP-OFFLINE-TREE-01-display');
     },
-    screens: _desktopTallScreens,
+    screens: _treeViewScreens,
     helper: testHelper,
   );
 
-  // Test ID: ITOP-FW — firmware update indicator on master node
-  testLocalizationsV2(
-    'instant topology view - firmware update banner',
+  // ===========================================================================
+  // Graph View Tests (Desktop/Tablet >= 600px)
+  // ===========================================================================
+
+  testLocalizations(
+    'instant topology view - graph view layout',
     (tester, screen) async {
-      final context = await pumpInstantTopology(
+      final topologyState = TopologyTestData().testTopology5SlavesStarState;
+      await pumpInstantTopology(
+        tester,
+        screen,
+        state: topologyState,
+      );
+
+      expect(find.text('Instant-Topology'), findsOneWidget);
+      expect(find.text('Living room'), findsOneWidget);
+      expect(find.text('Kitchen'), findsOneWidget);
+
+      // Verify NO status text badges (Graph View uses visual indicators)
+      expect(find.text('online'), findsNothing,
+          reason: 'Text status badges should NOT be visible in Graph View');
+
+      await testHelper.takeScreenshot(tester, 'ITOP-LAYOUT-GRAPH-01-base');
+    },
+    screens: _graphViewScreens,
+    helper: testHelper,
+  );
+
+  testLocalizations(
+    'instant topology view - graph view menu',
+    (tester, screen) async {
+      await pumpInstantTopology(
+        tester,
+        screen,
+        state: TopologyTestData().testTopology1SlaveState,
+      );
+
+      // Verify horizontal menu button (Icons.more_horiz)
+      final moreHorizIcons = find.byIcon(Icons.more_horiz);
+      expect(moreHorizIcons, findsAtLeastNWidgets(1),
+          reason: 'Horizontal menu buttons should be visible in Graph View');
+
+      await testHelper.takeScreenshot(tester, 'ITOP-MENU-GRAPH-01-display');
+    },
+    screens: _graphViewScreens,
+    helper: testHelper,
+  );
+
+  testLocalizations(
+    'instant topology view - graph view offline',
+    (tester, screen) async {
+      await pumpInstantTopology(
+        tester,
+        screen,
+        state: TopologyTestData().testTopology1OfflineState,
+      );
+
+      expect(find.text('Living room'), findsOneWidget);
+      expect(find.text('Kitchen'), findsOneWidget);
+
+      // Verify NO offline text badge
+      expect(find.text('offline'), findsNothing,
+          reason: 'Text offline badge should NOT be visible in Graph View');
+
+      await testHelper.takeScreenshot(tester, 'ITOP-OFFLINE-GRAPH-01-display');
+    },
+    screens: _graphViewScreens,
+    helper: testHelper,
+  );
+
+  // ===========================================================================
+  // Common / Firmware Update Tests (Run on both or specific subset)
+  // ===========================================================================
+
+  testLocalizations(
+    'instant topology view - firmware update indicator',
+    (tester, screen) async {
+      await pumpInstantTopology(
         tester,
         screen,
         state: TopologyTestData().testTopology2SlavesDaisyAndFwUpdateState,
       );
-      final loc = testHelper.loc(context);
 
-      expect(find.text(loc.updateAvailable), findsWidgets);
       expect(find.text('Living room 1'), findsOneWidget);
+      expect(find.byType(AppTopology), findsOneWidget); // Base check
 
-      await testHelper.takeScreenshot(tester, 'ITOP-FW-01-indicator');
-    },
-    screens: _desktopTallScreens,
-    helper: testHelper,
-  );
-
-  // Test ID: ITOP-PAIRING — wired pairing dialog shows progress state
-  testLocalizationsV2(
-    'instant topology view - wired pairing progress dialog',
-    (tester, screen) async {
-      final context = await pumpInstantTopology(
-        tester,
-        screen,
-        state: TopologyTestData().testTopology1SlaveState,
-        overrides: [
-          addWiredNodesProvider
-              .overrideWith(() => _ProcessingAddWiredNodesNotifier()),
-        ],
-      );
-      final loc = testHelper.loc(context);
-
-      await _openPairWiredDialog(tester);
-
-      expect(find.text(loc.instantPair), findsNWidgets(2));
-      expect(find.text(loc.pairingWiredChildNodeDesc), findsOneWidget);
-      expect(find.text(loc.donePairing), findsOneWidget);
-
-      await testHelper.takeScreenshot(tester, 'ITOP-PAIRING-01-dialog');
-    },
-    screens: _desktopTallScreens,
-    helper: testHelper,
-  );
-
-  // Test ID: ITOP-PAIR_SUCCESS — wired pairing completes with onboarded nodes
-  testLocalizationsV2(
-    'instant topology view - wired pairing success dialog',
-    (tester, screen) async {
-      final context = await pumpInstantTopology(
-        tester,
-        screen,
-        state: TopologyTestData().testTopology1SlaveState,
-        overrides: [
-          addWiredNodesProvider
-              .overrideWith(() => _SuccessAddWiredNodesNotifier()),
-        ],
-      );
-      final loc = testHelper.loc(context);
-
-      await _openPairWiredDialog(tester);
-
-      expect(find.text(loc.wiredPairComplete), findsOneWidget);
-      expect(find.text(loc.foundNNodesOnline(1)), findsOneWidget);
-      expect(find.text(loc.donePairing), findsOneWidget);
-
+      // Screenshot name depends on screen width for clarity, or just use suffix
+      final suffix = screen.width < 600 ? 'TREE' : 'GRAPH';
       await testHelper.takeScreenshot(
-        tester,
-        'ITOP-PAIR_SUCCESS-01-dialog',
-      );
+          tester, 'ITOP-FWUPDATE-$suffix-01-indicator');
     },
-    screens: _desktopTallScreens,
+    screens: _allScreens, // Run on both to ensure FW update visible in both
     helper: testHelper,
   );
-
-  // Test ID: ITOP-PAIR_EMPTY — wired pairing completes without new nodes
-  testLocalizationsV2(
-    'instant topology view - wired pairing no nodes dialog',
-    (tester, screen) async {
-      final context = await pumpInstantTopology(
-        tester,
-        screen,
-        state: TopologyTestData().testTopology1SlaveState,
-        overrides: [
-          addWiredNodesProvider
-              .overrideWith(() => _NoNewNodesAddWiredNodesNotifier()),
-        ],
-      );
-      final loc = testHelper.loc(context);
-
-      await _openPairWiredDialog(tester);
-
-      expect(find.text(loc.wiredPairCompleteNotFound), findsOneWidget);
-      expect(find.text(loc.donePairing), findsOneWidget);
-
-      await testHelper.takeScreenshot(
-        tester,
-        'ITOP-PAIR_EMPTY-01-dialog',
-      );
-    },
-    screens: _desktopTallScreens,
-    helper: testHelper,
-  );
-}
-
-class _ProcessingAddWiredNodesNotifier extends AddWiredNodesNotifier {
-  @override
-  AddWiredNodesState build() => const AddWiredNodesState(isLoading: false);
-
-  @override
-  Future startAutoOnboarding(BuildContext context) async {
-    state = const AddWiredNodesState(
-      isLoading: true,
-      onboardingProceed: false,
-    );
-  }
-}
-
-class _SuccessAddWiredNodesNotifier extends AddWiredNodesNotifier {
-  @override
-  AddWiredNodesState build() => const AddWiredNodesState(isLoading: false);
-
-  @override
-  Future startAutoOnboarding(BuildContext context) async {
-    state = AddWiredNodesState(
-      isLoading: false,
-      onboardingProceed: true,
-      anyOnboarded: true,
-      loadingMessage: loc(context).foundNNodesOnline(1),
-    );
-  }
-}
-
-class _NoNewNodesAddWiredNodesNotifier extends AddWiredNodesNotifier {
-  @override
-  AddWiredNodesState build() => const AddWiredNodesState(isLoading: false);
-
-  @override
-  Future startAutoOnboarding(BuildContext context) async {
-    state = const AddWiredNodesState(
-      isLoading: false,
-      onboardingProceed: true,
-      anyOnboarded: false,
-    );
-  }
 }

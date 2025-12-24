@@ -12,11 +12,19 @@ import 'wifi_list_test_state.dart';
 final wifiBundleTestState = {
   'settings': {
     'wifiList': WiFiListSettings.fromMap(wifiListTestState).toMap(),
-    'advanced': WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState).toMap(),
-    'privacy': InstantPrivacySettings.fromMap(instantPrivacyTestState['settings']?['original'] as Map<String, dynamic>).toMap(),
+    'advanced': WifiAdvancedSettingsState.fromMap(wifiAdvancedSettingsTestState)
+        .toMap(),
+    'privacy': InstantPrivacySettings.fromMap(
+            instantPrivacyTestState['settings']?['original']
+                as Map<String, dynamic>)
+        .toMap(),
   },
   'status': {
-    'wifiList': WiFiListStatus.fromMap({'canDisableMainWiFi': wifiListTestState['canDisableMainWiFi']}).toMap(),
-    'privacy': InstantPrivacyStatus.fromMap(instantPrivacyTestState['status'] as Map<String, dynamic>).toMap(),
+    'wifiList': WiFiListStatus.fromMap(
+            {'canDisableMainWiFi': wifiListTestState['canDisableMainWiFi']})
+        .toMap(),
+    'privacy': InstantPrivacyStatus.fromMap(
+            instantPrivacyTestState['status'] as Map<String, dynamic>)
+        .toMap(),
   }
 };

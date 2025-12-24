@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,16 +13,12 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/util/export_selector/export_base.dart'
     if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
     if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:super_tooltip/super_tooltip.dart';
 
 class DashboardWiFiGrid extends ConsumerStatefulWidget {
   const DashboardWiFiGrid({super.key});
@@ -34,15 +28,7 @@ class DashboardWiFiGrid extends ConsumerStatefulWidget {
 }
 
 class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
-  Map<String, SuperTooltipController> toolTipControllers = {};
-
-  @override
-  void dispose() {
-    toolTipControllers.forEach((key, value) {
-      value.dispose();
-    });
-    super.dispose();
-  }
+  Map<String, bool> toolTipVisible = {};
 
   @override
   Widget build(BuildContext context) {
@@ -50,8 +36,8 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
     final isLoading =
         (ref.watch(pollingProvider).value?.isReady ?? false) == false;
-    final crossAxisCount = ResponsiveLayout.isMobileLayout(context) ? 1 : 2;
-    final mainSpacing = ResponsiveLayout.columnPadding(context);
+    final crossAxisCount = context.isMobileLayout ? 1 : 2;
+    const mainSpacing = AppSpacing.lg;
     const itemHeight = 176.0;
     final mainAxisCount = (items.length / crossAxisCount);
 
@@ -72,7 +58,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
           : GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
-                mainAxisSpacing: Spacing.medium,
+                mainAxisSpacing: AppSpacing.lg,
                 crossAxisSpacing: mainSpacing,
                 // childAspectRatio: (3 / 2),
                 mainAxisExtent: itemHeight,
@@ -83,24 +69,25 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
               itemBuilder: (context, index) {
                 createWiFiCard() {
                   final item = items[index];
-                  final controllerKey =
+                  final visibilityKey =
                       '${item.ssid}${item.radios.join()}${item.isGuest}';
 
-                  SuperTooltipController? controller;
-                  controller = toolTipControllers[controllerKey] ??
-                      SuperTooltipController();
-                  toolTipControllers[controllerKey] = controller;
+                  final isVisible = toolTipVisible[visibilityKey] ?? false;
                   return WiFiCard(
-                    toolTipController: controller,
+                    tooltipVisible: isVisible,
                     item: item,
                     index: index,
                     canBeDisabled: canBeDisabled,
-                    beforeShowWiFiTip: () async {
-                      for (var ctrl in toolTipControllers.values) {
-                        if (ctrl.isVisible) {
-                          await ctrl.hideTooltip();
+                    onTooltipVisibilityChanged: (visible) {
+                      setState(() {
+                        // Hide all other tooltips when showing one
+                        if (visible) {
+                          for (var key in toolTipVisible.keys) {
+                            toolTipVisible[key] = false;
+                          }
                         }
-                      }
+                        toolTipVisible[visibilityKey] = visible;
+                      });
                     },
                   );
                 }
@@ -120,16 +107,16 @@ class WiFiCard extends ConsumerStatefulWidget {
   final DashboardWiFiItem item;
   final int index;
   final bool canBeDisabled;
-  final Future<void> Function()? beforeShowWiFiTip;
-  final SuperTooltipController? toolTipController;
+  final bool tooltipVisible;
+  final ValueChanged<bool>? onTooltipVisibilityChanged;
 
   const WiFiCard({
     Key? key,
     required this.item,
     required this.index,
     required this.canBeDisabled,
-    this.beforeShowWiFiTip,
-    this.toolTipController,
+    this.tooltipVisible = false,
+    this.onTooltipVisibilityChanged,
   }) : super(key: key);
 
   @override
@@ -137,28 +124,14 @@ class WiFiCard extends ConsumerStatefulWidget {
 }
 
 class _WiFiCardState extends ConsumerState<WiFiCard> {
-  SuperTooltipController? _toolTipController;
   final qrBtnKey = GlobalKey();
-  Completer? _completer;
-
-  @override
-  void initState() {
-    super.initState();
-    _toolTipController = widget.toolTipController;
-  }
-
-  @override
-  void dispose() {
-    // _toolTipController?.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraint) {
       return AppCard(
         padding: const EdgeInsets.symmetric(
-            vertical: Spacing.large2, horizontal: Spacing.large2),
+            vertical: AppSpacing.xxl, horizontal: AppSpacing.xxl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -173,11 +146,6 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                           .join('/')),
                 ),
                 AppSwitch(
-                  semanticLabel: widget.item.isGuest
-                      ? 'guest'
-                      : widget.item.radios
-                          .map((e) => e.replaceAll('RADIO_', ''))
-                          .join('/'),
                   value: widget.item.isEnabled,
                   onChanged: widget.item.isGuest ||
                           !widget.item.isEnabled ||
@@ -187,15 +155,13 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                 ),
               ],
             ),
-            const AppGap.small2(),
+            AppGap.sm(),
             FittedBox(
               child: AppText.titleMedium(
                 widget.item.ssid,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const AppGap.small2(),
+            AppGap.sm(),
             Stack(
               alignment: Alignment.center,
               // mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -204,15 +170,13 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                   alignment: AlignmentDirectional.centerStart,
                   child: Row(
                     children: [
-                      const Icon(
-                        LinksysIcons.devices,
-                        semanticLabel: 'devices',
+                      AppIcon.font(
+                        AppFontIcons.devices,
                       ),
-                      const AppGap.small2(),
+                      AppGap.sm(),
                       AppText.labelLarge(
                         loc(context)
                             .nDevices(widget.item.numOfConnectedDevices),
-                        maxLines: 2,
                       ),
                     ],
                   ),
@@ -233,14 +197,12 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
   }
 
   Widget _buildTooltip(BuildContext context) {
-    return SuperTooltip(
-      arrowTipDistance: 0,
-      popupDirection: TooltipDirection.left,
-      overlayDimensions: EdgeInsets.zero,
-      bubbleDimensions: EdgeInsets.zero,
-      showBarrier: false,
-      controller: _toolTipController,
-      showOnTap: false,
+    return AppTooltip(
+      position: AxisDirection.left,
+      visible: widget.item.isEnabled ? widget.tooltipVisible : false,
+      maxWidth: 200,
+      maxHeight: 200,
+      padding: EdgeInsets.zero,
       content: Container(
         color: Colors.white,
         height: 200,
@@ -254,42 +216,20 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
         ),
       ),
       child: MouseRegion(
-        onHover: (e) async {
-          if (!widget.item.isEnabled) {
-            return;
-          }
-
-          await _completer?.future;
-          final widgetPosition = _getWidgetPosition();
-          final rect = Rect.fromCenter(
-              center: widgetPosition + const Offset(20, 20),
-              width: 40,
-              height: 40);
-
-          if (_toolTipController?.isVisible == false &&
-              rect.contains(e.position)) {
-            _completer = Completer();
-            await widget.beforeShowWiFiTip?.call();
-            await _toolTipController?.showTooltip();
-            _completer?.complete();
-          }
-        },
-        onExit: (e) async {
-          await _completer?.future;
-          if (_toolTipController?.isVisible == true) {
-            await _toolTipController?.hideTooltip();
-          }
-        },
+        onEnter: widget.item.isEnabled
+            ? (_) => widget.onTooltipVisibilityChanged?.call(true)
+            : null,
+        onExit: (_) => widget.onTooltipVisibilityChanged?.call(false),
         child: SizedBox(
           width: 80,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               GestureDetector(
-                child: AppIconButton(
+                child: AppIconButton.small(
                   key: qrBtnKey,
-                  icon: LinksysIcons.qrCode,
-                  semanticLabel: 'share',
+                  styleVariant: ButtonStyleVariant.text,
+                  icon: AppIcon.font(AppFontIcons.qrCode),
                   onTap: () {
                     _showWiFiShareModal(context);
                   },
@@ -369,14 +309,14 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
             AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
             if (!widget.item.isGuest && widget.item.isEnabled)
               ..._disableGuestBandWarning(),
-            const AppGap.medium(),
+            AppGap.lg(),
             AppText.bodyMedium(loc(context).doYouWantToContinue),
           ],
         ),
       ),
       actions: [
-        AppTextButton(loc(context).cancel, onTap: () => context.pop()),
-        AppTextButton(loc(context).ok, onTap: () => context.pop(true)),
+        AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
+        AppButton.text(label: loc(context).ok, onTap: () => context.pop(true)),
       ],
     );
   }
@@ -388,11 +328,10 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
     final currentRadio = widget.item.radios.first;
     return guestWifiItem.isEnabled
         ? [
-            AppGap.small2(),
+            AppGap.sm(),
             AppText.labelMedium(
               loc(context).disableBandWarning(
                   WifiRadioBand.getByValue(currentRadio).bandName),
-              color: Theme.of(context).colorScheme.error,
             )
           ]
         : [];
@@ -408,26 +347,24 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
           ),
         ),
         actions: [
-          AppTextButton(loc(context).close, onTap: () {
-            context.pop();
-          }, color: Theme.of(context).colorScheme.onSurface),
-          AppTextButton(loc(context).downloadQR, onTap: () async {
-            createWiFiQRCode(WiFiCredential(
-                    ssid: widget.item.ssid,
-                    password: widget.item.password,
-                    type: SecurityType.wpa))
-                .then((imageBytes) {
-              exportFileFromBytes(
-                  fileName: 'share_wifi_${widget.item.ssid}.png',
-                  utf8Bytes: imageBytes);
-            });
-          }),
+          AppButton.text(
+              label: loc(context).close,
+              onTap: () {
+                context.pop();
+              }),
+          AppButton.text(
+              label: loc(context).downloadQR,
+              onTap: () async {
+                createWiFiQRCode(WiFiCredential(
+                        ssid: widget.item.ssid,
+                        password: widget.item.password,
+                        type: SecurityType.wpa))
+                    .then((imageBytes) {
+                  exportFileFromBytes(
+                      fileName: 'share_wifi_${widget.item.ssid}.png',
+                      utf8Bytes: imageBytes);
+                });
+              }),
         ]);
-  }
-
-  Offset _getWidgetPosition() {
-    final RenderBox renderBox =
-        qrBtnKey.currentContext?.findRenderObject() as RenderBox;
-    return renderBox.localToGlobal(Offset.zero);
   }
 }

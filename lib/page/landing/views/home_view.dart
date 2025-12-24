@@ -1,20 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/page/components/composed/app_panel_with_value_check.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/full_screen_spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart' hide AppBarStyle, AppStyledText;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeView extends ArgumentsConsumerStatefulView {
@@ -36,16 +30,14 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
-      backState: StyledBackState.none,
+    return UiKitPageView(
+      backState: UiKitBackState.none,
+      pageFooter: _footer(context),
       child: (context, constraints) => _isLoading
-          ? const AppFullScreenSpinner(
-              text: 'Loading...',
+          ? AppFullScreenLoader(
+              title: 'Loading...',
             )
-          : AppBasicLayout(
-              content: _content(context),
-              footer: _footer(context),
-            ),
+          : _content(context),
     );
   }
 
@@ -58,7 +50,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     return Stack(
       children: [
         Center(
-          child: SvgPicture(CustomTheme.of(context).images.linksysWordmark),
+          child: Assets.images.linksysWordmark.svg(),
         ),
       ],
     );
@@ -66,27 +58,34 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
   Widget _footer(BuildContext context) {
     return Column(children: [
-      AppFilledButton.fillWidth(
-        loc(context).login,
-        identifier: 'now-home-button-login',
-        key: const Key('home_view_button_login'),
-        onTap: () {
-          if (BuildConfig.forceCommandType == ForceCommand.local) {
-            context.pushNamed(RouteNamed.localLoginPassword);
-          } else {
-            context.pushNamed(RouteNamed.cloudLoginAccount);
-          }
-        },
-      ),
-      const AppGap.small3(),
-      if (!kIsWeb)
-        AppFilledButton.fillWidth(
-          'Local Log in',
-          key: const Key('home_view_button_local_login'),
-          onTap: () async {
-            // Local version flow
-            context.pushNamed(RouteNamed.localLoginPassword);
+      SizedBox(
+        width: double.infinity,
+        child: AppButton(
+          label: loc(context).login,
+          variant: SurfaceVariant.highlight,
+          key: const Key('home_view_button_login'),
+          onTap: () {
+            if (BuildConfig.forceCommandType == ForceCommand.local) {
+              context.pushNamed(RouteNamed.localLoginPassword);
+            } else {
+              context.pushNamed(RouteNamed.cloudLoginAccount);
+            }
           },
+        ),
+      ),
+      AppGap.md(),
+      if (!kIsWeb)
+        SizedBox(
+          width: double.infinity,
+          child: AppButton(
+            label: 'Local Log in',
+            variant: SurfaceVariant.highlight,
+            key: const Key('home_view_button_local_login'),
+            onTap: () async {
+              // Local version flow
+              context.pushNamed(RouteNamed.localLoginPassword);
+            },
+          ),
         ),
       Stack(
         children: [
@@ -112,14 +111,16 @@ class _HomeViewState extends ConsumerState<HomeView> {
               BuildConfig.forceCommandType != ForceCommand.local)
             Align(
                 alignment: Alignment.bottomRight,
-                child: AppTextButton.noPadding('Select Env', onTap: () async {
-                  final _ = await showModalBottomSheet(
-                      enableDrag: false,
-                      context: context,
-                      showDragHandle: true,
-                      builder: (context) => _createEnvPicker());
-                  setState(() {});
-                })),
+                child: AppButton.text(
+                    label: 'Select Env',
+                    onTap: () async {
+                      final _ = await showModalBottomSheet(
+                          enableDrag: false,
+                          context: context,
+                          showDragHandle: true,
+                          builder: (context) => _createEnvPicker());
+                      setState(() {});
+                    })),
         ],
       ),
     ]);
@@ -128,9 +129,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
   List<Widget> showDebugButton() {
     if (_isOpenDebug) {
       return [
-        const AppGap.large2(),
-        AppTextButton(
-          'Debug Tools',
+        AppGap.xxl(),
+        AppButton.text(
+          label: 'Debug Tools',
           onTap: () {
             context.pushNamed(RouteNamed.debug);
           },
@@ -147,9 +148,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
     bool isLoading = false;
     return StatefulBuilder(builder: (context, setState) {
       return isLoading
-          ? AppFullScreenSpinner(text: loc(context).processing)
+          ? AppFullScreenLoader(title: loc(context).processing)
           : Padding(
-              padding: const EdgeInsets.all(Spacing.medium),
+              padding: EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 children: [
                   ListView.builder(
@@ -158,8 +159,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       itemCount: CloudEnvironment.values.length,
                       itemBuilder: (context, index) => InkWell(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: Spacing.medium),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.lg),
                               child: AppPanelWithValueCheck(
                                 title: CloudEnvironment.values[index].name,
                                 valueText: '',
@@ -174,8 +175,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
                             },
                           )),
                   const Spacer(),
-                  AppFilledButton(
-                    'Save',
+                  AppButton(
+                    label: 'Save',
+                    variant: SurfaceVariant.highlight,
                     onTap: () async {
                       setState(() {
                         isLoading = true;
@@ -192,7 +194,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       }
                     },
                   ),
-                  const AppGap.medium(),
+                  AppGap.lg(),
                 ],
               ),
             );

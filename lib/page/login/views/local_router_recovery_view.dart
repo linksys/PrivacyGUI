@@ -3,16 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
-import 'package:privacy_gui/page/components/styled/consts.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/page/layout/basic_layout.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class LocalRouterRecoveryView extends ArgumentsConsumerStatefulView {
   const LocalRouterRecoveryView({
@@ -47,28 +42,29 @@ class _LocalRouterRecoveryViewState
   Widget _contentView() {
     MediaQuery.of(context);
     final state = ref.watch(routerPasswordProvider);
-    return StyledAppPageView(
-      appBarStyle: AppBarStyle.none,
+    return UiKitPageView(
+      appBarStyle: UiKitAppBarStyle.none,
       padding: EdgeInsets.zero,
       scrollable: true,
-      child: (context, constraints) => AppBasicLayout(
-        content: Center(
-          child: SizedBox(
-            width: 4.col,
-            child: AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppText.headlineSmall(loc(context).forgotPassword),
-                  const AppGap.medium(),
-                  AppText.bodyMedium(
-                      loc(context).localRouterRecoveryDescription),
-                  const AppGap.large3(),
-                  FittedBox(
-                    fit: BoxFit.contain,
-                    child: AppPinCodeInput(
-                      semanticLabel: 'pin code text field',
+      pageFooter: const BottomBar(),
+      child: (context, constraints) => Center(
+        child: SizedBox(
+          width: context.colWidth(4),
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppText.headlineSmall(loc(context).forgotPassword),
+                AppGap.lg(),
+                AppText.bodyMedium(loc(context).localRouterRecoveryDescription),
+                AppGap.xxxl(),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: AppPinInput(
                       length: 5,
                       controller: _otpController,
                       stayOnLastField: true,
@@ -77,36 +73,36 @@ class _LocalRouterRecoveryViewState
                           userInputCode = value;
                         });
                       },
-                      onSubmitted: (_) {
+                      onSubmitted: () {
                         if (userInputCode.length == 5) {
                           _validateCode(userInputCode);
                         }
                       },
                     ),
                   ),
-                  if (state.remainingErrorAttempts != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: Spacing.small2),
-                      child: AppText.bodyMedium(
-                        _getErrorString(state.remainingErrorAttempts!),
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                ),
+                if (state.remainingErrorAttempts != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: AppText.bodyMedium(
+                      _getErrorString(state.remainingErrorAttempts!),
+                      color: Theme.of(context).colorScheme.error,
                     ),
-                  const AppGap.large5(),
-                  AppFilledButton(
-                    loc(context).textContinue,
-                    onTap: userInputCode.length == 5
-                        ? () {
-                            _validateCode(userInputCode);
-                          }
-                        : null,
-                  )
-                ],
-              ),
+                  ),
+                AppGap.xxxl(),
+                AppButton(
+                  label: loc(context).textContinue,
+                  variant: SurfaceVariant.highlight,
+                  onTap: userInputCode.length == 5
+                      ? () {
+                          _validateCode(userInputCode);
+                        }
+                      : null,
+                )
+              ],
             ),
           ),
         ),
-        footer: const BottomBar(),
       ),
     );
   }

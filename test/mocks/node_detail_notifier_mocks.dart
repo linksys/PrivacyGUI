@@ -7,7 +7,6 @@ import 'dart:async' as _i6;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart' as _i7;
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
     as _i5;
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart' as _i4;
@@ -156,47 +155,6 @@ class MockNodeDetailNotifier extends _i2.Notifier<_i3.NodeDetailState>
           ),
         ),
       ) as _i3.NodeDetailState);
-
-  @override
-  bool isSupportLedBlinking() => (super.noSuchMethod(
-        Invocation.method(
-          #isSupportLedBlinking,
-          [],
-        ),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
-
-  @override
-  bool isSupportLedMode() => (super.noSuchMethod(
-        Invocation.method(
-          #isSupportLedMode,
-          [],
-        ),
-        returnValue: false,
-        returnValueForMissingStub: false,
-      ) as bool);
-
-  @override
-  _i6.Future<void> getLEDLight() => (super.noSuchMethod(
-        Invocation.method(
-          #getLEDLight,
-          [],
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
-
-  @override
-  _i6.Future<void> setLEDLight(_i7.NodeLightSettings? settings) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #setLEDLight,
-          [settings],
-        ),
-        returnValue: _i6.Future<void>.value(),
-        returnValueForMissingStub: _i6.Future<void>.value(),
-      ) as _i6.Future<void>);
 
   @override
   _i6.Future<_i4.JNAPResult> startBlinkNodeLED(String? deviceId) =>

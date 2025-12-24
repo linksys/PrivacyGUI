@@ -11,19 +11,13 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/input_field/ip_form_field.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
 
@@ -113,11 +107,11 @@ class _LocalNetworkSettingsViewState
       _ipAddressView(state),
       _dhcpServerView(state),
     ];
-    return StyledAppPageView.withSliver(
+    return UiKitPageView.withSliver(
       padding: EdgeInsets.zero,
       tabController: _tabController,
       useMainPadding: false,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled: _notifier.isDirty() && !_hasError(state),
         onPositiveTap: _saveSettings,
       ),
@@ -151,18 +145,16 @@ class _LocalNetworkSettingsViewState
   Widget _hostNameView(LocalNetworkSettingsState state) {
     return _viewLayout(
       child: AppCard(
-        padding: const EdgeInsets.symmetric(
-            vertical: Spacing.large3, horizontal: Spacing.large2),
+        padding: EdgeInsets.symmetric(
+            vertical: AppSpacing.xxl, horizontal: AppSpacing.xl),
         child: AppTextField(
           key: Key('hostNameTextField'),
-          headerText: loc(context).hostName.capitalizeWords(),
+          hintText: loc(context).hostName.capitalizeWords(),
           controller: hostNameController,
           errorText: LocalNetworkErrorPrompt.getErrorText(
               context: context,
               error: LocalNetworkErrorPrompt.resolve(state
                   .status.errorTextMap[LocalNetworkErrorPrompt.hostName.name])),
-          border: const OutlineInputBorder(),
-          focusNode: FocusNode()..requestFocus(),
           onChanged: (value) {
             _notifier.updateHostName(value);
           },
@@ -174,40 +166,37 @@ class _LocalNetworkSettingsViewState
   Widget _ipAddressView(LocalNetworkSettingsState state) {
     return _viewLayout(
       child: AppCard(
-        padding: const EdgeInsets.symmetric(
-            vertical: Spacing.large3, horizontal: Spacing.large2),
+        padding: EdgeInsets.symmetric(
+            vertical: AppSpacing.xxl, horizontal: AppSpacing.xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppIPFormField(
+            AppIpv4TextField(
               key: Key('lanIpAddressTextField'),
-              header: AppText.bodySmall(loc(context).ipAddress),
-              semanticLabel: 'ip address',
+              label: loc(context).ipAddress,
               controller: ipAddressController,
               errorText: LocalNetworkErrorPrompt.getErrorText(
                   context: context,
                   error: LocalNetworkErrorPrompt.resolve(state.status
                       .errorTextMap[LocalNetworkErrorPrompt.ipAddress.name])),
-              border: const OutlineInputBorder(),
-              autoFocus: true,
               onChanged: (value) {
                 _notifier.routerIpAddressChanged(context, value);
               },
             ),
-            const AppGap.large2(),
-            AppIPFormField(
+            AppGap.xl(),
+            AppIpv4TextField(
               key: Key('lanSubnetMaskTextField'),
-              header: AppText.bodySmall(loc(context).subnetMask),
-              semanticLabel: 'subnet mask',
-              octet1ReadOnly: true,
-              octet2ReadOnly: true,
+              label: loc(context).subnetMask,
+              readOnly: SegmentReadOnly(
+                segment1: true,
+                segment2: true,
+              ),
               controller: subnetMaskController,
               errorText: LocalNetworkErrorPrompt.getErrorText(
                   context: context,
                   error: LocalNetworkErrorPrompt.resolve(state.status
                       .errorTextMap[LocalNetworkErrorPrompt.subnetMask.name])),
-              border: const OutlineInputBorder(),
               onChanged: (value) {
                 _notifier.subnetMaskChanged(context, value);
               },
@@ -224,23 +213,17 @@ class _LocalNetworkSettingsViewState
     );
   }
 
-  Widget _viewLayout({double? col, required Widget child}) {
-    col = col ?? 12.col;
+  Widget _viewLayout({required Widget child}) {
     return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
-        child: ResponsiveLayout.isMobileLayout(context)
-            ? child
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: col,
-                    child: child,
-                  ),
-                ],
-              ),
+      child: AppResponsiveLayout(
+        mobile: (context) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: child,
+        ),
+        desktop: (context) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+          child: child,
+        ),
       ),
     );
   }
@@ -255,10 +238,10 @@ class _LocalNetworkSettingsViewState
         children: [
           if (hasError) ...[
             Icon(
-              LinksysIcons.error,
+              AppFontIcons.error,
               color: Theme.of(context).colorScheme.error,
             ),
-            AppGap.small1(),
+            AppGap.xs(),
           ],
           AppText.titleSmall(
             title,
@@ -274,8 +257,6 @@ class _LocalNetworkSettingsViewState
   }
 
   void _saveSettings() {
-    final originalIpAddress =
-        ref.read(localNetworkSettingProvider).settings.original.ipAddress;
     doSomethingWithSpinner(
       context,
       _notifier.save(),

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
-import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 
 mixin ProtocolMixin on State {}
 String getProtocolTitle(BuildContext context, String key) {
@@ -29,8 +29,7 @@ Future<String?> showSelectProtocolModal(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppRadioList<String>(
-              initial: value,
-              mainAxisSize: MainAxisSize.min,
+              selected: value,
               itemHeight: 56,
               items: ['TCP', 'UDP', 'Both']
                   .map((e) => AppRadioListItem(
@@ -48,14 +47,14 @@ Future<String?> showSelectProtocolModal(
         ),
       ),
       actions: [
-        AppTextButton(
-          loc(context).cancel,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () {
             context.pop();
           },
         ),
-        AppTextButton(
-          loc(context).ok,
+        AppButton.text(
+          label: loc(context).ok,
           onTap: () {
             context.pop(selected);
           },

@@ -24,8 +24,11 @@ final preservableInstantPrivacyProvider =
         (ref) {
   return ref.watch(instantPrivacyProvider.notifier);
 });
+
 class InstantPrivacyNotifier extends Notifier<InstantPrivacyState>
-    with PreservableNotifierMixin<InstantPrivacySettings, InstantPrivacyStatus, InstantPrivacyState> {
+    with
+        PreservableNotifierMixin<InstantPrivacySettings, InstantPrivacyStatus,
+            InstantPrivacyState> {
   @override
   InstantPrivacyState build() {
     // Asynchronously trigger fetch to load actual data
@@ -141,13 +144,16 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState>
   }
 
   setAccess(MacFilterMode value) {
-    state = state.copyWith(settings: state.settings.update(state.settings.current.copyWith(mode: value)));
+    state = state.copyWith(
+        settings: state.settings
+            .update(state.settings.current.copyWith(mode: value)));
   }
 
   setSelection(List<String> selections, [bool isDeny = false]) {
     selections = selections.map((e) => e.toUpperCase()).toList();
-    final List<String> unique = List.from(
-        isDeny ? state.settings.current.denyMacAddresses : state.settings.current.macAddresses)
+    final List<String> unique = List.from(isDeny
+        ? state.settings.current.denyMacAddresses
+        : state.settings.current.macAddresses)
       ..addAll(selections)
       ..unique();
     state = state.copyWith(
@@ -160,8 +166,9 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState>
 
   removeSelection(List<String> selection, [bool isDeny = false]) {
     selection = selection.map((e) => e.toUpperCase()).toList();
-    final list = List<String>.from(
-        isDeny ? state.settings.current.denyMacAddresses : state.settings.current.macAddresses)
+    final list = List<String>.from(isDeny
+        ? state.settings.current.denyMacAddresses
+        : state.settings.current.macAddresses)
       ..removeWhere((element) => selection.contains(element));
     state = state.copyWith(
       settings: state.settings.update(state.settings.current.copyWith(
@@ -174,6 +181,7 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState>
   setMacAddressList(List<String> macAddressList) {
     macAddressList = macAddressList.map((e) => e.toUpperCase()).toList();
     state = state.copyWith(
-        settings: state.settings.update(state.settings.current.copyWith(macAddresses: macAddressList)));
+        settings: state.settings.update(
+            state.settings.current.copyWith(macAddresses: macAddressList)));
   }
 }

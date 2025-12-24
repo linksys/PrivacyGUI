@@ -124,7 +124,7 @@ void main() {
     });
   });
 
-    group('test routerIconTest series', () {
+  group('test routerIconTest series', () {
     test('test routerIconTest - Unknown model number (should default)', () {
       const deviceJson = '''
       {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "MX987CF", "hardwareVersion": "1"}}
@@ -165,7 +165,7 @@ void main() {
       expect(result, 'routerMx6200');
     });
 
-     test('test routerIconTest - Oak SP1 (LN14)', () {
+    test('test routerIconTest - Oak SP1 (LN14)', () {
       const deviceJson = '''
       {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "LN14", "hardwareVersion": "1"}}
       ''';
@@ -189,7 +189,7 @@ void main() {
       const deviceJson = '''
       {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "LN12", "hardwareVersion": "1"}}
       ''';
-       // iconTest finds rule for '^(E|EA|WRT|XAC|MR|MX|LN|MBE).+\$' -> lookup 'model.modelNumber' -> 'LN12'
+      // iconTest finds rule for '^(E|EA|WRT|XAC|MR|MX|LN|MBE).+\$' -> lookup 'model.modelNumber' -> 'LN12'
       // _iconMapping('routerLn12') returns 'routerLn12'
       final result = routerIconTest(jsonDecode(deviceJson));
       expect(result, 'routerLn12');
@@ -265,7 +265,7 @@ void main() {
       expect(result, 'routerMx6200');
     });
 
-     test('test routerIconTest - Velop (WHW03)', () {
+    test('test routerIconTest - Velop (WHW03)', () {
       const deviceJson = '''
       {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "WHW03", "hardwareVersion": "1"}}
       ''';
@@ -275,7 +275,7 @@ void main() {
       expect(result, 'routerWhw03');
     });
 
-     test('test routerIconTest - Velop Jr (WHW01)', () {
+    test('test routerIconTest - Velop Jr (WHW01)', () {
       const deviceJson = '''
       {"model": {"deviceType": "Infrastructure", "manufacturer": "Linksys", "modelNumber": "WHW01", "hardwareVersion": "1"}}
       ''';
@@ -423,7 +423,7 @@ void main() {
       expect(result, IconDeviceCategory.phone.name);
     });
 
-     test('test deviceIconTest - Phone (Android by OS)', () {
+    test('test deviceIconTest - Phone (Android by OS)', () {
       const device = {
         "unit": {
           "operatingSystem": "Android", // OS triggers the rule
@@ -481,7 +481,7 @@ void main() {
       expect(result, IconDeviceCategory.computer.name);
     });
 
-     test('test deviceIconTest - Computer (PC Laptop by friendlyName)', () {
+    test('test deviceIconTest - Computer (PC Laptop by friendlyName)', () {
       const device = {
         "unit": {
           "operatingSystem": "Linux", // OS doesn't match specific rules
@@ -524,7 +524,7 @@ void main() {
       expect(result, IconDeviceCategory.unknown.name);
     });
 
-     test('test deviceIconTest - Unknown (Camera)', () {
+    test('test deviceIconTest - Unknown (Camera)', () {
       const device = {
         'model': {
           'deviceType': 'Camera', // deviceType triggers rule

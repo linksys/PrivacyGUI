@@ -24,8 +24,7 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/buttons/button.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../../common/config.dart';
 import '../../../../common/test_helper.dart';
@@ -47,7 +46,7 @@ void main() {
   });
 
   // Test ID: STV-INIT-01
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the initial idle state of the speed test.',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build())
@@ -61,8 +60,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.runAsync(() async {
-        await precacheImage(
-            CustomTheme.of(context).images.speedtestPowered, context);
+        await precacheImage(Assets.images.speedtestPowered.provider(), context);
         await tester.pumpAndSettle();
       });
 
@@ -79,7 +77,7 @@ void main() {
   );
 
   // Test ID: STV-PING-01
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the UI during the ping phase.',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build())
@@ -99,7 +97,7 @@ void main() {
   );
 
   // Test ID: STV-DOWNLOAD-01
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the UI during the download phase.',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build())
@@ -120,7 +118,7 @@ void main() {
   );
 
   // Test ID: STV-UPLOAD-01
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the UI during the upload phase.',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build())
@@ -142,7 +140,7 @@ void main() {
 
   group('Speedtest - success results', () {
     // Test ID: STV-SUCCESS-01
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the UI for a successful result (Ultra).',
       (tester, screen) async {
         when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -157,8 +155,7 @@ void main() {
         expect(find.text(testHelper.loc(context).speedUltraDescription),
             findsOneWidget);
         expect(
-            find.widgetWithText(
-                AppTextButton, testHelper.loc(context).testAgain),
+            find.widgetWithText(AppButton, testHelper.loc(context).testAgain),
             findsOneWidget);
       },
       goldenFilename: 'STV-SUCCESS-01-ultra',
@@ -167,7 +164,7 @@ void main() {
     );
 
     // Test ID: STV-SUCCESS-02
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the UI for a successful result (Optimal).',
       (tester, screen) async {
         when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -189,7 +186,7 @@ void main() {
     );
 
     // Test ID: STV-SUCCESS-03
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the UI for a successful result (Good).',
       (tester, screen) async {
         when(testHelper.mockHealthCheckProvider.build())
@@ -211,7 +208,7 @@ void main() {
     );
 
     // Test ID: STV-SUCCESS-04
-    testLocalizationsV2(
+    testLocalizations(
       'Verify the UI for a successful result (Okay).',
       (tester, screen) async {
         when(testHelper.mockHealthCheckProvider.build())
@@ -234,7 +231,7 @@ void main() {
   });
 
   // Test ID: STV-ERROR-01
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the UI when a configuration error occurs.',
     (tester, screen) async {
       // Mock a state with a specific error code
@@ -254,8 +251,7 @@ void main() {
 
       expect(find.text(testHelper.loc(context).speedTestConfigurationError),
           findsOneWidget);
-      expect(
-          find.widgetWithText(AppTextButton, testHelper.loc(context).testAgain),
+      expect(find.widgetWithText(AppButton, testHelper.loc(context).testAgain),
           findsOneWidget);
     },
     goldenFilename: 'STV-ERROR-01-error_state',
@@ -264,7 +260,7 @@ void main() {
   );
 
   // Test ID: STV-HISTORY-01
-  testLocalizationsV2(
+  testLocalizations(
     'Verify the history panel displays records.',
     (tester, screen) async {
       // Mock a state with historical data
@@ -305,7 +301,7 @@ void main() {
   );
 
   // Test ID: STV-ACTION-01
-  testLocalizationsV2(
+  testLocalizations(
     'Verify tapping "Go" button starts the test.',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(

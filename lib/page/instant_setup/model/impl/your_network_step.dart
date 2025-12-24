@@ -6,11 +6,10 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
-import 'package:privacygui_widgets/theme/custom_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/node_list_card.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:privacy_gui/page/components/composed/app_node_list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 /// A PnP (Plug and Play) step that displays the user's network information,
 /// specifically a list of connected nodes (routers/extenders).
@@ -78,25 +77,24 @@ class YourNetworkStep extends PnpStep {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(loc(context).pnpYourNetworkDesc),
-          const AppGap.medium(),
+          AppGap.lg(),
           // Display each connected child node as an AppNodeListCard.
           Column(
             children: [
               ...childNodes
                   .map((e) => AppNodeListCard(
-                      leading: CustomTheme.of(context).getRouterImage(
-                          routerIconTestByModel(modelNumber: e.modelNumber),
-                          false),
+                      leading: DeviceImageHelper.getRouterImage(
+                          routerIconTestByModel(modelNumber: e.modelNumber)),
                       title: e.location,
                       trailing: null))
                   .toList()
             ],
           ),
-          const AppGap.medium(),
+          AppGap.lg(),
           // Button to navigate to the "Add Nodes" screen.
-          AppTextButton(
-            loc(context).addNodes,
-            icon: LinksysIcons.add,
+          AppButton.text(
+            label: loc(context).addNodes,
+            icon: AppIcon.font(AppFontIcons.add),
             onTap: () async {
               // Navigate to the Add Nodes screen and wait for its result.
               await context.pushNamed<bool?>(RouteNamed.pnpAddNodes, extra: {

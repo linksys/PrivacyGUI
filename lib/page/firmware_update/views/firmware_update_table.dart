@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class FirmwareUpdateTableView extends ConsumerStatefulWidget {
   final List<(LinksysDevice, FirmwareUpdateStatus)> nodeStatusList;
@@ -46,12 +46,11 @@ class _FirmwareUpdateTableViewState
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Image(
-                        semanticLabel: 'device image',
-                        image: CustomTheme.of(context).getRouterImage(
-                              routerIconTestByModel(
-                                  modelNumber: child.$1.modelNumber ?? ''),
-                            ),
+                      child: AppImage.provider(
+                        imageProvider: DeviceImageHelper.getRouterImage(
+                          routerIconTestByModel(
+                              modelNumber: child.$1.modelNumber ?? ''),
+                        ),
                         fit: BoxFit.cover,
                         width: 72,
                         height: 72,
@@ -70,7 +69,9 @@ class _FirmwareUpdateTableViewState
                                 )
                               : AppText.bodyMedium(
                                   loc(context).upToDate,
-                                  color: Colors.green,
+                                  color: Theme.of(context)
+                                      .extension<AppColorScheme>()!
+                                      .semanticSuccess,
                                   maxLines: 5,
                                 )
                         ],

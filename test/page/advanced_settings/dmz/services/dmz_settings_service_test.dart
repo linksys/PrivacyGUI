@@ -15,7 +15,8 @@ import 'dmz_settings_service_test_data.dart';
 class MockRouterRepository extends Mock implements RouterRepository {}
 
 // Fake for JNAPTransactionBuilder
-class FakeJNAPTransactionBuilder extends Fake implements JNAPTransactionBuilder {}
+class FakeJNAPTransactionBuilder extends Fake
+    implements JNAPTransactionBuilder {}
 
 void main() {
   late MockRouterRepository mockRepository;
@@ -41,7 +42,8 @@ void main() {
         final mockResponse = DMZSettingsTestData.createSuccessfulTransaction(
           isDMZEnabled: false,
         );
-        when(() => mockRepository.transaction(any(), fetchRemote: any()))
+        when(() => mockRepository.transaction(any(),
+                fetchRemote: any(named: 'fetchRemote')))
             .thenAnswer((_) async => mockResponse);
 
         final mockRef = UnitTestHelper.createMockRef(
@@ -64,7 +66,8 @@ void main() {
         // Arrange
         final mockResponse = DMZSettingsTestData.createEnabledDMZWithIP(
             destinationIP: '192.168.1.100');
-        when(() => mockRepository.transaction(any(), fetchRemote: any()))
+        when(() => mockRepository.transaction(any(),
+                fetchRemote: any(named: 'fetchRemote')))
             .thenAnswer((_) async => mockResponse);
 
         final mockRef = UnitTestHelper.createMockRef(
@@ -84,7 +87,8 @@ void main() {
         // Arrange
         final mockResponse = DMZSettingsTestData.createEnabledDMZWithMAC(
             destinationMac: '00:11:22:33:44:55');
-        when(() => mockRepository.transaction(any(), fetchRemote: any()))
+        when(() => mockRepository.transaction(any(),
+                fetchRemote: any(named: 'fetchRemote')))
             .thenAnswer((_) async => mockResponse);
 
         final mockRef = UnitTestHelper.createMockRef(
@@ -107,7 +111,8 @@ void main() {
           lastIPAddress: '192.168.1.99',
           destinationIP: '192.168.1.100',
         );
-        when(() => mockRepository.transaction(any(), fetchRemote: any()))
+        when(() => mockRepository.transaction(any(),
+                fetchRemote: any(named: 'fetchRemote')))
             .thenAnswer((_) async => mockResponse);
 
         final mockRef = UnitTestHelper.createMockRef(
@@ -129,18 +134,20 @@ void main() {
         final mockResponse = DMZSettingsTestData.createPartialErrorTransaction(
           errorAction: JNAPAction.getDMZSettings,
         );
-        when(() => mockRepository.transaction(any(), fetchRemote: any()))
+        when(() => mockRepository.transaction(any(),
+                fetchRemote: any(named: 'fetchRemote')))
             .thenAnswer((_) async => mockResponse);
 
         final mockRef = UnitTestHelper.createMockRef(
           routerRepository: mockRepository,
         );
 
-        // Act & Assert
-        expect(
-          () => service.fetchDmzSettings(mockRef),
-          throwsA(isA<Exception>()),
-        );
+        // Act
+        final (uiSettings, status) = await service.fetchDmzSettings(mockRef);
+
+        // Assert - service returns null settings but still has status from LAN
+        expect(uiSettings, isNull);
+        expect(status, isNotNull);
       });
 
       test('returns null settings if getDMZSettings missing', () async {
@@ -154,7 +161,8 @@ void main() {
             ),
           ],
         );
-        when(() => mockRepository.transaction(any(), fetchRemote: any()))
+        when(() => mockRepository.transaction(any(),
+                fetchRemote: any(named: 'fetchRemote')))
             .thenAnswer((_) async => mockResponse);
 
         final mockRef = UnitTestHelper.createMockRef(
@@ -172,7 +180,8 @@ void main() {
       test('respects forceRemote parameter', () async {
         // Arrange
         final mockResponse = DMZSettingsTestData.createSuccessfulTransaction();
-        when(() => mockRepository.transaction(any(), fetchRemote: any()))
+        when(() => mockRepository.transaction(any(),
+                fetchRemote: any(named: 'fetchRemote')))
             .thenAnswer((_) async => mockResponse);
 
         final mockRef = UnitTestHelper.createMockRef(

@@ -82,7 +82,10 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
   List<String> getWifiNames() {
     final wifiState = ref.read(wifiBundleProvider);
     return [
-      ...wifiState.settings.current.wifiList.mainWiFi.map((e) => e.ssid).toList().unique(),
+      ...wifiState.settings.current.wifiList.mainWiFi
+          .map((e) => e.ssid)
+          .toList()
+          .unique(),
       wifiState.settings.current.wifiList.guestWiFi.ssid,
     ];
   }

@@ -5,11 +5,8 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
-import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/card.dart';
-import 'package:privacygui_widgets/widgets/panel/switch_trigger_tile.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 
 class WifiAdvancedSettingsView extends ConsumerWidget {
   const WifiAdvancedSettingsView({super.key});
@@ -40,11 +37,12 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(
-            horizontal: ResponsiveLayout.pageHorizontalPadding(context)),
+            horizontal:
+                context.isMobileLayout ? AppSpacing.lg : AppSpacing.xxl),
         child: MasonryGridView.count(
-          crossAxisCount: ResponsiveLayout.isMobileLayout(context) ? 1 : 2,
-          mainAxisSpacing: Spacing.small2,
-          crossAxisSpacing: ResponsiveLayout.columnPadding(context),
+          crossAxisCount: context.isMobileLayout ? 1 : 2,
+          mainAxisSpacing: AppSpacing.sm,
+          crossAxisSpacing: context.colWidth(1),
           itemCount: advancedSettingWidgets.length,
           itemBuilder: (context, index) => advancedSettingWidgets[index],
           shrinkWrap: true,
@@ -58,13 +56,11 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
       BuildContext context, WifiBundleNotifier notifier, bool isEnabled) {
     return AppCard(
       key: const Key('clientSteering'),
-      padding: const EdgeInsets.all(Spacing.large2),
-      child: AppSwitchTriggerTile(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: _WifiSwitchTile(
         title: AppText.labelLarge(loc(context).clientSteering),
-        semanticLabel: 'client steering',
         description: AppText.bodyMedium(loc(context).clientSteeringDesc),
         value: isEnabled,
-        toggleInCenter: true,
         onChanged: (value) {
           notifier.setClientSteeringEnabled(value);
         },
@@ -76,13 +72,11 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
       BuildContext context, WifiBundleNotifier notifier, bool isEnabled) {
     return AppCard(
       key: const Key('nodeSteering'),
-      padding: const EdgeInsets.all(Spacing.large2),
-      child: AppSwitchTriggerTile(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: _WifiSwitchTile(
         title: AppText.labelLarge(loc(context).nodeSteering),
-        semanticLabel: 'node steering',
         description: AppText.bodyMedium(loc(context).nodeSteeringDesc),
         value: isEnabled,
-        toggleInCenter: true,
         onChanged: (value) {
           notifier.setNodesSteeringEnabled(value);
         },
@@ -94,16 +88,14 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
       BuildContext context, WifiBundleNotifier notifier, bool isEnabled) {
     return AppCard(
       key: const Key('iptv'),
-      padding: const EdgeInsets.all(Spacing.large2),
-      child: AppSwitchTriggerTile(
-        title: const AppText.labelLarge('IPTV'),
-        semanticLabel: 'IPTV',
-        subtitle: const AppText.labelSmall(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: _WifiSwitchTile(
+        title: AppText.labelLarge('IPTV'),
+        subtitle: AppText.labelSmall(
             'Please check with your ISP if IPTV service is compatible with this router.'),
-        description: const AppText.bodySmall(
+        description: AppText.bodySmall(
             'IPTV subscribers should turn this feature ON to get the most out of the service. Depending on your network configuration, you might have to reconnect some devices.'),
         value: isEnabled,
-        toggleInCenter: true,
         onChanged: (value) {
           notifier.setIptvEnabled(value);
         },
@@ -115,27 +107,24 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
       BuildContext context, WifiBundleNotifier notifier, bool isEnabled) {
     return AppCard(
       key: const Key('dfs'),
-      padding: const EdgeInsets.all(Spacing.large2),
-      child: AppSwitchTriggerTile(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: _WifiSwitchTile(
         title: AppText.labelLarge(loc(context).dfs),
-        semanticLabel: 'dfs',
-        description: AppStyledText.bold(
-          loc(context).dfsDesc,
-          defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-          color: Theme.of(context).colorScheme.primary,
-          tags: const ['a'],
-          callbackTags: {
-            'a': (String? text, Map<String?, String?> attrs) {
-              _showDFSModal(context);
-            }
-          },
-        ),
+        description: _buildDFSDescription(context),
         value: isEnabled,
-        toggleInCenter: true,
         onChanged: (value) {
           notifier.setDFSEnabled(value);
         },
       ),
+    );
+  }
+
+  Widget _buildDFSDescription(BuildContext context) {
+    return AppStyledText(
+      text: loc(context).dfsDesc,
+      onTapHandlers: {
+        'a': () => _showDFSModal(context),
+      },
     );
   }
 
@@ -144,26 +133,26 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
     final wifiList = ref.watch(
         wifiBundleProvider.select((s) => s.settings.current.wifiList.mainWiFi));
     // This logic might need to be moved to the notifier itself to be a derived state (status)
-    bool showMLOWarning = notifier.checkingMLOSettingsConflicts(
-        Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
+    bool showMLOWarning = ref
+        .read(wifiBundleProvider.notifier)
+        .checkingMLOSettingsConflicts(
+            Map.fromIterables(wifiList.map((e) => e.radioID), wifiList));
     return AppCard(
       key: const Key('mlo'),
-      padding: const EdgeInsets.all(Spacing.large2),
-      child: AppSwitchTriggerTile(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: _WifiSwitchTile(
         title: AppText.labelLarge(loc(context).mlo),
-        semanticLabel: 'mlo',
         description: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText.bodyMedium(loc(context).mloDesc),
             if (showMLOWarning) ...[
-              const AppGap.medium(),
+              AppGap.md(),
               AppText.labelLarge(loc(context).mloWarning),
             ],
           ],
         ),
         value: isEnabled,
-        toggleInCenter: true,
         onChanged: (value) {
           notifier.setMLOEnabled(value);
         },
@@ -174,5 +163,46 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
   void _showDFSModal(BuildContext context) {
     showMessageAppOkDialog(context,
         title: loc(context).dfs, message: loc(context).modalDFSDesc);
+  }
+}
+
+class _WifiSwitchTile extends StatelessWidget {
+  final Widget title;
+  final Widget? subtitle;
+  final Widget description;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _WifiSwitchTile({
+    required this.title,
+    required this.description,
+    required this.value,
+    required this.onChanged,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: title),
+            AppSwitch(
+              value: value,
+              onChanged: onChanged,
+            ),
+          ],
+        ),
+        if (subtitle != null) ...[
+          AppGap.xs(),
+          subtitle!,
+        ],
+        AppGap.md(),
+        description,
+      ],
+    );
   }
 }

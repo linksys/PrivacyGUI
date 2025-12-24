@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/bullet_list/bullet_list.dart';
-import 'package:privacygui_widgets/widgets/bullet_list/bullet_style.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+
+import 'package:ui_kit_library/ui_kit.dart';
 
 class PnpModemLightsOffView extends ConsumerStatefulWidget {
   const PnpModemLightsOffView({Key? key}) : super(key: key);
@@ -22,7 +19,7 @@ class PnpModemLightsOffView extends ConsumerStatefulWidget {
 class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
   @override
   Widget build(BuildContext context) {
-    return StyledAppPageView(
+    return UiKitPageView(
       title: loc(context).pnpModemLightsOffTitle,
       scrollable: true,
       enableSafeArea: (left: true, top: false, right: true, bottom: true),
@@ -32,24 +29,23 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
           AppText.bodyLarge(
             loc(context).pnpModemLightsOffDesc,
           ),
-          const AppGap.large3(),
-          const AppGap.small2(),
+          AppGap.xxl(),
+          AppGap.sm(),
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SvgPicture(
-                  CustomTheme.of(context).images.modemDevice,
+                Assets.images.modemDevice.svg(
                   semanticsLabel: 'modem Device image',
                   fit: BoxFit.fitWidth,
                 ),
-                const AppGap.large3(),
-                const AppGap.large5(),
+                AppGap.xxl(),
+                AppGap.xxxl(),
                 Row(
                   children: [
                     Flexible(
-                      child: AppTextButton.noPadding(
-                        loc(context).pnpModemLightsOffTip,
+                      child: AppButton.text(
+                        label: loc(context).pnpModemLightsOffTip,
                         onTap: () {
                           showSimpleAppOkDialog(
                             context,
@@ -64,9 +60,10 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
               ],
             ),
           ),
-          const AppGap.large3(),
-          AppFilledButton(
-            loc(context).next,
+          AppGap.xxl(),
+          AppButton(
+            label: loc(context).next,
+            variant: SurfaceVariant.highlight,
             onTap: () {
               context.pushNamed(RouteNamed.pnpWaitingModem);
             },
@@ -78,7 +75,7 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
 
   Widget _bottomSheetContent() {
     return Padding(
-      padding: const EdgeInsets.all(Spacing.large2),
+      padding: EdgeInsets.all(AppSpacing.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,27 +84,39 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
           AppText.headlineSmall(
             loc(context).pnpModemLightsOffTipTitle,
           ),
-          const AppGap.large2(),
+          AppGap.xl(),
           AppText.bodyMedium(
             loc(context).pnpModemLightsOffTipDesc,
           ),
-          const AppGap.large2(),
-          AppBulletList(style: AppBulletStyle.number, children: [
-            AppText.bodyMedium(
-              loc(context).pnpModemLightsOffTipStep1,
-            ),
-            AppText.bodyMedium(
-              loc(context).pnpModemLightsOffTipStep2,
-            ),
-            AppStyledText.bold(
-              key: const Key('pnpModemLightsOffTipStep3'),
-              loc(context).pnpModemLightsOffTipStep3,
-              defaultTextStyle: Theme.of(context).textTheme.bodyMedium!,
-              tags: const ['b'],
-            ),
-          ]),
+          AppGap.xl(),
+          Column(
+            children: [
+              _buildNumberedItem(1, loc(context).pnpModemLightsOffTipStep1),
+              AppGap.sm(),
+              _buildNumberedItem(2, loc(context).pnpModemLightsOffTipStep2),
+              AppGap.sm(),
+              _buildNumberedItem(3, loc(context).pnpModemLightsOffTipStep3,
+                  isHtml: true, key: const Key('pnpModemLightsOffTipStep3')),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildNumberedItem(int index, String text,
+      {bool isHtml = false, Key? key}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.bodyMedium('$index. '),
+        AppGap.sm(),
+        Expanded(
+          child: isHtml
+              ? AppStyledText(key: key, text: '<b>$text</b>')
+              : AppText.bodyMedium(text),
+        ),
+      ],
     );
   }
 }

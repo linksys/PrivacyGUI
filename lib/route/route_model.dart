@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
 
 ValueNotifier<bool> showColumnOverlayNotifier =
@@ -66,6 +65,7 @@ class LinksysRoute extends GoRoute {
               if (!await onExit(context, state)) {
                 return false; // Custom logic blocked navigation.
               }
+              if (!context.mounted) return true;
             }
 
             // If dirty checking is enabled and a provider is given...
@@ -74,7 +74,10 @@ class LinksysRoute extends GoRoute {
               final notifier = container.read(preservableProvider);
 
               if (notifier.isDirty()) {
-                final bool? confirmed = await (showAlertForTest?.call(context) ?? showUnsavedAlert(context));
+                final bool? confirmed =
+                    await (showAlertForTest?.call(context) ??
+                        showUnsavedAlert(context));
+                if (!context.mounted) return true;
                 if (confirmed == true) {
                   // User wants to discard, so revert the state.
                   notifier.revert();

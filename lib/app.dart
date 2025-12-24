@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
@@ -18,7 +19,8 @@ import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/util/languages.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
 
 /// The root widget of the Linksys application.
 ///
@@ -103,33 +105,16 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
-    final appLightColorScheme = appSettings.themeColor == null
-        ? null
-        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).light;
-    final appLightColorSchemeExt = appSettings.themeColor == null
-        ? lightColorSchemeExt
-        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).lightExt;
+    final themeColor = appSettings.themeColor ?? AppPalette.brandPrimary;
 
-    final appDarkColorScheme = appSettings.themeColor == null
-        ? null
-        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).dark;
-    final appDarkColorSchemeExt = appSettings.themeColor == null
-        ? darkColorSchemeExt
-        : AppColorScheme.fromSeed(seedColor: appSettings.themeColor!).darkExt;
+    // Use ThemeJsonConfig as single source of truth
+    final themeConfig = getIt<ThemeJsonConfig>();
+    final appLightTheme = themeConfig.createLightTheme(themeColor);
+    final appDarkTheme = themeConfig.createDarkTheme(themeColor);
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
-      theme: linksysLightThemeData.copyWith(
-          colorScheme: appLightColorScheme,
-          extensions: [appLightColorSchemeExt, textSchemeExt],
-          splashColor: appLightColorScheme?.primary,
-          focusColor: Colors.transparent,
-          pageTransitionsTheme: pageTransitionsTheme),
-      darkTheme: linksysDarkThemeData.copyWith(
-          colorScheme: appDarkColorScheme,
-          extensions: [appDarkColorSchemeExt, textSchemeExt],
-          splashColor: appDarkColorScheme?.primary,
-          focusColor: Colors.transparent,
-          pageTransitionsTheme: pageTransitionsTheme),
+      theme: appLightTheme,
+      darkTheme: appDarkTheme,
       themeMode: appSettings.themeMode,
       locale: appSettings.locale ?? systemLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -155,8 +140,9 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
                 return null;
               }),
             },
-            child: CustomResponsive(
-              child: AppRootContainer(
+            child: DesignSystem.init(
+              context,
+              AppRootContainer(
                 route: _currentRoute,
                 child: child,
               ),

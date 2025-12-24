@@ -144,7 +144,10 @@ class AdministrationSettingsTestData {
       (JNAPAction.getManagementSettings, _createDefaultManagement()),
       (JNAPAction.getUPnPSettings, _createDefaultUPnP()),
       (JNAPAction.getALGSettings, _createDefaultALG()),
-      (JNAPAction.getExpressForwardingSettings, _createDefaultExpressForwarding()),
+      (
+        JNAPAction.getExpressForwardingSettings,
+        _createDefaultExpressForwarding()
+      ),
     ];
 
     return JNAPTransactionSuccessWrap(

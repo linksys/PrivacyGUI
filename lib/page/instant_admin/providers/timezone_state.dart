@@ -145,8 +145,7 @@ class TimezoneState extends FeatureState<TimezoneSettings, TimezoneStatus> {
 
   factory TimezoneState.fromMap(Map<String, dynamic> map) {
     return TimezoneState(
-      settings: Preservable.fromMap(
-          map['settings'] as Map<String, dynamic>,
+      settings: Preservable.fromMap(map['settings'] as Map<String, dynamic>,
           (value) => TimezoneSettings.fromMap(value)),
       status: TimezoneStatus.fromMap(map['status'] as Map<String, dynamic>),
     );

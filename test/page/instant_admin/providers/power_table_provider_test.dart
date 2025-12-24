@@ -114,8 +114,8 @@ void main() {
           lessThan(0));
       expect(PowerTableCountries.usa.compareTo(PowerTableCountries.chn),
           greaterThan(0));
-      expect(
-          PowerTableCountries.usa.compareTo(PowerTableCountries.usa), equals(0));
+      expect(PowerTableCountries.usa.compareTo(PowerTableCountries.usa),
+          equals(0));
     });
   });
 }

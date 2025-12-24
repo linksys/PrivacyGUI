@@ -6,12 +6,10 @@ import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/list_expand_card.dart';
-import 'package:privacygui_widgets/widgets/radios/radio_list.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class InstantSafetyView extends ArgumentsConsumerStatefulView {
   const InstantSafetyView({
@@ -42,10 +40,9 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
     final bool enableSafeBrowsing =
         settings.safeBrowsingType != InstantSafetyType.off;
 
-    return StyledAppPageView.withSliver(
-      scrollable: true,
+    return UiKitPageView.withSliver(
       title: loc(context).instantSafety,
-      bottomBar: PageBottomBar(
+      bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled: state.isDirty,
         onPositiveTap: _showRestartAlert,
       ),
@@ -53,50 +50,54 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppText.bodyLarge(loc(context).safeBrowsingDesc),
-          const AppGap.large3(),
-          AppListExpandCard(
-            title: AppText.labelLarge(loc(context).instantSafety),
-            trailing: AppSwitch(
-              semanticLabel: 'instant safety',
-              value: enableSafeBrowsing,
-              onChanged: (enable) {
-                _notifier.setSafeBrowsingEnabled(enable);
-              },
-            ),
-            description: enableSafeBrowsing
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const AppGap.medium(),
-                      const Divider(
-                        height: 1,
-                      ),
-                      const AppGap.large2(),
-                      AppText.labelLarge(loc(context).provider),
-                      AppRadioList(
-                        initial: settings.safeBrowsingType,
-                        mainAxisSize: MainAxisSize.min,
-                        itemHeight: 56,
-                        items: [
-                          if (status.hasFortinet)
-                            AppRadioListItem(
-                              title: loc(context).fortinetSecureDns,
-                              value: InstantSafetyType.fortinet,
-                            ),
-                          AppRadioListItem(
-                            title: loc(context).openDNS,
-                            value: InstantSafetyType.openDNS,
+          AppGap.xxxl(),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppText.labelLarge(loc(context).instantSafety),
+                    ),
+                    AppSwitch(
+                      value: enableSafeBrowsing,
+                      onChanged: (enable) {
+                        _notifier.setSafeBrowsingEnabled(enable);
+                      },
+                    ),
+                  ],
+                ),
+                if (enableSafeBrowsing) ...[
+                  AppGap.lg(),
+                  const Divider(height: 1),
+                  AppGap.xxl(),
+                  AppText.labelLarge(loc(context).provider),
+                  AppGap.sm(),
+                  ...[
+                    AppRadioList<InstantSafetyType>(
+                      selected: settings.safeBrowsingType,
+                      items: [
+                        if (status.hasFortinet)
+                          AppRadioListItem<InstantSafetyType>(
+                            title: loc(context).fortinetSecureDns,
+                            value: InstantSafetyType.fortinet,
                           ),
-                        ],
-                        onChanged: (index, selectedType) {
-                          if (selectedType != null) {
-                            _notifier.setSafeBrowsingProvider(selectedType);
-                          }
-                        },
-                      ),
-                    ],
-                  )
-                : null,
+                        AppRadioListItem<InstantSafetyType>(
+                          title: loc(context).openDNS,
+                          value: InstantSafetyType.openDNS,
+                        ),
+                      ],
+                      onChanged: (index, value) {
+                        if (value != null) {
+                          _notifier.setSafeBrowsingProvider(value);
+                        }
+                      },
+                    ),
+                  ],
+                ],
+              ],
+            ),
           ),
         ],
       ),
@@ -109,15 +110,14 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
       title: loc(context).restartWifiAlertTitle,
       content: AppText.bodyMedium(loc(context).restartWifiAlertDesc),
       actions: [
-        AppTextButton(
-          loc(context).cancel,
-          color: Theme.of(context).colorScheme.onSurface,
+        AppButton.text(
+          label: loc(context).cancel,
           onTap: () {
             context.pop();
           },
         ),
-        AppTextButton(
-          loc(context).restart,
+        AppButton.text(
+          label: loc(context).restart,
           onTap: () {
             context.pop(); // Close the dialog first
             _saveSettings();
@@ -135,9 +135,11 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
         showChangesSavedSnackBar();
       }),
     ).catchError((error, stackTrace) {
+      if (!mounted) return;
       if (error is JNAPSideEffectError) {
         showRouterNotFoundAlert(context, ref, onComplete: () async {
           await _notifier.fetch(forceRemote: true);
+          if (!mounted) return;
           showChangesSavedSnackBar();
         });
       } else if (error is UnexpectedError) {

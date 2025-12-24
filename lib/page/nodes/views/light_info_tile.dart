@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class LightInfoImageTile extends StatelessWidget {
   final Widget image;
@@ -24,7 +24,7 @@ class LightInfoImageTile extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         image,
-        const AppGap.medium(),
+        AppGap.lg(),
         Flexible(
           child: content,
         )
@@ -32,7 +32,6 @@ class LightInfoImageTile extends StatelessWidget {
     );
   }
 }
-
 
 class LightInfoTile extends StatelessWidget {
   final Color color;
@@ -56,7 +55,7 @@ class LightInfoTile extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _createLightCircle(context, color),
-        const AppGap.medium(),
+        AppGap.lg(),
         Flexible(
           child: content,
         )

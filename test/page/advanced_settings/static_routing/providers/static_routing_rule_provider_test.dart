@@ -65,7 +65,8 @@ void main() {
         interface: 'LAN',
       );
 
-      notifier.init([originalRule], originalRule, 0, '192.168.1.1', '255.255.255.0');
+      notifier.init(
+          [originalRule], originalRule, 0, '192.168.1.1', '255.255.255.0');
 
       const updatedRule = StaticRoutingRuleUIModel(
         name: 'Updated',

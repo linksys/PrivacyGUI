@@ -229,7 +229,8 @@ class FirmwareUpdateService {
     List<FirmwareUpdateUIModel> records,
   ) {
     if (result is JNAPSuccess) {
-      final statusList = switch (getIt.get<ServiceHelper>().isSupportNodeFirmwareUpdate()) {
+      final statusList =
+          switch (getIt.get<ServiceHelper>().isSupportNodeFirmwareUpdate()) {
         false => [FirmwareUpdateStatus.fromMap(result.output)],
         true => List.from(result.output['firmwareUpdateStatus'])
             .map((e) => NodesFirmwareUpdateStatus.fromMap(e))

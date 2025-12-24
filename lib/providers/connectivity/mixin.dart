@@ -7,10 +7,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/constants/cloud_const.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'availability_info.dart';
 import 'connectivity_info.dart';
@@ -106,12 +106,11 @@ mixin ConnectivityListener {
 
     try {
       if (!kIsWeb && Platform.isIOS) {
-        var status = await networkInfo.getLocationServiceAuthorization();
-        if (status == LocationAuthorizationStatus.notDetermined) {
-          status = await networkInfo.requestLocationServiceAuthorization();
+        var status = await Permission.location.status;
+        if (status.isDenied) {
+          status = await Permission.location.request();
         }
-        if (status == LocationAuthorizationStatus.authorizedAlways ||
-            status == LocationAuthorizationStatus.authorizedWhenInUse) {
+        if (status.isGranted || status.isLimited) {
           wifiName = await networkInfo.getWifiName();
         } else {
           wifiName = await networkInfo.getWifiName();

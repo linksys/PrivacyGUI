@@ -182,7 +182,9 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       await ref.read(healthCheckProvider.notifier).loadData();
     }
 
-    await ref.read(instantPrivacyProvider.notifier).fetch(updateStatusOnly: true);
+    await ref
+        .read(instantPrivacyProvider.notifier)
+        .fetch(updateStatusOnly: true);
   }
 
   Future forcePolling() {

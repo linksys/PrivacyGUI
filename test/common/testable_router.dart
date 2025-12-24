@@ -4,11 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacygui_widgets/theme/_theme.dart';
-import 'package:privacygui_widgets/theme/custom_responsive.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-
-import 'theme_data.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 Widget testableRouter({
   required GoRouter router,
@@ -18,21 +16,32 @@ Widget testableRouter({
   ThemeData? theme,
   ThemeData? darkTheme,
   Locale? locale,
+  bool disableAnimations = true,
 }) {
-  return ProviderScope(
+  // Use ThemeJsonConfig for consistent rendering with DI-registered themes
+  final appLightTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
+  final appDarkTheme = ThemeJsonConfig.defaultConfig().createDarkTheme();
+
+  Widget result = ProviderScope(
     overrides: overrides,
-    parent: provider,
     child: MaterialApp.router(
-      theme: theme ?? mockLightThemeData,
-      darkTheme: darkTheme ?? mockDarkThemeData,
+      theme: theme ?? appLightTheme,
+      darkTheme: darkTheme ?? appDarkTheme,
       locale: locale,
       themeMode: themeMode,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
       builder: (context, child) => Material(
-        child: CustomResponsive(
-          child: child!,
+        child: TickerMode(
+          enabled: !disableAnimations,
+          child: DesignSystem.init(
+            context,
+            AppResponsiveLayout(
+              mobile: (ctx) => child ?? const SizedBox(),
+              desktop: (ctx) => child ?? const SizedBox(),
+            ),
+          ),
         ),
       ),
       routeInformationProvider: router.routeInformationProvider,
@@ -40,6 +49,15 @@ Widget testableRouter({
       routerDelegate: router.routerDelegate,
     ),
   );
+
+  if (provider != null) {
+    result = UncontrolledProviderScope(
+      container: provider,
+      child: result,
+    );
+  }
+
+  return result;
 }
 
 Widget testableSingleRoute({
@@ -52,6 +70,7 @@ Widget testableSingleRoute({
   Locale? locale,
   ProviderContainer? provider,
   GlobalKey<NavigatorState>? navigatorKey,
+  bool disableAnimations = true,
 }) {
   final router = GoRouter(
     navigatorKey: navigatorKey ?? shellNavigatorKey,
@@ -73,6 +92,7 @@ Widget testableSingleRoute({
     darkTheme: darkTheme,
     locale: locale,
     provider: provider,
+    disableAnimations: disableAnimations,
   );
 }
 
@@ -84,6 +104,7 @@ Widget testableRouteShellWidget({
   ThemeData? theme,
   ThemeData? darkTheme,
   Locale? locale,
+  bool disableAnimations = true,
 }) {
   final router = GoRouter(
     navigatorKey: shellNavigatorKey,
@@ -110,5 +131,6 @@ Widget testableRouteShellWidget({
     theme: theme,
     darkTheme: darkTheme,
     locale: locale,
+    disableAnimations: disableAnimations,
   );
 }

@@ -5,10 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/card/list_card.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
-import '../../../../common/screen.dart';
 import '../../../../common/test_helper.dart';
 import '../../../../common/test_responsive_widget.dart';
 
@@ -73,7 +71,7 @@ void main() {
 
   group('SelectDeviceView', () {
     // Test ID: IDSDV-MULTI
-    testLocalizationsV2(
+    testLocalizations(
       'should display devices in multiple selection mode',
       (tester, screen) async {
         final context = await testHelper.pumpView(
@@ -83,7 +81,8 @@ void main() {
           ),
         );
 
-        expect(find.text(testHelper.loc(context).selectDevices), findsOneWidget);
+        expect(
+            find.text(testHelper.loc(context).selectDevices), findsOneWidget);
         expect(
             find.text(testHelper.loc(context).onlineDevices), findsOneWidget);
         expect(
@@ -105,10 +104,10 @@ void main() {
     );
 
     // Test ID: IDSDV-SINGLE
-    testLocalizationsV2(
+    testLocalizations(
       'should display devices in single selection mode and pop on tap',
       (tester, screen) async {
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           child: const SelectDeviceView(
             args: {'selectMode': 'single', 'type': 'ipv4'},
@@ -131,7 +130,7 @@ void main() {
     );
 
     // Test ID: IDSDV-SELECT
-    testLocalizationsV2(
+    testLocalizations(
       'should allow selecting and deselecting items',
       (tester, screen) async {
         final context = await testHelper.pumpView(
@@ -152,7 +151,7 @@ void main() {
         );
 
         await tester.tap(find.descendant(
-          of: find.widgetWithText(AppListCard, 'Online Device 1'),
+          of: find.widgetWithText(AppCard, 'Online Device 1'),
           matching: find.byType(AppCheckbox),
         ));
         await tester.pumpAndSettle();
@@ -163,7 +162,7 @@ void main() {
         );
 
         await tester.tap(find.descendant(
-          of: find.widgetWithText(AppListCard, 'Online Device 2'),
+          of: find.widgetWithText(AppCard, 'Online Device 2'),
           matching: find.byType(AppCheckbox),
         ));
         await tester.pumpAndSettle();
@@ -178,17 +177,13 @@ void main() {
     );
 
     // Test ID: IDSDV-ONLINE
-    testLocalizationsV2(
+    testLocalizations(
       'should show only online devices when onlineOnly is true',
       (tester, screen) async {
         final context = await testHelper.pumpView(
           tester,
           child: const SelectDeviceView(
-            args: {
-              'selectMode': 'multiple',
-              'type': 'mac',
-              'onlineOnly': true
-            },
+            args: {'selectMode': 'multiple', 'type': 'mac', 'onlineOnly': true},
           ),
         );
 
@@ -208,7 +203,7 @@ void main() {
     );
 
     // Test ID: IDSDV-WIRED
-    testLocalizationsV2(
+    testLocalizations(
       'should show only wired devices when connection is wired',
       (tester, screen) async {
         await testHelper.pumpView(
@@ -237,7 +232,7 @@ void main() {
     );
 
     // Test ID: IDSDV-IPMAC
-    testLocalizationsV2(
+    testLocalizations(
       'should show IP and MAC addresses',
       (tester, screen) async {
         await testHelper.pumpView(
@@ -260,7 +255,7 @@ void main() {
     );
 
     // Test ID: IDSDV-UNSELECT
-    testLocalizationsV2(
+    testLocalizations(
       'should show unselectable items as disabled',
       (tester, screen) async {
         await testHelper.pumpView(
@@ -272,14 +267,13 @@ void main() {
 
         final card = find.ancestor(
           of: find.text('Unselectable Device'),
-          matching: find.byType(AppListCard),
+          matching: find.byType(AppCard),
         );
         expect(card, findsOneWidget);
 
         final cardOpacityFinder =
             find.ancestor(of: card, matching: find.byType(Opacity));
-        final cardOpacity =
-            tester.widget<Opacity>(cardOpacityFinder.first);
+        final cardOpacity = tester.widget<Opacity>(cardOpacityFinder.first);
         expect(cardOpacity.opacity, 1.0);
 
         final checkbox =

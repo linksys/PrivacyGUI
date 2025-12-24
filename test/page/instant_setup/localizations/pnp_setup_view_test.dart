@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
+
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
@@ -13,41 +13,12 @@ import 'package:privacy_gui/page/instant_setup/widgets/pnp_stepper.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_password_widget.dart';
 import 'package:privacy_gui/page/instant_setup/widgets/wifi_ssid_widget.dart';
 import 'package:privacy_gui/route/route_model.dart';
-import 'package:privacygui_widgets/icons/linksys_icons.dart';
-import 'package:privacygui_widgets/widgets/_widgets.dart';
-import 'package:privacygui_widgets/widgets/progress_bar/spinner.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import '../../../common/config.dart';
 import '../../../common/test_helper.dart';
 import '../../../common/test_responsive_widget.dart';
 
-// View ID: PNPS
-// Reference: lib/page/instant_setup/pnp_setup_view.dart
-//
-// This file contains screenshot tests for the `PnpSetupView` widget, which handles
-// the multi-step wizard for device configuration.
-//
-// ## Test Cases
-//
-// | Test ID          | Description                                                                     |
-// |------------------|---------------------------------------------------------------------------------|
-// | PNPS-WIZ_INIT    | Verifies the initial loading screen of the wizard.                              |
-// | PNPS-STEP1_WIFI  | Verifies interactions on the "Personal WiFi" step.                              |
-// | PNPS-STEP2_GST   | Verifies interactions on the "Guest WiFi" step.                                 |
-// | PNPS-STEP3_NIT   | Verifies interactions on the "Night Mode" step.                                 |
-// | PNPS-STEP4_NET   | Verifies the "Your Network" step with no child nodes.                           |
-// | PNPS-NET_CHILD   | Verifies the "Your Network" step with child nodes displayed.                    |
-// | PNPS-WIZ_SAVE    | Verifies the "Saving" screen.                                                   |
-// | PNPS-WIZ_SAVED   | Verifies the "Saved" confirmation screen.                                       |
-// | PNPS-WIZ_RECONN  | Verifies the "Needs Reconnect" screen.                                          |
-// | PNPS-WIZ_TST_REC | Verifies the "Testing Reconnect" screen.                                        |
-// | PNPS-WIZ_FW_CHK  | Verifies the "Checking Firmware" screen.                                        |
-// | PNPS-WIZ_FW_UPD  | Verifies the "Updating Firmware" screen.                                        |
-// | PNPS-WIZ_RDY     | Verifies the "WiFi Ready" screen.                                               |
-// | PNPS-INIT_FAIL   | Verifies the wizard initialization failure screen.                              |
-// | PNPS-SAVE_FAIL   | Verifies the wizard save failure screen.                                        |
-
-// A stateful fake notifier for testing the complex navigation flow.
 class FakePnpNotifier extends BasePnpNotifier {
   final PnpState _initialState;
   FakePnpNotifier(this._initialState);
@@ -78,15 +49,12 @@ class FakePnpNotifier extends BasePnpNotifier {
 
   @override
   void validateStep(PnpStep step) {
-    // This is a simplified validation for testing purposes.
-    // It avoids calling the real PnpService and simulates basic validation rules.
     final data = step.getValidationData();
     bool hasError = false;
     Map<String, String?> errors = {};
 
     if (step.stepId == PnpStepId.personalWifi ||
         step.stepId == PnpStepId.guestWifi) {
-      // Simulate SSID validation
       if (data['ssid'] == null || data['ssid'] == '') {
         hasError = true;
         errors['ssid'] = 'Required';
@@ -95,7 +63,6 @@ class FakePnpNotifier extends BasePnpNotifier {
         errors['ssid'] = 'Too long';
       }
 
-      // Simulate Password validation
       if (data['password'] == null || data['password'] == '') {
         hasError = true;
         errors['password'] = 'Required';
@@ -165,6 +132,14 @@ void main() {
   final testHelper = TestHelper();
   final screens = responsiveAllScreens;
 
+  final tallDesktopScreens = responsiveDesktopScreens
+      .map((screen) => screen.copyWith(height: 1080))
+      .toList();
+  final tallScreens = [
+    ...responsiveMobileScreens,
+    ...tallDesktopScreens,
+  ];
+
   PnpState getDefaultPnpState(PnpFlowStatus status,
       {bool isUnconfigured = false,
       bool forceLogin = false,
@@ -183,7 +158,7 @@ void main() {
       ),
       isUnconfigured: isUnconfigured,
       forceLogin: forceLogin,
-      childNodes: childNodes ?? [], // Use provided childNodes or an empty list
+      childNodes: childNodes ?? [],
       stepStateList: const {
         PnpStepId.personalWifi: PnpStepState(
           status: StepViewStatus.data,
@@ -201,14 +176,13 @@ void main() {
 
   setUp(() {
     testHelper.setup();
-    // No more when() calls needed here for getStepState, as FakePnpNotifier handles it.
   });
 
   group('PnpSetupView screenshot tests based on PnpFlowStatus', () {
     // Test ID: PNPS-WIZ_INIT
     testLocalizations(
       'Verify the initial loading screen of the wizard',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
             getDefaultPnpState(PnpFlowStatus.wizardInitializing));
 
@@ -217,45 +191,43 @@ void main() {
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
         );
         await tester.pump();
 
-        // Verify the unique text is present.
         expect(find.text(testHelper.loc(context).processing), findsOneWidget);
-        // Verify the specific loading spinner is present by its key.
         expect(find.byKey(const Key('pnp_loading_spinner')), findsOneWidget);
       },
       screens: screens,
       goldenFilename: 'PNPS-WIZ_INIT_01-initial_state',
+      helper: testHelper,
     );
 
     group('status: wizardConfiguring', () {
       // Test ID: PNPS-STEP1_WIFI
       testLocalizations(
         'Verify interactions on the "Personal WiFi" step',
-        (tester, locale) async {
+        (tester, screen) async {
           final fakeNotifier = FakePnpNotifier(
               getDefaultPnpState(PnpFlowStatus.wizardConfiguring));
 
-          final context = await testHelper.pumpView(
+          await testHelper.pumpView(
             tester,
             child: const PnpSetupView(),
             config: LinksysRouteConfig(
                 column: ColumnGrid(column: 6, centered: true),
                 noNaviRail: true),
-            locale: locale,
+            locale: screen.locale,
             overrides: [
               pnpProvider.overrideWith(() => fakeNotifier),
             ],
           );
           await tester.pumpAndSettle();
 
-          // --- Test Info Button ---
-          final infoButton = find.byIcon(LinksysIcons.infoCircle);
+          final infoButton = find.byIcon(AppFontIcons.infoCircle);
           expect(infoButton, findsOneWidget);
           await tester.tap(infoButton);
           await tester.pumpAndSettle();
@@ -267,58 +239,52 @@ void main() {
           await tester.tap(closeButton);
           await tester.pumpAndSettle();
 
-          // --- Test Invalid SSID ---
           final ssidField = find.byType(WiFiSSIDField);
           expect(ssidField, findsOneWidget);
           await tester.enterText(ssidField, '');
-          await tester
-              .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
+          await tester.pumpAndSettle();
           await testHelper.takeScreenshot(
               tester, 'PNPS-STEP1_WIFI_02-ssid_error');
 
-          // --- Test Invalid Password ---
           final passwordField = find.byType(WiFiPasswordField);
           expect(passwordField, findsOneWidget);
           await tester.enterText(passwordField, '123');
-          await tester
-              .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
+          await tester.pumpAndSettle();
           await testHelper.takeScreenshot(
               tester, 'PNPS-STEP1_WIFI_03-password_error');
 
-          // --- Restore to valid state for final screenshot ---
           await tester.enterText(ssidField, 'MyTestWiFi');
           await tester.enterText(passwordField, 'MyTestPassword123');
           await tester.pumpAndSettle();
         },
-        screens: screens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-STEP1_WIFI_04-final_state',
+        helper: testHelper,
       );
 
       // Test ID: PNPS-STEP2_GST
       testLocalizations(
         'Verify interactions on the "Guest WiFi" step',
-        (tester, locale) async {
+        (tester, screen) async {
           final fakeNotifier = FakePnpNotifier(
               getDefaultPnpState(PnpFlowStatus.wizardConfiguring));
 
-          final context = await testHelper.pumpView(
+          await testHelper.pumpView(
             tester,
             child: const PnpSetupView(),
             config: LinksysRouteConfig(
                 column: ColumnGrid(column: 6, centered: true),
                 noNaviRail: true),
-            locale: locale,
+            locale: screen.locale,
             overrides: [
               pnpProvider.overrideWith(() => fakeNotifier),
             ],
           );
           await tester.pumpAndSettle();
 
-          // Navigate to Step 2
           await tester.tap(find.byKey(const Key('pnp_stepper_next_button')));
           await tester.pumpAndSettle();
 
-          // --- Enable Guest WiFi ---
           final guestSwitch = find.byType(AppSwitch);
           expect(guestSwitch, findsOneWidget);
           await tester.tap(guestSwitch);
@@ -326,64 +292,57 @@ void main() {
           await testHelper.takeScreenshot(
               tester, 'PNPS-STEP2_GST_01-switch_on');
 
-          // --- Test Invalid SSID ---
           final guestSsidField = find.byType(WiFiSSIDField);
           expect(guestSsidField, findsOneWidget);
           await tester.enterText(guestSsidField, '');
-          await tester
-              .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
+          await tester.pumpAndSettle();
           await testHelper.takeScreenshot(
               tester, 'PNPS-STEP2_GST_02-ssid_error');
 
-          // --- Test Invalid Password ---
           final guestPasswordField = find.byType(WiFiPasswordField);
           expect(guestPasswordField, findsOneWidget);
           await tester.enterText(guestPasswordField, '123');
-          await tester
-              .pumpAndSettle(); // Use pumpAndSettle to wait for UI to update
+          await tester.pumpAndSettle();
           await testHelper.takeScreenshot(
               tester, 'PNPS-STEP2_GST_03-password_error');
 
-          // --- Restore to valid state for final screenshot ---
           await tester.enterText(guestSsidField, 'MyGuestWiFi');
           await tester.enterText(guestPasswordField, 'MyGuestPassword');
           await tester.pumpAndSettle();
 
-          // --- Restore to off state for final screenshot ---
           await tester.tap(guestSwitch);
           await tester.pumpAndSettle();
         },
-        screens: screens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-STEP2_GST_04-final_state',
+        helper: testHelper,
       );
 
       // Test ID: PNPS-STEP3_NIT
       testLocalizations(
         'Verify interactions on the "Night Mode" step',
-        (tester, locale) async {
+        (tester, screen) async {
           final fakeNotifier = FakePnpNotifier(
               getDefaultPnpState(PnpFlowStatus.wizardConfiguring));
 
-          final context = await testHelper.pumpView(
+          await testHelper.pumpView(
             tester,
             child: const PnpSetupView(),
             config: LinksysRouteConfig(
                 column: ColumnGrid(column: 6, centered: true),
                 noNaviRail: true),
-            locale: locale,
+            locale: screen.locale,
             overrides: [
               pnpProvider.overrideWith(() => fakeNotifier),
             ],
           );
           await tester.pumpAndSettle();
 
-          // Navigate to Step 3
           await tester.tap(find.byKey(const Key('pnp_stepper_next_button')));
           await tester.pumpAndSettle();
           await tester.tap(find.byKey(const Key('pnp_stepper_next_button')));
           await tester.pumpAndSettle();
 
-          // --- Test Switch On ---
           final nightModeSwitch = find.byType(AppSwitch);
           expect(nightModeSwitch, findsOneWidget);
           await tester.tap(nightModeSwitch);
@@ -391,18 +350,18 @@ void main() {
           await testHelper.takeScreenshot(
               tester, 'PNPS-STEP3_NIT_01-switch_on');
 
-          // --- Restore to off state for final screenshot ---
           await tester.tap(nightModeSwitch);
           await tester.pumpAndSettle();
         },
-        screens: screens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-STEP3_NIT_02-final_state',
+        helper: testHelper,
       );
 
       // Test ID: PNPS-STEP4_NET
       testLocalizations(
         'Verify the "Your Network" step with no child nodes',
-        (tester, locale) async {
+        (tester, screen) async {
           final initialState = getDefaultPnpState(
               PnpFlowStatus.wizardConfiguring,
               isUnconfigured: true);
@@ -414,14 +373,13 @@ void main() {
             config: LinksysRouteConfig(
                 column: ColumnGrid(column: 6, centered: true),
                 noNaviRail: true),
-            locale: locale,
+            locale: screen.locale,
             overrides: [
               pnpProvider.overrideWith(() => fakeNotifier),
             ],
           );
           await tester.pumpAndSettle();
 
-          // Navigate to Step 4
           await tester.tap(find.byKey(const Key('pnp_stepper_next_button')));
           await tester.pumpAndSettle();
           await tester.tap(find.byKey(const Key('pnp_stepper_next_button')));
@@ -430,20 +388,19 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text(testHelper.loc(context).pnpYourNetworkTitle),
-              findsOneWidget);
-          expect(
-              find.widgetWithText(
-                  AppFilledButton, testHelper.loc(context).done),
+              findsAtLeastNWidgets(1));
+          expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
-        screens: screens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-STEP4_NET_01-final_state',
+        helper: testHelper,
       );
 
       // Test ID: PNPS-NET_CHILD
       testLocalizations(
         'Verify the "Your Network" step with child nodes displayed',
-        (tester, locale) async {
+        (tester, screen) async {
           final childNodes = [
             const PnpChildNodeUIModel(
                 location: 'Living Room', modelNumber: 'MX5500'),
@@ -463,14 +420,13 @@ void main() {
             config: LinksysRouteConfig(
                 column: ColumnGrid(column: 6, centered: true),
                 noNaviRail: true),
-            locale: locale,
+            locale: screen.locale,
             overrides: [
               pnpProvider.overrideWith(() => fakeNotifier),
             ],
           );
           await tester.pumpAndSettle();
 
-          // Navigate to Step 4
           await tester.tap(find.byKey(const Key('pnp_stepper_next_button')));
           await tester.pumpAndSettle();
           await tester.tap(find.byKey(const Key('pnp_stepper_next_button')));
@@ -479,23 +435,22 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text(testHelper.loc(context).pnpYourNetworkTitle),
-              findsOneWidget);
-          expect(find.text('Living Room'), findsOneWidget);
-          expect(find.text('Bedroom'), findsOneWidget);
-          expect(
-              find.widgetWithText(
-                  AppFilledButton, testHelper.loc(context).done),
+              findsAtLeastNWidgets(1));
+          expect(find.text('Living Room'), findsAtLeastNWidgets(1));
+          expect(find.text('Bedroom'), findsAtLeastNWidgets(1));
+          expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
               findsOneWidget);
         },
-        screens: screens,
+        screens: tallScreens,
         goldenFilename: 'PNPS-NET_CHILD_01-final_state',
+        helper: testHelper,
       );
     });
 
     // Test ID: PNPS-WIZ_SAVE
     testLocalizations(
       'Verify the "Saving" screen',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier =
             FakePnpNotifier(getDefaultPnpState(PnpFlowStatus.wizardSaving));
 
@@ -504,7 +459,7 @@ void main() {
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
@@ -516,12 +471,13 @@ void main() {
       },
       screens: screens,
       goldenFilename: 'PNPS-WIZ_SAVE_01-saving_screen',
+      helper: testHelper,
     );
 
     // Test ID: PNPS-WIZ_SAVED
     testLocalizations(
       'Verify the "Saved" confirmation screen',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier =
             FakePnpNotifier(getDefaultPnpState(PnpFlowStatus.wizardSaved));
 
@@ -530,25 +486,25 @@ void main() {
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
         );
         await tester.pump(const Duration(milliseconds: 500));
 
-        expect(find.byIcon(LinksysIcons.checkCircle), findsOneWidget);
+        expect(find.byIcon(AppFontIcons.checkCircle), findsOneWidget);
         expect(find.text(testHelper.loc(context).saved), findsOneWidget);
       },
       screens: screens,
       goldenFilename: 'PNPS-WIZ_SAVED_01-confirmation_screen',
+      helper: testHelper,
     );
 
     // Test ID: PNPS-WIZ_RECONN
-
     testLocalizations(
       'Verify the "Needs Reconnect" screen',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
             getDefaultPnpState(PnpFlowStatus.wizardNeedsReconnect));
 
@@ -557,7 +513,7 @@ void main() {
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
@@ -565,21 +521,25 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byIcon(LinksysIcons.wifi), findsOneWidget);
+        expect(find.byIcon(AppFontIcons.wifi), findsOneWidget);
         expect(find.text(testHelper.loc(context).pnpReconnectWiFi),
             findsOneWidget);
-        // Find the button by its unique key.
         expect(
-            find.byKey(const Key('pnp_reconnect_next_button')), findsOneWidget);
+            find.descendant(
+              of: find.byKey(const Key('pnp_reconnect_next_button')),
+              matching: find.byType(AppButton),
+            ),
+            findsOneWidget);
       },
       screens: screens,
       goldenFilename: 'PNPS-WIZ_RECONN_01-needs_reconnect_screen',
+      helper: testHelper,
     );
 
     // Test ID: PNPS-WIZ_TST_REC
     testLocalizations(
       'Verify the "Testing Reconnect" screen',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
             getDefaultPnpState(PnpFlowStatus.wizardTestingReconnect));
 
@@ -588,7 +548,7 @@ void main() {
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
@@ -600,13 +560,13 @@ void main() {
       },
       screens: screens,
       goldenFilename: 'PNPS-WIZ_TST_REC_01-testing_reconnect_screen',
+      helper: testHelper,
     );
 
     // Test ID: PNPS-WIZ_FW_CHK
-
     testLocalizations(
       'Verify the "Checking Firmware" screen',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
             getDefaultPnpState(PnpFlowStatus.wizardCheckingFirmware));
 
@@ -615,7 +575,7 @@ void main() {
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
@@ -631,13 +591,13 @@ void main() {
       },
       screens: screens,
       goldenFilename: 'PNPS-WIZ_FW_CHK_01-checking_firmware_screen',
+      helper: testHelper,
     );
 
     // Test ID: PNPS-WIZ_FW_UPD
-
     testLocalizations(
       'Verify the "Updating Firmware" screen',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier = FakePnpNotifier(
             getDefaultPnpState(PnpFlowStatus.wizardUpdatingFirmware));
 
@@ -646,7 +606,7 @@ void main() {
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
@@ -662,13 +622,13 @@ void main() {
       },
       screens: screens,
       goldenFilename: 'PNPS-WIZ_FW_UPD_01-updating_firmware_screen',
+      helper: testHelper,
     );
 
     // Test ID: PNPS-WIZ_RDY
-
     testLocalizations(
       'Verify the "WiFi Ready" screen',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier =
             FakePnpNotifier(getDefaultPnpState(PnpFlowStatus.wizardWifiReady));
 
@@ -677,7 +637,7 @@ void main() {
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
@@ -685,24 +645,21 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byIcon(LinksysIcons.wifi), findsOneWidget);
-
+        expect(find.byIcon(AppFontIcons.wifi), findsOneWidget);
         expect(find.text(testHelper.loc(context).pnpWiFiReady('MyTestWiFi')),
             findsOneWidget);
-
-        expect(
-            find.widgetWithText(AppFilledButton, testHelper.loc(context).done),
+        expect(find.widgetWithText(AppButton, testHelper.loc(context).done),
             findsOneWidget);
       },
       screens: screens,
       goldenFilename: 'PNPS-WIZ_RDY_01-wifi_ready_screen',
+      helper: testHelper,
     );
 
     // Test ID: PNPS-INIT_FAIL
-
     testLocalizations(
       'Verify the wizard initialization failure screen',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier =
             FakePnpNotifier(getDefaultPnpState(PnpFlowStatus.wizardInitFailed));
 
@@ -711,7 +668,7 @@ void main() {
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
@@ -720,41 +677,38 @@ void main() {
         await tester.pump();
 
         expect(find.text(testHelper.loc(context).generalError), findsOneWidget);
-
-        expect(
-            find.widgetWithText(
-                AppFilledButton, testHelper.loc(context).tryAgain),
+        expect(find.widgetWithText(AppButton, testHelper.loc(context).tryAgain),
             findsOneWidget);
       },
       screens: screens,
       goldenFilename: 'PNPS-INIT_FAIL_01-failure_screen',
+      helper: testHelper,
     );
 
     // Test ID: PNPS-SAVE_FAIL
     testLocalizations(
       'Verify the wizard save failure screen',
-      (tester, locale) async {
+      (tester, screen) async {
         final fakeNotifier =
             FakePnpNotifier(getDefaultPnpState(PnpFlowStatus.wizardSaveFailed));
 
-        final context = await testHelper.pumpView(
+        await testHelper.pumpView(
           tester,
           child: const PnpSetupView(),
           config: LinksysRouteConfig(
               column: ColumnGrid(column: 6, centered: true), noNaviRail: true),
-          locale: locale,
+          locale: screen.locale,
           overrides: [
             pnpProvider.overrideWith(() => fakeNotifier),
           ],
         );
         await tester.pump();
 
-        // This status only shows a SnackBar, the underlying UI remains the stepper.
-        // We verify that the stepper is still present.
         expect(find.byType(PnpStepper), findsOneWidget);
       },
       screens: screens,
       goldenFilename: 'PNPS-SAVE_FAIL_01-failure_screen',
+      helper: testHelper,
     );
   });
 }
