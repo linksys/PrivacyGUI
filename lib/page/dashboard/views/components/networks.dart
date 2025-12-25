@@ -95,7 +95,17 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                           topologyState.root.children,
                           meshNode.id,
                         );
-                        return originalNode?.data.model ?? '';
+                        if (originalNode == null) return '';
+                        final data = originalNode.data;
+                        final role = data.isMaster ? 'Master' : 'Slave';
+                        final clientCount = data.connectedDeviceCount;
+                        if (clientCount > 0) {
+                          final clientText = clientCount == 1
+                              ? loc(context).nDevices(clientCount)
+                              : loc(context).nDevices(clientCount);
+                          return '$role • $clientText';
+                        }
+                        return role;
                       },
                     ),
                   ),

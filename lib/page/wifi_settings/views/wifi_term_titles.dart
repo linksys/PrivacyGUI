@@ -95,6 +95,8 @@ String getWifiWirelessModeTitle(
       return '802.11b/g/n/ac Only';
     case WifiWirelessMode.bgnax:
       return '802.11b/g/n/ax Only';
+    case WifiWirelessMode.be:
+      return '802.11be Only';
     case WifiWirelessMode.axbe:
       return '802.11ax/be Only';
     case WifiWirelessMode.mixed:

@@ -66,7 +66,7 @@ dependencies:
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.3.2
+      ref: v2.3.4
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
   encrypt: ^5.0.3
@@ -81,11 +81,16 @@ dependencies:
   printing: ^5.13.1
   get_it: ^7.7.0
   pdf: ^3.11.1
-  web: ^0.5.1
+  web: ^1.1.1
   file_picker: ^8.0.7
   flutter_staggered_grid_view: ^0.7.0
   async: ^2.11.0
   path: ^1.9.0
+
+  # USP/gRPC Integration
+  grpc: ^5.0.0
+  usp_protocol_common:
+    path: ../../packages/usp_protocol_common
 
 dev_dependencies:
   flutter_test:

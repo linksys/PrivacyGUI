@@ -19,7 +19,11 @@ enum WifiRadioBand {
   final String value;
 
   static WifiRadioBand getByValue(String value) {
-    return WifiRadioBand.values.firstWhere((item) => item.value == value);
+    return WifiRadioBand.values.firstWhere((item) => item.value == value,
+        orElse: () {
+      print('⚠️ [WifiRadioBand] Unknown value: $value');
+      return WifiRadioBand.values.first;
+    });
   }
 
   String get bandName => value.replaceFirst('RADIO_', '');
@@ -47,7 +51,11 @@ enum WifiSecurityType {
   final String value;
 
   static WifiSecurityType getByValue(String value) {
-    return WifiSecurityType.values.firstWhere((item) => item.value == value);
+    return WifiSecurityType.values.firstWhere((item) => item.value == value,
+        orElse: () {
+      print('⚠️ [WifiSecurityType] Unknown value: $value');
+      return WifiSecurityType.open;
+    });
   }
 
   bool get isWPA3Variant =>
@@ -95,6 +103,7 @@ enum WifiWirelessMode {
   anacax(value: '802.11anacax'),
   bgnax(value: '802.11bgnax'),
   // 802.11be (Max 320MHz)
+  be(value: '802.11be'),
   anacaxbe(value: '802.11anacaxbe'),
   axbe(value: '802.11axbe'),
   // Special Case
@@ -107,16 +116,21 @@ enum WifiWirelessMode {
   final String value;
 
   static WifiWirelessMode getByValue(String value) {
-    return WifiWirelessMode.values.firstWhere((item) => item.value == value);
+    return WifiWirelessMode.values.firstWhere((item) => item.value == value,
+        orElse: () {
+      print('⚠️ [WifiWirelessMode] Unknown value: $value');
+      return WifiWirelessMode.mixed;
+    });
   }
 
   bool get isIncludeBeMixedMode =>
-      this == axbe || this == anacaxbe || this == mixed;
+      this == be || this == axbe || this == anacaxbe || this == mixed;
 
   /// Gets the maximum channel width supported by this wireless mode.
   WifiChannelWidth get maxSupportedWidth {
     switch (this) {
       // 802.11be (Wi-Fi 7) supports 320MHz
+      case WifiWirelessMode.be:
       case WifiWirelessMode.anacaxbe:
       case WifiWirelessMode.axbe:
       case WifiWirelessMode.mixed:
@@ -169,6 +183,10 @@ enum WifiChannelWidth {
   final String value;
 
   static WifiChannelWidth getByValue(String value) {
-    return WifiChannelWidth.values.firstWhere((item) => item.value == value);
+    return WifiChannelWidth.values.firstWhere((item) => item.value == value,
+        orElse: () {
+      print('⚠️ [WifiChannelWidth] Unknown value: $value');
+      return WifiChannelWidth.auto;
+    });
   }
 }

@@ -99,14 +99,14 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
                 // Main topology content - use Expanded to fill available space
                 if (constraints.maxHeight.isFinite)
                   Expanded(
-                    child: _buildTopology(context, ref,
-                        topologyState.root.children, meshTopology),
+                    child: _buildTopology(
+                        context, ref, [topologyState.root], meshTopology),
                   )
                 else
                   SizedBox(
                     height: 800,
-                    child: _buildTopology(context, ref,
-                        topologyState.root.children, meshTopology),
+                    child: _buildTopology(
+                        context, ref, [topologyState.root], meshTopology),
                   ),
               ],
             ),
