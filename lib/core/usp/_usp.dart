@@ -3,8 +3,8 @@
 /// Provides USP/gRPC integration with the USP Simulator.
 library;
 
-// Re-export from the package structure
-export 'package/usp/usp_client_core.dart';
+// Re-export from the usp_client_core package
+export 'package:usp_client_core/usp_client_core.dart';
 
 // PrivacyGUI-specific components (not in package)
 export 'usp_connection_provider.dart';

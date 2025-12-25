@@ -54,6 +54,19 @@ class Tr181Paths {
   /// Contains: MACAddress, BackhaulLinkType, BackhaulMACAddress, SerialNumber, etc.
   static const wifiMultiApDevice = 'Device.WiFi.MultiAP.APDevice.';
 
+  /// WiFi DataElements (Wi-Fi Alliance Data Elements).
+  /// Contains: Network.*, steering statistics, client capabilities, etc.
+  /// Used for Client/Node Steering in Multi-AP networks.
+  static const wifiDataElements = 'Device.WiFi.DataElements.';
+
+  /// WiFi DataElements Network.
+  /// Contains: SSID, ID, steering policies, etc.
+  static const wifiDataElementsNetwork = 'Device.WiFi.DataElements.Network.';
+
+  /// WiFi MultiLink (Wi-Fi 7 MLO - Multi-Link Operation).
+  /// Contains: Enable, Status, MultiLinkDevice.*, etc.
+  static const wifiMultiLink = 'Device.WiFi.MultiLink.';
+
   // ===========================================================================
   // Network - Hosts
   // ===========================================================================
@@ -193,4 +206,23 @@ class Tr181Paths {
 
   /// Returns all paths needed for GetEthernetPortConnections.
   static List<String> get ethernetPortConnectionsPaths => [ethernet];
+
+  /// Returns all paths needed for GetClientSteeringSettings.
+  static List<String> get clientSteeringSettingsPaths => [
+        wifiDataElements,
+        wifiDataElementsNetwork,
+      ];
+
+  /// Returns all paths needed for GetDFSSettings.
+  /// DFS is controlled via AutoChannelEnable on 5GHz radios.
+  static List<String> get dfsSettingsPaths => [wifiRadio];
+
+  /// Returns all paths needed for GetMLOSettings.
+  static List<String> get mloSettingsPaths => [wifiMultiLink];
+
+  /// Returns all paths needed for GetSTABSSIDs.
+  static List<String> get staBssidsPaths => [wifiSsid];
+
+  /// Returns all paths needed for GetLocalDeviceMAC.
+  static List<String> get localDeviceMacPaths => [ethernet];
 }

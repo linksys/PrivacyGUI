@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/usp/package/usp/usp_client_core.dart';
+import 'package:usp_client_core/usp_client_core.dart';
 import 'package:privacy_gui/core/usp/usp_mapper_repository.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';

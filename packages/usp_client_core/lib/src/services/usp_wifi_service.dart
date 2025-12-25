@@ -65,6 +65,88 @@ class UspWifiService {
     return _mapMACFilterSettings(response);
   }
 
+  /// Retrieves client/node steering settings.
+  ///
+  /// Returns a map containing isClientSteeringEnabled and isNodeSteeringEnabled.
+  Future<Map<String, dynamic>> getClientSteeringSettings() async {
+    final paths = Tr181Paths.clientSteeringSettingsPaths
+        .map((p) => UspPath.parse(p))
+        .toList();
+
+    final response = await _grpcService.sendRequest(UspGetRequest(paths));
+
+    if (response is! UspGetResponse) {
+      throw Exception('Unexpected response type: ${response.runtimeType}');
+    }
+
+    return _mapClientSteeringSettings(response);
+  }
+
+  /// Retrieves DFS (Dynamic Frequency Selection) settings.
+  ///
+  /// Returns a map containing isDFSSupported and isDFSEnabled.
+  /// DFS is typically controlled via AutoChannelEnable on 5GHz radios.
+  Future<Map<String, dynamic>> getDFSSettings() async {
+    final paths =
+        Tr181Paths.dfsSettingsPaths.map((p) => UspPath.parse(p)).toList();
+
+    final response = await _grpcService.sendRequest(UspGetRequest(paths));
+
+    if (response is! UspGetResponse) {
+      throw Exception('Unexpected response type: ${response.runtimeType}');
+    }
+
+    return _mapDFSSettings(response);
+  }
+
+  /// Retrieves MLO (Multi-Link Operation) settings for Wi-Fi 7.
+  ///
+  /// Returns a map containing isMLOSupported and isMLOEnabled.
+  Future<Map<String, dynamic>> getMLOSettings() async {
+    final paths =
+        Tr181Paths.mloSettingsPaths.map((p) => UspPath.parse(p)).toList();
+
+    final response = await _grpcService.sendRequest(UspGetRequest(paths));
+
+    if (response is! UspGetResponse) {
+      throw Exception('Unexpected response type: ${response.runtimeType}');
+    }
+
+    return _mapMLOSettings(response);
+  }
+
+  /// Retrieves STA (Station) BSSIDs.
+  ///
+  /// Returns a map containing staBSSIDS list.
+  Future<Map<String, dynamic>> getSTABSSIDs() async {
+    final paths =
+        Tr181Paths.staBssidsPaths.map((p) => UspPath.parse(p)).toList();
+
+    final response = await _grpcService.sendRequest(UspGetRequest(paths));
+
+    if (response is! UspGetResponse) {
+      throw Exception('Unexpected response type: ${response.runtimeType}');
+    }
+
+    return _mapSTABSSIDs(response);
+  }
+
+  /// Retrieves local device MAC address.
+  ///
+  /// Returns a map containing deviceID and macAddress.
+  Future<Map<String, dynamic>> getLocalDeviceMAC() async {
+    final paths =
+        Tr181Paths.localDeviceMacPaths.map((p) => UspPath.parse(p)).toList();
+
+    final response = await _grpcService.sendRequest(UspGetRequest(paths));
+
+    if (response is! UspGetResponse) {
+      throw Exception('Unexpected response type: ${response.runtimeType}');
+    }
+
+    return _mapLocalDeviceMAC(response);
+  }
+
   // ===========================================================================
   // Private Mapping Methods
   // ===========================================================================
@@ -221,7 +303,7 @@ class UspWifiService {
     final values = _flattenResults(response);
 
     // Usually MAC filtering is global or per-AP
-    final prefix = 'Device.WiFi.AccessPoint.1';
+    const prefix = 'Device.WiFi.AccessPoint.1';
 
     final isEnabled =
         values['$prefix.MACAddressControlEnabled']?.toString() == 'true';
@@ -330,5 +412,114 @@ class UspWifiService {
       result[entry.key.fullPath] = entry.value.value;
     }
     return result;
+  }
+
+  // ===========================================================================
+  // New Feature Mapping Methods
+  // ===========================================================================
+
+  Map<String, dynamic> _mapClientSteeringSettings(UspGetResponse response) {
+    final values = _flattenResults(response);
+
+    // Wi-Fi DataElements typically has steering policies
+    // Check for DataElements.Network entries
+    final hasDataElements =
+        values.keys.any((k) => k.startsWith('Device.WiFi.DataElements'));
+
+    // Default to supported if DataElements exists
+    return {
+      'isClientSteeringEnabled': hasDataElements,
+      'isNodeSteeringEnabled': hasDataElements,
+    };
+  }
+
+  Map<String, dynamic> _mapDFSSettings(UspGetResponse response) {
+    final values = _flattenResults(response);
+
+    // DFS is typically available on 5GHz radios with AutoChannelEnable
+    // Check if any 5GHz radio has AutoChannelEnable
+    bool isDFSSupported = false;
+    bool isDFSEnabled = false;
+
+    final radioCount = int.tryParse(
+            values['Device.WiFi.RadioNumberOfEntries']?.toString() ?? '0') ??
+        0;
+
+    for (int i = 1; i <= radioCount; i++) {
+      final prefix = 'Device.WiFi.Radio.$i';
+      final band = values['$prefix.OperatingFrequencyBand']?.toString() ?? '';
+
+      // DFS is only relevant for 5GHz band
+      if (band.contains('5')) {
+        isDFSSupported = true;
+        // AutoChannelEnable being true implies DFS is active
+        final autoChannel =
+            values['$prefix.AutoChannelEnable']?.toString() == 'true';
+        if (autoChannel) {
+          isDFSEnabled = true;
+        }
+      }
+    }
+
+    return {
+      'isDFSSupported': isDFSSupported,
+      'isDFSEnabled': isDFSEnabled,
+    };
+  }
+
+  Map<String, dynamic> _mapMLOSettings(UspGetResponse response) {
+    final values = _flattenResults(response);
+
+    // Check for MultiLink support
+    final hasMultiLink =
+        values.keys.any((k) => k.startsWith('Device.WiFi.MultiLink'));
+    final mloEnabled =
+        values['Device.WiFi.MultiLink.Enable']?.toString() == 'true';
+
+    return {
+      'isMLOSupported': hasMultiLink,
+      'isMLOEnabled': hasMultiLink ? mloEnabled : null,
+    };
+  }
+
+  Map<String, dynamic> _mapSTABSSIDs(UspGetResponse response) {
+    final values = _flattenResults(response);
+
+    // Collect all SSID BSSIDs
+    final bssids = <String>[];
+    final ssidCount = int.tryParse(
+            values['Device.WiFi.SSIDNumberOfEntries']?.toString() ?? '0') ??
+        0;
+
+    for (int i = 1; i <= ssidCount; i++) {
+      final bssid = values['Device.WiFi.SSID.$i.BSSID']?.toString();
+      if (bssid != null && bssid.isNotEmpty) {
+        bssids.add(bssid.toUpperCase());
+      }
+      // Also try MACAddress as fallback
+      final macAddress = values['Device.WiFi.SSID.$i.MACAddress']?.toString();
+      if (macAddress != null &&
+          macAddress.isNotEmpty &&
+          !bssids.contains(macAddress.toUpperCase())) {
+        bssids.add(macAddress.toUpperCase());
+      }
+    }
+
+    return {
+      'staBSSIDS': bssids,
+    };
+  }
+
+  Map<String, dynamic> _mapLocalDeviceMAC(UspGetResponse response) {
+    final values = _flattenResults(response);
+
+    // Get first Ethernet interface MAC address
+    final macAddress =
+        values['Device.Ethernet.Interface.1.MACAddress']?.toString() ?? '';
+
+    return {
+      'deviceID': macAddress.replaceAll(':', '').toUpperCase(),
+      'macAddress': macAddress.toUpperCase(),
+    };
   }
 }

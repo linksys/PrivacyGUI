@@ -59,10 +59,15 @@ jobs:
             --target=lib/main_demo.dart \
             --base-href "/PrivacyGUI/demo/"
 
-      - name: 📤 Upload Build Artifact
+      - name: � Prepare Deploy Structure
+        run: |
+          mkdir -p deploy/demo
+          mv build/web/* deploy/demo/
+
+      - name: �📤 Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build/web
+          path: deploy
 
   deploy:
     name: 🚀 Deploy to GitHub Pages

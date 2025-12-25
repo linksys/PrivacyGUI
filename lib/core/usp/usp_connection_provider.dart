@@ -4,8 +4,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/usp/usp_connection_config.dart';
-import 'package:privacy_gui/core/usp/usp_grpc_client_service.dart';
+import 'package:usp_client_core/usp_client_core.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 /// Provider for USP connection configuration.

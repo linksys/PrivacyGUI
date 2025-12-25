@@ -4,7 +4,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/firewall/providers/firewall_state.dart';
-import 'package:privacy_gui/page/advanced_settings/firewall/services/firewall_settings_service.dart';
 
 // Mock class for Ref
 class MockRef extends Mock implements Ref {}

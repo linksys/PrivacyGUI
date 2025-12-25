@@ -90,7 +90,9 @@ dependencies:
   # USP/gRPC Integration
   grpc: ^5.0.0
   usp_protocol_common:
-    path: ../../packages/usp_protocol_common
+    path: packages/usp_protocol_common
+  usp_client_core:
+    path: packages/usp_client_core
 
 dev_dependencies:
   flutter_test:
