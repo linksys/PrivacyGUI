@@ -80,6 +80,18 @@ class _DemoAuthNotifier extends AuthNotifier {
     );
   }
 
+  /// Override init() to return local login state without checking storage
+  @override
+  Future<AuthState?> init() async {
+    debugPrint('🔐 Demo: Auth.init() called - returning local login');
+    final authState = AuthState(
+      loginType: LoginType.local,
+      localPassword: 'demo-password',
+    );
+    state = AsyncValue.data(authState);
+    return authState;
+  }
+
   @override
   Future<dynamic> localLogin(
     String password, {
