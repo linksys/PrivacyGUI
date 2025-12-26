@@ -239,7 +239,8 @@ void main() {
           description: 'Other Rule',
         ),
       ];
-      notifier.init(existingRules, editingRule, 0, '192.168.1.1', '255.255.255.0');
+      notifier.init(
+          existingRules, editingRule, 0, '192.168.1.1', '255.255.255.0');
 
       // Should not conflict with itself (index 0)
       expect(notifier.isPortConflict(8000, 8100, 'TCP'), false);

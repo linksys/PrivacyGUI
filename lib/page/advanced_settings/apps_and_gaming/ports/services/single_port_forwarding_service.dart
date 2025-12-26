@@ -39,8 +39,7 @@ class SinglePortForwardingService {
         auth: true,
         fetchRemote: forceRemote,
       );
-      final lanSettings =
-          RouterLANSettings.fromMap(lanSettingsResponse.output);
+      final lanSettings = RouterLANSettings.fromMap(lanSettingsResponse.output);
       final ipAddress = lanSettings.ipAddress;
       final subnetMask = NetworkUtils.prefixLengthToSubnetMask(
           lanSettings.networkPrefixLength);
@@ -57,9 +56,8 @@ class SinglePortForwardingService {
           .map((e) => SinglePortForwardingRule.fromMap(e))
           .toList();
 
-      final uiRules = jnapRules
-          .map((jnapRule) => _jnapRuleToUIModel(jnapRule))
-          .toList();
+      final uiRules =
+          jnapRules.map((jnapRule) => _jnapRuleToUIModel(jnapRule)).toList();
 
       final int maxRules = response.output['maxRules'] ?? 50;
       final int maxDescriptionLength =

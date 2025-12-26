@@ -122,8 +122,8 @@ void main() {
       'DDNS - dyn.com',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings =
-            DDNSSettingsUIModel(provider: DDNSProviderUIModel.create(dynDNSProviderName));
+        final settings = DDNSSettingsUIModel(
+            provider: DDNSProviderUIModel.create(dynDNSProviderName));
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
             settings: Preservable(original: settings, current: settings)));
         final context = await testHelper.pumpView(
@@ -251,8 +251,8 @@ void main() {
       'DDNS - No-IP.com',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings =
-            DDNSSettingsUIModel(provider: DDNSProviderUIModel.create(noIPDNSProviderName));
+        final settings = DDNSSettingsUIModel(
+            provider: DDNSProviderUIModel.create(noIPDNSProviderName));
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
             settings: Preservable(original: settings, current: settings)));
         final context = await testHelper.pumpView(
@@ -283,10 +283,10 @@ void main() {
         final state = DDNSState.fromMap(ddnsTestState);
         final settings = DDNSSettingsUIModel(
             provider: NoIPDNSProviderUIModel(
-            username: 'username',
-            password: 'password',
-            hostName: 'hostname',
-          ));
+          username: 'username',
+          password: 'password',
+          hostName: 'hostname',
+        ));
 
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
             settings: Preservable(original: settings, current: settings)));
@@ -316,8 +316,8 @@ void main() {
       'DDNS - TZO',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings =
-            DDNSSettingsUIModel(provider: DDNSProviderUIModel.create(tzoDNSProviderName));
+        final settings = DDNSSettingsUIModel(
+            provider: DDNSProviderUIModel.create(tzoDNSProviderName));
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
             settings: Preservable(original: settings, current: settings)));
         final context = await testHelper.pumpView(
@@ -348,10 +348,10 @@ void main() {
         final state = DDNSState.fromMap(ddnsTestState);
         final settings = DDNSSettingsUIModel(
             provider: TzoDNSProviderUIModel(
-            username: 'username',
-            password: 'password',
-            hostName: 'hostname',
-          ));
+          username: 'username',
+          password: 'password',
+          hostName: 'hostname',
+        ));
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
             settings: Preservable(original: settings, current: settings)));
         await testHelper.pumpView(

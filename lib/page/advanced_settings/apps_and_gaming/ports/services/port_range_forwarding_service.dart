@@ -39,8 +39,7 @@ class PortRangeForwardingService {
         auth: true,
         fetchRemote: forceRemote,
       );
-      final lanSettings =
-          RouterLANSettings.fromMap(lanSettingsResponse.output);
+      final lanSettings = RouterLANSettings.fromMap(lanSettingsResponse.output);
       final ipAddress = lanSettings.ipAddress;
       final subnetMask = NetworkUtils.prefixLengthToSubnetMask(
           lanSettings.networkPrefixLength);
@@ -57,9 +56,8 @@ class PortRangeForwardingService {
           .map((e) => PortRangeForwardingRule.fromMap(e))
           .toList();
 
-      final uiRules = jnapRules
-          .map((jnapRule) => _jnapRuleToUIModel(jnapRule))
-          .toList();
+      final uiRules =
+          jnapRules.map((jnapRule) => _jnapRuleToUIModel(jnapRule)).toList();
 
       final int maxRules = response.output['maxRules'] ?? 50;
       final int maxDescriptionLength =
@@ -83,8 +81,7 @@ class PortRangeForwardingService {
   /// Transforms UI models to JNAP models and sends them to the router.
   ///
   /// Throws [ServiceError] if the operation fails.
-  Future<void> saveSettings(
-      PortRangeForwardingRuleListUIModel settings) async {
+  Future<void> saveSettings(PortRangeForwardingRuleListUIModel settings) async {
     try {
       // Transform UI models to JNAP models
       final jnapRules =

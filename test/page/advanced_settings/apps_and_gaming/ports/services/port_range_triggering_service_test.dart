@@ -23,11 +23,12 @@ void main() {
     test('returns UI models and status on success', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeTriggeringRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeTriggeringTestData.createGetRulesSuccess());
+                JNAPAction.getPortRangeTriggeringRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeTriggeringTestData.createGetRulesSuccess());
 
       // Act
       final (rules, status) = await service.fetchSettings();
@@ -53,11 +54,12 @@ void main() {
     test('returns empty list when no rules exist', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeTriggeringRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeTriggeringTestData.createEmptyRulesSuccess());
+                JNAPAction.getPortRangeTriggeringRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeTriggeringTestData.createEmptyRulesSuccess());
 
       // Act
       final (rules, status) = await service.fetchSettings();
@@ -70,11 +72,12 @@ void main() {
     test('fetches with forceRemote flag', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeTriggeringRules,
-            fetchRemote: true,
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeTriggeringTestData.createGetRulesSuccess());
+                JNAPAction.getPortRangeTriggeringRules,
+                fetchRemote: true,
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeTriggeringTestData.createGetRulesSuccess());
 
       // Act
       await service.fetchSettings(forceRemote: true);
@@ -101,11 +104,13 @@ void main() {
       ];
 
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeTriggeringRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenAnswer((_) async =>
-          PortRangeTriggeringTestData.createGetRulesSuccess(rules: customRules));
+                JNAPAction.getPortRangeTriggeringRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeTriggeringTestData.createGetRulesSuccess(
+                  rules: customRules));
 
       // Act
       final (rules, _) = await service.fetchSettings();
@@ -138,11 +143,12 @@ void main() {
     test('throws InvalidInputError when JNAP returns invalid input', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeTriggeringRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenThrow(PortRangeTriggeringTestData.createInvalidInputError(
-          message: 'Invalid port range'));
+                JNAPAction.getPortRangeTriggeringRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenThrow(PortRangeTriggeringTestData.createInvalidInputError(
+              message: 'Invalid port range'));
 
       // Act & Assert
       expect(
@@ -154,11 +160,12 @@ void main() {
     test('throws UnexpectedError for unmapped JNAP errors', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeTriggeringRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenThrow(PortRangeTriggeringTestData.createInvalidInputError(
-          message: 'Unknown error'));
+                JNAPAction.getPortRangeTriggeringRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenThrow(PortRangeTriggeringTestData.createInvalidInputError(
+              message: 'Unknown error'));
 
       // Act & Assert
       expect(
@@ -169,7 +176,8 @@ void main() {
   });
 
   group('PortRangeTriggeringService - saveSettings', () {
-    test('transforms UI models to JNAP models and saves successfully', () async {
+    test('transforms UI models to JNAP models and saves successfully',
+        () async {
       // Arrange
       final uiModel = PortRangeTriggeringRuleListUIModel(
         rules: [
@@ -185,11 +193,12 @@ void main() {
       );
 
       when(() => mockRepo.send(
-            JNAPAction.setPortRangeTriggeringRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeTriggeringTestData.createSetRulesSuccess());
+                JNAPAction.setPortRangeTriggeringRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeTriggeringTestData.createSetRulesSuccess());
 
       // Act
       await service.saveSettings(uiModel);
@@ -213,14 +222,16 @@ void main() {
 
     test('saves empty list successfully', () async {
       // Arrange
-      const uiModel = PortRangeTriggeringRuleListUIModel(rules: <PortRangeTriggeringRuleUIModel>[]);
+      const uiModel = PortRangeTriggeringRuleListUIModel(
+          rules: <PortRangeTriggeringRuleUIModel>[]);
 
       when(() => mockRepo.send(
-            JNAPAction.setPortRangeTriggeringRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeTriggeringTestData.createSetRulesSuccess());
+                JNAPAction.setPortRangeTriggeringRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeTriggeringTestData.createSetRulesSuccess());
 
       // Act
       await service.saveSettings(uiModel);
@@ -261,11 +272,12 @@ void main() {
       );
 
       when(() => mockRepo.send(
-            JNAPAction.setPortRangeTriggeringRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeTriggeringTestData.createSetRulesSuccess());
+                JNAPAction.setPortRangeTriggeringRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeTriggeringTestData.createSetRulesSuccess());
 
       // Act
       await service.saveSettings(uiModel);
@@ -288,7 +300,8 @@ void main() {
     test('throws RuleOverlapError when JNAP returns rule overlap error',
         () async {
       // Arrange
-      const uiModel = PortRangeTriggeringRuleListUIModel(rules: <PortRangeTriggeringRuleUIModel>[]);
+      const uiModel = PortRangeTriggeringRuleListUIModel(
+          rules: <PortRangeTriggeringRuleUIModel>[]);
 
       when(() => mockRepo.send(
             JNAPAction.setPortRangeTriggeringRules,
@@ -305,7 +318,8 @@ void main() {
 
     test('throws UnauthorizedError when JNAP returns unauthorized', () async {
       // Arrange
-      const uiModel = PortRangeTriggeringRuleListUIModel(rules: <PortRangeTriggeringRuleUIModel>[]);
+      const uiModel = PortRangeTriggeringRuleListUIModel(
+          rules: <PortRangeTriggeringRuleUIModel>[]);
 
       when(() => mockRepo.send(
             JNAPAction.setPortRangeTriggeringRules,
@@ -322,7 +336,8 @@ void main() {
 
     test('throws InvalidInputError when JNAP returns invalid input', () async {
       // Arrange
-      const uiModel = PortRangeTriggeringRuleListUIModel(rules: <PortRangeTriggeringRuleUIModel>[]);
+      const uiModel = PortRangeTriggeringRuleListUIModel(
+          rules: <PortRangeTriggeringRuleUIModel>[]);
 
       when(() => mockRepo.send(
             JNAPAction.setPortRangeTriggeringRules,

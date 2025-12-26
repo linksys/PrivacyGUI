@@ -150,7 +150,8 @@ void main() {
         description: 'Rule 2',
       );
 
-      const ruleList = SinglePortForwardingRuleListUIModel(rules: [rule1, rule2]);
+      const ruleList =
+          SinglePortForwardingRuleListUIModel(rules: [rule1, rule2]);
 
       expect(ruleList.rules, hasLength(2));
       expect(ruleList.rules.first, rule1);

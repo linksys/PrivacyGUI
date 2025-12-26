@@ -43,7 +43,8 @@ void main() {
           .thenAnswer((_) async => (settings, status));
 
       // Act
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       await notifier.performFetch();
 
       // Assert
@@ -62,7 +63,8 @@ void main() {
           .thenAnswer((_) async => (settings, status));
 
       // Act
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       await notifier.performFetch(forceRemote: true);
 
       // Assert
@@ -75,7 +77,8 @@ void main() {
           .thenThrow(Exception('Network error'));
 
       // Act & Assert
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       expect(
         () => notifier.performFetch(),
         throwsA(isA<Exception>()),
@@ -92,10 +95,10 @@ void main() {
 
       when(() => mockService.fetchSettings(forceRemote: false))
           .thenAnswer((_) async => (settings, status));
-      when(() => mockService.saveSettings(any()))
-          .thenAnswer((_) async => {});
+      when(() => mockService.saveSettings(any())).thenAnswer((_) async => {});
 
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       await notifier.performFetch();
 
       // Act
@@ -111,7 +114,8 @@ void main() {
           .thenThrow(Exception('Save failed'));
 
       // Act & Assert
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       expect(
         () => notifier.performSave(),
         throwsA(isA<Exception>()),
@@ -122,7 +126,8 @@ void main() {
   group('SinglePortForwardingListNotifier - rule management', () {
     test('addRule adds rule to current settings', () {
       // Arrange
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       final newRule = SinglePortForwardingTestData.createUIRule(
         externalPort: 8080,
         description: 'New Rule',
@@ -140,7 +145,8 @@ void main() {
 
     test('editRule updates rule at index', () {
       // Arrange
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       final rule1 = SinglePortForwardingTestData.createUIRule(
         externalPort: 8080,
         description: 'Original',
@@ -164,7 +170,8 @@ void main() {
 
     test('deleteRule removes rule from settings', () {
       // Arrange
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       final rule1 = SinglePortForwardingTestData.createUIRule(
         externalPort: 8080,
         description: 'Rule 1',
@@ -188,7 +195,8 @@ void main() {
 
     test('isExceedMax returns false when under limit', () {
       // Arrange
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       final rule = SinglePortForwardingTestData.createUIRule();
       notifier.addRule(rule);
 
@@ -214,7 +222,8 @@ void main() {
       when(() => mockService.fetchSettings(forceRemote: false))
           .thenAnswer((_) async => (settings, status));
 
-      final notifier = container.read(singlePortForwardingListProvider.notifier);
+      final notifier =
+          container.read(singlePortForwardingListProvider.notifier);
       await notifier.performFetch();
 
       // Act

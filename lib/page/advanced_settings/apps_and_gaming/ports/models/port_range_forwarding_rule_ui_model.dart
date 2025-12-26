@@ -115,8 +115,7 @@ class PortRangeForwardingRuleListUIModel extends Equatable {
     };
   }
 
-  factory PortRangeForwardingRuleListUIModel.fromMap(
-      Map<String, dynamic> map) {
+  factory PortRangeForwardingRuleListUIModel.fromMap(Map<String, dynamic> map) {
     return PortRangeForwardingRuleListUIModel(
       rules: List<PortRangeForwardingRuleUIModel>.from(
         map['rules']?.map<PortRangeForwardingRuleUIModel>(

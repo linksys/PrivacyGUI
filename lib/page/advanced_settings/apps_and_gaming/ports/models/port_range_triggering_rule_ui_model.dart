@@ -124,8 +124,7 @@ class PortRangeTriggeringRuleListUIModel extends Equatable {
     };
   }
 
-  factory PortRangeTriggeringRuleListUIModel.fromMap(
-      Map<String, dynamic> map) {
+  factory PortRangeTriggeringRuleListUIModel.fromMap(Map<String, dynamic> map) {
     return PortRangeTriggeringRuleListUIModel(
       rules: List<PortRangeTriggeringRuleUIModel>.from(
         map['rules']?.map<PortRangeTriggeringRuleUIModel>(

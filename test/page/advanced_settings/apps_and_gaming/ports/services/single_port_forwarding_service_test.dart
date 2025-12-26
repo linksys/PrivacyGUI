@@ -24,18 +24,20 @@ void main() {
     test('returns UI model and status on success', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => SinglePortForwardingTestData.createLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              SinglePortForwardingTestData.createLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getSinglePortForwardingRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenAnswer(
-          (_) async => SinglePortForwardingTestData.createRulesSuccess());
+                JNAPAction.getSinglePortForwardingRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => SinglePortForwardingTestData.createRulesSuccess());
 
       // Act
       final (settings, status) = await service.fetchSettings();
@@ -68,18 +70,21 @@ void main() {
       ];
 
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => SinglePortForwardingTestData.createLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              SinglePortForwardingTestData.createLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getSinglePortForwardingRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenAnswer((_) async =>
-          SinglePortForwardingTestData.createRulesSuccess(rules: customRules));
+                JNAPAction.getSinglePortForwardingRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenAnswer((_) async =>
+              SinglePortForwardingTestData.createRulesSuccess(
+                  rules: customRules));
 
       // Act
       final (settings, _) = await service.fetchSettings();
@@ -98,18 +103,20 @@ void main() {
     test('handles forceRemote parameter correctly', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: true,
-          )).thenAnswer(
-          (_) async => SinglePortForwardingTestData.createLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: true,
+              ))
+          .thenAnswer((_) async =>
+              SinglePortForwardingTestData.createLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getSinglePortForwardingRules,
-            fetchRemote: true,
-            auth: true,
-          )).thenAnswer(
-          (_) async => SinglePortForwardingTestData.createRulesSuccess());
+                JNAPAction.getSinglePortForwardingRules,
+                fetchRemote: true,
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => SinglePortForwardingTestData.createRulesSuccess());
 
       // Act
       await service.fetchSettings(forceRemote: true);
@@ -130,11 +137,12 @@ void main() {
     test('throws ServiceError on JNAP failure', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => SinglePortForwardingTestData.createLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              SinglePortForwardingTestData.createLANSettingsSuccess());
 
       when(() => mockRepo.send(
             JNAPAction.getSinglePortForwardingRules,
@@ -167,18 +175,21 @@ void main() {
       );
 
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => SinglePortForwardingTestData.createLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              SinglePortForwardingTestData.createLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getSinglePortForwardingRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenAnswer((_) async => SinglePortForwardingTestData.createRulesSuccess(
-          rules: multipleRules));
+                JNAPAction.getSinglePortForwardingRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenAnswer((_) async =>
+              SinglePortForwardingTestData.createRulesSuccess(
+                  rules: multipleRules));
 
       // Act
       final (settings, _) = await service.fetchSettings();
@@ -209,10 +220,12 @@ void main() {
       final settings = SinglePortForwardingRuleListUIModel(rules: uiRules);
 
       when(() => mockRepo.send(
-            JNAPAction.setSinglePortForwardingRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenAnswer((_) async => SinglePortForwardingTestData.createRulesSuccess());
+                JNAPAction.setSinglePortForwardingRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => SinglePortForwardingTestData.createRulesSuccess());
 
       // Act
       await service.saveSettings(settings);
@@ -243,10 +256,12 @@ void main() {
       final settings = SinglePortForwardingRuleListUIModel(rules: uiRules);
 
       when(() => mockRepo.send(
-            JNAPAction.setSinglePortForwardingRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenAnswer((_) async => SinglePortForwardingTestData.createRulesSuccess());
+                JNAPAction.setSinglePortForwardingRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => SinglePortForwardingTestData.createRulesSuccess());
 
       // Act
       await service.saveSettings(settings);
@@ -285,11 +300,12 @@ void main() {
       const settings = SinglePortForwardingRuleListUIModel(rules: []);
 
       when(() => mockRepo.send(
-            JNAPAction.setSinglePortForwardingRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenAnswer((_) async => SinglePortForwardingTestData.createRulesSuccess(
-          rules: []));
+                JNAPAction.setSinglePortForwardingRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenAnswer((_) async =>
+              SinglePortForwardingTestData.createRulesSuccess(rules: []));
 
       // Act
       await service.saveSettings(settings);

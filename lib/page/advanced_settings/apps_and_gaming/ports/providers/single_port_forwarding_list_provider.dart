@@ -29,16 +29,19 @@ class SinglePortForwardingListNotifier
       );
 
   @override
-  Future<(SinglePortForwardingRuleListUIModel?, SinglePortForwardingListStatus?)>
+  Future<
+          (
+            SinglePortForwardingRuleListUIModel?,
+            SinglePortForwardingListStatus?
+          )>
       performFetch(
           {bool forceRemote = false, bool updateStatusOnly = false}) async {
     final service = ref.read(singlePortForwardingServiceProvider);
-    final (settings, status) = await service.fetchSettings(forceRemote: forceRemote);
+    final (settings, status) =
+        await service.fetchSettings(forceRemote: forceRemote);
 
     state = state.copyWith(
-        settings: Preservable(
-            original: settings,
-            current: settings),
+        settings: Preservable(original: settings, current: settings),
         status: status);
     return (settings, status);
   }

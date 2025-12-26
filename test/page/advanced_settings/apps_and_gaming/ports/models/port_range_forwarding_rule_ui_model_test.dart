@@ -203,7 +203,8 @@ void main() {
     });
 
     test('creates empty list', () {
-      const ruleList = PortRangeForwardingRuleListUIModel(rules: <PortRangeForwardingRuleUIModel>[]);
+      const ruleList = PortRangeForwardingRuleListUIModel(
+          rules: <PortRangeForwardingRuleUIModel>[]);
 
       expect(ruleList.rules, isEmpty);
     });
@@ -328,7 +329,8 @@ void main() {
         ],
       );
 
-      const list3 = PortRangeForwardingRuleListUIModel(rules: <PortRangeForwardingRuleUIModel>[]);
+      const list3 = PortRangeForwardingRuleListUIModel(
+          rules: <PortRangeForwardingRuleUIModel>[]);
 
       expect(list1, list2);
       expect(list1 == list3, false);

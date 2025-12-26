@@ -43,9 +43,8 @@ class PortRangeTriggeringService {
           .map((e) => PortRangeTriggeringRule.fromMap(e))
           .toList();
 
-      final uiRules = jnapRules
-          .map((jnapRule) => _jnapRuleToUIModel(jnapRule))
-          .toList();
+      final uiRules =
+          jnapRules.map((jnapRule) => _jnapRuleToUIModel(jnapRule)).toList();
 
       final int maxRules = response.output['maxRules'] ?? 50;
       final int maxDescriptionLength =
@@ -67,8 +66,7 @@ class PortRangeTriggeringService {
   /// Transforms UI models to JNAP models and sends them to the router.
   ///
   /// Throws [ServiceError] if the operation fails.
-  Future<void> saveSettings(
-      PortRangeTriggeringRuleListUIModel settings) async {
+  Future<void> saveSettings(PortRangeTriggeringRuleListUIModel settings) async {
     try {
       // Transform UI models to JNAP models
       final jnapRules =

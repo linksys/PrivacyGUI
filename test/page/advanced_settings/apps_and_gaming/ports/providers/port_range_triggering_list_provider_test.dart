@@ -108,8 +108,7 @@ void main() {
 
       when(() => mockService.fetchSettings(forceRemote: false))
           .thenAnswer((_) async => (mockRules, mockStatus));
-      when(() => mockService.saveSettings(any()))
-          .thenAnswer((_) async => {});
+      when(() => mockService.saveSettings(any())).thenAnswer((_) async => {});
 
       // Act
       final notifier = container.read(portRangeTriggeringListProvider.notifier);
@@ -170,7 +169,8 @@ void main() {
 
       // Assert
       expect(notifier.state.settings.current.rules, hasLength(1));
-      expect(notifier.state.settings.current.rules[0].description, 'Updated Rule');
+      expect(
+          notifier.state.settings.current.rules[0].description, 'Updated Rule');
       expect(notifier.state.settings.current.rules[0].isEnabled, false);
       expect(notifier.state.settings.current.rules[0].firstTriggerPort, 4000);
     });
@@ -226,7 +226,8 @@ void main() {
       expect(notifier.isExceedMax(), true);
     });
 
-    test('isExceedMax returns false when rules count is less than maxRules', () {
+    test('isExceedMax returns false when rules count is less than maxRules',
+        () {
       // Arrange
       final notifier = container.read(portRangeTriggeringListProvider.notifier);
       notifier.addRule(const PortRangeTriggeringRuleUIModel(
@@ -267,7 +268,8 @@ void main() {
       await notifier.performFetch();
 
       // Assert: Not dirty initially
-      expect(notifier.state.settings.original, equals(notifier.state.settings.current));
+      expect(notifier.state.settings.original,
+          equals(notifier.state.settings.current));
 
       // Act: Add a new rule
       notifier.addRule(const PortRangeTriggeringRuleUIModel(
@@ -280,7 +282,8 @@ void main() {
       ));
 
       // Assert: Now dirty
-      expect(notifier.state.settings.original, isNot(equals(notifier.state.settings.current)));
+      expect(notifier.state.settings.original,
+          isNot(equals(notifier.state.settings.current)));
       expect(notifier.state.settings.current.rules, hasLength(2));
       expect(notifier.state.settings.original.rules, hasLength(1));
     });

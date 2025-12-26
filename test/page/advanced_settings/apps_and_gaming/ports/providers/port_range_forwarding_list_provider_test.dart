@@ -17,8 +17,7 @@ void main() {
 
   setUpAll(() {
     // Register fallback value for mocktail
-    registerFallbackValue(
-        const PortRangeForwardingRuleListUIModel(rules: []));
+    registerFallbackValue(const PortRangeForwardingRuleListUIModel(rules: []));
   });
 
   setUp(() {
@@ -36,8 +35,7 @@ void main() {
 
   group('PortRangeForwardingListNotifier - Initialization', () {
     test('build returns initial state', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       final state = notifier.build();
 
       expect(state.settings.original.rules, isEmpty);
@@ -74,8 +72,7 @@ void main() {
       when(() => mockService.fetchSettings(forceRemote: false))
           .thenAnswer((_) async => (rules, status));
 
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
 
       // Act
       final result = await notifier.performFetch();
@@ -100,8 +97,7 @@ void main() {
       when(() => mockService.fetchSettings(forceRemote: true))
           .thenAnswer((_) async => (rules, status));
 
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
 
       // Act
       await notifier.performFetch(forceRemote: true);
@@ -115,8 +111,7 @@ void main() {
       when(() => mockService.fetchSettings(forceRemote: false))
           .thenThrow(const UnauthorizedError());
 
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
 
       // Act & Assert
       expect(
@@ -138,8 +133,7 @@ void main() {
       when(() => mockService.fetchSettings(forceRemote: false))
           .thenAnswer((_) async => (rules, status));
 
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
 
       // Act
       await notifier.performFetch();
@@ -172,13 +166,11 @@ void main() {
       when(() => mockService.saveSettings(any()))
           .thenAnswer((_) async => Future.value());
 
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
 
       // Set current state
-      container
-          .read(portRangeForwardingListProvider.notifier)
-          .state = const PortRangeForwardingListState(
+      container.read(portRangeForwardingListProvider.notifier).state =
+          const PortRangeForwardingListState(
         settings: Preservable(
           original: PortRangeForwardingRuleListUIModel(rules: []),
           current: rules,
@@ -198,8 +190,7 @@ void main() {
       when(() => mockService.saveSettings(any()))
           .thenThrow(const RuleOverlapError());
 
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
 
       // Act & Assert
       expect(
@@ -215,13 +206,11 @@ void main() {
       when(() => mockService.saveSettings(any()))
           .thenAnswer((_) async => Future.value());
 
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
 
       // Set current state
-      container
-          .read(portRangeForwardingListProvider.notifier)
-          .state = const PortRangeForwardingListState(
+      container.read(portRangeForwardingListProvider.notifier).state =
+          const PortRangeForwardingListState(
         settings: Preservable(
           original: PortRangeForwardingRuleListUIModel(rules: []),
           current: emptyRules,
@@ -239,8 +228,7 @@ void main() {
 
   group('PortRangeForwardingListNotifier - Rule Management', () {
     test('addRule adds a new rule to current settings', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       const initialRule = PortRangeForwardingRuleUIModel(
         isEnabled: true,
         firstExternalPort: 3074,
@@ -280,8 +268,7 @@ void main() {
     });
 
     test('addRule to empty list', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       const newRule = PortRangeForwardingRuleUIModel(
         isEnabled: true,
         firstExternalPort: 3074,
@@ -301,8 +288,7 @@ void main() {
     });
 
     test('editRule updates existing rule at index', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       const originalRule = PortRangeForwardingRuleUIModel(
         isEnabled: true,
         firstExternalPort: 3074,
@@ -341,8 +327,7 @@ void main() {
     });
 
     test('editRule updates middle rule in list', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       const rule1 = PortRangeForwardingRuleUIModel(
         isEnabled: true,
         firstExternalPort: 3074,
@@ -379,8 +364,8 @@ void main() {
       // Set initial state with 3 rules
       notifier.state = const PortRangeForwardingListState(
         settings: Preservable(
-          original: PortRangeForwardingRuleListUIModel(
-              rules: [rule1, rule2, rule3]),
+          original:
+              PortRangeForwardingRuleListUIModel(rules: [rule1, rule2, rule3]),
           current:
               PortRangeForwardingRuleListUIModel(rules: [rule1, rule2, rule3]),
         ),
@@ -399,8 +384,7 @@ void main() {
     });
 
     test('deleteRule removes rule from current settings', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       const rule1 = PortRangeForwardingRuleUIModel(
         isEnabled: true,
         firstExternalPort: 3074,
@@ -439,8 +423,7 @@ void main() {
     });
 
     test('deleteRule removes last remaining rule', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       const onlyRule = PortRangeForwardingRuleUIModel(
         isEnabled: true,
         firstExternalPort: 3074,
@@ -470,8 +453,7 @@ void main() {
 
   group('PortRangeForwardingListNotifier - isExceedMax', () {
     test('returns true when rules count equals maxRules', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       final rules = List.generate(
         50,
         (index) => PortRangeForwardingRuleUIModel(
@@ -496,8 +478,7 @@ void main() {
     });
 
     test('returns false when rules count is less than maxRules', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       const rules = [
         PortRangeForwardingRuleUIModel(
           isEnabled: true,
@@ -521,15 +502,13 @@ void main() {
     });
 
     test('returns false when rules list is empty', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
 
       expect(notifier.isExceedMax(), false);
     });
 
     test('returns true when rules count exceeds custom maxRules', () {
-      final notifier =
-          container.read(portRangeForwardingListProvider.notifier);
+      final notifier = container.read(portRangeForwardingListProvider.notifier);
       final rules = List.generate(
         10,
         (index) => PortRangeForwardingRuleUIModel(

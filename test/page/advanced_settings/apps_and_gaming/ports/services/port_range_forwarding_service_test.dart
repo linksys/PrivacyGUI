@@ -23,18 +23,20 @@ void main() {
     test('returns UI models and status on success', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createGetLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeForwardingTestData.createGetLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeForwardingRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createGetRulesSuccess());
+                JNAPAction.getPortRangeForwardingRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeForwardingTestData.createGetRulesSuccess());
 
       // Act
       final (rules, status) = await service.fetchSettings();
@@ -58,18 +60,20 @@ void main() {
     test('returns empty list when no rules exist', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createGetLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeForwardingTestData.createGetLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeForwardingRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createEmptyRulesSuccess());
+                JNAPAction.getPortRangeForwardingRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeForwardingTestData.createEmptyRulesSuccess());
 
       // Act
       final (rules, status) = await service.fetchSettings();
@@ -82,18 +86,20 @@ void main() {
     test('fetches with forceRemote flag', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: true,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createGetLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: true,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeForwardingTestData.createGetLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeForwardingRules,
-            fetchRemote: true,
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createGetRulesSuccess());
+                JNAPAction.getPortRangeForwardingRules,
+                fetchRemote: true,
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeForwardingTestData.createGetRulesSuccess());
 
       // Act
       await service.fetchSettings(forceRemote: true);
@@ -125,18 +131,21 @@ void main() {
       ];
 
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createGetLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeForwardingTestData.createGetLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeForwardingRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenAnswer((_) async =>
-          PortRangeForwardingTestData.createGetRulesSuccess(rules: customRules));
+                JNAPAction.getPortRangeForwardingRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeForwardingTestData.createGetRulesSuccess(
+                  rules: customRules));
 
       // Act
       final (rules, _) = await service.fetchSettings();
@@ -153,11 +162,12 @@ void main() {
     test('throws UnauthorizedError when JNAP returns unauthorized', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createGetLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeForwardingTestData.createGetLANSettingsSuccess());
 
       when(() => mockRepo.send(
             JNAPAction.getPortRangeForwardingRules,
@@ -175,17 +185,19 @@ void main() {
     test('throws InvalidIPAddressError when JNAP returns invalid IP', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createGetLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeForwardingTestData.createGetLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeForwardingRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenThrow(PortRangeForwardingTestData.createInvalidIPAddressError());
+                JNAPAction.getPortRangeForwardingRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenThrow(PortRangeForwardingTestData.createInvalidIPAddressError());
 
       // Act & Assert
       expect(
@@ -197,18 +209,20 @@ void main() {
     test('throws UnexpectedError for unmapped JNAP errors', () async {
       // Arrange
       when(() => mockRepo.send(
-            JNAPAction.getLANSettings,
-            auth: true,
-            fetchRemote: false,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createGetLANSettingsSuccess());
+                JNAPAction.getLANSettings,
+                auth: true,
+                fetchRemote: false,
+              ))
+          .thenAnswer((_) async =>
+              PortRangeForwardingTestData.createGetLANSettingsSuccess());
 
       when(() => mockRepo.send(
-            JNAPAction.getPortRangeForwardingRules,
-            fetchRemote: false,
-            auth: true,
-          )).thenThrow(PortRangeForwardingTestData.createInvalidInputError(
-          message: 'Unknown error'));
+                JNAPAction.getPortRangeForwardingRules,
+                fetchRemote: false,
+                auth: true,
+              ))
+          .thenThrow(PortRangeForwardingTestData.createInvalidInputError(
+              message: 'Unknown error'));
 
       // Act & Assert
       expect(
@@ -219,7 +233,8 @@ void main() {
   });
 
   group('PortRangeForwardingService - saveSettings', () {
-    test('transforms UI models to JNAP models and saves successfully', () async {
+    test('transforms UI models to JNAP models and saves successfully',
+        () async {
       // Arrange
       final uiModel = PortRangeForwardingRuleListUIModel(
         rules: [
@@ -235,11 +250,12 @@ void main() {
       );
 
       when(() => mockRepo.send(
-            JNAPAction.setPortRangeForwardingRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createSetRulesSuccess());
+                JNAPAction.setPortRangeForwardingRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeForwardingTestData.createSetRulesSuccess());
 
       // Act
       await service.saveSettings(uiModel);
@@ -261,14 +277,16 @@ void main() {
 
     test('saves empty list successfully', () async {
       // Arrange
-      const uiModel = PortRangeForwardingRuleListUIModel(rules: <PortRangeForwardingRuleUIModel>[]);
+      const uiModel = PortRangeForwardingRuleListUIModel(
+          rules: <PortRangeForwardingRuleUIModel>[]);
 
       when(() => mockRepo.send(
-            JNAPAction.setPortRangeForwardingRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createSetRulesSuccess());
+                JNAPAction.setPortRangeForwardingRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeForwardingTestData.createSetRulesSuccess());
 
       // Act
       await service.saveSettings(uiModel);
@@ -309,11 +327,12 @@ void main() {
       );
 
       when(() => mockRepo.send(
-            JNAPAction.setPortRangeForwardingRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenAnswer(
-          (_) async => PortRangeForwardingTestData.createSetRulesSuccess());
+                JNAPAction.setPortRangeForwardingRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenAnswer(
+              (_) async => PortRangeForwardingTestData.createSetRulesSuccess());
 
       // Act
       await service.saveSettings(uiModel);
@@ -335,7 +354,8 @@ void main() {
     test('throws RuleOverlapError when JNAP returns rule overlap error',
         () async {
       // Arrange
-      const uiModel = PortRangeForwardingRuleListUIModel(rules: <PortRangeForwardingRuleUIModel>[]);
+      const uiModel = PortRangeForwardingRuleListUIModel(
+          rules: <PortRangeForwardingRuleUIModel>[]);
 
       when(() => mockRepo.send(
             JNAPAction.setPortRangeForwardingRules,
@@ -350,17 +370,20 @@ void main() {
       );
     });
 
-    test('throws InvalidDestinationIPAddressError when JNAP returns invalid destination IP',
+    test(
+        'throws InvalidDestinationIPAddressError when JNAP returns invalid destination IP',
         () async {
       // Arrange
-      const uiModel = PortRangeForwardingRuleListUIModel(rules: <PortRangeForwardingRuleUIModel>[]);
+      const uiModel = PortRangeForwardingRuleListUIModel(
+          rules: <PortRangeForwardingRuleUIModel>[]);
 
       when(() => mockRepo.send(
-            JNAPAction.setPortRangeForwardingRules,
-            data: any(named: 'data'),
-            auth: true,
-          )).thenThrow(
-          PortRangeForwardingTestData.createInvalidDestinationIPAddressError());
+                JNAPAction.setPortRangeForwardingRules,
+                data: any(named: 'data'),
+                auth: true,
+              ))
+          .thenThrow(PortRangeForwardingTestData
+              .createInvalidDestinationIPAddressError());
 
       // Act & Assert
       expect(
@@ -371,7 +394,8 @@ void main() {
 
     test('throws UnauthorizedError when JNAP returns unauthorized', () async {
       // Arrange
-      const uiModel = PortRangeForwardingRuleListUIModel(rules: <PortRangeForwardingRuleUIModel>[]);
+      const uiModel = PortRangeForwardingRuleListUIModel(
+          rules: <PortRangeForwardingRuleUIModel>[]);
 
       when(() => mockRepo.send(
             JNAPAction.setPortRangeForwardingRules,

@@ -33,13 +33,11 @@ class PortRangeTriggeringListNotifier
       performFetch(
           {bool forceRemote = false, bool updateStatusOnly = false}) async {
     final service = ref.read(portRangeTriggeringServiceProvider);
-    final (rules, status) = await service.fetchSettings(forceRemote: forceRemote);
+    final (rules, status) =
+        await service.fetchSettings(forceRemote: forceRemote);
 
     state = state.copyWith(
-        settings: Preservable(
-            original: rules,
-            current: rules),
-        status: status);
+        settings: Preservable(original: rules, current: rules), status: status);
     return (rules, status);
   }
 
