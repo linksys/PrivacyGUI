@@ -1,11 +1,11 @@
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 
 /// Test data builder for DHCPReservationsService tests
 ///
-/// Provides factory methods to create ReservationItemUIModel test data
+/// Provides factory methods to create DHCPReservationUIModel test data
 /// with sensible defaults and various test scenarios.
 class DHCPReservationsTestData {
-  /// Create default ReservationItemUIModel
+  /// Create default DHCPReservationUIModel
   static DHCPReservationUIModel createReservationUIModel({
     String macAddress = '00:11:22:33:44:55',
     String ipAddress = '192.168.1.100',

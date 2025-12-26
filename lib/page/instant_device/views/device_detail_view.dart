@@ -4,7 +4,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -12,6 +11,7 @@ import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -479,7 +479,7 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   Future<dynamic> handleReserveDhcp(
       DeviceListItem item, bool isReservedIp) async {
     final notifier = ref.read(localNetworkSettingProvider.notifier);
-    final dhcpReservationItem = DHCPReservation(
+    final dhcpReservationItem = DHCPReservationUIModel(
       description: item.name.replaceAll(HostNameRule().rule, ''),
       ipAddress: item.ipv4Address,
       macAddress: item.macAddress,

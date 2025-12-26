@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 
 void main() {
-  group('ReservationItemUIModel -', () {
+  group('DHCPReservationUIModel -', () {
     const testMacAddress = '00:11:22:33:44:55';
     const testIpAddress = '192.168.1.100';
     const testDescription = 'Test Device';

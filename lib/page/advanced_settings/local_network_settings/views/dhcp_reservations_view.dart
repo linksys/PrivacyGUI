@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/services/local_network_settings_service.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -50,9 +49,9 @@ class _DHCPReservationsContentViewState
       // Fetch initial reservations from LocalNetworkSettings
       final localNetworkStatus =
           ref.read(localNetworkSettingProvider.select((state) => state.status));
-      final service = ref.read(localNetworkSettingsServiceProvider);
-      final reservations =
-          service.convertFromJNAPList(localNetworkStatus.dhcpReservationList);
+
+      // Direct access - LocalNetworkStatus.dhcpReservationList is already UI Model
+      final reservations = localNetworkStatus.dhcpReservationList;
 
       ref
           .read(dhcpReservationProvider.notifier)

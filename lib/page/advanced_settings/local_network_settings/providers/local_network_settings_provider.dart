@@ -1,12 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
-import 'package:privacy_gui/core/jnap/models/set_lan_settings.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/services/local_network_settings_service.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
 import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
@@ -55,52 +52,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
   @override
   Future<(LocalNetworkSettings?, LocalNetworkStatus?)> performFetch(
       {bool forceRemote = false, bool updateStatusOnly = false}) async {
-    final repo = ref.read(routerRepositoryProvider);
-    final lanSettings = await repo
-        .send(
-          JNAPAction.getLANSettings,
-          fetchRemote: forceRemote,
-          auth: true,
-        )
-        .then((value) => RouterLANSettings.fromMap(value.output));
-
-    final subnetMaskString = NetworkUtils.prefixLengthToSubnetMask(
-      lanSettings.networkPrefixLength,
-    );
-    final maxUserAllowed = NetworkUtils.getMaxUserAllowedInDHCPRange(
-      lanSettings.ipAddress,
-      lanSettings.dhcpSettings.firstClientIPAddress,
-      lanSettings.dhcpSettings.lastClientIPAddress,
-    );
-    final maxUserLimit = NetworkUtils.getMaxUserLimit(
-      lanSettings.ipAddress,
-      lanSettings.dhcpSettings.firstClientIPAddress,
-      subnetMaskString,
-      maxUserAllowed,
-    );
-
-    final newSettings = LocalNetworkSettings(
-      hostName: lanSettings.hostName,
-      ipAddress: lanSettings.ipAddress,
-      subnetMask: subnetMaskString,
-      isDHCPEnabled: lanSettings.isDHCPEnabled,
-      firstIPAddress: lanSettings.dhcpSettings.firstClientIPAddress,
-      lastIPAddress: lanSettings.dhcpSettings.lastClientIPAddress,
-      maxUserAllowed: maxUserAllowed,
-      clientLeaseTime: lanSettings.dhcpSettings.leaseMinutes,
-      dns1: lanSettings.dhcpSettings.dnsServer1,
-      dns2: lanSettings.dhcpSettings.dnsServer2,
-      dns3: lanSettings.dhcpSettings.dnsServer3,
-      wins: lanSettings.dhcpSettings.winsServer,
-    );
-
-    final newStatus = state.status.copyWith(
-      maxUserLimit: maxUserLimit,
-      minNetworkPrefixLength: lanSettings.minNetworkPrefixLength,
-      maxNetworkPrefixLength: lanSettings.maxNetworkPrefixLength,
-      minAllowDHCPLeaseMinutes: lanSettings.minAllowedDHCPLeaseMinutes,
-      maxAllowDHCPLeaseMinutes: lanSettings.maxAllowedDHCPLeaseMinutes,
-      dhcpReservationList: lanSettings.dhcpSettings.reservations,
+    final service = ref.read(localNetworkSettingsServiceProvider);
+    final (newSettings, newStatus) = await service.fetchLANSettingsWithUIModels(
+      forceRemote: forceRemote,
+      currentStatus: state.status,
     );
 
     _updateValidators(state.copyWith(
@@ -112,65 +67,51 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
 
   @override
   Future<void> performSave() async {
+    final service = ref.read(localNetworkSettingsServiceProvider);
     final settings = state.settings.current;
-    final newSettings = SetRouterLANSettings(
-      ipAddress: settings.ipAddress,
+
+    // Clear reservations if router IP changed
+    final reservations =
+        (state.settings.original.ipAddress != settings.ipAddress)
+            ? <DHCPReservationUIModel>[]
+            : state.status.dhcpReservationList;
+
+    await service.saveReservations(
+      routerIp: settings.ipAddress,
       networkPrefixLength:
           NetworkUtils.subnetMaskToPrefixLength(settings.subnetMask),
       hostName: settings.hostName,
       isDHCPEnabled: settings.isDHCPEnabled,
-      dhcpSettings: DHCPSettings(
-        firstClientIPAddress: settings.firstIPAddress,
-        lastClientIPAddress: settings.lastIPAddress,
-        leaseMinutes: settings.clientLeaseTime,
-        dnsServer1: settings.dns1?.isEmpty == true ? null : settings.dns1,
-        dnsServer2: settings.dns2?.isEmpty == true ? null : settings.dns2,
-        dnsServer3: settings.dns3?.isEmpty == true ? null : settings.dns3,
-        winsServer: settings.wins?.isEmpty == true ? null : settings.wins,
-        reservations: (state.settings.original.ipAddress != settings.ipAddress)
-            ? []
-            : state.status.dhcpReservationList,
-      ),
-    );
-    final routerRepository = ref.read(routerRepositoryProvider);
-    await routerRepository.send(
-      JNAPAction.setLANSettings,
-      auth: true,
-      data: newSettings.toMap()..removeWhere((key, value) => value == null),
-      sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
+      firstClientIP: settings.firstIPAddress,
+      lastClientIP: settings.lastIPAddress,
+      leaseMinutes: settings.clientLeaseTime,
+      dns1: settings.dns1,
+      dns2: settings.dns2,
+      dns3: settings.dns3,
+      wins: settings.wins,
+      reservations: reservations,
     );
     await ref.read(instantSafetyProvider.notifier).fetch();
   }
 
-  Future<void> saveReservations(List<DHCPReservation> list) async {
+  Future<void> saveReservations(List<DHCPReservationUIModel> list) async {
+    final service = ref.read(localNetworkSettingsServiceProvider);
     final currentSettings = state.settings.current;
-    final newSettings = SetRouterLANSettings(
-      ipAddress: currentSettings.ipAddress,
+
+    await service.saveReservations(
+      routerIp: currentSettings.ipAddress,
       networkPrefixLength:
           NetworkUtils.subnetMaskToPrefixLength(currentSettings.subnetMask),
       hostName: currentSettings.hostName,
       isDHCPEnabled: currentSettings.isDHCPEnabled,
-      dhcpSettings: DHCPSettings(
-        firstClientIPAddress: currentSettings.firstIPAddress,
-        lastClientIPAddress: currentSettings.lastIPAddress,
-        leaseMinutes: currentSettings.clientLeaseTime,
-        dnsServer1:
-            currentSettings.dns1?.isEmpty == true ? null : currentSettings.dns1,
-        dnsServer2:
-            currentSettings.dns2?.isEmpty == true ? null : currentSettings.dns2,
-        dnsServer3:
-            currentSettings.dns3?.isEmpty == true ? null : currentSettings.dns3,
-        winsServer:
-            currentSettings.wins?.isEmpty == true ? null : currentSettings.wins,
-        reservations: list,
-      ),
-    );
-    final routerRepository = ref.read(routerRepositoryProvider);
-    await routerRepository.send(
-      JNAPAction.setLANSettings,
-      auth: true,
-      data: newSettings.toMap()..removeWhere((key, value) => value == null),
-      sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
+      firstClientIP: currentSettings.firstIPAddress,
+      lastClientIP: currentSettings.lastIPAddress,
+      leaseMinutes: currentSettings.clientLeaseTime,
+      dns1: currentSettings.dns1,
+      dns2: currentSettings.dns2,
+      dns3: currentSettings.dns3,
+      wins: currentSettings.wins,
+      reservations: list,
     );
     // After saving, we need to refetch the local network settings to get the updated state.
     await fetch(forceRemote: true);
@@ -246,10 +187,10 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
   }
 
   void updateDHCPReservationList(
-      List<DHCPReservation> addedDHCPReservationList) {
+      List<DHCPReservationUIModel> addedDHCPReservationList) {
     final filteredList = addedDHCPReservationList
         .where((element) => !isReservationOverlap(item: element));
-    final List<DHCPReservation> newList = [
+    final List<DHCPReservationUIModel> newList = [
       ...state.status.dhcpReservationList,
       ...filteredList
     ];
@@ -257,8 +198,9 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
         status: state.status.copyWith(dhcpReservationList: newList));
   }
 
-  bool updateDHCPReservationOfIndex(DHCPReservation item, int index) {
-    List<DHCPReservation> newList = List.from(state.status.dhcpReservationList);
+  bool updateDHCPReservationOfIndex(DHCPReservationUIModel item, int index) {
+    List<DHCPReservationUIModel> newList =
+        List.from(state.status.dhcpReservationList);
     bool succeed = false;
     if (item.ipAddress == 'DELETE') {
       newList.removeAt(index);
@@ -274,7 +216,8 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
     return succeed;
   }
 
-  bool isReservationOverlap({required DHCPReservation item, int? index}) {
+  bool isReservationOverlap(
+      {required DHCPReservationUIModel item, int? index}) {
     final overlap = state.status.dhcpReservationList.where((element) {
       // Not compare with self if on editing
       if (index != null &&

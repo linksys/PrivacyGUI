@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/services/local_network_settings_service.dart';
 import 'package:privacy_gui/utils.dart';
@@ -26,15 +26,14 @@ class DHCPReservationsService {
 
   /// Fetch initial reservations from LocalNetworkSettingsProvider
   ///
-  /// During Phase 1: Converts from JNAP model to UI model
-  /// During Phase 2 (after LocalNetworkSettings refactoring): Direct access, no conversion needed
+  /// Returns the current DHCP reservation list as UI models.
+  /// No conversion needed as LocalNetworkStatus now uses UI models directly.
   Future<List<DHCPReservationUIModel>> fetchInitialReservations(Ref ref) async {
     final localNetworkStatus =
         ref.read(localNetworkSettingProvider.select((state) => state.status));
 
-    // Phase 1: Convert JNAP → UI Model
-    return _localNetworkService
-        .convertFromJNAPList(localNetworkStatus.dhcpReservationList);
+    // Direct access - LocalNetworkStatus.dhcpReservationList is already UI Model
+    return localNetworkStatus.dhcpReservationList;
   }
 
   /// Save reservations by calling LocalNetworkSettingsService
