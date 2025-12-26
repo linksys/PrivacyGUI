@@ -1,0 +1,14 @@
+name: usp_client_core
+description: "USP/gRPC client integration for communicating with TR-181 Data Model."
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  usp_protocol_common:
+    path: ../usp_protocol_common
+  grpc: ^5.0.0
+  logging: ^1.2.0
+  meta: ^1.9.0
