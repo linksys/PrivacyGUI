@@ -1,8 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/services/dhcp_reservations_service.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
@@ -48,17 +48,15 @@ class DHCPReservationsNotifier extends AutoDisposeNotifier<DHCPReservationState>
 
   @override
   Future<void> performSave() async {
-    final settings = state.settings.current;
-    final reservations = settings.reservations
+    final service = ref.read(dhcpReservationsServiceProvider);
+    final reservedItems = state.settings.current.reservations
         .where((e) => e.reserved)
         .map((e) => e.data)
         .toList();
-    await ref
-        .read(localNetworkSettingProvider.notifier)
-        .saveReservations(reservations);
+    await service.saveReservations(ref, reservedItems);
   }
 
-  void setInitialReservations(List<DHCPReservation> reservedList) {
+  void setInitialReservations(List<DHCPReservationUIModel> reservedList) {
     final initialSettings = DHCPReservationsSettings(
         reservations: reservedList
             .map((e) => ReservedListItem(reserved: true, data: e))
@@ -80,7 +78,7 @@ class DHCPReservationsNotifier extends AutoDisposeNotifier<DHCPReservationState>
             devices: deviceList
                 .map((e) => ReservedListItem(
                     reserved: false,
-                    data: DHCPReservation(
+                    data: DHCPReservationUIModel(
                         macAddress: e.macAddress,
                         ipAddress: e.ipv4Address,
                         description: e.name)))
