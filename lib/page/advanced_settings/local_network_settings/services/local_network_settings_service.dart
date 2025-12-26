@@ -4,7 +4,9 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/set_lan_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
+import 'package:privacy_gui/utils.dart';
 
 final localNetworkSettingsServiceProvider =
     Provider<LocalNetworkSettingsService>((ref) {
@@ -16,7 +18,8 @@ final localNetworkSettingsServiceProvider =
 /// Responsibilities:
 /// - Fetch LAN settings from router via JNAP
 /// - Save LAN settings including DHCP reservations
-/// - Transform JNAP DHCPReservation ↔ UI ReservationItemUIModel
+/// - Transform JNAP DHCPReservation ↔ UI DHCPReservationUIModel
+/// - Perform network calculations (IP ranges, subnet masks, etc.)
 ///
 /// This service is shared by:
 /// - DHCPReservationsProvider (reservation management)
@@ -26,9 +29,10 @@ class LocalNetworkSettingsService {
 
   LocalNetworkSettingsService(this._routerRepository);
 
-  /// Fetch LAN settings from router
+  /// Fetch LAN settings from router (JNAP Data Model)
   ///
-  /// Returns the complete RouterLANSettings from JNAP API
+  /// Returns the complete RouterLANSettings from JNAP API.
+  /// This is a low-level method used internally for JNAP communication.
   Future<RouterLANSettings> fetchLANSettings({bool forceRemote = false}) async {
     final response = await _routerRepository.send(
       JNAPAction.getLANSettings,
@@ -36,6 +40,72 @@ class LocalNetworkSettingsService {
       auth: true,
     );
     return RouterLANSettings.fromMap(response.output);
+  }
+
+  /// Fetch LAN settings and convert to UI models with network calculations
+  ///
+  /// This is the main method for LocalNetworkSettingsProvider to use.
+  /// Returns a tuple of (LocalNetworkSettings, LocalNetworkStatus) with:
+  /// - All JNAP data converted to UI models
+  /// - Network calculations performed (subnet mask, max users, etc.)
+  /// - DHCP reservations converted to DHCPReservationUIModel
+  Future<(LocalNetworkSettings, LocalNetworkStatus)>
+      fetchLANSettingsWithUIModels({
+    bool forceRemote = false,
+    required LocalNetworkStatus currentStatus,
+  }) async {
+    final lanSettings = await fetchLANSettings(forceRemote: forceRemote);
+
+    // Convert prefix length to subnet mask string
+    final subnetMaskString = NetworkUtils.prefixLengthToSubnetMask(
+      lanSettings.networkPrefixLength,
+    );
+
+    // Calculate max user allowed in DHCP range
+    final maxUserAllowed = NetworkUtils.getMaxUserAllowedInDHCPRange(
+      lanSettings.ipAddress,
+      lanSettings.dhcpSettings.firstClientIPAddress,
+      lanSettings.dhcpSettings.lastClientIPAddress,
+    );
+
+    // Calculate max user limit
+    final maxUserLimit = NetworkUtils.getMaxUserLimit(
+      lanSettings.ipAddress,
+      lanSettings.dhcpSettings.firstClientIPAddress,
+      subnetMaskString,
+      maxUserAllowed,
+    );
+
+    // Build LocalNetworkSettings (UI layer settings)
+    final newSettings = LocalNetworkSettings(
+      hostName: lanSettings.hostName,
+      ipAddress: lanSettings.ipAddress,
+      subnetMask: subnetMaskString,
+      isDHCPEnabled: lanSettings.isDHCPEnabled,
+      firstIPAddress: lanSettings.dhcpSettings.firstClientIPAddress,
+      lastIPAddress: lanSettings.dhcpSettings.lastClientIPAddress,
+      maxUserAllowed: maxUserAllowed,
+      clientLeaseTime: lanSettings.dhcpSettings.leaseMinutes,
+      dns1: lanSettings.dhcpSettings.dnsServer1,
+      dns2: lanSettings.dhcpSettings.dnsServer2,
+      dns3: lanSettings.dhcpSettings.dnsServer3,
+      wins: lanSettings.dhcpSettings.winsServer,
+    );
+
+    // Convert JNAP DHCPReservation list to UI models
+    final reservationsUI = _fromJNAPList(lanSettings.dhcpSettings.reservations);
+
+    // Build LocalNetworkStatus (UI layer status)
+    final newStatus = currentStatus.copyWith(
+      maxUserLimit: maxUserLimit,
+      minNetworkPrefixLength: lanSettings.minNetworkPrefixLength,
+      maxNetworkPrefixLength: lanSettings.maxNetworkPrefixLength,
+      minAllowDHCPLeaseMinutes: lanSettings.minAllowedDHCPLeaseMinutes,
+      maxAllowDHCPLeaseMinutes: lanSettings.maxAllowedDHCPLeaseMinutes,
+      dhcpReservationList: reservationsUI,
+    );
+
+    return (newSettings, newStatus);
   }
 
   /// Save reservations to router
@@ -115,16 +185,5 @@ class LocalNetworkSettingsService {
   /// Convert list of UI models to JNAP models
   List<DHCPReservation> _toJNAPList(List<DHCPReservationUIModel> list) {
     return list.map((ui) => _toJNAP(ui)).toList();
-  }
-
-  /// Public helper for external conversion (used during Phase 1 transition)
-  ///
-  /// This is used by DHCPReservationsService to convert from LocalNetworkStatus's
-  /// JNAP model list to UI model list during the transition phase.
-  ///
-  /// In Phase 2 (LocalNetworkSettings refactoring), this will no longer be needed
-  /// as LocalNetworkStatus will directly use List<ReservationItemUIModel>.
-  List<DHCPReservationUIModel> convertFromJNAPList(List<DHCPReservation> list) {
-    return _fromJNAPList(list);
   }
 }

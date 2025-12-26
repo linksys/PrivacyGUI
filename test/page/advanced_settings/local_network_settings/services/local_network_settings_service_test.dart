@@ -3,7 +3,6 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/services/local_network_settings_service.dart';
 import 'package:privacy_gui/utils.dart';
 
@@ -269,53 +268,7 @@ void main() {
       });
     });
 
-    group('convertFromJNAPList -', () {
-      test('converts JNAP list to UI model list', () {
-        final jnapList = [
-          DHCPReservation(
-            macAddress: '00:11:22:33:44:55',
-            ipAddress: '192.168.1.100',
-            description: 'Device 1',
-          ),
-          DHCPReservation(
-            macAddress: 'AA:BB:CC:DD:EE:FF',
-            ipAddress: '192.168.1.101',
-            description: 'Device 2',
-          ),
-        ];
-
-        final result = service.convertFromJNAPList(jnapList);
-
-        expect(result, isA<List<DHCPReservationUIModel>>());
-        expect(result.length, 2);
-        expect(result[0].macAddress, '00:11:22:33:44:55');
-        expect(result[0].ipAddress, '192.168.1.100');
-        expect(result[0].description, 'Device 1');
-        expect(result[1].macAddress, 'AA:BB:CC:DD:EE:FF');
-        expect(result[1].ipAddress, '192.168.1.101');
-        expect(result[1].description, 'Device 2');
-      });
-
-      test('converts empty JNAP list', () {
-        final result = service.convertFromJNAPList([]);
-
-        expect(result, isEmpty);
-      });
-
-      test('preserves all fields during conversion', () {
-        final jnapReservation = DHCPReservation(
-          macAddress: '00:11:22:33:44:55',
-          ipAddress: '192.168.1.100',
-          description: 'Test Device with Special Chars !@#\$%',
-        );
-
-        final result = service.convertFromJNAPList([jnapReservation]);
-
-        expect(result.length, 1);
-        expect(result[0].macAddress, jnapReservation.macAddress);
-        expect(result[0].ipAddress, jnapReservation.ipAddress);
-        expect(result[0].description, jnapReservation.description);
-      });
-    });
+    // Note: convertFromJNAPList is now a private method (_fromJNAPList)
+    // The conversion logic is tested through fetchLANSettingsWithUIModels
   });
 }

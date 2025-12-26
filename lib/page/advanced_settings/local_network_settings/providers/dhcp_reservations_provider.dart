@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/services/dhcp_reservations_service.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';

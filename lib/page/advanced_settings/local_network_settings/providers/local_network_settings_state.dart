@@ -4,8 +4,8 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
-import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/utils.dart';
@@ -201,7 +201,7 @@ class LocalNetworkStatus extends Equatable {
   final int maxAllowDHCPLeaseMinutes;
   final int minNetworkPrefixLength;
   final int maxNetworkPrefixLength;
-  final List<DHCPReservation> dhcpReservationList;
+  final List<DHCPReservationUIModel> dhcpReservationList;
   final Map<String, String> errorTextMap;
   final bool hasErrorOnHostNameTab;
   final bool hasErrorOnIPAddressTab;
@@ -248,7 +248,7 @@ class LocalNetworkStatus extends Equatable {
     int? maxAllowDHCPLeaseMinutes,
     int? minNetworkPrefixLength,
     int? maxNetworkPrefixLength,
-    List<DHCPReservation>? dhcpReservationList,
+    List<DHCPReservationUIModel>? dhcpReservationList,
     Map<String, String>? errorTextMap,
     bool? hasErrorOnHostNameTab,
     bool? hasErrorOnIPAddressTab,
@@ -297,8 +297,9 @@ class LocalNetworkStatus extends Equatable {
       maxAllowDHCPLeaseMinutes: map['maxAllowDHCPLeaseMinutes']?.toInt() ?? 0,
       minNetworkPrefixLength: map['minNetworkPrefixLength']?.toInt() ?? 0,
       maxNetworkPrefixLength: map['maxNetworkPrefixLength']?.toInt() ?? 0,
-      dhcpReservationList: List<DHCPReservation>.from(
-          map['dhcpReservationList']?.map((x) => DHCPReservation.fromMap(x))),
+      dhcpReservationList: List<DHCPReservationUIModel>.from(
+          map['dhcpReservationList']
+              ?.map((x) => DHCPReservationUIModel.fromMap(x))),
       errorTextMap: Map<String, String>.from(map['errorTextMap'] ?? {}),
       hasErrorOnHostNameTab: map['hasErrorOnHostNameTab'] ?? false,
       hasErrorOnIPAddressTab: map['hasErrorOnIPAddressTab'] ?? false,

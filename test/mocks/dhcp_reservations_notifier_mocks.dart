@@ -7,7 +7,7 @@ import 'dart:async' as _i5;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart'
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart'
     as _i6;
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart'
     as _i4;

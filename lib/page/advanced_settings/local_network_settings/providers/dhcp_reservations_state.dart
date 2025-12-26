@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/reservation_item_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
