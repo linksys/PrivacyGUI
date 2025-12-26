@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/providers/port_util_mixin.dart';
 
 final portRangeTriggeringRuleProvider = NotifierProvider<
@@ -14,8 +14,8 @@ class PortRangeTriggeringRuleNotifier
   PortRangeTriggeringRuleState build() => const PortRangeTriggeringRuleState();
 
   void init(
-    List<PortRangeTriggeringRule> rules,
-    PortRangeTriggeringRule? rule,
+    List<PortRangeTriggeringRuleUIModel> rules,
+    PortRangeTriggeringRuleUIModel? rule,
     int? index,
   ) {
     state = state.copyWith(
@@ -25,7 +25,7 @@ class PortRangeTriggeringRuleNotifier
     );
   }
 
-  void updateRule(PortRangeTriggeringRule? rule) {
+  void updateRule(PortRangeTriggeringRuleUIModel? rule) {
     state = state.copyWith(rule: () => rule);
   }
 

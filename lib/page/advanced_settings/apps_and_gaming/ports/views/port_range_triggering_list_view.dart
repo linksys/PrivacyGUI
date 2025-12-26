@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -40,7 +40,7 @@ class _PortRangeTriggeringContentViewState
       TextEditingController();
 
   // Editing state
-  PortRangeTriggeringRule? _editingRule;
+  PortRangeTriggeringRuleUIModel? _editingRule;
   bool _isInitializing = false;
   StateSetter? _sheetStateSetter;
 
@@ -83,7 +83,7 @@ class _PortRangeTriggeringContentViewState
     final state = ref.watch(portRangeTriggeringListProvider);
     final isAddEnabled = !_notifier.isExceedMax();
 
-    return AppDataTable<PortRangeTriggeringRule>(
+    return AppDataTable<PortRangeTriggeringRuleUIModel>(
       data: state.current.rules,
       columns: _buildColumns(context),
       totalRows: state.current.rules.length,
@@ -93,7 +93,7 @@ class _PortRangeTriggeringContentViewState
       onSave: _handleSave,
       emptyMessage: loc(context).noPortRangeTriggering,
       showAddButton: isAddEnabled,
-      onCreateTemplate: () => PortRangeTriggeringRule(
+      onCreateTemplate: () => PortRangeTriggeringRuleUIModel(
         isEnabled: true,
         description: '',
         firstTriggerPort: 0,
@@ -115,11 +115,11 @@ class _PortRangeTriggeringContentViewState
     );
   }
 
-  List<AppTableColumn<PortRangeTriggeringRule>> _buildColumns(
+  List<AppTableColumn<PortRangeTriggeringRuleUIModel>> _buildColumns(
       BuildContext context) {
     return [
       // Column 0: Application Name
-      AppTableColumn<PortRangeTriggeringRule>(
+      AppTableColumn<PortRangeTriggeringRuleUIModel>(
         label: loc(context).applicationName,
         cellBuilder: (_, rule) => AppText.bodyMedium(rule.description),
         editBuilder: (_, rule, setSheetState) {
@@ -150,7 +150,7 @@ class _PortRangeTriggeringContentViewState
       ),
 
       // Column 1: Triggered Range
-      AppTableColumn<PortRangeTriggeringRule>(
+      AppTableColumn<PortRangeTriggeringRuleUIModel>(
         label: loc(context).triggeredRange,
         cellBuilder: (_, rule) => AppText.bodyMedium(
             '${rule.firstTriggerPort} ${loc(context).to} ${rule.lastTriggerPort}'),
@@ -167,7 +167,7 @@ class _PortRangeTriggeringContentViewState
       ),
 
       // Column 2: Forwarded Range
-      AppTableColumn<PortRangeTriggeringRule>(
+      AppTableColumn<PortRangeTriggeringRuleUIModel>(
         label: loc(context).forwardedRange,
         cellBuilder: (_, rule) => AppText.bodyMedium(
             '${rule.firstForwardedPort} ${loc(context).to} ${rule.lastForwardedPort}'),
@@ -336,13 +336,13 @@ class _PortRangeTriggeringContentViewState
     _clearControllers();
   }
 
-  Future<bool> _handleDelete(PortRangeTriggeringRule rule) async {
+  Future<bool> _handleDelete(PortRangeTriggeringRuleUIModel rule) async {
     _notifier.deleteRule(rule);
     _clearControllers();
     return true;
   }
 
-  Future<bool> _handleAdd(PortRangeTriggeringRule templateRule) async {
+  Future<bool> _handleAdd(PortRangeTriggeringRuleUIModel templateRule) async {
     // Initialize provider with template
     final state = ref.read(portRangeTriggeringListProvider);
     ref.read(portRangeTriggeringRuleProvider.notifier).init(
@@ -364,7 +364,7 @@ class _PortRangeTriggeringContentViewState
     return true;
   }
 
-  Future<bool> _handleSave(PortRangeTriggeringRule originalRule) async {
+  Future<bool> _handleSave(PortRangeTriggeringRuleUIModel originalRule) async {
     _validateAll();
     if (!_isValid()) {
       return false;
@@ -383,8 +383,8 @@ class _PortRangeTriggeringContentViewState
     return true;
   }
 
-  PortRangeTriggeringRule _buildRuleFromControllers(
-      PortRangeTriggeringRule template) {
+  PortRangeTriggeringRuleUIModel _buildRuleFromControllers(
+      PortRangeTriggeringRuleUIModel template) {
     return template.copyWith(
       description: _applicationTextController.text,
       firstTriggerPort: int.tryParse(_firstTriggerPortController.text) ?? 0,

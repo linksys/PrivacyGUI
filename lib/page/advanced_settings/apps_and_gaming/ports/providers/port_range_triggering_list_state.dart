@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
@@ -51,7 +51,7 @@ class PortRangeTriggeringListStatus extends Equatable {
 }
 
 class PortRangeTriggeringListState extends FeatureState<
-    PortRangeTriggeringRuleList, PortRangeTriggeringListStatus> {
+    PortRangeTriggeringRuleListUIModel, PortRangeTriggeringListStatus> {
   const PortRangeTriggeringListState({
     required super.settings,
     required super.status,
@@ -59,7 +59,7 @@ class PortRangeTriggeringListState extends FeatureState<
 
   @override
   PortRangeTriggeringListState copyWith({
-    Preservable<PortRangeTriggeringRuleList>? settings,
+    Preservable<PortRangeTriggeringRuleListUIModel>? settings,
     PortRangeTriggeringListStatus? status,
   }) {
     return PortRangeTriggeringListState(
@@ -80,7 +80,7 @@ class PortRangeTriggeringListState extends FeatureState<
     return PortRangeTriggeringListState(
       settings: Preservable.fromMap(
         map['settings'] as Map<String, dynamic>,
-        (valueMap) => PortRangeTriggeringRuleList.fromMap(
+        (valueMap) => PortRangeTriggeringRuleListUIModel.fromMap(
             valueMap as Map<String, dynamic>),
       ),
       status: PortRangeTriggeringListStatus.fromMap(

@@ -4,11 +4,11 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
-import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_triggering_rule_ui_model.dart';
 
 class PortRangeTriggeringRuleState extends Equatable {
-  final List<PortRangeTriggeringRule> rules;
-  final PortRangeTriggeringRule? rule;
+  final List<PortRangeTriggeringRuleUIModel> rules;
+  final PortRangeTriggeringRuleUIModel? rule;
   final int? editIndex;
 
   const PortRangeTriggeringRuleState({
@@ -21,8 +21,8 @@ class PortRangeTriggeringRuleState extends Equatable {
   List<Object?> get props => [rules, rule, editIndex];
 
   PortRangeTriggeringRuleState copyWith({
-    List<PortRangeTriggeringRule>? rules,
-    ValueGetter<PortRangeTriggeringRule?>? rule,
+    List<PortRangeTriggeringRuleUIModel>? rules,
+    ValueGetter<PortRangeTriggeringRuleUIModel?>? rule,
     ValueGetter<int?>? editIndex,
   }) {
     return PortRangeTriggeringRuleState(
@@ -42,10 +42,10 @@ class PortRangeTriggeringRuleState extends Equatable {
 
   factory PortRangeTriggeringRuleState.fromMap(Map<String, dynamic> map) {
     return PortRangeTriggeringRuleState(
-      rules: List<PortRangeTriggeringRule>.from(
-          map['rules']?.map((x) => PortRangeTriggeringRule.fromMap(x))),
+      rules: List<PortRangeTriggeringRuleUIModel>.from(
+          map['rules']?.map((x) => PortRangeTriggeringRuleUIModel.fromMap(x))),
       rule: map['rule'] != null
-          ? PortRangeTriggeringRule.fromMap(map['rule'])
+          ? PortRangeTriggeringRuleUIModel.fromMap(map['rule'])
           : null,
       editIndex: map['editIndex']?.toInt(),
     );
