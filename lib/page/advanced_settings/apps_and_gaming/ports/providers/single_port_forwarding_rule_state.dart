@@ -4,11 +4,11 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
-import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/single_port_forwarding_rule_ui_model.dart';
 
 class SinglePortForwardingRuleState extends Equatable {
-  final List<SinglePortForwardingRule> rules;
-  final SinglePortForwardingRule? rule;
+  final List<SinglePortForwardingRuleUIModel> rules;
+  final SinglePortForwardingRuleUIModel? rule;
   final int? editIndex;
   final String routerIp;
   final String subnetMask;
@@ -33,8 +33,8 @@ class SinglePortForwardingRuleState extends Equatable {
   }
 
   SinglePortForwardingRuleState copyWith({
-    List<SinglePortForwardingRule>? rules,
-    ValueGetter<SinglePortForwardingRule?>? rule,
+    List<SinglePortForwardingRuleUIModel>? rules,
+    ValueGetter<SinglePortForwardingRuleUIModel?>? rule,
     ValueGetter<int?>? editIndex,
     String? routerIp,
     String? subnetMask,
@@ -60,10 +60,10 @@ class SinglePortForwardingRuleState extends Equatable {
 
   factory SinglePortForwardingRuleState.fromMap(Map<String, dynamic> map) {
     return SinglePortForwardingRuleState(
-      rules: List<SinglePortForwardingRule>.from(
-          map['rules']?.map((x) => SinglePortForwardingRule.fromMap(x))),
+      rules: List<SinglePortForwardingRuleUIModel>.from(
+          map['rules']?.map((x) => SinglePortForwardingRuleUIModel.fromMap(x))),
       rule: map['rule'] != null
-          ? SinglePortForwardingRule.fromMap(map['rule'])
+          ? SinglePortForwardingRuleUIModel.fromMap(map['rule'])
           : null,
       editIndex: map['editIndex']?.toInt(),
       routerIp: map['routerIp'] ?? '',

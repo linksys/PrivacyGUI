@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/single_port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 
 final singlePortForwardingRuleProvider = NotifierProvider<
@@ -15,8 +15,8 @@ class SinglePortForwardingRuleNotifier
       routerIp: '192.168.1.1', subnetMask: '255.255.255.0');
 
   void init(
-    List<SinglePortForwardingRule> rules,
-    SinglePortForwardingRule? rule,
+    List<SinglePortForwardingRuleUIModel> rules,
+    SinglePortForwardingRuleUIModel? rule,
     int? index,
     String routerIp,
     String subnetMask,
@@ -30,7 +30,7 @@ class SinglePortForwardingRuleNotifier
     );
   }
 
-  void updateRule(SinglePortForwardingRule? rule) {
+  void updateRule(SinglePortForwardingRuleUIModel? rule) {
     state = state.copyWith(rule: () => rule);
   }
 

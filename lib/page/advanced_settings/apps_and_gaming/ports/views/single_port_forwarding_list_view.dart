@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/single_port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -40,7 +40,7 @@ class _SinglePortForwardingContentViewState
       TextEditingController();
 
   // Editing state
-  SinglePortForwardingRule? _editingRule;
+  SinglePortForwardingRuleUIModel? _editingRule;
   bool _isInitializing = false;
   StateSetter? _sheetStateSetter;
 
@@ -80,7 +80,7 @@ class _SinglePortForwardingContentViewState
     final state = ref.watch(singlePortForwardingListProvider);
     final isAddEnabled = !_notifier.isExceedMax();
 
-    return AppDataTable<SinglePortForwardingRule>(
+    return AppDataTable<SinglePortForwardingRuleUIModel>(
       data: state.current.rules,
       columns: _buildColumns(context, state),
       totalRows: state.current.rules.length,
@@ -90,7 +90,7 @@ class _SinglePortForwardingContentViewState
       onSave: _handleSave,
       emptyMessage: loc(context).noSinglePortForwarding,
       showAddButton: isAddEnabled,
-      onCreateTemplate: () => SinglePortForwardingRule(
+      onCreateTemplate: () => SinglePortForwardingRuleUIModel(
         isEnabled: true,
         externalPort: 0,
         protocol: 'Both',
@@ -112,11 +112,11 @@ class _SinglePortForwardingContentViewState
     );
   }
 
-  List<AppTableColumn<SinglePortForwardingRule>> _buildColumns(
+  List<AppTableColumn<SinglePortForwardingRuleUIModel>> _buildColumns(
       BuildContext context, SinglePortForwardingListState state) {
     return [
       // Column 0: Application Name
-      AppTableColumn<SinglePortForwardingRule>(
+      AppTableColumn<SinglePortForwardingRuleUIModel>(
         label: loc(context).applicationName,
         cellBuilder: (_, rule) => AppText.bodyMedium(rule.description),
         editBuilder: (_, rule, setSheetState) {
@@ -146,7 +146,7 @@ class _SinglePortForwardingContentViewState
       ),
 
       // Column 1: Internal Port
-      AppTableColumn<SinglePortForwardingRule>(
+      AppTableColumn<SinglePortForwardingRuleUIModel>(
         label: loc(context).internalPort,
         cellBuilder: (_, rule) => AppText.bodyMedium('${rule.internalPort}'),
         editBuilder: (_, rule, setSheetState) {
@@ -160,7 +160,7 @@ class _SinglePortForwardingContentViewState
       ),
 
       // Column 2: External Port
-      AppTableColumn<SinglePortForwardingRule>(
+      AppTableColumn<SinglePortForwardingRuleUIModel>(
         label: loc(context).externalPort,
         cellBuilder: (_, rule) => AppText.bodyMedium('${rule.externalPort}'),
         editBuilder: (_, rule, setSheetState) {
@@ -175,7 +175,7 @@ class _SinglePortForwardingContentViewState
       ),
 
       // Column 3: Protocol
-      AppTableColumn<SinglePortForwardingRule>(
+      AppTableColumn<SinglePortForwardingRuleUIModel>(
         label: loc(context).protocol,
         cellBuilder: (_, rule) =>
             AppText.bodyMedium(getProtocolTitle(context, rule.protocol)),
@@ -205,7 +205,7 @@ class _SinglePortForwardingContentViewState
       ),
 
       // Column 4: Device IP
-      AppTableColumn<SinglePortForwardingRule>(
+      AppTableColumn<SinglePortForwardingRuleUIModel>(
         label: loc(context).deviceIP,
         cellBuilder: (_, rule) =>
             AppText.bodyMedium(rule.internalServerIPAddress),
@@ -347,13 +347,13 @@ class _SinglePortForwardingContentViewState
     _clearControllers();
   }
 
-  Future<bool> _handleDelete(SinglePortForwardingRule rule) async {
+  Future<bool> _handleDelete(SinglePortForwardingRuleUIModel rule) async {
     _notifier.deleteRule(rule);
     _clearControllers();
     return true;
   }
 
-  Future<bool> _handleAdd(SinglePortForwardingRule templateRule) async {
+  Future<bool> _handleAdd(SinglePortForwardingRuleUIModel templateRule) async {
     // Initialize provider with template
     final state = ref.read(singlePortForwardingListProvider);
     ref.read(singlePortForwardingRuleProvider.notifier).init(
@@ -377,7 +377,7 @@ class _SinglePortForwardingContentViewState
     return true;
   }
 
-  Future<bool> _handleSave(SinglePortForwardingRule originalRule) async {
+  Future<bool> _handleSave(SinglePortForwardingRuleUIModel originalRule) async {
     _validateAll();
     if (!_isValid()) {
       return false;
@@ -396,8 +396,8 @@ class _SinglePortForwardingContentViewState
     return true;
   }
 
-  SinglePortForwardingRule _buildRuleFromControllers(
-      SinglePortForwardingRule template) {
+  SinglePortForwardingRuleUIModel _buildRuleFromControllers(
+      SinglePortForwardingRuleUIModel template) {
     return template.copyWith(
       description: _applicationTextController.text,
       internalPort: int.tryParse(_internalPortTextController.text) ?? 0,
