@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/single_port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
@@ -68,7 +68,7 @@ class SinglePortForwardingListStatus extends Equatable {
 }
 
 class SinglePortForwardingListState extends FeatureState<
-    SinglePortForwardingRuleList, SinglePortForwardingListStatus> {
+    SinglePortForwardingRuleListUIModel, SinglePortForwardingListStatus> {
   const SinglePortForwardingListState({
     required super.settings,
     required super.status,
@@ -76,7 +76,7 @@ class SinglePortForwardingListState extends FeatureState<
 
   @override
   SinglePortForwardingListState copyWith({
-    Preservable<SinglePortForwardingRuleList>? settings,
+    Preservable<SinglePortForwardingRuleListUIModel>? settings,
     SinglePortForwardingListStatus? status,
   }) {
     return SinglePortForwardingListState(
@@ -97,7 +97,7 @@ class SinglePortForwardingListState extends FeatureState<
     return SinglePortForwardingListState(
       settings: Preservable.fromMap(
         map['settings'] as Map<String, dynamic>,
-        (valueMap) => SinglePortForwardingRuleList.fromMap(
+        (valueMap) => SinglePortForwardingRuleListUIModel.fromMap(
             valueMap as Map<String, dynamic>),
       ),
       status: SinglePortForwardingListStatus.fromMap(

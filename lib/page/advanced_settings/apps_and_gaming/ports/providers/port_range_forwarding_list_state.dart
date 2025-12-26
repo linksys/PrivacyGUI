@@ -2,8 +2,7 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-
-import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
@@ -68,7 +67,7 @@ class PortRangeForwardingListStatus extends Equatable {
 }
 
 class PortRangeForwardingListState extends FeatureState<
-    PortRangeForwardingRuleList, PortRangeForwardingListStatus> {
+    PortRangeForwardingRuleListUIModel, PortRangeForwardingListStatus> {
   const PortRangeForwardingListState({
     required super.settings,
     required super.status,
@@ -76,7 +75,7 @@ class PortRangeForwardingListState extends FeatureState<
 
   @override
   PortRangeForwardingListState copyWith({
-    Preservable<PortRangeForwardingRuleList>? settings,
+    Preservable<PortRangeForwardingRuleListUIModel>? settings,
     PortRangeForwardingListStatus? status,
   }) {
     return PortRangeForwardingListState(
@@ -97,7 +96,7 @@ class PortRangeForwardingListState extends FeatureState<
     return PortRangeForwardingListState(
       settings: Preservable.fromMap(
         map['settings'] as Map<String, dynamic>,
-        (valueMap) => PortRangeForwardingRuleList.fromMap(
+        (valueMap) => PortRangeForwardingRuleListUIModel.fromMap(
             valueMap as Map<String, dynamic>),
       ),
       status: PortRangeForwardingListStatus.fromMap(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/_ports.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/views/widgets/protocol_utils.dart';
@@ -38,7 +38,7 @@ class _PortRangeForwardingContentViewState
       TextEditingController();
 
   // Editing state
-  PortRangeForwardingRule? _editingRule;
+  PortRangeForwardingRuleUIModel? _editingRule;
   bool _isInitializing = false;
   StateSetter? _sheetStateSetter;
 
@@ -78,7 +78,7 @@ class _PortRangeForwardingContentViewState
     final state = ref.watch(portRangeForwardingListProvider);
     final isAddEnabled = !_notifier.isExceedMax();
 
-    return AppDataTable<PortRangeForwardingRule>(
+    return AppDataTable<PortRangeForwardingRuleUIModel>(
       data: state.current.rules,
       columns: _buildColumns(context, state),
       totalRows: state.current.rules.length,
@@ -88,7 +88,7 @@ class _PortRangeForwardingContentViewState
       onSave: _handleSave,
       emptyMessage: loc(context).noPortRangeForwarding,
       showAddButton: isAddEnabled,
-      onCreateTemplate: () => PortRangeForwardingRule(
+      onCreateTemplate: () => PortRangeForwardingRuleUIModel(
         isEnabled: true,
         firstExternalPort: 0,
         lastExternalPort: 0,
@@ -110,11 +110,11 @@ class _PortRangeForwardingContentViewState
     );
   }
 
-  List<AppTableColumn<PortRangeForwardingRule>> _buildColumns(
+  List<AppTableColumn<PortRangeForwardingRuleUIModel>> _buildColumns(
       BuildContext context, PortRangeForwardingListState state) {
     return [
       // Column 0: Application Name
-      AppTableColumn<PortRangeForwardingRule>(
+      AppTableColumn<PortRangeForwardingRuleUIModel>(
         label: loc(context).applicationName,
         cellBuilder: (_, rule) => AppText.bodyMedium(rule.description),
         editBuilder: (_, rule, setSheetState) {
@@ -144,7 +144,7 @@ class _PortRangeForwardingContentViewState
       ),
 
       // Column 1: Port Range (Start - End)
-      AppTableColumn<PortRangeForwardingRule>(
+      AppTableColumn<PortRangeForwardingRuleUIModel>(
         label: loc(context).startEndPorts,
         cellBuilder: (_, rule) => AppText.bodyMedium(
             '${rule.firstExternalPort} ${loc(context).to} ${rule.lastExternalPort}'),
@@ -161,7 +161,7 @@ class _PortRangeForwardingContentViewState
       ),
 
       // Column 2: Protocol
-      AppTableColumn<PortRangeForwardingRule>(
+      AppTableColumn<PortRangeForwardingRuleUIModel>(
         label: loc(context).protocol,
         cellBuilder: (_, rule) =>
             AppText.bodyMedium(getProtocolTitle(context, rule.protocol)),
@@ -191,7 +191,7 @@ class _PortRangeForwardingContentViewState
       ),
 
       // Column 3: Device IP
-      AppTableColumn<PortRangeForwardingRule>(
+      AppTableColumn<PortRangeForwardingRuleUIModel>(
         label: loc(context).deviceIP,
         cellBuilder: (_, rule) =>
             AppText.bodyMedium(rule.internalServerIPAddress),
@@ -348,13 +348,13 @@ class _PortRangeForwardingContentViewState
     _clearControllers();
   }
 
-  Future<bool> _handleDelete(PortRangeForwardingRule rule) async {
+  Future<bool> _handleDelete(PortRangeForwardingRuleUIModel rule) async {
     _notifier.deleteRule(rule);
     _clearControllers();
     return true;
   }
 
-  Future<bool> _handleAdd(PortRangeForwardingRule templateRule) async {
+  Future<bool> _handleAdd(PortRangeForwardingRuleUIModel templateRule) async {
     // Initialize provider with template
     final state = ref.read(portRangeForwardingListProvider);
     ref.read(portRangeForwardingRuleProvider.notifier).init(
@@ -378,7 +378,7 @@ class _PortRangeForwardingContentViewState
     return true;
   }
 
-  Future<bool> _handleSave(PortRangeForwardingRule originalRule) async {
+  Future<bool> _handleSave(PortRangeForwardingRuleUIModel originalRule) async {
     _validateAll();
     if (!_isValid()) {
       return false;
@@ -397,8 +397,8 @@ class _PortRangeForwardingContentViewState
     return true;
   }
 
-  PortRangeForwardingRule _buildRuleFromControllers(
-      PortRangeForwardingRule template) {
+  PortRangeForwardingRuleUIModel _buildRuleFromControllers(
+      PortRangeForwardingRuleUIModel template) {
     return template.copyWith(
       description: _applicationTextController.text,
       firstExternalPort: int.tryParse(_firstPortTextController.text) ?? 0,

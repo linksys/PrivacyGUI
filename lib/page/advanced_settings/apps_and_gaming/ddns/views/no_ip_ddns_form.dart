@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/models/_models.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class NoIPDNSForm extends StatefulWidget {
-  final NoIPSettings? value;
-  final void Function(NoIPSettings?) onFormChanged;
+  final NoIPDNSProviderUIModel? value;
+  final void Function(NoIPDNSProviderUIModel?) onFormChanged;
 
   const NoIPDNSForm({
     super.key,

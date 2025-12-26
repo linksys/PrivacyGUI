@@ -2,10 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
-import 'package:privacy_gui/core/jnap/models/no_ip_settings.dart';
-import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/models/_models.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/dyn_ddns_form.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/views/no_ip_ddns_form.dart';
@@ -124,8 +122,8 @@ void main() {
       'DDNS - dyn.com',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings =
-            DDNSSettings(provider: DDNSProvider.create(dynDNSProviderName));
+        final settings = DDNSSettingsUIModel(
+            provider: DDNSProviderUIModel.create(dynDNSProviderName));
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
             settings: Preservable(original: settings, current: settings)));
         final context = await testHelper.pumpView(
@@ -155,19 +153,17 @@ void main() {
       'DDNS - dyn.com filled up',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings = DDNSSettings(
-          provider: DynDNSProvider(
-            settings: const DynDNSSettings(
-              username: 'username',
-              password: 'password',
-              hostName: 'hostname',
-              isWildcardEnabled: true,
-              mode: 'Dynamic',
-              isMailExchangeEnabled: true,
-              mailExchangeSettings: DynDNSMailExchangeSettings(
-                hostName: 'mail exchange',
-                isBackup: true,
-              ),
+        final settings = DDNSSettingsUIModel(
+          provider: DynDNSProviderUIModel(
+            username: 'username',
+            password: 'password',
+            hostName: 'hostname',
+            isWildcardEnabled: true,
+            mode: 'Dynamic',
+            isMailExchangeEnabled: true,
+            mailExchangeSettings: const DynDNSMailExchangeUIModel(
+              hostName: 'mail exchange',
+              isBackup: true,
             ),
           ),
         );
@@ -204,19 +200,17 @@ void main() {
       'DDNS - dyn.com system type',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings = DDNSSettings(
-          provider: DynDNSProvider(
-            settings: const DynDNSSettings(
-              username: 'username',
-              password: 'password',
-              hostName: 'hostname',
-              isWildcardEnabled: true,
-              mode: 'Dynamic',
-              isMailExchangeEnabled: true,
-              mailExchangeSettings: DynDNSMailExchangeSettings(
-                hostName: 'mail exchange',
-                isBackup: true,
-              ),
+        final settings = DDNSSettingsUIModel(
+          provider: DynDNSProviderUIModel(
+            username: 'username',
+            password: 'password',
+            hostName: 'hostname',
+            isWildcardEnabled: true,
+            mode: 'Dynamic',
+            isMailExchangeEnabled: true,
+            mailExchangeSettings: const DynDNSMailExchangeUIModel(
+              hostName: 'mail exchange',
+              isBackup: true,
             ),
           ),
         );
@@ -257,8 +251,8 @@ void main() {
       'DDNS - No-IP.com',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings =
-            DDNSSettings(provider: DDNSProvider.create(noIPDNSProviderName));
+        final settings = DDNSSettingsUIModel(
+            provider: DDNSProviderUIModel.create(noIPDNSProviderName));
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
             settings: Preservable(original: settings, current: settings)));
         final context = await testHelper.pumpView(
@@ -287,13 +281,11 @@ void main() {
       'DDNS - No-IP.com filled up',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings = DDNSSettings(
-            provider: NoIPDNSProvider(
-          settings: const NoIPSettings(
-            username: 'username',
-            password: 'password',
-            hostName: 'hostname',
-          ),
+        final settings = DDNSSettingsUIModel(
+            provider: NoIPDNSProviderUIModel(
+          username: 'username',
+          password: 'password',
+          hostName: 'hostname',
         ));
 
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
@@ -324,8 +316,8 @@ void main() {
       'DDNS - TZO',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings =
-            DDNSSettings(provider: DDNSProvider.create(tzoDNSProviderName));
+        final settings = DDNSSettingsUIModel(
+            provider: DDNSProviderUIModel.create(tzoDNSProviderName));
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
             settings: Preservable(original: settings, current: settings)));
         final context = await testHelper.pumpView(
@@ -354,13 +346,11 @@ void main() {
       'DDNS - TZO filled up',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
-        final settings = DDNSSettings(
-            provider: TzoDNSProvider(
-          settings: const TZOSettings(
-            username: 'username',
-            password: 'password',
-            hostName: 'hostname',
-          ),
+        final settings = DDNSSettingsUIModel(
+            provider: TzoDNSProviderUIModel(
+          username: 'username',
+          password: 'password',
+          hostName: 'hostname',
         ));
         when(testHelper.mockDDNSNotifier.build()).thenReturn(state.copyWith(
             settings: Preservable(original: settings, current: settings)));

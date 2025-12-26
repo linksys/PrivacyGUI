@@ -1,9 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/dyn_dns_settings.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/models/_models.dart';
 import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 
 import 'package:ui_kit_library/ui_kit.dart';
@@ -22,8 +22,8 @@ enum DynDDNSSystem {
 }
 
 class DynDNSForm extends ConsumerStatefulWidget {
-  final DynDNSSettings? value;
-  final void Function(DynDNSSettings?) onFormChanged;
+  final DynDNSProviderUIModel? value;
+  final void Function(DynDNSProviderUIModel?) onFormChanged;
 
   const DynDNSForm({
     super.key,
@@ -148,7 +148,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
               onChanged: (value) {
                 final mailExchangeSettings =
                     widget.value?.mailExchangeSettings ??
-                        const DynDNSMailExchangeSettings(
+                        const DynDNSMailExchangeUIModel(
                             hostName: '', isBackup: false);
                 widget.onFormChanged.call(widget.value?.copyWith(
                     isMailExchangeEnabled: value.isNotEmpty,
@@ -170,7 +170,7 @@ class _DynDNSFormState extends ConsumerState<DynDNSForm> {
                 onChanged: (value) {
                   final mailExchangeSettings =
                       widget.value?.mailExchangeSettings ??
-                          const DynDNSMailExchangeSettings(
+                          const DynDNSMailExchangeUIModel(
                               hostName: '', isBackup: false);
                   widget.onFormChanged.call(widget.value?.copyWith(
                       mailExchangeSettings: () =>

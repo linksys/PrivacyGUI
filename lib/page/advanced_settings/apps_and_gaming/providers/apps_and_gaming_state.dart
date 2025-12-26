@@ -1,20 +1,19 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/core/jnap/models/port_range_forwarding_rule.dart';
-import 'package:privacy_gui/core/jnap/models/port_range_triggering_rule.dart';
-import 'package:privacy_gui/core/jnap/models/single_port_forwarding_rule.dart';
-
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/models/_models.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/port_range_triggering_rule_ui_model.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ports/models/single_port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/providers/empty_status.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
 class AppsAndGamingSettings extends Equatable {
-  final DDNSSettings ddnsSettings;
-  final SinglePortForwardingRuleList singlePortForwardingList;
-  final PortRangeForwardingRuleList portRangeForwardingList;
-  final PortRangeTriggeringRuleList portRangeTriggeringList;
+  final DDNSSettingsUIModel ddnsSettings;
+  final SinglePortForwardingRuleListUIModel singlePortForwardingList;
+  final PortRangeForwardingRuleListUIModel portRangeForwardingList;
+  final PortRangeTriggeringRuleListUIModel portRangeTriggeringList;
 
   const AppsAndGamingSettings({
     required this.ddnsSettings,
@@ -32,10 +31,10 @@ class AppsAndGamingSettings extends Equatable {
       ];
 
   AppsAndGamingSettings copyWith({
-    DDNSSettings? ddnsSettings,
-    SinglePortForwardingRuleList? singlePortForwardingList,
-    PortRangeForwardingRuleList? portRangeForwardingList,
-    PortRangeTriggeringRuleList? portRangeTriggeringList,
+    DDNSSettingsUIModel? ddnsSettings,
+    SinglePortForwardingRuleListUIModel? singlePortForwardingList,
+    PortRangeForwardingRuleListUIModel? portRangeForwardingList,
+    PortRangeTriggeringRuleListUIModel? portRangeTriggeringList,
   }) {
     return AppsAndGamingSettings(
       ddnsSettings: ddnsSettings ?? this.ddnsSettings,
@@ -59,13 +58,13 @@ class AppsAndGamingSettings extends Equatable {
 
   factory AppsAndGamingSettings.fromMap(Map<String, dynamic> map) {
     return AppsAndGamingSettings(
-      ddnsSettings:
-          DDNSSettings.fromMap(map['ddnsSettings'] as Map<String, dynamic>),
-      singlePortForwardingList: SinglePortForwardingRuleList.fromMap(
+      ddnsSettings: DDNSSettingsUIModel.fromMap(
+          map['ddnsSettings'] as Map<String, dynamic>),
+      singlePortForwardingList: SinglePortForwardingRuleListUIModel.fromMap(
           map['singlePortForwardingList'] as Map<String, dynamic>),
-      portRangeForwardingList: PortRangeForwardingRuleList.fromMap(
+      portRangeForwardingList: PortRangeForwardingRuleListUIModel.fromMap(
           map['portRangeForwardingList'] as Map<String, dynamic>),
-      portRangeTriggeringList: PortRangeTriggeringRuleList.fromMap(
+      portRangeTriggeringList: PortRangeTriggeringRuleListUIModel.fromMap(
           map['portRangeTriggeringList'] as Map<String, dynamic>),
     );
   }

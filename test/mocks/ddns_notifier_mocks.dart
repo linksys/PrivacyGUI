@@ -7,6 +7,8 @@ import 'dart:async' as _i5;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/models/_models.dart'
+    as _i6;
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_provider.dart'
     as _i4;
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart'
@@ -25,6 +27,7 @@ import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/provider
 // ignore_for_file: unnecessary_parenthesis
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
+// ignore_for_file: invalid_use_of_internal_member
 
 class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
     implements _i2.NotifierProviderRef<T> {
@@ -111,7 +114,7 @@ class MockDDNSNotifier extends _i2.Notifier<_i3.DDNSState>
       ) as _i3.DDNSState);
 
   @override
-  _i5.Future<(_i3.DDNSSettings?, _i3.DDNSStatus?)> performFetch({
+  _i5.Future<(_i6.DDNSSettingsUIModel?, _i6.DDNSStatusUIModel?)> performFetch({
     bool? forceRemote = false,
     bool? updateStatusOnly = false,
   }) =>
@@ -124,22 +127,23 @@ class MockDDNSNotifier extends _i2.Notifier<_i3.DDNSState>
             #updateStatusOnly: updateStatusOnly,
           },
         ),
-        returnValue: _i5.Future<(_i3.DDNSSettings?, _i3.DDNSStatus?)>.value(
+        returnValue: _i5
+            .Future<(_i6.DDNSSettingsUIModel?, _i6.DDNSStatusUIModel?)>.value(
             (null, null)),
-        returnValueForMissingStub:
-            _i5.Future<(_i3.DDNSSettings?, _i3.DDNSStatus?)>.value(
-                (null, null)),
-      ) as _i5.Future<(_i3.DDNSSettings?, _i3.DDNSStatus?)>);
+        returnValueForMissingStub: _i5
+            .Future<(_i6.DDNSSettingsUIModel?, _i6.DDNSStatusUIModel?)>.value(
+            (null, null)),
+      ) as _i5.Future<(_i6.DDNSSettingsUIModel?, _i6.DDNSStatusUIModel?)>);
 
   @override
-  _i5.Future<dynamic> getStatus() => (super.noSuchMethod(
+  _i5.Future<void> getStatus() => (super.noSuchMethod(
         Invocation.method(
           #getStatus,
           [],
         ),
-        returnValue: _i5.Future<dynamic>.value(),
-        returnValueForMissingStub: _i5.Future<dynamic>.value(),
-      ) as _i5.Future<dynamic>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
   _i5.Future<void> performSave() => (super.noSuchMethod(
@@ -161,7 +165,8 @@ class MockDDNSNotifier extends _i2.Notifier<_i3.DDNSState>
       );
 
   @override
-  void setProviderSettings(dynamic settings) => super.noSuchMethod(
+  void setProviderSettings(_i6.DDNSProviderUIModel? settings) =>
+      super.noSuchMethod(
         Invocation.method(
           #setProviderSettings,
           [settings],

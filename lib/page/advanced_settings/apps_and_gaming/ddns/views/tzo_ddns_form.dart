@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/core/jnap/models/tzo_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/models/_models.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class TzoDNSForm extends StatefulWidget {
-  final TZOSettings? value;
-  final void Function(TZOSettings?) onFormChanged;
+  final TzoDNSProviderUIModel? value;
+  final void Function(TzoDNSProviderUIModel?) onFormChanged;
 
   const TzoDNSForm({
     super.key,
