@@ -10,9 +10,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
+import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/demo/jnap/demo_router_repository.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
@@ -25,6 +27,7 @@ import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
 /// - Auth: Always logged in
 /// - Connectivity: Always online
 /// - Polling: Initializes with empty state (data loaded via DemoRouterRepository)
+/// - PnP: Bypasses auto-configuration checks to skip setup wizard
 ///
 /// All other providers use their **original implementation** and get data
 /// through the DemoRouterRepository -> JnapMockRegistry -> demo_cache_data.json
@@ -47,6 +50,9 @@ class DemoProviders {
 
         // 5. Geolocation: Bypass cloud service call
         geolocationProvider.overrideWith(() => _DemoGeolocationNotifier()),
+
+        // 6. PnP: Bypass setup wizard
+        pnpProvider.overrideWith(() => _DemoPnpNotifier()),
       ];
 }
 
@@ -78,6 +84,18 @@ class _DemoAuthNotifier extends AuthNotifier {
       loginType: LoginType.local,
       localPassword: 'demo-password',
     );
+  }
+
+  @override
+  Future<AuthState?> init() async {
+    debugPrint('🔐 Demo: Auth init called - preserving local login');
+    // In demo mode, we ignore storage and always return the local login state
+    final demoState = AuthState(
+      loginType: LoginType.local,
+      localPassword: 'demo-password',
+    );
+    state = AsyncValue.data(demoState);
+    return demoState;
   }
 
   @override
@@ -133,5 +151,31 @@ class _DemoPollingNotifier extends PollingNotifier {
       isReady: false,
       data: {},
     );
+  }
+}
+
+/// Demo PnP notifier - bypasses setup wizard checks
+class _DemoPnpNotifier extends PnpNotifier {
+  @override
+  Future<AutoConfigurationSettings?> autoConfigurationCheck() async {
+    debugPrint('🔌 Demo: Bypassing auto-configuration check');
+    return const AutoConfigurationSettings(isAutoConfigurationSupported: false);
+  }
+
+  @override
+  Future<bool> isRouterPasswordSet() async {
+    // Return true to simulate that the router is already configured
+    return true;
+  }
+
+  @override
+  Future fetchDeviceInfo([bool clearCurrentSN = true]) async {
+    // Just call super, but wrap in try-catch to be safe,
+    // although DemoRouterRepository should handle it.
+    try {
+      await super.fetchDeviceInfo(clearCurrentSN);
+    } catch (e) {
+      debugPrint('🔌 Demo: fetchDeviceInfo suppressed error: $e');
+    }
   }
 }
