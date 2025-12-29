@@ -290,3 +290,20 @@ final class StorageError extends ServiceError {
   final Object? originalError;
   const StorageError({this.originalError});
 }
+
+// ============================================================================
+// Device/Router Errors
+// ============================================================================
+
+/// Serial number mismatch between expected and actual router
+final class SerialNumberMismatchError extends ServiceError {
+  final String expected;
+  final String actual;
+  const SerialNumberMismatchError({required this.expected, required this.actual});
+}
+
+/// Router connectivity error (cannot reach router)
+final class ConnectivityError extends ServiceError {
+  final String? message;
+  const ConnectivityError({this.message});
+}
