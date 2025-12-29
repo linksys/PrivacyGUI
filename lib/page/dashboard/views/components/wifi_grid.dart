@@ -104,7 +104,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
 }
 
 class WiFiCard extends ConsumerStatefulWidget {
-  final DashboardWiFiItem item;
+  final DashboardWiFiUIModel item;
   final int index;
   final bool canBeDisabled;
   final bool tooltipVisible;
