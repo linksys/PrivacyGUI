@@ -49,6 +49,9 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     final expiredCountdown =
         isRemote ? ref.watch(remoteClientProvider).expiredCountdown : null;
 
+    // Watch Theme.of(context) to trigger rebuild when global theme changes
+    Theme.of(context);
+
     // Use dark theme's color scheme for TopBar
     final darkTheme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
     final colorScheme = darkTheme.colorScheme;

@@ -13,6 +13,8 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
+import 'widgets/demo_theme_settings_fab.dart';
+
 /// Demo version of the Linksys application.
 ///
 /// This app uses mock providers instead of real network services,
@@ -48,15 +50,43 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
 
-    final themeColor = appSettings.themeColor ?? AppPalette.brandPrimary;
-    final themeConfig = getIt<ThemeJsonConfig>();
-    final appLightTheme = themeConfig.createLightTheme(themeColor);
-    final appDarkTheme = themeConfig.createDarkTheme(themeColor);
+    // Watch demo theme config for dynamic updates
+    final demoConfig = ref.watch(demoThemeConfigProvider);
+
+    // Use demo seedColor if set, otherwise fall back to appSettings
+    final effectiveSeedColor = demoConfig.seedColor ?? appSettings.themeColor;
+
+    // Build dynamic theme from demo config
+    final themeData = _buildThemeData(
+      brightness: appSettings.themeMode == ThemeMode.dark
+          ? Brightness.dark
+          : Brightness.light,
+      style: demoConfig.style,
+      globalOverlay: demoConfig.globalOverlay,
+      visualEffects: demoConfig.visualEffects,
+      userThemeColor: effectiveSeedColor,
+    );
+
+    final darkTheme = _buildThemeData(
+      brightness: Brightness.dark,
+      style: demoConfig.style,
+      globalOverlay: demoConfig.globalOverlay,
+      visualEffects: demoConfig.visualEffects,
+      userThemeColor: effectiveSeedColor,
+    );
+
+    // Update GetIt with the new dark theme so BottomNavigationMenu (TopBar) picks it up.
+    // This is safe because GetIt lookup is synchronous and we update before subtree builds.
+    if (getIt.isRegistered<ThemeData>(instanceName: 'darkThemeData')) {
+      getIt.unregister<ThemeData>(instanceName: 'darkThemeData');
+    }
+    getIt.registerSingleton<ThemeData>(darkTheme,
+        instanceName: 'darkThemeData');
 
     return MaterialApp.router(
       onGenerateTitle: (context) => '${loc(context).appTitle} (Demo)',
-      theme: appLightTheme,
-      darkTheme: appDarkTheme,
+      theme: themeData,
+      darkTheme: darkTheme,
       themeMode: appSettings.themeMode,
       locale: appSettings.locale ?? systemLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -76,6 +106,12 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
                 right: 0,
                 child: _DemoModeBanner(),
               ),
+              // Theme settings FAB
+              const Positioned(
+                bottom: 16,
+                right: 16,
+                child: DemoThemeSettingsFab(),
+              ),
             ],
           ),
         ),
@@ -83,6 +119,62 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
       routeInformationProvider: router.routeInformationProvider,
       routeInformationParser: router.routeInformationParser,
       routerDelegate: router.routerDelegate,
+    );
+  }
+
+  /// Build theme data from dynamic configuration.
+  ThemeData _buildThemeData({
+    required Brightness brightness,
+    required String style,
+    GlobalOverlayType? globalOverlay,
+    int visualEffects = AppThemeConfig.effectAll,
+    Color? userThemeColor,
+  }) {
+    // Get base JSON config
+    final themeConfig = getIt<ThemeJsonConfig>();
+    final baseJson = brightness == Brightness.dark
+        ? themeConfig.darkJson
+        : themeConfig.lightJson;
+
+    // Create dynamic config by merging base with overrides
+    final dynamicJson = Map<String, dynamic>.from(baseJson);
+    dynamicJson['style'] = style;
+    if (globalOverlay != null) {
+      dynamicJson['globalOverlay'] = globalOverlay.name;
+    } else {
+      dynamicJson.remove('globalOverlay');
+    }
+    dynamicJson['visualEffects'] = visualEffects;
+
+    // Override seed color if user set one
+    if (userThemeColor != null) {
+      dynamicJson['seedColor'] =
+          '#${userThemeColor.toARGB32().toRadixString(16).substring(2)}';
+    }
+
+    // Build design theme
+    final designTheme = CustomDesignTheme.fromJson(dynamicJson);
+
+    // Parse effective seed color
+    final seedColorHex = dynamicJson['seedColor'] as String?;
+    Color? parsedSeedColor;
+    if (seedColorHex != null) {
+      try {
+        final cleanHex = seedColorHex.replaceAll('#', '');
+        if (cleanHex.length == 6) {
+          parsedSeedColor = Color(int.parse('FF$cleanHex', radix: 16));
+        } else if (cleanHex.length == 8) {
+          parsedSeedColor = Color(int.parse(cleanHex, radix: 16));
+        }
+      } catch (_) {}
+    }
+    final effectiveSeedColor =
+        userThemeColor ?? parsedSeedColor ?? AppPalette.brandPrimary;
+
+    return AppTheme.create(
+      brightness: brightness,
+      seedColor: effectiveSeedColor,
+      designThemeBuilder: (_) => designTheme,
     );
   }
 

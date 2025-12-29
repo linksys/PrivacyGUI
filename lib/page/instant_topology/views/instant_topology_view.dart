@@ -183,8 +183,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       ),
       enableAnimation: true,
       clientVisibility: ClientVisibility.onHover,
-      // Use unified registry: RippleNode for Graph View, Pulse/Liquid for Tree View
-      nodeRendererRegistry: NodeRendererRegistry.unified,
+      // Let AppTopology use theme's topologySpec.gatewayRenderer/extenderRenderer/clientRenderer
+      // nodeRendererRegistry: NodeRendererRegistry.unified,
       // Disable interaction for Internet node
       nodeTapFilter: (node) => !node.isInternet,
       // Detail panel configuration

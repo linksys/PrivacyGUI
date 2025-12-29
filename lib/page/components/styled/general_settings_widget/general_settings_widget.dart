@@ -32,6 +32,9 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
             LoginType.none;
     final isRemote = loginType == LoginType.remote;
 
+    // Watch Theme.of(context) to trigger rebuild when global theme changes
+    Theme.of(context);
+
     // Use dark theme's color scheme for icon color
     final darkTheme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
     final colorScheme = darkTheme.colorScheme;

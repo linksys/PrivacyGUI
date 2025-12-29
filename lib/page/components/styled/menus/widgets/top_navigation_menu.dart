@@ -26,6 +26,9 @@ class _TopNavigationMenuState extends State<TopNavigationMenu> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch Theme.of(context) to trigger rebuild when global theme changes
+    Theme.of(context);
+
     // Use dark theme for navigation chips
     final darkTheme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
     final selectedIndex =

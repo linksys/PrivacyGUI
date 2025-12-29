@@ -17,12 +17,68 @@ class ThemeJsonConfig {
   })  : _lightJson = lightJson,
         _darkJson = darkJson;
 
+  /// Public getter for light theme JSON configuration.
+  Map<String, dynamic> get lightJson => _lightJson;
+
+  /// Public getter for dark theme JSON configuration.
+  Map<String, dynamic> get darkJson => _darkJson;
+
   /// Default configuration (Glass style).
   factory ThemeJsonConfig.defaultConfig() => ThemeJsonConfig._(
         lightJson: {
-          'style': 'glass',
-          'visualEffects': 31,
-          'brightness': 'light'
+          "style": "aurora",
+          "brightness": "light",
+          "seedColor": "#8E08EA",
+          "globalOverlay": "snow",
+          "overrides": {
+            "semantic": {"success": "#527589"},
+            "component": {
+              "skeleton": {
+                "animationType": "blink",
+                "baseColor": null,
+                "highlightColor": null
+              },
+              "topology": {
+                "gatewayNormalBackgroundColor": null,
+                "gatewayNormalBorderColor": null,
+                "gatewayNormalIconColor": null,
+                "gatewayNormalGlowColor": null,
+                "gatewayHighLoadBackgroundColor": null,
+                "gatewayHighLoadBorderColor": null,
+                "gatewayHighLoadIconColor": null,
+                "gatewayHighLoadGlowColor": null,
+                "gatewayOfflineBackgroundColor": null,
+                "gatewayOfflineBorderColor": null,
+                "gatewayOfflineIconColor": null,
+                "extenderNormalBackgroundColor": null,
+                "extenderNormalBorderColor": null,
+                "extenderNormalIconColor": null,
+                "extenderNormalGlowColor": null,
+                "extenderHighLoadBackgroundColor": null,
+                "extenderHighLoadBorderColor": null,
+                "extenderHighLoadIconColor": null,
+                "extenderHighLoadGlowColor": null,
+                "extenderOfflineBackgroundColor": null,
+                "extenderOfflineBorderColor": null,
+                "extenderOfflineIconColor": null,
+                "clientNormalBackgroundColor": null,
+                "clientNormalBorderColor": null,
+                "clientNormalIconColor": null,
+                "clientNormalGlowColor": null,
+                "clientOfflineBackgroundColor": null,
+                "clientOfflineBorderColor": null,
+                "clientOfflineIconColor": null,
+                "ethernetLinkColor": null,
+                "wifiStrongColor": null,
+                "wifiMediumColor": null,
+                "wifiWeakColor": null,
+                "wifiUnknownColor": null,
+                "gatewayRenderer": "liquid",
+                "extenderRenderer": "liquid",
+                "clientRenderer": "liquid"
+              }
+            }
+          }
         },
         darkJson: {'style': 'glass', 'visualEffects': 31, 'brightness': 'dark'},
       );
@@ -99,9 +155,16 @@ class ThemeJsonConfig {
     }
 
     final designTheme = CustomDesignTheme.fromJson(json);
+    // Parse seedColor from JSON or use override or fallback to brandPrimary
+    final seedColorHex = json['seedColor'] as String?;
+    final parsedSeedColor =
+        seedColorHex != null ? _parseColor(seedColorHex) : null;
+    final effectiveSeedColor =
+        overrideSeedColor ?? parsedSeedColor ?? AppPalette.brandPrimary;
+
     return AppTheme.create(
       brightness: Brightness.light,
-      seedColor: overrideSeedColor ?? AppPalette.brandPrimary,
+      seedColor: effectiveSeedColor,
       designThemeBuilder: (_) => designTheme,
     );
   }
@@ -115,17 +178,30 @@ class ThemeJsonConfig {
     }
 
     final designTheme = CustomDesignTheme.fromJson(json);
-    // return AppTheme.create(
-    //   brightness: Brightness.dark,
-    //   seedColor: overrideSeedColor ?? AppPalette.brandPrimary,
-    //   designThemeBuilder: (_) => designTheme,
-    // );
-    // TODO: Temporary workaround for dark mode creation to ensure consistency,
-    // verifying parameter passing.
+    // Parse seedColor from JSON or use override or fallback to brandPrimary
+    final seedColorHex = json['seedColor'] as String?;
+    final parsedSeedColor =
+        seedColorHex != null ? _parseColor(seedColorHex) : null;
+    final effectiveSeedColor =
+        overrideSeedColor ?? parsedSeedColor ?? AppPalette.brandPrimary;
+
     return AppTheme.create(
       brightness: Brightness.dark,
-      seedColor: overrideSeedColor ?? AppPalette.brandPrimary,
+      seedColor: effectiveSeedColor,
       designThemeBuilder: (_) => designTheme,
     );
+  }
+
+  /// Helper to parse color from hex string.
+  static Color? _parseColor(String hex) {
+    try {
+      final cleanHex = hex.replaceAll('#', '');
+      if (cleanHex.length == 6) {
+        return Color(int.parse('FF$cleanHex', radix: 16));
+      } else if (cleanHex.length == 8) {
+        return Color(int.parse(cleanHex, radix: 16));
+      }
+    } catch (_) {}
+    return null;
   }
 }

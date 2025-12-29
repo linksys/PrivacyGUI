@@ -105,12 +105,14 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     router.routerDelegate.removeListener(_onReceiveRouteChanged);
     router.routerDelegate.addListener(_onReceiveRouteChanged);
 
-    final themeColor = appSettings.themeColor ?? AppPalette.brandPrimary;
+    // Only override theme color if user has explicitly set one
+    // If null, let the JSON config's seedColor be used
+    final userThemeColor = appSettings.themeColor;
 
     // Use ThemeJsonConfig as single source of truth
     final themeConfig = getIt<ThemeJsonConfig>();
-    final appLightTheme = themeConfig.createLightTheme(themeColor);
-    final appDarkTheme = themeConfig.createDarkTheme(themeColor);
+    final appLightTheme = themeConfig.createLightTheme(userThemeColor);
+    final appDarkTheme = themeConfig.createDarkTheme(userThemeColor);
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
       theme: appLightTheme,
