@@ -72,8 +72,7 @@ class DeviceManagerService {
       getDevicesData = getSuccess(JNAPAction.getDevices)?.output;
       getWANStatusData = getSuccess(JNAPAction.getWANStatus)?.output;
       getBackHaulInfoData = getSuccess(JNAPAction.getBackhaulInfo)?.output;
-      guestRadioSettings =
-          getSuccess(JNAPAction.getGuestRadioSettings)?.output;
+      guestRadioSettings = getSuccess(JNAPAction.getGuestRadioSettings)?.output;
     }
 
     final List<Layer2Connection> connectionData;
@@ -283,8 +282,8 @@ class DeviceManagerService {
               signalDecibels: e.wirelessConnectionInfo?.stationRSSI ??
                   _getWirelessSignalOf(e, newState),
               connectedDevices: e.connectedDevices
-                  .map((e) =>
-                      e.copyWith(signalDecibels: _getWirelessSignalOf(e, newState)))
+                  .map((e) => e.copyWith(
+                      signalDecibels: _getWirelessSignalOf(e, newState)))
                   .toList(),
             ))
         .toList();

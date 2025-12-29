@@ -451,7 +451,11 @@ class DeviceManagerTestData {
               'channels': [1, 6, 11],
             }
           ],
-          'supportedSecurityTypes': const ['None', 'WPA2-Personal', 'WPA3-Personal'],
+          'supportedSecurityTypes': const [
+            'None',
+            'WPA2-Personal',
+            'WPA3-Personal'
+          ],
           'maxRADIUSSharedKeyLength': 64,
           'settings': {
             'isEnabled': true,
@@ -475,7 +479,11 @@ class DeviceManagerTestData {
               'channels': [36, 40, 44, 48],
             }
           ],
-          'supportedSecurityTypes': const ['None', 'WPA2-Personal', 'WPA3-Personal'],
+          'supportedSecurityTypes': const [
+            'None',
+            'WPA2-Personal',
+            'WPA3-Personal'
+          ],
           'maxRADIUSSharedKeyLength': 64,
           'settings': {
             'isEnabled': true,

@@ -35,7 +35,9 @@ void main() {
       expect(result.guestRadioSettings, isNull);
     });
 
-    test('returns complete state with all device data when valid polling data provided', () {
+    test(
+        'returns complete state with all device data when valid polling data provided',
+        () {
       // Arrange
       final pollingData = DeviceManagerTestData.createCompletePollingData();
 
@@ -45,7 +47,8 @@ void main() {
       // Assert
       expect(result, isA<DeviceManagerState>());
       expect(result.deviceList, isNotEmpty);
-      expect(result.deviceList.length, greaterThanOrEqualTo(3)); // master, slave, 2 external
+      expect(result.deviceList.length,
+          greaterThanOrEqualTo(3)); // master, slave, 2 external
       expect(result.wirelessConnections, isNotEmpty);
       expect(result.radioInfos, isNotEmpty);
       expect(result.wanStatus, isNotNull);

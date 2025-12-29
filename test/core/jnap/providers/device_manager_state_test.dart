@@ -295,7 +295,9 @@ void main() {
         expect(nodes.any((d) => d.deviceID == 'slave-device-id-001'), isTrue);
       });
 
-      test('nodeDevices includes devices with isAuthority true even without nodeType', () {
+      test(
+          'nodeDevices includes devices with isAuthority true even without nodeType',
+          () {
         // Arrange - device with isAuthority true but nodeType null (factory settings)
         final factoryDevice = masterDevice.copyWith(nodeType: null);
         final state = DeviceManagerState(
@@ -312,7 +314,12 @@ void main() {
       test('externalDevices returns only external devices', () {
         // Arrange
         final state = DeviceManagerState(
-          deviceList: [masterDevice, slaveDevice, mainWifiDevice, guestWifiDevice],
+          deviceList: [
+            masterDevice,
+            slaveDevice,
+            mainWifiDevice,
+            guestWifiDevice
+          ],
         );
 
         // Act
@@ -335,8 +342,8 @@ void main() {
         // Assert
         expect(mainWifi, hasLength(2)); // master + mainWifiDevice
         expect(
-            mainWifi.every(
-                (d) => d.connectedWifiType == WifiConnectionType.main),
+            mainWifi
+                .every((d) => d.connectedWifiType == WifiConnectionType.main),
             isTrue);
       });
 
@@ -469,7 +476,8 @@ void main() {
 
         // Assert
         expect(restored.deviceList, hasLength(1));
-        expect(restored.deviceList.first.deviceID, equals('master-device-id-001'));
+        expect(
+            restored.deviceList.first.deviceID, equals('master-device-id-001'));
         expect(restored.lastUpdateTime, equals(12345));
       });
 

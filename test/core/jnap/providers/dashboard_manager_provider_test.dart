@@ -85,14 +85,12 @@ void main() {
 
     test('rebuilds when polling data changes', () async {
       // Arrange
-      final pollingData1 =
-          DashboardManagerTestData.createSuccessfulPollingData(
+      final pollingData1 = DashboardManagerTestData.createSuccessfulPollingData(
         systemStats: DashboardManagerTestData.createSystemStatsSuccess(
           uptimeSeconds: 1000,
         ),
       );
-      final pollingData2 =
-          DashboardManagerTestData.createSuccessfulPollingData(
+      final pollingData2 = DashboardManagerTestData.createSuccessfulPollingData(
         systemStats: DashboardManagerTestData.createSystemStatsSuccess(
           uptimeSeconds: 2000,
         ),
@@ -110,7 +108,8 @@ void main() {
       container = ProviderContainer(
         overrides: [
           dashboardManagerServiceProvider.overrideWithValue(mockService),
-          pollingProvider.overrideWith(() => _MockPollingNotifier(pollingData1)),
+          pollingProvider
+              .overrideWith(() => _MockPollingNotifier(pollingData1)),
         ],
       );
 
@@ -123,7 +122,8 @@ void main() {
       container = ProviderContainer(
         overrides: [
           dashboardManagerServiceProvider.overrideWithValue(mockService),
-          pollingProvider.overrideWith(() => _MockPollingNotifier(pollingData2)),
+          pollingProvider
+              .overrideWith(() => _MockPollingNotifier(pollingData2)),
         ],
       );
 
@@ -177,8 +177,7 @@ void main() {
       when(() => mockService.transformPollingData(any()))
           .thenReturn(const DashboardManagerState());
       when(() => mockService.checkRouterIsBack(any())).thenThrow(
-        const SerialNumberMismatchError(
-            expected: 'EXPECTED', actual: 'ACTUAL'),
+        const SerialNumberMismatchError(expected: 'EXPECTED', actual: 'ACTUAL'),
       );
 
       container = ProviderContainer(

@@ -91,7 +91,8 @@ void main() {
         RawDeviceProperty(name: 'userDeviceName', value: 'New Name'),
       ];
 
-      when(() => mockService.transformPollingData(any())).thenReturn(initialState);
+      when(() => mockService.transformPollingData(any()))
+          .thenReturn(initialState);
       when(() => mockService.updateDeviceNameAndIcon(
             targetId: masterDevice.deviceID,
             newName: 'New Name',
@@ -107,7 +108,9 @@ void main() {
       );
 
       // Act
-      await container.read(deviceManagerProvider.notifier).updateDeviceNameAndIcon(
+      await container
+          .read(deviceManagerProvider.notifier)
+          .updateDeviceNameAndIcon(
             targetId: masterDevice.deviceID,
             newName: 'New Name',
             isLocation: false,
@@ -128,8 +131,7 @@ void main() {
       // Arrange
       when(() => mockService.transformPollingData(any()))
           .thenReturn(const DeviceManagerState());
-      when(() => mockService.deleteDevices([]))
-          .thenAnswer((_) async => {});
+      when(() => mockService.deleteDevices([])).thenAnswer((_) async => {});
 
       container = ProviderContainer(
         overrides: [
@@ -139,13 +141,16 @@ void main() {
       );
 
       // Act
-      await container.read(deviceManagerProvider.notifier).deleteDevices(deviceIds: []);
+      await container
+          .read(deviceManagerProvider.notifier)
+          .deleteDevices(deviceIds: []);
 
       // Assert
       verify(() => mockService.deleteDevices([])).called(1);
     });
 
-    test('delegates to service and removes deleted devices from state', () async {
+    test('delegates to service and removes deleted devices from state',
+        () async {
       // Arrange
       final device1 =
           LinksysDevice.fromMap(DeviceManagerTestData.createExternalDevice(
@@ -159,7 +164,8 @@ void main() {
         deviceList: [device1, device2],
       );
 
-      when(() => mockService.transformPollingData(any())).thenReturn(initialState);
+      when(() => mockService.transformPollingData(any()))
+          .thenReturn(initialState);
       when(() => mockService.deleteDevices(['device-1']))
           .thenAnswer((_) async => {'device-1': true});
 
@@ -172,8 +178,8 @@ void main() {
 
       // Act
       await container.read(deviceManagerProvider.notifier).deleteDevices(
-            deviceIds: ['device-1'],
-          );
+        deviceIds: ['device-1'],
+      );
 
       // Assert
       verify(() => mockService.deleteDevices(['device-1'])).called(1);
