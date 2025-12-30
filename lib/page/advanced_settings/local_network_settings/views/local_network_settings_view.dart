@@ -263,6 +263,7 @@ class _LocalNetworkSettingsViewState
         _finishSaveSettings();
       },
     ).catchError((error) {
+      if (!mounted) return;
       final state = ref.read(localNetworkSettingProvider);
       final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
       final regex = RegExp(r'(www\.)?myrouter\.info');
@@ -280,6 +281,7 @@ class _LocalNetworkSettingsViewState
       }
     }, test: (error) => error is JNAPSideEffectError).onError(
         (error, stackTrace) {
+      if (!mounted) return;
       showErrorMessageSnackBar(error);
     });
   }

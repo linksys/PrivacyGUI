@@ -4,23 +4,20 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 
-import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
-import 'package:privacy_gui/core/jnap/models/radio_info.dart';
-
-class DashboardSpeedItem extends Equatable {
+class DashboardSpeedUIModel extends Equatable {
   final String unit;
   final String value;
 
-  const DashboardSpeedItem({
+  const DashboardSpeedUIModel({
     required this.unit,
     required this.value,
   });
 
-  DashboardSpeedItem copyWith({
+  DashboardSpeedUIModel copyWith({
     String? unit,
     String? value,
   }) {
-    return DashboardSpeedItem(
+    return DashboardSpeedUIModel(
       unit: unit ?? this.unit,
       value: value ?? this.value,
     );
@@ -33,8 +30,8 @@ class DashboardSpeedItem extends Equatable {
     };
   }
 
-  factory DashboardSpeedItem.fromMap(Map<String, dynamic> map) {
-    return DashboardSpeedItem(
+  factory DashboardSpeedUIModel.fromMap(Map<String, dynamic> map) {
+    return DashboardSpeedUIModel(
       unit: map['unit'] ?? '',
       value: map['value'] ?? '',
     );
@@ -42,17 +39,17 @@ class DashboardSpeedItem extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory DashboardSpeedItem.fromJson(String source) =>
-      DashboardSpeedItem.fromMap(json.decode(source));
+  factory DashboardSpeedUIModel.fromJson(String source) =>
+      DashboardSpeedUIModel.fromMap(json.decode(source));
 
   @override
-  String toString() => 'DasboardSpeedItem(unit: $unit, value: $value)';
+  String toString() => 'DashboardSpeedUIModel(unit: $unit, value: $value)';
 
   @override
   List<Object> get props => [unit, value];
 }
 
-class DashboardWiFiItem extends Equatable {
+class DashboardWiFiUIModel extends Equatable {
   final String ssid;
   final String password;
   final List<String> radios;
@@ -60,7 +57,7 @@ class DashboardWiFiItem extends Equatable {
   final bool isEnabled;
   final int numOfConnectedDevices;
 
-  const DashboardWiFiItem({
+  const DashboardWiFiUIModel({
     required this.ssid,
     required this.password,
     required this.radios,
@@ -69,33 +66,7 @@ class DashboardWiFiItem extends Equatable {
     required this.numOfConnectedDevices,
   });
 
-  factory DashboardWiFiItem.fromMainRadios(
-      List<RouterRadio> radios, int connectedDevices) {
-    final radio = radios.first;
-    return DashboardWiFiItem(
-      ssid: radio.settings.ssid,
-      password: radio.settings.wpaPersonalSettings?.passphrase ?? '',
-      radios: radios.map((e) => e.radioID).toList(),
-      isGuest: false,
-      isEnabled: radio.settings.isEnabled,
-      numOfConnectedDevices: connectedDevices,
-    );
-  }
-
-  factory DashboardWiFiItem.fromGuestRadios(
-      List<GuestRadioInfo> radios, int connectedDevices) {
-    final radio = radios.first;
-    return DashboardWiFiItem(
-      ssid: radio.guestSSID,
-      password: radio.guestWPAPassphrase ?? '',
-      radios: radios.map((e) => e.radioID).toList(),
-      isGuest: true,
-      isEnabled: radio.isEnabled,
-      numOfConnectedDevices: connectedDevices,
-    );
-  }
-
-  DashboardWiFiItem copyWith({
+  DashboardWiFiUIModel copyWith({
     String? ssid,
     String? password,
     List<String>? radios,
@@ -103,7 +74,7 @@ class DashboardWiFiItem extends Equatable {
     bool? isEnabled,
     int? numOfConnectedDevices,
   }) {
-    return DashboardWiFiItem(
+    return DashboardWiFiUIModel(
       ssid: ssid ?? this.ssid,
       password: password ?? this.password,
       radios: radios ?? this.radios,
@@ -125,8 +96,8 @@ class DashboardWiFiItem extends Equatable {
     };
   }
 
-  factory DashboardWiFiItem.fromMap(Map<String, dynamic> map) {
-    return DashboardWiFiItem(
+  factory DashboardWiFiUIModel.fromMap(Map<String, dynamic> map) {
+    return DashboardWiFiUIModel(
       ssid: map['ssid'] as String,
       password: map['password'] as String,
       radios: List<String>.from(map['radios']),
@@ -138,8 +109,8 @@ class DashboardWiFiItem extends Equatable {
 
   String toJson() => json.encode(toMap());
 
-  factory DashboardWiFiItem.fromJson(String source) =>
-      DashboardWiFiItem.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory DashboardWiFiUIModel.fromJson(String source) =>
+      DashboardWiFiUIModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   bool get stringify => true;
@@ -165,7 +136,7 @@ class DashboardHomeState extends Equatable {
   final int? uptime;
   final String? wanPortConnection;
   final List<String> lanPortConnections;
-  final List<DashboardWiFiItem> wifis;
+  final List<DashboardWiFiUIModel> wifis;
   final String? wanType;
   final String? detectedWANType;
 
@@ -206,8 +177,8 @@ class DashboardHomeState extends Equatable {
       uptime: map['uptime']?.toInt(),
       wanPortConnection: map['wanPortConnection'],
       lanPortConnections: List<String>.from(map['lanPortConnections']),
-      wifis: List<DashboardWiFiItem>.from(
-          map['wifis']?.map((x) => DashboardWiFiItem.fromMap(x))),
+      wifis: List<DashboardWiFiUIModel>.from(
+          map['wifis']?.map((x) => DashboardWiFiUIModel.fromMap(x))),
       wanType: map['wanType'],
       detectedWANType: map['detectedWANType'],
     );
@@ -245,7 +216,7 @@ class DashboardHomeState extends Equatable {
     ValueGetter<int?>? uptime,
     ValueGetter<String?>? wanPortConnection,
     List<String>? lanPortConnections,
-    List<DashboardWiFiItem>? wifis,
+    List<DashboardWiFiUIModel>? wifis,
     ValueGetter<String?>? wanType,
     ValueGetter<String?>? detectedWANType,
   }) {

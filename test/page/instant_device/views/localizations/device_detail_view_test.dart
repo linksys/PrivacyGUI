@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -34,7 +34,7 @@ final _defaultNetworkState =
     LocalNetworkSettingsState.fromMap(mockLocalNetworkSettingsState);
 
 LocalNetworkSettingsState _networkStateWithReservation() {
-  final reservation = DHCPReservation(
+  final reservation = DHCPReservationUIModel(
     macAddress: _defaultExternalState.item.macAddress,
     ipAddress: _defaultExternalState.item.ipv4Address,
     description: 'Reserved device',

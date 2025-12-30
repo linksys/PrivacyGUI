@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_state.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -45,8 +45,14 @@ class _DHCPReservationsContentViewState
 
     Future.doWhile(() => !mounted).then((value) {
       ref.read(deviceFilterConfigProvider.notifier).initFilter();
-      final reservations = ref.read(localNetworkSettingProvider
-          .select((state) => state.status.dhcpReservationList));
+
+      // Fetch initial reservations from LocalNetworkSettings
+      final localNetworkStatus =
+          ref.read(localNetworkSettingProvider.select((state) => state.status));
+
+      // Direct access - LocalNetworkStatus.dhcpReservationList is already UI Model
+      final reservations = localNetworkStatus.dhcpReservationList;
+
       ref
           .read(dhcpReservationProvider.notifier)
           .setInitialReservations(reservations);
@@ -339,7 +345,7 @@ class _DHCPReservationsContentViewState
               ? ref.read(dhcpReservationProvider.notifier).updateReservations(
                     ReservedListItem(
                       reserved: true,
-                      data: DHCPReservation(
+                      data: DHCPReservationUIModel(
                           macAddress: mac, ipAddress: ip, description: name),
                     ),
                     true,

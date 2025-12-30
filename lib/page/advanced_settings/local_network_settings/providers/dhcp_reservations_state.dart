@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/local_network_settings/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 
@@ -137,6 +137,7 @@ class DHCPReservationState
     );
   }
 
+  @override
   String toJson() => json.encode(toMap());
 
   factory DHCPReservationState.fromJson(String source) =>
@@ -148,7 +149,7 @@ class DHCPReservationState
 
 class ReservedListItem extends Equatable {
   final bool reserved;
-  final DHCPReservation data;
+  final DHCPReservationUIModel data;
   const ReservedListItem({
     required this.reserved,
     required this.data,
@@ -156,7 +157,7 @@ class ReservedListItem extends Equatable {
 
   ReservedListItem copyWith({
     bool? reserved,
-    DHCPReservation? data,
+    DHCPReservationUIModel? data,
   }) {
     return ReservedListItem(
       reserved: reserved ?? this.reserved,
@@ -174,7 +175,7 @@ class ReservedListItem extends Equatable {
   factory ReservedListItem.fromMap(Map<String, dynamic> map) {
     return ReservedListItem(
       reserved: map['reserved'] ?? false,
-      data: DHCPReservation.fromMap(map['data']),
+      data: DHCPReservationUIModel.fromMap(map['data']),
     );
   }
 
