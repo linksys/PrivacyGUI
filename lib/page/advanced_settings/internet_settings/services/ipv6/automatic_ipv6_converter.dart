@@ -1,16 +1,10 @@
 import 'package:privacy_gui/core/jnap/models/ipv6_automatic_settings.dart';
 import 'package:privacy_gui/core/jnap/models/ipv6_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/services/ipv6_settings_handler.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/_models.dart';
 
-class AutomaticIpv6SettingsHandler implements Ipv6SettingsHandler {
-  @override
-  WanIPv6Type get wanType => WanIPv6Type.automatic;
-
-  @override
-  Ipv6Setting getIpv6Setting(GetIPv6Settings? ipv6Settings) {
-    return Ipv6Setting(
+class AutomaticIpv6Converter {
+  static Ipv6SettingsUIModel fromJNAP(GetIPv6Settings? ipv6Settings) {
+    return Ipv6SettingsUIModel(
       ipv6ConnectionType: WanIPv6Type.automatic.type,
       isIPv6AutomaticEnabled:
           ipv6Settings?.ipv6AutomaticSettings?.isIPv6AutomaticEnabled ?? false,
@@ -27,34 +21,32 @@ class AutomaticIpv6SettingsHandler implements Ipv6SettingsHandler {
     );
   }
 
-  @override
-  SetIPv6Settings createSetIPv6Settings(Ipv6Setting ipv6Setting) {
-    final hasIPv6rdTunnelSettings = !ipv6Setting.isIPv6AutomaticEnabled &&
-        ipv6Setting.ipv6rdTunnelMode == IPv6rdTunnelMode.manual;
+  static SetIPv6Settings toJNAP(Ipv6SettingsUIModel uiModel) {
+    final hasIPv6rdTunnelSettings = !uiModel.isIPv6AutomaticEnabled &&
+        uiModel.ipv6rdTunnelMode == IPv6rdTunnelMode.manual;
 
     return SetIPv6Settings(
-      wanType: wanType.type,
+      wanType: WanIPv6Type.automatic.type,
       ipv6AutomaticSettings: IPv6AutomaticSettings(
-        isIPv6AutomaticEnabled: ipv6Setting.isIPv6AutomaticEnabled,
-        ipv6rdTunnelMode: ipv6Setting.isIPv6AutomaticEnabled
+        isIPv6AutomaticEnabled: uiModel.isIPv6AutomaticEnabled,
+        ipv6rdTunnelMode: uiModel.isIPv6AutomaticEnabled
             ? null
-            : ipv6Setting.ipv6rdTunnelMode?.value,
+            : uiModel.ipv6rdTunnelMode?.value,
         ipv6rdTunnelSettings: hasIPv6rdTunnelSettings
             ? IPv6rdTunnelSettings(
-                prefix: ipv6Setting.ipv6Prefix ?? '',
-                prefixLength: ipv6Setting.ipv6PrefixLength ?? 0,
-                borderRelay: ipv6Setting.ipv6BorderRelay ?? '',
+                prefix: uiModel.ipv6Prefix ?? '',
+                prefixLength: uiModel.ipv6PrefixLength ?? 0,
+                borderRelay: uiModel.ipv6BorderRelay ?? '',
                 borderRelayPrefixLength:
-                    ipv6Setting.ipv6BorderRelayPrefixLength ?? 0,
+                    uiModel.ipv6BorderRelayPrefixLength ?? 0,
               )
             : null,
       ),
     );
   }
 
-  @override
-  Ipv6Setting updateIpv6Setting(
-      Ipv6Setting currentSetting, Ipv6Setting newValues) {
+  static Ipv6SettingsUIModel updateFromForm(
+      Ipv6SettingsUIModel currentSetting, Ipv6SettingsUIModel newValues) {
     return currentSetting.copyWith(
       ipv6ConnectionType: newValues.ipv6ConnectionType,
       isIPv6AutomaticEnabled: newValues.isIPv6AutomaticEnabled,

@@ -1,22 +1,15 @@
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/wan_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
-import 'package:privacy_gui/page/advanced_settings/internet_settings/services/ipv4_settings_handler.dart';
+import 'package:privacy_gui/page/advanced_settings/internet_settings/models/_models.dart';
 import 'package:privacy_gui/utils.dart';
 
-class PptpSettingsHandler implements Ipv4SettingsHandler {
-  @override
-  WanType get wanType => WanType.pptp;
-
-  @override
-  Ipv4Setting getIpv4Setting(RouterWANSettings? wanSettings) {
+class PptpConverter {
+  static Ipv4SettingsUIModel fromJNAP(RouterWANSettings? wanSettings) {
     final tpSettings = wanSettings?.tpSettings;
     const defaultConnectionBehavior = PPPConnectionBehavior.keepAlive;
     const defaultMaxIdleMinutes = 15;
     const defaultReconnectAfterSeconds = 30;
 
-    return Ipv4Setting(
+    return Ipv4SettingsUIModel(
       ipv4ConnectionType: WanType.pptp.type,
       mtu: wanSettings?.mtu ?? 0,
       behavior: tpSettings != null
@@ -39,62 +32,54 @@ class PptpSettingsHandler implements Ipv4SettingsHandler {
     );
   }
 
-  @override
-  RouterWANSettings createWanSettings(Ipv4Setting ipv4Setting) {
-    final mtu = NetworkUtils.isMtuValid(wanType.type, ipv4Setting.mtu)
-        ? ipv4Setting.mtu
+  static RouterWANSettings toJNAP(Ipv4SettingsUIModel uiModel) {
+    final mtu = NetworkUtils.isMtuValid(WanType.pptp.type, uiModel.mtu)
+        ? uiModel.mtu
         : 0;
-    final diabledWanTaggingSettings =
+    const disabledWanTaggingSettings =
         SinglePortVLANTaggingSettings(isEnabled: false);
 
     return RouterWANSettings.pptp(
       mtu: mtu,
-      tpSettings: _createTPSettings(ipv4Setting, true),
-      wanTaggingSettings: diabledWanTaggingSettings,
+      tpSettings: _createTPSettings(uiModel, true),
+      wanTaggingSettings: disabledWanTaggingSettings,
     );
   }
 
-  TPSettings _createTPSettings(Ipv4Setting ipv4Setting, bool isPPTP) {
-    final useStaticSettings =
-        (ipv4Setting.useStaticSettings ?? false) && isPPTP;
-    final behavior = ipv4Setting.behavior ?? PPPConnectionBehavior.keepAlive;
+  static TPSettings _createTPSettings(
+      Ipv4SettingsUIModel uiModel, bool isPPTP) {
+    final useStaticSettings = (uiModel.useStaticSettings ?? false) && isPPTP;
+    final behavior = uiModel.behavior ?? PPPConnectionBehavior.keepAlive;
     return TPSettings(
       useStaticSettings: useStaticSettings,
-      staticSettings:
-          useStaticSettings ? _createStaticSettings(ipv4Setting) : null,
-      server: ipv4Setting.serverIp ?? '',
-      username: ipv4Setting.username ?? '',
-      password: ipv4Setting.password ?? '',
+      staticSettings: useStaticSettings ? _createStaticSettings(uiModel) : null,
+      server: uiModel.serverIp ?? '',
+      username: uiModel.username ?? '',
+      password: uiModel.password ?? '',
       behavior: behavior.value,
       maxIdleMinutes: behavior == PPPConnectionBehavior.connectOnDemand
-          ? ipv4Setting.maxIdleMinutes ?? 15
+          ? uiModel.maxIdleMinutes ?? 15
           : null,
       reconnectAfterSeconds: behavior == PPPConnectionBehavior.keepAlive
-          ? ipv4Setting.reconnectAfterSeconds ?? 30
+          ? uiModel.reconnectAfterSeconds ?? 30
           : null,
     );
   }
 
-  StaticSettings _createStaticSettings(Ipv4Setting ipv4Setting) {
+  static StaticSettings _createStaticSettings(Ipv4SettingsUIModel uiModel) {
     return StaticSettings(
-      ipAddress: ipv4Setting.staticIpAddress ?? '',
-      networkPrefixLength: ipv4Setting.networkPrefixLength ?? 24,
-      gateway: ipv4Setting.staticGateway ?? '',
-      dnsServer1: ipv4Setting.staticDns1 ?? '',
-      dnsServer2: ipv4Setting.staticDns2,
-      dnsServer3: ipv4Setting.staticDns3,
-      domainName: ipv4Setting.domainName,
+      ipAddress: uiModel.staticIpAddress ?? '',
+      networkPrefixLength: uiModel.networkPrefixLength ?? 24,
+      gateway: uiModel.staticGateway ?? '',
+      dnsServer1: uiModel.staticDns1 ?? '',
+      dnsServer2: uiModel.staticDns2,
+      dnsServer3: uiModel.staticDns3,
+      domainName: uiModel.domainName,
     );
   }
 
-  @override
-  MapEntry<JNAPAction, Map<String, dynamic>>? getAdditionalSetting() {
-    return null;
-  }
-
-  @override
-  Ipv4Setting updateIpv4Setting(
-      Ipv4Setting currentSetting, Ipv4Setting newValues) {
+  static Ipv4SettingsUIModel updateFromForm(
+      Ipv4SettingsUIModel currentSetting, Ipv4SettingsUIModel newValues) {
     const defaultConnectionBehavior = PPPConnectionBehavior.keepAlive;
     const defaultMaxIdleMinutes = 15;
     const defaultReconnectAfterSeconds = 30;
