@@ -12,6 +12,7 @@ import 'package:privacy_gui/core/jnap/models/wan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
@@ -161,6 +162,9 @@ class InternetSettingsService {
       );
 
       return _getRedirectionMap(result.data);
+    } on JNAPSideEffectError catch (e) {
+      // Extract redirection from side effect error if available
+      return _extractRedirectionFromSideEffectError(e);
     } on JNAPError catch (e) {
       throw UnexpectedError(originalError: e, message: e.error);
     } catch (e) {
@@ -338,5 +342,15 @@ class InternetSettingsService {
     final setWanSettingsResult = JNAPTransactionSuccessWrap.getResult(
         JNAPAction.setWANSettings, Map.fromEntries(data));
     return setWanSettingsResult?.output["redirection"];
+  }
+
+  Map<String, dynamic>? _extractRedirectionFromSideEffectError(
+      JNAPSideEffectError error) {
+    if (error.attach is JNAPTransactionSuccessWrap) {
+      final successWrap = error.attach as JNAPTransactionSuccessWrap;
+      return _getRedirectionMap(successWrap.data);
+    }
+    // If no attach or cannot extract redirection, rethrow
+    throw error;
   }
 }

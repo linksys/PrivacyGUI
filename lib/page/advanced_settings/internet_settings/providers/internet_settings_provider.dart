@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/services/internet_settings_service.dart';
@@ -68,20 +67,6 @@ class InternetSettingsNotifier extends Notifier<InternetSettingsState>
     } on ServiceError catch (e) {
       logger.e('Failed to save internet settings: $e');
       rethrow;
-    } catch (error) {
-      // Handle JNAP side effect error (for web redirection after save)
-      if (error is JNAPSideEffectError) {
-        // Try to extract redirection from side effect
-        final originalWanType = WanType.resolve(
-            state.settings.original.ipv4Setting.ipv4ConnectionType);
-        final redirectionMap = originalWanType == WanType.bridge
-            ? {'hostName': 'www.myrouter', 'domain': 'info'}
-            : null;
-
-        _handleWebRedirection(redirectionMap);
-      } else {
-        rethrow;
-      }
     }
   }
 

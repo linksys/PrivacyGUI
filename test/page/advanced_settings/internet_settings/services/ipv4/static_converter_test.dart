@@ -127,7 +127,8 @@ void main() {
         );
 
         // Act
-        final result = StaticConverter.updateFromForm(currentSettings, formData);
+        final result =
+            StaticConverter.updateFromForm(currentSettings, formData);
 
         // Assert
         expect(result.staticIpAddress, '10.0.0.100');

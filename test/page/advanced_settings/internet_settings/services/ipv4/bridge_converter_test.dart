@@ -51,7 +51,8 @@ void main() {
         );
 
         // Act
-        final result = BridgeConverter.updateFromForm(currentSettings, formData);
+        final result =
+            BridgeConverter.updateFromForm(currentSettings, formData);
 
         // Assert
         expect(result.ipv4ConnectionType, 'Bridge');
@@ -61,7 +62,8 @@ void main() {
     group('round-trip conversion', () {
       test('JNAP -> UI -> JNAP maintains data integrity', () {
         // Arrange
-        final originalJnap = InternetSettingsTestDataBuilder.bridgeWanSettings();
+        final originalJnap =
+            InternetSettingsTestDataBuilder.bridgeWanSettings();
 
         // Act
         final uiModel = BridgeConverter.fromJNAP(originalJnap);
