@@ -152,8 +152,8 @@ void main() {
         // Assert
         expect(result.wanTaggingSettings?.isEnabled, true);
         expect(result.wanTaggingSettings?.vlanTaggingSettings?.vlanID, 100);
-        expect(
-            result.wanTaggingSettings?.vlanTaggingSettings?.vlanStatus, 'Tagged');
+        expect(result.wanTaggingSettings?.vlanTaggingSettings?.vlanStatus,
+            'Tagged');
       });
 
       test('disables VLAN tagging when VLAN ID is out of range (< 5)', () {
@@ -335,8 +335,7 @@ void main() {
             originalJnap.wanTaggingSettings?.isEnabled);
       });
 
-      test(
-          'JNAP -> UI -> JNAP maintains data integrity for ConnectOnDemand',
+      test('JNAP -> UI -> JNAP maintains data integrity for ConnectOnDemand',
           () {
         // Arrange
         final originalJnap = InternetSettingsTestDataBuilder.pppoeWanSettings(
@@ -374,8 +373,8 @@ void main() {
         expect(convertedUi.ipv4ConnectionType, originalUi.ipv4ConnectionType);
         expect(convertedUi.mtu, originalUi.mtu);
         expect(convertedUi.behavior, originalUi.behavior);
-        expect(
-            convertedUi.reconnectAfterSeconds, originalUi.reconnectAfterSeconds);
+        expect(convertedUi.reconnectAfterSeconds,
+            originalUi.reconnectAfterSeconds);
         expect(convertedUi.username, originalUi.username);
         expect(convertedUi.password, originalUi.password);
         expect(convertedUi.serviceName, originalUi.serviceName);

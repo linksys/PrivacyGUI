@@ -9,8 +9,7 @@ void main() {
     group('fromJNAP', () {
       test('converts Automatic IPv6 JNAP model to UI model', () {
         // Arrange
-        final jnapModel =
-            InternetSettingsTestDataBuilder.automaticIPv6Settings(
+        final jnapModel = InternetSettingsTestDataBuilder.automaticIPv6Settings(
           isAutomatic: true,
         );
 
@@ -24,8 +23,7 @@ void main() {
 
       test('converts IPv6 with 6rd tunnel in Manual mode', () {
         // Arrange
-        final jnapModel =
-            InternetSettingsTestDataBuilder.automaticIPv6Settings(
+        final jnapModel = InternetSettingsTestDataBuilder.automaticIPv6Settings(
           isAutomatic: true,
           ipv6rdTunnelMode: 'Manual',
           prefix: '2001:db8::',
@@ -47,8 +45,7 @@ void main() {
 
       test('handles disabled IPv6rdTunnel mode', () {
         // Arrange
-        final jnapModel =
-            InternetSettingsTestDataBuilder.automaticIPv6Settings(
+        final jnapModel = InternetSettingsTestDataBuilder.automaticIPv6Settings(
           ipv6rdTunnelMode: 'Disabled',
         );
 
@@ -150,8 +147,7 @@ void main() {
 
         // Assert
         expect(convertedJnap.wanType, originalJnap.wanType);
-        expect(
-            convertedJnap.ipv6AutomaticSettings?.isIPv6AutomaticEnabled,
+        expect(convertedJnap.ipv6AutomaticSettings?.isIPv6AutomaticEnabled,
             originalJnap.ipv6AutomaticSettings?.isIPv6AutomaticEnabled);
         expect(convertedJnap.ipv6AutomaticSettings?.ipv6rdTunnelMode,
             originalJnap.ipv6AutomaticSettings?.ipv6rdTunnelMode);
