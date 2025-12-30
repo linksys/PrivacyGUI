@@ -108,9 +108,7 @@ class _LocalNetworkSettingsViewState
       _dhcpServerView(state),
     ];
     return UiKitPageView.withSliver(
-      padding: EdgeInsets.zero,
       tabController: _tabController,
-      useMainPadding: false,
       bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled: _notifier.isDirty() && !_hasError(state),
         onPositiveTap: _saveSettings,

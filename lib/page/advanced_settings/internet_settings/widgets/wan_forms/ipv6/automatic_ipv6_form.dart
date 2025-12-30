@@ -111,7 +111,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
     return Column(
       children: [
         AppGap.md(),
-        AppCard(
+        AppCard.noBorder(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Row(
             children: [

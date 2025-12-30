@@ -72,6 +72,18 @@ class TopologyMenuHelper {
           value: 'pair',
           label: loc(context).instantPair,
           icon: Icons.link,
+          children: [
+            AppPopupMenuItem(
+              value: 'pairWired',
+              label: loc(context).pairWiredNode,
+              icon: Icons.cable,
+            ),
+            AppPopupMenuItem(
+              value: 'pairWireless',
+              label: loc(context).pairWirelessNode,
+              icon: Icons.wifi,
+            ),
+          ],
         ));
       }
 
@@ -115,6 +127,12 @@ class TopologyMenuHelper {
         break;
       case 'pair':
         nodeAction = NodeInstantActions.pair;
+        break;
+      case 'pairWired':
+        nodeAction = NodeInstantActions.pairWired;
+        break;
+      case 'pairWireless':
+        nodeAction = NodeInstantActions.pairWireless;
         break;
       case 'reset':
         nodeAction = NodeInstantActions.reset;

@@ -61,7 +61,6 @@ class _FirewallViewState extends ConsumerState<FirewallView>
     final isDirty = firewallState.isDirty || ipv6State.isDirty;
 
     return UiKitPageView.withSliver(
-      padding: EdgeInsets.zero,
       tabController: _tabController,
       title: loc(context).firewall,
       bottomBar: UiKitBottomBarConfig(

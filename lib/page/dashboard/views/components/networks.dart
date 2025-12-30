@@ -91,11 +91,19 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                       showStatusIndicator: true,
                       titleBuilder: (meshNode) => meshNode.name,
                       subtitleBuilder: (meshNode) {
-                        final originalNode = _findOriginalNode(
-                          topologyState.root.children,
-                          meshNode.id,
-                        );
-                        return originalNode?.data.model ?? '';
+                        // Use metadata directly instead of searching the tree again
+                        final model = meshNode.extra;
+                        final deviceCount = meshNode
+                                .metadata?['connectedDeviceCount'] as int? ??
+                            0;
+                        final deviceLabel = deviceCount <= 1
+                            ? loc(context).device
+                            : loc(context).devices;
+
+                        if (model == null || model.isEmpty) {
+                          return '$deviceCount $deviceLabel';
+                        }
+                        return '$model • $deviceCount $deviceLabel';
                       },
                     ),
                   ),
@@ -103,20 +111,6 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
               ],
             ),
           );
-  }
-
-  /// Find the original RouterTreeNode by mesh node ID.
-  RouterTreeNode? _findOriginalNode(
-      List<RouterTreeNode> rootNodes, String nodeId) {
-    for (final rootNode in rootNodes) {
-      final flatNodes = rootNode.toFlatList();
-      for (final node in flatNodes) {
-        if (TopologyAdapter.getNodeId(node) == nodeId) {
-          return node;
-        }
-      }
-    }
-    return null;
   }
 
   Widget _desktopHorizontal(BuildContext context, WidgetRef ref) {

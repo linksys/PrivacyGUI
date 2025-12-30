@@ -40,6 +40,8 @@ class _PortRangeForwardingContentViewState
   // Editing state
   PortRangeForwardingRuleUIModel? _editingRule;
   bool _isInitializing = false;
+  bool _isAddInitialized = false;
+  String _selectedProtocol = 'Both';
   StateSetter? _sheetStateSetter;
 
   // Validation errors
@@ -119,7 +121,23 @@ class _PortRangeForwardingContentViewState
         cellBuilder: (_, rule) => AppText.bodyMedium(rule.description),
         editBuilder: (_, rule, setSheetState) {
           _sheetStateSetter = setSheetState;
-          if (_editingRule != rule) {
+
+          final state = ref.read(portRangeForwardingListProvider);
+          final isNewRule = !state.current.rules.contains(rule);
+          bool shouldInitialize = false;
+
+          if (isNewRule) {
+            if (!_isAddInitialized) {
+              shouldInitialize = true;
+              _isAddInitialized = true;
+            }
+          } else {
+            if (_editingRule != rule) {
+              shouldInitialize = true;
+            }
+          }
+
+          if (shouldInitialize) {
             _isInitializing = true;
             try {
               _editingRule = rule;
@@ -127,6 +145,7 @@ class _PortRangeForwardingContentViewState
               _firstPortTextController.text = '${rule.firstExternalPort}';
               _lastPortTextController.text = '${rule.lastExternalPort}';
               _ipAddressTextController.text = rule.internalServerIPAddress;
+              _selectedProtocol = rule.protocol;
               _nameError = null;
               _ipError = null;
               _portRangeError = null;
@@ -166,7 +185,6 @@ class _PortRangeForwardingContentViewState
         cellBuilder: (_, rule) =>
             AppText.bodyMedium(getProtocolTitle(context, rule.protocol)),
         editBuilder: (_, rule, setSheetState) {
-          final currentProtocol = rule.protocol;
           final protocolDisplayMap = {
             'TCP': getProtocolTitle(context, 'TCP'),
             'UDP': getProtocolTitle(context, 'UDP'),
@@ -175,7 +193,7 @@ class _PortRangeForwardingContentViewState
           return AppDropdown<String>(
             key: const Key('protocolDropdown'),
             items: protocolDisplayMap.values.toList(),
-            value: protocolDisplayMap[currentProtocol],
+            value: protocolDisplayMap[_selectedProtocol],
             hint: loc(context).protocol,
             onChanged: (displayValue) {
               if (displayValue != null) {
@@ -183,7 +201,9 @@ class _PortRangeForwardingContentViewState
                     .firstWhere((e) => e.value == displayValue,
                         orElse: () => const MapEntry('Both', 'Both'))
                     .key;
+                _selectedProtocol = protocolKey;
                 _updateProtocol(protocolKey);
+                setSheetState(() {});
               }
             },
           );
@@ -196,11 +216,11 @@ class _PortRangeForwardingContentViewState
         cellBuilder: (_, rule) =>
             AppText.bodyMedium(rule.internalServerIPAddress),
         editBuilder: (_, rule, setSheetState) {
-          return AppTextField(
+          return AppIpv4TextField(
             key: const Key('ipAddressTextField'),
             controller: _ipAddressTextController,
-            hintText: loc(context).ipAddress,
             errorText: _ipError,
+            variant: Ipv4InputVariant.unified,
           );
         },
       ),
@@ -330,6 +350,8 @@ class _PortRangeForwardingContentViewState
   }
 
   void _clearControllers() {
+    _isAddInitialized = false;
+    _selectedProtocol = 'Both';
     _applicationTextController.clear();
     _firstPortTextController.clear();
     _lastPortTextController.clear();
@@ -404,8 +426,7 @@ class _PortRangeForwardingContentViewState
       firstExternalPort: int.tryParse(_firstPortTextController.text) ?? 0,
       lastExternalPort: int.tryParse(_lastPortTextController.text) ?? 0,
       internalServerIPAddress: _ipAddressTextController.text,
-      protocol:
-          ref.read(portRangeForwardingRuleProvider).rule?.protocol ?? 'Both',
+      protocol: _selectedProtocol,
     );
   }
 }

@@ -40,7 +40,7 @@ class SpeedTestView extends ConsumerWidget {
 
     final historyWidget = _buildHistoryPanel(context, historicalTests);
 
-    return UiKitPageView(
+    return UiKitPageView.withSliver(
       scrollable: true,
       title: loc(context).speedTest,
       child: (context, constraints) => AppResponsiveLayout(

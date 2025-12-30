@@ -26,61 +26,11 @@ class ThemeJsonConfig {
   /// Default configuration (Glass style).
   factory ThemeJsonConfig.defaultConfig() => ThemeJsonConfig._(
         lightJson: {
-          "style": "aurora",
-          "brightness": "light",
-          "seedColor": "#8E08EA",
-          "globalOverlay": "snow",
-          "overrides": {
-            "semantic": {"success": "#527589"},
-            "component": {
-              "skeleton": {
-                "animationType": "blink",
-                "baseColor": null,
-                "highlightColor": null
-              },
-              "topology": {
-                "gatewayNormalBackgroundColor": null,
-                "gatewayNormalBorderColor": null,
-                "gatewayNormalIconColor": null,
-                "gatewayNormalGlowColor": null,
-                "gatewayHighLoadBackgroundColor": null,
-                "gatewayHighLoadBorderColor": null,
-                "gatewayHighLoadIconColor": null,
-                "gatewayHighLoadGlowColor": null,
-                "gatewayOfflineBackgroundColor": null,
-                "gatewayOfflineBorderColor": null,
-                "gatewayOfflineIconColor": null,
-                "extenderNormalBackgroundColor": null,
-                "extenderNormalBorderColor": null,
-                "extenderNormalIconColor": null,
-                "extenderNormalGlowColor": null,
-                "extenderHighLoadBackgroundColor": null,
-                "extenderHighLoadBorderColor": null,
-                "extenderHighLoadIconColor": null,
-                "extenderHighLoadGlowColor": null,
-                "extenderOfflineBackgroundColor": null,
-                "extenderOfflineBorderColor": null,
-                "extenderOfflineIconColor": null,
-                "clientNormalBackgroundColor": null,
-                "clientNormalBorderColor": null,
-                "clientNormalIconColor": null,
-                "clientNormalGlowColor": null,
-                "clientOfflineBackgroundColor": null,
-                "clientOfflineBorderColor": null,
-                "clientOfflineIconColor": null,
-                "ethernetLinkColor": null,
-                "wifiStrongColor": null,
-                "wifiMediumColor": null,
-                "wifiWeakColor": null,
-                "wifiUnknownColor": null,
-                "gatewayRenderer": "liquid",
-                "extenderRenderer": "liquid",
-                "clientRenderer": "liquid"
-              }
-            }
-          }
+          'style': 'glass',
+          'visualEffects': 63,
+          'brightness': 'light'
         },
-        darkJson: {'style': 'glass', 'visualEffects': 31, 'brightness': 'dark'},
+        darkJson: {'style': 'glass', 'visualEffects': 63, 'brightness': 'dark'},
       );
 
   /// Constructs from a complete JSON object (including light/dark colors).

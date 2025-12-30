@@ -39,6 +39,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
   StaticRouteEntryUIModel? _editingRule;
   RoutingSettingInterface _selectedInterface = RoutingSettingInterface.lan;
   bool _isInitializing = false;
+  bool _isAddInitialized = false;
   StateSetter? _sheetStateSetter;
 
   // Validation errors
@@ -181,11 +182,11 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
         label: loc(context).destinationIPAddress,
         cellBuilder: (_, rule) => AppText.bodyMedium(rule.destinationIP),
         editBuilder: (_, rule, setSheetState) {
-          return AppTextField(
+          return AppIpv4TextField(
             key: const Key('destinationIP'),
             controller: _destinationIPController,
-            hintText: loc(context).destinationIPAddress,
             errorText: _destIpError,
+            variant: Ipv4InputVariant.unified,
           );
         },
       ),
@@ -195,11 +196,11 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
         label: loc(context).subnetMask,
         cellBuilder: (_, rule) => AppText.bodyMedium(rule.subnetMask),
         editBuilder: (_, rule, setSheetState) {
-          return AppTextField(
+          return AppIpv4TextField(
             key: const Key('subnetMask'),
             controller: _subnetMaskController,
-            hintText: loc(context).subnetMask,
             errorText: _subnetError,
+            variant: Ipv4InputVariant.unified,
           );
         },
       ),
@@ -210,11 +211,11 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
         cellBuilder: (_, rule) =>
             AppText.bodyMedium(rule.gateway.isEmpty ? '--' : rule.gateway),
         editBuilder: (_, rule, setSheetState) {
-          return AppTextField(
+          return AppIpv4TextField(
             key: const Key('gateway'),
             controller: _gatewayController,
-            hintText: loc(context).gateway,
             errorText: _gatewayError,
+            variant: Ipv4InputVariant.unified,
           );
         },
       ),
@@ -252,7 +253,22 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
   }
 
   void _initEditingState(StaticRouteEntryUIModel rule) {
-    if (_editingRule != rule) {
+    bool shouldInitialize = false;
+    final state = ref.read(staticRoutingProvider);
+    final isNewRule = !state.current.entries.contains(rule);
+
+    if (isNewRule) {
+      if (!_isAddInitialized) {
+        shouldInitialize = true;
+        _isAddInitialized = true;
+      }
+    } else {
+      if (_editingRule != rule) {
+        shouldInitialize = true;
+      }
+    }
+
+    if (shouldInitialize) {
       _editingRule = rule;
       Future.microtask(() {
         _isInitializing = true;
@@ -424,6 +440,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
   }
 
   void _clearControllers() {
+    _isAddInitialized = false;
     _routerNameController.clear();
     _destinationIPController.clear();
     _subnetMaskController.clear();

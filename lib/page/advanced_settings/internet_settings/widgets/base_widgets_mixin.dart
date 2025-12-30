@@ -21,7 +21,7 @@ mixin BaseWidgetsMixin {
   }
 
   Widget buildInfoCard(String title, String description) {
-    return AppCard(
+    return AppCard.noBorder(
       padding: EdgeInsets.symmetric(
         vertical: AppSpacing.md,
       ),

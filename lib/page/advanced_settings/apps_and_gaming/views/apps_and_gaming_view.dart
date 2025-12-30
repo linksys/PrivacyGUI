@@ -66,7 +66,6 @@ class _AppsGamingSettingsViewState extends ConsumerState<AppsGamingSettingsView>
     final isDirty = ref.read(appsAndGamingProvider.notifier).isDirty();
     return UiKitPageView.withSliver(
       title: loc(context).appsGaming,
-      padding: EdgeInsets.zero,
       tabController: _tabController,
       bottomBar: UiKitBottomBarConfig(
         isPositiveEnabled:

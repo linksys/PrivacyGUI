@@ -107,11 +107,7 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
                 child: _DemoModeBanner(),
               ),
               // Theme settings FAB
-              const Positioned(
-                bottom: 16,
-                right: 16,
-                child: DemoThemeSettingsFab(),
-              ),
+              const DemoThemeSettingsFab(),
             ],
           ),
         ),

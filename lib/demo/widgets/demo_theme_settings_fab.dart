@@ -109,23 +109,34 @@ class _DemoThemeSettingsFabState extends ConsumerState<DemoThemeSettingsFab> {
   Widget build(BuildContext context) {
     final config = ref.watch(demoThemeConfigProvider);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // Expanded menu
-        if (_isExpanded) ...[
-          _buildSettingsPanel(context, config),
-          const SizedBox(height: 8),
-        ],
-        // Main FAB
-        AppIconButton.primary(
-          icon: AppIcon.font(
-            _isExpanded ? AppFontIcons.close : AppFontIcons.widgets,
-          ),
-          onTap: () => setState(() => _isExpanded = !_isExpanded),
-        ),
-      ],
+    return AppDraggable(
+      initialPosition: Alignment.bottomRight,
+      enableSnapping: true,
+      padding: const EdgeInsets.all(16.0),
+      builder: (context, isDragging, alignment) {
+        // Adapt layout based on side (Left aligned -> Panel starts at left)
+        final isLeft = alignment.x < 0;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment:
+              isLeft ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+          children: [
+            // Expanded menu
+            if (_isExpanded) ...[
+              _buildSettingsPanel(context, config),
+              const SizedBox(height: 8),
+            ],
+            // Main FAB
+            AppIconButton.primary(
+              icon: AppIcon.font(
+                _isExpanded ? AppFontIcons.close : AppFontIcons.widgets,
+              ),
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -265,6 +276,7 @@ class _DemoThemeSettingsFabState extends ConsumerState<DemoThemeSettingsFab> {
       (AppThemeConfig.effectBlur, 'Blur'),
       (AppThemeConfig.effectNoiseTexture, 'Noise'),
       (AppThemeConfig.effectShimmer, 'Shimmer'),
+      (AppThemeConfig.effectTopologyAnimation, 'Topology'),
     ];
 
     return Wrap(
