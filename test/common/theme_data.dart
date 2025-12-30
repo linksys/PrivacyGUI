@@ -7,12 +7,17 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-final mockLightThemeData = ThemeJsonConfig.defaultConfig()
-    .createLightTheme()
-    .copyWith(textTheme: mockLinksysDarkTextTheme);
-final mockDarkThemeData = ThemeJsonConfig.defaultConfig()
-    .createDarkTheme()
-    .copyWith(textTheme: mockLinksysLightTextTheme);
+final mockLightThemeData = ThemeJsonConfig.fromJson({
+  'style': 'glass',
+  'visualEffects': 0,
+  'brightness': 'light',
+}).createLightTheme().copyWith(textTheme: mockLinksysDarkTextTheme);
+
+final mockDarkThemeData = ThemeJsonConfig.fromJson({
+  'style': 'glass',
+  'visualEffects': 0,
+  'brightness': 'dark',
+}).createDarkTheme().copyWith(textTheme: mockLinksysLightTextTheme);
 
 ///
 /// This is used to help to generate snapshots with localizations
