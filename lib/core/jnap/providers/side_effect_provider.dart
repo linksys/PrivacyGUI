@@ -73,7 +73,13 @@ class SideEffectPollConfig extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object?> get props => [condition];
+  List<Object?> get props => [
+        retryDelayInSec,
+        maxRetry,
+        maxPollTimeInSec,
+        timeDelayStartInSec,
+        condition,
+      ];
 }
 
 class SideEffectState extends Equatable {
@@ -132,16 +138,16 @@ class SideEffectNotifier extends Notifier<SideEffectState> {
   SideEffectState build() => const SideEffectState(hasSideEffect: false);
 
   Future manualDeviceRestart({
-    SideEffectPollConfig? overrides,
+    SideEffectPollConfig? config,
   }) {
     state = state.copyWith(hasSideEffect: true, reason: 'manual', progress: 0);
     return poll(
       pollFunc: testRouterReconnected,
-      maxRetry: overrides?.maxRetry ?? -1,
-      timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 10,
-      retryDelayInSec: overrides?.retryDelayInSec ?? 10,
-      maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 240,
-      condition: overrides?.condition,
+      maxRetry: config?.maxRetry ?? -1,
+      timeDelayStartInSec: config?.timeDelayStartInSec ?? 10,
+      retryDelayInSec: config?.retryDelayInSec ?? 10,
+      maxPollTimeInSec: config?.maxPollTimeInSec ?? 240,
+      condition: config?.condition,
     ).whenComplete(() {
       finishSideEffect();
     });
@@ -169,18 +175,19 @@ class SideEffectNotifier extends Notifier<SideEffectState> {
         retryDelayInSec: config?.retryDelayInSec ?? 10,
         maxPollTimeInSec: config?.maxPollTimeInSec ?? 240,
         condition: config?.condition,
-      ).then((value) {
-        ref.read(pollingProvider.notifier).startPolling();
-        return result;
-      }).catchError(
-        (error) {
-          if (error is ServiceSideEffectError) {
-            throw ServiceSideEffectError(result, error.lastPolledResult);
-          }
-          throw ServiceSideEffectError(result);
-        },
-        test: (error) => error is ServiceSideEffectError,
-      );
+      )
+          .then((value) {
+            ref.read(pollingProvider.notifier).startPolling();
+            return result;
+          })
+          .catchError(
+            (error) => throw ServiceSideEffectError(
+                result, (error as ServiceSideEffectError).lastPolledResult),
+            test: (error) => error is ServiceSideEffectError,
+          )
+          .whenComplete(() {
+            finishSideEffect();
+          });
     } else if (sideEffects.contains('WirelessInterruption')) {
       return poll(
         pollFunc: testRouterReconnected,
@@ -189,18 +196,19 @@ class SideEffectNotifier extends Notifier<SideEffectState> {
         retryDelayInSec: config?.retryDelayInSec ?? 10,
         maxPollTimeInSec: config?.maxPollTimeInSec ?? 120,
         condition: config?.condition,
-      ).then((value) {
-        ref.read(pollingProvider.notifier).startPolling();
-        return result;
-      }).catchError(
-        (error) {
-          if (error is ServiceSideEffectError) {
-            throw ServiceSideEffectError(result, error.lastPolledResult);
-          }
-          throw ServiceSideEffectError(result);
-        },
-        test: (error) => error is ServiceSideEffectError,
-      );
+      )
+          .then((value) {
+            ref.read(pollingProvider.notifier).startPolling();
+            return result;
+          })
+          .catchError(
+            (error) => throw ServiceSideEffectError(
+                result, (error as ServiceSideEffectError).lastPolledResult),
+            test: (error) => error is ServiceSideEffectError,
+          )
+          .whenComplete(() {
+            finishSideEffect();
+          });
     } else {
       // Unknown side effect: use testRouterFullyBootedUp (checks WAN status)
       return poll(
@@ -210,18 +218,19 @@ class SideEffectNotifier extends Notifier<SideEffectState> {
         retryDelayInSec: config?.retryDelayInSec ?? 15,
         maxPollTimeInSec: config?.maxPollTimeInSec ?? -1,
         condition: config?.condition,
-      ).then((value) {
-        ref.read(pollingProvider.notifier).startPolling();
-        return result;
-      }).catchError(
-        (error) {
-          if (error is ServiceSideEffectError) {
-            throw ServiceSideEffectError(result, error.lastPolledResult);
-          }
-          throw ServiceSideEffectError(result);
-        },
-        test: (error) => error is ServiceSideEffectError,
-      );
+      )
+          .then((value) {
+            ref.read(pollingProvider.notifier).startPolling();
+            return result;
+          })
+          .catchError(
+            (error) => throw ServiceSideEffectError(
+                result, (error as ServiceSideEffectError).lastPolledResult),
+            test: (error) => error is ServiceSideEffectError,
+          )
+          .whenComplete(() {
+            finishSideEffect();
+          });
     }
   }
 

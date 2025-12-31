@@ -122,13 +122,12 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.SideEffectState>
       ) as _i3.SideEffectState);
 
   @override
-  _i5.Future<dynamic> manualDeviceRestart(
-          {_i3.SideEffectPollConfig? overrides}) =>
+  _i5.Future<dynamic> manualDeviceRestart({_i3.SideEffectPollConfig? config}) =>
       (super.noSuchMethod(
         Invocation.method(
           #manualDeviceRestart,
           [],
-          {#overrides: overrides},
+          {#config: config},
         ),
         returnValue: _i5.Future<dynamic>.value(),
         returnValueForMissingStub: _i5.Future<dynamic>.value(),
@@ -143,14 +142,14 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.SideEffectState>
         Invocation.method(
           #handleSideEffect,
           [result],
-          {#overrides: config},
+          {#config: config},
         ),
         returnValue: _i5.Future<_i4.JNAPResult>.value(_FakeJNAPResult_2(
           this,
           Invocation.method(
             #handleSideEffect,
             [result],
-            {#overrides: config},
+            {#config: config},
           ),
         )),
         returnValueForMissingStub:
@@ -159,7 +158,7 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.SideEffectState>
           Invocation.method(
             #handleSideEffect,
             [result],
-            {#overrides: config},
+            {#config: config},
           ),
         )),
       ) as _i5.Future<_i4.JNAPResult>);

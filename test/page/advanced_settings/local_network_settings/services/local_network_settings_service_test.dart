@@ -84,7 +84,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          pollConfig: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('pollConfig'),
         )).thenAnswer((_) async => jnapResponse);
 
         await service.saveReservations(
@@ -107,7 +107,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: captureAnyNamed('data'),
-          pollConfig: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('pollConfig'),
         )).captured;
 
         final sentData = captured.first as Map<String, dynamic>;
@@ -135,7 +135,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          pollConfig: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('pollConfig'),
         )).thenAnswer((_) async => jnapResponse);
 
         await service.saveReservations(
@@ -157,7 +157,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: captureAnyNamed('data'),
-          pollConfig: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('pollConfig'),
         )).captured;
 
         final sentData = captured.first as Map<String, dynamic>;
@@ -177,7 +177,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          pollConfig: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('pollConfig'),
         )).thenAnswer((_) async => jnapResponse);
 
         await service.saveReservations(
@@ -199,7 +199,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: captureAnyNamed('data'),
-          pollConfig: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('pollConfig'),
         )).captured;
 
         final sentData = captured.first as Map<String, dynamic>;
@@ -219,7 +219,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          pollConfig: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('pollConfig'),
         )).thenAnswer((_) async => jnapResponse);
 
         await service.saveReservations(
@@ -237,7 +237,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          pollConfig: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('pollConfig'),
         )).called(1);
       });
 
@@ -250,7 +250,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          pollConfig: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('pollConfig'),
         )).thenThrow(Exception('Save failed'));
 
         expect(
@@ -283,7 +283,7 @@ void main() {
             JNAPAction.setLANSettings,
             auth: true,
             data: anyNamed('data'),
-            pollConfig: anyNamed('sideEffectOverrides'),
+            pollConfig: anyNamed('pollConfig'),
           )).thenThrow(const ServiceSideEffectError());
 
           expect(
