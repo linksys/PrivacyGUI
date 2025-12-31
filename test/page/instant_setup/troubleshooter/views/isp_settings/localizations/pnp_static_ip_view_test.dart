@@ -4,7 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
@@ -31,11 +31,11 @@ import '../../../../../../test_data/internet_settings_state_data.dart';
 //
 // 2. PNP-STATIC-IP-ERR_01_JNAP-SIDE-EFFECT:
 //    - Verifies that a specific error message is shown when saving settings
-//      results in a JNAPSideEffectError with a JNAPSuccess.
+//      results in a ServiceSideEffectError with a JNAPSuccess.
 //
 // 3. PNP-STATIC-IP-ERR_02_ROUTER-NOT-FOUND:
 //    - Verifies that the 'Router Not Found' alert is displayed when saving
-//      settings results in a JNAPSideEffectError without a JNAPSuccess.
+//      settings results in a ServiceSideEffectError without a JNAPSuccess.
 //
 // 4. PNP-STATIC-IP-ERR_03_JNAP-ERROR:
 //    - Verifies that a specific error message is shown when saving settings
@@ -216,10 +216,10 @@ void main() async {
   group('PNP-STATIC-IP_ERROR-HANDLING', () {
     // Test ID: PNP-STATIC-IP-ERR_01_JNAP-SIDE-EFFECT
     testLocalizations(
-      'WHEN saveAndVerifySettings throws JNAPSideEffectError with JNAPSuccess, THEN shows error message',
+      'WHEN saveAndVerifySettings throws ServiceSideEffectError with JNAPSuccess, THEN shows error message',
       (tester, localizedScreen) async {
         when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
-            .thenThrow(JNAPSideEffectError(
+            .thenThrow(ServiceSideEffectError(
                 const JNAPSuccess(output: {}, result: 'Success'),
                 const JNAPSuccess(output: {}, result: 'Success')));
 
@@ -265,10 +265,10 @@ void main() async {
 
     // Test ID: PNP-STATIC-IP-ERR_02_ROUTER-NOT-FOUND
     testLocalizations(
-      'WHEN saveAndVerifySettings throws JNAPSideEffectError without JNAPSuccess, THEN shows router not found alert',
+      'WHEN saveAndVerifySettings throws ServiceSideEffectError without JNAPSuccess, THEN shows router not found alert',
       (tester, localizedScreen) async {
         when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
-            .thenThrow(JNAPSideEffectError());
+            .thenThrow(ServiceSideEffectError());
 
         final context = await testHelper.pumpView(
           tester,

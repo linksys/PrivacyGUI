@@ -155,7 +155,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
     _i7.CacheLevel? cacheLevel,
     int? timeoutMs = 10000,
     int? retries = 1,
-    _i11.JNAPSideEffectOverrides? sideEffectOverrides,
+    _i11.SideEffectPollConfig? pollConfig,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -170,7 +170,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
             #cacheLevel: cacheLevel,
             #timeoutMs: timeoutMs,
             #retries: retries,
-            #sideEffectOverrides: sideEffectOverrides,
+            #pollConfig: pollConfig,
           },
         ),
         returnValue: _i9.Future<_i4.JNAPSuccess>.value(_FakeJNAPSuccess_2(
@@ -187,7 +187,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
               #cacheLevel: cacheLevel,
               #timeoutMs: timeoutMs,
               #retries: retries,
-              #sideEffectOverrides: sideEffectOverrides,
+              #pollConfig: pollConfig,
             },
           ),
         )),
@@ -206,7 +206,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
               #cacheLevel: cacheLevel,
               #timeoutMs: timeoutMs,
               #retries: retries,
-              #sideEffectOverrides: sideEffectOverrides,
+              #pollConfig: pollConfig,
             },
           ),
         )),
@@ -219,7 +219,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
     _i7.CacheLevel? cacheLevel = _i7.CacheLevel.localCached,
     int? timeoutMs = 10000,
     int? retries = 1,
-    _i11.JNAPSideEffectOverrides? sideEffectOverrides,
+    _i11.SideEffectPollConfig? pollConfig,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -230,7 +230,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
             #cacheLevel: cacheLevel,
             #timeoutMs: timeoutMs,
             #retries: retries,
-            #sideEffectOverrides: sideEffectOverrides,
+            #pollConfig: pollConfig,
           },
         ),
         returnValue: _i9.Future<_i4.JNAPTransactionSuccessWrap>.value(
@@ -244,7 +244,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
               #cacheLevel: cacheLevel,
               #timeoutMs: timeoutMs,
               #retries: retries,
-              #sideEffectOverrides: sideEffectOverrides,
+              #pollConfig: pollConfig,
             },
           ),
         )),
@@ -260,7 +260,7 @@ class MockRouterRepository extends _i1.Mock implements _i8.RouterRepository {
               #cacheLevel: cacheLevel,
               #timeoutMs: timeoutMs,
               #retries: retries,
-              #sideEffectOverrides: sideEffectOverrides,
+              #pollConfig: pollConfig,
             },
           ),
         )),

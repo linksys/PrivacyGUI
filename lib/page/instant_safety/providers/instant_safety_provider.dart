@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
@@ -34,34 +32,23 @@ class InstantSafetyNotifier extends Notifier<InstantSafetyState>
     final service = ref.read(instantSafetyServiceProvider);
     final deviceInfo = ref.read(instantSafetyDeviceInfoProvider);
 
-    try {
-      final result = await service.fetchSettings(
-        deviceInfo: deviceInfo,
-        forceRemote: forceRemote,
-      );
+    final result = await service.fetchSettings(
+      deviceInfo: deviceInfo,
+      forceRemote: forceRemote,
+    );
 
-      final settings =
-          InstantSafetySettings(safeBrowsingType: result.safeBrowsingType);
-      final status = InstantSafetyStatus(hasFortinet: result.hasFortinet);
+    final settings =
+        InstantSafetySettings(safeBrowsingType: result.safeBrowsingType);
+    final status = InstantSafetyStatus(hasFortinet: result.hasFortinet);
 
-      return (settings, status);
-    } on ServiceError {
-      rethrow;
-    }
+    return (settings, status);
   }
 
   @override
   Future<void> performSave() async {
     final service = ref.read(instantSafetyServiceProvider);
     final currentType = state.settings.current.safeBrowsingType;
-
-    try {
-      await service.saveSettings(currentType);
-    } on JNAPSideEffectError {
-      rethrow;
-    } on ServiceError {
-      rethrow;
-    }
+    await service.saveSettings(currentType);
   }
 
   // These methods are for UI interaction to update the 'current' state.
