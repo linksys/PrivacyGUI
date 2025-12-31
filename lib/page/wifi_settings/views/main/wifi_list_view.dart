@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
-import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/main/wifi_list_advanced_mode_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/main/wifi_list_simple_mode_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class WiFiListView extends ArgumentsConsumerStatelessView {

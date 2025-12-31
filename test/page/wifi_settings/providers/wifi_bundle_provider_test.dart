@@ -95,6 +95,28 @@ void main() {
     when(() => mockDeviceManagerNotifier.getBandConnectedBy(any()))
         .thenReturn('');
 
+    // Stub for createInitialWifiListSettings (added for refactored build() method)
+    when(() => mockWifiSettingsService.createInitialWifiListSettings(
+          mainRadios: any(named: 'mainRadios'),
+          isGuestNetworkEnabled: any(named: 'isGuestNetworkEnabled'),
+          guestSSID: any(named: 'guestSSID'),
+          guestPassword: any(named: 'guestPassword'),
+          mainWifiDevices: any(named: 'mainWifiDevices'),
+          guestWifiDevicesCount: any(named: 'guestWifiDevicesCount'),
+          getBandConnectedBy: any(named: 'getBandConnectedBy'),
+        )).thenReturn(WiFiListSettings(
+      mainWiFi: const [],
+      guestWiFi: const GuestWiFiItem(
+          isEnabled: false, ssid: '', password: '', numOfDevices: 0),
+      isSimpleMode: true,
+      simpleModeWifi: WiFiItem.fromMap(const {
+        'channel': 0,
+        'isBroadcast': false,
+        'isEnabled': false,
+        'numOfDevices': 0,
+      }),
+    ));
+
     container = ProviderContainer(
       overrides: [
         wifiSettingsServiceProvider.overrideWithValue(mockWifiSettingsService),
@@ -150,6 +172,51 @@ void main() {
     ];
     when(() => mockDashboardManagerNotifier.build())
         .thenReturn(DashboardManagerState(mainRadios: radios));
+
+    // Create WiFiItems matching the seeded radios for the mock
+    final wifiItems = [
+      WiFiItem.fromMap(const {
+        'radioID': 'RADIO_2.4GHz',
+        'ssid': 'Test 2.4',
+        'password': '',
+        'securityType': 'WPA2-Personal',
+        'wirelessMode': '802.11mixed',
+        'channelWidth': 'Auto',
+        'channel': 6,
+        'isBroadcast': true,
+        'isEnabled': true,
+        'numOfDevices': 0,
+      }),
+      WiFiItem.fromMap(const {
+        'radioID': 'RADIO_5GHz',
+        'ssid': 'Test 5',
+        'password': '',
+        'securityType': 'WPA2-Personal',
+        'wirelessMode': '802.11mixed',
+        'channelWidth': 'Auto',
+        'channel': 36,
+        'isBroadcast': true,
+        'isEnabled': true,
+        'numOfDevices': 0,
+      }),
+    ];
+
+    // Stub createInitialWifiListSettings to return the matching WiFiItems
+    when(() => mockWifiSettingsService.createInitialWifiListSettings(
+          mainRadios: any(named: 'mainRadios'),
+          isGuestNetworkEnabled: any(named: 'isGuestNetworkEnabled'),
+          guestSSID: any(named: 'guestSSID'),
+          guestPassword: any(named: 'guestPassword'),
+          mainWifiDevices: any(named: 'mainWifiDevices'),
+          guestWifiDevicesCount: any(named: 'guestWifiDevicesCount'),
+          getBandConnectedBy: any(named: 'getBandConnectedBy'),
+        )).thenReturn(WiFiListSettings(
+      mainWiFi: wifiItems,
+      guestWiFi: const GuestWiFiItem(
+          isEnabled: false, ssid: '', password: '', numOfDevices: 0),
+      isSimpleMode: true,
+      simpleModeWifi: wifiItems.first,
+    ));
 
     // Re-create container to pick up new stub
     container = ProviderContainer(

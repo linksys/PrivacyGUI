@@ -4,8 +4,6 @@ import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_name_field.dart';
-import 'package:privacy_gui/page/wifi_settings/views/wifi_list_advanced_mode_view.dart';
-import 'package:privacy_gui/page/wifi_settings/views/wifi_list_simple_mode_view.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/wifi_settings/views/widgets/wifi_list_tile.dart';

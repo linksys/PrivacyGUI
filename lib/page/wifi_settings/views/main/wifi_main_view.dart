@@ -12,9 +12,9 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.da
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
 import 'package:privacy_gui/page/wifi_settings/services/wifi_settings_mapper.dart';
 
-import 'package:privacy_gui/page/wifi_settings/views/mac_filtering_view.dart';
-import 'package:privacy_gui/page/wifi_settings/views/wifi_advanced_settings_view.dart';
-import 'package:privacy_gui/page/wifi_settings/views/wifi_list_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/mac_filter/mac_filtering_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/advanced/wifi_advanced_settings_view.dart';
+import 'package:privacy_gui/page/wifi_settings/views/main/wifi_list_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class WiFiMainView extends ArgumentsConsumerStatefulView {
