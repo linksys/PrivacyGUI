@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -253,7 +253,7 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           changesSavedMessage,
         );
       });
-    }, test: (error) => error is JNAPSideEffectError).onError(
+    }, test: (error) => error is ServiceSideEffectError).onError(
         (error, stackTrace) {
       if (!mounted) return;
       final errorMsg = switch (error.runtimeType) {

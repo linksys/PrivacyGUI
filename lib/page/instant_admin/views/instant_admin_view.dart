@@ -8,7 +8,7 @@ import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
@@ -374,7 +374,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
           showSavedFailSnackbar();
         }).catchError((error) {
           showRouterNotFound();
-        }, test: (error) => error is JNAPSideEffectError);
+        }, test: (error) => error is ServiceSideEffectError);
       }
     });
   }

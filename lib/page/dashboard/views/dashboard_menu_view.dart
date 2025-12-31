@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -285,7 +285,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
               if (mounted) {
                 showRouterNotFoundAlert(context, ref);
               }
-            }, test: (error) => error is JNAPSideEffectError);
+            }, test: (error) => error is ServiceSideEffectError);
           },
         ),
         AppButton(

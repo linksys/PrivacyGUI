@@ -1,7 +1,32 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
+// =============================================================================
+// This File Does NOT Need Service Layer Extraction
+// =============================================================================
+//
+// This file is intentionally part of the JNAP infrastructure layer, not a
+// feature provider. It does NOT violate the Constitution's architecture rules
+// for the following reasons:
+//
+// 1. Special Cross-Layer Role
+//    SideEffectNotifier is an infrastructure-level component used directly by
+//    RouterRepository. It handles side effects (e.g., device restart) that
+//    occur during JNAP operations and is part of the Data Layer itself.
+//
+// 2. Circular Dependency Risk
+//    Creating a SideEffectService that depends on RouterRepository while
+//    RouterRepository depends on SideEffectNotifier would create a circular
+//    dependency.
+//
+// 3. Design Rationale
+//    Located in `lib/core/jnap/providers/`, this component is explicitly part
+//    of the JNAP infrastructure, not a feature provider in `lib/page/`.
+//    Its responsibility is to handle JNAP operation side effects, which
+//    inherently belongs to the Data Layer.
+//
+// =============================================================================
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,13 +39,13 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
-class JNAPSideEffectOverrides extends Equatable {
+class SideEffectPollConfig extends Equatable {
   final int? retryDelayInSec;
   final int? maxRetry;
   final int? maxPollTimeInSec;
   final int? timeDelayStartInSec;
   final bool Function()? condition;
-  const JNAPSideEffectOverrides({
+  const SideEffectPollConfig({
     this.retryDelayInSec,
     this.maxRetry,
     this.maxPollTimeInSec,
@@ -28,10 +53,18 @@ class JNAPSideEffectOverrides extends Equatable {
     this.condition,
   });
 
-  JNAPSideEffectOverrides copyWith({
+  SideEffectPollConfig copyWith({
+    int? retryDelayInSec,
+    int? maxRetry,
+    int? maxPollTimeInSec,
+    int? timeDelayStartInSec,
     bool Function()? condition,
   }) {
-    return JNAPSideEffectOverrides(
+    return SideEffectPollConfig(
+      retryDelayInSec: retryDelayInSec ?? this.retryDelayInSec,
+      maxRetry: maxRetry ?? this.maxRetry,
+      maxPollTimeInSec: maxPollTimeInSec ?? this.maxPollTimeInSec,
+      timeDelayStartInSec: timeDelayStartInSec ?? this.timeDelayStartInSec,
       condition: condition ?? this.condition,
     );
   }
@@ -40,15 +73,21 @@ class JNAPSideEffectOverrides extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object?> get props => [condition];
+  List<Object?> get props => [
+        retryDelayInSec,
+        maxRetry,
+        maxPollTimeInSec,
+        timeDelayStartInSec,
+        condition,
+      ];
 }
 
-class JNAPSideEffect extends Equatable {
+class SideEffectState extends Equatable {
   final bool hasSideEffect;
   final String? reason;
   final int progress;
 
-  const JNAPSideEffect({
+  const SideEffectState({
     required this.hasSideEffect,
     this.reason,
     this.progress = 0,
@@ -61,12 +100,12 @@ class JNAPSideEffect extends Equatable {
         progress,
       ];
 
-  JNAPSideEffect copyWith({
+  SideEffectState copyWith({
     bool? hasSideEffect,
     String? reason,
     int? progress,
   }) {
-    return JNAPSideEffect(
+    return SideEffectState(
       hasSideEffect: hasSideEffect ?? this.hasSideEffect,
       reason: reason ?? this.reason,
       progress: progress ?? this.progress,
@@ -81,8 +120,8 @@ class JNAPSideEffect extends Equatable {
     };
   }
 
-  factory JNAPSideEffect.fromJson(Map<String, dynamic> json) {
-    return JNAPSideEffect(
+  factory SideEffectState.fromJson(Map<String, dynamic> json) {
+    return SideEffectState(
       hasSideEffect: json['hasSideEffect'],
       reason: json['reason'],
       progress: json['progress'],
@@ -90,36 +129,25 @@ class JNAPSideEffect extends Equatable {
   }
 }
 
-class SideEffectNotifier extends Notifier<JNAPSideEffect> {
-  @override
-  JNAPSideEffect build() => const JNAPSideEffect(hasSideEffect: false);
+final sideEffectProvider =
+    NotifierProvider<SideEffectNotifier, SideEffectState>(
+        () => SideEffectNotifier());
 
-  // TODO check again
-  Future handleDeviceRestart() async {
-    poll(
-      pollFunc: testRouterReconnected,
-      timeDelayStartInSec: 40,
-      retryDelayInSec: 10,
-      maxPollTimeInSec: 240,
-    );
-  }
+class SideEffectNotifier extends Notifier<SideEffectState> {
+  @override
+  SideEffectState build() => const SideEffectState(hasSideEffect: false);
 
   Future manualDeviceRestart({
-    JNAPSideEffectOverrides? overrides,
+    SideEffectPollConfig? config,
   }) {
     state = state.copyWith(hasSideEffect: true, reason: 'manual', progress: 0);
     return poll(
       pollFunc: testRouterReconnected,
-      maxRetry: overrides?.maxRetry ?? -1,
-      timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 10,
-      retryDelayInSec: overrides?.retryDelayInSec ?? 10,
-      maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 240,
-      condition: overrides?.condition,
-    ).catchError(
-      (error) {
-        throw JNAPSideEffectError();
-      },
-      test: (error) => error is JNAPSideEffectError,
+      maxRetry: config?.maxRetry ?? -1,
+      timeDelayStartInSec: config?.timeDelayStartInSec ?? 10,
+      retryDelayInSec: config?.retryDelayInSec ?? 10,
+      maxPollTimeInSec: config?.maxPollTimeInSec ?? 240,
+      condition: config?.condition,
     ).whenComplete(() {
       finishSideEffect();
     });
@@ -127,7 +155,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
 
   Future<JNAPResult> handleSideEffect(
     JNAPResult result, {
-    JNAPSideEffectOverrides? overrides,
+    SideEffectPollConfig? config,
   }) async {
     final sideEffects = (result as SideEffectGetter).getSideEffects() ?? [];
     if (sideEffects.isEmpty) {
@@ -137,66 +165,76 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     logger.d('[SideEffectManager] handleSideEffect: $result');
     ref.read(pollingProvider.notifier).stopPolling();
     state = state.copyWith(hasSideEffect: true, reason: sideEffects[0]);
+    // poll() throws ServiceSideEffectError(null, lastPolledResult) on timeout.
+    // catchError enriches it with originalResult for upstream consumers.
     if (sideEffects.contains('DeviceRestart')) {
       return poll(
         pollFunc: testRouterReconnected,
-        maxRetry: overrides?.maxRetry ?? -1,
-        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 20,
-        retryDelayInSec: overrides?.retryDelayInSec ?? 10,
-        maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 240,
-        condition: overrides?.condition,
-      ).then((value) {
-        ref.read(pollingProvider.notifier).startPolling();
-        return result;
-      }).catchError(
-        (error) {
-          throw JNAPSideEffectError(result);
-        },
-        test: (error) => error is JNAPSideEffectError,
-      );
+        maxRetry: config?.maxRetry ?? -1,
+        timeDelayStartInSec: config?.timeDelayStartInSec ?? 20,
+        retryDelayInSec: config?.retryDelayInSec ?? 10,
+        maxPollTimeInSec: config?.maxPollTimeInSec ?? 240,
+        condition: config?.condition,
+      )
+          .then((value) {
+            ref.read(pollingProvider.notifier).startPolling();
+            return result;
+          })
+          .catchError(
+            (error) => throw ServiceSideEffectError(
+                result, (error as ServiceSideEffectError).lastPolledResult),
+            test: (error) => error is ServiceSideEffectError,
+          )
+          .whenComplete(() {
+            finishSideEffect();
+          });
     } else if (sideEffects.contains('WirelessInterruption')) {
       return poll(
         pollFunc: testRouterReconnected,
-        maxRetry: overrides?.maxRetry ?? -1,
-        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 20,
-        retryDelayInSec: overrides?.retryDelayInSec ?? 10,
-        maxPollTimeInSec: overrides?.maxPollTimeInSec ?? 120,
-        condition: overrides?.condition,
-      ).then((value) {
-        ref.read(pollingProvider.notifier).startPolling();
-        return result;
-      }).catchError(
-        (error) {
-          throw JNAPSideEffectError(result);
-        },
-        test: (error) => error is JNAPSideEffectError,
-      );
+        maxRetry: config?.maxRetry ?? -1,
+        timeDelayStartInSec: config?.timeDelayStartInSec ?? 20,
+        retryDelayInSec: config?.retryDelayInSec ?? 10,
+        maxPollTimeInSec: config?.maxPollTimeInSec ?? 120,
+        condition: config?.condition,
+      )
+          .then((value) {
+            ref.read(pollingProvider.notifier).startPolling();
+            return result;
+          })
+          .catchError(
+            (error) => throw ServiceSideEffectError(
+                result, (error as ServiceSideEffectError).lastPolledResult),
+            test: (error) => error is ServiceSideEffectError,
+          )
+          .whenComplete(() {
+            finishSideEffect();
+          });
     } else {
+      // Unknown side effect: use testRouterFullyBootedUp (checks WAN status)
       return poll(
         pollFunc: testRouterFullyBootedUp,
-        maxRetry: overrides?.maxRetry ?? 10,
-        timeDelayStartInSec: overrides?.timeDelayStartInSec ?? 20,
-        retryDelayInSec: overrides?.retryDelayInSec ?? 15,
-        maxPollTimeInSec: overrides?.maxPollTimeInSec ?? -1,
-        condition: overrides?.condition,
-      ).then((value) {
-        ref.read(pollingProvider.notifier).startPolling();
-        return result;
-      }).catchError(
-        (error) {
-          if (error is JNAPSideEffectError) {
-            final lastHandleResult = error.lastHandledResult;
-            throw JNAPSideEffectError(result, lastHandleResult);
-          } else {
-            throw JNAPSideEffectError(result);
-          }
-        },
-        test: (error) => error is JNAPSideEffectError,
-      );
+        maxRetry: config?.maxRetry ?? 10,
+        timeDelayStartInSec: config?.timeDelayStartInSec ?? 20,
+        retryDelayInSec: config?.retryDelayInSec ?? 15,
+        maxPollTimeInSec: config?.maxPollTimeInSec ?? -1,
+        condition: config?.condition,
+      )
+          .then((value) {
+            ref.read(pollingProvider.notifier).startPolling();
+            return result;
+          })
+          .catchError(
+            (error) => throw ServiceSideEffectError(
+                result, (error as ServiceSideEffectError).lastPolledResult),
+            test: (error) => error is ServiceSideEffectError,
+          )
+          .whenComplete(() {
+            finishSideEffect();
+          });
     }
   }
 
-  finishSideEffect() {
+  void finishSideEffect() {
     state = state.copyWith(
       hasSideEffect: false,
       reason: null,
@@ -225,11 +263,11 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     }
     final startTime = DateTime.now().millisecondsSinceEpoch;
     var result = false;
-    JNAPResult? lastHandledResult;
+    JNAPResult? lastPolledResult;
     while (maxRetry == -1 || retry <= maxRetry) {
       logger.d('[SideEffectManager] poll <$retry> times');
       result = await pollFunc.call().then((value) {
-            lastHandledResult = value.$2;
+            lastPolledResult = value.$2;
             return value.$1;
           }).onError((error, stackTrace) => false) ||
           (condition?.call() ?? false);
@@ -249,7 +287,7 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
     }
     if (!result) {
       logger.d(('[SideEffectManager] exceed to MAX retry!'));
-      throw JNAPSideEffectError(null, lastHandledResult);
+      throw ServiceSideEffectError(null, lastPolledResult);
     }
     return result;
   }
@@ -317,14 +355,4 @@ class SideEffectNotifier extends Notifier<JNAPSideEffect> {
       state = state.copyWith(progress: ((diff / maxRetry) * 100).toInt());
     }
   }
-}
-
-final sideEffectProvider = NotifierProvider<SideEffectNotifier, JNAPSideEffect>(
-    () => SideEffectNotifier());
-
-class JNAPSideEffectError extends JNAPError {
-  final JNAPResult? attach;
-  final JNAPResult? lastHandledResult;
-  const JNAPSideEffectError([this.attach, this.lastHandledResult])
-      : super(result: 'JNAP handle side effect error');
 }

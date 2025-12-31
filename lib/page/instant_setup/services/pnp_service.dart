@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
@@ -390,11 +391,10 @@ class PnpService with AvailabilityChecker {
           transaction,
           fetchRemote: true,
           cacheLevel: CacheLevel.noCache,
-          sideEffectOverrides:
-              const JNAPSideEffectOverrides(maxRetry: 18, retryDelayInSec: 10),
+          pollConfig:
+              const SideEffectPollConfig(maxRetry: 18, retryDelayInSec: 10),
         )
         .catchError((error) {
-      // Connection error,
       logger.e(
           '[PnP]: Service - Connection changed during save. Need to reconnect.',
           error: error);
@@ -402,7 +402,7 @@ class PnpService with AvailabilityChecker {
     },
             test: (error) =>
                 error is ClientException ||
-                error is JNAPSideEffectError).onError((error, stackTrace) {
+                error is ServiceSideEffectError).onError((error, stackTrace) {
       if (error is ExceptionNeedToReconnect) {
         throw error;
       }

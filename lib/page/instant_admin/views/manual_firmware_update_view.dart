@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/rotating_icon.dart';
@@ -115,7 +115,7 @@ class _ManualFirmwareUpdateViewState
                         });
                       },
                               test: (error) =>
-                                  error is JNAPSideEffectError).catchError(
+                                  error is ServiceSideEffectError).catchError(
                               (error) {
                         if (!mounted) return;
                         setState(() {

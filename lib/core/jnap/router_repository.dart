@@ -82,7 +82,7 @@ class RouterRepository {
     CacheLevel? cacheLevel,
     int timeoutMs = 10000,
     int retries = 1,
-    JNAPSideEffectOverrides? sideEffectOverrides,
+    SideEffectPollConfig? pollConfig,
   }) async {
     cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
         ? CacheLevel.noCache
@@ -101,8 +101,8 @@ class RouterRepository {
     final sideEffectManager = ref.read(sideEffectProvider.notifier);
     return CommandQueue()
         .enqueue(command)
-        .then((record) => sideEffectManager.handleSideEffect(record,
-            overrides: sideEffectOverrides))
+        .then((record) =>
+            sideEffectManager.handleSideEffect(record, config: pollConfig))
         .then((record) {
       sideEffectManager.finishSideEffect();
       return record as JNAPSuccess;
@@ -115,7 +115,7 @@ class RouterRepository {
     CacheLevel cacheLevel = CacheLevel.localCached,
     int timeoutMs = 10000,
     int retries = 1,
-    JNAPSideEffectOverrides? sideEffectOverrides,
+    SideEffectPollConfig? pollConfig,
   }) async {
     cacheLevel =
         builder.commands.any((entry) => isMatchedJNAPNoCachePolicy(entry.key))
@@ -142,8 +142,7 @@ class RouterRepository {
     return CommandQueue().enqueue(command).then((
       record,
     ) {
-      return sideEffectManager.handleSideEffect(record,
-          overrides: sideEffectOverrides);
+      return sideEffectManager.handleSideEffect(record, config: pollConfig);
     }).then((record) {
       sideEffectManager.finishSideEffect();
       return record;

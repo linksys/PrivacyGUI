@@ -308,3 +308,37 @@ final class ConnectivityError extends ServiceError {
   final String? message;
   const ConnectivityError({this.message});
 }
+
+// ============================================================================
+// Side Effect Error (Operation succeeded but device recovery timed out)
+// ============================================================================
+
+/// Operation succeeded but triggered a side effect requiring device recovery.
+///
+/// Unlike other [ServiceError] subtypes, this indicates the operation DID succeed.
+/// The device is now recovering (restarting, reconnecting, etc.) and we timed out
+/// waiting for it to come back online.
+///
+/// - [originalResult]: The JNAP result from the operation that triggered the
+///   side effect. Contains data like redirection URLs needed after device recovery.
+/// - [lastPolledResult]: The last successful poll result before timeout.
+///   Useful for diagnosing the device's final known state.
+///
+/// UI should typically:
+/// 1. Inform user the settings were saved
+/// 2. Guide user to reconnect to the device
+///
+/// Example:
+/// ```dart
+/// try {
+///   await service.saveSettings(settings);
+/// } on ServiceSideEffectError {
+///   showRouterNotFoundAlert(context, ref);
+/// }
+/// ```
+final class ServiceSideEffectError extends ServiceError {
+  final Object? originalResult;
+  final Object? lastPolledResult;
+
+  const ServiceSideEffectError([this.originalResult, this.lastPolledResult]);
+}
