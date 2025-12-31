@@ -66,14 +66,22 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
     final oldState = ref.read(internetSettingsProvider).settings.original;
     final newState = ref.read(internetSettingsProvider).settings.current;
 
-    if (oldState.ipv4Setting.domainName != newState.ipv4Setting.domainName) {
+    // Fix: Compare against current controller text to avoid cursor reset
+    if ((newState.ipv4Setting.domainName ?? '') != _domainNameController.text) {
       _domainNameController.text = newState.ipv4Setting.domainName ?? '';
     }
+
+    // MTU Logic
+    final newMtuStr = '${newState.ipv4Setting.mtu}';
+    if (newMtuStr != _mtuSizeController.text) {
+      _mtuSizeController.text = newMtuStr;
+    }
+    // Update local state for UI toggle if needed
     if (oldState.ipv4Setting.mtu != newState.ipv4Setting.mtu) {
-      _mtuSizeController.text = '${newState.ipv4Setting.mtu}';
       isMtuAuto = newState.ipv4Setting.mtu == 0;
     }
-    if (oldState.macCloneAddress != newState.macCloneAddress) {
+
+    if ((newState.macCloneAddress ?? '') != _macAddressCloneController.text) {
       _macAddressCloneController.text = newState.macCloneAddress ?? '';
     }
   }
@@ -203,14 +211,10 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
               onFocusChange: (hasFocus) {
                 if (!hasFocus) {
                   setState(() => _mtuSizeTouched = true);
-                  if (int.parse(_mtuSizeController.text) < 576) {
-                    _mtuSizeController.text = '576';
-                    notifier.updateMtu(576);
-                  }
                 }
               },
               child: AppMinMaxInput(
-                key: const ValueKey('mtuManualSizeText'),
+                key: ValueKey('mtuManualSizeText_$isMtuAuto'),
                 value: int.tryParse(_mtuSizeController.text),
                 enabled: !isMtuAuto,
                 label: loc(context).size,
@@ -218,10 +222,18 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
                 max: _getMaxMtu(ipv4Setting.ipv4ConnectionType),
                 errorText: _mtuSizeTouched &&
                         !isMtuAuto &&
-                        int.tryParse(_mtuSizeController.text) == null
+                        _isMtuInvalid(
+                          _mtuSizeController.text,
+                          _getMaxMtu(ipv4Setting.ipv4ConnectionType),
+                        )
                     ? loc(context).invalidInput
                     : null,
                 onChanged: (value) {
+                  if (!_mtuSizeTouched) {
+                    setState(() {
+                      _mtuSizeTouched = true;
+                    });
+                  }
                   _mtuSizeController.text = value?.toString() ?? '';
                   notifier.updateMtu(value ?? 0);
                 },
@@ -386,5 +398,11 @@ class _OptionalSettingsFormState extends ConsumerState<OptionalSettingsForm> {
 
   int _getMaxMtu(String wanType) {
     return NetworkUtils.getMaxMtu(wanType);
+  }
+
+  bool _isMtuInvalid(String text, int max) {
+    final value = int.tryParse(text);
+    if (value == null) return true;
+    return value < 576 || value > max;
   }
 }

@@ -219,7 +219,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                 SizedBox(
                   child: AppPasswordInput(
                     controller: _passwordController,
-                    hint: loc(context).routerPassword,
+                    hintText: loc(context).routerPassword,
                     onChanged: (value) {
                       setState(() {
                         _shouldEnableLoginButton();

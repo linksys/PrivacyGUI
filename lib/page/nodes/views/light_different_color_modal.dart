@@ -13,24 +13,30 @@ class LightDifferentColorModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppText.labelLarge(loc(context).modalLightDifferentDesc),
-          AppGap.xxl(),
-          ...isCogntive
-              ? _cognitiveNodeLightSet(context)
-              : _meshNodeLightSet(context),
-          AppGap.xxl(),
-          AppText.labelLarge(loc(context).modalLightDifferentToFactoryReset),
-          AppGap.xxl(),
-          _buildNumberedList(context, [
-            loc(context).modalLightDifferentToFactoryResetStep1,
-            loc(context).modalLightDifferentToFactoryResetStep2,
-          ]),
-        ],
+    // Constrain the height to 60% of the screen height to prevent overflow in dialogs
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.6,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppText.labelLarge(loc(context).modalLightDifferentDesc),
+            AppGap.xxl(),
+            ...isCogntive
+                ? _cognitiveNodeLightSet(context)
+                : _meshNodeLightSet(context),
+            AppGap.xxl(),
+            AppText.labelLarge(loc(context).modalLightDifferentToFactoryReset),
+            AppGap.xxl(),
+            _buildNumberedList(context, [
+              loc(context).modalLightDifferentToFactoryResetStep1,
+              loc(context).modalLightDifferentToFactoryResetStep2,
+            ]),
+          ],
+        ),
       ),
     );
   }

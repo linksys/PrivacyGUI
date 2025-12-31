@@ -52,18 +52,17 @@ class _L2tpFormState extends BaseWanFormState<L2tpForm> {
   @override
   void didUpdateWidget(L2tpForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldIpv4Setting =
-        ref.read(internetSettingsProvider).settings.original.ipv4Setting;
     final newIpv4Setting =
         ref.read(internetSettingsProvider).settings.current.ipv4Setting;
 
-    if (oldIpv4Setting.username != newIpv4Setting.username) {
+    // Fix: Compare against current controller text to avoid cursor reset
+    if ((newIpv4Setting.username ?? '') != _usernameController.text) {
       _usernameController.text = newIpv4Setting.username ?? '';
     }
-    if (oldIpv4Setting.password != newIpv4Setting.password) {
+    if ((newIpv4Setting.password ?? '') != _passwordController.text) {
       _passwordController.text = newIpv4Setting.password ?? '';
     }
-    if (oldIpv4Setting.serverIp != newIpv4Setting.serverIp) {
+    if ((newIpv4Setting.serverIp ?? '') != _serverIpController.text) {
       _serverIpController.text = newIpv4Setting.serverIp ?? '';
     }
   }

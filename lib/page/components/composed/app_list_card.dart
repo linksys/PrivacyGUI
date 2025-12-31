@@ -97,7 +97,7 @@ class AppListCard extends StatelessWidget {
             vertical: AppSpacing.lg,
             horizontal: AppSpacing.xxl,
           ),
-      color: color,
+      color: color ?? Colors.transparent,
       borderColor: Colors.transparent,
       margin: margin,
       selectableDescription: selectableDescription,
@@ -130,6 +130,7 @@ class AppListCard extends StatelessWidget {
         borderWidth: hideBorder ? 0 : null,
         borderColor: (!hideBorder && borderColor != null) ? borderColor : null,
         backgroundColor: color,
+        shadows: const [],
       );
     }
 

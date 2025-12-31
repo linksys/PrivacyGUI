@@ -246,6 +246,7 @@ class _DemoThemeSettingsFabState extends ConsumerState<DemoThemeSettingsFab> {
       (GlobalOverlayType.noiseOverlay, 'Noise'),
       (GlobalOverlayType.crtShader, 'CRT'),
       (GlobalOverlayType.auroraGlow, 'Aurora'),
+      (GlobalOverlayType.liquid, 'Liquid'),
     ];
 
     return Wrap(

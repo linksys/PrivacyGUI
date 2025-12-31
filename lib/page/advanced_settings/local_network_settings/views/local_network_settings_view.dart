@@ -89,15 +89,18 @@ class _LocalNetworkSettingsViewState
 
     ref.listen(localNetworkSettingProvider, (previous, next) {
       if (previous?.settings.current.hostName !=
-          next.settings.current.hostName) {
+              next.settings.current.hostName &&
+          hostNameController.text != next.settings.current.hostName) {
         hostNameController.text = next.settings.current.hostName;
       }
       if (previous?.settings.current.ipAddress !=
-          next.settings.current.ipAddress) {
+              next.settings.current.ipAddress &&
+          ipAddressController.text != next.settings.current.ipAddress) {
         ipAddressController.text = next.settings.current.ipAddress;
       }
       if (previous?.settings.current.subnetMask !=
-          next.settings.current.subnetMask) {
+              next.settings.current.subnetMask &&
+          subnetMaskController.text != next.settings.current.subnetMask) {
         subnetMaskController.text = next.settings.current.subnetMask;
       }
     });

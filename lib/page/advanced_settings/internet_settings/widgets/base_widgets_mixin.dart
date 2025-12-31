@@ -51,6 +51,7 @@ mixin BaseWidgetsMixin {
     TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     bool enable = true,
+    FocusNode? focusNode,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,6 +61,7 @@ mixin BaseWidgetsMixin {
         AppTextField(
           key: key,
           controller: controller,
+          focusNode: focusNode,
           onChanged: onChanged,
           errorText: errorText,
           keyboardType: keyboardType,

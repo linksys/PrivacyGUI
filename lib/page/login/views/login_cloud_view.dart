@@ -104,7 +104,7 @@ class _LoginCloudViewState extends ConsumerState<LoginCloudView> {
                             AppGap.lg(),
                             AppPasswordInput(
                               controller: _passwordController,
-                              hint: loc(context).password,
+                              hintText: loc(context).password,
                               errorText: errorCodeHelper(context, _error),
                               onSubmitted: (_) {
                                 _cloudLogin();
