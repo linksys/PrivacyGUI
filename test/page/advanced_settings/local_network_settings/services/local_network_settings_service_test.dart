@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -83,7 +84,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('sideEffectOverrides'),
         )).thenAnswer((_) async => jnapResponse);
 
         await service.saveReservations(
@@ -106,7 +107,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: captureAnyNamed('data'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('sideEffectOverrides'),
         )).captured;
 
         final sentData = captured.first as Map<String, dynamic>;
@@ -134,7 +135,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('sideEffectOverrides'),
         )).thenAnswer((_) async => jnapResponse);
 
         await service.saveReservations(
@@ -156,7 +157,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: captureAnyNamed('data'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('sideEffectOverrides'),
         )).captured;
 
         final sentData = captured.first as Map<String, dynamic>;
@@ -176,7 +177,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('sideEffectOverrides'),
         )).thenAnswer((_) async => jnapResponse);
 
         await service.saveReservations(
@@ -198,7 +199,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: captureAnyNamed('data'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('sideEffectOverrides'),
         )).captured;
 
         final sentData = captured.first as Map<String, dynamic>;
@@ -218,7 +219,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('sideEffectOverrides'),
         )).thenAnswer((_) async => jnapResponse);
 
         await service.saveReservations(
@@ -236,7 +237,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('sideEffectOverrides'),
         )).called(1);
       });
 
@@ -249,7 +250,7 @@ void main() {
           JNAPAction.setLANSettings,
           auth: true,
           data: anyNamed('data'),
-          sideEffectOverrides: anyNamed('sideEffectOverrides'),
+          pollConfig: anyNamed('sideEffectOverrides'),
         )).thenThrow(Exception('Save failed'));
 
         expect(
@@ -265,6 +266,40 @@ void main() {
           ),
           throwsException,
         );
+      });
+
+      group('Side Effect Handling -', () {
+        // Note: ServiceSideEffectError is now thrown directly by handleSideEffect
+        // in side_effect_provider.dart, so we mock the repository throwing
+        // ServiceSideEffectError directly (as it would propagate from handleSideEffect)
+
+        test('propagates ServiceSideEffectError from handleSideEffect',
+            () async {
+          final reservations = [
+            DHCPReservationsTestData.createReservationUIModel()
+          ];
+
+          when(mockRepository.send(
+            JNAPAction.setLANSettings,
+            auth: true,
+            data: anyNamed('data'),
+            pollConfig: anyNamed('sideEffectOverrides'),
+          )).thenThrow(const ServiceSideEffectError());
+
+          expect(
+            () => service.saveReservations(
+              routerIp: '192.168.1.1',
+              networkPrefixLength: 24,
+              hostName: 'MyRouter',
+              isDHCPEnabled: true,
+              firstClientIP: '192.168.1.100',
+              lastClientIP: '192.168.1.200',
+              leaseMinutes: 1440,
+              reservations: reservations,
+            ),
+            throwsA(isA<ServiceSideEffectError>()),
+          );
+        });
       });
     });
 

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
@@ -30,8 +30,8 @@ import '../../../../../../test_data/internet_settings_state_data.dart';
 /// - PNP-PPPOE_SAVE-ERROR-GENERIC: Verifies the UI for a generic JNAPError during save.
 /// - PNP-PPPOE_SAVE-ERROR-SPECIFIC-JNAP: Verifies the UI for a specific JNAPError during save.
 /// - PNP-PPPOE_SAVE-ERROR-NO-INTERNET: Verifies the UI for no internet connection error during save.
-/// - PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-SUCCESS: Verifies the UI for JNAPSideEffectError with JNAPSuccess during save.
-/// - PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-OTHER: Verifies the UI for JNAPSideEffectError without JNAPSuccess during save.
+/// - PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-SUCCESS: Verifies the UI for ServiceSideEffectError with JNAPSuccess during save.
+/// - PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-OTHER: Verifies the UI for ServiceSideEffectError without JNAPSuccess during save.
 /// - PNP-PPPOE_SAVE-PROGRESS: Verifies UI updates during the save and verify progress states.
 
 void main() async {
@@ -208,7 +208,7 @@ void main() async {
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-SUCCESS
   testLocalizations(
-    'Verify JNAPSideEffectError with JNAPSuccess during PPPoE save',
+    'Verify ServiceSideEffectError with JNAPSuccess during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
       when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -229,8 +229,8 @@ void main() async {
       // Verify the spinner is displayed
       expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
-      // Complete the future with JNAPSideEffectError with JNAPSuccess
-      completer.completeError(JNAPSideEffectError(
+      // Complete the future with ServiceSideEffectError with JNAPSuccess
+      completer.completeError(ServiceSideEffectError(
           const JNAPSuccess(output: {}, result: 'Success'),
           const JNAPSuccess(output: {}, result: 'Success')));
       await tester.pumpAndSettle(); // Let the UI handle the error and rebuild.
@@ -249,7 +249,7 @@ void main() async {
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-OTHER
   testLocalizations(
-    'Verify JNAPSideEffectError without JNAPSuccess during PPPoE save',
+    'Verify ServiceSideEffectError without JNAPSuccess during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
       when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -270,8 +270,8 @@ void main() async {
       // Verify the spinner is displayed
       expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
-      // Complete the future with JNAPSideEffectError without JNAPSuccess
-      completer.completeError(JNAPSideEffectError(
+      // Complete the future with ServiceSideEffectError without JNAPSuccess
+      completer.completeError(ServiceSideEffectError(
           const JNAPSuccess(output: {}, result: 'Success')));
       await tester.pumpAndSettle(); // Hide spinner, trigger navigation
 

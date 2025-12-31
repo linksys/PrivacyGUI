@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -88,9 +88,9 @@ class _PnpIspTypeSelectionViewState extends ConsumerState {
 
     String? errorMessage;
 
-    if (error is JNAPSideEffectError) {
-      final lastHandledResult = error.lastHandledResult;
-      if (lastHandledResult != null && lastHandledResult is JNAPSuccess) {
+    if (error is ServiceSideEffectError) {
+      final lastPolledResult = error.lastPolledResult;
+      if (lastPolledResult != null && lastPolledResult is JNAPSuccess) {
         errorMessage = _getErrorMessage(wanType);
       } else {
         showRouterNotFoundAlert(context, ref, onComplete: () async {

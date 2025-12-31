@@ -6,7 +6,6 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/_models.dart';
@@ -543,7 +542,8 @@ void main() {
       );
     });
 
-    test('extracts redirection from JNAPSideEffectError when attach is present',
+    test(
+        'extracts redirection from ServiceSideEffectError when originalResult is present',
         () async {
       // Arrange
       final settings = InternetSettingsTestDataBuilder.internetSettingsUIModel(
@@ -577,8 +577,8 @@ void main() {
         data: mockTransactionData,
       );
 
-      // Create JNAPSideEffectError with attach
-      final sideEffectError = JNAPSideEffectError(mockSuccessWrap);
+      // Create ServiceSideEffectError with originalResult
+      final sideEffectError = ServiceSideEffectError(mockSuccessWrap);
 
       when(() => mockRepo.transaction(
             any(),
@@ -595,15 +595,16 @@ void main() {
       expect(result?['domain'], 'local');
     });
 
-    test('rethrows JNAPSideEffectError when attach is null', () async {
+    test('rethrows ServiceSideEffectError when originalResult is null',
+        () async {
       // Arrange
       final settings = InternetSettingsTestDataBuilder.internetSettingsUIModel(
         ipv4Setting: InternetSettingsTestDataBuilder.dhcpUIModel(),
         ipv6Setting: InternetSettingsTestDataBuilder.automaticIPv6UIModel(),
       );
 
-      // Create JNAPSideEffectError without attach
-      final sideEffectError = const JNAPSideEffectError(null);
+      // Create ServiceSideEffectError without originalResult
+      final sideEffectError = const ServiceSideEffectError(null);
 
       when(() => mockRepo.transaction(
             any(),
@@ -614,7 +615,7 @@ void main() {
       // Act & Assert
       expect(
         () => service.saveSettings(settings),
-        throwsA(isA<JNAPSideEffectError>()),
+        throwsA(isA<ServiceSideEffectError>()),
       );
     });
   });

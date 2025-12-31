@@ -116,6 +116,9 @@ class LocalNetworkSettingsService {
   ///
   /// Parameters include all required LAN settings fields since the JNAP API
   /// requires the complete settings object.
+  ///
+  /// Throws [ServiceSideEffectError] if the operation succeeds but device recovery
+  /// times out.
   Future<void> saveReservations({
     required String routerIp,
     required int networkPrefixLength,
@@ -147,11 +150,12 @@ class LocalNetworkSettingsService {
       ),
     );
 
+    // ServiceSideEffectError is thrown directly by handleSideEffect if poll times out
     await _routerRepository.send(
       JNAPAction.setLANSettings,
       auth: true,
       data: setLANSettings.toMap()..removeWhere((key, value) => value == null),
-      sideEffectOverrides: const JNAPSideEffectOverrides(maxRetry: 5),
+      pollConfig: const SideEffectPollConfig(maxRetry: 5),
     );
   }
 
