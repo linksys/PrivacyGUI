@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
@@ -123,33 +125,41 @@ class InstantVerifyService {
   Stream<PingStatusUIModel> getPingStatus({void Function()? onCompleted}) {
     return _routerRepository
         .scheduledCommand(
-      action: JNAPAction.getPingStatus,
-      retryDelayInMilliSec: 1000,
-      maxRetry: 30,
-      condition: (result) {
-        if (result is JNAPSuccess) {
-          final status = PingStatus.fromMap(result.output);
-          return !status.isRunning;
-        } else {
-          return false;
-        }
-      },
-      auth: true,
-      onCompleted: (_) {
-        onCompleted?.call();
-      },
-    )
-        .map((event) {
-      if (event is JNAPSuccess) {
-        final status = PingStatus.fromMap(event.output);
-        return PingStatusUIModel(
-          isRunning: status.isRunning,
-          pingLog: status.pingLog,
-        );
-      } else {
-        throw event;
-      }
-    });
+          action: JNAPAction.getPingStatus,
+          retryDelayInMilliSec: 1000,
+          maxRetry: 30,
+          condition: (result) {
+            if (result is JNAPSuccess) {
+              final status = PingStatus.fromMap(result.output);
+              return !status.isRunning;
+            } else {
+              return false;
+            }
+          },
+          auth: true,
+        )
+        .transform(StreamTransformer.fromHandlers(
+          handleData: (event, sink) {
+            if (event is JNAPSuccess) {
+              final status = PingStatus.fromMap(event.output);
+              sink.add(PingStatusUIModel(
+                isRunning: status.isRunning,
+                pingLog: status.pingLog,
+              ));
+            } else {
+              sink.addError(event);
+              sink.close();
+            }
+          },
+          handleDone: (sink) {
+            onCompleted?.call();
+            sink.close();
+          },
+          handleError: (error, stackTrace, sink) {
+            sink.addError(error, stackTrace);
+            sink.close();
+          },
+        ));
   }
 
   /// Starts a Traceroute test to the specified host
@@ -190,32 +200,40 @@ class InstantVerifyService {
       {void Function()? onCompleted}) {
     return _routerRepository
         .scheduledCommand(
-      action: JNAPAction.getTracerouteStatus,
-      retryDelayInMilliSec: 1000,
-      maxRetry: 30,
-      condition: (result) {
-        if (result is JNAPSuccess) {
-          final status = TracerouteStatus.fromMap(result.output);
-          return !status.isRunning;
-        } else {
-          return false;
-        }
-      },
-      auth: true,
-      onCompleted: (_) {
-        onCompleted?.call();
-      },
-    )
-        .map((event) {
-      if (event is JNAPSuccess) {
-        final status = TracerouteStatus.fromMap(event.output);
-        return TracerouteStatusUIModel(
-          isRunning: status.isRunning,
-          tracerouteLog: status.tracerouteLog,
-        );
-      } else {
-        throw event;
-      }
-    });
+          action: JNAPAction.getTracerouteStatus,
+          retryDelayInMilliSec: 1000,
+          maxRetry: 30,
+          condition: (result) {
+            if (result is JNAPSuccess) {
+              final status = TracerouteStatus.fromMap(result.output);
+              return !status.isRunning;
+            } else {
+              return false;
+            }
+          },
+          auth: true,
+        )
+        .transform(StreamTransformer.fromHandlers(
+          handleData: (event, sink) {
+            if (event is JNAPSuccess) {
+              final status = TracerouteStatus.fromMap(event.output);
+              sink.add(TracerouteStatusUIModel(
+                isRunning: status.isRunning,
+                tracerouteLog: status.tracerouteLog,
+              ));
+            } else {
+              sink.addError(event);
+              sink.close();
+            }
+          },
+          handleDone: (sink) {
+            onCompleted?.call();
+            sink.close();
+          },
+          handleError: (error, stackTrace, sink) {
+            sink.addError(error, stackTrace);
+            sink.close();
+          },
+        ));
   }
 }

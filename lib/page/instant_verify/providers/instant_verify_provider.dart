@@ -40,10 +40,15 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
   /// Parameters:
   ///   - host: Target hostname or IP address
   ///   - pingCount: Optional number of ping packets to send
-  Future<void> ping({required String host, required int? pingCount}) {
+  Future<void> ping({required String host, required int? pingCount}) async {
     state = state.copyWith(isRunning: true);
     final service = ref.read(instantVerifyServiceProvider);
-    return service.startPing(host: host, pingCount: pingCount);
+    try {
+      await service.startPing(host: host, pingCount: pingCount);
+    } catch (_) {
+      state = state.copyWith(isRunning: false);
+      rethrow;
+    }
   }
 
   /// Stops the currently running Ping test
@@ -70,10 +75,16 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
   /// Parameters:
   ///   - host: Target hostname or IP address
   ///   - pingCount: Unused, kept for API compatibility
-  Future<void> traceroute({required String host, required int? pingCount}) {
+  Future<void> traceroute(
+      {required String host, required int? pingCount}) async {
     state = state.copyWith(isRunning: true);
     final service = ref.read(instantVerifyServiceProvider);
-    return service.startTraceroute(host: host);
+    try {
+      await service.startTraceroute(host: host);
+    } catch (_) {
+      state = state.copyWith(isRunning: false);
+      rethrow;
+    }
   }
 
   /// Stops the currently running Traceroute test
