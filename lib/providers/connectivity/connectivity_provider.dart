@@ -3,18 +3,11 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
-import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/providers/connectivity/services/connectivity_service.dart';
 
 import 'availability_info.dart';
 import 'mixin.dart';
@@ -76,51 +69,23 @@ class ConnectivityNotifier extends Notifier<ConnectivityState>
         cloudAvailabilityInfo: cloudInfo);
   }
 
+  /// Tests router type by delegating to ConnectivityService.
+  ///
+  /// This method delegates to [ConnectivityService.testRouterType] which
+  /// handles all JNAP communication internally.
   Future<RouterType> _testRouterType(String? newIp) async {
-    final routerRepository = ref.read(routerRepositoryProvider);
-    // final testJNAP = await routerRepository
-    //     .send(JNAPAction.isAdminPasswordDefault,
-    //         type: CommandType.local,
-    //         fetchRemote: true,
-    //         cacheLevel: CacheLevel.noCache)
-    //     .then((value) => true)
-    //     .onError((error, stackTrace) => false);
-    // if (!testJNAP) {
-    //   return RouterType.others;
-    // }
-
-    final routerSN = await routerRepository
-        .send(
-          JNAPAction.getDeviceInfo,
-          type: CommandType.local,
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache,
-        )
-        .then<String>(
-            (value) => NodeDeviceInfo.fromJson(value.output).serialNumber)
-        .onError((error, stackTrace) => '');
-    if (routerSN.isEmpty) {
-      return RouterType.others;
-    }
-    final prefs = await SharedPreferences.getInstance();
-    final currentSN = prefs.get(pCurrentSN);
-    if (routerSN.isNotEmpty && routerSN == currentSN) {
-      return RouterType.behindManaged;
-    }
-    return RouterType.behind;
+    final connectivityService = ref.read(connectivityServiceProvider);
+    return connectivityService.testRouterType(newIp);
   }
 
+  /// Checks if router is configured by delegating to ConnectivityService.
+  ///
+  /// This method delegates to [ConnectivityService.fetchRouterConfiguredData]
+  /// which handles all JNAP communication and error mapping internally.
+  ///
+  /// Throws: [ServiceError] on JNAP failure (propagated from service)
   Future<RouterConfiguredData> isRouterConfigured() async {
-    final routerRepository = ref.read(routerRepositoryProvider);
-    final results = await routerRepository.fetchIsConfigured();
-
-    bool isDefaultPassword = JNAPTransactionSuccessWrap.getResult(
-            JNAPAction.isAdminPasswordDefault, Map.fromEntries(results))
-        ?.output['isAdminPasswordDefault'];
-    bool isSetByUser = JNAPTransactionSuccessWrap.getResult(
-            JNAPAction.isAdminPasswordDefault, Map.fromEntries(results))
-        ?.output['isAdminPasswordSetByUser'];
-    return RouterConfiguredData(
-        isDefaultPassword: isDefaultPassword, isSetByUser: isSetByUser);
+    final connectivityService = ref.read(connectivityServiceProvider);
+    return connectivityService.fetchRouterConfiguredData();
   }
 }
