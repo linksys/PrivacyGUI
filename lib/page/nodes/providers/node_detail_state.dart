@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 
@@ -27,20 +26,6 @@ enum NodeLightStatus {
   on,
   off,
   night;
-
-  static NodeLightStatus getStatus(NodeLightSettings? settings) {
-    if (settings == null) {
-      return NodeLightStatus.off;
-    }
-    if ((settings.allDayOff ?? false) ||
-        (settings.startHour == 0 && settings.endHour == 24)) {
-      return NodeLightStatus.off;
-    } else if (!settings.isNightModeEnable) {
-      return NodeLightStatus.on;
-    } else {
-      return NodeLightStatus.night;
-    }
-  }
 
   String resolveString(BuildContext context) {
     if (this == NodeLightStatus.on) {
@@ -107,7 +92,6 @@ class NodeDetailState extends Equatable {
     String? hardwareVersion,
     String? lanIpAddress,
     String? wanIpAddress,
-    NodeLightSettings? nodeLightSettings,
     BlinkingStatus? blinkingStatus,
     bool? isMLO,
     String? macAddress,

@@ -2,17 +2,14 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/models/device.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
+import 'package:privacy_gui/page/nodes/services/node_detail_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String blinkingDeviceId = 'blinkDeviceId';
@@ -41,95 +38,59 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
       return newState;
     }
 
-    // Details of the specific device
-    var location = '';
-    var isMaster = false;
-    var isOnline = false;
-    var connectedDevices = <DeviceListItem>[];
-    var upstreamDevice = '';
-    var isWired = false;
-    var signalStrength = 0;
-    var serialNumber = '';
-    var modelNumber = '';
-    var firmwareVersion = '';
-    var lanIpAddress = '';
-    var wanIpAddress = '';
-    var hardwareVersion = '';
-    var isMLO = false;
-    var macAddress = '';
-
-    RawDevice? master = deviceManagerState.deviceList
+    // Find the target device and master device
+    final device = deviceManagerState.deviceList
+        .firstWhereOrNull((element) => element.deviceID == targetId);
+    final master = deviceManagerState.deviceList
         .firstWhereOrNull((element) => element.isAuthority);
-    final alldevices = deviceManagerState.deviceList;
-    for (final device in alldevices) {
-      // Fill the details of the target device
-      if (device.deviceID == targetId) {
-        location = device.getDeviceLocation();
-        isMaster = (targetId == master?.deviceID);
-        isOnline = device.isOnline();
-        upstreamDevice = isMaster
-            ? 'INTERNET'
-            : (device.upstream?.getDeviceLocation() ??
-                master?.getDeviceLocation() ??
-                '');
-        isWired = device.getConnectionType() == DeviceConnectionType.wired;
-        signalStrength = device.signalDecibels ?? 0;
-        serialNumber = device.unit.serialNumber ?? '';
-        modelNumber = device.model.modelNumber ?? '';
-        firmwareVersion = device.unit.firmwareVersion ?? '';
-        hardwareVersion = device.model.hardwareVersion ?? '';
-        lanIpAddress = device.connections.firstOrNull?.ipAddress ?? '';
-        final wanStatusModel = deviceManagerState.wanStatus;
-        wanIpAddress = wanStatusModel?.wanConnection?.ipAddress ?? '';
-        connectedDevices = device.connectedDevices
-            .map((e) => ref.read(deviceListProvider.notifier).createItem(e))
-            .toList();
-        isMLO = device.wirelessConnectionInfo?.isMultiLinkOperation ?? false;
-        macAddress = device.getMacAddress();
-      }
+
+    if (device == null) {
+      return newState;
     }
+
+    // Use Service for transformation
+    final service = ref.read(nodeDetailServiceProvider);
+    final values = service.transformDeviceToUIValues(
+      device: device,
+      masterDevice: master,
+      wanStatus: deviceManagerState.wanStatus,
+    );
+
+    final connectedDevices = service.transformConnectedDevices(
+      devices: device.connectedDevices,
+      deviceListNotifier: ref.read(deviceListProvider.notifier),
+    );
 
     final state = newState.copyWith(
       deviceId: targetId,
-      location: location,
-      isMaster: isMaster,
-      isOnline: isOnline,
+      location: values['location'] as String,
+      isMaster: values['isMaster'] as bool,
+      isOnline: values['isOnline'] as bool,
       connectedDevices: connectedDevices,
-      upstreamDevice: upstreamDevice,
-      isWiredConnection: isWired,
-      signalStrength: signalStrength,
-      serialNumber: serialNumber,
-      modelNumber: modelNumber,
-      firmwareVersion: firmwareVersion,
-      hardwareVersion: hardwareVersion,
-      lanIpAddress: lanIpAddress,
-      wanIpAddress: wanIpAddress,
-      isMLO: isMLO,
-      macAddress: macAddress,
+      upstreamDevice: values['upstreamDevice'] as String,
+      isWiredConnection: values['isWiredConnection'] as bool,
+      signalStrength: values['signalStrength'] as int,
+      serialNumber: values['serialNumber'] as String,
+      modelNumber: values['modelNumber'] as String,
+      firmwareVersion: values['firmwareVersion'] as String,
+      hardwareVersion: values['hardwareVersion'] as String,
+      lanIpAddress: values['lanIpAddress'] as String,
+      wanIpAddress: values['wanIpAddress'] as String,
+      isMLO: values['isMLO'] as bool,
+      macAddress: values['macAddress'] as String,
     );
     logger.d('[State]:[NodeDetailsState]: ${state.toJson()}');
     return state;
   }
 
-  Future startBlinkNodeLED(String deviceId) async {
-    final repository = ref.read(routerRepositoryProvider);
-    return repository.send(
-      JNAPAction.startBlinkNodeLed,
-      data: {'deviceID': deviceId},
-      fetchRemote: true,
-      cacheLevel: CacheLevel.noCache,
-      auth: true,
-    );
+  Future<void> _startBlinkNodeLED(String deviceId) async {
+    final service = ref.read(nodeDetailServiceProvider);
+    await service.startBlinkNodeLED(deviceId);
   }
 
-  Future stopBlinkNodeLED() async {
-    final repository = ref.read(routerRepositoryProvider);
-    return repository.send(
-      JNAPAction.stopBlinkNodeLed,
-      auth: true,
-      fetchRemote: true,
-      cacheLevel: CacheLevel.noCache,
-    );
+  Future<void> _stopBlinkNodeLED() async {
+    final service = ref.read(nodeDetailServiceProvider);
+    await service.stopBlinkNodeLED();
   }
 
   Future<void> toggleBlinkNode([bool stopOnly = false]) async {
@@ -138,27 +99,35 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     final deviceId = ref.read(nodeDetailIdProvider);
     if (!stopOnly && blinkDevice == null) {
       state = state.copyWith(blinkingStatus: BlinkingStatus.blinking);
-      startBlinkNodeLED(deviceId).then((response) {
+      _startBlinkNodeLED(deviceId).then((_) {
         prefs.setString(blinkingDeviceId, deviceId);
         state = state.copyWith(blinkingStatus: BlinkingStatus.stopBlinking);
         _blinkTimer?.cancel();
         _blinkTimer = Timer(const Duration(seconds: 24), () {
-          stopBlinkNodeLED().then((response) {
+          _stopBlinkNodeLED().then((_) {
             state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
           });
         });
       }).onError((error, stackTrace) {
         state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
-        logger.e(error.toString());
+        if (error is ServiceError) {
+          logger.e('ServiceError: $error');
+        } else {
+          logger.e(error.toString());
+        }
       });
     } else {
-      stopBlinkNodeLED().then((response) {
+      _stopBlinkNodeLED().then((_) {
         _blinkTimer?.cancel();
         prefs.remove(blinkingDeviceId);
         state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
       }).onError((error, stackTrace) {
         state = state.copyWith(blinkingStatus: BlinkingStatus.stopBlinking);
-        logger.e(error.toString());
+        if (error is ServiceError) {
+          logger.e('ServiceError: $error');
+        } else {
+          logger.e(error.toString());
+        }
       });
     }
   }
