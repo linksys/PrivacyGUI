@@ -1,17 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
+import 'package:privacy_gui/page/instant_topology/services/instant_topology_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart';
 
@@ -210,129 +206,49 @@ class InstantTopologyNotifier extends Notifier<InstantTopologyState> {
     return DeviceTopologyNode(data: data, children: []);
   }
 
-  Future reboot([List<String> deviceUUIDs = const []]) {
-    final routerRepository = ref.read(routerRepositoryProvider);
-    final builder = JNAPTransactionBuilder(
-        commands: deviceUUIDs.reversed
-            .map((uuid) => MapEntry(JNAPAction.reboot2, {'deviceUUID': uuid}))
-            .toList(),
-        auth: true);
-    if (deviceUUIDs.isEmpty) {
-      return routerRepository.send(
-        JNAPAction.reboot,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-        auth: true,
-      );
-    } else {
-      return routerRepository
-          .transaction(
-            builder,
-            fetchRemote: true,
-            cacheLevel: CacheLevel.noCache,
-          )
-          .then((_) => _waitForNodesOffline(deviceUUIDs));
-    }
+  /// Reboots one or more network nodes.
+  ///
+  /// Delegates to [InstantTopologyService.rebootNodes].
+  Future<void> reboot([List<String> deviceUUIDs = const []]) async {
+    final service = ref.read(instantTopologyServiceProvider);
+    await service.rebootNodes(deviceUUIDs);
   }
 
-  Future startBlinkNodeLED(String deviceId) async {
-    final repository = ref.read(routerRepositoryProvider);
-    return repository.send(
-      JNAPAction.startBlinkNodeLed,
-      data: {'deviceID': deviceId},
-      fetchRemote: true,
-      cacheLevel: CacheLevel.noCache,
-      auth: true,
-    );
+  /// Starts LED blinking on a specific node.
+  ///
+  /// Delegates to [InstantTopologyService.startBlinkNodeLED].
+  Future<void> startBlinkNodeLED(String deviceId) async {
+    final service = ref.read(instantTopologyServiceProvider);
+    await service.startBlinkNodeLED(deviceId);
   }
 
-  Future stopBlinkNodeLED() async {
-    final repository = ref.read(routerRepositoryProvider);
-    return repository.send(
-      JNAPAction.stopBlinkNodeLed,
-      auth: true,
-      fetchRemote: true,
-      cacheLevel: CacheLevel.noCache,
-    );
+  /// Stops LED blinking on all nodes.
+  ///
+  /// Delegates to [InstantTopologyService.stopBlinkNodeLED].
+  Future<void> stopBlinkNodeLED() async {
+    final service = ref.read(instantTopologyServiceProvider);
+    await service.stopBlinkNodeLED();
   }
 
+  /// Toggles LED blink on a node, stopping any previous blink.
+  ///
+  /// SharedPreferences tracking remains in Provider (UI state management).
   Future<void> toggleBlinkNode(String deviceId, [bool stopOnly = false]) async {
+    final service = ref.read(instantTopologyServiceProvider);
     final prefs = await SharedPreferences.getInstance();
     final blinkDevice = prefs.get(pBlinkingNodeId);
     if (blinkDevice != null && deviceId != blinkDevice) {
-      stopBlinkNodeLED();
+      await service.stopBlinkNodeLED();
     }
-    startBlinkNodeLED(deviceId).then((_) {
-      prefs.setString(pBlinkingNodeId, deviceId);
-    });
+    await service.startBlinkNodeLED(deviceId);
+    await prefs.setString(pBlinkingNodeId, deviceId);
   }
 
-  Future<dynamic> factoryReset(List<String> deviceUUIDs) {
-    final routerRepository = ref.read(routerRepositoryProvider);
-    final builder = JNAPTransactionBuilder(
-      // Start doing factory reset from the nodes of the bottom level
-      commands: deviceUUIDs.reversed
-          .map((uuid) =>
-              MapEntry(JNAPAction.factoryReset2, {'deviceUUID': uuid}))
-          .toList(),
-      auth: true,
-    );
-    // If the target node is the master, the Id list will be empty
-    if (deviceUUIDs.isEmpty) {
-      return routerRepository.send(
-        JNAPAction.factoryReset,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-        auth: true,
-      );
-    } else {
-      return routerRepository
-          .transaction(
-            builder,
-            fetchRemote: true,
-            cacheLevel: CacheLevel.noCache,
-          )
-          // After factory resetting a child node, we need to wait for them
-          // being offline for subsequent Delete actions
-          .then(
-            (_) => _waitForNodesOffline(deviceUUIDs),
-          );
-    }
-  }
-
-  Future<void> _waitForNodesOffline(List<String> deviceUUIDs) async {
-    final waitingStream = ref.read(routerRepositoryProvider).scheduledCommand(
-          action: JNAPAction.getDevices,
-          retryDelayInMilliSec: 3000,
-          maxRetry: 20,
-          condition: (result) {
-            if (result is JNAPSuccess) {
-              final deviceList = List.from(
-                result.output['devices'],
-              )
-                  .map((e) => LinksysDevice.fromMap(e))
-                  .where((device) => deviceUUIDs.contains(device.deviceID))
-                  .toList();
-              return !deviceList.any((device) => device.isOnline());
-            }
-            return false;
-          },
-          auth: true,
-        );
-    await for (final result in waitingStream) {
-      logger.d('[Reboot/FactoryReset]: Waiting for all nodes offline');
-      if (result is JNAPSuccess) {
-        final deviceList = List.from(
-          result.output['devices'],
-        )
-            .map((e) => LinksysDevice.fromMap(e))
-            .where((device) => deviceUUIDs.contains(device.deviceID))
-            .toList();
-        for (final device in deviceList) {
-          logger.d(
-              '[Reboot/FactoryReset]: Waiting for - isDevice<${device.getDeviceLocation()}> Online - ${device.isOnline()}');
-        }
-      }
-    }
+  /// Factory resets one or more network nodes.
+  ///
+  /// Delegates to [InstantTopologyService.factoryResetNodes].
+  Future<void> factoryReset(List<String> deviceUUIDs) async {
+    final service = ref.read(instantTopologyServiceProvider);
+    await service.factoryResetNodes(deviceUUIDs);
   }
 }
