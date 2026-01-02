@@ -1008,10 +1008,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                    child:
-                        AppText.labelMedium('${e.band} | ${e.settings.ssid}')),
-                dot(e.settings.isEnabled),
+                Expanded(child: AppText.labelMedium('${e.band} | ${e.ssid}')),
+                dot(e.isEnabled),
               ],
             ),
             AppGap.lg(),
