@@ -218,4 +218,24 @@ class MockServiceHelper extends _i1.Mock implements _i2.ServiceHelper {
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
+
+  @override
+  bool isSupportGetSTABSSID([List<String>? services]) => (super.noSuchMethod(
+        Invocation.method(
+          #isSupportGetSTABSSID,
+          [services],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool isSupportSetup([List<String>? services]) => (super.noSuchMethod(
+        Invocation.method(
+          #isSupportSetup,
+          [services],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
 }
