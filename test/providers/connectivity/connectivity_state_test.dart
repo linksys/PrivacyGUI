@@ -90,7 +90,8 @@ void main() {
         const newAvailability = AvailabilityInfo(isCloudOk: false);
 
         // Act
-        final copied = original.copyWith(cloudAvailabilityInfo: newAvailability);
+        final copied =
+            original.copyWith(cloudAvailabilityInfo: newAvailability);
 
         // Assert
         expect(copied.cloudAvailabilityInfo, newAvailability);

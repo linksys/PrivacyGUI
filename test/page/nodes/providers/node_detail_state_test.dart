@@ -49,7 +49,8 @@ void main() {
           blinkingStatus: BlinkingStatus.blinkNode,
         );
 
-        final blinking = state.copyWith(blinkingStatus: BlinkingStatus.blinking);
+        final blinking =
+            state.copyWith(blinkingStatus: BlinkingStatus.blinking);
         final stopBlinking =
             state.copyWith(blinkingStatus: BlinkingStatus.stopBlinking);
 
