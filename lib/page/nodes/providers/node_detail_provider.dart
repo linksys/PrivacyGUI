@@ -99,36 +99,45 @@ class NodeDetailNotifier extends Notifier<NodeDetailState> {
     final deviceId = ref.read(nodeDetailIdProvider);
     if (!stopOnly && blinkDevice == null) {
       state = state.copyWith(blinkingStatus: BlinkingStatus.blinking);
-      _startBlinkNodeLED(deviceId).then((_) {
-        prefs.setString(blinkingDeviceId, deviceId);
+      try {
+        await _startBlinkNodeLED(deviceId);
+        await prefs.setString(blinkingDeviceId, deviceId);
         state = state.copyWith(blinkingStatus: BlinkingStatus.stopBlinking);
         _blinkTimer?.cancel();
-        _blinkTimer = Timer(const Duration(seconds: 24), () {
-          _stopBlinkNodeLED().then((_) {
+        _blinkTimer = Timer(const Duration(seconds: 24), () async {
+          try {
+            await _stopBlinkNodeLED();
             state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
-          });
+          } catch (error) {
+            if (error is ServiceError) {
+              logger.e('ServiceError: $error');
+            } else {
+              logger.e(error.toString());
+            }
+          }
         });
-      }).onError((error, stackTrace) {
+      } catch (error) {
         state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
         if (error is ServiceError) {
           logger.e('ServiceError: $error');
         } else {
           logger.e(error.toString());
         }
-      });
+      }
     } else {
-      _stopBlinkNodeLED().then((_) {
+      try {
+        await _stopBlinkNodeLED();
         _blinkTimer?.cancel();
-        prefs.remove(blinkingDeviceId);
+        await prefs.remove(blinkingDeviceId);
         state = state.copyWith(blinkingStatus: BlinkingStatus.blinkNode);
-      }).onError((error, stackTrace) {
+      } catch (error) {
         state = state.copyWith(blinkingStatus: BlinkingStatus.stopBlinking);
         if (error is ServiceError) {
           logger.e('ServiceError: $error');
         } else {
           logger.e(error.toString());
         }
-      });
+      }
     }
   }
 
