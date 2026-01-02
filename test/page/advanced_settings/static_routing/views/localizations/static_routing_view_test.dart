@@ -234,19 +234,19 @@ void main() {
         expect(nameController?.text, isEmpty);
 
         final destinationIp = tester
-            .widget<AppTextField>(find.byKey(const Key('destinationIP')))
+            .widget<AppIpv4TextField>(find.byKey(const Key('destinationIP')))
             .controller
             ?.text;
         expect(destinationIp, isEmpty);
 
         final subnetMask = tester
-            .widget<AppTextField>(find.byKey(const Key('subnetMask')))
+            .widget<AppIpv4TextField>(find.byKey(const Key('subnetMask')))
             .controller
             ?.text;
         expect(subnetMask, '255.255.255.0');
 
         final gatewayIp = tester
-            .widget<AppTextField>(find.byKey(const Key('gateway')))
+            .widget<AppIpv4TextField>(find.byKey(const Key('gateway')))
             .controller
             ?.text;
         expect(gatewayIp, isEmpty);
@@ -284,19 +284,19 @@ void main() {
         expect(nameController?.text, isEmpty);
 
         final destinationIp = tester
-            .widget<AppTextField>(find.byKey(const Key('destinationIP')))
+            .widget<AppIpv4TextField>(find.byKey(const Key('destinationIP')))
             .controller
             ?.text;
         expect(destinationIp, isEmpty);
 
         final subnetMask = tester
-            .widget<AppTextField>(find.byKey(const Key('subnetMask')))
+            .widget<AppIpv4TextField>(find.byKey(const Key('subnetMask')))
             .controller
             ?.text;
         expect(subnetMask, '255.255.255.0');
 
         final gatewayIp = tester
-            .widget<AppTextField>(find.byKey(const Key('gateway')))
+            .widget<AppIpv4TextField>(find.byKey(const Key('gateway')))
             .controller
             ?.text;
         expect(gatewayIp, isEmpty);
@@ -336,17 +336,17 @@ void main() {
         expect(nameController?.text, rule.name);
 
         final destinationIp = tester
-            .widget<AppTextField>(find.byKey(const Key('destinationIP')))
+            .widget<AppIpv4TextField>(find.byKey(const Key('destinationIP')))
             .controller
             ?.text;
         expect(destinationIp, rule.destinationIP);
         final subnetMask = tester
-            .widget<AppTextField>(find.byKey(const Key('subnetMask')))
+            .widget<AppIpv4TextField>(find.byKey(const Key('subnetMask')))
             .controller
             ?.text;
         expect(subnetMask, rule.subnetMask);
         final gatewayIp = tester
-            .widget<AppTextField>(find.byKey(const Key('gateway')))
+            .widget<AppIpv4TextField>(find.byKey(const Key('gateway')))
             .controller
             ?.text;
         expect(gatewayIp, rule.gateway);

@@ -235,7 +235,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                   ),
                 ),
                 if (_passwordHint != null && _passwordHint?.isNotEmpty == true)
-                  AppExpansionPanel.single(
+                  AppExpansionPanel.compactSingle(
                     headerTitle: _showPassword
                         ? loc(context).hideHint
                         : loc(context).showHint,

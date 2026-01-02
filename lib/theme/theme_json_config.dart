@@ -24,14 +24,22 @@ class ThemeJsonConfig {
   Map<String, dynamic> get darkJson => _darkJson;
 
   /// Default configuration (Glass style).
-  factory ThemeJsonConfig.defaultConfig() => ThemeJsonConfig._(
-        lightJson: {
-          'style': 'glass',
-          'visualEffects': 63,
-          'brightness': 'light'
-        },
-        darkJson: {'style': 'glass', 'visualEffects': 63, 'brightness': 'dark'},
-      );
+  factory ThemeJsonConfig.defaultConfig() {
+    const defaultVisualEffects =
+        int.fromEnvironment('visualEffects', defaultValue: 0);
+    return ThemeJsonConfig._(
+      lightJson: {
+        'style': 'flat',
+        'visualEffects': defaultVisualEffects,
+        'brightness': 'light'
+      },
+      darkJson: {
+        'style': 'flat',
+        'visualEffects': defaultVisualEffects,
+        'brightness': 'dark'
+      },
+    );
+  }
 
   /// Constructs from a complete JSON object (including light/dark colors).
   ///

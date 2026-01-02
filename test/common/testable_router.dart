@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/dashboard/views/dashboard_shell.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+
+import 'theme_data.dart';
 
 Widget testableRouter({
   required GoRouter router,
@@ -19,8 +20,8 @@ Widget testableRouter({
   bool disableAnimations = true,
 }) {
   // Use ThemeJsonConfig for consistent rendering with DI-registered themes
-  final appLightTheme = ThemeJsonConfig.defaultConfig().createLightTheme();
-  final appDarkTheme = ThemeJsonConfig.defaultConfig().createDarkTheme();
+  final appLightTheme = mockLightThemeData;
+  final appDarkTheme = mockDarkThemeData;
 
   Widget result = ProviderScope(
     overrides: overrides,
