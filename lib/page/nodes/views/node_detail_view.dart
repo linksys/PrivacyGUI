@@ -431,9 +431,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
     if (!serviceHelper.isSupportLedMode()) {
       return [];
     } else {
-      final nodeLightSettings = ref.watch(nodeLightSettingsProvider);
+      ref.watch(nodeLightSettingsProvider);
       final title = loc(context).nodeLight;
-      final nodeLightStatus = NodeLightStatus.getStatus(nodeLightSettings);
+      final nodeLightStatus = ref.read(nodeLightSettingsProvider.notifier).currentStatus;
       final statusText = nodeLightStatus == NodeLightStatus.off
           ? loc(context).off
           : loc(context).on;
