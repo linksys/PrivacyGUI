@@ -42,21 +42,22 @@ void main() {
 
   group('ConnectivityService - testRouterType', () {
     // T008: testRouterType returns RouterType.behindManaged when serial numbers match
-    test(
-        'T008: returns RouterType.behindManaged when serial numbers match',
+    test('T008: returns RouterType.behindManaged when serial numbers match',
         () async {
       // Arrange
       const testSerialNumber = 'ABC123456789';
       SharedPreferences.setMockInitialValues({pCurrentSN: testSerialNumber});
 
       when(() => mockRepository.send(
-            any(),
-            type: any(named: 'type'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenAnswer((_) async => ConnectivityTestData.createGetDeviceInfoSuccess(
-            serialNumber: testSerialNumber,
-          ));
+                any(),
+                type: any(named: 'type'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenAnswer(
+              (_) async => ConnectivityTestData.createGetDeviceInfoSuccess(
+                    serialNumber: testSerialNumber,
+                  ));
 
       // Act
       final result = await service.testRouterType('192.168.1.1');
@@ -72,8 +73,7 @@ void main() {
     });
 
     // T009: testRouterType returns RouterType.behind when serial numbers differ
-    test(
-        'T009: returns RouterType.behind when serial numbers differ',
+    test('T009: returns RouterType.behind when serial numbers differ',
         () async {
       // Arrange
       const storedSerialNumber = 'ABC123456789';
@@ -81,13 +81,15 @@ void main() {
       SharedPreferences.setMockInitialValues({pCurrentSN: storedSerialNumber});
 
       when(() => mockRepository.send(
-            any(),
-            type: any(named: 'type'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenAnswer((_) async => ConnectivityTestData.createGetDeviceInfoSuccess(
-            serialNumber: differentSerialNumber,
-          ));
+                any(),
+                type: any(named: 'type'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenAnswer(
+              (_) async => ConnectivityTestData.createGetDeviceInfoSuccess(
+                    serialNumber: differentSerialNumber,
+                  ));
 
       // Act
       final result = await service.testRouterType('192.168.1.1');
@@ -97,18 +99,17 @@ void main() {
     });
 
     // T010: testRouterType returns RouterType.others when JNAP call fails
-    test(
-        'T010: returns RouterType.others when JNAP call fails',
-        () async {
+    test('T010: returns RouterType.others when JNAP call fails', () async {
       // Arrange
       SharedPreferences.setMockInitialValues({pCurrentSN: 'ABC123456789'});
 
       when(() => mockRepository.send(
-            any(),
-            type: any(named: 'type'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenAnswer((_) async =>
+                any(),
+                type: any(named: 'type'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenAnswer((_) async =>
               throw ConnectivityTestData.createGetDeviceInfoError());
 
       // Act
@@ -119,18 +120,19 @@ void main() {
     });
 
     // T011: testRouterType returns RouterType.others when serial number is empty
-    test(
-        'T011: returns RouterType.others when serial number is empty',
+    test('T011: returns RouterType.others when serial number is empty',
         () async {
       // Arrange
       SharedPreferences.setMockInitialValues({pCurrentSN: 'ABC123456789'});
 
       when(() => mockRepository.send(
-            any(),
-            type: any(named: 'type'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenAnswer((_) async => ConnectivityTestData.createGetDeviceInfoEmptySerial());
+                any(),
+                type: any(named: 'type'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenAnswer((_) async =>
+              ConnectivityTestData.createGetDeviceInfoEmptySerial());
 
       // Act
       final result = await service.testRouterType('192.168.1.1');
@@ -146,11 +148,12 @@ void main() {
       SharedPreferences.setMockInitialValues({});
 
       when(() => mockRepository.send(
-            any(),
-            type: any(named: 'type'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenAnswer((_) async =>
+                any(),
+                type: any(named: 'type'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenAnswer((_) async =>
               throw ConnectivityTestData.createGetDeviceInfoError());
 
       // Act
@@ -167,13 +170,15 @@ void main() {
       SharedPreferences.setMockInitialValues({}); // No stored serial number
 
       when(() => mockRepository.send(
-            any(),
-            type: any(named: 'type'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenAnswer((_) async => ConnectivityTestData.createGetDeviceInfoSuccess(
-            serialNumber: 'ABC123456789',
-          ));
+                any(),
+                type: any(named: 'type'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenAnswer(
+              (_) async => ConnectivityTestData.createGetDeviceInfoSuccess(
+                    serialNumber: 'ABC123456789',
+                  ));
 
       // Act
       final result = await service.testRouterType('192.168.1.1');

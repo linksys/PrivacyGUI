@@ -433,7 +433,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
     } else {
       ref.watch(nodeLightSettingsProvider);
       final title = loc(context).nodeLight;
-      final nodeLightStatus = ref.read(nodeLightSettingsProvider.notifier).currentStatus;
+      final nodeLightStatus =
+          ref.read(nodeLightSettingsProvider.notifier).currentStatus;
       final statusText = nodeLightStatus == NodeLightStatus.off
           ? loc(context).off
           : loc(context).on;

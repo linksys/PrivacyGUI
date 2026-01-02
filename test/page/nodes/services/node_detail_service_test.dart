@@ -29,13 +29,13 @@ void main() {
     test('sends correct JNAP action with deviceId', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            data: any(named: 'data'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-            auth: any(named: 'auth'),
-          )).thenAnswer(
-              (_) async => NodeDetailTestData.createBlinkNodeSuccess());
+                any(),
+                data: any(named: 'data'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+                auth: any(named: 'auth'),
+              ))
+          .thenAnswer((_) async => NodeDetailTestData.createBlinkNodeSuccess());
 
       // Act
       await service.startBlinkNodeLED('test-device-id');
@@ -53,13 +53,13 @@ void main() {
     test('succeeds when JNAP call returns success', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            data: any(named: 'data'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-            auth: any(named: 'auth'),
-          )).thenAnswer(
-              (_) async => NodeDetailTestData.createBlinkNodeSuccess());
+                any(),
+                data: any(named: 'data'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+                auth: any(named: 'auth'),
+              ))
+          .thenAnswer((_) async => NodeDetailTestData.createBlinkNodeSuccess());
 
       // Act & Assert
       await expectLater(
@@ -89,12 +89,13 @@ void main() {
     test('throws UnexpectedError when JNAP returns generic error', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            data: any(named: 'data'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-            auth: any(named: 'auth'),
-          )).thenThrow(NodeDetailTestData.createUnexpectedError('ErrorUnknown'));
+                any(),
+                data: any(named: 'data'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+                auth: any(named: 'auth'),
+              ))
+          .thenThrow(NodeDetailTestData.createUnexpectedError('ErrorUnknown'));
 
       // Act & Assert
       expect(
@@ -107,12 +108,13 @@ void main() {
         () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            data: any(named: 'data'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-            auth: any(named: 'auth'),
-          )).thenThrow(
+                any(),
+                data: any(named: 'data'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+                auth: any(named: 'auth'),
+              ))
+          .thenThrow(
               NodeDetailTestData.createUnexpectedError('ErrorNetworkTimeout'));
 
       // Act & Assert
@@ -127,11 +129,12 @@ void main() {
     test('sends correct JNAP action without data', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenAnswer(
+                any(),
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenAnswer(
               (_) async => NodeDetailTestData.createStopBlinkNodeSuccess());
 
       // Act
@@ -149,11 +152,12 @@ void main() {
     test('succeeds when JNAP call returns success', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenAnswer(
+                any(),
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenAnswer(
               (_) async => NodeDetailTestData.createStopBlinkNodeSuccess());
 
       // Act & Assert
@@ -183,11 +187,12 @@ void main() {
     test('throws UnexpectedError when JNAP returns generic error', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenThrow(NodeDetailTestData.createUnexpectedError('ErrorUnknown'));
+                any(),
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenThrow(NodeDetailTestData.createUnexpectedError('ErrorUnknown'));
 
       // Act & Assert
       expect(
@@ -200,11 +205,12 @@ void main() {
         () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-            cacheLevel: any(named: 'cacheLevel'),
-          )).thenThrow(
+                any(),
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+                cacheLevel: any(named: 'cacheLevel'),
+              ))
+          .thenThrow(
               NodeDetailTestData.createUnexpectedError('ErrorNetworkTimeout'));
 
       // Act & Assert

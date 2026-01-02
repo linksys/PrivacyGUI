@@ -21,8 +21,7 @@ void main() {
   ProviderContainer makeProviderContainer() {
     return ProviderContainer(
       overrides: [
-        connectivityServiceProvider
-            .overrideWithValue(mockConnectivityService),
+        connectivityServiceProvider.overrideWithValue(mockConnectivityService),
       ],
     );
   }
@@ -32,7 +31,8 @@ void main() {
   // ============================================================================
 
   group('ConnectivityNotifier - isRouterConfigured delegation', () {
-    test('delegates to ConnectivityService.fetchRouterConfiguredData on success',
+    test(
+        'delegates to ConnectivityService.fetchRouterConfiguredData on success',
         () async {
       // Arrange
       final container = makeProviderContainer();
@@ -133,7 +133,8 @@ void main() {
   // ============================================================================
 
   group('ConnectivityNotifier - service dependency', () {
-    test('reads ConnectivityService from connectivityServiceProvider', () async {
+    test('reads ConnectivityService from connectivityServiceProvider',
+        () async {
       // Arrange
       final container = makeProviderContainer();
       const expectedData = RouterConfiguredData(

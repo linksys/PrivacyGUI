@@ -27,11 +27,12 @@ void main() {
     test('returns NodeLightSettings from JNAP response', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-          )).thenAnswer(
-          (_) async => NodeLightSettingsTestData.createNightModeSettings());
+                any(),
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+              ))
+          .thenAnswer(
+              (_) async => NodeLightSettingsTestData.createNightModeSettings());
 
       // Act
       final result = await service.fetchSettings();
@@ -45,11 +46,12 @@ void main() {
     test('passes forceRemote=false by default', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-          )).thenAnswer(
-          (_) async => NodeLightSettingsTestData.createLedOnSettings());
+                any(),
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+              ))
+          .thenAnswer(
+              (_) async => NodeLightSettingsTestData.createLedOnSettings());
 
       // Act
       await service.fetchSettings();
@@ -65,11 +67,12 @@ void main() {
     test('passes forceRemote=true when specified', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-          )).thenAnswer(
-          (_) async => NodeLightSettingsTestData.createLedOnSettings());
+                any(),
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+              ))
+          .thenAnswer(
+              (_) async => NodeLightSettingsTestData.createLedOnSettings());
 
       // Act
       await service.fetchSettings(forceRemote: true);
@@ -100,11 +103,12 @@ void main() {
     test('throws UnexpectedError on generic JNAP error', () async {
       // Arrange
       when(() => mockRepository.send(
-            any(),
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-          )).thenThrow(
-          NodeLightSettingsTestData.createUnexpectedError('ErrorUnknown'));
+                any(),
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+              ))
+          .thenThrow(
+              NodeLightSettingsTestData.createUnexpectedError('ErrorUnknown'));
 
       // Act & Assert
       expect(
@@ -120,18 +124,20 @@ void main() {
       final settingsToSave = NodeLightSettings.night();
 
       when(() => mockRepository.send(
-            JNAPAction.setLedNightModeSetting,
-            data: any(named: 'data'),
-            auth: any(named: 'auth'),
-          )).thenAnswer(
-          (_) async => NodeLightSettingsTestData.createSaveSuccess());
+                JNAPAction.setLedNightModeSetting,
+                data: any(named: 'data'),
+                auth: any(named: 'auth'),
+              ))
+          .thenAnswer(
+              (_) async => NodeLightSettingsTestData.createSaveSuccess());
 
       when(() => mockRepository.send(
-            JNAPAction.getLedNightModeSetting,
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-          )).thenAnswer(
-          (_) async => NodeLightSettingsTestData.createNightModeSettings());
+                JNAPAction.getLedNightModeSetting,
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+              ))
+          .thenAnswer(
+              (_) async => NodeLightSettingsTestData.createNightModeSettings());
 
       // Act
       final result = await service.saveSettings(settingsToSave);
@@ -159,21 +165,24 @@ void main() {
 
     test('excludes null fields from request', () async {
       // Arrange
-      final settingsToSave = NodeLightSettings.on(); // Has null startHour/endHour
+      final settingsToSave =
+          NodeLightSettings.on(); // Has null startHour/endHour
 
       when(() => mockRepository.send(
-            JNAPAction.setLedNightModeSetting,
-            data: any(named: 'data'),
-            auth: any(named: 'auth'),
-          )).thenAnswer(
-          (_) async => NodeLightSettingsTestData.createSaveSuccess());
+                JNAPAction.setLedNightModeSetting,
+                data: any(named: 'data'),
+                auth: any(named: 'auth'),
+              ))
+          .thenAnswer(
+              (_) async => NodeLightSettingsTestData.createSaveSuccess());
 
       when(() => mockRepository.send(
-            JNAPAction.getLedNightModeSetting,
-            auth: any(named: 'auth'),
-            fetchRemote: any(named: 'fetchRemote'),
-          )).thenAnswer(
-          (_) async => NodeLightSettingsTestData.createLedOnSettings());
+                JNAPAction.getLedNightModeSetting,
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+              ))
+          .thenAnswer(
+              (_) async => NodeLightSettingsTestData.createLedOnSettings());
 
       // Act
       await service.saveSettings(settingsToSave);
@@ -208,11 +217,12 @@ void main() {
       final settingsToSave = NodeLightSettings.night();
 
       when(() => mockRepository.send(
-            JNAPAction.setLedNightModeSetting,
-            data: any(named: 'data'),
-            auth: any(named: 'auth'),
-          )).thenThrow(
-          NodeLightSettingsTestData.createUnexpectedError('ErrorSaveFailed'));
+                JNAPAction.setLedNightModeSetting,
+                data: any(named: 'data'),
+                auth: any(named: 'auth'),
+              ))
+          .thenThrow(NodeLightSettingsTestData.createUnexpectedError(
+              'ErrorSaveFailed'));
 
       // Act & Assert
       expect(

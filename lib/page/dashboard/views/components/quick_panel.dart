@@ -96,10 +96,14 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                   toggleTileWidget(
                       title: loc(context).nightMode,
                       value: nodeLightState.isNightModeEnable,
-                      subTitle: ref.read(nodeLightSettingsProvider.notifier).currentStatus ==
+                      subTitle: ref
+                                  .read(nodeLightSettingsProvider.notifier)
+                                  .currentStatus ==
                               NodeLightStatus.night
                           ? loc(context).nightModeTime
-                          : ref.read(nodeLightSettingsProvider.notifier).currentStatus ==
+                          : ref
+                                      .read(nodeLightSettingsProvider.notifier)
+                                      .currentStatus ==
                                   NodeLightStatus.off
                               ? loc(context).allDayOff
                               : null,

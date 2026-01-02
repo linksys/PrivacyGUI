@@ -34,7 +34,8 @@ void main() {
     test('fetch() calls service.fetchSettings() and updates state', () async {
       // Arrange
       final expectedSettings = NodeLightSettings.night();
-      when(() => mockService.fetchSettings(forceRemote: any(named: 'forceRemote')))
+      when(() =>
+              mockService.fetchSettings(forceRemote: any(named: 'forceRemote')))
           .thenAnswer((_) async => expectedSettings);
 
       // Act
@@ -50,7 +51,8 @@ void main() {
     test('fetch(true) passes forceRemote=true to service', () async {
       // Arrange
       final expectedSettings = NodeLightSettings.night();
-      when(() => mockService.fetchSettings(forceRemote: any(named: 'forceRemote')))
+      when(() =>
+              mockService.fetchSettings(forceRemote: any(named: 'forceRemote')))
           .thenAnswer((_) async => expectedSettings);
 
       // Act
@@ -61,7 +63,8 @@ void main() {
       verify(() => mockService.fetchSettings(forceRemote: true)).called(1);
     });
 
-    test('save() calls service.saveSettings(state) and updates state', () async {
+    test('save() calls service.saveSettings(state) and updates state',
+        () async {
       // Arrange
       final settingsToSave = NodeLightSettings.night();
       final savedSettings = NodeLightSettings.night();
@@ -136,7 +139,8 @@ void main() {
       expect(status, NodeLightStatus.off);
     });
 
-    test('returns NodeLightStatus.night when isNightModeEnable=true with partial schedule',
+    test(
+        'returns NodeLightStatus.night when isNightModeEnable=true with partial schedule',
         () {
       // Arrange
       final settings = NodeLightSettings.night();
