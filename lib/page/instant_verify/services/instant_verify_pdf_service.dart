@@ -104,7 +104,7 @@ class InstantVerifyPdfService {
           '${loc(context).internet}... ${systemConnectivityState.wanConnection != null ? 'Passed' : 'Failed'}'),
       ...systemConnectivityState.radioInfo.radios.map(
         (e) => pw.Text(
-            '${e.band} | ${e.settings.ssid}... ${e.settings.isEnabled ? 'Enabled' : 'Disabled'}'),
+            '${e.band} | ${e.ssid}... ${e.isEnabled ? 'Enabled' : 'Disabled'}'),
       ),
       if (guestWiFi != null)
         pw.Text(

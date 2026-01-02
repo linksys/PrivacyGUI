@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/instant_verify/models/instant_verify_ui_models.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 
@@ -23,7 +23,7 @@ class PingNetworkModal extends ConsumerStatefulWidget {
 class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
   final TextEditingController _controller = TextEditingController();
   String _pingLog = '';
-  StreamSubscription<PingStatus>? _subscription;
+  StreamSubscription<PingStatusUIModel>? _subscription;
   bool _validIP = false;
 
   @override

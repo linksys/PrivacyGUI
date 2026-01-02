@@ -1,152 +1,97 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
-import 'package:privacy_gui/core/jnap/models/ping_status.dart';
-import 'package:privacy_gui/core/jnap/models/radio_info.dart';
-import 'package:privacy_gui/core/jnap/models/traceroute_status.dart';
-import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/page/instant_verify/models/instant_verify_ui_models.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
+import 'package:privacy_gui/page/instant_verify/services/instant_verify_service.dart';
 
 final instantVerifyProvider =
     NotifierProvider<InstantVerifyNotifier, InstantVerifyState>(
         () => InstantVerifyNotifier());
 
+/// Notifier for InstantVerify feature
+///
+/// Manages UI state and delegates business logic to InstantVerifyService.
+/// Does not directly interact with JNAP - all data access goes through Service.
 class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
   @override
   InstantVerifyState build() {
+    final service = ref.read(instantVerifyServiceProvider);
     final pollingData = ref.watch(pollingProvider).value?.data ?? {};
-    final wanStatusResult = JNAPTransactionSuccessWrap.getResult(
-        JNAPAction.getWANStatus, pollingData);
-    final wanStatus = wanStatusResult == null
-        ? null
-        : RouterWANStatus.fromMap(wanStatusResult.output);
-    final radioInfoResult = JNAPTransactionSuccessWrap.getResult(
-        JNAPAction.getRadioInfo, pollingData);
-    final radioInfo = radioInfoResult == null
-        ? null
-        : GetRadioInfo.fromMap(radioInfoResult.output);
-    final guestRadioSettingsResult = JNAPTransactionSuccessWrap.getResult(
-        JNAPAction.getGuestRadioSettings, pollingData);
-    final guestRadioSettings = guestRadioSettingsResult == null
-        ? null
-        : GuestRadioSettings.fromMap(guestRadioSettingsResult.output);
-
-    final wanExternal =
+    final wanExternalData =
         ref.watch(wanExternalProvider.select((state) => state.wanExternal));
-    final state = InstantVerifyState(
-      wanConnection: wanStatus?.wanConnection,
-      radioInfo: radioInfo ??
-          const GetRadioInfo(isBandSteeringSupported: false, radios: []),
-      guestRadioSettings: guestRadioSettings ??
-          const GuestRadioSettings(
-            isGuestNetworkACaptivePortal: false,
-            isGuestNetworkEnabled: false,
-            radios: [],
-          ),
+
+    // Use service to parse polling data and transform to UI models
+    final wanConnection = service.parseWanConnection(pollingData);
+    final radioInfo = service.parseRadioInfo(pollingData);
+    final guestRadioSettings = service.parseGuestRadioSettings(pollingData);
+    final wanExternal = service.transformWanExternal(wanExternalData);
+
+    return InstantVerifyState(
+      wanConnection: wanConnection,
+      radioInfo: radioInfo,
+      guestRadioSettings: guestRadioSettings,
       wanExternal: wanExternal,
     );
-    return state;
   }
 
-  Future ping({required String host, required int? pingCount}) {
+  /// Starts a Ping test to the specified host
+  ///
+  /// Parameters:
+  ///   - host: Target hostname or IP address
+  ///   - pingCount: Optional number of ping packets to send
+  Future<void> ping({required String host, required int? pingCount}) {
     state = state.copyWith(isRunning: true);
-    return ref.read(routerRepositoryProvider).send(JNAPAction.startPing,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-        auth: true,
-        data: {'host': host, 'packetSizeBytes': 32, 'pingCount': pingCount}
-          ..removeWhere((key, value) => value == null));
+    final service = ref.read(instantVerifyServiceProvider);
+    return service.startPing(host: host, pingCount: pingCount);
   }
 
-  Future stopPing() {
+  /// Stops the currently running Ping test
+  Future<void> stopPing() {
     state = state.copyWith(isRunning: false);
-    return ref.read(routerRepositoryProvider).send(
-          JNAPAction.stopPing,
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache,
-          auth: true,
-        );
+    final service = ref.read(instantVerifyServiceProvider);
+    return service.stopPing();
   }
 
-  Stream<PingStatus> getPingStatus() {
-    return ref
-        .read(routerRepositoryProvider)
-        .scheduledCommand(
-          action: JNAPAction.getPingStatus,
-          retryDelayInMilliSec: 1000,
-          maxRetry: 30,
-          condition: (result) {
-            if (result is JNAPSuccess) {
-              final status = PingStatus.fromMap(result.output);
-              return !status.isRunning;
-            } else {
-              return false;
-            }
-          },
-          auth: true,
-          onCompleted: (_) {
-            state = state.copyWith(isRunning: false);
-          },
-        )
-        .map((event) {
-      if (event is JNAPSuccess) {
-        return PingStatus.fromMap(event.output);
-      } else {
-        throw event;
-      }
-    });
+  /// Gets the current Ping status as a stream
+  ///
+  /// Returns: Stream of PingStatusUIModel updates
+  Stream<PingStatusUIModel> getPingStatus() {
+    final service = ref.read(instantVerifyServiceProvider);
+    return service.getPingStatus(
+      onCompleted: () {
+        state = state.copyWith(isRunning: false);
+      },
+    );
   }
 
-  Future traceroute({required String host, required int? pingCount}) {
+  /// Starts a Traceroute test to the specified host
+  ///
+  /// Parameters:
+  ///   - host: Target hostname or IP address
+  ///   - pingCount: Unused, kept for API compatibility
+  Future<void> traceroute({required String host, required int? pingCount}) {
     state = state.copyWith(isRunning: true);
-    return ref.read(routerRepositoryProvider).send(JNAPAction.startTracroute,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-        auth: true,
-        data: {'host': host}..removeWhere((key, value) => value == null));
+    final service = ref.read(instantVerifyServiceProvider);
+    return service.startTraceroute(host: host);
   }
 
-  Future stopTraceroute() {
+  /// Stops the currently running Traceroute test
+  Future<void> stopTraceroute() {
     state = state.copyWith(isRunning: false);
-    return ref.read(routerRepositoryProvider).send(
-          JNAPAction.stopTracroute,
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache,
-          auth: true,
-        );
+    final service = ref.read(instantVerifyServiceProvider);
+    return service.stopTraceroute();
   }
 
-  Stream<TracerouteStatus> getTracerouteStatus() {
-    return ref
-        .read(routerRepositoryProvider)
-        .scheduledCommand(
-          action: JNAPAction.getTracerouteStatus,
-          retryDelayInMilliSec: 1000,
-          maxRetry: 30,
-          condition: (result) {
-            if (result is JNAPSuccess) {
-              final status = TracerouteStatus.fromMap(result.output);
-              return !status.isRunning;
-            } else {
-              return false;
-            }
-          },
-          auth: true,
-          onCompleted: (_) {
-            state = state.copyWith(isRunning: false);
-          },
-        )
-        .map((event) {
-      if (event is JNAPSuccess) {
-        return TracerouteStatus.fromMap(event.output);
-      } else {
-        throw event;
-      }
-    });
+  /// Gets the current Traceroute status as a stream
+  ///
+  /// Returns: Stream of TracerouteStatusUIModel updates
+  Stream<TracerouteStatusUIModel> getTracerouteStatus() {
+    final service = ref.read(instantVerifyServiceProvider);
+    return service.getTracerouteStatus(
+      onCompleted: () {
+        state = state.copyWith(isRunning: false);
+      },
+    );
   }
 }
