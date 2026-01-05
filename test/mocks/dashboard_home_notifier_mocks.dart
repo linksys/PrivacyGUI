@@ -5,16 +5,10 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart'
-    as _i5;
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
-    as _i6;
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart'
     as _i4;
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart'
     as _i3;
-import 'package:privacy_gui/page/health_check/providers/health_check_state.dart'
-    as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -29,6 +23,7 @@ import 'package:privacy_gui/page/health_check/providers/health_check_state.dart'
 // ignore_for_file: unnecessary_parenthesis
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
+// ignore_for_file: invalid_use_of_internal_member
 
 class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
     implements _i2.NotifierProviderRef<T> {
@@ -55,8 +50,7 @@ class _FakeDashboardHomeState_1 extends _i1.SmartFake
 /// A class which mocks [DashboardHomeNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDashboardHomeNotifier extends _i2.Notifier<_i3.DashboardHomeState>
-    with _i1.Mock
+class MockDashboardHomeNotifier extends _i1.Mock
     implements _i4.DashboardHomeNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DashboardHomeState> get ref =>
@@ -113,45 +107,6 @@ class MockDashboardHomeNotifier extends _i2.Notifier<_i3.DashboardHomeState>
           Invocation.method(
             #build,
             [],
-          ),
-        ),
-      ) as _i3.DashboardHomeState);
-
-  @override
-  _i3.DashboardHomeState createState(
-    _i5.DashboardManagerState? dashboardManagerState,
-    _i6.DeviceManagerState? deviceManagerState,
-    _i7.HealthCheckState? healthCheckState,
-  ) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #createState,
-          [
-            dashboardManagerState,
-            deviceManagerState,
-            healthCheckState,
-          ],
-        ),
-        returnValue: _FakeDashboardHomeState_1(
-          this,
-          Invocation.method(
-            #createState,
-            [
-              dashboardManagerState,
-              deviceManagerState,
-              healthCheckState,
-            ],
-          ),
-        ),
-        returnValueForMissingStub: _FakeDashboardHomeState_1(
-          this,
-          Invocation.method(
-            #createState,
-            [
-              dashboardManagerState,
-              deviceManagerState,
-              healthCheckState,
-            ],
           ),
         ),
       ) as _i3.DashboardHomeState);

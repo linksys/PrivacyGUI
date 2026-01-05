@@ -214,7 +214,7 @@ void main() {
 
     test('toMap and fromMap work correctly', () {
       // Arrange
-      final original = const InternetSettingsStatusUIModel(
+      const original = InternetSettingsStatusUIModel(
         supportedIPv4ConnectionType: ['DHCP', 'PPPoE'],
         supportedWANCombinations: [],
         supportedIPv6ConnectionType: ['Automatic'],
@@ -235,7 +235,7 @@ void main() {
 
     test('toJson and fromJson work correctly', () {
       // Arrange
-      final original = const InternetSettingsStatusUIModel(
+      const original = InternetSettingsStatusUIModel(
         supportedIPv4ConnectionType: ['Static'],
         supportedWANCombinations: [],
         supportedIPv6ConnectionType: ['PPPoE'],
@@ -254,7 +254,7 @@ void main() {
 
     test('equality works correctly', () {
       // Arrange
-      final model1 = const InternetSettingsStatusUIModel(
+      const model1 = InternetSettingsStatusUIModel(
         supportedIPv4ConnectionType: ['DHCP'],
         supportedWANCombinations: [],
         supportedIPv6ConnectionType: ['Automatic'],
@@ -263,7 +263,7 @@ void main() {
         redirection: null,
       );
 
-      final model2 = const InternetSettingsStatusUIModel(
+      const model2 = InternetSettingsStatusUIModel(
         supportedIPv4ConnectionType: ['DHCP'],
         supportedWANCombinations: [],
         supportedIPv6ConnectionType: ['Automatic'],

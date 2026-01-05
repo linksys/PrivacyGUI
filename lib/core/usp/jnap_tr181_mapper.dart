@@ -599,7 +599,7 @@ class JnapTr181Mapper {
       // Mock IPs for demonstration as standard MultiAP APDevice doesn't expose IP easily
       // In real scenario, we might look this up or USP provides it.
       final mockIp = '192.168.1.${10 + i}';
-      final mockParentIp = '192.168.1.1'; // Assume master is parent
+      const mockParentIp = '192.168.1.1'; // Assume master is parent
 
       backhaulDevices.add(<String, dynamic>{
         'deviceUUID': mac,
@@ -740,11 +740,13 @@ class JnapTr181Mapper {
 
     String wanConnection = 'Disconnected';
     if (wanEnable) {
-      if (wanBitRate == '1000')
+      if (wanBitRate == '1000') {
         wanConnection = '1Gbps';
-      else if (wanBitRate == '100')
+      } else if (wanBitRate == '100') {
         wanConnection = '100Mbps';
-      else if (wanBitRate != '0') wanConnection = '${wanBitRate}Mbps';
+      } else if (wanBitRate != '0') {
+        wanConnection = '${wanBitRate}Mbps';
+      }
     }
 
     // LAN Ports (Interfaces 3+ in mock data)
@@ -768,13 +770,15 @@ class JnapTr181Mapper {
 
       String status = 'Disconnected';
       if (enable) {
-        if (bitRate == '1000')
+        if (bitRate == '1000') {
           status = '1Gbps';
-        else if (bitRate == '100')
+        } else if (bitRate == '100') {
           status = '100Mbps';
-        else if (bitRate == '10')
+        } else if (bitRate == '10') {
           status = '10Mbps';
-        else if (bitRate != '0') status = '${bitRate}Mbps';
+        } else if (bitRate != '0') {
+          status = '${bitRate}Mbps';
+        }
       }
       lanList.add(status);
     }
@@ -933,7 +937,7 @@ class JnapTr181Mapper {
 
     // Usually MAC filtering is global or per-AP. JNAP usually sets it globally or
     // for the main APs. We'll look at the first AP as the "master" switch.
-    final prefix = 'Device.WiFi.AccessPoint.1';
+    const prefix = 'Device.WiFi.AccessPoint.1';
 
     final isEnabled =
         values['$prefix.MACAddressControlEnabled']?.toString() == 'true';

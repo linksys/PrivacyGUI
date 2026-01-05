@@ -318,8 +318,6 @@ void main() {
           routerRepository: mockRepository,
         );
 
-        final uiSettings =
-            FirewallSettingsTestData.createSuccessfulResponse().output;
         final firewallUISettings =
             service.fetchFirewallSettings(mockRef).then((value) => value.$1!);
 

@@ -600,7 +600,7 @@ void main() {
         );
         const state = DMZSettingsState(
           settings: preservableSettings,
-          status: const DMZStatus(),
+          status: DMZStatus(),
         );
 
         const newSettings = DMZUISettings(
@@ -634,7 +634,7 @@ void main() {
         );
         const state = DMZSettingsState(
           settings: preservableSettings,
-          status: const DMZStatus(),
+          status: DMZStatus(),
         );
 
         const newStatus = DMZStatus(
@@ -663,7 +663,7 @@ void main() {
         );
         const state = DMZSettingsState(
           settings: preservableSettings,
-          status: const DMZStatus(),
+          status: DMZStatus(),
         );
 
         // Act
@@ -747,7 +747,7 @@ void main() {
         );
         const state = DMZSettingsState(
           settings: preservableSettings,
-          status: const DMZStatus(),
+          status: DMZStatus(),
         );
 
         // Act
@@ -774,7 +774,7 @@ void main() {
         );
         const originalState = DMZSettingsState(
           settings: preservableSettings,
-          status: const DMZStatus(),
+          status: DMZStatus(),
         );
         final json = originalState.toJson();
 
@@ -834,11 +834,11 @@ void main() {
         );
         const state1 = DMZSettingsState(
           settings: preservableSettings,
-          status: const DMZStatus(),
+          status: DMZStatus(),
         );
         const state2 = DMZSettingsState(
           settings: preservableSettings,
-          status: const DMZStatus(),
+          status: DMZStatus(),
         );
 
         // Assert

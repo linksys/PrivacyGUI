@@ -169,7 +169,7 @@ void main() {
             auth: any(named: 'auth'),
             cacheLevel: any(named: 'cacheLevel'),
             data: any(named: 'data'),
-          )).thenAnswer((_) async => JNAPSuccess(result: 'OK', output: {}));
+          )).thenAnswer((_) async => JNAPSuccess(result: 'OK', output: const {}));
 
       // Fetch first to cache settings
       await service.fetchSettings(deviceInfo: null, forceRemote: false);
@@ -205,7 +205,7 @@ void main() {
             auth: any(named: 'auth'),
             cacheLevel: any(named: 'cacheLevel'),
             data: any(named: 'data'),
-          )).thenAnswer((_) async => JNAPSuccess(result: 'OK', output: {}));
+          )).thenAnswer((_) async => JNAPSuccess(result: 'OK', output: const {}));
 
       await service.fetchSettings(deviceInfo: null, forceRemote: false);
 
@@ -241,7 +241,7 @@ void main() {
             auth: any(named: 'auth'),
             cacheLevel: any(named: 'cacheLevel'),
             data: any(named: 'data'),
-          )).thenAnswer((_) async => JNAPSuccess(result: 'OK', output: {}));
+          )).thenAnswer((_) async => JNAPSuccess(result: 'OK', output: const {}));
 
       await service.fetchSettings(deviceInfo: null, forceRemote: false);
 

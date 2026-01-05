@@ -75,7 +75,7 @@ void main() {
     });
 
     test('fromMap uses defaults for missing values', () {
-      final model = StaticRoutingRuleUIModel.fromMap(<String, dynamic>{});
+      final model = StaticRoutingRuleUIModel.fromMap(const <String, dynamic>{});
       expect(model.name, '');
       expect(model.networkPrefixLength, 24);
       expect(model.interface, 'LAN');

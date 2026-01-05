@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:privacy_gui/validator_rules/input_validators.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:test/test.dart';
@@ -993,14 +995,14 @@ void main() {
   });
 
   // Test result tracking
-  final Map<String, Map<String, dynamic>> _testResults = {};
+  final Map<String, Map<String, dynamic>> testResults = {};
 
   // Helper to track test results
-  void _trackTestResult(String group, String testName, bool passed,
+  void trackTestResult(String group, String testName, bool passed,
       String address, String? expectedType,
       {String? description}) {
-    if (!_testResults.containsKey(group)) {
-      _testResults[group] = {
+    if (!testResults.containsKey(group)) {
+      testResults[group] = {
         'total': 0,
         'passed': 0,
         'failed': 0,
@@ -1016,24 +1018,24 @@ void main() {
       if (description != null) 'description': description,
     };
 
-    _testResults[group]!['total']++;
+    testResults[group]!['total']++;
     if (passed) {
-      _testResults[group]!['passed']++;
+      testResults[group]!['passed']++;
     } else {
-      _testResults[group]!['failed']++;
+      testResults[group]!['failed']++;
     }
-    _testResults[group]!['details'].add(result);
+    testResults[group]!['details'].add(result);
   }
 
   // Print test summary
-  void _printTestSummary() {
+  void printTestSummary() {
     print('\n\n=== IPv6 Validation Test Summary ===\n');
 
     int totalTests = 0;
     int totalPassed = 0;
     int totalFailed = 0;
 
-    _testResults.forEach((group, data) {
+    testResults.forEach((group, data) {
       print('\n=== $group ===');
       print(
           'Total: ${data['total']} | Passed: ${data['passed']} | Failed: ${data['failed']}');
@@ -1083,18 +1085,18 @@ void main() {
   group('IPv6WithReservedRule', () {
     // Add teardown to print summary after all tests
     tearDownAll(() {
-      _printTestSummary();
+      printTestSummary();
     });
 
     // Helper function to run multiple invalid test cases
-    void _runInvalidTestCases(List<String> addresses, String description) {
+    void runInvalidTestCases(List<String> addresses, String description) {
       for (var address in addresses) {
         test('should reject $description: $address', () {
           final rule = IPv6WithReservedRule();
           final isValid = rule.validate(address);
           final testName = 'Reject $description: $address';
           final passed = isValid == false;
-          _trackTestResult('Invalid Address: $description', testName, passed,
+          trackTestResult('Invalid Address: $description', testName, passed,
               address, 'Should be rejected as $description',
               description: description);
           expect(isValid, isFalse,
@@ -1134,7 +1136,7 @@ void main() {
           final isValid = rule.validate(address);
           final testName = 'Valid Global Unicast: $address';
           final passed = isValid == true;
-          _trackTestResult('Valid Global Unicast', testName, passed, address,
+          trackTestResult('Valid Global Unicast', testName, passed, address,
               'Valid Global Unicast',
               description:
                   'Should be accepted as a valid global unicast IPv6 address');
@@ -1153,7 +1155,7 @@ void main() {
           '::1',
           '0:0:0:0:0:0:0:1',
         ];
-        _runInvalidTestCases(testCases, 'loopback');
+        runInvalidTestCases(testCases, 'loopback');
       });
 
       // Link-local addresses (fe80::/10)
@@ -1164,7 +1166,7 @@ void main() {
           'fe80:0000:0000:0000:0000:0000:0000:0001',
           'febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of fe80::/10
         ];
-        _runInvalidTestCases(testCases, 'link-local');
+        runInvalidTestCases(testCases, 'link-local');
       });
 
       // Unique Local Addresses (fc00::/7)
@@ -1175,7 +1177,7 @@ void main() {
           'fd12:3456:789a:1::1',
           'fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of fd00::/8
         ];
-        _runInvalidTestCases(testCases, 'ULA');
+        runInvalidTestCases(testCases, 'ULA');
       });
 
       // Multicast addresses (ff00::/8)
@@ -1185,7 +1187,7 @@ void main() {
           'ff02::1',
           'ff0f:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of ff00::/8
         ];
-        _runInvalidTestCases(testCases, 'multicast');
+        runInvalidTestCases(testCases, 'multicast');
       });
 
       // Unspecified/undefined addresses (::/128 and 0::/96)
@@ -1198,7 +1200,7 @@ void main() {
           '0::0',
           '0:0:0:0:0:0:0:0:0',
         ];
-        _runInvalidTestCases(testCases, 'unspecified/undefined');
+        runInvalidTestCases(testCases, 'unspecified/undefined');
       });
 
       // Unallocated address space (e.g., ffff::/16)
@@ -1217,7 +1219,7 @@ void main() {
           '5f00::',
           '5fff:ffff:ffff:ffff:ffff:ffff:ffff:ffff',
         ];
-        _runInvalidTestCases(testCases, 'unallocated/reserved');
+        runInvalidTestCases(testCases, 'unallocated/reserved');
       });
 
       // IPv4-mapped and IPv4-compatible addresses
@@ -1228,7 +1230,7 @@ void main() {
           '::ffff:0:192.168.1.1',
           '::ffff:c0a8:0101', // Same as ::ffff:192.168.1.1
         ];
-        _runInvalidTestCases(testCases, 'IPv4-mapped/compatible');
+        runInvalidTestCases(testCases, 'IPv4-mapped/compatible');
       });
 
       // Invalid formats and non-IPv6 addresses
@@ -1243,7 +1245,7 @@ void main() {
           '2001:db8:1:2:3:4:5:6:7', // Too many segments
           '2001:db8:1:2:3', // Too few segments
         ];
-        _runInvalidTestCases(testCases, 'invalid format');
+        runInvalidTestCases(testCases, 'invalid format');
       });
     });
 

@@ -58,7 +58,7 @@ void main() {
         ),
         radioInfo: RadioInfoUIModel(
           isBandSteeringSupported: true,
-          radios: [
+          radios: const [
             RouterRadioUIModel(
               radioID: 'RADIO_2.4GHz',
               band: '2.4GHz',
@@ -73,7 +73,7 @@ void main() {
         guestRadioSettings: GuestRadioSettingsUIModel(
           isGuestNetworkACaptivePortal: false,
           isGuestNetworkEnabled: true,
-          radios: [
+          radios: const [
             GuestRadioUIModel(
               radioID: 'RADIO_2.4GHz',
               isEnabled: true,

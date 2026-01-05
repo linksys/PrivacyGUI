@@ -7,7 +7,6 @@ import 'dart:async' as _i4;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart' as _i3;
 
 // ignore_for_file: type=lint
@@ -23,6 +22,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart' as _i3;
 // ignore_for_file: unnecessary_parenthesis
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
+// ignore_for_file: invalid_use_of_internal_member
 
 class _FakeAsyncNotifierProviderRef_0<T> extends _i1.SmartFake
     implements _i2.AsyncNotifierProviderRef<T> {
@@ -59,9 +59,7 @@ class _FakeCoreTransactionData_2 extends _i1.SmartFake
 /// A class which mocks [PollingNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPollingNotifier extends _i2.AsyncNotifier<_i3.CoreTransactionData>
-    with _i1.Mock
-    implements _i3.PollingNotifier {
+class MockPollingNotifier extends _i1.Mock implements _i3.PollingNotifier {
   @override
   bool get paused => (super.noSuchMethod(
         Invocation.getter(#paused),
@@ -173,29 +171,6 @@ class MockPollingNotifier extends _i2.AsyncNotifier<_i3.CoreTransactionData>
         ),
         returnValueForMissingStub: null,
       );
-
-  @override
-  _i4.Future<String> checkSmartMode() => (super.noSuchMethod(
-        Invocation.method(
-          #checkSmartMode,
-          [],
-        ),
-        returnValue: _i4.Future<String>.value(_i5.dummyValue<String>(
-          this,
-          Invocation.method(
-            #checkSmartMode,
-            [],
-          ),
-        )),
-        returnValueForMissingStub:
-            _i4.Future<String>.value(_i5.dummyValue<String>(
-          this,
-          Invocation.method(
-            #checkSmartMode,
-            [],
-          ),
-        )),
-      ) as _i4.Future<String>);
 
   @override
   void listenSelf(

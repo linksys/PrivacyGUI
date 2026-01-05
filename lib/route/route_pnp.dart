@@ -30,7 +30,7 @@ final pnpRoute = LinksysRoute(
           builder: (context, state) => AddNodesView(
             args: state.extra as Map<String, dynamic>? ?? {},
           ),
-          routes: [],
+          routes: const [],
         )
       ],
     ),

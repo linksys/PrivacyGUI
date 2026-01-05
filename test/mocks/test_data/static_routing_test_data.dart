@@ -3,7 +3,6 @@ import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
-import 'package:privacy_gui/utils.dart';
 
 /// Test data builder for StaticRoutingService tests
 ///

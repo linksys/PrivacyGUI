@@ -180,8 +180,8 @@ void main() {
         () async {
       // Arrange
       final uiModel = PortRangeTriggeringRuleListUIModel(
-        rules: [
-          const PortRangeTriggeringRuleUIModel(
+        rules: const [
+          PortRangeTriggeringRuleUIModel(
             isEnabled: true,
             firstTriggerPort: 5000,
             lastTriggerPort: 5000,
@@ -251,8 +251,8 @@ void main() {
     test('saves multiple rules correctly', () async {
       // Arrange
       final uiModel = PortRangeTriggeringRuleListUIModel(
-        rules: [
-          const PortRangeTriggeringRuleUIModel(
+        rules: const [
+          PortRangeTriggeringRuleUIModel(
             isEnabled: true,
             firstTriggerPort: 3000,
             lastTriggerPort: 3000,
@@ -260,7 +260,7 @@ void main() {
             lastForwardedPort: 3100,
             description: 'Rule 1',
           ),
-          const PortRangeTriggeringRuleUIModel(
+          PortRangeTriggeringRuleUIModel(
             isEnabled: false,
             firstTriggerPort: 4000,
             lastTriggerPort: 4100,

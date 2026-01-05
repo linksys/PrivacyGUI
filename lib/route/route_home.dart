@@ -7,7 +7,7 @@ final homeRoute = LinksysRoute(
     column: ColumnGrid(column: 9, centered: true),
   ),
   builder: (context, state) => const HomeView(),
-  routes: [
+  routes: const [
     // cloudLoginRoute,
     // cloudRALoginRoute,
     //setupRoute

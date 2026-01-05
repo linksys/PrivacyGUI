@@ -105,7 +105,6 @@ void main() {
 
         // Act
         notifier.setRules(rules);
-        final state = container.read(ipv6PortServiceListProvider);
 
         // Assert
         expect(notifier.isExceedMax(), false);
@@ -128,7 +127,6 @@ void main() {
 
         // Act
         notifier.setRules(rules);
-        final state = container.read(ipv6PortServiceListProvider);
 
         // Assert
         expect(notifier.isExceedMax(), true);
@@ -873,12 +871,12 @@ void main() {
       group('performFetch integration', () {
         test('fetches rules via service provider', () async {
           // Arrange
-          final testRules = IPv6PortServiceRuleUIList(rules: [
+          final testRules = IPv6PortServiceRuleUIList(rules: const [
             IPv6PortServiceRuleUI(
               enabled: true,
               description: 'Test Rule',
               ipv6Address: '2001:db8::1',
-              portRanges: const [
+              portRanges: [
                 PortRangeUI(protocol: 'TCP', firstPort: 80, lastPort: 80)
               ],
             ),
@@ -886,7 +884,7 @@ void main() {
               enabled: false,
               description: 'Another Rule',
               ipv6Address: '2001:db8::2',
-              portRanges: const [
+              portRanges: [
                 PortRangeUI(protocol: 'UDP', firstPort: 53, lastPort: 53)
               ],
             )
@@ -913,12 +911,12 @@ void main() {
 
         test('fetches with forceRemote parameter', () async {
           // Arrange
-          final testRules = IPv6PortServiceRuleUIList(rules: [
+          final testRules = IPv6PortServiceRuleUIList(rules: const [
             IPv6PortServiceRuleUI(
               enabled: true,
               description: 'Remote Rule',
               ipv6Address: '2001:db8::1',
-              portRanges: const [
+              portRanges: [
                 PortRangeUI(protocol: 'TCP', firstPort: 22, lastPort: 22)
               ],
             )

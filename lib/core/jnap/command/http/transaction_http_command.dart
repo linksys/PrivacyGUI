@@ -44,14 +44,14 @@ class TransactionHttpCommand
         if (cacheLevel == CacheLevel.localCached) {
           final prefs = await SharedPreferences.getInstance();
           final serialNumber = prefs.getString(pCurrentSN);
-          jnap.data.forEach((entry) {
+          for (var entry in jnap.data) {
             final dataResult = {
               "target": entry.key.actionValue,
               "cachedAt": DateTime.now().millisecondsSinceEpoch,
             };
             dataResult["data"] = (entry.value as JNAPSuccess).toJson();
             cache.data[entry.key.actionValue] = dataResult;
-          });
+          }
 
           if (serialNumber != null) {
             logger.d(

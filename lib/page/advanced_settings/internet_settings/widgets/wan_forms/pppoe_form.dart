@@ -48,13 +48,15 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
     // Initialize focus nodes with listeners
     _usernameFocusNode = FocusNode()
       ..addListener(() {
-        if (!_usernameFocusNode.hasFocus)
+        if (!_usernameFocusNode.hasFocus) {
           setState(() => _usernameTouched = true);
+        }
       });
     _passwordFocusNode = FocusNode()
       ..addListener(() {
-        if (!_passwordFocusNode.hasFocus)
+        if (!_passwordFocusNode.hasFocus) {
           setState(() => _passwordTouched = true);
+        }
       });
     _vlanIdFocusNode = FocusNode()
       ..addListener(() {

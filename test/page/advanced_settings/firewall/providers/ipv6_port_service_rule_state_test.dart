@@ -99,7 +99,7 @@ void main() {
           lastPort: 8080,
         );
 
-        final portRange = PortRangeUI.fromMap({
+        final portRange = PortRangeUI.fromMap(const {
           'protocol': 'TCP',
           'firstPort': 80,
           'lastPort': 8080,
@@ -258,7 +258,7 @@ void main() {
           ],
         );
 
-        final rule = IPv6PortServiceRuleUI.fromMap({
+        final rule = IPv6PortServiceRuleUI.fromMap(const {
           'enabled': true,
           'description': 'Test',
           'ipv6Address': '2001:db8::1',
@@ -472,7 +472,7 @@ void main() {
           ),
         ]);
 
-        final list = IPv6PortServiceRuleUIList.fromMap({
+        final list = IPv6PortServiceRuleUIList.fromMap(const {
           'rules': [
             {
               'enabled': true,

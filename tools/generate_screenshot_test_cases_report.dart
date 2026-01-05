@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
@@ -210,9 +212,10 @@ Future<List<TestCaseInfo>> _parseTestFile(File file, bool debugMode) async {
     }
 
     if (mainDescription == null) {
-      if (debugMode)
+      if (debugMode) {
         print(
             '    No main description found for Test ID: $baseId in file ${file.path}, skipping test case.');
+      }
       continue; // Skip if no description found
     }
 
@@ -238,9 +241,10 @@ Future<List<TestCaseInfo>> _parseTestFile(File file, bool debugMode) async {
     }
 
     if (goldenFiles.isEmpty) {
-      if (debugMode)
+      if (debugMode) {
         print(
             '    No golden files found for Test ID: $baseId in file ${file.path}, skipping test case.');
+      }
       continue;
     }
 

@@ -205,6 +205,7 @@ class _CompatibilityItem {
 
   const _CompatibilityItem({
     required this.modelRegExp,
+    // ignore: unused_element_parameter
     this.compatibleFW,
   });
 }
@@ -216,6 +217,7 @@ class _CompatibilityFW {
 
   const _CompatibilityFW({
     required this.min,
+    // ignore: unused_element_parameter
     this.max,
   });
 }

@@ -40,7 +40,7 @@ void main() {
         ),
       );
       final status = DDNSStatusUIModel(
-        supportedProviders: ['', 'DynDNS'],
+        supportedProviders: const ['', 'DynDNS'],
         status: 'Connected',
         ipAddress: '192.168.1.1',
       );

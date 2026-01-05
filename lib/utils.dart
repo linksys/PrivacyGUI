@@ -106,7 +106,7 @@ class Utils {
         return '$header$encryptedPassword';
       } else {
         // If encryption fails, return the original match, but mask the password
-        return '${header}************';
+        return '$header************';
       }
     });
   }

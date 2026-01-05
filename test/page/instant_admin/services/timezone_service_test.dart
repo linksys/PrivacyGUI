@@ -121,7 +121,7 @@ void main() {
           .thenAnswer(
               (_) async => InstantAdminTestData.createSetTimeSettingsSuccess());
 
-      final settings = const TimezoneSettings(
+      const settings = TimezoneSettings(
         timezoneId: 'PST8',
         isDaylightSaving: true,
       );
@@ -162,7 +162,7 @@ void main() {
               (_) async => InstantAdminTestData.createSetTimeSettingsSuccess());
 
       // Timezone that does NOT observe DST
-      final settings = const TimezoneSettings(
+      const settings = TimezoneSettings(
         timezoneId: 'JST-9',
         isDaylightSaving:
             true, // User selected DST, but timezone doesn't support it
@@ -201,7 +201,7 @@ void main() {
             auth: true,
           )).thenThrow(InstantAdminTestData.createGenericError());
 
-      final settings = const TimezoneSettings(
+      const settings = TimezoneSettings(
         timezoneId: 'PST8',
         isDaylightSaving: true,
       );

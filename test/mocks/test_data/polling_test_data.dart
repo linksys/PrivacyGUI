@@ -47,7 +47,7 @@ class PollingTestData {
   /// Create getRadioInfo success response
   static JNAPSuccess createRadioInfoSuccess() => JNAPSuccess(
         result: 'OK',
-        output: {
+        output: const {
           'isBandSteeringSupported': true,
           'radios': [
             {
@@ -178,7 +178,7 @@ class PollingTestData {
         result: 'OK',
         output: {
           'isEnabled': isEnabled,
-          'macAddresses': <String>[],
+          'macAddresses': const <String>[],
         },
       );
 

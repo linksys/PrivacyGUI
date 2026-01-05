@@ -4,7 +4,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_admin/services/router_password_service.dart';

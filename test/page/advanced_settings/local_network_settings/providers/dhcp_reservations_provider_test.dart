@@ -311,7 +311,7 @@ void main() {
           ),
         );
         notifier
-            .updateSettings(DHCPReservationsSettings(reservations: [newItem]));
+            .updateSettings(DHCPReservationsSettings(reservations: const [newItem]));
         final state = container.read(dhcpReservationProvider);
 
         expect(state.settings.current.reservations, hasLength(1));

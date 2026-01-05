@@ -204,7 +204,7 @@ void main() {
     test('fromJnap creates correct model from JNAP GetRadioInfo', () {
       final jnapModel = GetRadioInfo(
         isBandSteeringSupported: true,
-        radios: [
+        radios: const [
           RouterRadio(
             radioID: 'RADIO_2.4GHz',
             physicalRadioID: 'phy0',
@@ -266,9 +266,9 @@ void main() {
         physicalRadioID: 'phy0',
         bssid: '00:11:22:33:44:55',
         band: '2.4GHz',
-        supportedModes: ['802.11bgn'],
-        supportedChannelsForChannelWidths: [],
-        supportedSecurityTypes: ['WPA2-Personal'],
+        supportedModes: const ['802.11bgn'],
+        supportedChannelsForChannelWidths: const [],
+        supportedSecurityTypes: const ['WPA2-Personal'],
         maxRadiusSharedKeyLength: 64,
         settings: RouterRadioSettings(
           isEnabled: false,

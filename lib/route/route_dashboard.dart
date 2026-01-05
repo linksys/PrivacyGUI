@@ -3,7 +3,7 @@ part of 'router_provider.dart';
 final shellNavigatorKey = GlobalKey<NavigatorState>();
 final dashboardRoute = ShellRoute(
   navigatorKey: shellNavigatorKey,
-  observers: [],
+  observers: const [],
   builder: (BuildContext context, GoRouterState state, Widget child) =>
       DashboardShell(
     child: child,

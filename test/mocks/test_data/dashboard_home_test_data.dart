@@ -404,7 +404,7 @@ class DashboardHomeTestData {
       'description': 'Test Router',
       'firmwareVersion': '1.0.0',
       'firmwareDate': '2024-01-01T00:00:00Z',
-      'services': ['http://linksys.com/jnap/core/Core'],
+      'services': const ['http://linksys.com/jnap/core/Core'],
     });
   }
 

@@ -15,7 +15,7 @@ extension Unique<E, Id> on List<E> {
   ///
   /// Returns a list containing only the unique elements.
   List<E> unique([Id Function(E element)? id, bool inplace = true]) {
-    final ids = Set();
+    final ids = <dynamic>{};
     var list = inplace ? this : List<E>.from(this);
     if (list.isEmpty) {
       return list;
