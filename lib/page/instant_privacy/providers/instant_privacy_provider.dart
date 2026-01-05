@@ -1,16 +1,9 @@
-import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/models/mac_filter_settings.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
 import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/util/extensions.dart';
@@ -39,82 +32,40 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState>
   @override
   Future<(InstantPrivacySettings?, InstantPrivacyStatus?)> performFetch(
       {bool forceRemote = false, bool updateStatusOnly = false}) async {
-    final settings = await ref
-        .read(routerRepositoryProvider)
-        .send(
-          JNAPAction.getMACFilterSettings,
-          fetchRemote: forceRemote,
-          auth: true,
-        )
-        .then((result) => MACFilterSettings.fromMap(result.output));
+    final service = ref.read(instantPrivacyServiceProvider);
 
-    final mode = MacFilterMode.reslove(settings.macFilterMode);
-    final newStatus = InstantPrivacyStatus(mode: mode);
+    final (settings, status) = await service.fetchMacFilterSettings(
+      forceRemote: forceRemote,
+      updateStatusOnly: updateStatusOnly,
+    );
 
-    // update status only
+    // For status-only updates, don't fetch myMac
     if (updateStatusOnly) {
-      return (null, newStatus);
+      return (null, status);
     }
 
-    final List<String> staBSSIDS = serviceHelper.isSupportGetSTABSSID()
-        ? await ref
-            .read(routerRepositoryProvider)
-            .send(
-              JNAPAction.getSTABSSIDs,
-              fetchRemote: true,
-              auth: true,
-            )
-            .then((result) {
-            return List<String>.from(result.output['staBSSIDS']);
-          }).onError((error, _) {
-            logger.d('Not able to get STA BSSIDs');
-            return [];
-          })
-        : [];
-
+    // Fetch myMac and add to settings
     final myMac = await getMyMACAddress();
-    final macAddresses =
-        settings.macAddresses.map((e) => e.toUpperCase()).toList();
-    final InstantPrivacySettings newSettings = InstantPrivacySettings(
-      mode: mode,
-      macAddresses: mode == MacFilterMode.allow ? macAddresses : [],
-      denyMacAddresses: mode == MacFilterMode.deny ? macAddresses : [],
-      maxMacAddresses: settings.maxMACAddresses,
-      bssids: staBSSIDS.map((e) => e.toUpperCase()).toList(),
-      myMac: myMac,
-    );
-    return (newSettings, newStatus);
+    final newSettings = settings?.copyWith(myMac: myMac);
+
+    return (newSettings, status);
   }
 
   @override
   Future<void> performSave() async {
-    var macAddresses = <String>[];
-    if (state.settings.current.mode == MacFilterMode.allow) {
-      final nodesMacAddresses = ref
-          .read(deviceManagerProvider)
-          .nodeDevices
-          .map((e) => e.getMacAddress().toUpperCase())
-          .toList();
-      macAddresses = [
-        ...state.settings.current.macAddresses,
-        ...nodesMacAddresses,
-        ...state.settings.current.bssids,
-      ].unique();
-    } else if (state.settings.current.mode == MacFilterMode.deny) {
-      macAddresses = [
-        ...state.settings.current.macAddresses,
-      ];
-    }
-    await ref.read(routerRepositoryProvider).send(
-          JNAPAction.setMACFilterSettings,
-          data: {
-            'macFilterMode': state.settings.current.mode.name.capitalize(),
-            'macAddresses': macAddresses,
-          },
-          auth: true,
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache,
-        );
+    final service = ref.read(instantPrivacyServiceProvider);
+
+    // Get node MAC addresses for allow mode
+    final nodesMacAddresses = ref
+        .read(deviceManagerProvider)
+        .nodeDevices
+        .map((e) => e.getMacAddress().toUpperCase())
+        .toList();
+
+    await service.saveMacFilterSettings(
+      state.settings.current,
+      nodesMacAddresses,
+    );
   }
 
   Future doPolling() {
@@ -122,19 +73,9 @@ class InstantPrivacyNotifier extends Notifier<InstantPrivacyState>
   }
 
   Future<String?> getMyMACAddress() {
-    final repo = ref.read(routerRepositoryProvider);
-    return repo
-        .send(JNAPAction.getLocalDevice, auth: true, fetchRemote: true)
-        .then((result) {
-      final deviceID = result.output['deviceID'];
-      return ref
-          .read(deviceManagerProvider)
-          .deviceList
-          .firstWhereOrNull((device) => device.deviceID == deviceID)
-          ?.getMacAddress();
-    }).onError((_, __) {
-      return null;
-    });
+    final service = ref.read(instantPrivacyServiceProvider);
+    final deviceList = ref.read(deviceManagerProvider).deviceList;
+    return service.fetchMyMacAddress(deviceList);
   }
 
   setEnable(bool isEnabled) {

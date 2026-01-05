@@ -5,17 +5,15 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/jnap/services/polling_service.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
-import 'package:privacy_gui/core/utils/fernet_manager.dart';
 
 const int pollFirstDelayInSec = 1;
 
@@ -53,6 +51,10 @@ class CoreTransactionData extends Equatable {
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
   bool _paused = false;
+
+  /// Service for polling operations
+  PollingService get _service => ref.read(pollingServiceProvider);
+
   set paused(bool value) {
     _paused = value;
     if (_paused) {
@@ -78,52 +80,33 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
 
   fetchFirstLaunchedCacheData() {
     final cache = ref.read(linksysCacheManagerProvider).data;
-    final commands = _coreTransactions;
-    final checkCacheDataList = commands
-        .where((command) => cache.keys.contains(command.key.actionValue));
-    // Have not done any polling yet
-    if (checkCacheDataList.length != commands.length) return;
 
-    final cacheDataList = checkCacheDataList
-        .where((command) => cache[command.key.actionValue]['data'] != null)
-        .map((command) => MapEntry(command.key,
-            JNAPSuccess.fromJson(cache[command.key.actionValue]['data'])))
-        .toList();
+    // Delegate cache parsing to Service
+    final cacheDataMap = _service.parseCacheData(
+      cache: cache,
+      commands: _coreTransactions,
+    );
 
-    // Update Fernet key from cached device info
-    try {
-      final deviceInfoEntry = cacheDataList.firstWhere(
-        (entry) => entry.key == JNAPAction.getDeviceInfo,
-      );
-      final deviceInfoResult = deviceInfoEntry.value;
+    // Cache incomplete - skip
+    if (cacheDataMap == null) return;
 
-      final serialNumber = deviceInfoResult.output['serialNumber'] as String?;
-      if (serialNumber != null && serialNumber.isNotEmpty) {
-        FernetManager().updateKeyFromSerial(serialNumber);
-        logger.d('Fernet key updated from cached serial number.');
-      }
-    } catch (e) {
-      // Could be a StateError if not found, or other errors.
-      logger.i('Device info not found in cache, cannot update Fernet key yet.');
-    }
+    // Delegate Fernet key update to Service
+    _service.updateFernetKeyFromResult(cacheDataMap);
 
     final previousSnapshot = state.value;
     state = AsyncValue.data(CoreTransactionData(
         lastUpdate: 0,
         isReady: previousSnapshot?.isReady ?? false,
-        data: Map.fromEntries(cacheDataList)));
+        data: cacheDataMap));
   }
 
-  Future _polling(RouterRepository repository, {bool force = false}) async {
+  Future _polling({bool force = false}) async {
     final benchMark = BenchMarkLogger(name: 'Polling provider');
     benchMark.start();
     final previousSnapshot = state.value;
     state = const AsyncValue.loading();
-    final fetchFuture = repository
-        .transaction(
-          JNAPTransactionBuilder(commands: _coreTransactions, auth: true),
-          fetchRemote: force,
-        )
+    final fetchFuture = _service
+        .executeTransaction(_coreTransactions, force: force)
         .then((successWrap) => successWrap.data)
         .then((data) => CoreTransactionData(
               lastUpdate: DateTime.now().millisecondsSinceEpoch,
@@ -141,22 +124,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     state = await AsyncValue.guard(
       () => fetchFuture.then(
         (result) async {
-          // Update Fernet key from device info
-          try {
-            final deviceInfoResult = result.data[JNAPAction.getDeviceInfo];
-            if (deviceInfoResult is JNAPSuccess) {
-              final serialNumber =
-                  deviceInfoResult.output['serialNumber'] as String?;
-              if (serialNumber != null && serialNumber.isNotEmpty) {
-                FernetManager().updateKeyFromSerial(serialNumber);
-              } else {
-                logger.w(
-                    'Serial number not found in getDeviceInfo response, cannot update Fernet key.');
-              }
-            }
-          } catch (e) {
-            logger.e('Failed to update Fernet key: $e');
-          }
+          // Delegate Fernet key update to Service
+          _service.updateFernetKeyFromResult(result.data);
 
           await _additionalPolling();
           return result.copyWith(isReady: true);
@@ -188,10 +157,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   }
 
   Future forcePolling() {
-    final routerRepository = ref.read(routerRepositoryProvider);
-
-    return _polling(routerRepository, force: true)
-        .then((_) => _setTimePeriod(routerRepository));
+    return _polling(force: true).then((_) => _setTimePeriod());
   }
 
   void checkAndStartPolling([bool force = false]) {
@@ -213,17 +179,16 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       return;
     }
     logger.d('prepare start polling data');
-    final routerRepository = ref.read(routerRepositoryProvider);
-    checkSmartMode().then((mode) {
-      _coreTransactions = _buildCoreTransaction(mode: mode);
+    _service.checkDeviceMode().then((mode) {
+      _coreTransactions = _service.buildCoreTransactions(mode: mode);
       fetchFirstLaunchedCacheData();
     }).then(
       (value) =>
           Future.delayed(const Duration(seconds: pollFirstDelayInSec), () {
-        _polling(routerRepository);
+        _polling();
       }).then(
         (_) {
-          _setTimePeriod(routerRepository);
+          _setTimePeriod();
         },
       ),
     );
@@ -236,77 +201,11 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     }
   }
 
-  _setTimePeriod(RouterRepository routerRepository) {
+  _setTimePeriod() {
     _timer?.cancel();
     _timer = Timer.periodic(
         const Duration(seconds: BuildConfig.refreshTimeInterval), (timer) {
-      _polling(routerRepository);
+      _polling();
     });
-  }
-
-  List<MapEntry<JNAPAction, Map<String, dynamic>>> _buildCoreTransaction(
-      {String? mode}) {
-    final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
-
-    List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [
-      const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
-      const MapEntry(JNAPAction.getNetworkConnections, {}),
-      const MapEntry(JNAPAction.getRadioInfo, {}),
-      if (isSupportGuestWiFi)
-        const MapEntry(JNAPAction.getGuestRadioSettings, {}),
-      const MapEntry(JNAPAction.getDevices, {}),
-      const MapEntry(JNAPAction.getFirmwareUpdateSettings, {}),
-      if ((mode ?? 'Unconfigured') == 'Master')
-        const MapEntry(JNAPAction.getBackhaulInfo, {}),
-      const MapEntry(JNAPAction.getWANStatus, {}),
-      const MapEntry(JNAPAction.getEthernetPortConnections, {}),
-      const MapEntry(JNAPAction.getSystemStats, {}),
-      const MapEntry(JNAPAction.getPowerTableSettings, {}),
-      const MapEntry(JNAPAction.getLocalTime, {}),
-      const MapEntry(JNAPAction.getDeviceInfo, {}),
-    ];
-    if (serviceHelper.isSupportSetup()) {
-      commands.add(
-        const MapEntry(JNAPAction.getInternetConnectionStatus, {}),
-      );
-    }
-    if (serviceHelper.isSupportHealthCheck()) {
-      commands.add(const MapEntry(JNAPAction.getHealthCheckResults, {
-        'includeModuleResults': true,
-        "lastNumberOfResults": 5,
-      }));
-      commands
-          .add(const MapEntry(JNAPAction.getSupportedHealthCheckModules, {}));
-    }
-    if (serviceHelper.isSupportNodeFirmwareUpdate()) {
-      commands.add(
-        const MapEntry(JNAPAction.getNodesFirmwareUpdateStatus, {}),
-      );
-    } else {
-      commands.add(
-        const MapEntry(JNAPAction.getFirmwareUpdateStatus, {}),
-      );
-    }
-    if (serviceHelper.isSupportProduct()) {
-      commands.add(const MapEntry(JNAPAction.getSoftSKUSettings, {}));
-    }
-
-    // For additional features
-    if (serviceHelper.isSupportLedMode()) {
-      commands.add(const MapEntry(JNAPAction.getLedNightModeSetting, {}));
-    }
-    commands.add(const MapEntry(JNAPAction.getMACFilterSettings, {}));
-
-    return commands;
-  }
-
-  Future<String> checkSmartMode() async {
-    final routerRepository = ref.read(routerRepositoryProvider);
-    return await routerRepository
-        .send(
-          JNAPAction.getDeviceMode,
-          fetchRemote: true,
-        )
-        .then((value) => value.output['mode'] ?? 'Unconfigured');
   }
 }

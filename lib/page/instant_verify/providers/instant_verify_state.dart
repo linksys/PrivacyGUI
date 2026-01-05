@@ -2,16 +2,15 @@
 import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
+import 'package:privacy_gui/page/instant_verify/models/instant_verify_ui_models.dart';
 
-import 'package:privacy_gui/core/jnap/models/radio_info.dart';
-import 'package:privacy_gui/core/jnap/models/wan_external_ui_model.dart';
-import 'package:privacy_gui/core/jnap/models/wan_status.dart';
-
+/// State class for InstantVerify feature
+///
+/// Uses UI Models instead of JNAP Models to maintain layer separation.
 class InstantVerifyState extends Equatable {
-  final WANConnectionInfo? wanConnection;
-  final GetRadioInfo radioInfo;
-  final GuestRadioSettings guestRadioSettings;
+  final WANConnectionUIModel? wanConnection;
+  final RadioInfoUIModel radioInfo;
+  final GuestRadioSettingsUIModel guestRadioSettings;
   final WanExternalUIModel? wanExternal;
   final bool isRunning;
 
@@ -23,10 +22,18 @@ class InstantVerifyState extends Equatable {
     this.isRunning = false,
   });
 
+  /// Initial state factory constructor
+  const InstantVerifyState.initial()
+      : wanConnection = null,
+        radioInfo = const RadioInfoUIModel.initial(),
+        guestRadioSettings = const GuestRadioSettingsUIModel.initial(),
+        wanExternal = null,
+        isRunning = false;
+
   InstantVerifyState copyWith({
-    WANConnectionInfo? wanConnection,
-    GetRadioInfo? radioInfo,
-    GuestRadioSettings? guestRadioSettings,
+    WANConnectionUIModel? wanConnection,
+    RadioInfoUIModel? radioInfo,
+    GuestRadioSettingsUIModel? guestRadioSettings,
     WanExternalUIModel? wanExternal,
     bool? isRunning,
   }) {
@@ -53,13 +60,16 @@ class InstantVerifyState extends Equatable {
     return InstantVerifyState(
       wanConnection: map['wanConnection'] == null
           ? null
-          : WANConnectionInfo.fromMap(
+          : WANConnectionUIModel.fromMap(
               map['wanConnection'] as Map<String, dynamic>),
-      radioInfo: GetRadioInfo.fromMap(map['radioInfo'] as Map<String, dynamic>),
-      guestRadioSettings: GuestRadioSettings.fromMap(map['guestRadioSettings']),
+      radioInfo:
+          RadioInfoUIModel.fromMap(map['radioInfo'] as Map<String, dynamic>),
+      guestRadioSettings: GuestRadioSettingsUIModel.fromMap(
+          map['guestRadioSettings'] as Map<String, dynamic>),
       wanExternal: map['wanExternal'] == null
           ? null
-          : WanExternalUIModel.fromMap(map['wanExternal']),
+          : WanExternalUIModel.fromMap(
+              map['wanExternal'] as Map<String, dynamic>),
       isRunning: map['isRunning'] ?? false,
     );
   }
@@ -73,5 +83,6 @@ class InstantVerifyState extends Equatable {
   bool get stringify => true;
 
   @override
-  List<Object?> get props => [wanConnection, radioInfo];
+  List<Object?> get props =>
+      [wanConnection, radioInfo, guestRadioSettings, wanExternal, isRunning];
 }
