@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -44,6 +45,17 @@ void main() async {
   }
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Storage.init();
+
+  // Load environment variables for FAQ Agent (AWS Bedrock)
+  // Create assets/.env with AWS credentials (copy from gen_ui_client)
+  try {
+    await dotenv.load(fileName: 'env.template');
+    debugPrint('FAQ Agent: .env loaded successfully');
+  } catch (e) {
+    debugPrint('Warning: Could not load .env file for FAQ Agent: $e');
+    debugPrint('FAQ Agent will use direct search instead of AI.');
+  }
+
   if (kDebugMode) {
     print(await getPackageInfo());
   }

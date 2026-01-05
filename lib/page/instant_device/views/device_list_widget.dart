@@ -145,7 +145,6 @@ class _DeviceListWidgetState extends ConsumerState<DeviceListWidget> {
           AppIconButton(
             icon: AppIcon.font(
               AppFontIcons.bidirectional,
-              color: Theme.of(context).colorScheme.primary,
             ),
             onTap: () {
               widget.onItemDeauth?.call(device);

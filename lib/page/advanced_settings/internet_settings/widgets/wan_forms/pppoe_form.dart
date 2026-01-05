@@ -23,6 +23,10 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
   late final TextEditingController _vlanIdController;
   late final TextEditingController _serviceNameController;
 
+  late final FocusNode _usernameFocusNode;
+  late final FocusNode _passwordFocusNode;
+  late final FocusNode _vlanIdFocusNode;
+
   bool _usernameTouched = false;
   bool _passwordTouched = false;
 
@@ -40,6 +44,33 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
         text: ipv4Setting.vlanId != null ? '${ipv4Setting.vlanId}' : '');
     _serviceNameController =
         TextEditingController(text: ipv4Setting.serviceName ?? '');
+
+    // Initialize focus nodes with listeners
+    _usernameFocusNode = FocusNode()
+      ..addListener(() {
+        if (!_usernameFocusNode.hasFocus)
+          setState(() => _usernameTouched = true);
+      });
+    _passwordFocusNode = FocusNode()
+      ..addListener(() {
+        if (!_passwordFocusNode.hasFocus)
+          setState(() => _passwordTouched = true);
+      });
+    _vlanIdFocusNode = FocusNode()
+      ..addListener(() {
+        if (!_vlanIdFocusNode.hasFocus) {
+          final value = _vlanIdController.text;
+          if (value.isNotEmpty && int.parse(value) < 5) {
+            _vlanIdController.text = '5';
+            final notifier = ref.read(internetSettingsProvider.notifier);
+            final ipv4Setting =
+                ref.read(internetSettingsProvider).settings.current.ipv4Setting;
+            notifier.updateIpv4Settings(ipv4Setting.copyWith(
+              vlanId: () => 5,
+            ));
+          }
+        }
+      });
   }
 
   @override
@@ -48,28 +79,34 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
     _passwordController.dispose();
     _vlanIdController.dispose();
     _serviceNameController.dispose();
+    _usernameFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _vlanIdFocusNode.dispose();
     super.dispose();
   }
 
   @override
   void didUpdateWidget(PppoeForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldIpv4Setting =
-        ref.read(internetSettingsProvider).settings.original.ipv4Setting;
     final newIpv4Setting =
         ref.read(internetSettingsProvider).settings.current.ipv4Setting;
 
-    if (oldIpv4Setting.username != newIpv4Setting.username) {
+    // Fix: Compare against current controller text to avoid cursor reset
+    // Only update controller if the new value is actually different from what's currently in the input
+    if ((newIpv4Setting.username ?? '') != _usernameController.text) {
       _usernameController.text = newIpv4Setting.username ?? '';
     }
-    if (oldIpv4Setting.password != newIpv4Setting.password) {
+    if ((newIpv4Setting.password ?? '') != _passwordController.text) {
       _passwordController.text = newIpv4Setting.password ?? '';
     }
-    if (oldIpv4Setting.vlanId != newIpv4Setting.vlanId) {
-      _vlanIdController.text =
-          newIpv4Setting.vlanId != null ? '${newIpv4Setting.vlanId}' : '';
+
+    final newVlanStr =
+        newIpv4Setting.vlanId != null ? '${newIpv4Setting.vlanId}' : '';
+    if (newVlanStr != _vlanIdController.text) {
+      _vlanIdController.text = newVlanStr;
     }
-    if (oldIpv4Setting.serviceName != newIpv4Setting.serviceName) {
+
+    if ((newIpv4Setting.serviceName ?? '') != _serviceNameController.text) {
       _serviceNameController.text = newIpv4Setting.serviceName ?? '';
     }
   }
@@ -109,76 +146,55 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
       children: [
         Padding(
           padding: inputPadding,
-          child: Focus(
-            onFocusChange: (hasFocus) {
-              if (!hasFocus) setState(() => _usernameTouched = true);
+          child: buildEditableField(
+            key: const ValueKey('pppoeUsername'),
+            label: loc(context).username,
+            controller: _usernameController,
+            focusNode: _usernameFocusNode,
+            errorText:
+                _usernameTouched && (ipv4Setting.username?.isEmpty ?? true)
+                    ? loc(context).invalidUsername
+                    : null,
+            onChanged: (value) {
+              notifier.updateIpv4Settings(ipv4Setting.copyWith(
+                username: () => value,
+              ));
             },
-            child: buildEditableField(
-              key: const ValueKey('pppoeUsername'),
-              label: loc(context).username,
-              controller: _usernameController,
-              errorText:
-                  _usernameTouched && (ipv4Setting.username?.isEmpty ?? true)
-                      ? loc(context).invalidUsername
-                      : null,
-              onChanged: (value) {
-                notifier.updateIpv4Settings(ipv4Setting.copyWith(
-                  username: () => value,
-                ));
-              },
-            ),
           ),
         ),
         Padding(
           padding: inputPadding,
-          child: Focus(
-            onFocusChange: (hasFocus) {
-              if (!hasFocus) setState(() => _passwordTouched = true);
+          child: buildEditableField(
+            key: const ValueKey('pppoePassword'),
+            label: loc(context).password,
+            controller: _passwordController,
+            focusNode: _passwordFocusNode,
+            obscureText: true,
+            errorText:
+                _passwordTouched && (ipv4Setting.password?.isEmpty ?? true)
+                    ? loc(context).invalidPassword
+                    : null,
+            onChanged: (value) {
+              notifier.updateIpv4Settings(ipv4Setting.copyWith(
+                password: () => value,
+              ));
             },
-            child: buildEditableField(
-              key: const ValueKey('pppoePassword'),
-              label: loc(context).password,
-              controller: _passwordController,
-              obscureText: true,
-              errorText:
-                  _passwordTouched && (ipv4Setting.password?.isEmpty ?? true)
-                      ? loc(context).invalidPassword
-                      : null,
-              onChanged: (value) {
-                notifier.updateIpv4Settings(ipv4Setting.copyWith(
-                  password: () => value,
-                ));
-              },
-            ),
           ),
         ),
         Padding(
           padding: inputPadding,
-          child: Focus(
-            onFocusChange: (hasFocus) {
-              if (!hasFocus) {
-                final value = _vlanIdController.text;
-                if (value.isNotEmpty && int.parse(value) < 5) {
-                  _vlanIdController.text = '5';
-                  notifier.updateIpv4Settings(ipv4Setting.copyWith(
-                    vlanId: () => 5,
-                  ));
-                }
-              }
+          child: AppMinMaxInput(
+            key: const ValueKey('pppoeVlanId'),
+            min: 5,
+            max: 4094,
+            label: loc(context).vlanIdOptional,
+            value: int.tryParse(_vlanIdController.text),
+            onChanged: (value) {
+              _vlanIdController.text = value?.toString() ?? '';
+              notifier.updateIpv4Settings(ipv4Setting.copyWith(
+                vlanId: () => value,
+              ));
             },
-            child: AppMinMaxInput(
-              key: const ValueKey('pppoeVlanId'),
-              min: 5,
-              max: 4094,
-              label: loc(context).vlanIdOptional,
-              value: int.tryParse(_vlanIdController.text),
-              onChanged: (value) {
-                _vlanIdController.text = value?.toString() ?? '';
-                notifier.updateIpv4Settings(ipv4Setting.copyWith(
-                  vlanId: () => value,
-                ));
-              },
-            ),
           ),
         ),
         Padding(

@@ -101,9 +101,9 @@ class _InternetConnectionWidgetState
                             return Padding(
                               padding: const EdgeInsets.all(0.0),
                               child: AppIconButton(
-                                icon: AppIcon.font(AppFontIcons.refresh,
-                                    color:
-                                        Theme.of(context).colorScheme.primary),
+                                icon: AppIcon.font(
+                                  AppFontIcons.refresh,
+                                ),
                                 onTap: () {
                                   controller.repeat();
                                   ref

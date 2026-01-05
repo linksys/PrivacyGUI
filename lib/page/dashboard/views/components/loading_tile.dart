@@ -20,82 +20,66 @@ class LoadingTile extends StatefulWidget {
   State<LoadingTile> createState() => _LoadingTileState();
 }
 
-class _LoadingTileState extends State<LoadingTile>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
+class _LoadingTileState extends State<LoadingTile> {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat();
-
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 
-  Widget _createSkeletonFromWidget(Widget widget) {
-    if (widget is Text) {
-      return Container(
-        width: widget.data?.length != null ? widget.data!.length * 8.0 : 100,
-        height: 16,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(4),
-        ),
+  Widget _createSkeletonFromWidget(Widget w) {
+    // Determine effective colors from widget properties or context if needed,
+    // but AppSkeleton handles theme-aware colors by default.
+    // If specific overrides are passed to LoadingTile, we can use them.
+    final baseColor = widget.baseColor;
+    final highlightColor = widget.shimmerColor;
+
+    if (w is Text) {
+      return AppSkeleton.text(
+        width: w.data?.length != null ? w.data!.length * 8.0 : 100,
+        baseColor: baseColor,
+        highlightColor: highlightColor,
       );
-    } else if (widget is AppText) {
-      // AppText from ui_kit doesn't expose text property, use fixed size
-      return Container(
+    } else if (w is AppText) {
+      // AppText from ui_kit doesn't expose text property easily without reflection or extending,
+      // assume a standard width or try to infer. For now use fixed size.
+      return AppSkeleton.text(
         width: 100,
-        height: 16,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(4),
-        ),
+        baseColor: baseColor,
+        highlightColor: highlightColor,
       );
-    } else if (widget is Icon) {
-      return Container(
+    } else if (w is Icon) {
+      return AppSkeleton(
         width: 24,
         height: 24,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(4),
-        ),
+        baseColor: baseColor,
+        highlightColor: highlightColor,
       );
-    } else if (widget is Image) {
-      return Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(4),
-        ),
+    } else if (w is Image) {
+      return AppSkeleton(
+        width: w.width,
+        height: w.height,
+        baseColor: baseColor,
+        highlightColor: highlightColor,
       );
-    } else if (widget is AppSwitch) {
-      return AppSwitch(
-        value: widget.value,
-        onChanged: null,
+    } else if (w is AppSwitch) {
+      // Simulate switch shape
+      return AppSkeleton.capsule(
+        width: 40,
+        height: 20, // Approx switch size
+        baseColor: baseColor,
+        highlightColor: highlightColor,
       );
     }
-    return Container(
+    return AppSkeleton(
       width: 100,
       height: 24,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-      ),
+      baseColor: baseColor,
+      highlightColor: highlightColor,
     );
   }
 
@@ -125,7 +109,6 @@ class _LoadingTileState extends State<LoadingTile>
             child.children.map((w) => _buildSkeletonFromChild(w)).toList(),
       );
     } else if (child is AppCard) {
-      // AppCard from ui_kit doesn't expose margin property
       return Container(
         padding: child.padding,
         child: _buildSkeletonFromChild(child.child),
@@ -137,8 +120,6 @@ class _LoadingTileState extends State<LoadingTile>
         child: _buildSkeletonFromChild(child.child ?? Container()),
       );
     } else if (child is AppResponsiveLayout) {
-      // Note: child.desktop/mobile are now builders, so we create new builders
-      // that wrap the skeleton versions
       return AppResponsiveLayout(
         desktop: (ctx) => _buildSkeletonFromChild(child.desktop(ctx)),
         mobile: (ctx) => _buildSkeletonFromChild(child.mobile(ctx)),
@@ -148,18 +129,35 @@ class _LoadingTileState extends State<LoadingTile>
         child: _buildSkeletonFromChild(child.child),
       );
     } else if (child is Container) {
-      return Container(
-        width: child.constraints?.maxWidth,
-        height: child.constraints?.maxHeight,
-        padding: child.padding,
-        margin: child.margin,
-        constraints: child.constraints,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: _buildSkeletonFromChild(child.child ?? Container()),
-      );
+      // If container has child, recurse. If it's a spacer/block, replace with skeleton (via _createSkeletonFromWidget implicitly if we return it directly, but here we recurse)
+      // Actually, if 'child' is null, we should probably render a skeleton for the container's box.
+      if (child.child != null) {
+        return Container(
+          width: child.constraints?.maxWidth,
+          height: child.constraints?.maxHeight,
+          padding: child.padding,
+          margin: child.margin,
+          constraints: child.constraints,
+          // We don't want the container's background color in skeleton mode, usually
+          decoration: const BoxDecoration(color: Colors.transparent),
+          child: _buildSkeletonFromChild(child.child!),
+        );
+      } else {
+        // Empty container usually acts as spacer or block
+        // Use maxWidth/maxHeight if bounded, else custom default
+        double? w = child.constraints?.maxWidth;
+        double? h = child.constraints?.maxHeight;
+
+        if (w == double.infinity || w == null) w = 100;
+        if (h == double.infinity || h == null) h = 24;
+
+        return AppSkeleton(
+          width: w,
+          height: h,
+          baseColor: widget.baseColor,
+          highlightColor: widget.shimmerColor,
+        );
+      }
     } else if (child is Table) {
       return Table(
         border: const TableBorder(),
@@ -179,102 +177,44 @@ class _LoadingTileState extends State<LoadingTile>
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = widget.baseColor ??
-        Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.3);
-    final shimmerColor = widget.shimmerColor ??
-        Theme.of(context).colorScheme.primary.withValues(alpha: 0.5);
-
     return widget.isLoading
-        ? AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              return Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      baseColor,
-                      shimmerColor,
-                      baseColor,
-                    ],
-                    stops: [
-                      0.0,
-                      _animation.value,
-                      1.0,
-                    ],
-                  ),
-                ),
-                child: widget.child != null
-                    ? _buildSkeletonFromChild(widget.child!)
-                    : _buildDefaultSkeleton(),
-              );
-            },
-          )
+        ? (widget.child != null
+            ? _buildSkeletonFromChild(widget.child!)
+            : _buildDefaultSkeleton())
         : widget.child ?? const SizedBox.shrink();
   }
 
   Widget _buildDefaultSkeleton() {
+    final baseColor = widget.baseColor;
+    final highlightColor = widget.shimmerColor;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
+          AppSkeleton(
             width: double.infinity,
             height: 24,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
+            baseColor: baseColor,
+            highlightColor: highlightColor,
           ),
           AppGap.lg(),
-          Container(
+          AppSkeleton(
             width: 200,
             height: 16,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
+            baseColor: baseColor,
+            highlightColor: highlightColor,
           ),
           AppGap.sm(),
-          Container(
+          AppSkeleton(
             width: 150,
             height: 16,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
+            baseColor: baseColor,
+            highlightColor: highlightColor,
           ),
         ],
       ),
     );
-  }
-}
-
-class FillPainter extends CustomPainter {
-  final Color fillColor;
-  final double fillAmount;
-
-  FillPainter({
-    required this.fillColor,
-    required this.fillAmount,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final fillHeight = size.height * fillAmount;
-    final rect =
-        Rect.fromLTWH(0, size.height - fillHeight, size.width, fillHeight);
-    canvas.clipRect(rect);
-  }
-
-  @override
-  bool shouldRepaint(FillPainter oldDelegate) {
-    return oldDelegate.fillAmount != fillAmount ||
-        oldDelegate.fillColor != fillColor;
   }
 }

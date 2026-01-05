@@ -17,11 +17,29 @@ class ThemeJsonConfig {
   })  : _lightJson = lightJson,
         _darkJson = darkJson;
 
+  /// Public getter for light theme JSON configuration.
+  Map<String, dynamic> get lightJson => _lightJson;
+
+  /// Public getter for dark theme JSON configuration.
+  Map<String, dynamic> get darkJson => _darkJson;
+
   /// Default configuration (Glass style).
-  factory ThemeJsonConfig.defaultConfig() => ThemeJsonConfig._(
-        lightJson: {'style': 'pixel', 'brightness': 'light'},
-        darkJson: {'style': 'pixel', 'brightness': 'dark'},
-      );
+  factory ThemeJsonConfig.defaultConfig() {
+    const defaultVisualEffects =
+        int.fromEnvironment('visualEffects', defaultValue: 0);
+    return ThemeJsonConfig._(
+      lightJson: {
+        'style': 'flat',
+        'visualEffects': defaultVisualEffects,
+        'brightness': 'light'
+      },
+      darkJson: {
+        'style': 'flat',
+        'visualEffects': defaultVisualEffects,
+        'brightness': 'dark'
+      },
+    );
+  }
 
   /// Constructs from a complete JSON object (including light/dark colors).
   ///
@@ -43,10 +61,13 @@ class ThemeJsonConfig {
     final overrides = json['overrides'] as Map<String, dynamic>?;
     final colors = json['colors'] as Map<String, dynamic>?;
 
+    final visualEffects = json['visualEffects'] as int?;
+
     // Compose light theme JSON
     final lightJson = <String, dynamic>{
       'style': style,
       'brightness': 'light',
+      if (visualEffects != null) 'visualEffects': visualEffects,
       if (seedColor != null) 'seedColor': seedColor,
       if (overrides != null) 'overrides': overrides,
       ...?(colors?['light'] as Map<String, dynamic>?),
@@ -56,6 +77,7 @@ class ThemeJsonConfig {
     final darkJson = <String, dynamic>{
       'style': style,
       'brightness': 'dark',
+      if (visualEffects != null) 'visualEffects': visualEffects,
       if (seedColor != null) 'seedColor': seedColor,
       if (overrides != null) 'overrides': overrides,
       ...?(colors?['dark'] as Map<String, dynamic>?),
@@ -95,9 +117,16 @@ class ThemeJsonConfig {
     }
 
     final designTheme = CustomDesignTheme.fromJson(json);
+    // Parse seedColor from JSON or use override or fallback to brandPrimary
+    final seedColorHex = json['seedColor'] as String?;
+    final parsedSeedColor =
+        seedColorHex != null ? _parseColor(seedColorHex) : null;
+    final effectiveSeedColor =
+        overrideSeedColor ?? parsedSeedColor ?? AppPalette.brandPrimary;
+
     return AppTheme.create(
       brightness: Brightness.light,
-      seedColor: overrideSeedColor ?? AppPalette.brandPrimary,
+      seedColor: effectiveSeedColor,
       designThemeBuilder: (_) => designTheme,
     );
   }
@@ -111,17 +140,30 @@ class ThemeJsonConfig {
     }
 
     final designTheme = CustomDesignTheme.fromJson(json);
-    // return AppTheme.create(
-    //   brightness: Brightness.dark,
-    //   seedColor: overrideSeedColor ?? AppPalette.brandPrimary,
-    //   designThemeBuilder: (_) => designTheme,
-    // );
-    // TODO: Temporary workaround for dark mode creation to ensure consistency,
-    // verifying parameter passing.
+    // Parse seedColor from JSON or use override or fallback to brandPrimary
+    final seedColorHex = json['seedColor'] as String?;
+    final parsedSeedColor =
+        seedColorHex != null ? _parseColor(seedColorHex) : null;
+    final effectiveSeedColor =
+        overrideSeedColor ?? parsedSeedColor ?? AppPalette.brandPrimary;
+
     return AppTheme.create(
       brightness: Brightness.dark,
-      seedColor: overrideSeedColor ?? AppPalette.brandPrimary,
+      seedColor: effectiveSeedColor,
       designThemeBuilder: (_) => designTheme,
     );
+  }
+
+  /// Helper to parse color from hex string.
+  static Color? _parseColor(String hex) {
+    try {
+      final cleanHex = hex.replaceAll('#', '');
+      if (cleanHex.length == 6) {
+        return Color(int.parse('FF$cleanHex', radix: 16));
+      } else if (cleanHex.length == 8) {
+        return Color(int.parse(cleanHex, radix: 16));
+      }
+    } catch (_) {}
+    return null;
   }
 }

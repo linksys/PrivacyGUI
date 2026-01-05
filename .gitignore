@@ -81,7 +81,7 @@ plugins/ios_push_notification_plugin/example/pubspec.lock
 plugins/sms_receiver_plugin/example/pubspec.lock
 plugins/universal_link_plugin/example/pubspec.lock
 build/app/outputs/*
-packages
+
 plugins/connecting_wifi_plugin/example/pubspec.lock
 plugins/ios_push_notification_plugin/example/pubspec.lock
 plugins/sms_receiver_plugin/example/pubspec.lock
@@ -97,7 +97,7 @@ test/**/*.mocks.dart
 
 #
 untranslated.txt
-packages
+
 snapshots/*
 reports/*
 lib/l10n/gen/app_localizations_ar.dart

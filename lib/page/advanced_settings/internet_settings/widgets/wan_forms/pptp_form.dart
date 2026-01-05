@@ -92,43 +92,45 @@ class _PptpFormState extends BaseWanFormState<PptpForm> {
   @override
   void didUpdateWidget(PptpForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldIpv4Setting =
-        ref.read(internetSettingsProvider).settings.original.ipv4Setting;
     final newIpv4Setting =
         ref.read(internetSettingsProvider).settings.current.ipv4Setting;
 
+    // Fix: Compare against current controller text to avoid cursor reset
+
     // Update static fields
-    if (oldIpv4Setting.staticIpAddress != newIpv4Setting.staticIpAddress) {
+    if ((newIpv4Setting.staticIpAddress ?? '') != _ipAddressController.text) {
       _ipAddressController.text = newIpv4Setting.staticIpAddress ?? '';
     }
-    if (oldIpv4Setting.networkPrefixLength !=
-        newIpv4Setting.networkPrefixLength) {
-      _subnetController.text = newIpv4Setting.networkPrefixLength != null
-          ? NetworkUtils.prefixLengthToSubnetMask(
-              newIpv4Setting.networkPrefixLength!)
-          : '';
+
+    final newSubnet = newIpv4Setting.networkPrefixLength != null
+        ? NetworkUtils.prefixLengthToSubnetMask(
+            newIpv4Setting.networkPrefixLength!)
+        : '';
+    if (newSubnet != _subnetController.text) {
+      _subnetController.text = newSubnet;
     }
-    if (oldIpv4Setting.staticGateway != newIpv4Setting.staticGateway) {
+
+    if ((newIpv4Setting.staticGateway ?? '') != _gatewayController.text) {
       _gatewayController.text = newIpv4Setting.staticGateway ?? '';
     }
-    if (oldIpv4Setting.staticDns1 != newIpv4Setting.staticDns1) {
+    if ((newIpv4Setting.staticDns1 ?? '') != _dns1Controller.text) {
       _dns1Controller.text = newIpv4Setting.staticDns1 ?? '';
     }
-    if (oldIpv4Setting.staticDns2 != newIpv4Setting.staticDns2) {
+    if ((newIpv4Setting.staticDns2 ?? '') != _dns2Controller.text) {
       _dns2Controller.text = newIpv4Setting.staticDns2 ?? '';
     }
-    if (oldIpv4Setting.staticDns3 != newIpv4Setting.staticDns3) {
+    if ((newIpv4Setting.staticDns3 ?? '') != _dns3Controller.text) {
       _dns3Controller.text = newIpv4Setting.staticDns3 ?? '';
     }
 
     // Update PPTP fields
-    if (oldIpv4Setting.serverIp != newIpv4Setting.serverIp) {
+    if ((newIpv4Setting.serverIp ?? '') != _serverIpController.text) {
       _serverIpController.text = newIpv4Setting.serverIp ?? '';
     }
-    if (oldIpv4Setting.username != newIpv4Setting.username) {
+    if ((newIpv4Setting.username ?? '') != _usernameController.text) {
       _usernameController.text = newIpv4Setting.username ?? '';
     }
-    if (oldIpv4Setting.password != newIpv4Setting.password) {
+    if ((newIpv4Setting.password ?? '') != _passwordController.text) {
       _passwordController.text = newIpv4Setting.password ?? '';
     }
   }

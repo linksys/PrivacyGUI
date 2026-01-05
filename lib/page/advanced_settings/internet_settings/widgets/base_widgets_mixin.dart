@@ -21,7 +21,7 @@ mixin BaseWidgetsMixin {
   }
 
   Widget buildInfoCard(String title, String description) {
-    return AppCard(
+    return AppCard.noBorder(
       padding: EdgeInsets.symmetric(
         vertical: AppSpacing.md,
       ),
@@ -51,6 +51,7 @@ mixin BaseWidgetsMixin {
     TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     bool enable = true,
+    FocusNode? focusNode,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,6 +61,7 @@ mixin BaseWidgetsMixin {
         AppTextField(
           key: key,
           controller: controller,
+          focusNode: focusNode,
           onChanged: onChanged,
           errorText: errorText,
           keyboardType: keyboardType,

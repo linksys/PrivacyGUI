@@ -11,11 +11,13 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/page/instant_topology/widgets/app_mesh_wired_connection.dart';
 
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_topology/helpers/topology_menu_helper.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
+import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -61,7 +63,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
               child: CircularProgressIndicator(),
             ),
           )
-        : UiKitPageView(
+        : UiKitPageView.withSliver(
             title: _isWidget ? null : loc(context).instantTopology,
             hideTopbar: _isWidget,
             backState: _isWidget ? UiKitBackState.none : UiKitBackState.enabled,
@@ -133,58 +135,92 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         action,
         originalNodes,
       ),
-      // Custom badge builder for client counts
-      nodeContentBuilder: (context, meshNode, style, isOffline) {
-        // NOTE: Data Provider Limitation
-        // The `InstantTopologyProvider` currently filters out client nodes.
-        // As requested, we are reverting to standard `clientVisibility` logic.
-        // Since there are no client nodes in the graph, the system count will be 0,
-        // and the system badge will NOT appear.
-
-        final originalNode =
-            _menuHelper.findOriginalNode(originalNodes, meshNode.id);
-
-        // Return simple content without manual badge (System handles badge in Graph View)
-        if (meshNode.image != null) {
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Image(
-              image: meshNode.image!,
-              fit: BoxFit.contain,
-            ),
-          );
-        }
-
-        final iconData = meshNode.iconData ??
-            (originalNode != null
-                ? _getIconForNode(originalNode.data)
-                : Icons.devices);
-
-        return AppIcon.font(
-          iconData,
-          size: 24,
-          color: isOffline
-              ? Theme.of(context).colorScheme.outline
-              : Theme.of(context).colorScheme.onPrimary,
-        );
-      },
-
+      // Tree View Configuration (List Mode)
       treeConfig: TopologyTreeConfiguration(
-        preferAnimationNode: false,
+        titleBuilder: (meshNode) => meshNode.name,
+        subtitleBuilder: (meshNode) {
+          // Don't show device count for Internet node
+          if (meshNode.type == MeshNodeType.internet) {
+            return meshNode.extra ?? '';
+          }
+
+          final model = meshNode.extra ?? '';
+          final deviceCount = meshNode.metadata?['connectedDeviceCount'] ?? 0;
+          final deviceLabel =
+              deviceCount <= 1 ? loc(context).device : loc(context).devices;
+
+          if (model.isEmpty) {
+            return '$deviceCount $deviceLabel';
+          }
+          return '$model • $deviceCount $deviceLabel';
+        },
+        preferAnimationNode: true,
         showType: true,
         showStatusText: true,
         showStatusIndicator: true,
-        titleBuilder: (meshNode) => meshNode.name,
-        subtitleBuilder: (meshNode) {
-          final originalNode =
-              _menuHelper.findOriginalNode(originalNodes, meshNode.id);
-          return originalNode?.data.model ?? '';
-        },
       ),
+      // Graph View Configuration (Concentric/Force Mode)
+      nodeContentBuilder: (context, meshNode, style, isOffline) {
+        final deviceCount = meshNode.metadata?['connectedDeviceCount'] ?? 0;
+
+        Widget content;
+        if (meshNode.image != null) {
+          content = Image(
+            image: meshNode.image!,
+            fit: BoxFit.contain,
+          );
+        } else {
+          content = Icon(
+            meshNode.iconData ?? Icons.router,
+            color: style.iconColor,
+            size: style.size * 0.5,
+          );
+        }
+
+        // Wrap content in padding to respect node borders/glow
+        final paddedContent = Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: content,
+        );
+
+        if (deviceCount > 0) {
+          return Stack(
+            clipBehavior: Clip.none,
+            fit: StackFit.expand,
+            children: [
+              paddedContent,
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    '$deviceCount',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return paddedContent;
+      },
       enableAnimation: true,
       clientVisibility: ClientVisibility.onHover,
-      // Use unified registry: RippleNode for Graph View, Pulse/Liquid for Tree View
-      nodeRendererRegistry: NodeRendererRegistry.unified,
       // Disable interaction for Internet node
       nodeTapFilter: (node) => !node.isInternet,
       // Detail panel configuration
@@ -451,15 +487,6 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
     });
   }
 
-  /// Get appropriate icon for topology node
-  IconData _getIconForNode(TopologyModel topology) {
-    if (topology.isRouter) {
-      return topology.isMaster ? Icons.router : Icons.wifi_tethering;
-    }
-    // Simple fallback
-    return Icons.devices;
-  }
-
   _doBlinkNodeLed(WidgetRef ref, String deviceId) {
     ref.read(instantTopologyProvider.notifier).toggleBlinkNode(deviceId);
   }
@@ -473,13 +500,87 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   }
 
   _doInstantPairWired(WidgetRef ref) {
-    // Implementation needed - this is complex dialog logic
-    // For now, use the simpler approach
-    context.pushNamed(RouteNamed.addNodes).then((result) {
-      if (result is bool && result) {
-        _showMoveChildNodesModal();
-      }
-    });
+    showSimpleAppDialog(
+      context,
+      title: loc(context).instantPair,
+      dismissible: false,
+      content: Consumer(builder: (context, ref, child) {
+        final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
+        // Start onboarding once dialog is built
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            addWiredNodesNotifier.startAutoOnboarding(context);
+          }
+        });
+
+        final addWiredNodesState = ref.watch(addWiredNodesProvider);
+        final isCompleted = addWiredNodesState.isLoading == false &&
+            addWiredNodesState.onboardingProceed == true;
+        final anyOnboarded = addWiredNodesState.anyOnboarded == true;
+
+        final message = isCompleted
+            ? anyOnboarded
+                ? loc(context).wiredPairComplete
+                : loc(context).wiredPairCompleteNotFound
+            : loc(context).pairingWiredChildNodeDesc;
+
+        final theme = Theme.of(context).extension<AppDesignTheme>();
+        final colors = theme?.colorScheme;
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppGap.md(),
+            SizedBox(
+              width: 300,
+              height: 200,
+              child: Stack(children: [
+                AppMeshWiredConnection(animate: !isCompleted),
+                if (isCompleted)
+                  Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 2.0),
+                        child: AppIcon.font(
+                          anyOnboarded
+                              ? Icons.check_circle_outline
+                              : Icons.warning_rounded,
+                          size: 48,
+                          color: anyOnboarded
+                              ? colors?.semanticSuccess
+                              : colors?.semanticWarning,
+                        ),
+                      )),
+              ]),
+            ),
+            AppGap.md(),
+            SizedBox(
+              width: kDefaultDialogWidth,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.bodyMedium(message),
+                  AppGap.xs(),
+                  AppText.bodyMedium(isCompleted && anyOnboarded
+                      ? addWiredNodesState.loadingMessage ?? ''
+                      : ''),
+                ],
+              ),
+            ),
+          ],
+        );
+      }),
+      actions: [
+        AppButton(
+          label: loc(context).donePairing,
+          variant: SurfaceVariant.highlight,
+          onTap: () {
+            ref.read(addWiredNodesProvider.notifier).forceStopAutoOnboarding();
+            context.pop();
+          },
+        ),
+      ],
+    );
   }
 
   _showMoveChildNodesModal() {

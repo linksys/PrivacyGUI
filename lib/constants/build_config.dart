@@ -51,6 +51,34 @@ class BuildConfig {
       int.fromEnvironment('refresh_time', defaultValue: 60);
   static const copyRightYear = int.fromEnvironment('year', defaultValue: 2025);
 
+  /// Advanced Visual Effects Switch (Bitmask)
+  ///
+  /// Controls advanced rendering effects for UI components (e.g., AppSurface).
+  /// These flags are aligned with the definitions in [AppThemeConfig].
+  ///
+  /// Bit Definitions:
+  /// - Bit 0 (1): Directional Shadow (Depth)
+  /// - Bit 1 (2): Gradient Border (Detail)
+  /// - Bit 2 (4): Background Blur (Filter)
+  /// - Bit 3 (8): Noise Texture (Texture)
+  /// - Bit 4 (16): Dynamic Shimmer (Motion)
+  ///
+  /// Examples:
+  /// - `0`  = All off (Best performance)
+  /// - `7`  = First three on (1+2+4) -> Shadow + Border + Blur
+  /// - `31` = All on (Max Quality)
+  ///
+  /// Enable at build time: `flutter run --dart-define=liquid_glass=31`
+  static const int liquidGlassEffects =
+      int.fromEnvironment('liquid_glass', defaultValue: 0);
+
+  // Visual Effect Convenience Getters
+  static bool get enableShadows => (liquidGlassEffects & 1) != 0;
+  static bool get enableGradientBorder => (liquidGlassEffects & 2) != 0;
+  static bool get enableBlur => (liquidGlassEffects & 4) != 0;
+  static bool get enableNoiseTexture => (liquidGlassEffects & 8) != 0;
+  static bool get enableShimmer => (liquidGlassEffects & 16) != 0;
+
   @pragma('vm:entry-point')
   static load() async {
     logger.d('load build configuration');

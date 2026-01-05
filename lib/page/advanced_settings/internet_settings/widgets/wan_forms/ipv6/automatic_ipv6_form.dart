@@ -58,25 +58,28 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
   @override
   void didUpdateWidget(AutomaticIPv6Form oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldIpv6Setting =
-        ref.read(internetSettingsProvider).settings.original.ipv6Setting;
     final newIpv6Setting =
         ref.read(internetSettingsProvider).settings.current.ipv6Setting;
 
-    if (oldIpv6Setting.ipv6Prefix != newIpv6Setting.ipv6Prefix) {
+    // Fix: Compare against current controller text to avoid cursor reset
+    if ((newIpv6Setting.ipv6Prefix ?? '') != _ipv6PrefixController.text) {
       _ipv6PrefixController.text = newIpv6Setting.ipv6Prefix ?? '';
     }
-    if (oldIpv6Setting.ipv6PrefixLength != newIpv6Setting.ipv6PrefixLength) {
-      _ipv6PrefixLengthController.text =
-          newIpv6Setting.ipv6PrefixLength?.toString() ?? '';
+
+    final newPrefixLenStr = newIpv6Setting.ipv6PrefixLength?.toString() ?? '';
+    if (newPrefixLenStr != _ipv6PrefixLengthController.text) {
+      _ipv6PrefixLengthController.text = newPrefixLenStr;
     }
-    if (oldIpv6Setting.ipv6BorderRelay != newIpv6Setting.ipv6BorderRelay) {
+
+    if ((newIpv6Setting.ipv6BorderRelay ?? '') !=
+        _ipv6BorderRelayController.text) {
       _ipv6BorderRelayController.text = newIpv6Setting.ipv6BorderRelay ?? '';
     }
-    if (oldIpv6Setting.ipv6BorderRelayPrefixLength !=
-        newIpv6Setting.ipv6BorderRelayPrefixLength) {
-      _ipv6BorderRelayPrefixLengthController.text =
-          newIpv6Setting.ipv6BorderRelayPrefixLength?.toString() ?? '';
+
+    final newRelayLenStr =
+        newIpv6Setting.ipv6BorderRelayPrefixLength?.toString() ?? '';
+    if (newRelayLenStr != _ipv6BorderRelayPrefixLengthController.text) {
+      _ipv6BorderRelayPrefixLengthController.text = newRelayLenStr;
     }
   }
 
@@ -111,7 +114,7 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
     return Column(
       children: [
         AppGap.md(),
-        AppCard(
+        AppCard.noBorder(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Row(
             children: [

@@ -195,9 +195,9 @@ class _LocalResetRouterPasswordViewState
       };
     }).whenComplete(() {
       if (!mounted) return;
-      showAdaptiveDialog(
+      showAppDialog(
         context: context,
-        builder: (BuildContext context) => AlertDialog.adaptive(
+        builder: (context) => AppDialog(
           key: const ValueKey('resetSavedDialog'),
           title: AppText.titleLarge(dialogTitle),
           content: AppText.bodyMedium(dialogContent),

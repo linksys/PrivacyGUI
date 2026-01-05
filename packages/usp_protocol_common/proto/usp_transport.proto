@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package usp_transport;
+
+
+// --- DTOs for gRPC Payload ---
+
+// This is the request sent by the Client to the Router Gateway/Proxy
+message UspTransportRequest {
+    // The serialized USP Record binary data
+    bytes usp_record_payload = 1; 
+}
+
+// This is the response returned by the Proxy to the Client
+message UspTransportResponse {
+    // The USP Record binary data returned after Agent processing
+    bytes usp_record_response = 1; 
+}
+
+// --- gRPC Service Definition ---
+
+// Defines the gRPC service called by the Client App
+service UspTransportService {
+    // RPC method: Used to send a USP message and await a synchronous response.
+    // The Proxy forwards this message to the internal MQTT broker.
+    rpc SendUspMessage (UspTransportRequest) returns (UspTransportResponse);
+}

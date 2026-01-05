@@ -38,6 +38,8 @@ class _Ipv6PortServiceListViewState
   // Track which rule is being edited to avoid reinitializing controllers
   IPv6PortServiceRuleUI? _editingRule;
   bool _isInitializing = false;
+  bool _isAddInitialized = false;
+  String _selectedProtocol = 'Both';
   StateSetter? _sheetStateSetter;
 
   @override
@@ -119,8 +121,24 @@ class _Ipv6PortServiceListViewState
         editBuilder: (_, rule, setSheetState) {
           // Store the sheet's StateSetter for validation updates
           _sheetStateSetter = setSheetState;
+
+          final state = ref.read(ipv6PortServiceListProvider);
+          final isNewRule = !state.current.rules.contains(rule);
+          bool shouldInitialize = false;
+
+          if (isNewRule) {
+            if (!_isAddInitialized) {
+              shouldInitialize = true;
+              _isAddInitialized = true;
+            }
+          } else {
+            if (_editingRule != rule) {
+              shouldInitialize = true;
+            }
+          }
+
           // Only initialize when starting to edit a new rule
-          if (_editingRule != rule) {
+          if (shouldInitialize) {
             _isInitializing = true;
             try {
               _editingRule = rule;
@@ -130,6 +148,8 @@ class _Ipv6PortServiceListViewState
               _lastPortTextController.text =
                   '${rule.portRanges.firstOrNull?.lastPort ?? 0}';
               _ipAddressTextController.text = rule.ipv6Address;
+              _selectedProtocol =
+                  rule.portRanges.firstOrNull?.protocol ?? 'Both';
               _nameError = null;
               _portRangeError = null;
             } finally {
@@ -153,8 +173,6 @@ class _Ipv6PortServiceListViewState
               context, rule.portRanges.firstOrNull?.protocol ?? 'Both'),
         ),
         editBuilder: (_, rule, setSheetState) {
-          final currentProtocol =
-              rule.portRanges.firstOrNull?.protocol ?? 'Both';
           // Map protocol values to display names
           final protocolDisplayMap = {
             'TCP': getProtocolTitle(context, 'TCP'),
@@ -164,7 +182,7 @@ class _Ipv6PortServiceListViewState
           return AppDropdown<String>(
             key: const Key('protocol'),
             items: protocolDisplayMap.values.toList(),
-            value: protocolDisplayMap[currentProtocol],
+            value: protocolDisplayMap[_selectedProtocol],
             hint: loc(context).protocol,
             onChanged: (displayValue) {
               if (displayValue != null) {
@@ -173,7 +191,9 @@ class _Ipv6PortServiceListViewState
                     .firstWhere((e) => e.value == displayValue,
                         orElse: () => const MapEntry('Both', 'Both'))
                     .key;
+                _selectedProtocol = protocolKey;
                 _updateProtocol(protocolKey);
+                setSheetState(() {});
               }
             },
           );
@@ -351,6 +371,8 @@ class _Ipv6PortServiceListViewState
   }
 
   void _clearControllers() {
+    _isAddInitialized = false;
+    _selectedProtocol = 'Both';
     _applicationTextController.clear();
     _firstPortTextController.clear();
     _lastPortTextController.clear();

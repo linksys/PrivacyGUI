@@ -51,11 +51,7 @@ void main() {
       final label = successButtons[i];
       final buttonFinder = find.text(label);
 
-      await tester.scrollUntilVisible(
-        buttonFinder,
-        100,
-        scrollable: find.byType(Scrollable).last,
-      );
+      await tester.ensureVisible(buttonFinder);
       await tester.tap(buttonFinder);
       await tester.pump(); // Start animation
       await tester
@@ -119,11 +115,7 @@ void main() {
       final buttonIndex = startIndex + i;
       final buttonFinder = find.byType(AppButton).at(buttonIndex);
 
-      await tester.scrollUntilVisible(
-        buttonFinder,
-        100,
-        scrollable: find.byType(Scrollable).last,
-      );
+      await tester.ensureVisible(buttonFinder);
 
       await tester.tap(buttonFinder);
       await tester.pump();

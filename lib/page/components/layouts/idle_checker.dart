@@ -50,20 +50,15 @@ class _IdleCheckerState extends State<IdleChecker> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onHover: (event) {
-        if (_debounce?.isActive ?? false) _debounce?.cancel();
-        _debounce = Timer(const Duration(milliseconds: 500), () {
-          handleUserInteraction();
-        });
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          handleUserInteraction();
-        },
-        onPanDown: (details) {
-          handleUserInteraction();
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => handleUserInteraction(),
+      child: MouseRegion(
+        onHover: (event) {
+          if (_debounce?.isActive ?? false) _debounce?.cancel();
+          _debounce = Timer(const Duration(milliseconds: 500), () {
+            handleUserInteraction();
+          });
         },
         child: widget.child,
       ),

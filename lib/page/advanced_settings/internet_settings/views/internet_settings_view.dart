@@ -116,8 +116,6 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
     ];
     final isDirty = ref.read(internetSettingsProvider.notifier).isDirty();
     return UiKitPageView.withSliver(
-      padding: EdgeInsets.zero,
-      useMainPadding: false,
       title: loc(context).internetSettings.capitalizeWords(),
       bottomBar: isEditing
           ? UiKitBottomBarConfig(

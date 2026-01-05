@@ -70,31 +70,32 @@ class _StaticIpFormState extends BaseWanFormState<StaticIpForm> {
   @override
   void didUpdateWidget(StaticIpForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldIpv4Setting =
-        ref.read(internetSettingsProvider).settings.original.ipv4Setting;
     final newIpv4Setting =
         ref.read(internetSettingsProvider).settings.current.ipv4Setting;
 
-    if (oldIpv4Setting.staticIpAddress != newIpv4Setting.staticIpAddress) {
+    // Fix: Compare against current controller text to avoid cursor reset
+    if ((newIpv4Setting.staticIpAddress ?? '') != _ipAddressController.text) {
       _ipAddressController.text = newIpv4Setting.staticIpAddress ?? '';
     }
-    if (oldIpv4Setting.networkPrefixLength !=
-        newIpv4Setting.networkPrefixLength) {
-      _subnetController.text = newIpv4Setting.networkPrefixLength != null
-          ? NetworkUtils.prefixLengthToSubnetMask(
-              newIpv4Setting.networkPrefixLength!)
-          : '';
+
+    final newSubnet = newIpv4Setting.networkPrefixLength != null
+        ? NetworkUtils.prefixLengthToSubnetMask(
+            newIpv4Setting.networkPrefixLength!)
+        : '';
+    if (newSubnet != _subnetController.text) {
+      _subnetController.text = newSubnet;
     }
-    if (oldIpv4Setting.staticGateway != newIpv4Setting.staticGateway) {
+
+    if ((newIpv4Setting.staticGateway ?? '') != _gatewayController.text) {
       _gatewayController.text = newIpv4Setting.staticGateway ?? '';
     }
-    if (oldIpv4Setting.staticDns1 != newIpv4Setting.staticDns1) {
+    if ((newIpv4Setting.staticDns1 ?? '') != _dns1Controller.text) {
       _dns1Controller.text = newIpv4Setting.staticDns1 ?? '';
     }
-    if (oldIpv4Setting.staticDns2 != newIpv4Setting.staticDns2) {
+    if ((newIpv4Setting.staticDns2 ?? '') != _dns2Controller.text) {
       _dns2Controller.text = newIpv4Setting.staticDns2 ?? '';
     }
-    if (oldIpv4Setting.staticDns3 != newIpv4Setting.staticDns3) {
+    if ((newIpv4Setting.staticDns3 ?? '') != _dns3Controller.text) {
       _dns3Controller.text = newIpv4Setting.staticDns3 ?? '';
     }
   }

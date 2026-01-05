@@ -341,11 +341,9 @@ class _VPNSettingsPageState extends ConsumerState<VPNSettingsPage>
       title: loc(context).vpnUserCredentialsSection,
       isEnabled: state.settings.isEditingCredentials,
       trailing: AppIconButton(
-        icon: AppIcon.font(
-            state.settings.isEditingCredentials
-                ? AppFontIcons.close
-                : AppFontIcons.edit,
-            color: Theme.of(context).colorScheme.primary),
+        icon: AppIcon.font(state.settings.isEditingCredentials
+            ? AppFontIcons.close
+            : AppFontIcons.edit),
         onTap: () {
           setState(() {
             if (state.settings.isEditingCredentials) {

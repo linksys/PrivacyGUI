@@ -42,6 +42,7 @@ class _PortRangeTriggeringContentViewState
   // Editing state
   PortRangeTriggeringRuleUIModel? _editingRule;
   bool _isInitializing = false;
+  bool _isAddInitialized = false;
   StateSetter? _sheetStateSetter;
 
   // Validation errors
@@ -124,7 +125,23 @@ class _PortRangeTriggeringContentViewState
         cellBuilder: (_, rule) => AppText.bodyMedium(rule.description),
         editBuilder: (_, rule, setSheetState) {
           _sheetStateSetter = setSheetState;
-          if (_editingRule != rule) {
+
+          final state = ref.read(portRangeTriggeringListProvider);
+          final isNewRule = !state.current.rules.contains(rule);
+          bool shouldInitialize = false;
+
+          if (isNewRule) {
+            if (!_isAddInitialized) {
+              shouldInitialize = true;
+              _isAddInitialized = true;
+            }
+          } else {
+            if (_editingRule != rule) {
+              shouldInitialize = true;
+            }
+          }
+
+          if (shouldInitialize) {
             _isInitializing = true;
             try {
               _editingRule = rule;
@@ -317,6 +334,7 @@ class _PortRangeTriggeringContentViewState
   }
 
   void _clearControllers() {
+    _isAddInitialized = false;
     _applicationTextController.clear();
     _firstTriggerPortController.clear();
     _lastTriggerPortController.clear();

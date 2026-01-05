@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
+import 'package:privacy_gui/page/support/widgets/faq_agent_fab.dart';
 
 class FaqListView extends ArgumentsConsumerStatefulView {
   const FaqListView({super.key});
@@ -34,64 +35,76 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
 
   @override
   Widget build(BuildContext context) {
-    return UiKitPageView.withSliver(
-      title: loc(context).faqs,
-      backState: UiKitBackState.none,
-      menuPosition: MenuPosition.right,
-      menuView: PageMenuView(
-          icon: AppFontIcons.menu,
-          label: loc(context).faqLookingFor,
-          content: AppCard(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppText.titleMedium(loc(context).faqLookingFor),
-                AppGap.sm(),
-                AppButton.text(
-                  label: loc(context).faqVisitLinksysSupport,
-                  onTap: () {
-                    gotoOfficialWebUrl(FaqItem.faqVisitLinksysSupport.url,
-                        locale: ref.read(appSettingsProvider).locale);
-                  },
+    return Stack(
+      children: [
+        // Main content
+        UiKitPageView.withSliver(
+          title: loc(context).faqs,
+          backState: UiKitBackState.none,
+          menuPosition: MenuPosition.right,
+          menuView: PageMenuView(
+              icon: AppFontIcons.menu,
+              label: loc(context).faqLookingFor,
+              content: AppCard(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppText.titleMedium(loc(context).faqLookingFor),
+                    AppGap.sm(),
+                    AppButton.text(
+                      label: loc(context).faqVisitLinksysSupport,
+                      onTap: () {
+                        gotoOfficialWebUrl(FaqItem.faqVisitLinksysSupport.url,
+                            locale: ref.read(appSettingsProvider).locale);
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          )),
-      pageContentType: UiKitPageContentType.flexible,
-      child: (context, constraints) {
-        return SizedBox(
-          width: context.colWidth(9),
-          child: ListView(
-            primary: true,
-            shrinkWrap: true,
-            children: [
-              ...categories.map((category) => Column(
-                    children: [
-                      _buildExpansionCard(
-                        context,
-                        title: category.displayString(context),
-                        children: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: category.items
-                              .map((item) => AppButton.text(
-                                    label: item.displayString(context),
-                                    onTap: () {
-                                      gotoOfficialWebUrl(item.url,
-                                          locale: ref
-                                              .read(appSettingsProvider)
-                                              .locale);
-                                    },
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                      AppGap.sm(),
-                    ],
-                  )),
-            ],
-          ),
-        );
-      },
+              )),
+          pageContentType: UiKitPageContentType.flexible,
+          child: (context, constraints) {
+            return SizedBox(
+              width: context.colWidth(9),
+              child: ListView(
+                primary: true,
+                shrinkWrap: true,
+                children: [
+                  ...categories.map((category) => Column(
+                        children: [
+                          _buildExpansionCard(
+                            context,
+                            title: category.displayString(context),
+                            children: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: category.items
+                                  .map((item) => AppButton.text(
+                                        label: item.displayString(context),
+                                        onTap: () {
+                                          gotoOfficialWebUrl(item.url,
+                                              locale: ref
+                                                  .read(appSettingsProvider)
+                                                  .locale);
+                                        },
+                                      ))
+                                  .toList(),
+                            ),
+                          ),
+                          AppGap.sm(),
+                        ],
+                      )),
+                ],
+              ),
+            );
+          },
+        ),
+
+        // FAQ Agent floating button
+        const Positioned(
+          bottom: 24,
+          right: 24,
+          child: FAQAgentFab(),
+        ),
+      ],
     );
   }
 

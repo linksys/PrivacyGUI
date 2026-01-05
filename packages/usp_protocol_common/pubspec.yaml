@@ -1,0 +1,23 @@
+name: usp_protocol_common
+description: "A pure Dart library for working with the USP (User Services Platform / TR-369) protocol."
+version: 1.0.0
+homepage:
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  protobuf: ^5.1.0
+  equatable: ^2.0.5
+  json_annotation: ^4.8.2
+  fixnum: ^1.1.0
+  collection: ^1.18.0
+  grpc: ^5.0.0
+
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^3.0.0
+  build_runner: ^2.4.0
+  json_serializable: ^6.9.5
+  coverage: ^1.7.2

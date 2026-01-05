@@ -7,12 +7,22 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-final mockLightThemeData = ThemeJsonConfig.defaultConfig()
-    .createLightTheme()
-    .copyWith(textTheme: mockLinksysDarkTextTheme);
-final mockDarkThemeData = ThemeJsonConfig.defaultConfig()
-    .createDarkTheme()
-    .copyWith(textTheme: mockLinksysLightTextTheme);
+///
+/// Use this theme to generate snapshots with localizations
+/// To avoid animation in snapshots, set visualEffects to 0
+/// Flat has no animation and global effects
+///
+final mockLightThemeData = ThemeJsonConfig.fromJson({
+  'style': 'flat',
+  'visualEffects': 0,
+  'brightness': 'light',
+}).createLightTheme();
+
+final mockDarkThemeData = ThemeJsonConfig.fromJson({
+  'style': 'flat',
+  'visualEffects': 0,
+  'brightness': 'dark',
+}).createDarkTheme();
 
 ///
 /// This is used to help to generate snapshots with localizations

@@ -238,8 +238,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                 },
               ),
               mobile: (ctx) => AppIconButton(
-                icon: AppIcon.font(AppFontIcons.filter,
-                    color: Theme.of(context).colorScheme.primary),
+                icon: AppIcon.font(AppFontIcons.filter),
                 onTap: () {
                   showModalBottomSheet(
                     context: context,

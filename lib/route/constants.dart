@@ -20,6 +20,7 @@ class RoutePath {
   static const dashboardHome = '/dashboardHome';
   static const dashboardMenu = '/dashboardMenu';
   static const dashboardSupport = '/dashboardSupport';
+  static const dashboardAiAssistant = '/dashboardAiAssistant';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -153,6 +154,7 @@ class RouteNamed {
   static const dashboardMenu = 'dashboardMenu';
   static const dashboardHome = 'dashboardHome';
   static const dashboardSupport = 'dashboardSupport';
+  static const dashboardAiAssistant = 'dashboardAiAssistant';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';

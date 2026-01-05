@@ -45,6 +45,9 @@ jobs:
       - name: 🔄 Configure Git to use SSH
         run: git config --global url."git@github.com:".insteadOf "https://github.com/"
 
+      - name: 📋 Setup Environment File
+        run: cp env.template assets/.env
+
       - name: Install Dependencies
         run: flutter pub get
 
@@ -96,6 +99,9 @@ jobs:
       # Force git to use SSH instead of HTTPS
       - name: 🔄 Configure Git to use SSH
         run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+      - name: 📋 Setup Environment File
+        run: cp env.template assets/.env
 
       - name: Install Dependencies
         run: flutter pub get

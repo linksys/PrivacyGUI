@@ -5,7 +5,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-const double kDefaultToolbarHeight = 80;
+const double kDefaultToolbarHeight = kToolbarHeight; // 56
 const double kDefaultBottomHeight = 80;
 
 /// Custom AppBar styles
@@ -372,7 +372,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       // Wrap in SliverToBoxAdapter for sliver compatibility
       headerWidget = SliverToBoxAdapter(
         child: SizedBox(
-          height: 80, // Fixed height to match PreferredSize
+          height: kDefaultToolbarHeight, // Use constant for consistency
           child: topBarContent,
         ),
       );
@@ -461,7 +461,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
 
     // Create default TopBar for PrivacyGUI integration
     return const PreferredSize(
-      preferredSize: Size.fromHeight(80),
+      preferredSize: Size.fromHeight(kDefaultToolbarHeight),
       child: TopBar(),
     );
   }

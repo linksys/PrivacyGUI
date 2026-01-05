@@ -102,7 +102,6 @@ class Ipv4ConnectionView extends StatelessWidget {
           key: const Key('ipv4EditButton'),
           icon: Icon(
             isEditing ? AppFontIcons.close : AppFontIcons.edit,
-            color: isEditing ? null : Theme.of(context).colorScheme.primary,
           ),
           onTap: isRemote ? null : onEditToggle,
         ));

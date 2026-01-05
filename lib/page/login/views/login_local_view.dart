@@ -219,7 +219,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                 SizedBox(
                   child: AppPasswordInput(
                     controller: _passwordController,
-                    hint: loc(context).routerPassword,
+                    hintText: loc(context).routerPassword,
                     onChanged: (value) {
                       setState(() {
                         _shouldEnableLoginButton();
@@ -235,7 +235,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                   ),
                 ),
                 if (_passwordHint != null && _passwordHint?.isNotEmpty == true)
-                  AppExpansionPanel.single(
+                  AppExpansionPanel.compactSingle(
                     headerTitle: _showPassword
                         ? loc(context).hideHint
                         : loc(context).showHint,

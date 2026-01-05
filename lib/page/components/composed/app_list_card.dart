@@ -82,7 +82,6 @@ class AppListCard extends StatelessWidget {
     VoidCallback? onTap,
     EdgeInsets? padding,
     Color? color,
-    Color? borderColor,
     EdgeInsets? margin,
     bool selectableDescription = false,
   }) {
@@ -98,8 +97,8 @@ class AppListCard extends StatelessWidget {
             vertical: AppSpacing.lg,
             horizontal: AppSpacing.xxl,
           ),
-      color: color,
-      borderColor: borderColor,
+      color: color ?? Colors.transparent,
+      borderColor: Colors.transparent,
       margin: margin,
       selectableDescription: selectableDescription,
     );
@@ -119,10 +118,27 @@ class AppListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).extension<AppDesignTheme>();
+
+    // Determine if border should be hidden
+    final hideBorder = !showBorder || borderColor == Colors.transparent;
+
+    // Create style override if needed
+    SurfaceStyle? effectiveStyle;
+    if (theme != null && (hideBorder || color != null || borderColor != null)) {
+      effectiveStyle = theme.surfaceBase.copyWith(
+        borderWidth: hideBorder ? 0 : null,
+        borderColor: (!hideBorder && borderColor != null) ? borderColor : null,
+        backgroundColor: color,
+        shadows: const [],
+      );
+    }
+
     return Container(
       margin: margin,
       child: AppCard(
         onTap: onTap,
+        style: effectiveStyle,
         padding: padding ??
             EdgeInsets.symmetric(
               vertical: AppSpacing.md,
