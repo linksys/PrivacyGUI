@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/jnap/models/wan_external_ui_model.dart';
+import 'package:privacy_gui/page/instant_verify/models/instant_verify_ui_models.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_state.dart';
 
 void main() {

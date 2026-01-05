@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/wan_external.dart';
+
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_state.dart';
@@ -31,7 +31,7 @@ void main() {
 
   ProviderContainer createContainer({
     Map<JNAPAction, JNAPResult>? pollingData,
-    WanExternal? wanExternal,
+    WanExternalUIModel? wanExternal,
   }) {
     return ProviderContainer(
       overrides: [
@@ -54,7 +54,6 @@ void main() {
             .thenReturn(RadioInfoUIModel.initial());
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.transformWanExternal(any())).thenReturn(null);
 
         container = createContainer();
 
@@ -87,7 +86,6 @@ void main() {
             .thenReturn(expectedRadioInfo);
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.transformWanExternal(any())).thenReturn(null);
 
         container = createContainer();
 
@@ -99,11 +97,8 @@ void main() {
         verify(() => mockService.parseRadioInfo(any())).called(1);
       });
 
-      test('transforms wanExternal from provider', () {
+      test('uses wanExternal directly from provider', () {
         const expectedWanExternal = WanExternalUIModel(
-          publicWanIPv4: '203.0.113.1',
-        );
-        const sourceWanExternal = WanExternal(
           publicWanIPv4: '203.0.113.1',
         );
 
@@ -112,10 +107,8 @@ void main() {
             .thenReturn(RadioInfoUIModel.initial());
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.transformWanExternal(sourceWanExternal))
-            .thenReturn(expectedWanExternal);
 
-        container = createContainer(wanExternal: sourceWanExternal);
+        container = createContainer(wanExternal: expectedWanExternal);
 
         final state = container.read(instantVerifyProvider);
 
@@ -130,7 +123,6 @@ void main() {
             .thenReturn(RadioInfoUIModel.initial());
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.transformWanExternal(any())).thenReturn(null);
         when(() => mockService.startPing(
               host: any(named: 'host'),
               pingCount: any(named: 'pingCount'),
@@ -155,7 +147,6 @@ void main() {
             .thenReturn(RadioInfoUIModel.initial());
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.transformWanExternal(any())).thenReturn(null);
         when(() => mockService.stopPing()).thenAnswer((_) async {});
 
         container = createContainer();
@@ -176,7 +167,6 @@ void main() {
             .thenReturn(RadioInfoUIModel.initial());
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.transformWanExternal(any())).thenReturn(null);
         when(() => mockService.getPingStatus(
                 onCompleted: any(named: 'onCompleted')))
             .thenAnswer((_) => Stream<PingStatusUIModel>.fromIterable([
@@ -201,7 +191,6 @@ void main() {
             .thenReturn(RadioInfoUIModel.initial());
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.transformWanExternal(any())).thenReturn(null);
         when(() => mockService.startTraceroute(host: '8.8.8.8'))
             .thenAnswer((_) async {});
 
@@ -224,7 +213,6 @@ void main() {
             .thenReturn(RadioInfoUIModel.initial());
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.transformWanExternal(any())).thenReturn(null);
         when(() => mockService.stopTraceroute()).thenAnswer((_) async => null);
 
         container = createContainer();
@@ -245,7 +233,6 @@ void main() {
             .thenReturn(RadioInfoUIModel.initial());
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.transformWanExternal(any())).thenReturn(null);
         when(() => mockService.getTracerouteStatus(
                 onCompleted: any(named: 'onCompleted')))
             .thenAnswer((_) => Stream<TracerouteStatusUIModel>.fromIterable([
@@ -288,7 +275,7 @@ class MockPollingNotifier extends AsyncNotifier<CoreTransactionData>
 
 class MockWanExternalNotifier extends Notifier<WANExternalState>
     implements WANExternalNotifier {
-  final WanExternal? _wanExternal;
+  final WanExternalUIModel? _wanExternal;
 
   MockWanExternalNotifier(this._wanExternal);
 

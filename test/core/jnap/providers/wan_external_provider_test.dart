@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/models/wan_external_ui_model.dart';
+import 'package:privacy_gui/page/instant_verify/models/instant_verify_ui_models.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/wan_external_state.dart';
 import 'package:privacy_gui/core/jnap/services/wan_external_service.dart';

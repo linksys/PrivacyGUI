@@ -3,7 +3,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/wan_external.dart';
+
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_verify/models/instant_verify_ui_models.dart';
@@ -173,27 +173,6 @@ void main() {
         expect(result.isGuestNetworkEnabled, isTrue);
         expect(result.radios.length, 1);
         expect(result.radios.first.guestSSID, 'Guest_Network');
-      });
-    });
-
-    group('transformWanExternal', () {
-      test('returns null when input is null', () {
-        final result = service.transformWanExternal(null);
-
-        expect(result, isNull);
-      });
-
-      test('returns WanExternalUIModel when valid WanExternal provided', () {
-        final wanExternal = WanExternal(
-          publicWanIPv4: '203.0.113.1',
-          privateWanIPv4: '192.168.1.100',
-        );
-
-        final result = service.transformWanExternal(wanExternal);
-
-        expect(result, isNotNull);
-        expect(result!.publicWanIPv4, '203.0.113.1');
-        expect(result.privateWanIPv4, '192.168.1.100');
       });
     });
   });

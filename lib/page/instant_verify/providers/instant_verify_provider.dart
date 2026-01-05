@@ -25,13 +25,12 @@ class InstantVerifyNotifier extends Notifier<InstantVerifyState> {
     final wanConnection = service.parseWanConnection(pollingData);
     final radioInfo = service.parseRadioInfo(pollingData);
     final guestRadioSettings = service.parseGuestRadioSettings(pollingData);
-    final wanExternal = service.transformWanExternal(wanExternalData);
 
     return InstantVerifyState(
       wanConnection: wanConnection,
       radioInfo: radioInfo,
       guestRadioSettings: guestRadioSettings,
-      wanExternal: wanExternal,
+      wanExternal: wanExternalData,
     );
   }
 
