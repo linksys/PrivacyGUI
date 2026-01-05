@@ -7,7 +7,6 @@ import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/traceroute_status.dart';
-import 'package:privacy_gui/core/jnap/models/wan_external.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -76,14 +75,6 @@ class InstantVerifyService {
     final guestRadioSettings =
         GuestRadioSettings.fromMap(guestRadioSettingsResult.output);
     return GuestRadioSettingsUIModel.fromJnap(guestRadioSettings);
-  }
-
-  /// Transform WanExternal JNAP model to UI model
-  ///
-  /// Returns: WAN external UI model, null if input is null
-  WanExternalUIModel? transformWanExternal(WanExternal? wanExternal) {
-    if (wanExternal == null) return null;
-    return WanExternalUIModel.fromJnap(wanExternal);
   }
 
   /// Starts a Ping test to the specified host
