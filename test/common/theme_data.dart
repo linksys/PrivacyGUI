@@ -7,7 +7,6 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-
 ///
 /// Use this theme to generate snapshots with localizations
 /// To avoid animation in snapshots, set visualEffects to 0

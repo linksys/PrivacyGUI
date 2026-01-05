@@ -55,5 +55,10 @@ final dashboardRoute = ShellRoute(
         ),
       ],
     ),
+    LinksysRoute(
+      name: RouteNamed.dashboardAiAssistant,
+      path: RoutePath.dashboardAiAssistant,
+      builder: (context, state) => const RouterAssistantView(),
+    ),
   ],
 );

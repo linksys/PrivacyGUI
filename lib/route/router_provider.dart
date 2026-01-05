@@ -66,6 +66,7 @@ import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
+import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 
 part 'route_home.dart';
 part 'route_cloud_login.dart';

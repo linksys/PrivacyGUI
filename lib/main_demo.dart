@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
@@ -34,6 +35,13 @@ void main() async {
 
   // Initialize better actions for JNAP
   initBetterActions();
+
+  // Load environment variables (for AWS credentials)
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint('No .env file found, using defaults');
+  }
 
   // Load demo cache data
   await DemoCacheDataLoader.instance.load();
