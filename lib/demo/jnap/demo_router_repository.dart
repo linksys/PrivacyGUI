@@ -31,7 +31,7 @@ class DemoRouterRepository extends RouterRepository {
     CacheLevel? cacheLevel,
     int timeoutMs = 10000,
     int retries = 1,
-    JNAPSideEffectOverrides? sideEffectOverrides,
+    SideEffectPollConfig? pollConfig,
   }) async {
     // Debug: log when this is called
     debugPrint('🔵 DemoRouterRepository.send: ${action.actionValue}');
@@ -51,7 +51,7 @@ class DemoRouterRepository extends RouterRepository {
     CacheLevel cacheLevel = CacheLevel.localCached,
     int timeoutMs = 10000,
     int retries = 1,
-    JNAPSideEffectOverrides? sideEffectOverrides,
+    SideEffectPollConfig? pollConfig,
   }) async {
     // Debug: log when this is called
     final actionNames =

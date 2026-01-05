@@ -57,7 +57,7 @@ class UspMapperRepository extends RouterRepository {
     CacheLevel? cacheLevel,
     int timeoutMs = 10000,
     int retries = 1,
-    JNAPSideEffectOverrides? sideEffectOverrides,
+    SideEffectPollConfig? pollConfig,
   }) async {
     final actionName = _extractActionName(action.actionValue);
     final baseName = _stripVersionSuffix(actionName);
@@ -141,7 +141,7 @@ class UspMapperRepository extends RouterRepository {
     CacheLevel cacheLevel = CacheLevel.localCached,
     int timeoutMs = 10000,
     int retries = 1,
-    JNAPSideEffectOverrides? sideEffectOverrides,
+    SideEffectPollConfig? pollConfig,
   }) async {
     final actionNames =
         builder.commands.map((e) => e.key.actionValue.split('/').last).toList();
