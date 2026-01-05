@@ -5,14 +5,14 @@ import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
-import 'package:privacy_gui/core/jnap/models/wan_external.dart';
+import 'package:privacy_gui/core/jnap/models/wan_external_ui_model.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 
 class InstantVerifyState extends Equatable {
   final WANConnectionInfo? wanConnection;
   final GetRadioInfo radioInfo;
   final GuestRadioSettings guestRadioSettings;
-  final WanExternal? wanExternal;
+  final WanExternalUIModel? wanExternal;
   final bool isRunning;
 
   const InstantVerifyState({
@@ -27,7 +27,7 @@ class InstantVerifyState extends Equatable {
     WANConnectionInfo? wanConnection,
     GetRadioInfo? radioInfo,
     GuestRadioSettings? guestRadioSettings,
-    WanExternal? wanExternal,
+    WanExternalUIModel? wanExternal,
     bool? isRunning,
   }) {
     return InstantVerifyState(
@@ -59,7 +59,7 @@ class InstantVerifyState extends Equatable {
       guestRadioSettings: GuestRadioSettings.fromMap(map['guestRadioSettings']),
       wanExternal: map['wanExternal'] == null
           ? null
-          : WanExternal.fromMap(map['wanExternal']),
+          : WanExternalUIModel.fromMap(map['wanExternal']),
       isRunning: map['isRunning'] ?? false,
     );
   }
