@@ -20,8 +20,9 @@ class WANExternalNotifier extends Notifier<WANExternalState> {
     if (!serviceHelper.isSupportWANExternal()) {
       return state;
     }
-    if (DateTime.now().millisecondsSinceEpoch - state.lastUpdate <
-        3600 * 1000) {
+    if (!force &&
+        DateTime.now().millisecondsSinceEpoch - state.lastUpdate <
+            3600 * 1000) {
       return state;
     }
 
