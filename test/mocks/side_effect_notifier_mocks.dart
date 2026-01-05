@@ -37,7 +37,7 @@ class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
 }
 
 class _FakeJNAPSideEffect_1 extends _i1.SmartFake
-    implements _i3.JNAPSideEffect {
+    implements _i3.SideEffectState {
   _FakeJNAPSideEffect_1(
     Object parent,
     Invocation parentInvocation,
@@ -60,25 +60,25 @@ class _FakeJNAPResult_2 extends _i1.SmartFake implements _i4.JNAPResult {
 /// A class which mocks [SideEffectNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSideEffectNotifier extends _i2.Notifier<_i3.JNAPSideEffect>
+class MockSideEffectNotifier extends _i2.Notifier<_i3.SideEffectState>
     with _i1.Mock
     implements _i3.SideEffectNotifier {
   @override
-  _i2.NotifierProviderRef<_i3.JNAPSideEffect> get ref => (super.noSuchMethod(
+  _i2.NotifierProviderRef<_i3.SideEffectState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),
-        returnValue: _FakeNotifierProviderRef_0<_i3.JNAPSideEffect>(
+        returnValue: _FakeNotifierProviderRef_0<_i3.SideEffectState>(
           this,
           Invocation.getter(#ref),
         ),
         returnValueForMissingStub:
-            _FakeNotifierProviderRef_0<_i3.JNAPSideEffect>(
+            _FakeNotifierProviderRef_0<_i3.SideEffectState>(
           this,
           Invocation.getter(#ref),
         ),
-      ) as _i2.NotifierProviderRef<_i3.JNAPSideEffect>);
+      ) as _i2.NotifierProviderRef<_i3.SideEffectState>);
 
   @override
-  _i3.JNAPSideEffect get state => (super.noSuchMethod(
+  _i3.SideEffectState get state => (super.noSuchMethod(
         Invocation.getter(#state),
         returnValue: _FakeJNAPSideEffect_1(
           this,
@@ -88,10 +88,10 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.JNAPSideEffect>
           this,
           Invocation.getter(#state),
         ),
-      ) as _i3.JNAPSideEffect);
+      ) as _i3.SideEffectState);
 
   @override
-  set state(_i3.JNAPSideEffect? value) => super.noSuchMethod(
+  set state(_i3.SideEffectState? value) => super.noSuchMethod(
         Invocation.setter(
           #state,
           value,
@@ -100,7 +100,7 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.JNAPSideEffect>
       );
 
   @override
-  _i3.JNAPSideEffect build() => (super.noSuchMethod(
+  _i3.SideEffectState build() => (super.noSuchMethod(
         Invocation.method(
           #build,
           [],
@@ -119,26 +119,15 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.JNAPSideEffect>
             [],
           ),
         ),
-      ) as _i3.JNAPSideEffect);
+      ) as _i3.SideEffectState);
 
   @override
-  _i5.Future<dynamic> handleDeviceRestart() => (super.noSuchMethod(
-        Invocation.method(
-          #handleDeviceRestart,
-          [],
-        ),
-        returnValue: _i5.Future<dynamic>.value(),
-        returnValueForMissingStub: _i5.Future<dynamic>.value(),
-      ) as _i5.Future<dynamic>);
-
-  @override
-  _i5.Future<dynamic> manualDeviceRestart(
-          {_i3.JNAPSideEffectOverrides? overrides}) =>
+  _i5.Future<dynamic> manualDeviceRestart({_i3.SideEffectPollConfig? config}) =>
       (super.noSuchMethod(
         Invocation.method(
           #manualDeviceRestart,
           [],
-          {#overrides: overrides},
+          {#config: config},
         ),
         returnValue: _i5.Future<dynamic>.value(),
         returnValueForMissingStub: _i5.Future<dynamic>.value(),
@@ -147,20 +136,20 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.JNAPSideEffect>
   @override
   _i5.Future<_i4.JNAPResult> handleSideEffect(
     _i4.JNAPResult? result, {
-    _i3.JNAPSideEffectOverrides? overrides,
+    _i3.SideEffectPollConfig? config,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
           #handleSideEffect,
           [result],
-          {#overrides: overrides},
+          {#config: config},
         ),
         returnValue: _i5.Future<_i4.JNAPResult>.value(_FakeJNAPResult_2(
           this,
           Invocation.method(
             #handleSideEffect,
             [result],
-            {#overrides: overrides},
+            {#config: config},
           ),
         )),
         returnValueForMissingStub:
@@ -169,7 +158,7 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.JNAPSideEffect>
           Invocation.method(
             #handleSideEffect,
             [result],
-            {#overrides: overrides},
+            {#config: config},
           ),
         )),
       ) as _i5.Future<_i4.JNAPResult>);
@@ -227,8 +216,8 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.JNAPSideEffect>
   @override
   void listenSelf(
     void Function(
-      _i3.JNAPSideEffect?,
-      _i3.JNAPSideEffect,
+      _i3.SideEffectState?,
+      _i3.SideEffectState,
     )? listener, {
     void Function(
       Object,
@@ -246,8 +235,8 @@ class MockSideEffectNotifier extends _i2.Notifier<_i3.JNAPSideEffect>
 
   @override
   bool updateShouldNotify(
-    _i3.JNAPSideEffect? previous,
-    _i3.JNAPSideEffect? next,
+    _i3.SideEffectState? previous,
+    _i3.SideEffectState? next,
   ) =>
       (super.noSuchMethod(
         Invocation.method(

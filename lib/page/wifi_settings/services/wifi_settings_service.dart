@@ -31,6 +31,54 @@ class WifiSettingsService {
 
   WifiSettingsService(this._repo);
 
+  /// Creates initial WiFiListSettings from dashboard state data.
+  ///
+  /// Used by WifiBundleNotifier.build() to initialize state without
+  /// requiring JNAP imports in the provider layer.
+  WiFiListSettings createInitialWifiListSettings({
+    required List<RouterRadio> mainRadios,
+    required bool isGuestNetworkEnabled,
+    required String? guestSSID,
+    required String? guestPassword,
+    required List<LinksysDevice> mainWifiDevices,
+    required int guestWifiDevicesCount,
+    required String? Function(LinksysDevice) getBandConnectedBy,
+  }) {
+    final wifiItems = mainRadios
+        .map(
+          (radio) => WifiSettingsMapper.fromRadio(radio,
+              numOfDevices: mainWifiDevices.where((device) {
+                final deviceBand = getBandConnectedBy(device);
+                return device.isOnline() && deviceBand == radio.band;
+              }).length),
+        )
+        .toList();
+
+    final guestWiFi = GuestWiFiItem(
+      isEnabled: isGuestNetworkEnabled,
+      ssid: guestSSID ?? '',
+      password: guestPassword ?? '',
+      numOfDevices: guestWifiDevicesCount,
+    );
+
+    final simpleModeWifi = wifiItems.firstWhereOrNull((e) => e.isEnabled) ??
+        (wifiItems.isNotEmpty
+            ? wifiItems.first
+            : WiFiItem.fromMap(const {
+                'channel': 0,
+                'isBroadcast': false,
+                'isEnabled': false,
+                'numOfDevices': 0,
+              }));
+
+    return WiFiListSettings(
+      mainWiFi: wifiItems,
+      guestWiFi: guestWiFi,
+      isSimpleMode: true, // Default to simple mode
+      simpleModeWifi: simpleModeWifi,
+    );
+  }
+
   Future<void> saveWifiListSettings(
       WiFiListSettings settings, bool isSupportGuestWiFi) async {
     final setRadioSettings = WifiSettingsMapper.toSetRadioSettings(settings);

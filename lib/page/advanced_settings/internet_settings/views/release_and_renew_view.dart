@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/models/internet_settings_enums.dart';
@@ -170,7 +170,7 @@ class ReleaseAndRenewView extends ConsumerWidget {
             loc(context).successExclamation,
           );
         });
-      }, test: (error) => error is JNAPSideEffectError).onError(
+      }, test: (error) => error is ServiceSideEffectError).onError(
           (error, stackTrace) {
         if (!context.mounted) return;
         final errorMsg = switch (error) {
@@ -212,7 +212,7 @@ class ReleaseAndRenewView extends ConsumerWidget {
             loc(context).successExclamation,
           );
         });
-      }, test: (error) => error is JNAPSideEffectError).onError(
+      }, test: (error) => error is ServiceSideEffectError).onError(
           (error, stackTrace) {
         if (!context.mounted) return;
         final errorMsg = switch (error) {

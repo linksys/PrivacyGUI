@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/wan_external.dart';
+import 'package:privacy_gui/page/instant_verify/models/instant_verify_ui_models.dart';
 
 class WANExternalState extends Equatable {
-  final WanExternal? wanExternal;
+  final WanExternalUIModel? wanExternal;
   final int lastUpdate;
 
   const WANExternalState({
@@ -14,7 +14,7 @@ class WANExternalState extends Equatable {
   });
 
   WANExternalState copyWith({
-    WanExternal? wanExternal,
+    WanExternalUIModel? wanExternal,
     int? lastUpdate,
   }) {
     return WANExternalState(
@@ -33,7 +33,7 @@ class WANExternalState extends Equatable {
   factory WANExternalState.fromMap(Map<String, dynamic> map) {
     return WANExternalState(
       wanExternal: map['wanExternal'] != null
-          ? WanExternal.fromMap(map['wanExternal'])
+          ? WanExternalUIModel.fromMap(map['wanExternal'])
           : null,
       lastUpdate: map['lastUpdate']?.toInt() ?? 0,
     );

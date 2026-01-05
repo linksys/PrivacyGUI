@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -136,7 +135,7 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
       }),
     ).catchError((error, stackTrace) {
       if (!mounted) return;
-      if (error is JNAPSideEffectError) {
+      if (error is ServiceSideEffectError) {
         showRouterNotFoundAlert(context, ref, onComplete: () async {
           await _notifier.fetch(forceRemote: true);
           if (!mounted) return;

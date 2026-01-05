@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/_internet_settings.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
@@ -25,8 +25,8 @@ import '../../../../../../test_data/internet_settings_state_data.dart';
 // - PNP-ISP-SEL_DHCP-ALERT: Verify the DHCP alert dialog when another type is selected.
 // - PNP-ISP-SEL_DHCP-SAVE-ERROR-GENERIC: Verify generic JNAPError during DHCP save.
 // - PNP-ISP-SEL_DHCP-SAVE-ERROR-NO-INTERNET: Verify no internet connection error during DHCP save.
-// - PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-SUCCESS: Verify JNAPSideEffectError with JNAPSuccess during DHCP save.
-// - PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-OTHER: Verify JNAPSideEffectError without JNAPSuccess during DHCP save.
+// - PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-SUCCESS: Verify ServiceSideEffectError with JNAPSuccess during DHCP save.
+// - PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-OTHER: Verify ServiceSideEffectError without JNAPSuccess during DHCP save.
 
 void main() async {
   final testHelper = TestHelper();
@@ -233,7 +233,7 @@ void main() async {
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-SUCCESS
   testLocalizations(
-    'Verify JNAPSideEffectError with JNAPSuccess during DHCP save',
+    'Verify ServiceSideEffectError with JNAPSuccess during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
           InternetSettingsState.fromMap(jsonDecode(internetSettingsStateData2));
@@ -268,8 +268,8 @@ void main() async {
 
       expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
-      // Complete with JNAPSideEffectError with JNAPSuccess
-      completer.completeError(const JNAPSideEffectError(
+      // Complete with ServiceSideEffectError with JNAPSuccess
+      completer.completeError(const ServiceSideEffectError(
           JNAPSuccess(output: {}, result: 'success'),
           JNAPSuccess(output: {}, result: 'success')));
       await tester.pumpAndSettle(); // Hide spinner, show error dialog
@@ -290,7 +290,7 @@ void main() async {
 
   // Test ID: PNP-ISP-SEL_DHCP-SAVE-ERROR-SIDE-EFFECT-OTHER
   testLocalizations(
-    'Verify JNAPSideEffectError without JNAPSuccess during DHCP save',
+    'Verify ServiceSideEffectError without JNAPSuccess during DHCP save',
     (tester, localizedScreen) async {
       final mockInternetSettingsState2 =
           InternetSettingsState.fromMap(jsonDecode(internetSettingsStateData2));
@@ -325,8 +325,8 @@ void main() async {
 
       expect(find.byType(AppFullScreenLoader), findsOneWidget);
 
-      // Complete with JNAPSideEffectError without JNAPSuccess
-      completer.completeError(const JNAPSideEffectError(
+      // Complete with ServiceSideEffectError without JNAPSuccess
+      completer.completeError(const ServiceSideEffectError(
           JNAPSuccess(output: {}, result: 'success'), null));
       await tester.pumpAndSettle(); // Hide spinner, trigger navigation
 

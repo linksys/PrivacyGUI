@@ -25,20 +25,6 @@ extension BatchCommands on RouterRepository {
     ).then((successWrap) => successWrap.data);
   }
 
-  Future<List<MapEntry<JNAPAction, JNAPResult>>> fetchInternetSettings(
-      {bool forceRemote = false}) async {
-    return transaction(
-      fetchRemote: forceRemote,
-      JNAPTransactionBuilder(commands: [
-        const MapEntry(JNAPAction.getIPv6Settings, {}),
-        const MapEntry(JNAPAction.getWANSettings, {}),
-        const MapEntry(JNAPAction.getWANStatus, {}),
-        const MapEntry(JNAPAction.getMACAddressCloneSettings, {}),
-        const MapEntry(JNAPAction.getLANSettings, {}),
-      ], auth: true),
-    ).then((successWrap) => successWrap.data);
-  }
-
   /*
   Future<Map<JNAPAction, JNAPResult>> fetchDeviceList() async {
     return transaction(JNAPTransactionBuilder(

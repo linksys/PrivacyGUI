@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/topology_adapter.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -447,7 +447,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
         }).catchError((error) {
           if (!mounted) return;
           showRouterNotFoundAlert(context, ref);
-        }, test: (error) => error is JNAPSideEffectError);
+        }, test: (error) => error is ServiceSideEffectError);
       }
     });
   }

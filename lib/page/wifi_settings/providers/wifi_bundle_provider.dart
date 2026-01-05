@@ -5,16 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/guest_wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_state.dart';
-import 'package:privacy_gui/page/wifi_settings/services/wifi_settings_mapper.dart';
 import 'package:privacy_gui/page/wifi_settings/services/wifi_settings_service.dart';
 import 'package:privacy_gui/providers/preservable.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
@@ -41,43 +37,22 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
     final deviceManagerState = ref.read(deviceManagerProvider);
     final homeState = ref.read(dashboardHomeProvider);
 
-    final initialWifiItems = dashboardManagerState.mainRadios
-        .map(
-          (radio) => WifiSettingsMapper.fromRadio(radio,
-              numOfDevices: deviceManagerState.mainWifiDevices.where((device) {
-                final deviceBand = ref
-                    .read(deviceManagerProvider.notifier)
-                    .getBandConnectedBy(device);
-                return device.isOnline() && deviceBand == radio.band;
-              }).length),
-        )
-        .toList();
-
-    final initialGuestWiFi = GuestWiFiItem(
-        isEnabled: dashboardManagerState.isGuestNetworkEnabled,
-        ssid: dashboardManagerState.guestRadios.firstOrNull?.guestSSID ?? '',
-        password:
-            dashboardManagerState.guestRadios.firstOrNull?.guestWPAPassphrase ??
-                '',
-        numOfDevices: deviceManagerState.guestWifiDevices.length);
-
-    final simpleModeWifi =
-        initialWifiItems.firstWhereOrNull((e) => e.isEnabled) ??
-            (initialWifiItems.isNotEmpty
-                ? initialWifiItems.first
-                : WiFiItem.fromMap(const {
-                    'channel': 0,
-                    'isBroadcast': false,
-                    'isEnabled': false,
-                    'numOfDevices': 0,
-                  }));
-
-    final initialWifiListSettings = WiFiListSettings(
-      mainWiFi: initialWifiItems,
-      guestWiFi: initialGuestWiFi,
-      isSimpleMode: true, // Default to simple mode
-      simpleModeWifi: simpleModeWifi,
-    );
+    // Use service layer to create initial WiFi list settings
+    // This avoids importing JNAP models directly in the provider
+    final initialWifiListSettings = ref
+        .read(wifiSettingsServiceProvider)
+        .createInitialWifiListSettings(
+          mainRadios: dashboardManagerState.mainRadios,
+          isGuestNetworkEnabled: dashboardManagerState.isGuestNetworkEnabled,
+          guestSSID: dashboardManagerState.guestRadios.firstOrNull?.guestSSID,
+          guestPassword:
+              dashboardManagerState.guestRadios.firstOrNull?.guestWPAPassphrase,
+          mainWifiDevices: deviceManagerState.mainWifiDevices,
+          guestWifiDevicesCount: deviceManagerState.guestWifiDevices.length,
+          getBandConnectedBy: (device) => ref
+              .read(deviceManagerProvider.notifier)
+              .getBandConnectedBy(device),
+        );
 
     final initialWifiListStatus = WiFiListStatus(
         canDisableMainWiFi: homeState.lanPortConnections.isNotEmpty);
@@ -140,17 +115,16 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
     final original = state.settings.original;
     final current = state.settings.current;
 
-    final repo = ref.read(routerRepositoryProvider);
     final futures = <Future>[];
 
     if (original.wifiList != current.wifiList) {
       futures.add(_saveWifiList(current.wifiList));
     }
     if (original.advanced != current.advanced) {
-      futures.add(_saveAdvancedSettings(repo, current.advanced));
+      futures.add(_saveAdvancedSettings(current.advanced));
     }
     if (original.privacy != current.privacy) {
-      futures.add(_savePrivacySettings(repo, current.privacy));
+      futures.add(_savePrivacySettings(current.privacy));
     }
 
     if (futures.isNotEmpty) {
@@ -165,15 +139,13 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
         .saveWifiListSettings(settings, isSupportGuestWiFi);
   }
 
-  Future<void> _saveAdvancedSettings(
-      RouterRepository repo, WifiAdvancedSettingsState settings) {
+  Future<void> _saveAdvancedSettings(WifiAdvancedSettingsState settings) {
     return ref
         .read(wifiSettingsServiceProvider)
         .saveAdvancedSettings(settings: settings, serviceHelper: serviceHelper);
   }
 
-  Future<void> _savePrivacySettings(
-      RouterRepository repo, InstantPrivacySettings settings) {
+  Future<void> _savePrivacySettings(InstantPrivacySettings settings) {
     final nodeDevices = ref.read(deviceManagerProvider).nodeDevices;
     return ref
         .read(wifiSettingsServiceProvider)

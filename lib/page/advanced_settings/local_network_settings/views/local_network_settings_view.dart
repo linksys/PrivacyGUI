@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -282,7 +282,7 @@ class _LocalNetworkSettingsViewState
         // ip is not changed, finish settings
         _finishSaveSettings();
       }
-    }, test: (error) => error is JNAPSideEffectError).onError(
+    }, test: (error) => error is ServiceSideEffectError).onError(
         (error, stackTrace) {
       if (!mounted) return;
       showErrorMessageSnackBar(error);

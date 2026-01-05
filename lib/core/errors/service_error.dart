@@ -308,3 +308,88 @@ final class ConnectivityError extends ServiceError {
   final String? message;
   const ConnectivityError({this.message});
 }
+
+// ============================================================================
+// Side Effect Error (Operation succeeded but device recovery timed out)
+// ============================================================================
+
+/// Operation succeeded but triggered a side effect requiring device recovery.
+///
+/// Unlike other [ServiceError] subtypes, this indicates the operation DID succeed.
+/// The device is now recovering (restarting, reconnecting, etc.) and we timed out
+/// waiting for it to come back online.
+///
+/// - [originalResult]: The JNAP result from the operation that triggered the
+///   side effect. Contains data like redirection URLs needed after device recovery.
+/// - [lastPolledResult]: The last successful poll result before timeout.
+///   Useful for diagnosing the device's final known state.
+///
+/// UI should typically:
+/// 1. Inform user the settings were saved
+/// 2. Guide user to reconnect to the device
+///
+/// Example:
+/// ```dart
+/// try {
+///   await service.saveSettings(settings);
+/// } on ServiceSideEffectError {
+///   showRouterNotFoundAlert(context, ref);
+/// }
+/// ```
+final class ServiceSideEffectError extends ServiceError {
+  final Object? originalResult;
+  final Object? lastPolledResult;
+
+  const ServiceSideEffectError([this.originalResult, this.lastPolledResult]);
+}
+
+// ============================================================================
+// Topology Operation Errors
+// ============================================================================
+
+/// Timeout while waiting for nodes to go offline after reboot/factory reset.
+///
+/// Thrown when nodes don't reach offline state within the configured timeout
+/// (default: 60 seconds = 20 retries × 3 second intervals).
+final class TopologyTimeoutError extends ServiceError {
+  /// The timeout duration that was exceeded
+  final Duration timeout;
+
+  /// Device IDs that were being monitored
+  final List<String> deviceIds;
+
+  const TopologyTimeoutError({
+    required this.timeout,
+    required this.deviceIds,
+  });
+}
+
+/// Target node is offline and cannot be reached for the requested operation.
+///
+/// Thrown when attempting LED blink or other operations on an offline node.
+final class NodeOfflineError extends ServiceError {
+  /// The device ID of the offline node
+  final String deviceId;
+
+  const NodeOfflineError({required this.deviceId});
+}
+
+/// A node operation (reboot, factory reset, LED blink) failed.
+///
+/// Contains details about which operation failed and on which device.
+final class NodeOperationFailedError extends ServiceError {
+  /// The device ID where the operation failed
+  final String deviceId;
+
+  /// The operation that failed: 'reboot', 'factoryReset', 'blinkStart', 'blinkStop'
+  final String operation;
+
+  /// The underlying error (if available)
+  final Object? originalError;
+
+  const NodeOperationFailedError({
+    required this.deviceId,
+    required this.operation,
+    this.originalError,
+  });
+}
