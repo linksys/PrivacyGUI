@@ -814,10 +814,9 @@ class JnapTr181Mapper {
     final subnetMask =
         values['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] ??
             '255.255.255.0';
-    final isDhcpEnabled = values['Device.DHCPv4.Server.Enable'] == 'true'
-        ? true
-        : true; // Default true if missing
-    final hostName = values['Device.DeviceInfo.HostName'] ?? 'Linksys01234';
+    final isDhcpEnabled =
+        (values['Device.DHCPv4.Server.Enable']?.toString() ?? 'true') == 'true';
+    final hostName = values['Device.DeviceInfo.HostName'] ?? '';
 
     return {
       'ipAddress': ipAddress,
