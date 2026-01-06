@@ -1179,7 +1179,8 @@ class _InternetSettingsViewState extends ConsumerState<InternetSettingsView>
           errorText: subnetMaskErrorText,
           border: const OutlineInputBorder(),
           onChanged: (value) {
-            final subnetMaskValidator = SubnetMaskValidator();
+            // override default of 30 for WAN Static IP settings (QUALITY-439)
+            final subnetMaskValidator = SubnetMaskValidator(max: 31);
             final isValidSubnetMask = subnetMaskValidator.validate(value);
             if (isValidSubnetMask) {
               _notifier.updateIpv4Settings(ipv4Setting.copyWith(
