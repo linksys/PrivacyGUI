@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
-import 'package:privacy_gui/core/jnap/providers/node_light_settings_provider.dart';
-import 'package:privacy_gui/core/jnap/services/node_light_settings_service.dart';
+import 'package:privacy_gui/page/nodes/providers/node_light_settings_provider.dart';
+import 'package:privacy_gui/page/nodes/services/node_light_settings_service.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_state.dart';
 
 class MockNodeLightSettingsService extends Mock

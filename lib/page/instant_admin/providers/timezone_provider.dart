@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/page/instant_admin/providers/timezone_state.dart';
 import 'package:privacy_gui/page/instant_admin/services/timezone_service.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';

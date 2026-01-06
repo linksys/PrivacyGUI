@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_event.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';

@@ -8,9 +8,9 @@ import 'dart:async' as _i6;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/core/jnap/models/device_info.dart' as _i4;
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
-    as _i5;
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart'
+import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart'
+    as _i10;
+import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart'
     as _i3;
 
 // ignore_for_file: type=lint
@@ -67,7 +67,7 @@ class _FakeNodeDeviceInfo_2 extends _i1.SmartFake
 class MockDashboardManagerNotifier
     extends _i2.Notifier<_i3.DashboardManagerState>
     with _i1.Mock
-    implements _i5.DashboardManagerNotifier {
+    implements _i10.DashboardManagerNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DashboardManagerState> get ref =>
       (super.noSuchMethod(

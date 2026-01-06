@@ -3,10 +3,10 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/data/providers/firmware_update_state.dart';
+import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/services/firmware_update_service.dart';
+import 'package:privacy_gui/core/data/services/firmware_update_service.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_ui_model.dart';
 

@@ -7,8 +7,8 @@ import 'dart:async' as _i5;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
-    as _i4;
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart'
+    as _i5;
 import 'package:privacy_gui/page/nodes/_nodes.dart' as _i3;
 
 // ignore_for_file: type=lint
@@ -114,7 +114,7 @@ class MockNodeDetailNotifier extends _i2.Notifier<_i3.NodeDetailState>
 
   @override
   _i3.NodeDetailState createState(
-    _i4.DeviceManagerState? deviceManagerState,
+    _i5.DeviceManagerState? deviceManagerState,
     String? targetId,
   ) =>
       (super.noSuchMethod(

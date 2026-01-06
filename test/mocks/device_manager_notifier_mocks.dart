@@ -7,12 +7,12 @@ import 'dart:async' as _i6;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart'
-    as _i4;
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
+import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:privacy_gui/core/data/providers/device_manager_provider.dart'
+    as _i5;
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart'
     as _i3;
-import 'package:privacy_gui/core/utils/icon_device_category.dart' as _i7;
+import 'package:privacy_gui/core/utils/icon_device_category.dart' as _i9;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -56,7 +56,7 @@ class _FakeDeviceManagerState_1 extends _i1.SmartFake
 /// See the documentation for Mockito's code generation for more information.
 class MockDeviceManagerNotifier extends _i2.Notifier<_i3.DeviceManagerState>
     with _i1.Mock
-    implements _i4.DeviceManagerNotifier {
+    implements _i5.DeviceManagerNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DeviceManagerState> get ref =>
       (super.noSuchMethod(
@@ -150,14 +150,14 @@ class MockDeviceManagerNotifier extends _i2.Notifier<_i3.DeviceManagerState>
           #getBandConnectedBy,
           [device],
         ),
-        returnValue: _i5.dummyValue<String>(
+        returnValue: _i7.dummyValue<String>(
           this,
           Invocation.method(
             #getBandConnectedBy,
             [device],
           ),
         ),
-        returnValueForMissingStub: _i5.dummyValue<String>(
+        returnValueForMissingStub: _i7.dummyValue<String>(
           this,
           Invocation.method(
             #getBandConnectedBy,
@@ -187,7 +187,7 @@ class MockDeviceManagerNotifier extends _i2.Notifier<_i3.DeviceManagerState>
     required String? targetId,
     required String? newName,
     required bool? isLocation,
-    _i7.IconDeviceCategory? icon,
+    _i9.IconDeviceCategory? icon,
   }) =>
       (super.noSuchMethod(
         Invocation.method(

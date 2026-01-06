@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart';
+import 'package:privacy_gui/core/data/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_provider.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';

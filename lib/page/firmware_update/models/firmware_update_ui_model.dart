@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_status_nodes.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 
 class FirmwareUpdateUIModel extends Equatable {

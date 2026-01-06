@@ -1,14 +1,14 @@
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/data/providers/polling_provider.dart';
+import 'package:privacy_gui/core/data/providers/side_effect_provider.dart';
 import 'package:privacy_gui/page/instant_admin/providers/manual_firmware_update_state.dart';
 import 'package:privacy_gui/page/instant_admin/services/manual_firmware_update_service.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
-    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
+import 'package:privacy_gui/core/utils/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'package:privacy_gui/core/utils/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/utils/ip_getter/web_get_local_ip.dart';
 
 final manualFirmwareUpdateProvider = NotifierProvider.autoDispose<
     ManualFirmwareUpdateNotifier, ManualFirmwareUpdateState>(

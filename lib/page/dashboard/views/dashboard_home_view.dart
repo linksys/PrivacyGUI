@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
+import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
@@ -19,8 +19,8 @@ import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
+import 'package:privacy_gui/core/utils/assign_ip/base_assign_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/utils/assign_ip/web_assign_ip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardHomeView extends ConsumerStatefulWidget {
