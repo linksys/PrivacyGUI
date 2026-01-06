@@ -17,7 +17,7 @@
 //    dependency.
 //
 // 3. Design Rationale
-//    Located in `lib/core/jnap/providers/`, this component is explicitly part
+//    Located in `lib/core/data/providers/`, this component is explicitly part
 //    of the JNAP infrastructure, not a feature provider in `lib/page/`.
 //    Its responsibility is to handle JNAP operation side effects, which
 //    inherently belongs to the Data Layer.
@@ -27,7 +27,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:privacy_gui/constants/_constants.dart';

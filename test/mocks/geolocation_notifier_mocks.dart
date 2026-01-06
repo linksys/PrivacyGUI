@@ -11,7 +11,7 @@ import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provide
     as _i4;
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart'
     as _i3;
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart'
     as _i6;
 
 // ignore_for_file: type=lint

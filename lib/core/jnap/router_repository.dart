@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cache/utility.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
@@ -23,13 +23,13 @@ import 'package:privacy_gui/core/jnap/jnap_command_queue.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/spec/jnap_spec.dart';
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart';
+import 'package:privacy_gui/core/data/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'providers/ip_getter/get_local_ip.dart'
-    if (dart.library.io) 'providers/ip_getter/mobile_get_local_ip.dart'
-    if (dart.library.html) 'providers/ip_getter/web_get_local_ip.dart';
+import 'package:privacy_gui/core/utils/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'package:privacy_gui/core/utils/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/utils/ip_getter/web_get_local_ip.dart';
 
 enum CommandType {
   remote,

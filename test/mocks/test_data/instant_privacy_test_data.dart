@@ -1,5 +1,5 @@
 import 'package:privacy_gui/core/jnap/models/device.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 
 /// Test data builder for InstantPrivacyService tests

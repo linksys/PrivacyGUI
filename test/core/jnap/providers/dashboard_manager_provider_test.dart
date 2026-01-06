@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/services/dashboard_manager_service.dart';
+import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/polling_provider.dart';
+import 'package:privacy_gui/core/data/services/dashboard_manager_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/test_data/dashboard_manager_test_data.dart';

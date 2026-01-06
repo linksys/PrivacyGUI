@@ -22,8 +22,8 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/core/jnap/providers/assign_ip/base_assign_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/assign_ip/web_assign_ip.dart';
+import 'package:privacy_gui/core/utils/assign_ip/base_assign_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/utils/assign_ip/web_assign_ip.dart';
 
 enum InternetSettingsViewType {
   ipv4,

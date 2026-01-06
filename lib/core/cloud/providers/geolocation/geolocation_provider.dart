@@ -2,8 +2,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cloud/linksys_device_cloud_service.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 

@@ -2,4 +2,4 @@
   MockSpec<PollingNotifier>(),
 ])
 import 'package:mockito/annotations.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/data/providers/polling_provider.dart';

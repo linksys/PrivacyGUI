@@ -8,11 +8,11 @@ import 'dart:async' as _i12;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/core/jnap/models/device_info.dart' as _i4;
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart'
+import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart'
     as _i10;
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart'
+import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart'
     as _i3;
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart' as _i11;
+import 'package:privacy_gui/core/data/providers/polling_provider.dart' as _i11;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values

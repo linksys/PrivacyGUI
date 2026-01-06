@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/jnap/services/device_manager_service.dart';
+import 'package:privacy_gui/core/data/services/device_manager_service.dart';
 
 import '../../../mocks/test_data/device_manager_test_data.dart';
 

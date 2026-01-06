@@ -7,9 +7,9 @@ import 'dart:async' as _i5;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/core/jnap/providers/firmware_update_provider.dart'
+import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart'
     as _i4;
-import 'package:privacy_gui/core/jnap/providers/firmware_update_state.dart'
+import 'package:privacy_gui/core/data/providers/firmware_update_state.dart'
     as _i3;
 
 // ignore_for_file: type=lint

@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/jnap/services/node_light_settings_service.dart';
+import 'package:privacy_gui/page/nodes/services/node_light_settings_service.dart';
 
 import '../../../mocks/test_data/node_light_settings_test_data.dart';
 

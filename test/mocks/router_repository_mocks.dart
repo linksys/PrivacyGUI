@@ -13,7 +13,7 @@ import 'package:privacy_gui/core/jnap/command/base_command.dart' as _i7;
 import 'package:privacy_gui/core/jnap/command/http/base_http_command.dart'
     as _i5;
 import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart' as _i3;
-import 'package:privacy_gui/core/jnap/providers/side_effect_provider.dart'
+import 'package:privacy_gui/core/data/providers/side_effect_provider.dart'
     as _i11;
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart' as _i4;
 import 'package:privacy_gui/core/jnap/router_repository.dart' as _i8;
