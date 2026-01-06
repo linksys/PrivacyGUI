@@ -7,6 +7,7 @@ import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:privacy_gui/constants/build_config.dart';
@@ -656,5 +657,31 @@ extension NodeSignalLevelExt on NodeSignalLevel {
       NodeSignalLevel.wired => Theme.of(context).colorScheme.onSurface,
       NodeSignalLevel.none => Colors.black,
     };
+  }
+}
+
+class BrandUtils {
+  static Future<String?> resolveAsset(String basePath) async {
+    final isDark = basePath.endsWith('_dark');
+    // Priority 1: .webp
+    try {
+      final webp = '$basePath.webp';
+      await rootBundle.load(webp);
+      return webp;
+    } catch (_) {}
+
+    // Priority 2: .png
+    try {
+      final png = '$basePath.png';
+      await rootBundle.load(png);
+      return png;
+    } catch (_) {}
+
+    // if dark, try light
+    if (isDark) {
+      return resolveAsset(basePath.replaceFirst('_dark', ''));
+    }
+    // null if nothing found
+    return null;
   }
 }

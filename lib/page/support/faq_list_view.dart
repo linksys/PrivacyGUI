@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:privacy_gui/utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:privacy_gui/constants/url_links.dart';
@@ -17,6 +17,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
+import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class FaqListView extends ArgumentsConsumerStatefulView {
   const FaqListView({super.key});
@@ -42,13 +43,34 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
 
   @override
   Widget build(BuildContext context) {
+    final supImgPath =
+        Theme.of(context).brightness == Brightness.dark ? 'assets/brand/brand_img_sup_dark' : 'assets/brand/brand_img_sup';
     return StyledAppPageView(
       title: loc(context).faqs,
       backState: StyledBackState.none,
       menuWidget: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppText.bodySmall(loc(context).faqLookingFor),
+          Wrap(
+            spacing: Spacing.small2,
+            runSpacing: Spacing.small2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FutureBuilder<String?>(
+                future: BrandUtils.resolveAsset(supImgPath),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data != null) {
+                    return Image.asset(
+                      snapshot.data!,
+                      height: 48,
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+              AppText.bodySmall(loc(context).faqLookingFor),
+            ],
+          ),
           const AppGap.medium(),
           AppTextButton.noPadding(
             loc(context).faqVisitLinksysSupport,
