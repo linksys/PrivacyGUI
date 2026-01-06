@@ -63,7 +63,9 @@ class _FakeAuthState_2 extends _i1.SmartFake implements _i3.AuthState {
 /// A class which mocks [AuthNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAuthNotifier extends _i1.Mock implements _i4.AuthNotifier {
+class MockAuthNotifier extends _i2.AsyncNotifier<_i3.AuthState>
+    with _i1.Mock
+    implements _i4.AuthNotifier {
   @override
   _i2.AsyncNotifierProviderRef<_i3.AuthState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),

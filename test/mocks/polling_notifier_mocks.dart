@@ -59,7 +59,9 @@ class _FakeCoreTransactionData_2 extends _i1.SmartFake
 /// A class which mocks [PollingNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockPollingNotifier extends _i1.Mock implements _i3.PollingNotifier {
+class MockPollingNotifier extends _i2.AsyncNotifier<_i3.CoreTransactionData>
+    with _i1.Mock
+    implements _i3.PollingNotifier {
   @override
   bool get paused => (super.noSuchMethod(
         Invocation.getter(#paused),

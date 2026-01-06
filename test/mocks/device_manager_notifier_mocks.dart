@@ -54,7 +54,8 @@ class _FakeDeviceManagerState_1 extends _i1.SmartFake
 /// A class which mocks [DeviceManagerNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockDeviceManagerNotifier extends _i1.Mock
+class MockDeviceManagerNotifier extends _i2.Notifier<_i3.DeviceManagerState>
+    with _i1.Mock
     implements _i4.DeviceManagerNotifier {
   @override
   _i2.NotifierProviderRef<_i3.DeviceManagerState> get ref =>

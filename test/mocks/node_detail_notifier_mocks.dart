@@ -51,7 +51,8 @@ class _FakeNodeDetailState_1 extends _i1.SmartFake
 /// A class which mocks [NodeDetailNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockNodeDetailNotifier extends _i1.Mock
+class MockNodeDetailNotifier extends _i2.Notifier<_i3.NodeDetailState>
+    with _i1.Mock
     implements _i3.NodeDetailNotifier {
   @override
   _i2.NotifierProviderRef<_i3.NodeDetailState> get ref => (super.noSuchMethod(
