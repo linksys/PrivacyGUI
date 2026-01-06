@@ -8,11 +8,11 @@ import 'dart:async' as _i8;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart'
+import 'package:privacy_gui/core/data/providers/device_manager_provider.dart'
     as _i5;
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart'
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart'
     as _i3;
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart' as _i6;
+import 'package:privacy_gui/core/data/providers/polling_provider.dart' as _i6;
 import 'package:privacy_gui/core/utils/icon_device_category.dart' as _i9;
 
 // ignore_for_file: type=lint

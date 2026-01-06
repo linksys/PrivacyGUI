@@ -8,7 +8,7 @@ import 'dart:async' as _i4;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart'
     as _i2;
-import 'package:privacy_gui/core/jnap/services/firmware_update_service.dart'
+import 'package:privacy_gui/core/data/services/firmware_update_service.dart'
     as _i3;
 import 'package:privacy_gui/page/firmware_update/models/firmware_update_ui_model.dart'
     as _i5;

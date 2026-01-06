@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 
 class AddWiredNodesState extends Equatable {
   final bool? onboardingProceed;

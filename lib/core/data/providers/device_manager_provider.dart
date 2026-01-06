@@ -1,8 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/services/device_manager_service.dart';
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/polling_provider.dart';
+import 'package:privacy_gui/core/data/services/device_manager_service.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_device_category.dart';
 

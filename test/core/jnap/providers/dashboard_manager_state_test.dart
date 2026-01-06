@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
-import 'package:privacy_gui/core/jnap/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart';
 
 import '../../../mocks/test_data/dashboard_manager_test_data.dart';
 

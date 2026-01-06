@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
 import 'package:privacy_gui/page/instant_topology/services/instant_topology_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 
 class MockInstantTopologyService extends Mock
     implements InstantTopologyService {}

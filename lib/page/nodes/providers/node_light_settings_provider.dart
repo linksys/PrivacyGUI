@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
-import 'package:privacy_gui/core/jnap/services/node_light_settings_service.dart';
+import 'package:privacy_gui/page/nodes/services/node_light_settings_service.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_state.dart';
 
