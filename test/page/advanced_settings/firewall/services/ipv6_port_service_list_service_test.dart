@@ -118,8 +118,7 @@ void main() {
             description: 'Both Rule',
             ipv6Address: '2001:db8::3',
             portRanges: const [
-              PortRange(
-                  protocol: 'Both', firstPort: 5000, lastPort: 6000),
+              PortRange(protocol: 'Both', firstPort: 5000, lastPort: 6000),
             ],
           ),
         ];

@@ -838,8 +838,8 @@ void main() {
               onCompleted: anyNamed('onCompleted'),
               requestTimeoutOverride: anyNamed('requestTimeoutOverride'),
               auth: anyNamed('auth')))
-          .thenAnswer((_) => Stream.value(
-              JNAPSuccess(result: 'OK', output: const {'firmwareUpdateStatus': []})));
+          .thenAnswer((_) => Stream.value(JNAPSuccess(
+              result: 'OK', output: const {'firmwareUpdateStatus': []})));
 
       final resultStream = service.fetchFirmwareUpdateStream(
           force: true, retry: 2, currentNodesStatus: nodesStatus);

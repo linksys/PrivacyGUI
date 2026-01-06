@@ -109,8 +109,7 @@ void main() {
       // ARRANGE
       final nonMatchingResult = JNAPSuccess(
         result: jnapResultOk,
-        output:
-            baseWanStatusOutput(wanStatus: 'Connecting'), // Not 'Connected'
+        output: baseWanStatusOutput(wanStatus: 'Connecting'), // Not 'Connected'
       );
 
       when(mockRouterRepository.scheduledCommand(

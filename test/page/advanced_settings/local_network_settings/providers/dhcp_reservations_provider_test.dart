@@ -310,8 +310,8 @@ void main() {
             description: 'Device2',
           ),
         );
-        notifier
-            .updateSettings(DHCPReservationsSettings(reservations: const [newItem]));
+        notifier.updateSettings(
+            DHCPReservationsSettings(reservations: const [newItem]));
         final state = container.read(dhcpReservationProvider);
 
         expect(state.settings.current.reservations, hasLength(1));

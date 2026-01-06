@@ -68,7 +68,8 @@ void main() {
     });
 
     test('fromMap handles null values', () {
-      final state = WifiAdvancedSettingsState.fromMap(const <String, dynamic>{});
+      final state =
+          WifiAdvancedSettingsState.fromMap(const <String, dynamic>{});
       expect(state.isIptvEnabled, isNull);
       expect(state.isMLOEnabled, isNull);
     });

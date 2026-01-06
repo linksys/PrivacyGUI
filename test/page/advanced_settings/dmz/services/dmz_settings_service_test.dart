@@ -208,12 +208,14 @@ void main() {
         );
 
         when(() => mockRepository.send(
-              any(),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              auth: any(named: 'auth'),
-              data: any(named: 'data'),
-            )).thenAnswer((_) async => JNAPSuccess(result: 'ok', output: const {}));
+                  any(),
+                  fetchRemote: any(named: 'fetchRemote'),
+                  cacheLevel: any(named: 'cacheLevel'),
+                  auth: any(named: 'auth'),
+                  data: any(named: 'data'),
+                ))
+            .thenAnswer(
+                (_) async => JNAPSuccess(result: 'ok', output: const {}));
 
         final mockRef = UnitTestHelper.createMockRef(
           routerRepository: mockRepository,
@@ -275,12 +277,14 @@ void main() {
         );
 
         when(() => mockRepository.send(
-              any(),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              auth: any(named: 'auth'),
-              data: any(named: 'data'),
-            )).thenAnswer((_) async => JNAPSuccess(result: 'ok', output: const {}));
+                  any(),
+                  fetchRemote: any(named: 'fetchRemote'),
+                  cacheLevel: any(named: 'cacheLevel'),
+                  auth: any(named: 'auth'),
+                  data: any(named: 'data'),
+                ))
+            .thenAnswer(
+                (_) async => JNAPSuccess(result: 'ok', output: const {}));
 
         final mockRef = UnitTestHelper.createMockRef(
           routerRepository: mockRepository,
