@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:privacy_gui/utils.dart';
 import 'package:test/test.dart';
 import 'package:privacy_gui/core/utils/fernet_manager.dart';
