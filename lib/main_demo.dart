@@ -38,7 +38,7 @@ void main() async {
 
   // Load environment variables (for AWS credentials)
   try {
-    await dotenv.load(fileName: 'env.template');
+    await dotenv.load(fileName: 'assets/agents/.env');
   } catch (e) {
     debugPrint('No .env file found, using defaults');
   }

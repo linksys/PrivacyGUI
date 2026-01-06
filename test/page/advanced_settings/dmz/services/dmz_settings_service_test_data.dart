@@ -21,7 +21,7 @@ class DMZSettingsTestData {
           'maxNetworkPrefixLength': 30,
           'minAllowedDHCPLeaseMinutes': 1,
           'maxAllowedDHCPLeaseMinutes': 525600,
-          'dhcpSettings': {
+          'dhcpSettings': const {
             'firstClientIPAddress': '192.168.1.10',
             'lastClientIPAddress': '192.168.1.254',
             'leaseMinutes': 1440,

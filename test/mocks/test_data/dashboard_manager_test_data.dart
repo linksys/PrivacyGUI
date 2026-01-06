@@ -31,7 +31,7 @@ class DashboardManagerTestData {
           'manufacturer': manufacturer,
           'description': description,
           'firmwareDate': firmwareDate,
-          'services': ['http://linksys.com/jnap/core/Core'],
+          'services': const ['http://linksys.com/jnap/core/Core'],
         },
       );
 
@@ -271,7 +271,7 @@ class DashboardManagerTestData {
     return createSuccessfulPollingData(
       localTime: JNAPSuccess(
         result: 'OK',
-        output: {
+        output: const {
           'currentTime': 'invalid-time-format',
         },
       ),

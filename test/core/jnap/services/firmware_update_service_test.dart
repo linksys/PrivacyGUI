@@ -838,8 +838,8 @@ void main() {
               onCompleted: anyNamed('onCompleted'),
               requestTimeoutOverride: anyNamed('requestTimeoutOverride'),
               auth: anyNamed('auth')))
-          .thenAnswer((_) => Stream.value(
-              JNAPSuccess(result: 'OK', output: {'firmwareUpdateStatus': []})));
+          .thenAnswer((_) => Stream.value(JNAPSuccess(
+              result: 'OK', output: const {'firmwareUpdateStatus': []})));
 
       final resultStream = service.fetchFirmwareUpdateStream(
           force: true, retry: 2, currentNodesStatus: nodesStatus);
@@ -875,7 +875,7 @@ void main() {
             {
               'deviceUUID': 'uuid1',
               'lastSuccessfulCheckTime': DateTime.now().toIso8601String(),
-              'availableUpdate': {
+              'availableUpdate': const {
                 'firmwareVersion': '1.0.0',
                 'firmwareDate': '2025-01-01',
               },
@@ -896,7 +896,7 @@ void main() {
         '_checkFirmwareUpdateComplete returns false when firmware update is not complete for nodes',
         () {
       final service = container.read(firmwareUpdateServiceProvider);
-      final result = JNAPSuccess(result: 'OK', output: {
+      final result = JNAPSuccess(result: 'OK', output: const {
         'firmwareUpdateStatus': [
           {
             'deviceUUID': 'uuid1',
@@ -926,7 +926,7 @@ void main() {
         '_checkFirmwareUpdateComplete returns true when firmware update is complete for nodes',
         () {
       final service = container.read(firmwareUpdateServiceProvider);
-      final result = JNAPSuccess(result: 'OK', output: {
+      final result = JNAPSuccess(result: 'OK', output: const {
         'firmwareUpdateStatus': [
           {
             'deviceUUID': 'uuid1',

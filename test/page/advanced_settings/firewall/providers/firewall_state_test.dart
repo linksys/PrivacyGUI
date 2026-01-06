@@ -700,7 +700,7 @@ void main() {
         );
         const state = FirewallState(
           settings: preservableSettings,
-          status: const EmptyStatus(),
+          status: EmptyStatus(),
         );
 
         const newSettings = FirewallUISettings(
@@ -746,7 +746,7 @@ void main() {
         );
         const state = FirewallState(
           settings: preservableSettings,
-          status: const EmptyStatus(),
+          status: EmptyStatus(),
         );
 
         const newStatus = EmptyStatus();
@@ -778,7 +778,7 @@ void main() {
         );
         const state = FirewallState(
           settings: preservableSettings,
-          status: const EmptyStatus(),
+          status: EmptyStatus(),
         );
 
         // Act
@@ -809,7 +809,7 @@ void main() {
         );
         const state = FirewallState(
           settings: preservableSettings,
-          status: const EmptyStatus(),
+          status: EmptyStatus(),
         );
 
         // Act
@@ -839,7 +839,7 @@ void main() {
         );
         const originalState = FirewallState(
           settings: preservableSettings,
-          status: const EmptyStatus(),
+          status: EmptyStatus(),
         );
         final map = originalState.toMap();
 
@@ -870,7 +870,7 @@ void main() {
         );
         const originalState = FirewallState(
           settings: preservableSettings,
-          status: const EmptyStatus(),
+          status: EmptyStatus(),
         );
 
         // Act
@@ -901,7 +901,7 @@ void main() {
         );
         const originalState = FirewallState(
           settings: preservableSettings,
-          status: const EmptyStatus(),
+          status: EmptyStatus(),
         );
         final map = originalState.toMap();
         final json = jsonEncode(map);

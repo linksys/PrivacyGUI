@@ -23,7 +23,7 @@ class IPv6PortServiceTestData {
       JNAPSuccess(
         result: 'OK',
         output: {
-          'rules': [],
+          'rules': const [],
           'maxRules': maxRules,
           'maxDescriptionLength': maxDescriptionLength,
         },
@@ -86,7 +86,7 @@ class IPv6PortServiceTestData {
       JNAPSuccess(
         result: 'OK',
         output: {
-          'rules': [
+          'rules': const [
             {
               'description': 'Web Server',
               'ipv6Address': '2001:db8::1',

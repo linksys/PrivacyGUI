@@ -15,7 +15,7 @@ void main() {
     late PnpIspService pnpIspService;
 
     // Helper for common mock output
-    Map<String, dynamic> _baseWanStatusOutput({
+    Map<String, dynamic> baseWanStatusOutput({
       String wanStatus = 'Connecting',
       String ipAddress = '0.0.0.0',
       bool includeWanConnection = false,
@@ -55,7 +55,7 @@ void main() {
       // ARRANGE
       final successResult = JNAPSuccess(
         result: jnapResultOk,
-        output: _baseWanStatusOutput(wanStatus: 'Connected'),
+        output: baseWanStatusOutput(wanStatus: 'Connected'),
       );
 
       when(mockRouterRepository.scheduledCommand(
@@ -80,7 +80,7 @@ void main() {
       // ARRANGE
       final successResult = JNAPSuccess(
         result: jnapResultOk,
-        output: _baseWanStatusOutput(
+        output: baseWanStatusOutput(
           wanStatus: 'Connected', // PPPoE also needs to be 'Connected'
           ipAddress: '123.45.67.89',
           includeWanConnection: true,
@@ -109,8 +109,7 @@ void main() {
       // ARRANGE
       final nonMatchingResult = JNAPSuccess(
         result: jnapResultOk,
-        output:
-            _baseWanStatusOutput(wanStatus: 'Connecting'), // Not 'Connected'
+        output: baseWanStatusOutput(wanStatus: 'Connecting'), // Not 'Connected'
       );
 
       when(mockRouterRepository.scheduledCommand(
@@ -145,7 +144,7 @@ void main() {
       // ARRANGE
       final nonMatchingResult = JNAPSuccess(
         result: jnapResultOk,
-        output: _baseWanStatusOutput(
+        output: baseWanStatusOutput(
           wanStatus: 'Connected', // Status is connected, but IP is invalid
           ipAddress: '0.0.0.0',
           includeWanConnection: true,

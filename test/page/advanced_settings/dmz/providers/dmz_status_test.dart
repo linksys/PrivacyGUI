@@ -40,7 +40,7 @@ void main() {
     });
 
     test('fromMap uses defaults for missing values', () {
-      final status = DMZStatus.fromMap(<String, dynamic>{});
+      final status = DMZStatus.fromMap(const <String, dynamic>{});
       expect(status.ipAddress, '192.168.1.1');
       expect(status.subnetMask, '255.255.0.0');
     });

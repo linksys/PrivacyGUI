@@ -92,7 +92,7 @@ void main() {
 
       final newStepState = PnpStepState(
         status: StepViewStatus.error,
-        data: {'ssid': 'NewWiFi', 'password': 'newpassword'},
+        data: const {'ssid': 'NewWiFi', 'password': 'newpassword'},
         error: Exception('New error'),
       );
       pnpNotifier.setStepState(stepId, newStepState);

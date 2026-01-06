@@ -5,7 +5,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/services/static_routing_service.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
 import '../../../../mocks/test_data/static_routing_test_data.dart';
 
 class MockRouterRepository extends Mock implements RouterRepository {}

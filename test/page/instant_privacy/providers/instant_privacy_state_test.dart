@@ -62,7 +62,7 @@ void main() {
     });
 
     test('copyWith creates new instance with updated mode', () {
-      final original = const InstantPrivacyStatus(mode: MacFilterMode.disabled);
+      const original = InstantPrivacyStatus(mode: MacFilterMode.disabled);
       final copied = original.copyWith(mode: MacFilterMode.allow);
 
       expect(copied.mode, MacFilterMode.allow);
@@ -70,7 +70,7 @@ void main() {
     });
 
     test('copyWith retains original value when not specified', () {
-      final original = const InstantPrivacyStatus(mode: MacFilterMode.allow);
+      const original = InstantPrivacyStatus(mode: MacFilterMode.allow);
       final copied = original.copyWith();
 
       expect(copied.mode, MacFilterMode.allow);

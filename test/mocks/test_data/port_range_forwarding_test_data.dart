@@ -80,7 +80,7 @@ class PortRangeForwardingTestData {
     return JNAPSuccess(
       result: 'ok',
       output: {
-        'rules': [],
+        'rules': const [],
         'maxRules': maxRules,
         'maxDescriptionLength': maxDescriptionLength,
       },
@@ -104,11 +104,11 @@ class PortRangeForwardingTestData {
         'maxAllowedDHCPLeaseMinutes': 10080,
         'maxDHCPReservationDescriptionLength': 32,
         'hostName': 'Linksys',
-        'dhcpSettings': <String, dynamic>{
+        'dhcpSettings': const <String, dynamic>{
           'firstClientIPAddress': '192.168.1.100',
           'lastClientIPAddress': '192.168.1.200',
           'leaseMinutes': 1440,
-          'reservations': const <Map<String, dynamic>>[],
+          'reservations': <Map<String, dynamic>>[],
         },
       },
     );

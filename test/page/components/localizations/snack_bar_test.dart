@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -108,7 +107,7 @@ void main() {
       'Failed: Unknown error: _ErrorUnexpected',
     ];
 
-    final startIndex = 6; // Success buttons (0-5) take up first 6 slots
+    const startIndex = 6; // Success buttons (0-5) take up first 6 slots
 
     for (var i = 0; i < failedButtons.length; i++) {
       final label = failedButtons[i];

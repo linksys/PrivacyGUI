@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_routing_rule_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_rule_state.dart';
 
 void main() {
   group('StaticRoutingRuleNotifier', () {
@@ -17,7 +16,6 @@ void main() {
     });
 
     test('builds with default initial state', () {
-      final notifier = container.read(staticRoutingRuleProvider.notifier);
       final state = container.read(staticRoutingRuleProvider);
 
       expect(state.routerIp, '192.168.1.1');

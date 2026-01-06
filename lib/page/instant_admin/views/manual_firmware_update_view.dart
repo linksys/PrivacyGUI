@@ -183,7 +183,7 @@ class _ManualFirmwareUpdateViewState
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width * 0.5,
                   child: Column(
-                    children: [
+                    children: const [
                       AppLoader(
                         variant: LoaderVariant.linear,
                       ),

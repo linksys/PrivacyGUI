@@ -46,7 +46,7 @@ jobs:
         run: git config --global url."git@github.com:".insteadOf "https://github.com/"
 
       - name: 📋 Setup Environment File
-        run: cp env.template assets/.env
+        run: cp assets/agents/env.template assets/agents/.env
 
       - name: Install Dependencies
         run: flutter pub get
@@ -101,7 +101,7 @@ jobs:
         run: git config --global url."git@github.com:".insteadOf "https://github.com/"
 
       - name: 📋 Setup Environment File
-        run: cp env.template assets/.env
+        run: cp assets/agents/env.template assets/agents/.env
 
       - name: Install Dependencies
         run: flutter pub get

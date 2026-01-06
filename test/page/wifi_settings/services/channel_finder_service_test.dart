@@ -1,10 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/channelfinder_info.dart';
 import 'package:privacy_gui/page/wifi_settings/services/channel_finder_service.dart';
 
 class MockRouterRepository extends Mock implements RouterRepository {}
@@ -26,7 +24,7 @@ void main() {
     group('getSelectedChannels', () {
       test('returns empty list when no channels', () async {
         when(() => mockRepo.send(any(), cacheLevel: any(named: 'cacheLevel')))
-            .thenAnswer((_) async => JNAPSuccess(result: 'OK', output: {
+            .thenAnswer((_) async => JNAPSuccess(result: 'OK', output: const {
                   'isRunning': false,
                   'selectedChannels': [],
                 }));
@@ -38,7 +36,7 @@ void main() {
 
       test('returns selected channels when available', () async {
         when(() => mockRepo.send(any(), cacheLevel: any(named: 'cacheLevel')))
-            .thenAnswer((_) async => JNAPSuccess(result: 'OK', output: {
+            .thenAnswer((_) async => JNAPSuccess(result: 'OK', output: const {
                   'isRunning': false,
                   'selectedChannels': [
                     {
@@ -59,7 +57,7 @@ void main() {
 
       test('throws error when already running', () async {
         when(() => mockRepo.send(any(), cacheLevel: any(named: 'cacheLevel')))
-            .thenAnswer((_) async => JNAPSuccess(result: 'OK', output: {
+            .thenAnswer((_) async => JNAPSuccess(result: 'OK', output: const {
                   'isRunning': true,
                 }));
 

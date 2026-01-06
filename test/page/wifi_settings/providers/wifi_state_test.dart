@@ -67,12 +67,12 @@ void main() {
 
     test('equality comparison works', () {
       final s1 = WiFiListSettings(
-        mainWiFi: [],
+        mainWiFi: const [],
         guestWiFi: createGuestItem(),
         simpleModeWifi: createWifiItem(),
       );
       final s2 = WiFiListSettings(
-        mainWiFi: [],
+        mainWiFi: const [],
         guestWiFi: createGuestItem(),
         simpleModeWifi: createWifiItem(),
       );

@@ -49,7 +49,7 @@ void main() async {
   // Load environment variables for FAQ Agent (AWS Bedrock)
   // Create assets/.env with AWS credentials (copy from gen_ui_client)
   try {
-    await dotenv.load(fileName: 'env.template');
+    await dotenv.load(fileName: 'assets/agents/.env');
     debugPrint('FAQ Agent: .env loaded successfully');
   } catch (e) {
     debugPrint('Warning: Could not load .env file for FAQ Agent: $e');

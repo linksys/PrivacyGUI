@@ -23,7 +23,7 @@ class SinglePortForwardingTestData {
           'hostName': 'linksys',
           'maxDHCPReservationDescriptionLength': 32,
           'isDHCPEnabled': true,
-          'dhcpSettings': {
+          'dhcpSettings': const {
             'lastClientIPAddress': '192.168.1.254',
             'leaseMinutes': 1440,
             'reservations': [],

@@ -213,7 +213,7 @@ void main() {
             .thenReturn(RadioInfoUIModel.initial());
         when(() => mockService.parseGuestRadioSettings(any()))
             .thenReturn(GuestRadioSettingsUIModel.initial());
-        when(() => mockService.stopTraceroute()).thenAnswer((_) async => null);
+        when(() => mockService.stopTraceroute()).thenAnswer((_) async {});
 
         container = createContainer();
         final notifier = container.read(instantVerifyProvider.notifier);

@@ -75,9 +75,9 @@ class DDNSTestData {
         'detectedWANType': 'DHCP',
         'wanStatus': wanStatus,
         'wanIPv6Status': 'Disconnected',
-        'supportedWANTypes': ['DHCP', 'Static', 'PPPoE'],
-        'supportedIPv6WANTypes': [],
-        'supportedWANCombinations': [],
+        'supportedWANTypes': const ['DHCP', 'Static', 'PPPoE'],
+        'supportedIPv6WANTypes': const [],
+        'supportedWANCombinations': const [],
         'wanConnection': {
           'wanType': 'DHCP',
           'ipAddress': wanIP,

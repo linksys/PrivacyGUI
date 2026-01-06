@@ -212,6 +212,8 @@ void main() {
           allDayOff: false,
         ),
       );
+      when(testHelper.mockNodeLightSettingsNotifier.currentStatus)
+          .thenReturn(NodeLightStatus.night);
 
       final context = await pumpNodeDetailView(tester, screen);
       final loc = testHelper.loc(context);

@@ -11,8 +11,9 @@ class InternetSettingsFormValidator {
       InputValidator([IpAddressNoReservedRule()]);
 
   ValidationError? validateMacAddress(String? value) {
-    if (value == null || value.isEmpty)
+    if (value == null || value.isEmpty) {
       return ValidationError.invalidMACAddress;
+    }
     if (_macValidator.validate(value)) {
       return null;
     } else {
@@ -39,8 +40,9 @@ class InternetSettingsFormValidator {
   }
 
   ValidationError? validateSubnetMask(String? value) {
-    if (value == null || value.isEmpty)
+    if (value == null || value.isEmpty) {
       return ValidationError.invalidSubnetMask;
+    }
     final subnetMaskValidator = SubnetMaskValidator();
     if (subnetMaskValidator.validate(value)) {
       return null;
@@ -50,8 +52,9 @@ class InternetSettingsFormValidator {
   }
 
   ValidationError? validateIpAddress(String? value, [allowEmpty = false]) {
-    if (value == null || value.isEmpty)
+    if (value == null || value.isEmpty) {
       return allowEmpty ? null : ValidationError.invalidIpAddress;
+    }
     if (_ipv4Validator.validate(value)) {
       return null;
     } else {
@@ -60,8 +63,9 @@ class InternetSettingsFormValidator {
   }
 
   ValidationError? validateEmpty(String? value) {
-    if (value == null || value.isEmpty)
+    if (value == null || value.isEmpty) {
       return ValidationError.fieldCannotBeEmpty;
+    }
     return null;
   }
 }

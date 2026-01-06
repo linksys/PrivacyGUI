@@ -351,18 +351,18 @@ void main() {
 
       final mockTransaction = JNAPTransactionSuccessWrap(
         result: 'OK',
-        data: [
+        data: const [
           MapEntry(
             JNAPAction.setMACAddressCloneSettings,
-            const JNAPSuccess(result: 'OK', output: {}),
+            JNAPSuccess(result: 'OK', output: {}),
           ),
           MapEntry(
             JNAPAction.setWANSettings,
-            const JNAPSuccess(result: 'OK', output: {}),
+            JNAPSuccess(result: 'OK', output: {}),
           ),
           MapEntry(
             JNAPAction.setIPv6Settings,
-            const JNAPSuccess(result: 'OK', output: {}),
+            JNAPSuccess(result: 'OK', output: {}),
           ),
         ],
       );
@@ -394,18 +394,18 @@ void main() {
 
       final mockTransaction = JNAPTransactionSuccessWrap(
         result: 'OK',
-        data: [
+        data: const [
           MapEntry(
             JNAPAction.setMACAddressCloneSettings,
-            const JNAPSuccess(result: 'OK', output: {}),
+            JNAPSuccess(result: 'OK', output: {}),
           ),
           MapEntry(
             JNAPAction.setWANSettings,
-            const JNAPSuccess(result: 'OK', output: {}),
+            JNAPSuccess(result: 'OK', output: {}),
           ),
           MapEntry(
             JNAPAction.setIPv6Settings,
-            const JNAPSuccess(result: 'OK', output: {}),
+            JNAPSuccess(result: 'OK', output: {}),
           ),
         ],
       );
@@ -439,14 +439,14 @@ void main() {
 
       final mockTransaction = JNAPTransactionSuccessWrap(
         result: 'OK',
-        data: [
+        data: const [
           MapEntry(
             JNAPAction.setMACAddressCloneSettings,
-            const JNAPSuccess(result: 'OK', output: {}),
+            JNAPSuccess(result: 'OK', output: {}),
           ),
           MapEntry(
             JNAPAction.setWANSettings,
-            const JNAPSuccess(
+            JNAPSuccess(
               result: 'OK',
               output: {
                 'redirection': {'url': 'http://192.168.1.1'}
@@ -455,7 +455,7 @@ void main() {
           ),
           MapEntry(
             JNAPAction.setIPv6Settings,
-            const JNAPSuccess(result: 'OK', output: {}),
+            JNAPSuccess(result: 'OK', output: {}),
           ),
         ],
       );
@@ -523,14 +523,14 @@ void main() {
             cacheLevel: any(named: 'cacheLevel'),
           )).thenAnswer((_) async => JNAPTransactionSuccessWrap(
             result: 'OK',
-            data: [
+            data: const [
               MapEntry(
                 JNAPAction.setMACAddressCloneSettings,
-                const JNAPSuccess(result: 'OK', output: {}),
+                JNAPSuccess(result: 'OK', output: {}),
               ),
               MapEntry(
                 JNAPAction.setWANSettings,
-                const JNAPSuccess(result: 'OK', output: {}),
+                JNAPSuccess(result: 'OK', output: {}),
               ),
             ],
           ));
@@ -604,7 +604,7 @@ void main() {
       );
 
       // Create ServiceSideEffectError without originalResult
-      final sideEffectError = const ServiceSideEffectError(null);
+      const sideEffectError = ServiceSideEffectError(null);
 
       when(() => mockRepo.transaction(
             any(),

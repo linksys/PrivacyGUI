@@ -252,7 +252,7 @@ void main() {
         expect(state.result, partialResult);
         expect(state.step, HealthCheckStep.uploadBandwidth);
         // Meter value should have changed from 0.0 (initial) to a predictable non-zero value
-        final expectedRandomValue = (0.5 * (15 - (-3)) + (-3)) * 1024;
+        const expectedRandomValue = (0.5 * (15 - (-3)) + (-3)) * 1024;
         expect(state.meterValue, expectedRandomValue);
       });
 

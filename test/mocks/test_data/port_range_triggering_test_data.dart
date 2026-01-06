@@ -80,7 +80,7 @@ class PortRangeTriggeringTestData {
     return JNAPSuccess(
       result: 'ok',
       output: {
-        'rules': [],
+        'rules': const [],
         'maxRules': maxRules,
         'maxDescriptionLength': maxDescriptionLength,
       },

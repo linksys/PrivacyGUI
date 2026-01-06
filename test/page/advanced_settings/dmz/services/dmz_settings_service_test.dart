@@ -4,7 +4,6 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/jnap/models/dmz_settings.dart' as jnap_models;
 import 'package:privacy_gui/page/advanced_settings/dmz/providers/dmz_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/dmz/services/dmz_settings_service.dart';
 
@@ -209,12 +208,14 @@ void main() {
         );
 
         when(() => mockRepository.send(
-              any(),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              auth: any(named: 'auth'),
-              data: any(named: 'data'),
-            )).thenAnswer((_) async => JNAPSuccess(result: 'ok', output: {}));
+                  any(),
+                  fetchRemote: any(named: 'fetchRemote'),
+                  cacheLevel: any(named: 'cacheLevel'),
+                  auth: any(named: 'auth'),
+                  data: any(named: 'data'),
+                ))
+            .thenAnswer(
+                (_) async => JNAPSuccess(result: 'ok', output: const {}));
 
         final mockRef = UnitTestHelper.createMockRef(
           routerRepository: mockRepository,
@@ -276,12 +277,14 @@ void main() {
         );
 
         when(() => mockRepository.send(
-              any(),
-              fetchRemote: any(named: 'fetchRemote'),
-              cacheLevel: any(named: 'cacheLevel'),
-              auth: any(named: 'auth'),
-              data: any(named: 'data'),
-            )).thenAnswer((_) async => JNAPSuccess(result: 'ok', output: {}));
+                  any(),
+                  fetchRemote: any(named: 'fetchRemote'),
+                  cacheLevel: any(named: 'cacheLevel'),
+                  auth: any(named: 'auth'),
+                  data: any(named: 'data'),
+                ))
+            .thenAnswer(
+                (_) async => JNAPSuccess(result: 'ok', output: const {}));
 
         final mockRef = UnitTestHelper.createMockRef(
           routerRepository: mockRepository,

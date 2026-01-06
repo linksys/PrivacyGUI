@@ -17,7 +17,7 @@ class IdleChecker extends StatefulWidget {
   });
 
   @override
-  _IdleCheckerState createState() => _IdleCheckerState();
+  State<IdleChecker> createState() => _IdleCheckerState();
 }
 
 class _IdleCheckerState extends State<IdleChecker> {

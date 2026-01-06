@@ -49,7 +49,7 @@ void main() {
 
     test('setFile updates the state with file info', () {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
-      final fileName = 'test.img';
+      const fileName = 'test.img';
       final fileBytes = Uint8List.fromList([1, 2, 3]);
 
       notifier.setFile(fileName, fileBytes);
@@ -93,7 +93,7 @@ void main() {
 
     test('manualFirmwareUpdate handles null localPassword', () async {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
-      final fileName = 'firmware.img';
+      const fileName = 'firmware.img';
       final bytes = Uint8List.fromList([1, 2, 3]);
       notifier.setFile(fileName, bytes);
 
@@ -115,7 +115,7 @@ void main() {
     test('manualFirmwareUpdate calls pollingProvider.notifier.stopPolling',
         () async {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
-      final fileName = 'firmware.img';
+      const fileName = 'firmware.img';
       final bytes = Uint8List.fromList([1, 2, 3]);
       notifier.setFile(fileName, bytes);
 
@@ -131,7 +131,7 @@ void main() {
     test('manualFirmwareUpdate sets status to installing on service success',
         () async {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
-      final fileName = 'firmware.img';
+      const fileName = 'firmware.img';
       final bytes = Uint8List.fromList([1, 2, 3]);
       notifier.setFile(fileName, bytes);
 
@@ -149,7 +149,7 @@ void main() {
     test('manualFirmwareUpdate sets status to null on service failure',
         () async {
       final notifier = container.read(manualFirmwareUpdateProvider.notifier);
-      final fileName = 'firmware.img';
+      const fileName = 'firmware.img';
       final bytes = Uint8List.fromList([1, 2, 3]);
       notifier.setFile(fileName, bytes);
 

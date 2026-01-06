@@ -60,7 +60,7 @@ void main() {
     });
 
     test('fromMap uses defaults for missing values', () {
-      final model = StaticRouteEntryUIModel.fromMap(<String, dynamic>{});
+      final model = StaticRouteEntryUIModel.fromMap(const <String, dynamic>{});
       expect(model.name, '');
       expect(model.interface, 'LAN');
     });

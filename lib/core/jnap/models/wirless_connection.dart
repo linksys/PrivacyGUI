@@ -38,7 +38,7 @@ class WirelessConnection extends Equatable {
       isGuest: isGuest ?? this.isGuest,
       radioID: radioID ?? this.radioID,
       band: band ?? this.band,
-      signalDecibels: signalBecibels ?? this.signalDecibels,
+      signalDecibels: signalBecibels ?? signalDecibels,
       txRate: txRate ?? this.txRate,
       rxRate: rxRate ?? this.rxRate,
       isMLOCapable: isMLOCapable ?? this.isMLOCapable,

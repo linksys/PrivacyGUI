@@ -1,13 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:usp_protocol_common/usp_protocol_common.dart';
 import '../generated/usp_msg.pb.dart' as pb;
-import '../dtos/base_dto.dart';
-import '../dtos/requests/usp_requests.dart';
-import '../dtos/responses/usp_responses.dart';
-import '../value_objects/usp_path.dart';
-import '../value_objects/usp_value.dart';
-import '../value_objects/usp_value_type.dart';
-import '../exceptions/usp_exception.dart';
 
 /// A utility class for converting between USP DTOs and Protobuf messages.
 class UspProtobufConverter {

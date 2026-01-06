@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:mockito/mockito.dart';
 
 void main() {
   // Use a simple test wrapper that provides the AppDesignTheme

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/models/static_route_entry_ui_model.dart';
 import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_state.dart';
-import 'dart:convert';
 
 void main() {
   group('StaticRouteEntryUI - Model Tests', () {
@@ -150,7 +149,7 @@ void main() {
       final settings = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
-        entries: [],
+        entries: const [],
       );
 
       // Assert
@@ -164,7 +163,7 @@ void main() {
       final original = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
-        entries: [],
+        entries: const [],
       );
 
       // Act
@@ -181,17 +180,17 @@ void main() {
       final settings1 = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
-        entries: [],
+        entries: const [],
       );
       final settings2 = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
-        entries: [],
+        entries: const [],
       );
       final settings3 = StaticRoutingSettings(
         isNATEnabled: false,
         isDynamicRoutingEnabled: false,
-        entries: [],
+        entries: const [],
       );
 
       // Assert
@@ -246,7 +245,7 @@ void main() {
       final original = StaticRoutingSettings(
         isNATEnabled: true,
         isDynamicRoutingEnabled: false,
-        entries: [],
+        entries: const [],
       );
 
       // Act

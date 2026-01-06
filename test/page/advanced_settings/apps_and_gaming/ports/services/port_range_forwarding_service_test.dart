@@ -237,8 +237,8 @@ void main() {
         () async {
       // Arrange
       final uiModel = PortRangeForwardingRuleListUIModel(
-        rules: [
-          const PortRangeForwardingRuleUIModel(
+        rules: const [
+          PortRangeForwardingRuleUIModel(
             isEnabled: true,
             firstExternalPort: 5000,
             protocol: 'TCP',
@@ -306,8 +306,8 @@ void main() {
     test('saves multiple rules correctly', () async {
       // Arrange
       final uiModel = PortRangeForwardingRuleListUIModel(
-        rules: [
-          const PortRangeForwardingRuleUIModel(
+        rules: const [
+          PortRangeForwardingRuleUIModel(
             isEnabled: true,
             firstExternalPort: 3000,
             protocol: 'TCP',
@@ -315,7 +315,7 @@ void main() {
             lastExternalPort: 3000,
             description: 'Rule 1',
           ),
-          const PortRangeForwardingRuleUIModel(
+          PortRangeForwardingRuleUIModel(
             isEnabled: false,
             firstExternalPort: 4000,
             protocol: 'UDP',

@@ -36,8 +36,8 @@ void main() {
           isEnabled: true,
           description: 'SSH Access',
           ipv6Address: '2001:db8::1',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 22, lastPort: 22),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 22, lastPort: 22),
           ],
         );
 
@@ -62,17 +62,17 @@ void main() {
             isEnabled: true,
             description: 'Web Server',
             ipv6Address: '2001:db8::1',
-            portRanges: [
-              const PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
-              const PortRange(protocol: 'TCP', firstPort: 443, lastPort: 443),
+            portRanges: const [
+              PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+              PortRange(protocol: 'TCP', firstPort: 443, lastPort: 443),
             ],
           ),
           IPv6FirewallRule(
             isEnabled: false,
             description: 'DNS',
             ipv6Address: '2001:db8::2',
-            portRanges: [
-              const PortRange(protocol: 'UDP', firstPort: 53, lastPort: 53),
+            portRanges: const [
+              PortRange(protocol: 'UDP', firstPort: 53, lastPort: 53),
             ],
           ),
         ];
@@ -101,25 +101,24 @@ void main() {
             isEnabled: true,
             description: 'TCP Rule',
             ipv6Address: '2001:db8::1',
-            portRanges: [
-              const PortRange(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
+            portRanges: const [
+              PortRange(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
             ],
           ),
           IPv6FirewallRule(
             isEnabled: true,
             description: 'UDP Rule',
             ipv6Address: '2001:db8::2',
-            portRanges: [
-              const PortRange(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
+            portRanges: const [
+              PortRange(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
             ],
           ),
           IPv6FirewallRule(
             isEnabled: true,
             description: 'Both Rule',
             ipv6Address: '2001:db8::3',
-            portRanges: [
-              const PortRange(
-                  protocol: 'Both', firstPort: 5000, lastPort: 6000),
+            portRanges: const [
+              PortRange(protocol: 'Both', firstPort: 5000, lastPort: 6000),
             ],
           ),
         ];
@@ -136,8 +135,8 @@ void main() {
           isEnabled: true,
           description: 'Edge Ports',
           ipv6Address: '2001:db8::1',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 0, lastPort: 65535),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 0, lastPort: 65535),
           ],
         );
 
@@ -154,8 +153,8 @@ void main() {
           isEnabled: true,
           description: 'Test-Rule_#123!@Special',
           ipv6Address: '2001:db8::1',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 8080, lastPort: 8080),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 8080, lastPort: 8080),
           ],
         );
 
@@ -170,8 +169,8 @@ void main() {
           isEnabled: true,
           description: longDescription,
           ipv6Address: '2001:db8::1',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
           ],
         );
 
@@ -186,8 +185,8 @@ void main() {
           isEnabled: true,
           description: 'Test',
           ipv6Address: '2001:db8::1',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
           ],
         );
 
@@ -220,9 +219,9 @@ void main() {
           isEnabled: true,
           description: 'Preserve Test',
           ipv6Address: '2001:db8::10',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
-            const PortRange(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
+            PortRange(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
           ],
         );
 
@@ -277,8 +276,8 @@ void main() {
           isEnabled: true,
           description: 'Single Port',
           ipv6Address: '2001:db8::1',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 80, lastPort: 80),
           ],
         );
 
@@ -388,9 +387,9 @@ void main() {
           isEnabled: true,
           description: 'Round-trip Test',
           ipv6Address: '2001:db8::10',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
-            const PortRange(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 1000, lastPort: 2000),
+            PortRange(protocol: 'UDP', firstPort: 3000, lastPort: 4000),
           ],
         );
 
@@ -462,8 +461,8 @@ void main() {
           isEnabled: true,
           description: 'Bad Protocol',
           ipv6Address: '2001:db8::1',
-          portRanges: [
-            const PortRange(protocol: 'INVALID', firstPort: 80, lastPort: 80),
+          portRanges: const [
+            PortRange(protocol: 'INVALID', firstPort: 80, lastPort: 80),
           ],
         );
 
@@ -481,8 +480,8 @@ void main() {
           isEnabled: true,
           description: 'Bad Port',
           ipv6Address: '2001:db8::1',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 65536, lastPort: 65537),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 65536, lastPort: 65537),
           ],
         );
 
@@ -500,8 +499,8 @@ void main() {
           isEnabled: true,
           description: 'Reversed Range',
           ipv6Address: '2001:db8::1',
-          portRanges: [
-            const PortRange(protocol: 'TCP', firstPort: 443, lastPort: 80),
+          portRanges: const [
+            PortRange(protocol: 'TCP', firstPort: 443, lastPort: 80),
           ],
         );
 

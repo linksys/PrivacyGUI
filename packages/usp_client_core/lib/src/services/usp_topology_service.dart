@@ -260,7 +260,7 @@ class UspTopologyService {
 
       // Mock IPs for demonstration
       final mockIp = '192.168.1.${10 + i}';
-      final mockParentIp = '192.168.1.1'; // Assume master is parent
+      const mockParentIp = '192.168.1.1'; // Assume master is parent
 
       backhaulDevices.add(<String, dynamic>{
         'deviceUUID': mac,
