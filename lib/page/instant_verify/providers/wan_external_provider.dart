@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/providers/wan_external_state.dart';
-import 'package:privacy_gui/core/jnap/services/wan_external_service.dart';
+import 'package:privacy_gui/page/instant_verify/providers/wan_external_state.dart';
+import 'package:privacy_gui/page/instant_verify/services/wan_external_service.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 final wanExternalProvider =

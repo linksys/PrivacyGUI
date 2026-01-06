@@ -5,7 +5,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/jnap/services/polling_service.dart';
+import 'package:privacy_gui/core/data/services/polling_service.dart';
 import 'package:privacy_gui/di.dart';
 
 import '../../../mocks/jnap_service_supported_mocks.dart';
