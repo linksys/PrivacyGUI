@@ -42,12 +42,3 @@ enum DashboardLayoutVariant {
         : DashboardLayoutVariant.desktopVertical;
   }
 }
-
-/// Extension to provide utility methods for DashboardLayoutVariant
-extension DashboardLayoutVariantX on DashboardLayoutVariant {
-  /// Returns true if this is a desktop layout variant
-  bool get isDesktop => this != DashboardLayoutVariant.mobile;
-
-  /// Returns true if this is the mobile layout
-  bool get isMobile => this == DashboardLayoutVariant.mobile;
-}
