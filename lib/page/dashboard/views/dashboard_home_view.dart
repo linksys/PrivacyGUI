@@ -38,9 +38,20 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   Widget build(BuildContext context) {
     MediaQuery.of(context);
     final state = ref.watch(dashboardHomeProvider);
+    final preferences = ref.watch(dashboardPreferencesProvider);
     final hasLanPort = state.lanPortConnections.isNotEmpty;
     final isHorizontalLayout = state.isHorizontalLayout;
     final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
+
+    // Get display modes from preferences
+    final internetMode =
+        preferences.getMode(DashboardWidgetSpecs.internetStatus.id);
+    final networksMode = preferences.getMode(DashboardWidgetSpecs.networks.id);
+    final wifiMode = preferences.getMode(DashboardWidgetSpecs.wifiGrid.id);
+    final quickPanelMode =
+        preferences.getMode(DashboardWidgetSpecs.quickPanel.id);
+    final portAndSpeedMode =
+        preferences.getMode(DashboardWidgetSpecs.portAndSpeed.id);
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -68,14 +79,17 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           state: state,
           hasLanPort: hasLanPort,
           isHorizontalLayout: isHorizontalLayout,
+          displayModes: preferences.widgetModes,
           title: const DashboardHomeTitle(),
-          internetWidget: const InternetConnectionWidget(),
-          networksWidget: const DashboardNetworks(),
-          wifiGrid: const DashboardWiFiGrid(),
-          quickPanel: const DashboardQuickPanel(),
+          internetWidget: InternetConnectionWidget(displayMode: internetMode),
+          networksWidget: DashboardNetworks(displayMode: networksMode),
+          wifiGrid: DashboardWiFiGrid(displayMode: wifiMode),
+          quickPanel: DashboardQuickPanel(displayMode: quickPanelMode),
           vpnTile: isSupportVPN ? const VPNStatusTile() : null,
-          buildPortAndSpeed: (config) =>
-              DashboardHomePortAndSpeed(config: config),
+          buildPortAndSpeed: (config) => DashboardHomePortAndSpeed(
+            config: config,
+            displayMode: portAndSpeedMode,
+          ),
         );
 
         // 3. Delegate to strategy
