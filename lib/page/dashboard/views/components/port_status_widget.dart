@@ -173,12 +173,16 @@ class PortStatusWidget extends StatelessWidget {
             portImage,
           ],
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (connectionInfo != null) connectionInfo,
-            if (wanLabel != null) wanLabel,
-          ],
+        AppGap.md(),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (connectionInfo != null) connectionInfo,
+              if (wanLabel != null) wanLabel,
+            ],
+          ),
         ),
       ],
     );

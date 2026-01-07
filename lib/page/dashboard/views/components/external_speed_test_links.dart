@@ -30,19 +30,19 @@ class ExternalSpeedTestLinks extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.xl,
-        vertical: AppSpacing.sm,
+        vertical: AppSpacing.xs,
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           _buildHeader(context, horizontalLayout, hasLanPort),
-          AppGap.sm(),
+          const Spacer(),
           Flexible(
             child: isVerticalDesktop
                 ? _buildVerticalButtons(context)
                 : _buildHorizontalButtons(context),
           ),
-          AppGap.sm(),
+          const Spacer(),
           AppText.bodyExtraSmall(loc(context).speedTestExternalOthers),
         ],
       ),

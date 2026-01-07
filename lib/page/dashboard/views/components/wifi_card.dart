@@ -69,12 +69,14 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        AppText.bodyMedium(
-          widget.item.isGuest
-              ? loc(context).guestWifi
-              : loc(context).wifiBand(widget.item.radios
-                  .map((e) => e.replaceAll('RADIO_', ''))
-                  .join('/')),
+        Expanded(
+          child: AppText.bodyMedium(
+            widget.item.isGuest
+                ? loc(context).guestWifi
+                : loc(context).wifiBand(widget.item.radios
+                    .map((e) => e.replaceAll('RADIO_', ''))
+                    .join('/')),
+          ),
         ),
         AppSwitch(
           value: widget.item.isEnabled,
@@ -104,8 +106,11 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
             children: [
               AppIcon.font(AppFontIcons.devices),
               AppGap.sm(),
-              AppText.labelLarge(
-                loc(context).nDevices(widget.item.numOfConnectedDevices),
+              Flexible(
+                child: AppText.labelLarge(
+                  loc(context).nDevices(widget.item.numOfConnectedDevices),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

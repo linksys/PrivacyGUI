@@ -267,7 +267,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.titleSmall('$count'),
+                Flexible(child: AppText.titleSmall('$count')),
                 icon,
               ],
             ),

@@ -85,7 +85,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     return Column(
       children: [
         SizedBox(
-          height: 256,
+          height: 300,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
