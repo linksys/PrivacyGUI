@@ -23,12 +23,13 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
     final isLoading =
         (ref.watch(pollingProvider).value?.isReady ?? false) == false;
-    final crossAxisCount = context.isMobileLayout ? 1 : 2;
+    final crossAxisCount =
+        (context.isMobileLayout || context.isTabletLayout) ? 1 : 2;
     // Use layout gutter for horizontal spacing to match Dashboard Layout
     final mainSpacing =
         AppLayoutConfig.gutter(MediaQuery.of(context).size.width);
     const itemHeight = 176.0;
-    final mainAxisCount = (items.length / crossAxisCount);
+    final mainAxisCount = (items.length / crossAxisCount).ceil();
 
     final enabledWiFiCount =
         items.where((e) => !e.isGuest && e.isEnabled).length;
