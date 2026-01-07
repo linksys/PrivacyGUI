@@ -24,7 +24,9 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
     final isLoading =
         (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     final crossAxisCount = context.isMobileLayout ? 1 : 2;
-    const mainSpacing = AppSpacing.lg;
+    // Use layout gutter for horizontal spacing to match Dashboard Layout
+    final mainSpacing =
+        AppLayoutConfig.gutter(MediaQuery.of(context).size.width);
     const itemHeight = 176.0;
     final mainAxisCount = (items.length / crossAxisCount);
 
@@ -37,7 +39,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
     final gridHeight = isLoading
         ? itemHeight * 2 + mainSpacing * 1
         : mainAxisCount * itemHeight +
-            ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * mainSpacing +
+            ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * AppSpacing.lg +
             100;
 
     if (isLoading) {
