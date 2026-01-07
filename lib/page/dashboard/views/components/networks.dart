@@ -44,8 +44,8 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     final meshTopology = TopologyAdapter.convert(topologyState.root.children);
 
     // Calculate topology height
-    const topologyItemHeight = 96.0;
-    const treeViewBaseHeight = 68.0;
+    const topologyItemHeight = 72.0;
+    const treeViewBaseHeight = 72.0;
     final routerLength =
         topologyState.root.children.firstOrNull?.toFlatList().length ?? 1;
     final double nodeTopologyHeight = context.isMobileLayout
