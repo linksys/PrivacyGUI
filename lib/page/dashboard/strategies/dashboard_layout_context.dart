@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../models/display_mode.dart';
+import '../models/widget_spec.dart';
+import 'grid_layout_resolver.dart';
+
 /// Configuration for port and speed widget building.
 class PortAndSpeedConfig {
   /// Direction of port layout (horizontal or vertical).
@@ -79,6 +83,15 @@ class DashboardLayoutContext {
   /// a properly configured port and speed widget.
   final Widget Function(PortAndSpeedConfig config) buildPortAndSpeed;
 
+  // ---------------------------------------------------------------------------
+  // Grid Constraint System
+  // ---------------------------------------------------------------------------
+
+  /// Display modes for each widget (keyed by widget ID).
+  ///
+  /// Used by the grid constraint system to determine widget sizing.
+  final Map<String, DisplayMode> displayModes;
+
   const DashboardLayoutContext({
     required this.context,
     required this.ref,
@@ -92,8 +105,47 @@ class DashboardLayoutContext {
     required this.quickPanel,
     this.vpnTile,
     required this.buildPortAndSpeed,
+    this.displayModes = const {},
   });
 
   /// Convenience getter for column width calculation.
   double colWidth(int columns) => context.colWidth(columns);
+
+  // ---------------------------------------------------------------------------
+  // Grid Constraint Helpers
+  // ---------------------------------------------------------------------------
+
+  /// Creates a [GridLayoutResolver] for this context.
+  GridLayoutResolver get resolver => GridLayoutResolver(context);
+
+  /// Gets the display mode for a widget spec.
+  DisplayMode getModeFor(WidgetSpec spec) =>
+      displayModes[spec.id] ?? DisplayMode.normal;
+
+  /// Gets the resolved column count for a widget.
+  int getColumnsFor(WidgetSpec spec, {int? availableColumns}) =>
+      resolver.resolveColumns(spec, getModeFor(spec),
+          availableColumns: availableColumns);
+
+  /// Gets the resolved width for a widget.
+  double getWidthFor(WidgetSpec spec, {int? availableColumns}) => resolver
+      .resolveWidth(spec, getModeFor(spec), availableColumns: availableColumns);
+
+  /// Gets the resolved height for a widget (null = intrinsic).
+  double? getHeightFor(WidgetSpec spec, {int? availableColumns}) =>
+      resolver.resolveHeight(spec, getModeFor(spec),
+          availableColumns: availableColumns);
+
+  /// Wraps a widget with size constraints based on its spec.
+  Widget wrapWidget(
+    Widget child, {
+    required WidgetSpec spec,
+    int? availableColumns,
+  }) =>
+      resolver.wrapWithConstraints(
+        child,
+        spec: spec,
+        mode: getModeFor(spec),
+        availableColumns: availableColumns,
+      );
 }
