@@ -37,11 +37,9 @@ class ExternalSpeedTestLinks extends StatelessWidget {
         children: [
           _buildHeader(context, horizontalLayout, hasLanPort),
           AppGap.xs(),
-          Flexible(
-            child: isVerticalDesktop
-                ? _buildVerticalButtons(context)
-                : _buildHorizontalButtons(context),
-          ),
+          isVerticalDesktop
+              ? _buildVerticalButtons(context)
+              : _buildHorizontalButtons(context),
           AppGap.xs(),
           AppText.bodyExtraSmall(loc(context).speedTestExternalOthers),
         ],
