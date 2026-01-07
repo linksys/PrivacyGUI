@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Grid displaying WiFi networks for the dashboard.
+///
+/// Supports three display modes:
+/// - [DisplayMode.compact]: Horizontal scrollable cards
+/// - [DisplayMode.normal]: 2-column grid
+/// - [DisplayMode.expanded]: Larger cards with more details
 class DashboardWiFiGrid extends ConsumerStatefulWidget {
-  const DashboardWiFiGrid({super.key});
+  const DashboardWiFiGrid({
+    super.key,
+    this.displayMode = DisplayMode.normal,
+  });
+
+  /// The display mode for this widget
+  final DisplayMode displayMode;
 
   @override
   ConsumerState<DashboardWiFiGrid> createState() => _DashboardWiFiGridState();

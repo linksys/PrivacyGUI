@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shared_widgets.dart';
+import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
@@ -16,8 +17,20 @@ import 'package:privacy_gui/utils.dart';
 
 import 'package:ui_kit_library/ui_kit.dart';
 
+/// Widget displaying internet connection status.
+///
+/// Supports three display modes:
+/// - [DisplayMode.compact]: Only status indicator and IP
+/// - [DisplayMode.normal]: Full display with router info
+/// - [DisplayMode.expanded]: Extra details like uptime
 class InternetConnectionWidget extends ConsumerStatefulWidget {
-  const InternetConnectionWidget({super.key});
+  const InternetConnectionWidget({
+    super.key,
+    this.displayMode = DisplayMode.normal,
+  });
+
+  /// The display mode for this widget
+  final DisplayMode displayMode;
 
   @override
   ConsumerState<InternetConnectionWidget> createState() =>
@@ -29,9 +42,17 @@ class _InternetConnectionWidgetState
   @override
   Widget build(BuildContext context) {
     return DashboardLoadingWrapper(
-      loadingHeight: 150,
+      loadingHeight: _getLoadingHeight(),
       builder: (context, ref) => _buildContent(context, ref),
     );
+  }
+
+  double _getLoadingHeight() {
+    return switch (widget.displayMode) {
+      DisplayMode.compact => 80,
+      DisplayMode.normal => 150,
+      DisplayMode.expanded => 200,
+    };
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {

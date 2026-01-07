@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/strategies/dashboard_layout_context.dart';
@@ -19,24 +20,41 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// This component follows IoC (Inversion of Control) - configuration is
 /// provided by the parent [DashboardLayoutStrategy] via [PortAndSpeedConfig],
 /// rather than self-determining layout based on variant.
+///
+/// Supports three display modes:
+/// - [DisplayMode.compact]: Minimal port status only
+/// - [DisplayMode.normal]: Ports with speed test
+/// - [DisplayMode.expanded]: Detailed port and speed info
 class DashboardHomePortAndSpeed extends ConsumerWidget {
   const DashboardHomePortAndSpeed({
     super.key,
     required this.config,
+    this.displayMode = DisplayMode.normal,
   });
 
   /// Configuration provided by the parent Strategy.
   final PortAndSpeedConfig config;
 
+  /// The display mode for this widget
+  final DisplayMode displayMode;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DashboardLoadingWrapper(
-      loadingHeight: 250,
+      loadingHeight: _getLoadingHeight(),
       builder: (context, ref) {
         final state = ref.watch(dashboardHomeProvider);
         return _buildLayout(context, ref, state);
       },
     );
+  }
+
+  double _getLoadingHeight() {
+    return switch (displayMode) {
+      DisplayMode.compact => 150,
+      DisplayMode.normal => 250,
+      DisplayMode.expanded => 350,
+    };
   }
 
   Widget _buildLayout(

@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/nodes/providers/node_light_settings_provider.da
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -16,8 +17,20 @@ import 'package:privacy_gui/page/nodes/providers/node_detail_state.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+/// Quick actions panel for the dashboard.
+///
+/// Supports three display modes:
+/// - [DisplayMode.compact]: Minimal toggles only
+/// - [DisplayMode.normal]: Standard toggle list
+/// - [DisplayMode.expanded]: Expanded toggles with descriptions
 class DashboardQuickPanel extends ConsumerStatefulWidget {
-  const DashboardQuickPanel({super.key});
+  const DashboardQuickPanel({
+    super.key,
+    this.displayMode = DisplayMode.normal,
+  });
+
+  /// The display mode for this widget
+  final DisplayMode displayMode;
 
   @override
   ConsumerState<DashboardQuickPanel> createState() =>
@@ -28,9 +41,17 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
   @override
   Widget build(BuildContext context) {
     return DashboardLoadingWrapper(
-      loadingHeight: 150,
+      loadingHeight: _getLoadingHeight(),
       builder: (context, ref) => _buildContent(context, ref),
     );
+  }
+
+  double _getLoadingHeight() {
+    return switch (widget.displayMode) {
+      DisplayMode.compact => 100,
+      DisplayMode.normal => 150,
+      DisplayMode.expanded => 200,
+    };
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {

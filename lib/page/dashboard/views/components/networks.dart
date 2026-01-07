@@ -17,14 +17,35 @@ import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+/// Widget displaying network topology and nodes.
+///
+/// Supports three display modes:
+/// - [DisplayMode.compact]: Minimal view with node/device counts only
+/// - [DisplayMode.normal]: Standard view with topology tree
+/// - [DisplayMode.expanded]: Full view with detailed topology
 class DashboardNetworks extends ConsumerWidget {
-  const DashboardNetworks({super.key});
+  const DashboardNetworks({
+    super.key,
+    this.displayMode = DisplayMode.normal,
+  });
+
+  /// The display mode for this widget
+  final DisplayMode displayMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DashboardLoadingWrapper(
+      loadingHeight: _getLoadingHeight(),
       builder: (context, ref) => _buildContent(context, ref),
     );
+  }
+
+  double _getLoadingHeight() {
+    return switch (displayMode) {
+      DisplayMode.compact => 120,
+      DisplayMode.normal => 250,
+      DisplayMode.expanded => 350,
+    };
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {

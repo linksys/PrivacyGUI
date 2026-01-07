@@ -1,6 +1,7 @@
 /// Dashboard home components barrel file.
 library;
 
+export 'dashboard_layout_settings_panel.dart';
 export 'dashboard_loading_wrapper.dart';
 export 'dashboard_tile.dart';
 export 'external_speed_test_links.dart';
