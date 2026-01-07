@@ -153,6 +153,137 @@ class AddNodesNotifier extends AutoDisposeNotifier<AddNodesState> {
 
 ---
 
+## Scope Extension: AddWiredNodesService (2026-01-07)
+
+### 7. BackhaulInfoUIModel Design
+
+**Question**: How should `BackHaulInfoData` be replaced in AddWiredNodesState?
+
+**Decision**: Create `BackhaulInfoUIModel` as a dedicated UI model in `lib/page/nodes/models/`.
+
+**Rationale**:
+- State currently uses `List<BackHaulInfoData>` which violates architecture (JNAP model in State)
+- Per constitution §5.3.1: separate models per layer
+- UI model only needs fields actually used by Provider/State
+
+**Fields required** (from `add_wired_nodes_state.dart` and `add_wired_nodes_provider.dart` usage):
+```dart
+class BackhaulInfoUIModel extends Equatable {
+  final String deviceUUID;
+  final String connectionType;
+  final String timestamp;
+
+  // Factory from JNAP model (used by Service)
+  factory BackhaulInfoUIModel.fromJnap(BackHaulInfoData data);
+
+  // Equatable, toMap/fromMap, toJson/fromJson
+}
+```
+
+**Alternatives Considered**:
+- Reuse `BackHaulInfoData` directly → Rejected (violates architecture)
+- Generic interface → Rejected (over-engineering)
+
+---
+
+### 8. Timestamp Comparison Logic Location
+
+**Question**: Where should the timestamp parsing and comparison logic reside?
+
+**Decision**: Move to `AddWiredNodesService` as a private helper method.
+
+**Rationale**:
+- This is data transformation logic, not UI state management
+- Current implementation in Provider uses `DateFormat` which is a data concern
+- Service can encapsulate the complex comparison logic for detecting new nodes
+
+**Current location**: `add_wired_nodes_provider.dart` lines 165-197
+**Target location**: `AddWiredNodesService._isNewBackhaulEntry()` or similar
+
+---
+
+### 9. BackhaulPollResult Structure
+
+**Question**: What should `pollBackhaulChanges()` return through its Stream?
+
+**Decision**: Create a simple result class to carry poll results.
+
+**Rationale**:
+- Need to return both the backhaul list AND the "found counting" metric
+- Provider uses `foundCounting` to update UI message
+- Stream should emit intermediate results during polling
+
+**Structure**:
+```dart
+class BackhaulPollResult {
+  final List<BackhaulInfoUIModel> backhaulList;
+  final int foundCounting;
+  final bool anyOnboarded;
+
+  BackhaulPollResult({...});
+}
+```
+
+---
+
+### 10. Service Method Signatures (Wired)
+
+**Question**: What should `AddWiredNodesService` method signatures look like?
+
+**Decision**: Follow same patterns as `AddNodesService` with wired-specific operations.
+
+**Methods**:
+```dart
+class AddWiredNodesService {
+  final RouterRepository _routerRepository;
+
+  AddWiredNodesService(this._routerRepository);
+
+  /// Enable/disable wired auto-onboarding
+  Future<void> setAutoOnboardingEnabled(bool enabled);
+
+  /// Get current wired auto-onboarding status
+  Future<bool> getAutoOnboardingEnabled();
+
+  /// Poll for backhaul changes compared to snapshot
+  Stream<BackhaulPollResult> pollBackhaulChanges(
+    List<BackhaulInfoUIModel> snapshot, {
+    bool refreshing = false,
+  });
+
+  /// Fetch all node devices
+  Future<List<LinksysDevice>> fetchNodes();
+}
+```
+
+---
+
+### 11. Shared vs Separate Test Data Builders
+
+**Question**: Should `AddWiredNodesTestData` be separate from `AddNodesTestData`?
+
+**Decision**: Create separate `AddWiredNodesTestData` for wired-specific JNAP responses.
+
+**Rationale**:
+- Different JNAP actions (wired vs Bluetooth)
+- Different response structures
+- Clearer test organization
+
+**Methods**:
+```dart
+class AddWiredNodesTestData {
+  static JNAPSuccess createWiredAutoOnboardingSettingsSuccess({bool isEnabled = false});
+  static JNAPSuccess createBackhaulInfoSuccess({List<Map<String, dynamic>>? devices});
+  static JNAPSuccess createDevicesSuccess({List<Map<String, dynamic>>? devices});
+  static JNAPError createJNAPError({String result = 'ErrorUnknown'});
+}
+```
+
+---
+
 ## Open Questions Resolved
 
 All research questions resolved. No NEEDS CLARIFICATION items remain.
+
+**AddNodesService (Bluetooth)**: ✅ Implemented
+**AddWiredNodesService (Wired)**: Ready for Phase 1 design
