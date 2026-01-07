@@ -1,3 +1,6 @@
+import 'package:flutter/widgets.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+
 /// Defines the different layout variants for the dashboard.
 /// Used to determine how components should arrange themselves.
 enum DashboardLayoutVariant {
@@ -14,7 +17,30 @@ enum DashboardLayoutVariant {
   desktopNoLanPorts,
 
   /// Tablet layout - optimized for mid-size screens (flexible 2-column)
-  tablet,
+  tablet;
+
+  /// Resolves the layout variant based on context and state.
+  static DashboardLayoutVariant fromContext(
+    BuildContext context, {
+    required bool hasLanPort,
+    required bool isHorizontalLayout,
+  }) {
+    if (context.isMobileLayout) {
+      return DashboardLayoutVariant.mobile;
+    }
+
+    if (context.isTabletLayout) {
+      return DashboardLayoutVariant.tablet;
+    }
+
+    if (!hasLanPort) {
+      return DashboardLayoutVariant.desktopNoLanPorts;
+    }
+
+    return isHorizontalLayout
+        ? DashboardLayoutVariant.desktopHorizontal
+        : DashboardLayoutVariant.desktopVertical;
+  }
 }
 
 /// Extension to provide utility methods for DashboardLayoutVariant

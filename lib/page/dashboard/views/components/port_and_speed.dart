@@ -39,15 +39,11 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     }
 
     // Determine layout variant
-    final layoutVariant = context.isMobileLayout
-        ? DashboardLayoutVariant.mobile
-        : context.isTabletLayout
-            ? DashboardLayoutVariant.tablet
-            : !hasLanPort
-                ? DashboardLayoutVariant.desktopNoLanPorts
-                : horizontalLayout
-                    ? DashboardLayoutVariant.desktopHorizontal
-                    : DashboardLayoutVariant.desktopVertical;
+    final layoutVariant = DashboardLayoutVariant.fromContext(
+      context,
+      hasLanPort: hasLanPort,
+      isHorizontalLayout: horizontalLayout,
+    );
 
     return _buildLayout(context, ref, state, layoutVariant);
   }

@@ -88,8 +88,14 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
 
     // Determine layout variant
+    // Determine layout variant
+    final layoutVariant = DashboardLayoutVariant.fromContext(
+      context,
+      hasLanPort: hasLanPort,
+      isHorizontalLayout: state.isHorizontalLayout,
+    );
     final useVerticalLayout =
-        !context.isMobileLayout && hasLanPort && !state.isHorizontalLayout;
+        layoutVariant == DashboardLayoutVariant.desktopVertical;
 
     final titleSection = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
