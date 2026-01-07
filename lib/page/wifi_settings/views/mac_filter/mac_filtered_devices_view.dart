@@ -41,17 +41,21 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
 
     return UiKitPageView.withSliver(
       title: loc(context).filteredDevices,
-      actions: [
-        AppButton.text(
-          label: loc(context).edit,
-          icon: AppIcon.font(AppFontIcons.edit),
-          onTap: state.current.privacy.denyMacAddresses.isNotEmpty
-              ? () {
-                  _toggleEdit();
-                }
-              : null,
-        )
-      ],
+      menu: UiKitMenuConfig(
+        title: '',
+        items: [
+          UiKitMenuItem(
+            label: loc(context).edit,
+            icon: AppFontIcons.edit,
+            onTap: state.current.privacy.denyMacAddresses.isNotEmpty
+                ? () {
+                    _toggleEdit();
+                  }
+                : null,
+          ),
+        ],
+      ),
+      menuPosition: MenuPosition.top,
       bottomBar: _isEdit
           ? UiKitBottomBarConfig(
               positiveLabel: loc(context).remove,
@@ -147,77 +151,60 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
               ),
             ),
           )
-        : SizedBox(
-            height: 76.0 * state.length + AppSpacing.sm * state.length,
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: state.length,
-              itemBuilder: (context, index) {
-                final device = state[index];
-                return SizedBox(
-                  height: 76,
-                  child: Container(
-                    decoration: _selectedMACs.contains(device.macAddress)
-                        ? BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.primaryContainer,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          )
-                        : null,
-                    child: AppCard(
-                      onTap: _isEdit
-                          ? () {
-                              setState(() {
-                                if (_selectedMACs.contains(device.macAddress)) {
-                                  _selectedMACs.remove(device.macAddress);
-                                } else {
-                                  _selectedMACs.add(device.macAddress);
-                                }
-                              });
-                            }
-                          : null,
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Row(
+        : ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: state.length,
+            itemBuilder: (context, index) {
+              final device = state[index];
+              final isSelected = _selectedMACs.contains(device.macAddress);
+              return AppCard(
+                isSelected: isSelected,
+                onTap: _isEdit
+                    ? () {
+                        setState(() {
+                          if (_selectedMACs.contains(device.macAddress)) {
+                            _selectedMACs.remove(device.macAddress);
+                          } else {
+                            _selectedMACs.add(device.macAddress);
+                          }
+                        });
+                      }
+                    : null,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Row(
+                  children: [
+                    if (_isEdit) ...[
+                      IgnorePointer(
+                        child: AppCheckbox(
+                          value: _selectedMACs.contains(device.macAddress),
+                          onChanged: (value) {},
+                        ),
+                      ),
+                      AppGap.lg(),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if (_isEdit) ...[
-                            IgnorePointer(
-                              child: AppCheckbox(
-                                value:
-                                    _selectedMACs.contains(device.macAddress),
-                                onChanged: (value) {},
-                              ),
-                            ),
-                            AppGap.lg(),
-                          ],
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                AppText.labelLarge(device.name),
-                                AppGap.xs(),
-                                AppText.bodyMedium(device.macAddress),
-                              ],
-                            ),
-                          ),
+                          AppText.labelLarge(device.name),
+                          AppGap.xs(),
+                          AppText.bodyMedium(device.macAddress),
                         ],
                       ),
                     ),
-                  ),
-                );
-              },
-              separatorBuilder: (BuildContext context, int index) {
-                if (index != state.length - 1) {
-                  return AppGap.sm();
-                } else {
-                  return const Center();
-                }
-              },
-            ),
+                  ],
+                ),
+              );
+            },
+            separatorBuilder: (BuildContext context, int index) {
+              if (index != state.length - 1) {
+                return AppGap.sm();
+              } else {
+                return const Center();
+              }
+            },
           );
   }
 
@@ -230,33 +217,31 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
       title: loc(context).macAddress,
       contentBuilder: (context, setState, onSubmit) => Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            children: [
-              AppTextFormField(
-                key: const Key('macAddressTextField'),
-                controller: controller,
-                label: loc(context).macAddress,
-                onChanged: (text) {
-                  setState(() {
-                    isValid = InputValidator([MACAddressRule()])
-                        .validate(controller.text);
-                    isDuplicate = ref
-                        .read(macFilteringDeviceListProvider)
-                        .any((device) => device.macAddress == controller.text);
-                  });
-                },
+          AppMacAddressTextField(
+            key: const Key('macAddressTextField'),
+            controller: controller,
+            label: loc(context).macAddress,
+            onChanged: (text) {
+              setState(() {
+                isValid = InputValidator([MACAddressRule()])
+                    .validate(controller.text);
+                isDuplicate = ref
+                    .read(macFilteringDeviceListProvider)
+                    .any((device) => device.macAddress == controller.text);
+              });
+            },
+            invalidFormatMessage: loc(context).invalidMACAddress,
+          ),
+          if (!isValid || isDuplicate)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
+              child: AppText.bodySmall(
+                loc(context).invalidMACAddress,
+                color: Theme.of(context).colorScheme.error,
               ),
-              if (!isValid || isDuplicate)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.xs),
-                  child: AppText.bodySmall(
-                    loc(context).invalidMACAddress,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-            ],
-          )
+            )
         ],
       ),
       event: () async {

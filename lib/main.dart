@@ -39,7 +39,8 @@ void main() async {
   // TODO Revisit again until Flutter SDK 3.27.x
   // https://github.com/flutter/engine/commit/35af5fe80e0212caff4b34b583232d833b5a2596
   //
-  if (defaultTargetPlatform != TargetPlatform.iOS &&
+  if (!kDebugMode &&
+      defaultTargetPlatform != TargetPlatform.iOS &&
       defaultTargetPlatform != TargetPlatform.android) {
     SemanticsBinding.instance.ensureSemantics();
   }

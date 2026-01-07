@@ -65,10 +65,12 @@ dependencies:
   usp_protocol_common:
     path: packages/usp_protocol_common
 
+  # ui_kit_library:
+  #   git:
+  #     url: https://github.com/linksys/privacyGUI-UI-kit.git
+  #     ref: v2.10.1
   ui_kit_library:
-    git:
-      url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.10.1
+    path: ../../ui_kit
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git

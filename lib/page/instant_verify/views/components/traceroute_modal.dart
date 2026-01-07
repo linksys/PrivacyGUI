@@ -63,7 +63,8 @@ class _TracerouteModalState extends ConsumerState<TracerouteModal> {
               child: SizedBox(
                   width: 36, height: 36, child: CircularProgressIndicator())),
         if (_tracerouteLog.isNotEmpty)
-          Expanded(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 300),
             child: SingleChildScrollView(
               child: AppText.bodySmall(_tracerouteLog),
             ),

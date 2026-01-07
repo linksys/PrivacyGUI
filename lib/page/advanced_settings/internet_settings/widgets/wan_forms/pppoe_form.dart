@@ -96,6 +96,8 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
     // Fix: Compare against current controller text to avoid cursor reset
     // Only update controller if the new value is actually different from what's currently in the input
     if ((newIpv4Setting.username ?? '') != _usernameController.text) {
+      debugPrint(
+          'PppoeForm: Syncing Username. State=${newIpv4Setting.username}, Ctrl=${_usernameController.text}');
       _usernameController.text = newIpv4Setting.username ?? '';
     }
     if ((newIpv4Setting.password ?? '') != _passwordController.text) {
@@ -105,6 +107,8 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
     final newVlanStr =
         newIpv4Setting.vlanId != null ? '${newIpv4Setting.vlanId}' : '';
     if (newVlanStr != _vlanIdController.text) {
+      debugPrint(
+          'PppoeForm: Syncing VlanId. State=$newVlanStr, Ctrl=${_vlanIdController.text}');
       _vlanIdController.text = newVlanStr;
     }
 
@@ -187,12 +191,12 @@ class _PppoeFormState extends BaseWanFormState<PppoeForm> {
           padding: inputPadding,
           child: AppMinMaxInput(
             key: const ValueKey('pppoeVlanId'),
+            controller: _vlanIdController,
             min: 5,
             max: 4094,
             label: loc(context).vlanIdOptional,
-            value: int.tryParse(_vlanIdController.text),
             onChanged: (value) {
-              _vlanIdController.text = value?.toString() ?? '';
+              // controller is updated by AppMinMaxInput internally
               notifier.updateIpv4Settings(ipv4Setting.copyWith(
                 vlanId: () => value,
               ));

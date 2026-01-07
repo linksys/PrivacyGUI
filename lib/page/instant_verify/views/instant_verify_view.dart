@@ -1039,8 +1039,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           title: loc(context).ping,
           icon: Icons.radio_button_checked,
           onTap: () {
-            doSomethingWithSpinner(
-                context, _showPingNetworkModal(context, ref));
+            _showPingNetworkModal(context, ref);
           },
         ),
         AppGap.lg(),
@@ -1050,7 +1049,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           title: loc(context).traceroute,
           icon: Icons.route,
           onTap: () {
-            doSomethingWithSpinner(context, _showTracerouteModal(context, ref));
+            _showTracerouteModal(context, ref);
           },
         ),
       ],

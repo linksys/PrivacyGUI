@@ -63,7 +63,8 @@ class _PingNetworkModalState extends ConsumerState<PingNetworkModal> {
               child: SizedBox(
                   width: 36, height: 36, child: CircularProgressIndicator())),
         if (_pingLog.isNotEmpty)
-          Expanded(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 300),
             child: SingleChildScrollView(
               child: AppText.bodySmall(_pingLog),
             ),

@@ -301,18 +301,17 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
     return await showSimpleAppDialog(
       context,
       title: loc(context).wifiListSaveModalTitle,
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
-            if (!widget.item.isGuest && widget.item.isEnabled)
-              ..._disableGuestBandWarning(),
-            AppGap.lg(),
-            AppText.bodyMedium(loc(context).doYouWantToContinue),
-          ],
-        ),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
+          if (!widget.item.isGuest && widget.item.isEnabled)
+            ..._disableGuestBandWarning(),
+          AppGap.lg(),
+          AppText.bodyMedium(loc(context).doYouWantToContinue),
+        ],
       ),
       actions: [
         AppButton.text(label: loc(context).cancel, onTap: () => context.pop()),
@@ -340,11 +339,10 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
   void _showWiFiShareModal(BuildContext context) {
     showSimpleAppDialog(context,
         title: loc(context).shareWiFi,
-        content: SingleChildScrollView(
-          child: WiFiShareDetailView(
-            ssid: widget.item.ssid,
-            password: widget.item.password,
-          ),
+        scrollable: true,
+        content: WiFiShareDetailView(
+          ssid: widget.item.ssid,
+          password: widget.item.password,
         ),
         actions: [
           AppButton.text(

@@ -42,7 +42,7 @@ class WifiAdvancedSettingsView extends ConsumerWidget {
         child: MasonryGridView.count(
           crossAxisCount: context.isMobileLayout ? 1 : 2,
           mainAxisSpacing: AppSpacing.sm,
-          crossAxisSpacing: context.colWidth(1),
+          crossAxisSpacing: context.layoutGutter,
           itemCount: advancedSettingWidgets.length,
           itemBuilder: (context, index) => advancedSettingWidgets[index],
           shrinkWrap: true,

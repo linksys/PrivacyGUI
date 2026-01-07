@@ -76,6 +76,7 @@ class AdvancedModeView extends ConsumerWidget {
     }
 
     return Table(
+      defaultVerticalAlignment: TableCellVerticalAlignment.intrinsicHeight,
       columnWidths: Map.fromEntries(
         List.generate(columnCount, (index) => index).map((e) =>
             e == columnCount - 1

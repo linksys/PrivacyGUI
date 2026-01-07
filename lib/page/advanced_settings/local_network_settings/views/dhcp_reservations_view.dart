@@ -141,10 +141,9 @@ class _DHCPReservationsContentViewState
                             onTap: () {
                               showSimpleAppOkDialog(
                                 context,
-                                content: SingleChildScrollView(
-                                  child: DevicesFilterWidget(
-                                    onlineOnly: true,
-                                  ),
+                                scrollable: true,
+                                content: DevicesFilterWidget(
+                                  onlineOnly: true,
                                 ),
                               );
                             },
