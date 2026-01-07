@@ -22,6 +22,7 @@ import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
+import 'package:privacy_gui/page/dashboard/views/components/port_status_widget.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_external_widget.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
@@ -743,102 +744,29 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                   children: [
                     ...state.lanPortConnections
                         .mapIndexed((index, e) => Expanded(
-                              child: _portWidget(
-                                  context,
-                                  e == 'None' ? null : e,
-                                  loc(context).indexedPort(index + 1),
-                                  false),
+                              child: PortStatusWidget(
+                                connection: e == 'None' ? null : e,
+                                label: loc(context).indexedPort(index + 1),
+                                isWan: false,
+                                hasLanPorts: true, // Force vertical layout
+                              ),
                             ))
                         .toList(),
                     Expanded(
-                      child: _portWidget(
-                          context,
-                          state.wanPortConnection == 'None'
-                              ? null
-                              : state.wanPortConnection,
-                          loc(context).wan,
-                          true),
-                    )
+                      child: PortStatusWidget(
+                        connection: state.wanPortConnection == 'None'
+                            ? null
+                            : state.wanPortConnection,
+                        label: loc(context).wan,
+                        isWan: true,
+                        hasLanPorts: true, // Force vertical layout
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           )),
-    );
-  }
-
-  Widget _portWidget(
-      BuildContext context, String? connection, String label, bool isWan) {
-    final isMobile = context.isMobileLayout;
-    final portLabel = [
-      AppIcon.font(
-        connection == null
-            ? AppFontIcons.circle
-            : AppFontIcons.checkCircleFilled,
-        color: connection == null
-            ? Theme.of(context).colorScheme.surfaceContainerHighest
-            : Theme.of(context).extension<AppColorScheme>()?.semanticSuccess,
-      ),
-      AppGap.sm(),
-      AppText.labelMedium(label),
-    ];
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Wrap(
-          // mainAxisSize: MainAxisSize.min,
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            isMobile
-                ? Column(
-                    children: portLabel,
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: portLabel,
-                  )
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: connection == null
-                ? Assets.images.imgPortOff.svg()
-                : Assets.images.imgPortOn.svg(),
-          ),
-        ),
-        if (connection != null)
-          Column(
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppIcon.font(
-                    AppFontIcons.bidirectional,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  AppText.bodySmall(connection),
-                ],
-              ),
-              SizedBox(
-                width: 70,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: AppText.bodySmall(
-                    loc(context).connectedSpeed,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                  ),
-                ),
-              )
-            ],
-          ),
-        if (isWan) AppText.labelMedium(loc(context).internet),
-      ],
     );
   }
 
