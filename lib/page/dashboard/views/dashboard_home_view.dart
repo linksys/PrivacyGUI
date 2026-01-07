@@ -77,6 +77,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           ],
         ),
         mobile: (context) => _mobileLayout(),
+        tablet: (context) => _tabletLayout(context),
       ),
     );
   }
@@ -84,8 +85,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   Widget _desktopNoLanPortsLayout(BuildContext layoutContext) {
     return Column(
       children: [
-        SizedBox(
-          height: 300,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 300),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -226,6 +227,62 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         AppGap.lg(),
         DashboardWiFiGrid(),
         AppGap.lg(),
+      ],
+    );
+  }
+
+  Widget _tabletLayout(BuildContext layoutContext) {
+    return Column(
+      children: [
+        DashboardHomeTitle(),
+        AppGap.xl(),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 1,
+                child: InternetConnectionWidget(),
+              ),
+              AppGap.gutter(),
+              Expanded(
+                flex: 1,
+                child: DashboardHomePortAndSpeed(),
+              ),
+            ],
+          ),
+        ),
+        AppGap.lg(),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 1,
+                child: Column(
+                  children: [
+                    DashboardNetworks(),
+                    AppGap.lg(),
+                    DashboardQuickPanel(),
+                  ],
+                ),
+              ),
+              AppGap.gutter(),
+              Expanded(
+                flex: 1,
+                child: Column(
+                  children: [
+                    if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
+                      VPNStatusTile(),
+                      AppGap.lg(),
+                    ],
+                    DashboardWiFiGrid(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

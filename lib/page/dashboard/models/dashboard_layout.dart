@@ -12,6 +12,9 @@ enum DashboardLayoutVariant {
 
   /// Desktop layout for devices without LAN ports
   desktopNoLanPorts,
+
+  /// Tablet layout - optimized for mid-size screens (flexible 2-column)
+  tablet,
 }
 
 /// Extension to provide utility methods for DashboardLayoutVariant

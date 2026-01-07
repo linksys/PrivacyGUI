@@ -41,11 +41,13 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     // Determine layout variant
     final layoutVariant = context.isMobileLayout
         ? DashboardLayoutVariant.mobile
-        : !hasLanPort
-            ? DashboardLayoutVariant.desktopNoLanPorts
-            : horizontalLayout
-                ? DashboardLayoutVariant.desktopHorizontal
-                : DashboardLayoutVariant.desktopVertical;
+        : context.isTabletLayout
+            ? DashboardLayoutVariant.tablet
+            : !hasLanPort
+                ? DashboardLayoutVariant.desktopNoLanPorts
+                : horizontalLayout
+                    ? DashboardLayoutVariant.desktopHorizontal
+                    : DashboardLayoutVariant.desktopVertical;
 
     return _buildLayout(context, ref, state, layoutVariant);
   }
@@ -67,7 +69,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       child: AppCard(
         padding: EdgeInsets.zero,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: config.mainAxisSize,
           mainAxisAlignment: config.mainAxisAlignment,
           children: [
             SizedBox(
@@ -188,6 +190,7 @@ class _LayoutConfig {
   final double? speedTestHeight;
   final EdgeInsets portsPadding;
   final MainAxisAlignment mainAxisAlignment;
+  final MainAxisSize mainAxisSize;
 
   const _LayoutConfig({
     required this.minHeight,
@@ -195,6 +198,7 @@ class _LayoutConfig {
     this.speedTestHeight,
     required this.portsPadding,
     this.mainAxisAlignment = MainAxisAlignment.start,
+    this.mainAxisSize = MainAxisSize.max,
   });
 
   factory _LayoutConfig.fromVariant(
@@ -209,6 +213,18 @@ class _LayoutConfig {
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.xxl,
           ),
+          mainAxisSize: MainAxisSize.min,
+        );
+      case DashboardLayoutVariant.tablet:
+        return _LayoutConfig(
+          minHeight: 0,
+          portsHeight: null, // Flexible
+          speedTestHeight: null, // Flexible
+          portsPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md, // Tighter than mobile?
+          ),
+          mainAxisSize: MainAxisSize.min,
         );
       case DashboardLayoutVariant.desktopHorizontal:
         return _LayoutConfig(
