@@ -11,12 +11,11 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/topology_adapter.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
+import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
+import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
-
 import 'package:ui_kit_library/ui_kit.dart';
 
 class DashboardNetworks extends ConsumerStatefulWidget {
@@ -31,10 +30,20 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardHomeProvider);
     final topologyState = ref.watch(instantTopologyProvider);
+    final isLoading =
+        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
+
+    if (isLoading) {
+      return AppCard(
+        padding: EdgeInsets.zero,
+        child: SizedBox(width: double.infinity, child: const LoadingTile()),
+      );
+    }
 
     // Convert topology data to ui_kit format
     final meshTopology = TopologyAdapter.convert(topologyState.root.children);
 
+    // Calculate topology height
     const topologyItemHeight = 96.0;
     const treeViewBaseHeight = 68.0;
     final routerLength =
@@ -42,192 +51,133 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     final double nodeTopologyHeight = context.isMobileLayout
         ? routerLength * topologyItemHeight
         : min(routerLength * topologyItemHeight, 3 * topologyItemHeight);
-    final hasLanPort =
-        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     final showAllTopology = context.isMobileLayout || routerLength <= 3;
-    final isLoading =
-        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
-    return isLoading
-        ? AppCard(
-            padding: EdgeInsets.zero,
-            child: SizedBox(width: double.infinity, child: const LoadingTile()))
-        : AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppGap.lg(),
-                AppResponsiveLayout(
-                  desktop: (ctx) => !hasLanPort
-                      ? _mobile(context, ref)
-                      : state.isHorizontalLayout
-                          ? _desktopHorizontal(context, ref)
-                          : _desktopVertical(context, ref),
-                  mobile: (ctx) => _mobile(context, ref),
-                ),
-                SizedBox(
-                  height:
-                      isLoading ? 188 : nodeTopologyHeight + treeViewBaseHeight,
-                  child: AppTopology(
-                    topology: meshTopology,
-                    viewMode:
-                        TopologyViewMode.tree, // Force tree view for dashboard
-                    enableAnimation:
-                        !showAllTopology, // Disable animation for mobile/small screens
-                    onNodeTap: TopologyAdapter.wrapNodeTapCallback(
-                      topologyState.root.children,
-                      (RouterTreeNode node) {
-                        if (node.data.isOnline) {
-                          ref.read(nodeDetailIdProvider.notifier).state =
-                              node.data.deviceId;
-                          context.pushNamed(RouteNamed.nodeDetails);
-                        }
-                      },
-                    ),
-                    indent: 16.0, // Reduced indentation
-                    treeConfig: TopologyTreeConfiguration(
-                      preferAnimationNode: false,
-                      showType: false,
-                      showStatusText: false,
-                      showStatusIndicator: true,
-                      titleBuilder: (meshNode) => meshNode.name,
-                      subtitleBuilder: (meshNode) {
-                        // Use metadata directly instead of searching the tree again
-                        final model = meshNode.extra;
-                        final deviceCount = meshNode
-                                .metadata?['connectedDeviceCount'] as int? ??
-                            0;
-                        final deviceLabel = deviceCount <= 1
-                            ? loc(context).device
-                            : loc(context).devices;
 
-                        if (model == null || model.isEmpty) {
-                          return '$deviceCount $deviceLabel';
-                        }
-                        return '$model • $deviceCount $deviceLabel';
-                      },
-                    ),
-                  ),
-                ),
-              ],
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppGap.lg(),
+          _buildNetworkHeader(context, ref, state),
+          SizedBox(
+            height: nodeTopologyHeight + treeViewBaseHeight,
+            child: _buildTopologyView(
+              context,
+              ref,
+              meshTopology,
+              topologyState,
+              showAllTopology,
             ),
-          );
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _desktopHorizontal(BuildContext context, WidgetRef ref) {
+  /// Unified network header with title, firmware status, and info tiles.
+  Widget _buildNetworkHeader(
+    BuildContext context,
+    WidgetRef ref,
+    DashboardHomeState state,
+  ) {
     final topologyState = ref.watch(instantTopologyProvider);
     final wanStatus = ref.watch(internetStatusProvider);
-
-    final newFirmware = hasNewFirmware(ref);
+    final newFirmware = _hasNewFirmware(ref);
     final isOnline = wanStatus == InternetStatus.online;
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
 
-    return Column(
+    // Determine layout variant
+    final useVerticalLayout =
+        !context.isMobileLayout && hasLanPort && !state.isHorizontalLayout;
+
+    final titleSection = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText.titleSmall(loc(context).myNetwork),
-        if (isOnline) ...[
-          AppGap.lg(),
-          _firmwareStatusWidget(context, newFirmware),
-        ],
-        AppGap.xxl(),
-        Row(
-          children: [
-            Expanded(
-              child: _nodesInfoTile(
-                context,
-                ref,
-                topologyState,
-              ),
-            ),
-            AppGap.gutter(),
-            Expanded(
-              child: _devicesInfoTile(
-                context,
-                ref,
-                topologyState,
-              ),
-            )
-          ],
-        ),
+        if (isOnline) _firmwareStatusWidget(context, newFirmware),
       ],
     );
-  }
 
-  Widget _desktopVertical(BuildContext context, WidgetRef ref) {
-    final wanStatus = ref.watch(internetStatusProvider);
-    final topologyState = ref.watch(instantTopologyProvider);
-    final newFirmware = hasNewFirmware(ref);
-    final isOnline = wanStatus == InternetStatus.online;
-
-    return Row(
+    final infoTilesSection = Row(
+      mainAxisSize: useVerticalLayout ? MainAxisSize.min : MainAxisSize.max,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.titleSmall(loc(context).myNetwork),
-            if (isOnline) _firmwareStatusWidget(context, newFirmware),
-          ],
-        ),
-        const Spacer(),
-        Expanded(
-          flex: 3,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _nodesInfoTile(context, ref, topologyState),
-              AppGap.gutter(),
-              _devicesInfoTile(
-                context,
-                ref,
-                topologyState,
-              )
-            ],
-          ),
-        ),
+        useVerticalLayout
+            ? _nodesInfoTile(context, ref, topologyState)
+            : Expanded(child: _nodesInfoTile(context, ref, topologyState)),
+        AppGap.gutter(),
+        useVerticalLayout
+            ? _devicesInfoTile(context, ref, topologyState)
+            : Expanded(child: _devicesInfoTile(context, ref, topologyState)),
       ],
     );
-  }
 
-  Widget _mobile(BuildContext context, WidgetRef ref) {
-    final newFirmware = hasNewFirmware(ref);
-    final wanStatus = ref.watch(internetStatusProvider);
-    final isOnline = wanStatus == InternetStatus.online;
-    final topologyState = ref.watch(instantTopologyProvider);
+    // Desktop vertical layout: title on left, info tiles on right
+    if (useVerticalLayout) {
+      return Row(
+        children: [
+          titleSection,
+          const Spacer(),
+          Expanded(flex: 3, child: infoTilesSection),
+        ],
+      );
+    }
 
+    // Mobile and desktop horizontal layout: title on top, info tiles below
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AppText.titleSmall(loc(context).myNetwork),
-            if (isOnline) _firmwareStatusWidget(context, newFirmware),
-          ],
-        ),
+        titleSection,
         AppGap.xxl(),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-                child: _nodesInfoTile(
-              context,
-              ref,
-              topologyState,
-            )),
-            AppGap.gutter(),
-            Expanded(
-              child: _devicesInfoTile(
-                context,
-                ref,
-                topologyState,
-              ),
-            )
-          ],
-        ),
+        infoTilesSection,
       ],
     );
   }
 
-  bool hasNewFirmware(WidgetRef ref) {
+  Widget _buildTopologyView(
+    BuildContext context,
+    WidgetRef ref,
+    MeshTopology meshTopology,
+    InstantTopologyState topologyState,
+    bool showAllTopology,
+  ) {
+    return AppTopology(
+      topology: meshTopology,
+      viewMode: TopologyViewMode.tree,
+      enableAnimation: !showAllTopology,
+      onNodeTap: TopologyAdapter.wrapNodeTapCallback(
+        topologyState.root.children,
+        (RouterTreeNode node) {
+          if (node.data.isOnline) {
+            ref.read(nodeDetailIdProvider.notifier).state = node.data.deviceId;
+            context.pushNamed(RouteNamed.nodeDetails);
+          }
+        },
+      ),
+      indent: 16.0,
+      treeConfig: TopologyTreeConfiguration(
+        preferAnimationNode: false,
+        showType: false,
+        showStatusText: false,
+        showStatusIndicator: true,
+        titleBuilder: (meshNode) => meshNode.name,
+        subtitleBuilder: (meshNode) {
+          final model = meshNode.extra;
+          final deviceCount =
+              meshNode.metadata?['connectedDeviceCount'] as int? ?? 0;
+          final deviceLabel =
+              deviceCount <= 1 ? loc(context).device : loc(context).devices;
+
+          if (model == null || model.isEmpty) {
+            return '$deviceCount $deviceLabel';
+          }
+          return '$model • $deviceCount $deviceLabel';
+        },
+      ),
+    );
+  }
+
+  bool _hasNewFirmware(WidgetRef ref) {
     final nodesStatus =
         ref.watch(firmwareUpdateProvider.select((value) => value.nodesStatus));
     return nodesStatus?.any((element) => element.availableUpdate != null) ??
@@ -248,7 +198,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                   loc(context).updateFirmware,
                   color: Theme.of(context).colorScheme.primary,
                 )
-              : _firmwareUpdateToDateWidget(context),
+              : AppStyledText(text: loc(context).dashboardFirmwareUpdateToDate),
           newFirmware
               ? AppIcon.font(
                   AppFontIcons.cloudDownload,
@@ -260,15 +210,9 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
                           .extension<AppColorScheme>()
                           ?.semanticSuccess ??
                       Colors.green,
-                )
+                ),
         ],
       ),
-    );
-  }
-
-  Widget _firmwareUpdateToDateWidget(BuildContext context) {
-    return AppStyledText(
-      text: loc(context).dashboardFirmwareUpdateToDate,
     );
   }
 
@@ -281,7 +225,6 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
           ? AppIcon.font(AppFontIcons.infoCircle,
               color: Theme.of(context).colorScheme.error)
           : AppIcon.font(AppFontIcons.networkNode),
-      // iconColor is now handled inside the AppIcon or ignored if passed
       text: nodes.length == 1 ? loc(context).node : loc(context).nodes,
       count: nodes.length,
       onTap: () {
@@ -304,9 +247,7 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
           externalDeviceCount == 1 ? loc(context).device : loc(context).devices,
       count: externalDeviceCount,
       icon: AppIcon.font(AppFontIcons.devices),
-      onTap: () {
-        context.pushNamed(RouteNamed.menuInstantDevices);
-      },
+      onTap: () => context.pushNamed(RouteNamed.menuInstantDevices),
     );
   }
 
