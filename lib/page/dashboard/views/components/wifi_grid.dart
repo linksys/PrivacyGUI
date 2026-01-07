@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
+import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/dashboard/views/components/wifi_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -19,10 +18,22 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
 
   @override
   Widget build(BuildContext context) {
+    return DashboardLoadingWrapper(
+      loadingHeight: _calculateLoadingHeight(context),
+      builder: (context, ref) => _buildContent(context, ref),
+    );
+  }
+
+  double _calculateLoadingHeight(BuildContext context) {
+    const itemHeight = 176.0;
+    final mainSpacing =
+        AppLayoutConfig.gutter(MediaQuery.of(context).size.width);
+    return itemHeight * 2 + mainSpacing * 1;
+  }
+
+  Widget _buildContent(BuildContext context, WidgetRef ref) {
     final items =
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
-    final isLoading =
-        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     final crossAxisCount =
         (context.isMobileLayout || context.isTabletLayout) ? 1 : 2;
     // Use layout gutter for horizontal spacing to match Dashboard Layout
@@ -37,18 +48,8 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     final canBeDisabled = enabledWiFiCount > 1 || hasLanPort;
 
-    final gridHeight = isLoading
-        ? itemHeight * 2 + mainSpacing * 1
-        : mainAxisCount * itemHeight +
-            ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * AppSpacing.lg +
-            100;
-
-    if (isLoading) {
-      return SizedBox(
-        height: gridHeight,
-        child: AppCard(padding: EdgeInsets.zero, child: LoadingTile()),
-      );
-    }
+    final gridHeight = mainAxisCount * itemHeight +
+        ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * AppSpacing.lg;
 
     return SizedBox(
       height: gridHeight,

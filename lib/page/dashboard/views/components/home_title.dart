@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
-import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
+import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -19,70 +18,65 @@ class DashboardHomeTitle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return DashboardLoadingWrapper(
+      loadingHeight: 150,
+      builder: (context, ref) => _buildContent(context, ref),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, WidgetRef ref) {
     final wanStatus = ref.watch(internetStatusProvider);
     final state = ref.watch(dashboardManagerProvider);
     final isOnline = wanStatus == InternetStatus.online;
-    final isLoading =
-        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
     final localTime = DateTime.fromMillisecondsSinceEpoch(state.localTime);
-    return isLoading
-        ? AppCard(
-            padding: EdgeInsets.zero,
-            child: SizedBox(
-                width: double.infinity,
-                height: 150,
-                child: const LoadingTile()))
-        : Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                helloString(context, localTime),
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                doSomethingWithSpinner(
+                        context, ref.read(timezoneProvider.notifier).fetch())
+                    .then((_) {
+                  if (!context.mounted) return;
+                  context.pushNamed(RouteNamed.settingsTimeZone);
+                });
+              },
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Expanded(
+                  AppIcon.font(AppFontIcons.calendar,
+                      color: Theme.of(context).colorScheme.onSurface),
+                  Padding(
+                    padding: EdgeInsets.only(left: AppSpacing.sm),
                     child: Text(
-                      helloString(context, localTime),
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      doSomethingWithSpinner(context,
-                              ref.read(timezoneProvider.notifier).fetch())
-                          .then((_) {
-                        if (!context.mounted) return;
-                        context.pushNamed(RouteNamed.settingsTimeZone);
-                      });
-                    },
-                    child: Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        AppIcon.font(AppFontIcons.calendar,
-                            color: Theme.of(context).colorScheme.onSurface),
-                        Padding(
-                          padding: EdgeInsets.only(left: AppSpacing.sm),
-                          child: Text(
-                            loc(context).formalDateTime(localTime, localTime),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      loc(context).formalDateTime(localTime, localTime),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
-                        ),
-                      ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-              if (!isLoading && !isOnline) _troubleshooting(context, ref),
-            ],
-          );
+            ),
+          ],
+        ),
+        if (!isOnline) _troubleshooting(context, ref),
+      ],
+    );
   }
 
   Widget _troubleshooting(BuildContext context, WidgetRef ref) {

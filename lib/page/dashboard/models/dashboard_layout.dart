@@ -17,7 +17,13 @@ enum DashboardLayoutVariant {
   desktopNoLanPorts,
 
   /// Tablet layout - optimized for mid-size screens (flexible 2-column)
-  tablet;
+  tablet,
+
+  /// Tablet layout with horizontal ports (stacked vertically)
+  tabletHorizontal,
+
+  /// Tablet layout with vertical ports (side-by-side)
+  tabletVertical;
 
   /// Resolves the layout variant based on context and state.
   static DashboardLayoutVariant fromContext(
@@ -30,7 +36,12 @@ enum DashboardLayoutVariant {
     }
 
     if (context.isTabletLayout) {
-      return DashboardLayoutVariant.tablet;
+      if (!hasLanPort) {
+        return DashboardLayoutVariant.tablet;
+      }
+      return isHorizontalLayout
+          ? DashboardLayoutVariant.tabletHorizontal
+          : DashboardLayoutVariant.tabletVertical;
     }
 
     if (!hasLanPort) {

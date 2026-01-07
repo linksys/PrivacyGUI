@@ -10,15 +10,8 @@ import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/views/components/home_title.dart';
-import 'package:privacy_gui/page/dashboard/views/components/internet_status.dart';
-import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
-import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart';
-import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
-import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
-import 'package:privacy_gui/page/dashboard/views/components/firmware_update_countdown_dialog.dart';
+import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
-import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/core/utils/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/utils/assign_ip/web_assign_ip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,7 +30,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   void initState() {
     super.initState();
     firmware = ref.read(firmwareUpdateProvider.notifier);
-    // _pushNotificationCheck();
     _firmwareUpdateCheck();
     ref.read(menuController).setTo(NaviType.home);
   }
@@ -45,10 +37,10 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   @override
   Widget build(BuildContext context) {
     MediaQuery.of(context);
-    final horizontalLayout =
-        ref.watch(dashboardHomeProvider).isHorizontalLayout;
-    final hasLanPort =
-        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+    final state = ref.watch(dashboardHomeProvider);
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+    final isHorizontalLayout = state.isHorizontalLayout;
+    final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -58,231 +50,38 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       appBarStyle: UiKitAppBarStyle.none,
       backState: UiKitBackState.none,
       padding: EdgeInsets.only(
-        top: 32.0, // was AppSpacing.large3
-        bottom: 16.0, // was AppSpacing.medium
+        top: 32.0,
+        bottom: 16.0,
       ),
-      child: (childContext, constraints) => AppResponsiveLayout(
-        // New WidgetBuilder API: context has correct PageLayoutScope for colWidth
-        desktop: (layoutContext) => Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DashboardHomeTitle(),
-            AppGap.xl(),
-            !hasLanPort
-                ? _desktopNoLanPortsLayout(layoutContext)
-                : horizontalLayout
-                    ? _desktopHorizontalLayout(layoutContext)
-                    : _desktopVerticalLayout(layoutContext),
-          ],
-        ),
-        mobile: (context) => _mobileLayout(),
-        tablet: (context) => _tabletLayout(context),
-      ),
-    );
-  }
+      child: (childContext, constraints) {
+        // 1. Determine layout variant (single source of truth)
+        final variant = DashboardLayoutVariant.fromContext(
+          childContext,
+          hasLanPort: hasLanPort,
+          isHorizontalLayout: isHorizontalLayout,
+        );
 
-  Widget _desktopNoLanPortsLayout(BuildContext layoutContext) {
-    return Column(
-      children: [
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                  width: layoutContext.colWidth(8),
-                  child: InternetConnectionWidget()),
-              AppGap.gutter(),
-              SizedBox(
-                  width: layoutContext.colWidth(4),
-                  child: DashboardHomePortAndSpeed()),
-            ],
-          ),
-        ),
-        AppGap.lg(),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: layoutContext.colWidth(4),
-              child: Column(
-                children: [
-                  DashboardNetworks(),
-                  AppGap.lg(),
-                  DashboardQuickPanel(),
-                  // _networkInfoTiles(state, isLoading),
-                ],
-              ),
-            ),
-            AppGap.gutter(),
-            SizedBox(
-                width: layoutContext.colWidth(8),
-                child: Column(
-                  children: [
-                    if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
-                      VPNStatusTile(),
-                      AppGap.lg(),
-                    ],
-                    DashboardWiFiGrid(),
-                  ],
-                )),
-          ],
-        ),
-      ],
-    );
-  }
+        // 2. Build layout context (IoC - widgets built here, passed to strategy)
+        final layoutContext = DashboardLayoutContext(
+          context: childContext,
+          ref: ref,
+          state: state,
+          hasLanPort: hasLanPort,
+          isHorizontalLayout: isHorizontalLayout,
+          title: const DashboardHomeTitle(),
+          internetWidget: const InternetConnectionWidget(),
+          networksWidget: const DashboardNetworks(),
+          wifiGrid: const DashboardWiFiGrid(),
+          quickPanel: const DashboardQuickPanel(),
+          vpnTile: isSupportVPN ? const VPNStatusTile() : null,
+          buildPortAndSpeed: (config) =>
+              DashboardHomePortAndSpeed(config: config),
+        );
 
-  Widget _desktopHorizontalLayout(BuildContext layoutContext) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                InternetConnectionWidget(),
-                AppGap.lg(),
-                DashboardHomePortAndSpeed(),
-                AppGap.lg(),
-                DashboardWiFiGrid(),
-              ],
-            ),
-          ),
-          AppGap.gutter(),
-          SizedBox(
-              width: layoutContext.colWidth(4),
-              child: Column(
-                children: [
-                  DashboardNetworks(),
-                  AppGap.lg(),
-                  if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
-                    VPNStatusTile(),
-                    AppGap.lg(),
-                  ],
-                  DashboardQuickPanel(),
-                  // _networkInfoTiles(state, isLoading),
-                ],
-              )),
-        ],
-      ),
-    );
-  }
-
-  Widget _desktopVerticalLayout(BuildContext layoutContext) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: layoutContext.colWidth(3),
-            child: Column(
-              children: [
-                DashboardHomePortAndSpeed(),
-                AppGap.lg(),
-                DashboardQuickPanel(),
-              ],
-            ),
-          ),
-          AppGap.gutter(),
-          Expanded(
-            child: Column(
-              children: [
-                InternetConnectionWidget(),
-                AppGap.lg(),
-                DashboardNetworks(),
-                AppGap.lg(),
-                if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
-                  VPNStatusTile(),
-                  AppGap.lg(),
-                ],
-                DashboardWiFiGrid(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _mobileLayout() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DashboardHomeTitle(),
-        AppGap.xl(),
-        InternetConnectionWidget(),
-        AppGap.lg(),
-        DashboardHomePortAndSpeed(),
-        AppGap.lg(),
-        DashboardNetworks(),
-        if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
-          AppGap.lg(),
-          VPNStatusTile(),
-        ],
-        AppGap.lg(),
-        DashboardQuickPanel(),
-        AppGap.lg(),
-        DashboardWiFiGrid(),
-        AppGap.lg(),
-      ],
-    );
-  }
-
-  Widget _tabletLayout(BuildContext layoutContext) {
-    return Column(
-      children: [
-        DashboardHomeTitle(),
-        AppGap.xl(),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 1,
-                child: InternetConnectionWidget(),
-              ),
-              AppGap.gutter(),
-              Expanded(
-                flex: 1,
-                child: DashboardHomePortAndSpeed(),
-              ),
-            ],
-          ),
-        ),
-        AppGap.lg(),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 1,
-                child: Column(
-                  children: [
-                    DashboardNetworks(),
-                    AppGap.lg(),
-                    DashboardQuickPanel(),
-                  ],
-                ),
-              ),
-              AppGap.gutter(),
-              Expanded(
-                flex: 1,
-                child: Column(
-                  children: [
-                    if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
-                      VPNStatusTile(),
-                      AppGap.lg(),
-                    ],
-                    DashboardWiFiGrid(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        // 3. Delegate to strategy
+        final strategy = DashboardLayoutFactory.create(variant);
+        return strategy.build(layoutContext);
+      },
     );
   }
 

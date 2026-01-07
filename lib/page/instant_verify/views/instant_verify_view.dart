@@ -22,7 +22,7 @@ import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
-import 'package:privacy_gui/page/dashboard/views/components/port_status_widget.dart';
+import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_external_widget.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';

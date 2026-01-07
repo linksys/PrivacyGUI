@@ -6,39 +6,30 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
-import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/topology_adapter.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
+import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class DashboardNetworks extends ConsumerStatefulWidget {
+class DashboardNetworks extends ConsumerWidget {
   const DashboardNetworks({super.key});
 
   @override
-  ConsumerState<DashboardNetworks> createState() => _DashboardNetworksState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    return DashboardLoadingWrapper(
+      builder: (context, ref) => _buildContent(context, ref),
+    );
+  }
 
-class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildContent(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
     final topologyState = ref.watch(instantTopologyProvider);
-    final isLoading =
-        (ref.watch(pollingProvider).value?.isReady ?? false) == false;
-
-    if (isLoading) {
-      return AppCard(
-        padding: EdgeInsets.zero,
-        child: SizedBox(width: double.infinity, child: const LoadingTile()),
-      );
-    }
 
     // Convert topology data to ui_kit format
     final meshTopology = TopologyAdapter.convert(topologyState.root.children);
@@ -88,14 +79,14 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
 
     // Determine layout variant
-    // Determine layout variant
     final layoutVariant = DashboardLayoutVariant.fromContext(
       context,
       hasLanPort: hasLanPort,
       isHorizontalLayout: state.isHorizontalLayout,
     );
     final useVerticalLayout =
-        layoutVariant == DashboardLayoutVariant.desktopVertical;
+        layoutVariant == DashboardLayoutVariant.desktopVertical ||
+            layoutVariant == DashboardLayoutVariant.tabletVertical;
 
     final titleSection = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,15 +97,10 @@ class _DashboardNetworksState extends ConsumerState<DashboardNetworks> {
     );
 
     final infoTilesSection = Row(
-      mainAxisSize: useVerticalLayout ? MainAxisSize.min : MainAxisSize.max,
       children: [
-        useVerticalLayout
-            ? _nodesInfoTile(context, ref, topologyState)
-            : Expanded(child: _nodesInfoTile(context, ref, topologyState)),
+        Expanded(child: _nodesInfoTile(context, ref, topologyState)),
         AppGap.gutter(),
-        useVerticalLayout
-            ? _devicesInfoTile(context, ref, topologyState)
-            : Expanded(child: _devicesInfoTile(context, ref, topologyState)),
+        Expanded(child: _devicesInfoTile(context, ref, topologyState)),
       ],
     );
 
