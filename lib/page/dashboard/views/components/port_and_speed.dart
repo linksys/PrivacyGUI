@@ -256,6 +256,7 @@ class _LayoutConfig {
             horizontal: AppSpacing.sm,
             vertical: AppSpacing.md,
           ),
+          mainAxisSize: MainAxisSize.min,
         );
     }
   }

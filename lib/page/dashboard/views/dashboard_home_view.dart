@@ -85,8 +85,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   Widget _desktopNoLanPortsLayout(BuildContext layoutContext) {
     return Column(
       children: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 300),
+        IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
