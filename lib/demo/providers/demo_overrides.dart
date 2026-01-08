@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
-import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/demo/jnap/demo_router_repository.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -157,9 +157,9 @@ class _DemoPollingNotifier extends PollingNotifier {
 /// Demo PnP notifier - bypasses setup wizard checks
 class _DemoPnpNotifier extends PnpNotifier {
   @override
-  Future<AutoConfigurationSettings?> autoConfigurationCheck() async {
+  Future<AutoConfigurationUIModel?> autoConfigurationCheck() async {
     debugPrint('🔌 Demo: Bypassing auto-configuration check');
-    return const AutoConfigurationSettings(isAutoConfigurationSupported: false);
+    return const AutoConfigurationUIModel(isSupported: false);
   }
 
   @override

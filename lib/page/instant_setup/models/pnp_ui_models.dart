@@ -92,6 +92,76 @@ class PnpChildNodeUIModel extends Equatable {
   List<Object?> get props => [location, modelNumber];
 }
 
+/// The auto-configuration method for the device (UI layer).
+///
+/// This enum is used by the UI layer to determine the configuration flow.
+/// - [preConfigured]: Standard PnP flow for pre-configured devices.
+/// - [autoParent]: Auto-parent flow for devices that connect to an existing network.
+enum AutoConfigurationMethodUI {
+  preConfigured,
+  autoParent,
+}
+
+/// Represents the auto-configuration settings for UI display.
+///
+/// This model abstracts the JNAP AutoConfigurationSettings and provides
+/// only the data needed by the UI layer for routing decisions.
+class AutoConfigurationUIModel extends Equatable {
+  /// Indicates if auto-configuration is supported by the device.
+  final bool? isSupported;
+
+  /// Indicates if the user has acknowledged the auto-configuration.
+  final bool? userAcknowledged;
+
+  /// The method of auto-configuration.
+  final AutoConfigurationMethodUI? method;
+
+  const AutoConfigurationUIModel({
+    this.isSupported,
+    this.userAcknowledged,
+    this.method,
+  });
+
+  @override
+  List<Object?> get props => [isSupported, userAcknowledged, method];
+
+  /// Creates a copy of this model with optional new values.
+  AutoConfigurationUIModel copyWith({
+    bool? isSupported,
+    bool? userAcknowledged,
+    AutoConfigurationMethodUI? method,
+  }) {
+    return AutoConfigurationUIModel(
+      isSupported: isSupported ?? this.isSupported,
+      userAcknowledged: userAcknowledged ?? this.userAcknowledged,
+      method: method ?? this.method,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'isSupported': isSupported,
+      'userAcknowledged': userAcknowledged,
+      'method': method?.name,
+    };
+  }
+
+  factory AutoConfigurationUIModel.fromMap(Map<String, dynamic> map) {
+    return AutoConfigurationUIModel(
+      isSupported: map['isSupported'] as bool?,
+      userAcknowledged: map['userAcknowledged'] as bool?,
+      method: map['method'] != null
+          ? AutoConfigurationMethodUI.values.byName(map['method'] as String)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => toMap();
+
+  factory AutoConfigurationUIModel.fromJson(Map<String, dynamic> json) =>
+      AutoConfigurationUIModel.fromMap(json);
+}
+
 /// Represents the default Wi-Fi settings for both main and guest networks.
 class PnpDefaultSettingsUIModel extends Equatable {
   /// The default SSID for the main Wi-Fi network.
