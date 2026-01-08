@@ -723,51 +723,47 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
-    return SizedBox(
-      height: context.isMobileLayout ? 224 : 208,
-      width: double.infinity,
-      child: AppCard(
-          key: const ValueKey('portCard'),
-          padding: EdgeInsets.zero,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xxl,
-                ),
-                child: Row(
-                  // mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...state.lanPortConnections
-                        .mapIndexed((index, e) => Expanded(
-                              child: PortStatusWidget(
-                                connection: e == 'None' ? null : e,
-                                label: loc(context).indexedPort(index + 1),
-                                isWan: false,
-                                hasLanPorts: true, // Force vertical layout
-                              ),
-                            ))
-                        .toList(),
-                    Expanded(
-                      child: PortStatusWidget(
-                        connection: state.wanPortConnection == 'None'
-                            ? null
-                            : state.wanPortConnection,
-                        label: loc(context).wan,
-                        isWan: true,
-                        hasLanPorts: true, // Force vertical layout
-                      ),
-                    ),
-                  ],
-                ),
+    return AppCard(
+        key: const ValueKey('portCard'),
+        padding: EdgeInsets.zero,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxl,
               ),
-            ],
-          )),
-    );
+              child: Row(
+                // mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...state.lanPortConnections
+                      .mapIndexed((index, e) => Expanded(
+                            child: PortStatusWidget(
+                              connection: e == 'None' ? null : e,
+                              label: loc(context).indexedPort(index + 1),
+                              isWan: false,
+                              hasLanPorts: true, // Force vertical layout
+                            ),
+                          ))
+                      .toList(),
+                  Expanded(
+                    child: PortStatusWidget(
+                      connection: state.wanPortConnection == 'None'
+                          ? null
+                          : state.wanPortConnection,
+                      label: loc(context).wan,
+                      isWan: true,
+                      hasLanPorts: true, // Force vertical layout
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ));
   }
 
   Widget _headerWidget(String title, [Widget? action]) {
