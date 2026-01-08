@@ -33,9 +33,15 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
   @override
   HealthCheckState build() => HealthCheckState.init();
 
+  void resetState() {
+    state = HealthCheckState.init().copyWith(
+      servers: state.servers,
+      // selectedServer: null, // Clear selection to force user to choose
+    );
+  }
+
   Future<void> runHealthCheck(Module module, {int? serverId}) async {
     if (module == Module.speedtest) {
-      // Reset state but keep servers and selection if not provided
       state = HealthCheckState.init().copyWith(
         servers: state.servers, // Preserve servers
         selectedServer: state.selectedServer,

@@ -53,10 +53,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
       await notifier.updateServers();
       // State is updated in provider, use ref.read to check
       if (mounted) {
-        final state = ref.read(healthCheckProvider);
-        if (state.servers.isNotEmpty && state.selectedServer == null) {
-          notifier.setSelectedServer(state.servers.first);
-        }
+        // final state = ref.read(healthCheckProvider);
+        // if (state.servers.isNotEmpty && state.selectedServer == null) {
+        //   notifier.setSelectedServer(state.servers.first);
+        // }
       }
     }
   }
@@ -82,9 +82,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                     positiveLabel: loc(context).testAgain,
                     isPositiveEnabled: true,
                     onPositiveTap: () {
-                      ref
-                          .read(healthCheckProvider.notifier)
-                          .runHealthCheck(Module.speedtest);
+                      ref.read(healthCheckProvider.notifier).resetState();
                     },
                   )
                 : null,
@@ -221,12 +219,18 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                   width: 300,
                   child: AppDropdownButton<HealthCheckServer>(
                     selected: selectedServer,
-                    items: state.servers,
+                    items: [HealthCheckServer.empty(), ...state.servers],
                     label: (server) => server.toString(),
                     onChanged: (server) {
-                      ref
-                          .read(healthCheckProvider.notifier)
-                          .setSelectedServer(server);
+                      if (server == HealthCheckServer.empty()) {
+                        ref
+                            .read(healthCheckProvider.notifier)
+                            .setSelectedServer(null);
+                      } else {
+                        ref
+                            .read(healthCheckProvider.notifier)
+                            .setSelectedServer(server);
+                      }
                     },
                   ),
                 ),

@@ -12,6 +12,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/views/components/speed_test_server_selection_dialog.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart'; // For serviceHelper
 import 'package:privacy_gui/di.dart'; // For getIt
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
@@ -303,10 +304,30 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
         // Check state after fetch
         if (servers.isNotEmpty) {
           if (mounted) {
-            final selected = await showDialog<HealthCheckServer>(
-              context: context,
-              builder: (context) =>
-                  SpeedTestServerSelectionDialog(servers: servers),
+            final selectionNotifier =
+                ValueNotifier<HealthCheckServer?>(servers.firstOrNull);
+
+            final selected = await showSimpleAppDialog<HealthCheckServer>(
+              context,
+              title: 'Select Speed Test Server',
+              content: SpeedTestServerSelectionList(
+                servers: servers,
+                notifier: selectionNotifier,
+              ),
+              actions: [
+                AppTextButton(
+                  loc(context).cancel,
+                  onTap: () => context.pop(),
+                ),
+                ValueListenableBuilder<HealthCheckServer?>(
+                    valueListenable: selectionNotifier,
+                    builder: (context, value, child) {
+                      return AppTextButton(
+                        loc(context).ok,
+                        onTap: value != null ? () => context.pop(value) : null,
+                      );
+                    })
+              ],
             );
 
             if (selected == null) {

@@ -1,4 +1,6 @@
-class HealthCheckServer {
+import 'package:equatable/equatable.dart';
+
+class HealthCheckServer extends Equatable {
   final String serverID;
   final String serverName;
   final String serverLocation;
@@ -6,7 +8,7 @@ class HealthCheckServer {
   final String serverHostname;
   final int serverPort;
 
-  HealthCheckServer({
+  const HealthCheckServer({
     required this.serverID,
     required this.serverName,
     required this.serverLocation,
@@ -26,6 +28,17 @@ class HealthCheckServer {
     );
   }
 
+  factory HealthCheckServer.empty() {
+    return const HealthCheckServer(
+      serverID: '',
+      serverName: '----',
+      serverLocation: '',
+      serverCountry: '',
+      serverHostname: '',
+      serverPort: 0,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'serverID': serverID,
@@ -41,4 +54,14 @@ class HealthCheckServer {
   String toString() {
     return '$serverName - $serverLocation';
   }
+
+  @override
+  List<Object?> get props => [
+        serverID,
+        serverName,
+        serverLocation,
+        serverCountry,
+        serverHostname,
+        serverPort,
+      ];
 }
