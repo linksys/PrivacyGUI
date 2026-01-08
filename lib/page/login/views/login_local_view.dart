@@ -7,12 +7,10 @@ import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
@@ -119,8 +117,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       //The error message should not be set again when countdown is terminated
       if (!isCountdownJustFinished) {
         // Just get the error and the countdown has yet to be triggered
-        final JNAPError? jnapError = (error is JNAPError) ? error : null;
-        setErrorMessage(jnapError);
+        setErrorMessage(error);
       }
       return contentView();
     }, data: (state) {
@@ -132,8 +129,8 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     });
   }
 
-  void setErrorMessage(JNAPError? error) {
-    if (error != null) {
+  void setErrorMessage(dynamic error) {
+    if (error != null && error is JNAPError) {
       // Check if it's the invalid admin password error from CheckAdminPassword3
       if (error.result == errorInvalidAdminPassword ||
           error.result == errorPasswordCheckDelayed) {
@@ -164,7 +161,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     } else {
       // Should not be here
       setState(() {
-        _errorMessage = errorCodeHelper(context, '');
+        _errorMessage = loc(context).generalError;
       });
     }
   }
@@ -271,7 +268,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
                         ),
                       ),
                     ),
-                  const AppGap.large3(),
+                  const AppGap.small3(),
                   AppTextButton.noPadding(
                     loc(context).forgotPassword,
                     onTap: () {

@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
@@ -20,7 +21,6 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
-import 'remote_assistance/remote_assistance_dialog.dart';
 
 class TopBar extends ConsumerStatefulWidget {
   final void Function(int)? onMenuClick;
@@ -40,7 +40,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         ref.watch(authProvider.select((value) => value.value?.loginType)) ??
             LoginType.none;
     final isRemote = loginType == LoginType.remote;
-    final isPollingDone = ref.watch(deviceManagerProvider).deviceList.isNotEmpty;
+    final isPollingDone =
+        ref.watch(deviceManagerProvider).deviceList.isNotEmpty;
     if (isRemote && isPollingDone) {
       _startRemoteAssistance(context);
     }
@@ -48,6 +49,9 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         isRemote ? ref.watch(remoteClientProvider).sessionInfo : null;
     final expiredCountdown =
         isRemote ? ref.watch(remoteClientProvider).expiredCountdown : null;
+    final brandLogoPath = Theme.of(context).brightness == Brightness.dark
+        ? 'assets/brand/brand_logo_dark'
+        : 'assets/brand/brand_logo';
     return SafeArea(
       bottom: false,
       child: GestureDetector(
@@ -68,8 +72,30 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              AppText.titleLarge(loc(context).appTitle,
-                  color: Color(neutralTonal.get(100))),
+              Row(
+                children: [
+                  FutureBuilder<String?>(
+                    future: BrandUtils.resolveAsset(brandLogoPath),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data != null) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              snapshot.data!,
+                              height: 48,
+                            ),
+                            AppGap.small2(),
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                  AppText.titleLarge(loc(context).appTitle,
+                      color: Color(neutralTonal.get(100))),
+                ],
+              ),
               MenuHolder(type: MenuDisplay.top),
               Wrap(
                 children: [
@@ -136,7 +162,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
     );
   }
 
-  Widget _sessionExpireCounter(GRASessionInfo sessionInfo, int? expiredCountdown) {
+  Widget _sessionExpireCounter(
+      GRASessionInfo sessionInfo, int? expiredCountdown) {
     var display = loc(context).remoteAssistanceSessionExpired;
     if (sessionInfo.status != GRASessionStatus.active) {
       return AppText.bodyMedium(display);
