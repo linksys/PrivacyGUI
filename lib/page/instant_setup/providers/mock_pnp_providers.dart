@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
@@ -155,13 +154,13 @@ class BaseMockPnpNotifier extends BasePnpNotifier {
   }
 
   @override
-  Future<AutoConfigurationSettings?> autoConfigurationCheck() {
+  Future<AutoConfigurationUIModel?> autoConfigurationCheck() {
     logger.d('[PnP]: Mock - autoConfigurationCheck called');
     // Default to configured, acknowledged
-    return Future.value(const AutoConfigurationSettings(
-      isAutoConfigurationSupported: true,
-      userAcknowledgedAutoConfiguration: true,
-      autoConfigurationMethod: AutoConfigurationMethod.preConfigured,
+    return Future.value(const AutoConfigurationUIModel(
+      isSupported: true,
+      userAcknowledged: true,
+      method: AutoConfigurationMethodUI.preConfigured,
     ));
   }
 
@@ -278,12 +277,12 @@ final unconfiguredPnpProvider = NotifierProvider<BasePnpNotifier, PnpState>(
 
 class UnconfiguredMockPnpNotifier extends BaseMockPnpNotifier {
   @override
-  Future<AutoConfigurationSettings?> autoConfigurationCheck() {
+  Future<AutoConfigurationUIModel?> autoConfigurationCheck() {
     logger.d('[PnP]: Mock (Unconfigured) - autoConfigurationCheck called');
-    return Future.value(const AutoConfigurationSettings(
-      isAutoConfigurationSupported: true,
-      userAcknowledgedAutoConfiguration: false, // This triggers PnP
-      autoConfigurationMethod: AutoConfigurationMethod.preConfigured,
+    return Future.value(const AutoConfigurationUIModel(
+      isSupported: true,
+      userAcknowledged: false, // This triggers PnP
+      method: AutoConfigurationMethodUI.preConfigured,
     ));
   }
 
@@ -374,12 +373,12 @@ final fwUpdatePnpProvider = NotifierProvider<BasePnpNotifier, PnpState>(
 
 class FwUpdateMockPnpNotifier extends BaseMockPnpNotifier {
   @override
-  Future<AutoConfigurationSettings?> autoConfigurationCheck() {
+  Future<AutoConfigurationUIModel?> autoConfigurationCheck() {
     logger.d('[PnP]: Mock (FW Update) - autoConfigurationCheck called');
-    return Future.value(const AutoConfigurationSettings(
-      isAutoConfigurationSupported: true,
-      userAcknowledgedAutoConfiguration: false, // This triggers PnP
-      autoConfigurationMethod: AutoConfigurationMethod.preConfigured,
+    return Future.value(const AutoConfigurationUIModel(
+      isSupported: true,
+      userAcknowledged: false, // This triggers PnP
+      method: AutoConfigurationMethodUI.preConfigured,
     ));
   }
 
@@ -415,13 +414,13 @@ final unconfiguredFwUpdatePnpProvider =
 
 class UnconfiguredFwUpdateMockPnpNotifier extends BaseMockPnpNotifier {
   @override
-  Future<AutoConfigurationSettings?> autoConfigurationCheck() {
+  Future<AutoConfigurationUIModel?> autoConfigurationCheck() {
     logger.d(
         '[PnP]: Mock (Unconfigured FW Update) - autoConfigurationCheck called');
-    return Future.value(const AutoConfigurationSettings(
-      isAutoConfigurationSupported: true,
-      userAcknowledgedAutoConfiguration: false, // This triggers PnP
-      autoConfigurationMethod: AutoConfigurationMethod.preConfigured,
+    return Future.value(const AutoConfigurationUIModel(
+      isSupported: true,
+      userAcknowledged: false, // This triggers PnP
+      method: AutoConfigurationMethodUI.preConfigured,
     ));
   }
 

@@ -7,7 +7,7 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
@@ -175,8 +175,8 @@ class RouterNotifier extends ChangeNotifier {
         if (config == null) {
           return LocalWhereToGo.login;
         }
-        // If isAutoConfigurationSupported is not true, then go to Login
-        if (config.isAutoConfigurationSupported != true) {
+        // If isSupported is not true, then go to Login
+        if (config.isSupported != true) {
           // Retail factory reset case - Check admin password
           final isAdminPasswordSet = await pnpNotifier.isRouterPasswordSet();
           return isAdminPasswordSet == false
@@ -186,23 +186,21 @@ class RouterNotifier extends ChangeNotifier {
         // AutoConfigurationSupported is true case -
 
         // AutoParent case -
-        if (config.autoConfigurationMethod ==
-            AutoConfigurationMethod.autoParent) {
+        if (config.method == AutoConfigurationMethodUI.autoParent) {
           // AutoParent case -
-          // First Time Login -> AutoConfigurationSupported is true and userAcknowledgedAutoConfiguration is false
+          // First Time Login -> isSupported is true and userAcknowledged is false
           // Login -> else
-          return config.userAcknowledgedAutoConfiguration == false
+          return config.userAcknowledged == false
               ? LocalWhereToGo.firstTimeLogin
               : LocalWhereToGo.login;
         }
 
-        // Prepair case - Check isAutoConfigurationSupported and userAcknowledgedAutoConfiguration
+        // Prepair case - Check isSupported and userAcknowledged
 
-        final userAcknowledgedAutoConfiguration =
-            config.userAcknowledgedAutoConfiguration;
-        if (userAcknowledgedAutoConfiguration == false) {
+        final userAcknowledged = config.userAcknowledged;
+        if (userAcknowledged == false) {
           // PnP case -
-          // Go PnP -> AutoConfigurationSupported is true and userAcknowledgedAutoConfiguration is false
+          // Go PnP -> isSupported is true and userAcknowledged is false
           // Login -> else
           return LocalWhereToGo.pnp;
         }
