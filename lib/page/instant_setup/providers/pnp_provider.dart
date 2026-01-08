@@ -6,7 +6,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_exception.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
-import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
+import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import '../troubleshooter/providers/pnp_troubleshooter_provider.dart';
 
 /// The main Riverpod provider for the PnP feature.
@@ -140,7 +140,7 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   Future<ConfigurationResult> checkRouterConfigured();
 
   /// Checks the auto-configuration status of the router.
-  Future<AutoConfigurationSettings?> autoConfigurationCheck();
+  Future<AutoConfigurationUIModel?> autoConfigurationCheck();
 
   /// Checks if the admin password has been set by the user.
   Future<bool> isRouterPasswordSet();
@@ -450,7 +450,7 @@ class PnpNotifier extends BasePnpNotifier {
   }
 
   @override
-  Future<AutoConfigurationSettings?> autoConfigurationCheck() {
+  Future<AutoConfigurationUIModel?> autoConfigurationCheck() {
     final pnpService = ref.read(pnpServiceProvider);
 
     return pnpService.autoConfigurationCheck();

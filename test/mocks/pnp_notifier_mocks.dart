@@ -8,7 +8,7 @@ import 'dart:async' as _i7;
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i8;
-import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart'
+import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart'
     as _i9;
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart' as _i10;
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart'
@@ -361,16 +361,16 @@ class MockPnpNotifier extends _i2.Notifier<_i3.PnpState>
       ) as _i7.Future<_i4.ConfigurationResult>);
 
   @override
-  _i7.Future<_i9.AutoConfigurationSettings?> autoConfigurationCheck() =>
+  _i7.Future<_i9.AutoConfigurationUIModel?> autoConfigurationCheck() =>
       (super.noSuchMethod(
         Invocation.method(
           #autoConfigurationCheck,
           [],
         ),
-        returnValue: _i7.Future<_i9.AutoConfigurationSettings?>.value(),
+        returnValue: _i7.Future<_i9.AutoConfigurationUIModel?>.value(),
         returnValueForMissingStub:
-            _i7.Future<_i9.AutoConfigurationSettings?>.value(),
-      ) as _i7.Future<_i9.AutoConfigurationSettings?>);
+            _i7.Future<_i9.AutoConfigurationUIModel?>.value(),
+      ) as _i7.Future<_i9.AutoConfigurationUIModel?>);
 
   @override
   _i7.Future<dynamic> fetchDevices() => (super.noSuchMethod(
