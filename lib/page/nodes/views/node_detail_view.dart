@@ -169,6 +169,8 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
           child: infoTab(state),
         ),
         SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
           child: deviceTab(
             state.deviceId,
             filteredDeviceList,
@@ -228,6 +230,7 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 builder: (controller) {
                   return Container(
+                    clipBehavior: Clip.none,
                     constraints: BoxConstraints(
                         minWidth: context.colWidth(3),
                         maxWidth: context.colWidth(7)),

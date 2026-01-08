@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dar
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
+import 'package:privacy_gui/page/dashboard/strategies/custom_dashboard_layout_strategy.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
 import 'package:privacy_gui/core/utils/assign_ip/base_assign_ip.dart'
     if (dart.library.html) 'package:privacy_gui/core/utils/assign_ip/web_assign_ip.dart';
@@ -43,15 +44,26 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final isHorizontalLayout = state.isHorizontalLayout;
     final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
 
-    // Get display modes from preferences
-    final internetMode =
-        preferences.getMode(DashboardWidgetSpecs.internetStatus.id);
-    final networksMode = preferences.getMode(DashboardWidgetSpecs.networks.id);
-    final wifiMode = preferences.getMode(DashboardWidgetSpecs.wifiGrid.id);
-    final quickPanelMode =
-        preferences.getMode(DashboardWidgetSpecs.quickPanel.id);
-    final portAndSpeedMode =
-        preferences.getMode(DashboardWidgetSpecs.portAndSpeed.id);
+    // Forced Display Mode Logic
+    // If Custom Layout is OFF, force all components to use Normal (Standard) mode.
+    // This ensures Legacy Layouts render correctly.
+    final useCustom = preferences.useCustomLayout;
+
+    final internetMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.internetStatus.id)
+        : DisplayMode.normal;
+    final networksMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.networks.id)
+        : DisplayMode.normal;
+    final wifiMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.wifiGrid.id)
+        : DisplayMode.normal;
+    final quickPanelMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.quickPanel.id)
+        : DisplayMode.normal;
+    final portAndSpeedMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.portAndSpeed.id)
+        : DisplayMode.normal;
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -73,27 +85,43 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         );
 
         // 2. Build layout context (IoC - widgets built here, passed to strategy)
+        // Note: We use keys combining mode and useCustom to force rebuilds when switching strategies.
         final layoutContext = DashboardLayoutContext(
           context: childContext,
           ref: ref,
           state: state,
           hasLanPort: hasLanPort,
           isHorizontalLayout: isHorizontalLayout,
-          displayModes: preferences.widgetModes,
+          widgetConfigs: preferences.widgetConfigs,
           title: const DashboardHomeTitle(),
-          internetWidget: InternetConnectionWidget(displayMode: internetMode),
-          networksWidget: DashboardNetworks(displayMode: networksMode),
-          wifiGrid: DashboardWiFiGrid(displayMode: wifiMode),
-          quickPanel: DashboardQuickPanel(displayMode: quickPanelMode),
+          internetWidget: InternetConnectionWidget(
+            key: ValueKey('internet-$internetMode-$useCustom'),
+            displayMode: internetMode,
+          ),
+          networksWidget: DashboardNetworks(
+            key: ValueKey('networks-$networksMode-$useCustom'),
+            displayMode: networksMode,
+          ),
+          wifiGrid: DashboardWiFiGrid(
+            key: ValueKey('wifi-$wifiMode-$useCustom'),
+            displayMode: wifiMode,
+          ),
+          quickPanel: DashboardQuickPanel(
+            key: ValueKey('quick-$quickPanelMode-$useCustom'),
+            displayMode: quickPanelMode,
+          ),
           vpnTile: isSupportVPN ? const VPNStatusTile() : null,
           buildPortAndSpeed: (config) => DashboardHomePortAndSpeed(
+            key: ValueKey('port-$portAndSpeedMode-$useCustom'),
             config: config,
             displayMode: portAndSpeedMode,
           ),
         );
 
         // 3. Delegate to strategy
-        final strategy = DashboardLayoutFactory.create(variant);
+        final strategy = useCustom
+            ? const CustomDashboardLayoutStrategy()
+            : DashboardLayoutFactory.create(variant);
         return strategy.build(layoutContext);
       },
     );

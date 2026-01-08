@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../models/dashboard_widget_specs.dart';
 import '../models/display_mode.dart';
+import '../models/grid_widget_config.dart';
 import '../models/widget_spec.dart';
 import 'grid_layout_resolver.dart';
 
 /// Configuration for port and speed widget building.
 class PortAndSpeedConfig {
   /// Direction of port layout (horizontal or vertical).
-  final Axis direction;
+  /// If null, the widget will determine direction based on available width.
+  final Axis? direction;
 
   /// Whether to show the speed test section.
   final bool showSpeedTest;
@@ -25,7 +28,7 @@ class PortAndSpeedConfig {
   final EdgeInsets portsPadding;
 
   const PortAndSpeedConfig({
-    this.direction = Axis.horizontal,
+    this.direction,
     this.showSpeedTest = true,
     this.portsHeight,
     this.speedTestHeight,
@@ -87,10 +90,10 @@ class DashboardLayoutContext {
   // Grid Constraint System
   // ---------------------------------------------------------------------------
 
-  /// Display modes for each widget (keyed by widget ID).
+  /// Widget configurations (keyed by widget ID).
   ///
-  /// Used by the grid constraint system to determine widget sizing.
-  final Map<String, DisplayMode> displayModes;
+  /// Used by the grid constraint system to determine widget sizing and display mode.
+  final Map<String, GridWidgetConfig> widgetConfigs;
 
   const DashboardLayoutContext({
     required this.context,
@@ -105,7 +108,7 @@ class DashboardLayoutContext {
     required this.quickPanel,
     this.vpnTile,
     required this.buildPortAndSpeed,
-    this.displayModes = const {},
+    this.widgetConfigs = const {},
   });
 
   /// Convenience getter for column width calculation.
@@ -118,34 +121,123 @@ class DashboardLayoutContext {
   /// Creates a [GridLayoutResolver] for this context.
   GridLayoutResolver get resolver => GridLayoutResolver(context);
 
+  /// Gets the full configuration for a widget spec.
+  GridWidgetConfig getConfigFor(WidgetSpec spec) {
+    return widgetConfigs[spec.id] ??
+        GridWidgetConfig(widgetId: spec.id, order: 0);
+  }
+
   /// Gets the display mode for a widget spec.
-  DisplayMode getModeFor(WidgetSpec spec) =>
-      displayModes[spec.id] ?? DisplayMode.normal;
+  DisplayMode getModeFor(WidgetSpec spec) => getConfigFor(spec).displayMode;
 
   /// Gets the resolved column count for a widget.
-  int getColumnsFor(WidgetSpec spec, {int? availableColumns}) =>
-      resolver.resolveColumns(spec, getModeFor(spec),
-          availableColumns: availableColumns);
+  int getColumnsFor(WidgetSpec spec, {int? availableColumns}) {
+    final config = getConfigFor(spec);
+    return resolver.resolveColumns(
+      spec,
+      config.displayMode,
+      availableColumns: availableColumns,
+      overrideColumns: config.columnSpan,
+    );
+  }
 
   /// Gets the resolved width for a widget.
-  double getWidthFor(WidgetSpec spec, {int? availableColumns}) => resolver
-      .resolveWidth(spec, getModeFor(spec), availableColumns: availableColumns);
+  double getWidthFor(WidgetSpec spec, {int? availableColumns}) {
+    final config = getConfigFor(spec);
+    return resolver.resolveWidth(
+      spec,
+      config.displayMode,
+      availableColumns: availableColumns,
+      overrideColumns: config.columnSpan,
+    );
+  }
 
   /// Gets the resolved height for a widget (null = intrinsic).
-  double? getHeightFor(WidgetSpec spec, {int? availableColumns}) =>
-      resolver.resolveHeight(spec, getModeFor(spec),
-          availableColumns: availableColumns);
+  double? getHeightFor(WidgetSpec spec, {int? availableColumns}) {
+    final config = getConfigFor(spec);
+    return resolver.resolveHeight(
+      spec,
+      config.displayMode,
+      availableColumns: availableColumns,
+      overrideColumns: config.columnSpan,
+    );
+  }
 
-  /// Wraps a widget with size constraints based on its spec.
+  /// Wraps a widget with size constraints based on its spec and user preferences.
   Widget wrapWidget(
     Widget child, {
     required WidgetSpec spec,
     int? availableColumns,
-  }) =>
-      resolver.wrapWithConstraints(
-        child,
-        spec: spec,
-        mode: getModeFor(spec),
-        availableColumns: availableColumns,
-      );
+  }) {
+    final config = getConfigFor(spec);
+
+    // Force full width (stack) on mobile, ignoring user width settings
+    final isMobile = context.isMobileLayout;
+    // Force half width (2 columns) on tablet, ignoring user width settings
+    final isTablet = context.isTabletLayout;
+
+    final effectiveOverride = isMobile
+        ? 12
+        : isTablet
+            ? 6
+            : config.columnSpan;
+
+    return resolver.wrapWithConstraints(
+      child,
+      spec: spec,
+      mode: config.displayMode,
+      availableColumns: availableColumns,
+      overrideColumns: effectiveOverride,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dynamic Layout Helpers
+  // ---------------------------------------------------------------------------
+
+  /// Gets a map of all dashboard widgets keyed by their ID.
+  ///
+  /// For PortAndSpeed, a default configuration is used.
+  Map<String, Widget> get _allWidgets => {
+        DashboardWidgetSpecs.internetStatus.id: internetWidget,
+        DashboardWidgetSpecs.networks.id: networksWidget,
+        DashboardWidgetSpecs.wifiGrid.id: wifiGrid,
+        DashboardWidgetSpecs.quickPanel.id: quickPanel,
+        // Use a default config for PortAndSpeed in flexible layouts
+        DashboardWidgetSpecs.portAndSpeed.id: buildPortAndSpeed(
+          const PortAndSpeedConfig(
+            direction: null, // Auto-detect
+            showSpeedTest: true,
+          ),
+        ),
+        if (vpnTile != null) DashboardWidgetSpecs.vpn.id: vpnTile!,
+      };
+
+  /// Gets the list of visible widgets, ordered and wrapped with constraints.
+  ///
+  /// This is the primary method for flexible layout strategies.
+  List<Widget> get orderedVisibleWidgets {
+    final widgets = _allWidgets;
+
+    // 1. Get ordered specs from configs
+    final orderedSpecs = DashboardWidgetSpecs.all.toList()
+      ..sort((a, b) {
+        final configA = getConfigFor(a);
+        final configB = getConfigFor(b);
+        return configA.order.compareTo(configB.order);
+      });
+
+    // 2. Filter visible and map to widgets
+    return orderedSpecs
+        .where((spec) {
+          final config = getConfigFor(spec);
+          // Only show if visible AND widget exists (e.g. VPN might be null)
+          return config.visible && widgets.containsKey(spec.id);
+        })
+        .map((spec) => wrapWidget(
+              widgets[spec.id]!,
+              spec: spec,
+            ))
+        .toList();
+  }
 }

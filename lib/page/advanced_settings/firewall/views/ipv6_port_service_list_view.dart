@@ -438,6 +438,7 @@ class _Ipv6PortServiceListViewState
 
     // Clear editing state
     _editingRule = null;
+    _sheetStateSetter = null; // Fix: Add button state error
     _clearControllers();
     return true;
   }

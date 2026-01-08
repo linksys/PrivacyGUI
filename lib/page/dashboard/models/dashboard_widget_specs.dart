@@ -15,7 +15,7 @@ abstract class DashboardWidgetSpecs {
   // ---------------------------------------------------------------------------
   static const internetStatus = WidgetSpec(
     id: 'internet_status',
-    displayName: 'Internet 狀態',
+    displayName: 'Internet Status',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -33,7 +33,7 @@ abstract class DashboardWidgetSpecs {
         minColumns: 8,
         maxColumns: 12,
         preferredColumns: 12,
-        heightStrategy: HeightStrategy.columnBased(1.5),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
@@ -43,25 +43,25 @@ abstract class DashboardWidgetSpecs {
   // ---------------------------------------------------------------------------
   static const networks = WidgetSpec(
     id: 'networks',
-    displayName: '網路節點',
+    displayName: 'Networks',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.columnBased(1.5),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.columnBased(2.0),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.columnBased(2.5),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
@@ -71,7 +71,7 @@ abstract class DashboardWidgetSpecs {
   // ---------------------------------------------------------------------------
   static const wifiGrid = WidgetSpec(
     id: 'wifi_grid',
-    displayName: 'WiFi 網路',
+    displayName: 'Wi-Fi Networks',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 6,
@@ -99,7 +99,7 @@ abstract class DashboardWidgetSpecs {
   // ---------------------------------------------------------------------------
   static const quickPanel = WidgetSpec(
     id: 'quick_panel',
-    displayName: '快速設定',
+    displayName: 'Quick Panel',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 3,
@@ -117,7 +117,7 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.columnBased(2.0),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
@@ -127,7 +127,7 @@ abstract class DashboardWidgetSpecs {
   // ---------------------------------------------------------------------------
   static const portAndSpeed = WidgetSpec(
     id: 'port_and_speed',
-    displayName: '連接埠與速度',
+    displayName: 'Ports & Speed',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -136,7 +136,7 @@ abstract class DashboardWidgetSpecs {
         heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 6,
+        minColumns: 4,
         maxColumns: 8,
         preferredColumns: 8,
         heightStrategy: HeightStrategy.intrinsic(),
@@ -145,7 +145,7 @@ abstract class DashboardWidgetSpecs {
         minColumns: 8,
         maxColumns: 12,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.columnBased(1.5),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
@@ -159,7 +159,36 @@ abstract class DashboardWidgetSpecs {
     wifiGrid,
     quickPanel,
     portAndSpeed,
+    vpn,
   ];
+
+  // ---------------------------------------------------------------------------
+  // VPN (if supported)
+  // ---------------------------------------------------------------------------
+  static const vpn = WidgetSpec(
+    id: 'vpn',
+    displayName: 'VPN',
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 3,
+        maxColumns: 4,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.intrinsic(),
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 4,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.intrinsic(),
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.intrinsic(),
+      ),
+    },
+  );
 
   /// 根據 ID 查詢規格
   static WidgetSpec? getById(String id) {

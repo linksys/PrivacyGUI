@@ -8,7 +8,7 @@ import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
-import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
+import 'package:privacy_gui/page/dashboard/views/components/core/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -55,6 +55,119 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {
+    return switch (widget.displayMode) {
+      DisplayMode.compact => _buildCompactView(context, ref),
+      DisplayMode.normal => _buildNormalView(context, ref),
+      DisplayMode.expanded => _buildExpandedView(context, ref),
+    };
+  }
+
+  /// Compact view: Icon-only toggles in a row
+  Widget _buildCompactView(BuildContext context, WidgetRef ref) {
+    final privacyState = ref.watch(instantPrivacyProvider);
+    final nodeLightState = ref.watch(nodeLightSettingsProvider);
+    final master = ref.watch(instantTopologyProvider).root.children.first;
+    bool isSupportNodeLight = serviceHelper.isSupportLedMode();
+    bool isCognitive = isCognitiveMeshRouter(
+        modelNumber: master.data.model,
+        hardwareVersion: master.data.hardwareVersion);
+
+    return AppCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Privacy toggle
+          _compactToggle(
+            context,
+            icon: Icons.shield,
+            isActive: privacyState.status.mode == MacFilterMode.allow,
+            label: loc(context).instantPrivacy,
+            onTap: () => context.pushNamed(RouteNamed.menuInstantPrivacy),
+            onToggle: (value) {
+              showInstantPrivacyConfirmDialog(context, value).then((isOk) {
+                if (isOk != true) return;
+                final notifier = ref.read(instantPrivacyProvider.notifier);
+                if (value) {
+                  final macAddressList = ref
+                      .read(instantPrivacyDeviceListProvider)
+                      .map((e) => e.macAddress.toUpperCase())
+                      .toList();
+                  notifier.setMacAddressList(macAddressList);
+                }
+                notifier.setEnable(value);
+                if (context.mounted) {
+                  doSomethingWithSpinner(context, notifier.save());
+                }
+              });
+            },
+          ),
+          // Night mode toggle
+          if (isCognitive && isSupportNodeLight)
+            _compactToggle(
+              context,
+              icon: AppFontIcons.darkMode,
+              isActive: nodeLightState.isNightModeEnable,
+              label: loc(context).nightMode,
+              onToggle: (value) {
+                final notifier = ref.read(nodeLightSettingsProvider.notifier);
+                if (value) {
+                  notifier.setSettings(NodeLightSettings.night());
+                } else {
+                  notifier.setSettings(NodeLightSettings.on());
+                }
+                doSomethingWithSpinner(context, notifier.save());
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _compactToggle(
+    BuildContext context, {
+    required IconData icon,
+    required bool isActive,
+    required String label,
+    VoidCallback? onTap,
+    required void Function(bool) onToggle,
+  }) {
+    return Tooltip(
+      message: label,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: onTap,
+            child: AppIcon.font(
+              icon,
+              size: 24,
+              color: isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          AppGap.xs(),
+          SizedBox(
+            width: 48,
+            height: 28,
+            child: FittedBox(
+              child: AppSwitch(
+                value: isActive,
+                onChanged: onToggle,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Normal view: Standard toggle list (existing implementation)
+  Widget _buildNormalView(BuildContext context, WidgetRef ref) {
     final privacyState = ref.watch(instantPrivacyProvider);
     final nodeLightState = ref.watch(nodeLightSettingsProvider);
     final master = ref.watch(instantTopologyProvider).root.children.first;
@@ -132,6 +245,104 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                 tips: loc(context).nightModeTips,
                 semantics: 'quick night mode switch'),
           ]
+        ],
+      ),
+    );
+  }
+
+  /// Expanded view: Toggles with full descriptions
+  Widget _buildExpandedView(BuildContext context, WidgetRef ref) {
+    final privacyState = ref.watch(instantPrivacyProvider);
+    final nodeLightState = ref.watch(nodeLightSettingsProvider);
+    final master = ref.watch(instantTopologyProvider).root.children.first;
+    bool isSupportNodeLight = serviceHelper.isSupportLedMode();
+    bool isCognitive = isCognitiveMeshRouter(
+        modelNumber: master.data.model,
+        hardwareVersion: master.data.hardwareVersion);
+
+    return AppCard(
+      padding: EdgeInsets.all(AppSpacing.xxl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _expandedToggleTile(
+            context,
+            title: loc(context).instantPrivacy,
+            description: loc(context).instantPrivacyInfo,
+            value: privacyState.status.mode == MacFilterMode.allow,
+            onTap: () => context.pushNamed(RouteNamed.menuInstantPrivacy),
+            onChanged: (value) {
+              showInstantPrivacyConfirmDialog(context, value).then((isOk) {
+                if (isOk != true) return;
+                final notifier = ref.read(instantPrivacyProvider.notifier);
+                if (value) {
+                  final macAddressList = ref
+                      .read(instantPrivacyDeviceListProvider)
+                      .map((e) => e.macAddress.toUpperCase())
+                      .toList();
+                  notifier.setMacAddressList(macAddressList);
+                }
+                notifier.setEnable(value);
+                if (context.mounted) {
+                  doSomethingWithSpinner(context, notifier.save());
+                }
+              });
+            },
+          ),
+          if (isCognitive && isSupportNodeLight) ...[
+            const Divider(height: 32),
+            _expandedToggleTile(
+              context,
+              title: loc(context).nightMode,
+              description: loc(context).nightModeTips,
+              value: nodeLightState.isNightModeEnable,
+              onChanged: (value) {
+                final notifier = ref.read(nodeLightSettingsProvider.notifier);
+                if (value) {
+                  notifier.setSettings(NodeLightSettings.night());
+                } else {
+                  notifier.setSettings(NodeLightSettings.on());
+                }
+                doSomethingWithSpinner(context, notifier.save());
+              },
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _expandedToggleTile(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required bool value,
+    VoidCallback? onTap,
+    required void Function(bool) onChanged,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge(title),
+                AppGap.sm(),
+                AppText.bodySmall(
+                  description,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          AppGap.lg(),
+          AppSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );

@@ -49,8 +49,9 @@ class _BridgeFormState extends BaseWanFormState<BridgeForm> {
       children: [
         buildDisplayFields(context), // Display same info as in display mode
         AppGap.md(),
+        AppGap.md(),
         AppStyledText(
-          text: '<b>${loc(context).toLogInLocallyWhileInBridgeMode}</b>',
+          text: loc(context).toLogInLocallyWhileInBridgeMode,
           key: const ValueKey('toLogInLocallyWhileInBridgeMode'),
         ),
         AppGap.sm(),

@@ -5,63 +5,84 @@ import '../models/display_mode.dart';
 import '../models/height_strategy.dart';
 import '../models/widget_spec.dart';
 
-/// 佈局解析器
+/// Layout Resolver
 ///
-/// 負責根據元件約束和目前螢幕狀態，計算實際應使用的欄數和尺寸。
-/// 僅讀取 UI Kit 的公開 API，不修改 UI Kit。
+/// Calculates actual column counts and sizes based on component constraints
+/// and current screen state. Only reads UI Kit public API, no modifications.
 class GridLayoutResolver {
   final BuildContext context;
 
   const GridLayoutResolver(this.context);
 
-  /// 目前的最大欄數（4/8/12）
+  /// Current maximum columns (4/8/12)
   int get currentMaxColumns => context.currentMaxColumns;
 
-  /// 計算元件應使用的欄數
+  /// Calculate columns for a widget
   ///
-  /// [spec] 元件規格
-  /// [mode] 顯示模式
-  /// [availableColumns] 可用欄數（用於巢狀佈局，預設為 currentMaxColumns）
+  /// [spec] Widget specification
+  /// [mode] Display mode
+  /// [availableColumns] Available columns (for nested layouts, defaults to currentMaxColumns)
+  /// [overrideColumns] User-specified column override from preferences (null = use spec default)
   int resolveColumns(
     WidgetSpec spec,
     DisplayMode mode, {
     int? availableColumns,
+    int? overrideColumns,
   }) {
     final constraints = spec.getConstraints(mode);
     final maxCols = availableColumns ?? currentMaxColumns;
 
-    // 按比例縮放
+    // If user has overridden columns, scale that value instead of spec default
+    if (overrideColumns != null) {
+      // Scale the override from 12-column system to current max
+      final scaledOverride = (overrideColumns * maxCols / 12).round();
+      // Clamp to valid range
+      return scaledOverride.clamp(1, maxCols);
+    }
+
+    // Use spec default - scale proportionally
     final scaled = constraints.scaleToMaxColumns(maxCols);
 
-    // 確保在約束範圍內
+    // Ensure within constraints
     final scaledMin = constraints.scaleMinToMaxColumns(maxCols);
     final scaledMax = constraints.scaleMaxToMaxColumns(maxCols);
 
     return scaled.clamp(scaledMin, scaledMax);
   }
 
-  /// 計算元件寬度
+  /// Calculate width for a widget
   double resolveWidth(
     WidgetSpec spec,
     DisplayMode mode, {
     int? availableColumns,
+    int? overrideColumns,
   }) {
-    final columns =
-        resolveColumns(spec, mode, availableColumns: availableColumns);
+    final columns = resolveColumns(
+      spec,
+      mode,
+      availableColumns: availableColumns,
+      overrideColumns: overrideColumns,
+    );
     return context.colWidth(columns);
   }
 
-  /// 計算元件高度
+  /// Calculate height for a widget
   ///
-  /// 回傳 null 表示使用 intrinsic sizing
+  /// Returns null for intrinsic sizing
   double? resolveHeight(
     WidgetSpec spec,
     DisplayMode mode, {
     int? availableColumns,
+    int? overrideColumns,
   }) {
     final constraints = spec.getConstraints(mode);
     final singleColWidth = context.colWidth(1);
-    final width = resolveWidth(spec, mode, availableColumns: availableColumns);
+    final width = resolveWidth(
+      spec,
+      mode,
+      availableColumns: availableColumns,
+      overrideColumns: overrideColumns,
+    );
 
     return switch (constraints.heightStrategy) {
       IntrinsicHeightStrategy() => null,
@@ -70,18 +91,28 @@ class GridLayoutResolver {
     };
   }
 
-  /// 建立約束後的 SizedBox 包裝
+  /// Build constrained SizedBox wrapper
   ///
-  /// 高度為 null 時不設定高度約束
+  /// Height is null when using intrinsic sizing
   Widget wrapWithConstraints(
     Widget child, {
     required WidgetSpec spec,
     required DisplayMode mode,
     int? availableColumns,
+    int? overrideColumns,
   }) {
-    final width = resolveWidth(spec, mode, availableColumns: availableColumns);
-    final height =
-        resolveHeight(spec, mode, availableColumns: availableColumns);
+    final width = resolveWidth(
+      spec,
+      mode,
+      availableColumns: availableColumns,
+      overrideColumns: overrideColumns,
+    );
+    final height = resolveHeight(
+      spec,
+      mode,
+      availableColumns: availableColumns,
+      overrideColumns: overrideColumns,
+    );
 
     return SizedBox(
       width: width,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
-import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
+import 'package:privacy_gui/page/dashboard/views/components/core/loading_tile.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A wrapper widget that shows a loading state while dashboard data is being fetched.

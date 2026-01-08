@@ -79,6 +79,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             childAspectRatio: (205 / 152),
             mainAxisExtent: isDesktop ? 152 : 112,
           ),
+          clipBehavior: Clip.none,
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
           itemCount: items.length,
@@ -134,14 +135,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                 context.pushNamed(RouteNamed.addNodes);
               },
             ),
-            AppListTile(
-              title: AppText.bodyMedium('Dashboard Layout'),
-              leading: const AppIcon.font(AppFontIcons.widgets),
-              onTap: () {
-                Navigator.of(context).maybePop();
-                _showLayoutSettingsDialog();
-              },
-            ),
+            // AppListTile(
+            //   title: AppText.bodyMedium('Dashboard Layout'),
+            //   leading: const AppIcon.font(AppFontIcons.widgets),
+            //   onTap: () {
+            //     Navigator.of(context).maybePop();
+            //     _showLayoutSettingsDialog();
+            //   },
+            // ),
           ],
         ),
       ),

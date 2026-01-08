@@ -14,7 +14,8 @@ final dashboardPreferencesProvider =
 /// Notifier for managing Dashboard layout preferences
 ///
 /// Handles loading, saving, and updating user preferences for widget
-/// display modes. Preferences are persisted to SharedPreferences.
+/// display modes, visibility, column spans, and ordering.
+/// Preferences are persisted to SharedPreferences.
 class DashboardPreferencesNotifier
     extends Notifier<DashboardLayoutPreferences> {
   @override
@@ -35,6 +36,30 @@ class DashboardPreferencesNotifier
   /// Set the display mode for a specific widget
   Future<void> setWidgetMode(String widgetId, DisplayMode mode) async {
     state = state.setMode(widgetId, mode);
+    await _saveToPrefs();
+  }
+
+  /// Set the visibility for a specific widget
+  Future<void> setVisibility(String widgetId, bool visible) async {
+    state = state.setVisibility(widgetId, visible);
+    await _saveToPrefs();
+  }
+
+  /// Set the column span for a specific widget
+  Future<void> setColumnSpan(String widgetId, int? columnSpan) async {
+    state = state.setColumnSpan(widgetId, columnSpan);
+    await _saveToPrefs();
+  }
+
+  /// Reorder widgets
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    state = state.reorder(oldIndex, newIndex);
+    await _saveToPrefs();
+  }
+
+  /// Toggle custom layout usage
+  Future<void> toggleCustomLayout(bool enabled) async {
+    state = state.toggleCustomLayout(enabled);
     await _saveToPrefs();
   }
 

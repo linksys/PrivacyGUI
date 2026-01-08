@@ -188,7 +188,11 @@ class _FilteredDevicesViewState extends ConsumerState<FilteredDevicesView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          AppText.labelLarge(device.name),
+                          AppText.labelLarge(
+                            device.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           AppGap.xs(),
                           AppText.bodyMedium(device.macAddress),
                         ],

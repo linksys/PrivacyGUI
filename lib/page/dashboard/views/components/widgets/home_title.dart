@@ -5,7 +5,7 @@ import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
+import 'package:privacy_gui/page/dashboard/views/components/core/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';

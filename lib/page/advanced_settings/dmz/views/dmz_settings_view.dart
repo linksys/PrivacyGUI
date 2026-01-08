@@ -261,29 +261,22 @@ class _DMZSettingsViewState extends ConsumerState<DMZSettingsView> {
                           DMZDestinationType.ip
                       ? Container(
                           constraints: const BoxConstraints(maxWidth: 429),
-                          child: Focus(
-                            onFocusChange: (value) {
-                              if (!value) {
-                                _checkDestinationIPAdress();
-                              }
-                            },
-                            child: AppIpv4TextField(
-                              key: const Key('destinationIP'),
-                              controller: _destinationIPController,
-                              readOnly: SegmentReadOnly(
-                                segment1: subnetMask[0] == '255',
-                                segment2: subnetMask[1] == '255',
-                                segment3: subnetMask[2] == '255',
-                              ),
-                              onChanged: (value) {
-                                ref
-                                    .read(dmzSettingsProvider.notifier)
-                                    .setSettings(state.settings.current
-                                        .copyWith(
-                                            destinationIPAddress: () => value));
-                              },
-                              errorText: _destinationError,
+                          child: AppIpv4TextField(
+                            key: const Key('destinationIP'),
+                            controller: _destinationIPController,
+                            readOnly: SegmentReadOnly(
+                              segment0: subnetMask[0] == '255',
+                              segment1: subnetMask[1] == '255',
+                              segment2: subnetMask[2] == '255',
                             ),
+                            onChanged: (value) {
+                              ref
+                                  .read(dmzSettingsProvider.notifier)
+                                  .setSettings(state.settings.current.copyWith(
+                                      destinationIPAddress: () => value));
+                              _checkDestinationIPAdress();
+                            },
+                            errorText: _destinationError,
                           ),
                         )
                       : null,

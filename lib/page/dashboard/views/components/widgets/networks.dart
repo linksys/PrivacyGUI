@@ -10,7 +10,7 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/topology_adapter.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
+import 'package:privacy_gui/page/dashboard/views/components/core/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
@@ -49,6 +49,76 @@ class DashboardNetworks extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {
+    return switch (displayMode) {
+      DisplayMode.compact => _buildCompactView(context, ref),
+      DisplayMode.normal => _buildNormalView(context, ref),
+      DisplayMode.expanded => _buildExpandedView(context, ref),
+    };
+  }
+
+  /// Compact view: Nodes and devices count displayed side by side
+  Widget _buildCompactView(BuildContext context, WidgetRef ref) {
+    final topologyState = ref.watch(instantTopologyProvider);
+    final nodes = topologyState.root.children.firstOrNull?.toFlatList() ?? [];
+    final hasOffline = nodes.any((element) => !element.data.isOnline);
+    final externalDeviceCount = ref
+        .watch(deviceManagerProvider)
+        .externalDevices
+        .where((e) => e.isOnline())
+        .length;
+
+    return AppCard(
+      child: InkWell(
+        onTap: () => context.pushNamed(RouteNamed.menuInstantTopology),
+        child: Row(
+          children: [
+            // Nodes section
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  hasOffline
+                      ? AppIcon.font(AppFontIcons.infoCircle,
+                          color: Theme.of(context).colorScheme.error, size: 18)
+                      : AppIcon.font(AppFontIcons.networkNode, size: 18),
+                  AppGap.sm(),
+                  AppText.titleMedium('${nodes.length}'),
+                  AppGap.xs(),
+                  AppText.bodySmall(
+                    nodes.length == 1 ? loc(context).node : loc(context).nodes,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 36, child: VerticalDivider()),
+            // Devices section
+            Expanded(
+              child: InkWell(
+                onTap: () => context.pushNamed(RouteNamed.menuInstantDevices),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AppIcon.font(AppFontIcons.devices, size: 18),
+                    AppGap.sm(),
+                    AppText.titleMedium('$externalDeviceCount'),
+                    AppGap.xs(),
+                    AppText.bodySmall(
+                      externalDeviceCount == 1
+                          ? loc(context).device
+                          : loc(context).devices,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Normal view: Standard view with topology tree (existing implementation)
+  Widget _buildNormalView(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardHomeProvider);
     final topologyState = ref.watch(instantTopologyProvider);
 
@@ -79,6 +149,42 @@ class DashboardNetworks extends ConsumerWidget {
               meshTopology,
               topologyState,
               showAllTopology,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Expanded view: Full topology with larger tree and more details
+  Widget _buildExpandedView(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dashboardHomeProvider);
+    final topologyState = ref.watch(instantTopologyProvider);
+
+    // Convert topology data to ui_kit format
+    final meshTopology = TopologyAdapter.convert(topologyState.root.children);
+
+    // Calculate expanded topology height (show more nodes)
+    const topologyItemHeight = 80.0;
+    const treeViewBaseHeight = 80.0;
+    final routerLength =
+        topologyState.root.children.firstOrNull?.toFlatList().length ?? 1;
+    final double nodeTopologyHeight = routerLength * topologyItemHeight;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppGap.lg(),
+          _buildNetworkHeader(context, ref, state),
+          SizedBox(
+            height: nodeTopologyHeight + treeViewBaseHeight,
+            child: _buildTopologyView(
+              context,
+              ref,
+              meshTopology,
+              topologyState,
+              true, // Always show all in expanded mode
             ),
           ),
         ],

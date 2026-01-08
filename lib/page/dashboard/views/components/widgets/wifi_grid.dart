@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:privacy_gui/page/dashboard/views/components/dashboard_loading_wrapper.dart';
-import 'package:privacy_gui/page/dashboard/views/components/wifi_card.dart';
+import 'package:privacy_gui/page/dashboard/views/components/core/dashboard_loading_wrapper.dart';
+import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/wifi_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Grid displaying WiFi networks for the dashboard.
@@ -44,6 +44,44 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
   }
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {
+    return switch (widget.displayMode) {
+      DisplayMode.compact => _buildCompactView(context, ref),
+      DisplayMode.normal => _buildNormalView(context, ref),
+      DisplayMode.expanded => _buildExpandedView(context, ref),
+    };
+  }
+
+  /// Compact view: Horizontal scrollable small cards
+  Widget _buildCompactView(BuildContext context, WidgetRef ref) {
+    final items =
+        ref.watch(dashboardHomeProvider.select((value) => value.wifis));
+    final enabledWiFiCount =
+        items.where((e) => !e.isGuest && e.isEnabled).length;
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+    final canBeDisabled = enabledWiFiCount > 1 || hasLanPort;
+
+    const compactHeight = 140.0;
+
+    return SizedBox(
+      height: compactHeight,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => AppGap.md(),
+        itemBuilder: (context, index) {
+          return SizedBox(
+            width: 200,
+            height: compactHeight,
+            child: _buildWiFiCard(items, index, canBeDisabled),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Normal view: 2-column grid (existing implementation)
+  Widget _buildNormalView(BuildContext context, WidgetRef ref) {
     final items =
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
     final crossAxisCount =
@@ -75,6 +113,38 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
         itemCount: items.length,
+        itemBuilder: (context, index) {
+          return SizedBox(
+            height: itemHeight,
+            child: _buildWiFiCard(items, index, canBeDisabled),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Expanded view: Single column with larger cards
+  Widget _buildExpandedView(BuildContext context, WidgetRef ref) {
+    final items =
+        ref.watch(dashboardHomeProvider.select((value) => value.wifis));
+    const itemHeight = 200.0;
+
+    final enabledWiFiCount =
+        items.where((e) => !e.isGuest && e.isEnabled).length;
+    final hasLanPort =
+        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+    final canBeDisabled = enabledWiFiCount > 1 || hasLanPort;
+
+    final gridHeight = items.length * itemHeight +
+        (items.isEmpty ? 0 : (items.length - 1)) * AppSpacing.lg;
+
+    return SizedBox(
+      height: gridHeight,
+      child: ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => AppGap.lg(),
         itemBuilder: (context, index) {
           return SizedBox(
             height: itemHeight,

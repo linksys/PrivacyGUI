@@ -162,25 +162,33 @@ class _AutomaticIPv6FormState extends BaseIPv6WanFormState<AutomaticIPv6Form> {
         children: [
           Padding(
             padding: inputPadding,
-            child: AppDropdown<IPv6rdTunnelMode>(
-              key: const ValueKey('ipv6TunnelDropdown'),
-              label: loc(context).sixrdTunnel,
-              value: ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,
-              items: const [
-                IPv6rdTunnelMode.disabled,
-                IPv6rdTunnelMode.automatic,
-                IPv6rdTunnelMode.manual,
-              ],
-              itemAsString: (item) {
-                return getIpv6rdTunnelModeLoc(context, item);
-              },
-              onChanged: widget.isEditing && !ipv6Setting.isIPv6AutomaticEnabled
-                  ? (value) {
-                      if (value == null) return;
-                      notifier.updateIpv6Settings(
-                          ipv6Setting.copyWith(ipv6rdTunnelMode: () => value));
-                    }
-                  : null,
+            child: Opacity(
+              opacity: widget.isEditing && !ipv6Setting.isIPv6AutomaticEnabled
+                  ? 1.0
+                  : 0.5,
+              child: IgnorePointer(
+                ignoring:
+                    !(widget.isEditing && !ipv6Setting.isIPv6AutomaticEnabled),
+                child: AppDropdown<IPv6rdTunnelMode>(
+                  key: const ValueKey('ipv6TunnelDropdown'),
+                  label: loc(context).sixrdTunnel,
+                  value:
+                      ipv6Setting.ipv6rdTunnelMode ?? IPv6rdTunnelMode.disabled,
+                  items: const [
+                    IPv6rdTunnelMode.disabled,
+                    IPv6rdTunnelMode.automatic,
+                    IPv6rdTunnelMode.manual,
+                  ],
+                  itemAsString: (item) {
+                    return getIpv6rdTunnelModeLoc(context, item);
+                  },
+                  onChanged: (value) {
+                    if (value == null) return;
+                    notifier.updateIpv6Settings(
+                        ipv6Setting.copyWith(ipv6rdTunnelMode: () => value));
+                  },
+                ),
+              ),
             ),
           ),
           _manualSixrdTunnel(ipv6Setting, context),
