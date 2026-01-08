@@ -26,6 +26,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacy_gui/page/health_check/providers/speed_test_display.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/speed_test_external_widget.dart';
@@ -119,6 +120,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final desktopCol = 4.col;
+    final showSpeedTest = isDisplaySpeedTest(ref);
+
     return StyledAppPageView.innerPage(
       onRefresh: () {
         return ref.read(pollingProvider.notifier).forcePolling();
@@ -130,8 +133,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 const AppGap.medium(),
                 _connectivityContentWidget(context, ref),
                 const AppGap.medium(),
-                _speedTestContent(context),
-                const AppGap.medium(),
+                if (showSpeedTest) ...[
+                  _speedTestContent(context),
+                  const AppGap.medium(),
+                ],
                 _portsCard(context, ref),
               ],
             )
@@ -154,7 +159,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                             const AppGap.gutter(),
                             SizedBox(
                               width: desktopCol,
-                              child: _speedTestContent(context),
+                              child: showSpeedTest
+                                  ? _speedTestContent(context)
+                                  : _portsCardVertical(context, ref),
                             ),
                           ],
                         ),
@@ -182,12 +189,16 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                           const AppGap.gutter(),
                           SizedBox(
                             width: desktopCol,
-                            child: _speedTestContent(context),
+                            child: showSpeedTest
+                                ? _speedTestContent(context)
+                                : _portsCardVertical(context, ref),
                           ),
                         ],
                       ),
-                const AppGap.medium(),
-                _portsCard(context, ref),
+                if (showSpeedTest) ...[
+                  const AppGap.medium(),
+                  _portsCard(context, ref),
+                ],
               ],
             ),
     );
@@ -429,6 +440,61 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
             ],
           )),
     );
+  }
+
+  Widget _portsCardVertical(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(dashboardHomeProvider);
+    // final isLoading = ref
+    //     .watch(deviceManagerProvider.select((value) => value.deviceList))
+    //     .isEmpty;
+    return SizedBox(
+        height: ResponsiveLayout.isMobileLayout(context) ? 224 : 752,
+        width: double.infinity,
+        child: AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisAlignment: !state.isHealthCheckSupported
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.spaceBetween,
+              children: [
+                SizedBox(
+                  height: 752,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.small2,
+                      vertical: Spacing.large2,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        ...state.lanPortConnections
+                            .mapIndexed((index, e) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 36.0),
+                                  child: _portWidget(
+                                    context,
+                                    e == 'None' ? null : e,
+                                    loc(context).indexedPort(index + 1),
+                                    false,
+                                  ),
+                                ))
+                            .toList(),
+                        Expanded(
+                          child: _portWidget(
+                            context,
+                            state.wanPortConnection == 'None'
+                                ? null
+                                : state.wanPortConnection,
+                            loc(context).wan,
+                            true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            )));
   }
 
   Widget _portWidget(

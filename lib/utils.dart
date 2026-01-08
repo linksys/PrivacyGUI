@@ -7,6 +7,7 @@ import 'package:collection/collection.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:privacy_gui/constants/build_config.dart';
@@ -20,6 +21,7 @@ import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:share_plus/share_plus.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/storage.dart';
+import 'core/utils/fernet_manager.dart';
 import '../../../util/export_selector/export_base.dart'
     if (dart.library.io) '../../../util/export_selector/export_mobile.dart'
     if (dart.library.html) '../../../util/export_selector/export_web.dart';
@@ -91,6 +93,24 @@ class Utils {
       'passphrase',
     ];
     return maskJsonValue(raw, keys);
+  }
+
+  static String encryptJNAPAuth(String raw) {
+    final pattern = RegExp(r'(X-JNAP-Authorization: Basic )([a-zA-Z0-9=+/]+)');
+    return raw.replaceAllMapped(pattern, (match) {
+      final header = match.group(1)!;
+      final encodedPassword = match.group(2)!;
+
+      // Encrypt the password
+      final encryptedPassword = FernetManager().encrypt(encodedPassword);
+
+      if (encryptedPassword != null) {
+        return '$header$encryptedPassword';
+      } else {
+        // If encryption fails, return the original match, but mask the password
+        return '${header}************';
+      }
+    });
   }
 
   static String replaceHttpScheme(String raw) {
@@ -637,5 +657,31 @@ extension NodeSignalLevelExt on NodeSignalLevel {
       NodeSignalLevel.wired => Theme.of(context).colorScheme.onSurface,
       NodeSignalLevel.none => Colors.black,
     };
+  }
+}
+
+class BrandUtils {
+  static Future<String?> resolveAsset(String basePath) async {
+    final isDark = basePath.endsWith('_dark');
+    // Priority 1: .webp
+    try {
+      final webp = '$basePath.webp';
+      await rootBundle.load(webp);
+      return webp;
+    } catch (_) {}
+
+    // Priority 2: .png
+    try {
+      final png = '$basePath.png';
+      await rootBundle.load(png);
+      return png;
+    } catch (_) {}
+
+    // if dark, try light
+    if (isDark) {
+      return resolveAsset(basePath.replaceFirst('_dark', ''));
+    }
+    // null if nothing found
+    return null;
   }
 }

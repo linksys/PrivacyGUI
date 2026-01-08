@@ -29,7 +29,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
   final _dns2Controller = TextEditingController();
   var _hasExtraDNS = false;
 
-  final subnetMaskValidator = SubnetMaskValidator();
+  // override default of 30 for WAN Static IP settings (QUALITY-439)
+  final subnetMaskValidator = SubnetMaskValidator(max: 31);
   final ipAddressValidator = IpAddressValidator();
   final requiredIpAddressValidator = IpAddressRequiredValidator();
   String? _ipError;

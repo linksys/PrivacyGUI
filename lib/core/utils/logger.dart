@@ -40,19 +40,18 @@ class CustomOutput extends LogOutput {
       }
     }
     if (!kIsWeb && output.isNotEmpty && _file.existsSync()) {
-      await _file.writeAsBytes(
-          "${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n"
-              .codeUnits,
+      final processedOutput = Utils.encryptJNAPAuth(
+          Utils.maskSensitiveJsonValues(
+              Utils.replaceHttpScheme(output.toString())));
+      await _file.writeAsBytes("$processedOutput\n".codeUnits,
           mode: FileMode.writeOnlyAppend);
     } else if (kIsWeb && output.isNotEmpty) {
-      // final SharedPreferences sp = await SharedPreferences.getInstance();
-      // String content = sp.getString(pWebLog) ?? '';
-      // await sp.setString(pWebLog,
-      //     '$content\n${Utils.maskSensitiveJsonValues(Utils.replaceHttpScheme(output.toString()))}\n');
       _recordLog(
-        Utils.maskUsernamePasswordBodyValue(
-          Utils.maskSensitiveJsonValues(
-            Utils.replaceHttpScheme(output.toString()),
+        Utils.encryptJNAPAuth(
+          Utils.maskUsernamePasswordBodyValue(
+            Utils.maskSensitiveJsonValues(
+              Utils.replaceHttpScheme(output.toString()),
+            ),
           ),
         ),
       );
@@ -113,9 +112,12 @@ void _addLogWithTag({required String message, String tag = appLogTag}) {
 
 String _getWebLogByTag({String tag = appLogTag}) {
   final logList = _webLogCache[tag] ?? [];
+  // Sort log list by timestamp in ascending order
+  // And return the log list as a string with date time prefix
   return logList
       .sorted((a, b) => a.$1.compareTo(b.$1))
-      .map((e) => e.$2)
+      .map((e) =>
+          '${DateTime.fromMillisecondsSinceEpoch(e.$1).toIso8601String()}: ${e.$2}')
       .join('\n');
 }
 
@@ -151,10 +153,10 @@ Future<String> getPackageInfo() async {
     'OS: ${defaultTargetPlatform.name}',
   ];
 
-    appInfo.add(
-      '================================= Device Info ==================================',
-    );
-    appInfo.add(await _getDeviceInfo(DeviceInfoPlugin()));
+  appInfo.add(
+    '================================= Device Info ==================================',
+  );
+  appInfo.add(await _getDeviceInfo(DeviceInfoPlugin()));
 
   return appInfo.join('\n');
 }
