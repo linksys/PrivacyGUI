@@ -3,13 +3,13 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
+import 'package:privacy_gui/page/nodes/models/backhaul_info_ui_model.dart';
 
 class AddWiredNodesState extends Equatable {
   final bool? onboardingProceed;
   final bool? anyOnboarded;
-  final List<BackHaulInfoData>? backhaulSnapshot;
+  final List<BackhaulInfoUIModel>? backhaulSnapshot;
   final bool isLoading;
   final bool forceStop;
   final String? loadingMessage;
@@ -30,7 +30,7 @@ class AddWiredNodesState extends Equatable {
   AddWiredNodesState copyWith({
     bool? onboardingProceed,
     bool? anyOnboarded,
-    List<BackHaulInfoData>? backhaulSnapshot,
+    List<BackhaulInfoUIModel>? backhaulSnapshot,
     bool? isLoading,
     bool? forceStop,
     String? loadingMessage,
@@ -67,8 +67,8 @@ class AddWiredNodesState extends Equatable {
       onboardingProceed: map['onboardingProceed'],
       anyOnboarded: map['anyOnboarded'],
       backhaulSnapshot: map['backhaulSnapshot'] != null
-          ? List<BackHaulInfoData>.from(
-              map['backhaulSnapshot']?.map((x) => BackHaulInfoData.fromMap(x)))
+          ? List<BackhaulInfoUIModel>.from(map['backhaulSnapshot']
+              ?.map((x) => BackhaulInfoUIModel.fromMap(x)))
           : null,
       isLoading: map['isLoading'] ?? false,
       forceStop: map['forceStop'] ?? false,
