@@ -10,6 +10,10 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dar
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
+import 'package:privacy_gui/page/health_check/views/components/speed_test_server_selection_dialog.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart'; // For serviceHelper
+import 'package:privacy_gui/di.dart'; // For getIt
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -284,16 +288,65 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
     );
   }
 
-  void run() {
+  Future<void> run() async {
     setState(() {
       _loading = true;
     });
-    ref.read(healthCheckProvider.notifier).runHealthCheck(Module.speedtest);
-    Future.delayed(const Duration(seconds: 5), () {
-      setState(() {
-        _loading = false;
+
+    final notifier = ref.read(healthCheckProvider.notifier);
+    final serviceHelper = getIt<ServiceHelper>();
+    HealthCheckServer? targetServer;
+
+    try {
+      if (serviceHelper.isSupportHealthCheckManager2()) {
+        final servers = await notifier.updateServers();
+        // Check state after fetch
+        if (servers.isNotEmpty) {
+          if (mounted) {
+            final selected = await showDialog<HealthCheckServer>(
+              context: context,
+              builder: (context) =>
+                  SpeedTestServerSelectionDialog(servers: servers),
+            );
+
+            if (selected == null) {
+              // User cancelled
+              setState(() {
+                _loading = false;
+              });
+              return;
+            }
+            targetServer = selected;
+          } else {
+            setState(() {
+              _loading = false;
+            });
+            return;
+          }
+        }
+      }
+
+      int? serverId;
+      if (targetServer != null) {
+        serverId = int.tryParse(targetServer.serverID);
+      }
+
+      notifier.runHealthCheck(Module.speedtest, serverId: serverId);
+
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+          });
+        }
       });
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
   }
 
   String _getDateTimeText(String? timestamp) {

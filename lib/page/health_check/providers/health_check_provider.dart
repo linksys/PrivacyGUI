@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 
 import '../../../core/jnap/actions/better_action.dart';
 import '../../../core/jnap/models/health_check_result.dart';
@@ -32,14 +33,26 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
   @override
   HealthCheckState build() => HealthCheckState.init();
 
-  Future<void> runHealthCheck(Module module) async {
+  Future<void> runHealthCheck(Module module, {int? serverId}) async {
     if (module == Module.speedtest) {
-      // Reset state
-      state = HealthCheckState.init();
+      // Reset state but keep servers and selection if not provided
+      state = HealthCheckState.init().copyWith(
+        servers: state.servers, // Preserve servers
+        selectedServer: state.selectedServer,
+      );
       final repo = ref.read(routerRepositoryProvider);
+
+      final targetServerId = serverId ??
+          (state.selectedServer?.serverID != null
+              ? int.tryParse(state.selectedServer!.serverID)
+              : null);
+
       final result = await repo.send(
         JNAPAction.runHealthCheck,
-        data: {"runHealthCheckModule": module.value},
+        data: {
+          "runHealthCheckModule": module.value,
+          "targetServerId": targetServerId,
+        }..removeWhere((key, value) => value == null),
         auth: true,
         fetchRemote: true,
         cacheLevel: CacheLevel.noCache,
@@ -196,6 +209,40 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
       state = state.copyWith(error: result);
     }
     return result;
+  }
+
+  Future<List<HealthCheckServer>> updateServers() async {
+    final repo = ref.read(routerRepositoryProvider);
+    try {
+      // Fetch from repository (which uses polling cache)
+      final result = await repo.send(
+        JNAPAction.getCloseHealthCheckServers,
+        auth: true,
+        fetchRemote: false, // Rely on polling/cache
+        cacheLevel: CacheLevel.localCached,
+      );
+
+      // ignore: unnecessary_type_check
+      if (result is JNAPSuccess) {
+        final List<dynamic> serverList = result.output['healthCheckServers'];
+        final servers = serverList
+            .map((e) => HealthCheckServer.fromJson(e as Map<String, dynamic>))
+            .toList();
+
+        // Update state with cached servers
+        state = state.copyWith(servers: servers);
+        return servers;
+      }
+    } catch (e) {
+      logger.d('Failed to update health check servers from cache: $e');
+    }
+    // If fail or empty, ensure state reflects that (or keep old? keeping empty for now)
+    state = state.copyWith(servers: []);
+    return [];
+  }
+
+  void setSelectedServer(HealthCheckServer? server) {
+    state = state.copyWith(selectedServer: server);
   }
 
   _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {

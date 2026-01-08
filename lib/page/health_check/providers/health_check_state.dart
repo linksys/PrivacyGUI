@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 
 class HealthCheckState extends Equatable {
   final String step;
@@ -14,6 +15,8 @@ class HealthCheckState extends Equatable {
   final String status;
   final double meterValue;
   final double randomValue;
+  final List<HealthCheckServer> servers;
+  final HealthCheckServer? selectedServer;
 
   const HealthCheckState({
     this.step = 'latency',
@@ -23,39 +26,53 @@ class HealthCheckState extends Equatable {
     this.status = 'IDLE',
     this.meterValue = 0.0,
     this.randomValue = 0.0,
-
+    this.servers = const [],
+    this.selectedServer,
   });
 
   @override
-  List<Object?> get props => [step, timestamp, result, error];
+  List<Object?> get props => [
+        step,
+        status,
+        result,
+        meterValue,
+        randomValue,
+        error,
+        servers,
+        selectedServer
+      ];
 
-  factory HealthCheckState.init() {
-    return const HealthCheckState(
-      step: 'latency',
-      result: [],
-      status: 'IDLE',
-      meterValue: 0.0,
-      randomValue: 0.0,
-    );
-  }
+  factory HealthCheckState.init() => const HealthCheckState(
+        step: '',
+        status: 'IDLE',
+        result: [],
+        meterValue: 0.0,
+        randomValue: 0.0,
+        servers: [],
+        selectedServer: null,
+      );
 
   HealthCheckState copyWith({
     String? step,
-    String? timestamp,
-    List<HealthCheckResult>? result,
-    JNAPError? error,
     String? status,
+    List<HealthCheckResult>? result,
+    String? timestamp,
     double? meterValue,
     double? randomValue,
+    JNAPError? error,
+    List<HealthCheckServer>? servers,
+    HealthCheckServer? selectedServer,
   }) {
     return HealthCheckState(
       step: step ?? this.step,
-      timestamp: timestamp ?? this.timestamp,
-      result: result ?? this.result,
-      error: error ?? this.error,
       status: status ?? this.status,
+      result: result ?? this.result,
+      timestamp: timestamp ?? this.timestamp,
       meterValue: meterValue ?? this.meterValue,
       randomValue: randomValue ?? this.randomValue,
+      error: error ?? this.error,
+      servers: servers ?? this.servers,
+      selectedServer: selectedServer ?? this.selectedServer,
     );
   }
 
@@ -68,6 +85,8 @@ class HealthCheckState extends Equatable {
       'status': status,
       'meterValue': meterValue,
       'randomValue': randomValue,
+      'servers': servers.map((x) => x.toJson()).toList(),
+      'selectedServer': selectedServer?.toJson(),
     }..removeWhere((key, value) => value == null);
   }
 
@@ -87,6 +106,17 @@ class HealthCheckState extends Equatable {
       status: map['status'] as String,
       meterValue: map['meterValue'] as double,
       randomValue: map['randomValue'] as double,
+      servers: map['servers'] != null
+          ? List<HealthCheckServer>.from(
+              map['servers'].map<HealthCheckServer>(
+                (x) => HealthCheckServer.fromJson(x as Map<String, dynamic>),
+              ),
+            )
+          : const [],
+      selectedServer: map['selectedServer'] != null
+          ? HealthCheckServer.fromJson(
+              map['selectedServer'] as Map<String, dynamic>)
+          : null,
     );
   }
 
