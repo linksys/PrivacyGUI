@@ -24,9 +24,7 @@ import 'package:privacy_gui/core/cloud/model/cloud_communication_method.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_network_model.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
-import 'package:privacy_gui/core/utils/ip_getter/get_local_ip.dart'
-    if (dart.library.io) 'package:privacy_gui/core/utils/ip_getter/mobile_get_local_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/utils/ip_getter/web_get_local_ip.dart';
+import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 
 final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
       httpClient: LinksysHttpClient(getHost: () {

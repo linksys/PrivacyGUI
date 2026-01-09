@@ -19,12 +19,8 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'core/utils/logger.dart';
 import 'core/utils/storage.dart';
 import 'core/utils/fernet_manager.dart';
-import '../../../util/export_selector/export_base.dart'
-    if (dart.library.io) '../../../util/export_selector/export_mobile.dart'
-    if (dart.library.html) '../../../util/export_selector/export_web.dart';
-import '../../../util/get_log_selector/get_log_base.dart'
-    if (dart.library.io) '../../../util/get_log_selector/get_log_mobile.dart'
-    if (dart.library.html) '../../../util/get_log_selector/get_log_web.dart';
+import 'package:privacy_gui/util/export_selector/export_selector.dart';
+import 'package:privacy_gui/util/get_log_selector/get_log_selector.dart';
 
 class Utils {
   static Future exportLogFile(BuildContext context) async {

@@ -13,8 +13,7 @@ import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/dashboard/strategies/custom_dashboard_layout_strategy.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
-import 'package:privacy_gui/core/utils/assign_ip/base_assign_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/utils/assign_ip/web_assign_ip.dart';
+import 'package:privacy_gui/core/utils/assign_ip/assign_ip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardHomeView extends ConsumerStatefulWidget {

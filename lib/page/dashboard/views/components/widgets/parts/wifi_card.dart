@@ -11,9 +11,7 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.da
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/qr_code.dart';
 import 'package:privacy_gui/util/wifi_credential.dart';
-import 'package:privacy_gui/util/export_selector/export_base.dart'
-    if (dart.library.io) 'package:privacy_gui/util/export_selector/export_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/export_selector/export_web.dart';
+import 'package:privacy_gui/util/export_selector/export_selector.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

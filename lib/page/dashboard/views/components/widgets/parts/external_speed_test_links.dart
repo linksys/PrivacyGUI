@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
+import 'package:privacy_gui/util/url_helper/url_helper.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Widget for external speed test links (Fast.com, Cloudflare).

@@ -1,9 +1,7 @@
 import 'dart:ui';
 
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
+import 'package:privacy_gui/util/url_helper/url_helper.dart';
 
 const officialWebHost = 'https://store.linksys.com';
 const officialSupportHost = 'https://support.linksys.com';
