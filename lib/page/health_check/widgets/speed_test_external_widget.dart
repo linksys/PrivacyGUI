@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
+import 'package:privacy_gui/util/url_helper/url_helper.dart';
 
 class SpeedTestExternalWidget extends ConsumerStatefulWidget {
   const SpeedTestExternalWidget({super.key});

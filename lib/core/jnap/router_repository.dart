@@ -27,9 +27,7 @@ import 'package:privacy_gui/core/data/providers/side_effect_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:privacy_gui/core/utils/ip_getter/get_local_ip.dart'
-    if (dart.library.io) 'package:privacy_gui/core/utils/ip_getter/mobile_get_local_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/utils/ip_getter/web_get_local_ip.dart';
+import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 
 enum CommandType {
   remote,

@@ -4,9 +4,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/base_wan_form.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/util/url_helper/url_helper.dart'
-    if (dart.library.io) 'package:privacy_gui/util/url_helper/url_helper_mobile.dart'
-    if (dart.library.html) 'package:privacy_gui/util/url_helper/url_helper_web.dart';
+import 'package:privacy_gui/util/url_helper/url_helper.dart';
 
 class BridgeForm extends BaseWanForm {
   const BridgeForm({
