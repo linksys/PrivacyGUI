@@ -145,11 +145,14 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
             title: loc(context).autoFirmwareUpdate,
             value: isFwAutoUpdate,
             onChanged: (value) async {
-              await ref
-                  .read(firmwareUpdateProvider.notifier)
-                  .setFirmwareUpdatePolicy(value
-                      ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
-                      : FirmwareUpdateSettings.firmwareUpdatePolicyManual);
+              await doSomethingWithSpinner(
+                context,
+                ref
+                    .read(firmwareUpdateProvider.notifier)
+                    .setFirmwareUpdatePolicy(value
+                        ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
+                        : FirmwareUpdateSettings.firmwareUpdatePolicyManual),
+              );
             },
           ),
         ],

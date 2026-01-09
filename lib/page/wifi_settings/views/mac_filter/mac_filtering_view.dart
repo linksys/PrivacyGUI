@@ -138,6 +138,7 @@ class MacFilteringView extends ConsumerWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.labelLarge(
                       loc(context).nDevices(length).capitalizeWords()),

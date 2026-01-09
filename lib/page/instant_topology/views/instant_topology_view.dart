@@ -179,14 +179,12 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
 
         // Wrap content in padding to respect node borders/glow
         final paddedContent = Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(12.0),
           child: content,
         );
 
         if (deviceCount > 0) {
           return Stack(
-            clipBehavior: Clip.none,
-            fit: StackFit.expand,
             children: [
               paddedContent,
               Positioned(

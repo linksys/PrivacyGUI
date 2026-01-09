@@ -55,14 +55,32 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   }
 
   void _updateControllers(LocalNetworkSettingsState state) {
-    _startIpAddressController.text = state.settings.current.firstIPAddress;
-    _maxUserAllowedController.text = '${state.settings.current.maxUserAllowed}';
-    _clientLeaseTimeController.text =
-        '${state.settings.current.clientLeaseTime}';
-    _dns1Controller.text = state.settings.current.dns1 ?? '';
-    _dns2Controller.text = state.settings.current.dns2 ?? '';
-    _dns3Controller.text = state.settings.current.dns3 ?? '';
-    _winsController.text = state.settings.current.wins ?? '';
+    if (_startIpAddressController.text !=
+        state.settings.current.firstIPAddress) {
+      _startIpAddressController.text = state.settings.current.firstIPAddress;
+    }
+    if (_maxUserAllowedController.text !=
+        '${state.settings.current.maxUserAllowed}') {
+      _maxUserAllowedController.text =
+          '${state.settings.current.maxUserAllowed}';
+    }
+    if (_clientLeaseTimeController.text !=
+        '${state.settings.current.clientLeaseTime}') {
+      _clientLeaseTimeController.text =
+          '${state.settings.current.clientLeaseTime}';
+    }
+    if (_dns1Controller.text != (state.settings.current.dns1 ?? '')) {
+      _dns1Controller.text = state.settings.current.dns1 ?? '';
+    }
+    if (_dns2Controller.text != (state.settings.current.dns2 ?? '')) {
+      _dns2Controller.text = state.settings.current.dns2 ?? '';
+    }
+    if (_dns3Controller.text != (state.settings.current.dns3 ?? '')) {
+      _dns3Controller.text = state.settings.current.dns3 ?? '';
+    }
+    if (_winsController.text != (state.settings.current.wins ?? '')) {
+      _winsController.text = state.settings.current.wins ?? '';
+    }
   }
 
   @override
@@ -145,6 +163,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         ),
         AppGap.sm(),
         Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            child: AppText.labelLarge(loc(context).maximumNumberOfUsers)),
+        Padding(
           padding: inputPadding,
           child: AppTextField(
             key: Key('maxUsersTextField'),
@@ -163,6 +184,9 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
         AppGap.xs(),
         _ipAddressRange(state),
         AppGap.xl(),
+        Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            child: AppText.labelLarge(loc(context).clientLeaseTime)),
         Padding(
           padding: inputPadding,
           child: AppTextField(

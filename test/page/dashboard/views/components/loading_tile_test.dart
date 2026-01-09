@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
+import 'package:privacy_gui/page/dashboard/views/components/core/loading_tile.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 void main() {

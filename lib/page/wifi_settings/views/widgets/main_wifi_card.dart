@@ -174,7 +174,11 @@ class _MainWiFiCardState extends ConsumerState<MainWiFiCard>
       key: Key('wifiWirelessModeCard-${radio.radioID.value}'),
       title: AppText.bodyMedium(loc(context).wifiMode),
       description: AppText.labelLarge(
-          getWifiWirelessModeTitle(context, radio.wirelessMode, null)),
+        getWifiWirelessModeTitle(context, radio.wirelessMode, null),
+        maxLines: 2,
+        minLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
       trailing: const AppIcon.font(AppFontIcons.edit),
       onTap: () {
         final availableModes = radio.availableWirelessModes
