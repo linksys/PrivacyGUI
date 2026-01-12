@@ -3,10 +3,10 @@ import 'height_strategy.dart';
 import 'widget_grid_constraints.dart';
 import 'widget_spec.dart';
 
-/// Dashboard 所有元件的規格定義
+/// Specifications for all Dashboard components.
 ///
-/// 定義各元件在不同 [DisplayMode] 下的 grid 約束。
-/// 所有 column 數值基於 12-column 設計。
+/// Defines grid constraints for each component across different [DisplayMode]s.
+/// All column values are based on a 12-column layout.
 abstract class DashboardWidgetSpecs {
   DashboardWidgetSpecs._();
 
@@ -42,7 +42,7 @@ abstract class DashboardWidgetSpecs {
   );
 
   // ---------------------------------------------------------------------------
-  // Networks (節點狀態)
+  // Networks (Node Status)
   // ---------------------------------------------------------------------------
   static const networks = WidgetSpec(
     id: 'networks',
@@ -344,7 +344,7 @@ abstract class DashboardWidgetSpecs {
   ];
 
   // ---------------------------------------------------------------------------
-  // 所有規格列表（用於設定 UI 迭代）
+  // All Specs List (for UI iteration)
   // ---------------------------------------------------------------------------
   static const List<WidgetSpec> all = [
     internetStatus,
@@ -390,7 +390,7 @@ abstract class DashboardWidgetSpecs {
     },
   );
 
-  /// 根據 ID 查詢規格
+  /// Get spec by ID
   static WidgetSpec? getById(String id) {
     for (final spec in all) {
       if (spec.id == id) return spec;

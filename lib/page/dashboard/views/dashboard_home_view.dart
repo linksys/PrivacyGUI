@@ -132,13 +132,12 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
             useAppCard: !useCustom,
           ),
           // Atomic widgets (for Custom Layout only)
-          internetStatusOnly:
-              useCustom ? const DashboardInternetStatus() : null,
-          masterNodeInfo: useCustom ? const DashboardMasterNodeInfo() : null,
-          portsWidget: useCustom ? const DashboardPorts() : null,
-          speedTestWidget: useCustom ? const DashboardSpeedTest() : null,
-          networkStats: useCustom ? const DashboardNetworkStats() : null,
-          topologyWidget: useCustom ? const DashboardTopology() : null,
+          internetStatusOnly: useCustom ? const CustomInternetStatus() : null,
+          masterNodeInfo: useCustom ? const CustomMasterNodeInfo() : null,
+          portsWidget: useCustom ? const CustomPorts() : null,
+          speedTestWidget: useCustom ? const CustomSpeedTest() : null,
+          networkStats: useCustom ? const CustomNetworkStats() : null,
+          topologyWidget: useCustom ? const CustomTopology() : null,
         );
 
         // 3. Delegate to strategy

@@ -2,7 +2,6 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 
 import '../models/display_mode.dart';
 import '../models/dashboard_widget_specs.dart';
-import '../models/height_strategy.dart';
 import '../models/widget_spec.dart';
 
 /// Factory for creating LayoutItems from DashboardWidgetSpecs.
@@ -43,7 +42,7 @@ class LayoutItemFactory {
     // Calculate dimensions from spec
     final preferredWidth = w ?? constraints.preferredColumns;
     final preferredHeight =
-        h ?? _getHeightFromStrategy(constraints.heightStrategy);
+        h ?? constraints.getPreferredHeightCells(columns: preferredWidth);
 
     return LayoutItem(
       id: spec.id,
@@ -57,16 +56,6 @@ class LayoutItemFactory {
           1, // Use configured min height, fallback to 1
       maxH: 12.0, // Max reasonable height
     );
-  }
-
-  /// Extract height value from HeightStrategy using pattern matching.
-  static int _getHeightFromStrategy(HeightStrategy strategy) {
-    return switch (strategy) {
-      ColumnBasedHeightStrategy(:final multiplier) => multiplier.toInt(),
-      AspectRatioHeightStrategy(:final ratio) =>
-        (4 / ratio).toInt().clamp(1, 8),
-      IntrinsicHeightStrategy() => 2, // Default for intrinsic
-    };
   }
 
   /// Create default layout from customWidgets specs.

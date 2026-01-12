@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/views/components/core/dashboard_loading_wrapper.dart';
+import 'package:privacy_gui/page/dashboard/views/components/settings/dashboard_layout_settings_panel.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -14,7 +16,14 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 
 class DashboardHomeTitle extends ConsumerWidget {
-  const DashboardHomeTitle({super.key});
+  final VoidCallback? onEditPressed;
+  final bool showSettings;
+
+  const DashboardHomeTitle({
+    super.key,
+    this.onEditPressed,
+    this.showSettings = true,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,10 +81,34 @@ class DashboardHomeTitle extends ConsumerWidget {
                 ],
               ),
             ),
+            if (showSettings && BuildConfig.customLayout) ...[
+              AppGap.lg(),
+              AppIconButton.icon(
+                size: AppButtonSize.small,
+                icon: const Icon(Icons.settings_outlined),
+                onTap: onEditPressed ?? () => _openLayoutSettings(context),
+              ),
+            ],
           ],
         ),
         if (!isOnline) _troubleshooting(context, ref),
       ],
+    );
+  }
+
+  void _openLayoutSettings(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AppDialog(
+        title: AppText.titleMedium('Dashboard Settings'),
+        content: const DashboardLayoutSettingsPanel(),
+        actions: [
+          AppButton(
+            label: 'Close',
+            onTap: () => Navigator.pop(context),
+          ),
+        ],
+      ),
     );
   }
 
