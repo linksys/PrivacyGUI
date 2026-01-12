@@ -57,6 +57,12 @@ class DashboardPreferencesNotifier
     await _saveToPrefs();
   }
 
+  /// Reorder custom widgets (atomic widgets only)
+  Future<void> reorderCustomWidget(int oldIndex, int newIndex) async {
+    state = state.reorderCustomWidget(oldIndex, newIndex);
+    await _saveToPrefs();
+  }
+
   /// Toggle custom layout usage
   Future<void> toggleCustomLayout(bool enabled) async {
     state = state.toggleCustomLayout(enabled);

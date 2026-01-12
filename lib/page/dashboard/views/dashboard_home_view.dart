@@ -96,10 +96,12 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           internetWidget: InternetConnectionWidget(
             key: ValueKey('internet-$internetMode-$useCustom'),
             displayMode: internetMode,
+            useAppCard: !useCustom,
           ),
           networksWidget: DashboardNetworks(
             key: ValueKey('networks-$networksMode-$useCustom'),
             displayMode: networksMode,
+            useAppCard: !useCustom,
           ),
           wifiGrid: DashboardWiFiGrid(
             key: ValueKey('wifi-$wifiMode-$useCustom'),
@@ -108,13 +110,23 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           quickPanel: DashboardQuickPanel(
             key: ValueKey('quick-$quickPanelMode-$useCustom'),
             displayMode: quickPanelMode,
+            useAppCard: !useCustom,
           ),
           vpnTile: isSupportVPN ? const VPNStatusTile() : null,
           buildPortAndSpeed: (config) => DashboardHomePortAndSpeed(
             key: ValueKey('port-$portAndSpeedMode-$useCustom'),
             config: config,
             displayMode: portAndSpeedMode,
+            useAppCard: !useCustom,
           ),
+          // Atomic widgets (for Custom Layout only)
+          internetStatusOnly:
+              useCustom ? const DashboardInternetStatus() : null,
+          masterNodeInfo: useCustom ? const DashboardMasterNodeInfo() : null,
+          portsWidget: useCustom ? const DashboardPorts() : null,
+          speedTestWidget: useCustom ? const DashboardSpeedTest() : null,
+          networkStats: useCustom ? const DashboardNetworkStats() : null,
+          topologyWidget: useCustom ? const DashboardTopology() : null,
         );
 
         // 3. Delegate to strategy

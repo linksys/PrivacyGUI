@@ -20,7 +20,7 @@ class DashboardLayoutSettingsPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final preferences = ref.watch(dashboardPreferencesProvider);
-    final orderedWidgets = preferences.allWidgetsOrdered;
+    final orderedWidgets = preferences.customWidgetsOrdered;
 
     return SingleChildScrollView(
       child: AppCard(
@@ -169,7 +169,7 @@ class _WidgetConfigTile extends ConsumerWidget {
                       ? () {
                           ref
                               .read(dashboardPreferencesProvider.notifier)
-                              .reorder(index, index - 1);
+                              .reorderCustomWidget(index, index - 1);
                         }
                       : null,
                   visualDensity: VisualDensity.compact,
@@ -184,7 +184,7 @@ class _WidgetConfigTile extends ConsumerWidget {
                       ? () {
                           ref
                               .read(dashboardPreferencesProvider.notifier)
-                              .reorder(index, index + 1);
+                              .reorderCustomWidget(index, index + 1);
                         }
                       : null,
                   visualDensity: VisualDensity.compact,

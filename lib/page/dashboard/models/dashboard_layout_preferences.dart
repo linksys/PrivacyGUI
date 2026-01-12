@@ -51,6 +51,19 @@ class DashboardLayoutPreferences extends Equatable {
     return allConfigs;
   }
 
+  /// Get custom layout widgets in order (atomic widgets only, no VPN)
+  ///
+  /// Used by the settings panel to show only atomic widgets for Custom Layout.
+  List<GridWidgetConfig> get customWidgetsOrdered {
+    // Filter out VPN from customWidgets for settings panel
+    final atomicSpecs = DashboardWidgetSpecs.customWidgets
+        .where((spec) => spec.id != DashboardWidgetSpecs.vpn.id)
+        .toList();
+    final allConfigs = atomicSpecs.map((spec) => getConfig(spec.id)).toList();
+    allConfigs.sort((a, b) => a.order.compareTo(b.order));
+    return allConfigs;
+  }
+
   // ---------------------------------------------------------------------------
   // Configuration Setters
   // ---------------------------------------------------------------------------
@@ -92,7 +105,7 @@ class DashboardLayoutPreferences extends Equatable {
     ));
   }
 
-  /// Reorder widgets
+  /// Reorder widgets (all widgets)
   DashboardLayoutPreferences reorder(int oldIndex, int newIndex) {
     final ordered = allWidgetsOrdered.toList();
     if (oldIndex < 0 || oldIndex >= ordered.length) return this;
@@ -102,6 +115,28 @@ class DashboardLayoutPreferences extends Equatable {
     ordered.insert(newIndex, item);
 
     final newConfigs = <String, GridWidgetConfig>{};
+    for (var i = 0; i < ordered.length; i++) {
+      final config = ordered[i];
+      newConfigs[config.widgetId] = config.copyWith(order: i);
+    }
+
+    return DashboardLayoutPreferences(
+      useCustomLayout: useCustomLayout,
+      widgetConfigs: newConfigs,
+    );
+  }
+
+  /// Reorder custom widgets (atomic widgets only)
+  DashboardLayoutPreferences reorderCustomWidget(int oldIndex, int newIndex) {
+    final ordered = customWidgetsOrdered.toList();
+    if (oldIndex < 0 || oldIndex >= ordered.length) return this;
+    if (newIndex < 0 || newIndex >= ordered.length) return this;
+
+    final item = ordered.removeAt(oldIndex);
+    ordered.insert(newIndex, item);
+
+    // Update order for custom widgets only
+    final newConfigs = Map<String, GridWidgetConfig>.from(widgetConfigs);
     for (var i = 0; i < ordered.length; i++) {
       final config = ordered[i];
       newConfigs[config.widgetId] = config.copyWith(order: i);

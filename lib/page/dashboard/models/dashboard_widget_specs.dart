@@ -21,19 +21,19 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(2.0),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 6,
         maxColumns: 8,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(4.0),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 8,
         maxColumns: 12,
         preferredColumns: 12,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(4.0),
       ),
     },
   );
@@ -49,19 +49,19 @@ abstract class DashboardWidgetSpecs {
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(2.0),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(6.0),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(8.0),
       ),
     },
   );
@@ -77,19 +77,20 @@ abstract class DashboardWidgetSpecs {
         minColumns: 6,
         maxColumns: 8,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.aspectRatio(4.0), // 橫向卡片
+        heightStrategy: HeightStrategy.strict(2.0),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 8,
         maxColumns: 12,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy:
+            HeightStrategy.strict(5.0), // 2 rows of cards (176px * 2 + spacing)
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 12,
         maxColumns: 12,
         preferredColumns: 12,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(6.0),
       ),
     },
   );
@@ -105,19 +106,19 @@ abstract class DashboardWidgetSpecs {
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(2.0),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(4.0),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(4.0),
       ),
     },
   );
@@ -133,22 +134,207 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(2.0),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 8,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(4.0),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 8,
         maxColumns: 12,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(4.0),
       ),
     },
   );
+
+  // ---------------------------------------------------------------------------
+  // Standard Widgets (used in Standard Layout)
+  // ---------------------------------------------------------------------------
+  static const List<WidgetSpec> standardWidgets = [
+    internetStatus,
+    networks,
+    wifiGrid,
+    quickPanel,
+    portAndSpeed,
+    vpn,
+  ];
+
+  // ---------------------------------------------------------------------------
+  // Atomic Widgets (used in Custom/Bento Layout)
+  // ---------------------------------------------------------------------------
+
+  /// Internet status only (online/offline, geolocation, uptime)
+  static const internetStatusOnly = WidgetSpec(
+    id: 'internet_status_only',
+    displayName: 'Internet Status',
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(1.0),
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(2.0),
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 8,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(2.0),
+      ),
+    },
+  );
+
+  /// Master node info (router image, model, serial, firmware)
+  static const masterNodeInfo = WidgetSpec(
+    id: 'master_node_info',
+    displayName: 'Master Router',
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(2.0),
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 8,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(3.0),
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 6,
+        maxColumns: 12,
+        preferredColumns: 8,
+        heightStrategy: HeightStrategy.strict(4.0),
+      ),
+    },
+  );
+
+  /// Ports status (LAN + WAN)
+  static const ports = WidgetSpec(
+    id: 'ports',
+    displayName: 'Ports',
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(2.0),
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 8,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(3.0),
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 6,
+        maxColumns: 12,
+        preferredColumns: 8,
+        heightStrategy: HeightStrategy.strict(4.0),
+      ),
+    },
+  );
+
+  /// Speed test results
+  static const speedTest = WidgetSpec(
+    id: 'speed_test',
+    displayName: 'Speed Test',
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(2.0),
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 8,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(3.0),
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 6,
+        maxColumns: 12,
+        preferredColumns: 8,
+        heightStrategy: HeightStrategy.strict(4.0),
+      ),
+    },
+  );
+
+  /// Network stats (nodes/devices count)
+  static const networkStats = WidgetSpec(
+    id: 'network_stats',
+    displayName: 'Network Stats',
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(1.0),
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(2.0),
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 8,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(2.0),
+      ),
+    },
+  );
+
+  /// Mesh topology tree view
+  static const topology = WidgetSpec(
+    id: 'topology',
+    displayName: 'Topology',
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(3.0),
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 8,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(4.0),
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 6,
+        maxColumns: 12,
+        preferredColumns: 8,
+        heightStrategy: HeightStrategy.strict(6.0),
+      ),
+    },
+  );
+
+  /// Custom layout widgets (atomic components)
+  static const List<WidgetSpec> customWidgets = [
+    internetStatusOnly,
+    masterNodeInfo,
+    ports,
+    speedTest,
+    networkStats,
+    topology,
+    wifiGrid,
+    quickPanel,
+    vpn,
+  ];
 
   // ---------------------------------------------------------------------------
   // 所有規格列表（用於設定 UI 迭代）
@@ -160,6 +346,13 @@ abstract class DashboardWidgetSpecs {
     quickPanel,
     portAndSpeed,
     vpn,
+    // Atomic widgets
+    internetStatusOnly,
+    masterNodeInfo,
+    ports,
+    speedTest,
+    networkStats,
+    topology,
   ];
 
   // ---------------------------------------------------------------------------
@@ -173,19 +366,19 @@ abstract class DashboardWidgetSpecs {
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(2.0),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(4.0),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.intrinsic(),
+        heightStrategy: HeightStrategy.strict(4.0),
       ),
     },
   );

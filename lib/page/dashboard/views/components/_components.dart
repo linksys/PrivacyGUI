@@ -17,3 +17,11 @@ export 'widgets/quick_panel.dart';
 export 'widgets/parts/remote_assistance_animation.dart';
 export 'widgets/parts/wifi_card.dart';
 export 'widgets/wifi_grid.dart';
+
+// Atomic widgets for Bento Grid
+export 'widgets/internet_status_only.dart';
+export 'widgets/master_node_info.dart';
+export 'widgets/ports.dart';
+export 'widgets/speed_test.dart';
+export 'widgets/network_stats.dart';
+export 'widgets/topology.dart';

@@ -61,7 +61,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     final canBeDisabled = enabledWiFiCount > 1 || hasLanPort;
 
-    const compactHeight = 140.0;
+    const compactHeight = 160.0;
 
     return SizedBox(
       height: compactHeight,
@@ -73,7 +73,12 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
           return SizedBox(
             width: 200,
             height: compactHeight,
-            child: _buildWiFiCard(items, index, canBeDisabled),
+            child: _buildWiFiCard(
+              items,
+              index,
+              canBeDisabled,
+              padding: const EdgeInsets.all(AppSpacing.lg),
+            ),
           );
         },
       ),
@@ -101,24 +106,28 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
     final gridHeight = mainAxisCount * itemHeight +
         ((mainAxisCount == 0 ? 1 : mainAxisCount) - 1) * AppSpacing.lg;
 
-    return SizedBox(
-      height: gridHeight,
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: AppSpacing.lg,
-          crossAxisSpacing: mainSpacing,
-          mainAxisExtent: itemHeight,
+    // Use SingleChildScrollView to handle overflow when Bento Grid container
+    // is smaller than the calculated gridHeight
+    return SingleChildScrollView(
+      child: SizedBox(
+        height: gridHeight,
+        child: GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: AppSpacing.lg,
+            crossAxisSpacing: mainSpacing,
+            mainAxisExtent: itemHeight,
+          ),
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            return SizedBox(
+              height: itemHeight,
+              child: _buildWiFiCard(items, index, canBeDisabled),
+            );
+          },
         ),
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: items.length,
-        itemBuilder: (context, index) {
-          return SizedBox(
-            height: itemHeight,
-            child: _buildWiFiCard(items, index, canBeDisabled),
-          );
-        },
       ),
     );
   }
@@ -158,8 +167,9 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
   Widget _buildWiFiCard(
     List items,
     int index,
-    bool canBeDisabled,
-  ) {
+    bool canBeDisabled, {
+    EdgeInsetsGeometry? padding,
+  }) {
     final item = items[index];
     final visibilityKey = '${item.ssid}${item.radios.join()}${item.isGuest}';
     final isVisible = toolTipVisible[visibilityKey] ?? false;
@@ -180,6 +190,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
           toolTipVisible[visibilityKey] = visible;
         });
       },
+      padding: padding,
     );
   }
 }

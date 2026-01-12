@@ -27,10 +27,15 @@ class InternetConnectionWidget extends ConsumerStatefulWidget {
   const InternetConnectionWidget({
     super.key,
     this.displayMode = DisplayMode.normal,
+    this.useAppCard = true,
   });
 
   /// The display mode for this widget
   final DisplayMode displayMode;
+
+  /// Whether to wrap the content in an AppCard (default true).
+  /// Set to false for layouts that provide their own containers.
+  final bool useAppCard;
 
   @override
   ConsumerState<InternetConnectionWidget> createState() =>
@@ -69,48 +74,56 @@ class _InternetConnectionWidgetState
     final isOnline = wanStatus == InternetStatus.online;
     final geolocationState = ref.watch(geolocationProvider);
 
-    return AppCard(
-      child: Row(
-        children: [
-          // Status indicator
-          Icon(
-            Icons.circle,
-            color: isOnline
-                ? Theme.of(context).extension<AppColorScheme>()!.semanticSuccess
-                : Theme.of(context).colorScheme.surfaceContainerHighest,
-            size: 12.0,
+    final content = Row(
+      children: [
+        // Status indicator
+        Icon(
+          Icons.circle,
+          color: isOnline
+              ? Theme.of(context).extension<AppColorScheme>()!.semanticSuccess
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
+          size: 12.0,
+        ),
+        AppGap.sm(),
+        // Status text
+        AppText.labelLarge(
+          isOnline ? loc(context).internetOnline : loc(context).internetOffline,
+        ),
+        const Spacer(),
+        // Location info
+        if (geolocationState.value?.name.isNotEmpty == true)
+          AppText.bodySmall(
+            geolocationState.value?.displayLocationText ?? '',
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          AppGap.sm(),
-          // Status text
-          AppText.labelLarge(
-            isOnline
-                ? loc(context).internetOnline
-                : loc(context).internetOffline,
+        // Refresh button (non-mobile only)
+        if (!Utils.isMobilePlatform()) ...[
+          AppGap.md(),
+          AnimatedRefreshContainer(
+            builder: (controller) => AppIconButton(
+              icon: AppIcon.font(AppFontIcons.refresh, size: 16),
+              onTap: () {
+                controller.repeat();
+                ref.read(pollingProvider.notifier).forcePolling().then((_) {
+                  controller.stop();
+                });
+              },
+            ),
           ),
-          const Spacer(),
-          // Location info
-          if (geolocationState.value?.name.isNotEmpty == true)
-            AppText.bodySmall(
-              geolocationState.value?.displayLocationText ?? '',
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          // Refresh button (non-mobile only)
-          if (!Utils.isMobilePlatform()) ...[
-            AppGap.md(),
-            AnimatedRefreshContainer(
-              builder: (controller) => AppIconButton(
-                icon: AppIcon.font(AppFontIcons.refresh, size: 16),
-                onTap: () {
-                  controller.repeat();
-                  ref.read(pollingProvider.notifier).forcePolling().then((_) {
-                    controller.stop();
-                  });
-                },
-              ),
-            ),
-          ],
         ],
-      ),
+      ],
+    );
+
+    if (widget.useAppCard) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: content,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: content,
     );
   }
 
@@ -126,157 +139,162 @@ class _InternetConnectionWidgetState
     final isMasterOffline =
         master.data.isOnline == false || wanPortConnection == 'None';
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.circle,
-                  color: isOnline
-                      ? Theme.of(context)
-                          .extension<AppColorScheme>()!
-                          .semanticSuccess
-                      : Theme.of(context).colorScheme.surfaceContainerHighest,
-                  size: 16.0,
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.circle,
+                color: isOnline
+                    ? Theme.of(context)
+                        .extension<AppColorScheme>()!
+                        .semanticSuccess
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                size: 16.0,
+              ),
+              AppGap.sm(),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.titleSmall(
+                      isOnline
+                          ? loc(context).internetOnline
+                          : loc(context).internetOffline,
+                    ),
+                    if (geolocationState.value?.name.isNotEmpty == true) ...[
+                      AppGap.sm(),
+                      SharedWidgets.geolocationWidget(
+                          context,
+                          geolocationState.value?.name ?? '',
+                          geolocationState.value?.displayLocationText ?? ''),
+                    ],
+                  ],
                 ),
-                AppGap.sm(),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.titleSmall(
-                        isOnline
-                            ? loc(context).internetOnline
-                            : loc(context).internetOffline,
+              ),
+              if (!Utils.isMobilePlatform())
+                AnimatedRefreshContainer(
+                  builder: (controller) {
+                    return Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: AppIconButton(
+                        icon: AppIcon.font(
+                          AppFontIcons.refresh,
+                        ),
+                        onTap: () {
+                          controller.repeat();
+                          ref
+                              .read(pollingProvider.notifier)
+                              .forcePolling()
+                              .then((value) {
+                            controller.stop();
+                          });
+                        },
                       ),
-                      if (geolocationState.value?.name.isNotEmpty == true) ...[
-                        AppGap.sm(),
-                        SharedWidgets.geolocationWidget(
-                            context,
-                            geolocationState.value?.name ?? '',
-                            geolocationState.value?.displayLocationText ?? ''),
-                      ],
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+        Container(
+          key: const ValueKey('master'),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            border: Border.all(color: Colors.transparent),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(8),
+              bottomRight: Radius.circular(8),
+            ),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: context.isMobileLayout ? 120 : 90,
+                child: SharedWidgets.resolveRouterImage(context, masterIcon,
+                    size: 112),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                      top: AppSpacing.lg,
+                      bottom: AppSpacing.lg,
+                      left: AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppText.titleMedium(master.data.location),
+                      AppGap.lg(),
+                      Table(
+                        border: const TableBorder(),
+                        columnWidths: const {
+                          0: FlexColumnWidth(1),
+                          1: FlexColumnWidth(2),
+                        },
+                        children: [
+                          TableRow(children: [
+                            AppText.labelLarge('${loc(context).connection}:'),
+                            AppText.bodyMedium(isMasterOffline
+                                ? '--'
+                                : (master.data.isWiredConnection == true)
+                                    ? loc(context).wired
+                                    : loc(context).wireless),
+                          ]),
+                          TableRow(children: [
+                            AppText.labelLarge('${loc(context).model}:'),
+                            AppText.bodyMedium(master.data.model),
+                          ]),
+                          TableRow(children: [
+                            AppText.labelLarge('${loc(context).serialNo}:'),
+                            AppText.bodyMedium(master.data.serialNumber),
+                          ]),
+                          TableRow(children: [
+                            AppText.labelLarge('${loc(context).fwVersion}:'),
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                AppText.bodyMedium(master.data.fwVersion),
+                                if (!isMasterOffline) ...[
+                                  AppGap.lg(),
+                                  SharedWidgets.nodeFirmwareStatusWidget(
+                                    context,
+                                    master.data.fwUpToDate == false,
+                                    () {
+                                      context.pushNamed(
+                                          RouteNamed.firmwareUpdateDetail);
+                                    },
+                                  ),
+                                ]
+                              ],
+                            ),
+                          ]),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-                if (!Utils.isMobilePlatform())
-                  AnimatedRefreshContainer(
-                    builder: (controller) {
-                      return Padding(
-                        padding: const EdgeInsets.all(0.0),
-                        child: AppIconButton(
-                          icon: AppIcon.font(
-                            AppFontIcons.refresh,
-                          ),
-                          onTap: () {
-                            controller.repeat();
-                            ref
-                                .read(pollingProvider.notifier)
-                                .forcePolling()
-                                .then((value) {
-                              controller.stop();
-                            });
-                          },
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ),
-          Container(
-            key: const ValueKey('master'),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              border: Border.all(color: Colors.transparent),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(8),
-                bottomRight: Radius.circular(8),
               ),
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: context.isMobileLayout ? 120 : 90,
-                  child: SharedWidgets.resolveRouterImage(context, masterIcon,
-                      size: 112),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                        top: AppSpacing.lg,
-                        bottom: AppSpacing.lg,
-                        left: AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppText.titleMedium(master.data.location),
-                        AppGap.lg(),
-                        Table(
-                          border: const TableBorder(),
-                          columnWidths: const {
-                            0: FlexColumnWidth(1),
-                            1: FlexColumnWidth(2),
-                          },
-                          children: [
-                            TableRow(children: [
-                              AppText.labelLarge('${loc(context).connection}:'),
-                              AppText.bodyMedium(isMasterOffline
-                                  ? '--'
-                                  : (master.data.isWiredConnection == true)
-                                      ? loc(context).wired
-                                      : loc(context).wireless),
-                            ]),
-                            TableRow(children: [
-                              AppText.labelLarge('${loc(context).model}:'),
-                              AppText.bodyMedium(master.data.model),
-                            ]),
-                            TableRow(children: [
-                              AppText.labelLarge('${loc(context).serialNo}:'),
-                              AppText.bodyMedium(master.data.serialNumber),
-                            ]),
-                            TableRow(children: [
-                              AppText.labelLarge('${loc(context).fwVersion}:'),
-                              Wrap(
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  AppText.bodyMedium(master.data.fwVersion),
-                                  if (!isMasterOffline) ...[
-                                    AppGap.lg(),
-                                    SharedWidgets.nodeFirmwareStatusWidget(
-                                      context,
-                                      master.data.fwUpToDate == false,
-                                      () {
-                                        context.pushNamed(
-                                            RouteNamed.firmwareUpdateDetail);
-                                      },
-                                    ),
-                                  ]
-                                ],
-                              ),
-                            ]),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
+
+    if (widget.useAppCard) {
+      return AppCard(
+        padding: EdgeInsets.zero,
+        child: content,
+      );
+    }
+    return content;
   }
 
   /// Expanded view: Normal view + uptime info
@@ -292,171 +310,175 @@ class _InternetConnectionWidgetState
     final isMasterOffline =
         master.data.isOnline == false || wanPortConnection == 'None';
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.circle,
-                  color: isOnline
-                      ? Theme.of(context)
-                          .extension<AppColorScheme>()!
-                          .semanticSuccess
-                      : Theme.of(context).colorScheme.surfaceContainerHighest,
-                  size: 16.0,
-                ),
-                AppGap.sm(),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.titleSmall(
-                        isOnline
-                            ? loc(context).internetOnline
-                            : loc(context).internetOffline,
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.circle,
+                color: isOnline
+                    ? Theme.of(context)
+                        .extension<AppColorScheme>()!
+                        .semanticSuccess
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                size: 16.0,
+              ),
+              AppGap.sm(),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.titleSmall(
+                      isOnline
+                          ? loc(context).internetOnline
+                          : loc(context).internetOffline,
+                    ),
+                    if (geolocationState.value?.name.isNotEmpty == true) ...[
+                      AppGap.sm(),
+                      SharedWidgets.geolocationWidget(
+                          context,
+                          geolocationState.value?.name ?? '',
+                          geolocationState.value?.displayLocationText ?? ''),
+                    ],
+                    // Uptime info (expanded only)
+                    if (uptime != null && isOnline) ...[
+                      AppGap.md(),
+                      Row(
+                        children: [
+                          AppIcon.font(Icons.access_time, size: 14),
+                          AppGap.xs(),
+                          AppText.bodySmall(
+                            _formatUptime(uptime),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ],
                       ),
-                      if (geolocationState.value?.name.isNotEmpty == true) ...[
-                        AppGap.sm(),
-                        SharedWidgets.geolocationWidget(
-                            context,
-                            geolocationState.value?.name ?? '',
-                            geolocationState.value?.displayLocationText ?? ''),
-                      ],
-                      // Uptime info (expanded only)
-                      if (uptime != null && isOnline) ...[
-                        AppGap.md(),
-                        Row(
-                          children: [
-                            AppIcon.font(Icons.access_time, size: 14),
-                            AppGap.xs(),
-                            AppText.bodySmall(
-                              _formatUptime(uptime),
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
+                    ],
+                  ],
+                ),
+              ),
+              if (!Utils.isMobilePlatform())
+                AnimatedRefreshContainer(
+                  builder: (controller) {
+                    return Padding(
+                      padding: const EdgeInsets.all(0.0),
+                      child: AppIconButton(
+                        icon: AppIcon.font(AppFontIcons.refresh),
+                        onTap: () {
+                          controller.repeat();
+                          ref
+                              .read(pollingProvider.notifier)
+                              .forcePolling()
+                              .then((_) {
+                            controller.stop();
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+        ),
+        Container(
+          key: const ValueKey('master_expanded'),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            border: Border.all(color: Colors.transparent),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(8),
+              bottomRight: Radius.circular(8),
+            ),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: context.isMobileLayout ? 120 : 90,
+                child: SharedWidgets.resolveRouterImage(context, masterIcon,
+                    size: 112),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                      top: AppSpacing.lg,
+                      bottom: AppSpacing.lg,
+                      left: AppSpacing.lg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppText.titleMedium(master.data.location),
+                      AppGap.lg(),
+                      Table(
+                        border: const TableBorder(),
+                        columnWidths: const {
+                          0: FlexColumnWidth(1),
+                          1: FlexColumnWidth(2),
+                        },
+                        children: [
+                          TableRow(children: [
+                            AppText.labelLarge('${loc(context).connection}:'),
+                            AppText.bodyMedium(isMasterOffline
+                                ? '--'
+                                : (master.data.isWiredConnection == true)
+                                    ? loc(context).wired
+                                    : loc(context).wireless),
+                          ]),
+                          TableRow(children: [
+                            AppText.labelLarge('${loc(context).model}:'),
+                            AppText.bodyMedium(master.data.model),
+                          ]),
+                          TableRow(children: [
+                            AppText.labelLarge('${loc(context).serialNo}:'),
+                            AppText.bodyMedium(master.data.serialNumber),
+                          ]),
+                          TableRow(children: [
+                            AppText.labelLarge('${loc(context).fwVersion}:'),
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                AppText.bodyMedium(master.data.fwVersion),
+                                if (!isMasterOffline) ...[
+                                  AppGap.lg(),
+                                  SharedWidgets.nodeFirmwareStatusWidget(
+                                    context,
+                                    master.data.fwUpToDate == false,
+                                    () {
+                                      context.pushNamed(
+                                          RouteNamed.firmwareUpdateDetail);
+                                    },
+                                  ),
+                                ]
+                              ],
                             ),
-                          ],
-                        ),
-                      ],
+                          ]),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-                if (!Utils.isMobilePlatform())
-                  AnimatedRefreshContainer(
-                    builder: (controller) {
-                      return Padding(
-                        padding: const EdgeInsets.all(0.0),
-                        child: AppIconButton(
-                          icon: AppIcon.font(AppFontIcons.refresh),
-                          onTap: () {
-                            controller.repeat();
-                            ref
-                                .read(pollingProvider.notifier)
-                                .forcePolling()
-                                .then((_) {
-                              controller.stop();
-                            });
-                          },
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ),
-          Container(
-            key: const ValueKey('master_expanded'),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              border: Border.all(color: Colors.transparent),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(8),
-                bottomRight: Radius.circular(8),
               ),
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: context.isMobileLayout ? 120 : 90,
-                  child: SharedWidgets.resolveRouterImage(context, masterIcon,
-                      size: 112),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                        top: AppSpacing.lg,
-                        bottom: AppSpacing.lg,
-                        left: AppSpacing.lg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppText.titleMedium(master.data.location),
-                        AppGap.lg(),
-                        Table(
-                          border: const TableBorder(),
-                          columnWidths: const {
-                            0: FlexColumnWidth(1),
-                            1: FlexColumnWidth(2),
-                          },
-                          children: [
-                            TableRow(children: [
-                              AppText.labelLarge('${loc(context).connection}:'),
-                              AppText.bodyMedium(isMasterOffline
-                                  ? '--'
-                                  : (master.data.isWiredConnection == true)
-                                      ? loc(context).wired
-                                      : loc(context).wireless),
-                            ]),
-                            TableRow(children: [
-                              AppText.labelLarge('${loc(context).model}:'),
-                              AppText.bodyMedium(master.data.model),
-                            ]),
-                            TableRow(children: [
-                              AppText.labelLarge('${loc(context).serialNo}:'),
-                              AppText.bodyMedium(master.data.serialNumber),
-                            ]),
-                            TableRow(children: [
-                              AppText.labelLarge('${loc(context).fwVersion}:'),
-                              Wrap(
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  AppText.bodyMedium(master.data.fwVersion),
-                                  if (!isMasterOffline) ...[
-                                    AppGap.lg(),
-                                    SharedWidgets.nodeFirmwareStatusWidget(
-                                      context,
-                                      master.data.fwUpToDate == false,
-                                      () {
-                                        context.pushNamed(
-                                            RouteNamed.firmwareUpdateDetail);
-                                      },
-                                    ),
-                                  ]
-                                ],
-                              ),
-                            ]),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
+
+    if (widget.useAppCard) {
+      return AppCard(
+        padding: EdgeInsets.zero,
+        child: content,
+      );
+    }
+    return content;
   }
 
   /// Format uptime in human-readable format

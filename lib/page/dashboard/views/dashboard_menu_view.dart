@@ -135,14 +135,14 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                 context.pushNamed(RouteNamed.addNodes);
               },
             ),
-            // AppListTile(
-            //   title: AppText.bodyMedium('Dashboard Layout'),
-            //   leading: const AppIcon.font(AppFontIcons.widgets),
-            //   onTap: () {
-            //     Navigator.of(context).maybePop();
-            //     _showLayoutSettingsDialog();
-            //   },
-            // ),
+            AppListTile(
+              title: AppText.bodyMedium('Dashboard Layout'),
+              leading: const AppIcon.font(AppFontIcons.widgets),
+              onTap: () {
+                Navigator.of(context).maybePop();
+                _showLayoutSettingsDialog();
+              },
+            ),
           ],
         ),
       ),

@@ -14,6 +14,12 @@ sealed class HeightStrategy {
   const factory HeightStrategy.columnBased(double multiplier) =
       ColumnBasedHeightStrategy;
 
+  /// Bento Grid 專用：強制指定格子的「行數」(Row Span)
+  ///
+  /// 這在邏輯上等同於 [ColumnBasedHeightStrategy]，但語意更明確。
+  /// 例：rows=2 表示該組件佔據 2 個單位高度。
+  const factory HeightStrategy.strict(double rows) = ColumnBasedHeightStrategy;
+
   /// 固定寬高比
   ///
   /// [ratio] = width / height，例：16/9 = 1.78

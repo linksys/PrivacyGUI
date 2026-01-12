@@ -29,8 +29,11 @@ class WiFiCard extends ConsumerStatefulWidget {
     required this.index,
     required this.canBeDisabled,
     this.tooltipVisible = false,
+    this.padding,
     this.onTooltipVisibilityChanged,
   });
+
+  final EdgeInsetsGeometry? padding;
 
   @override
   ConsumerState<WiFiCard> createState() => _WiFiCardState();
@@ -43,8 +46,9 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraint) {
       return AppCard(
-        padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.xxl, horizontal: AppSpacing.xxl),
+        padding: widget.padding ??
+            const EdgeInsets.symmetric(
+                vertical: AppSpacing.xxl, horizontal: AppSpacing.xxl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
