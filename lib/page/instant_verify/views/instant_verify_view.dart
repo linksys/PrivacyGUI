@@ -18,8 +18,6 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
@@ -721,7 +719,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardHomeProvider);
+    final state = ref.watch(dashboardManagerProvider);
     return SizedBox(
       height: context.isMobileLayout ? 224 : 208,
       width: double.infinity,
@@ -741,7 +739,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...state.lanPortConnections
+                    ...state.lanConnections
                         .mapIndexed((index, e) => Expanded(
                               child: _portWidget(
                                   context,
@@ -753,9 +751,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                     Expanded(
                       child: _portWidget(
                           context,
-                          state.wanPortConnection == 'None'
+                          state.wanConnection == 'None'
                               ? null
-                              : state.wanPortConnection,
+                              : state.wanConnection,
                           loc(context).wan,
                           true),
                     )
