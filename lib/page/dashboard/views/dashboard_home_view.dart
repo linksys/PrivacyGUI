@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/dashboard/strategies/custom_dashboard_layout_strategy.dart';
+import 'package:privacy_gui/page/dashboard/views/sliver_dashboard_view.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
 import 'package:privacy_gui/core/utils/assign_ip/assign_ip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,7 +64,18 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final portAndSpeedMode = useCustom
         ? preferences.getMode(DashboardWidgetSpecs.portAndSpeed.id)
         : DisplayMode.normal;
+    if (useCustom) {
+      // sliver_dashboard breakpoints are adjusted in SliverDashboardView
+      // to compensate for UiKitPageView's horizontal margin.
+      return UiKitPageView(
+        scrollable: false,
+        appBarStyle: UiKitAppBarStyle.none,
+        backState: UiKitBackState.none,
+        child: (_, __) => const SliverDashboardView(),
+      );
+    }
 
+    // Standard Layout: use strategy pattern
     return UiKitPageView.withSliver(
       scrollable: true,
       onRefresh: () async {

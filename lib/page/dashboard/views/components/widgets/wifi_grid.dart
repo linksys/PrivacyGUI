@@ -51,7 +51,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
     };
   }
 
-  /// Compact view: Horizontal scrollable small cards
+  /// Compact view: Vertical list of simplified cards (Band & Switch only)
   Widget _buildCompactView(BuildContext context, WidgetRef ref) {
     final items =
         ref.watch(dashboardHomeProvider.select((value) => value.wifis));
@@ -61,26 +61,26 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
         ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
     final canBeDisabled = enabledWiFiCount > 1 || hasLanPort;
 
-    const compactHeight = 160.0;
-
-    return SizedBox(
-      height: compactHeight,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: items.length,
-        separatorBuilder: (_, __) => AppGap.md(),
-        itemBuilder: (context, index) {
+    // Use SingleChildScrollView to allow scrolling if content exceeds height
+    return SingleChildScrollView(
+      child: Wrap(
+        spacing: AppSpacing.md,
+        runSpacing: AppSpacing.sm,
+        children: items.asMap().entries.map((entry) {
+          final index = entry.key;
+          // Calculate width for 2 items per row logic, or just let them wrap?
+          // If we want "tight", let them take intrinsic width or fixed width?
+          // Since it's a grid cell, maybe full width fraction?
+          // User said "horizontal arrangement".
+          // Let's wrapping LayoutBuilder to determine available width?
+          // For simplicity, let's try Wrap with Intrinsic Width first,
+          // but WiFiCard generally expands.
+          // We need to constrain the width of items in Wrap.
           return SizedBox(
-            width: 200,
-            height: compactHeight,
-            child: _buildWiFiCard(
-              items,
-              index,
-              canBeDisabled,
-              padding: const EdgeInsets.all(AppSpacing.lg),
-            ),
+            width: 180, // Approximate width for visual balance
+            child: _buildWiFiCard(items, index, canBeDisabled, isCompact: true),
           );
-        },
+        }).toList(),
       ),
     );
   }
@@ -169,6 +169,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
     int index,
     bool canBeDisabled, {
     EdgeInsetsGeometry? padding,
+    bool isCompact = false,
   }) {
     final item = items[index];
     final visibilityKey = '${item.ssid}${item.radios.join()}${item.isGuest}';
@@ -179,6 +180,7 @@ class _DashboardWiFiGridState extends ConsumerState<DashboardWiFiGrid> {
       item: item,
       index: index,
       canBeDisabled: canBeDisabled,
+      isCompact: isCompact,
       onTooltipVisibilityChanged: (visible) {
         setState(() {
           // Hide all other tooltips when showing one

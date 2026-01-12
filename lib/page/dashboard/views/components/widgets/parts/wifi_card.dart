@@ -22,6 +22,8 @@ class WiFiCard extends ConsumerStatefulWidget {
   final bool canBeDisabled;
   final bool tooltipVisible;
   final ValueChanged<bool>? onTooltipVisibilityChanged;
+  final EdgeInsetsGeometry? padding;
+  final bool isCompact;
 
   const WiFiCard({
     super.key,
@@ -31,9 +33,8 @@ class WiFiCard extends ConsumerStatefulWidget {
     this.tooltipVisible = false,
     this.padding,
     this.onTooltipVisibilityChanged,
+    this.isCompact = false,
   });
-
-  final EdgeInsetsGeometry? padding;
 
   @override
   ConsumerState<WiFiCard> createState() => _WiFiCardState();
@@ -44,6 +45,10 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isCompact) {
+      return _buildCompactCard(context);
+    }
+
     return LayoutBuilder(builder: (context, constraint) {
       return AppCard(
         padding: widget.padding ??
@@ -65,6 +70,52 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
         },
       );
     });
+  }
+
+  Widget _buildCompactCard(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      onTap: () {
+        context.pushNamed(RouteNamed.menuIncredibleWiFi,
+            extra: {'wifiIndex': widget.index, 'guest': widget.item.isGuest});
+      },
+      child: Row(
+        children: [
+          // Band Icon
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            decoration: BoxDecoration(
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.wifi,
+                size: 16, color: Theme.of(context).colorScheme.primary),
+          ),
+          AppGap.sm(),
+          // Band Name
+          Expanded(
+            child: AppText.labelMedium(
+              widget.item.isGuest
+                  ? loc(context).guestWifi
+                  : widget.item.radios
+                      .map((e) => e.replaceAll('RADIO_', ''))
+                      .join('/'),
+            ),
+          ),
+          // Switch
+          AppSwitch(
+            value: widget.item.isEnabled,
+            onChanged: widget.item.isGuest ||
+                    !widget.item.isEnabled ||
+                    widget.canBeDisabled
+                ? (value) => _handleWifiToggled(value)
+                : null,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildHeader(BuildContext context) {

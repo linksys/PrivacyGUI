@@ -21,19 +21,22 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(2.0),
+        heightStrategy: HeightStrategy.strict(1.0),
+        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 6,
         maxColumns: 8,
         preferredColumns: 8,
         heightStrategy: HeightStrategy.strict(4.0),
+        minHeightRows: 2,
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 8,
         maxColumns: 12,
         preferredColumns: 12,
         heightStrategy: HeightStrategy.strict(4.0),
+        minHeightRows: 2,
       ),
     },
   );
@@ -107,18 +110,21 @@ abstract class DashboardWidgetSpecs {
         maxColumns: 4,
         preferredColumns: 4,
         heightStrategy: HeightStrategy.strict(2.0),
+        minHeightRows: 2,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 4,
         preferredColumns: 4,
         heightStrategy: HeightStrategy.strict(4.0),
+        minHeightRows: 2,
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
         heightStrategy: HeightStrategy.strict(4.0),
+        minHeightRows: 2,
       ),
     },
   );
@@ -315,10 +321,11 @@ abstract class DashboardWidgetSpecs {
         heightStrategy: HeightStrategy.strict(4.0),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 6,
+        minColumns: 8,
         maxColumns: 12,
         preferredColumns: 8,
         heightStrategy: HeightStrategy.strict(6.0),
+        minHeightRows: 5,
       ),
     },
   );

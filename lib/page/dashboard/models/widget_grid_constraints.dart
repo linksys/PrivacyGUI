@@ -15,6 +15,9 @@ class WidgetGridConstraints {
   /// 理想/預設佔用欄數（基於 12-column）
   final int preferredColumns;
 
+  /// 最小行數限制 (Optional, default 1)
+  final int minHeightRows;
+
   /// 高度計算策略
   final HeightStrategy heightStrategy;
 
@@ -22,7 +25,8 @@ class WidgetGridConstraints {
     required this.minColumns,
     required this.maxColumns,
     required this.preferredColumns,
-    this.heightStrategy = const HeightStrategy.intrinsic(),
+    required this.heightStrategy,
+    this.minHeightRows = 1,
   })  : assert(minColumns >= 1 && minColumns <= 12),
         assert(maxColumns >= minColumns && maxColumns <= 12),
         assert(

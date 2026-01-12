@@ -262,12 +262,15 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
 
     if (widget.useAppCard) {
       return AppCard(
-        padding: EdgeInsets.all(AppSpacing.xxl),
-        child: content,
+        padding: EdgeInsets.zero,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: content,
+        ),
       );
     }
-    return Padding(
-      padding: EdgeInsets.all(AppSpacing.xxl),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
       child: content,
     );
   }
@@ -333,13 +336,16 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
 
     if (widget.useAppCard) {
       return AppCard(
-        padding: EdgeInsets.all(AppSpacing.xxl),
-        child: content,
+        padding: EdgeInsets.zero,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: content,
+        ),
       );
     }
 
-    return Padding(
-      padding: EdgeInsets.all(AppSpacing.xxl),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
       child: content,
     );
   }

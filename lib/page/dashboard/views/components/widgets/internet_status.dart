@@ -54,7 +54,7 @@ class _InternetConnectionWidgetState
 
   double _getLoadingHeight() {
     return switch (widget.displayMode) {
-      DisplayMode.compact => 80,
+      DisplayMode.compact => 40,
       DisplayMode.normal => 150,
       DisplayMode.expanded => 200,
     };
@@ -72,7 +72,6 @@ class _InternetConnectionWidgetState
   Widget _buildCompactView(BuildContext context, WidgetRef ref) {
     final wanStatus = ref.watch(internetStatusProvider);
     final isOnline = wanStatus == InternetStatus.online;
-    final geolocationState = ref.watch(geolocationProvider);
 
     final content = Row(
       children: [
@@ -90,12 +89,6 @@ class _InternetConnectionWidgetState
           isOnline ? loc(context).internetOnline : loc(context).internetOffline,
         ),
         const Spacer(),
-        // Location info
-        if (geolocationState.value?.name.isNotEmpty == true)
-          AppText.bodySmall(
-            geolocationState.value?.displayLocationText ?? '',
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
         // Refresh button (non-mobile only)
         if (!Utils.isMobilePlatform()) ...[
           AppGap.md(),
@@ -116,7 +109,7 @@ class _InternetConnectionWidgetState
 
     if (widget.useAppCard) {
       return AppCard(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: content,
       );
     }
