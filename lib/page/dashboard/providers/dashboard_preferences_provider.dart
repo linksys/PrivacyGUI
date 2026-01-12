@@ -63,6 +63,12 @@ class DashboardPreferencesNotifier
     await _saveToPrefs();
   }
 
+  /// Restore preferences from a snapshot
+  Future<void> restoreSnapshot(DashboardLayoutPreferences snapshot) async {
+    state = snapshot;
+    await _saveToPrefs();
+  }
+
   /// Toggle custom layout usage
   Future<void> toggleCustomLayout(bool enabled) async {
     state = state.toggleCustomLayout(enabled);

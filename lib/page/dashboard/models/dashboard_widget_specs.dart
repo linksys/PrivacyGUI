@@ -15,7 +15,10 @@ abstract class DashboardWidgetSpecs {
   // ---------------------------------------------------------------------------
   static const internetStatus = WidgetSpec(
     id: 'internet_status',
-    displayName: 'Internet Status',
+    displayName: 'Internet Status (Combined)',
+    description:
+        'Combined status including internet connectivity and master router info.',
+    canHide: false,
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -47,6 +50,7 @@ abstract class DashboardWidgetSpecs {
   static const networks = WidgetSpec(
     id: 'networks',
     displayName: 'Networks',
+    description: 'Combined view of network topology and device counts.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 3,
@@ -75,6 +79,7 @@ abstract class DashboardWidgetSpecs {
   static const wifiGrid = WidgetSpec(
     id: 'wifi_grid',
     displayName: 'Wi-Fi Networks',
+    description: 'Overview of Wi-Fi networks and guest access.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 6,
@@ -104,6 +109,7 @@ abstract class DashboardWidgetSpecs {
   static const quickPanel = WidgetSpec(
     id: 'quick_panel',
     displayName: 'Quick Panel',
+    description: 'Quick access to common settings and actions.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 3,
@@ -135,6 +141,7 @@ abstract class DashboardWidgetSpecs {
   static const portAndSpeed = WidgetSpec(
     id: 'port_and_speed',
     displayName: 'Ports & Speed',
+    description: 'Combined view of ethernet ports and speed test results.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -177,6 +184,8 @@ abstract class DashboardWidgetSpecs {
   static const internetStatusOnly = WidgetSpec(
     id: 'internet_status_only',
     displayName: 'Internet Status',
+    description: 'Shows internet connectivity status only.',
+    canHide: false,
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -203,6 +212,7 @@ abstract class DashboardWidgetSpecs {
   static const masterNodeInfo = WidgetSpec(
     id: 'master_node_info',
     displayName: 'Master Router',
+    description: 'Information about the master node (model, serial, firmware).',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -229,6 +239,7 @@ abstract class DashboardWidgetSpecs {
   static const ports = WidgetSpec(
     id: 'ports',
     displayName: 'Ports',
+    description: 'Status of LAN and WAN ethernet ports.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -255,6 +266,7 @@ abstract class DashboardWidgetSpecs {
   static const speedTest = WidgetSpec(
     id: 'speed_test',
     displayName: 'Speed Test',
+    description: 'Internet speed test results and history.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -281,6 +293,7 @@ abstract class DashboardWidgetSpecs {
   static const networkStats = WidgetSpec(
     id: 'network_stats',
     displayName: 'Network Stats',
+    description: 'Counts of connected nodes and devices.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -307,6 +320,7 @@ abstract class DashboardWidgetSpecs {
   static const topology = WidgetSpec(
     id: 'topology',
     displayName: 'Topology',
+    description: 'Visual map of your mesh network topology.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
@@ -368,6 +382,8 @@ abstract class DashboardWidgetSpecs {
   static const vpn = WidgetSpec(
     id: 'vpn',
     displayName: 'VPN',
+    description: 'VPN connection status.',
+    requirements: const [WidgetRequirement.vpnSupported],
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 3,

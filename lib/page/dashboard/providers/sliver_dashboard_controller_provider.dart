@@ -135,4 +135,80 @@ class SliverDashboardControllerNotifier
       await saveLayout();
     }
   }
+
+  /// Add a widget to the dashboard layout.
+  ///
+  /// Appends the widget to the bottom of the current layout.
+  Future<void> addWidget(String id) async {
+    // 1. Check if already exists
+    final currentLayout = state.exportLayout();
+    if (currentLayout.any((item) => (item as Map)['id'] == id)) {
+      return; // Already exists
+    }
+
+    // 2. Get spec
+    final spec = DashboardWidgetSpecs.getById(id);
+    if (spec == null) return;
+
+    // 3. Calculate position (bottom)
+    int maxY = 0;
+    if (currentLayout.isNotEmpty) {
+      for (final item in currentLayout) {
+        final map = item as Map;
+        final y = map['y'] as int;
+        final h = map['h'] as int;
+        if (y + h > maxY) {
+          maxY = y + h;
+        }
+      }
+    }
+
+    // 4. Create new item
+    // Use LayoutItemFactory logic but manually construct map since we are dealing with export/import format
+    // Or better, creating a LayoutItem and adding to controller?
+    // Controller.add() expects LayoutItem. But we want to persist details like minW/maxW.
+    // LayoutItemFactory returns LayoutItem.
+    // The exportLayout returns List<dynamic> (Maps).
+    // Let's create LayoutItem first to get correct dimensions.
+
+    final item = LayoutItemFactory.fromSpec(
+      spec,
+      x: 0,
+      y: maxY,
+      displayMode: DisplayMode.normal, // Default to normal when adding
+    );
+
+    // 5. Append via import mechanism
+    // Construct map manually to ensure all properties (min/max) are set
+    final newItemMap = {
+      'id': item.id,
+      'x': item.x,
+      'y': item.y,
+      'w': item.w,
+      'h': item.h,
+      // Use camelCase for package compatibility if needed, but package usually handles underscores too?
+      // Looking at updateItemConstraints, we used 'minW'.
+      'minW': item.minW,
+      'maxW': item.maxW,
+      'minH': item.minH,
+      'maxH': item.maxH,
+    };
+
+    final newLayout = [...currentLayout, newItemMap];
+
+    state.importLayout(newLayout);
+    await saveLayout();
+  }
+
+  /// Remove a widget from the dashboard layout.
+  Future<void> removeWidget(String id) async {
+    final currentLayout = state.exportLayout();
+    final newLayout =
+        currentLayout.where((item) => (item as Map)['id'] != id).toList();
+
+    if (newLayout.length != currentLayout.length) {
+      state.importLayout(newLayout);
+      await saveLayout();
+    }
+  }
 }

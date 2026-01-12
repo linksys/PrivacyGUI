@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import '../models/dashboard_widget_specs.dart';
 import '../models/display_mode.dart';
 import '../models/widget_spec.dart';
+import '../strategies/dashboard_layout_context.dart'; // For PortAndSpeedConfig
 import '../views/components/_components.dart';
 
 /// Unified Dashboard Widget Factory
@@ -28,6 +29,15 @@ class DashboardWidgetFactory {
       'topology' => CustomTopology(displayMode: displayMode),
       'wifi_grid' => CustomWiFiGrid(displayMode: displayMode),
       'quick_panel' => CustomQuickPanel(displayMode: displayMode),
+      // Composite Widgets
+      'port_and_speed' => DashboardHomePortAndSpeed(
+          displayMode: displayMode,
+          config: const PortAndSpeedConfig(
+            direction: null, // Auto-detect based on width
+            showSpeedTest: true,
+          ),
+        ),
+      'networks' => DashboardNetworks(displayMode: displayMode),
       _ => null,
     };
   }

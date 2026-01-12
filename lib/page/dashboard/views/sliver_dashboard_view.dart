@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/factories/dashboard_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_preferences_provider.dart';
+import 'package:privacy_gui/page/dashboard/models/dashboard_layout_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -25,6 +26,45 @@ class SliverDashboardView extends ConsumerStatefulWidget {
 
 class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
   bool _isEditMode = false;
+  List<dynamic>? _initialLayoutSnapshot;
+  DashboardLayoutPreferences? _initialPrefsSnapshot;
+
+  void _enterEditMode() {
+    final controller = ref.read(sliverDashboardControllerProvider);
+    _initialLayoutSnapshot = controller.exportLayout();
+    _initialPrefsSnapshot = ref.read(dashboardPreferencesProvider);
+
+    setState(() {
+      _isEditMode = true;
+    });
+    controller.setEditMode(true);
+  }
+
+  void _exitEditMode({bool save = true}) async {
+    final controller = ref.read(sliverDashboardControllerProvider);
+
+    if (!save) {
+      // Restore initial layout
+      if (_initialLayoutSnapshot != null) {
+        controller.importLayout(_initialLayoutSnapshot!);
+        await ref.read(sliverDashboardControllerProvider.notifier).saveLayout();
+      }
+
+      // Restore initial preferences (display modes)
+      if (_initialPrefsSnapshot != null) {
+        await ref
+            .read(dashboardPreferencesProvider.notifier)
+            .restoreSnapshot(_initialPrefsSnapshot!);
+      }
+    }
+
+    setState(() {
+      _isEditMode = false;
+      _initialLayoutSnapshot = null;
+      _initialPrefsSnapshot = null;
+    });
+    controller.setEditMode(false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,16 +91,7 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
           ),
           child: DashboardHomeTitle(
             showSettings: !_isEditMode,
-            onEditPressed: _isEditMode
-                ? null
-                : () {
-                    setState(() {
-                      _isEditMode = true;
-                    });
-                    ref
-                        .read(sliverDashboardControllerProvider)
-                        .setEditMode(true);
-                  },
+            onEditPressed: _isEditMode ? null : _enterEditMode,
           ),
         ),
 
@@ -129,6 +160,7 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
       ref.read(sliverDashboardControllerProvider.notifier).saveLayout();
     }
   }
+// ... (rest of class)
 
   Widget _buildEditToolbar(BuildContext context) {
     return Padding(
@@ -153,14 +185,16 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
               onTap: () => _openLayoutSettings(context),
             ),
             AppGap.sm(),
+            // Cancel Button
+            AppIconButton(
+              icon: const Icon(Icons.close),
+              onTap: () => _exitEditMode(save: false),
+            ),
+            AppGap.sm(),
+            // Save/Done Button
             AppIconButton(
               icon: const Icon(Icons.check),
-              onTap: () {
-                setState(() {
-                  _isEditMode = false;
-                });
-                ref.read(sliverDashboardControllerProvider).setEditMode(false);
-              },
+              onTap: () => _exitEditMode(save: true),
             ),
           ],
         ),
@@ -224,7 +258,7 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
               absorbing: true,
               child: displayedWidget,
             ),
-            // Toggle Button
+            // Toggle Button (Display Mode)
             Positioned(
               right: 8,
               top: 8,
@@ -263,6 +297,46 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
                 ),
               ),
             ),
+
+            // Remove Button (Top-Left) - Only if canHide is true
+            if (DashboardWidgetSpecs.getById(item.id)?.canHide ?? true)
+              Positioned(
+                left: 8,
+                top: 8,
+                child: GestureDetector(
+                  onTap: () async {
+                    await ref
+                        .read(sliverDashboardControllerProvider.notifier)
+                        .removeWidget(item.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Removed ${item.id}'),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.error,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                        )
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onError,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       );
