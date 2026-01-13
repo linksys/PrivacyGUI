@@ -207,7 +207,10 @@ class PnpService with AvailabilityChecker {
   }
 
   /// Checks the auto-configuration status of the router.
-  Future<AutoConfigurationSettings?> autoConfigurationCheck() async {
+  ///
+  /// Returns an [AutoConfigurationUIModel] containing the auto-configuration
+  /// settings, or null if PnP is not supported or an error occurs.
+  Future<AutoConfigurationUIModel?> autoConfigurationCheck() async {
     if (!serviceHelper.isSupportPnP(_rawDeviceInfo?.services)) {
       logger.i('[PnP]: Service - The router does NOT support PNP!');
       return null;
@@ -215,15 +218,38 @@ class PnpService with AvailabilityChecker {
     final repo = _ref.read(routerRepositoryProvider);
     final result = await repo
         .send(
-          JNAPAction.getAutoConfigurationSettings,
-          fetchRemote: true,
-          cacheLevel: CacheLevel.noCache,
-        )
-        .then<AutoConfigurationSettings?>(
-            (data) => AutoConfigurationSettings.fromMap(data.output))
-        .onError((error, stackTrace) => null);
+      JNAPAction.getAutoConfigurationSettings,
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+    )
+        .then<AutoConfigurationUIModel?>((data) {
+      final jnapModel = AutoConfigurationSettings.fromMap(data.output);
+      return _convertToUIModel(jnapModel);
+    }).onError((error, stackTrace) => null);
     logger.d('[PnP]: Service - Auto Configuration Check result: $result');
     return result;
+  }
+
+  /// Converts a JNAP [AutoConfigurationSettings] to an [AutoConfigurationUIModel].
+  AutoConfigurationUIModel _convertToUIModel(
+      AutoConfigurationSettings jnapModel) {
+    return AutoConfigurationUIModel(
+      isSupported: jnapModel.isAutoConfigurationSupported,
+      userAcknowledged: jnapModel.userAcknowledgedAutoConfiguration,
+      method: _convertMethod(jnapModel.autoConfigurationMethod),
+    );
+  }
+
+  /// Converts JNAP AutoConfigurationMethod to UI AutoConfigurationMethodUI.
+  AutoConfigurationMethodUI? _convertMethod(
+      AutoConfigurationMethod? jnapMethod) {
+    if (jnapMethod == null) return null;
+    return switch (jnapMethod) {
+      AutoConfigurationMethod.preConfigured =>
+        AutoConfigurationMethodUI.preConfigured,
+      AutoConfigurationMethod.autoParent =>
+        AutoConfigurationMethodUI.autoParent,
+    };
   }
 
   /// Checks if the admin password has been set by the user.

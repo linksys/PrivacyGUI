@@ -161,7 +161,9 @@ Future<T?> showSubmitAppDialog<T>(
           content: SizedBox(
               width: width ?? kDefaultDialogWidth,
               child: switch (isLoading) {
-                true => loadingWidget ?? const AppLoader(),
+                true => loadingWidget ??
+                    const Center(
+                        child: SizedBox(width: 40, child: AppLoader())),
                 false => contentBuilder(context, setState, onSubmit),
               }),
           actions: isLoading

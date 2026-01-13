@@ -6,21 +6,14 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/di.dart';
-import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/views/components/home_title.dart';
-import 'package:privacy_gui/page/dashboard/views/components/internet_status.dart';
-import 'package:privacy_gui/page/dashboard/views/components/networks.dart';
-import 'package:privacy_gui/page/dashboard/views/components/port_and_speed.dart';
-import 'package:privacy_gui/page/dashboard/views/components/quick_panel.dart';
-import 'package:privacy_gui/page/dashboard/views/components/wifi_grid.dart';
+import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
+import 'package:privacy_gui/page/dashboard/strategies/custom_dashboard_layout_strategy.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
-import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/core/utils/assign_ip/base_assign_ip.dart'
-    if (dart.library.html) 'package:privacy_gui/core/utils/assign_ip/web_assign_ip.dart';
+import 'package:privacy_gui/core/utils/assign_ip/assign_ip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardHomeView extends ConsumerStatefulWidget {
@@ -37,7 +30,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   void initState() {
     super.initState();
     firmware = ref.read(firmwareUpdateProvider.notifier);
-    // _pushNotificationCheck();
     _firmwareUpdateCheck();
     ref.read(menuController).setTo(NaviType.home);
   }
@@ -45,10 +37,32 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
   @override
   Widget build(BuildContext context) {
     MediaQuery.of(context);
-    final horizontalLayout =
-        ref.watch(dashboardHomeProvider).isHorizontalLayout;
-    final hasLanPort =
-        ref.read(dashboardHomeProvider).lanPortConnections.isNotEmpty;
+    final state = ref.watch(dashboardHomeProvider);
+    final preferences = ref.watch(dashboardPreferencesProvider);
+    final hasLanPort = state.lanPortConnections.isNotEmpty;
+    final isHorizontalLayout = state.isHorizontalLayout;
+    final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
+
+    // Forced Display Mode Logic
+    // If Custom Layout is OFF, force all components to use Normal (Standard) mode.
+    // This ensures Legacy Layouts render correctly.
+    final useCustom = preferences.useCustomLayout;
+
+    final internetMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.internetStatus.id)
+        : DisplayMode.normal;
+    final networksMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.networks.id)
+        : DisplayMode.normal;
+    final wifiMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.wifiGrid.id)
+        : DisplayMode.normal;
+    final quickPanelMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.quickPanel.id)
+        : DisplayMode.normal;
+    final portAndSpeedMode = useCustom
+        ? preferences.getMode(DashboardWidgetSpecs.portAndSpeed.id)
+        : DisplayMode.normal;
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -58,175 +72,57 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       appBarStyle: UiKitAppBarStyle.none,
       backState: UiKitBackState.none,
       padding: EdgeInsets.only(
-        top: 32.0, // was AppSpacing.large3
-        bottom: 16.0, // was AppSpacing.medium
+        top: 32.0,
+        bottom: 16.0,
       ),
-      child: (childContext, constraints) => AppResponsiveLayout(
-        // New WidgetBuilder API: context has correct PageLayoutScope for colWidth
-        desktop: (layoutContext) => Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DashboardHomeTitle(),
-            AppGap.xl(),
-            !hasLanPort
-                ? _desktopNoLanPortsLayout(layoutContext)
-                : horizontalLayout
-                    ? _desktopHorizontalLayout(layoutContext)
-                    : _desktopVerticalLayout(layoutContext),
-          ],
-        ),
-        mobile: (context) => _mobileLayout(),
-      ),
-    );
-  }
+      child: (childContext, constraints) {
+        // 1. Determine layout variant (single source of truth)
+        final variant = DashboardLayoutVariant.fromContext(
+          childContext,
+          hasLanPort: hasLanPort,
+          isHorizontalLayout: isHorizontalLayout,
+        );
 
-  Widget _desktopNoLanPortsLayout(BuildContext layoutContext) {
-    return Column(
-      children: [
-        SizedBox(
-          height: 256,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                  width: layoutContext.colWidth(8),
-                  child: InternetConnectionWidget()),
-              AppGap.gutter(),
-              SizedBox(
-                  width: layoutContext.colWidth(4),
-                  child: DashboardHomePortAndSpeed()),
-            ],
+        // 2. Build layout context (IoC - widgets built here, passed to strategy)
+        // Note: We use keys combining mode and useCustom to force rebuilds when switching strategies.
+        final layoutContext = DashboardLayoutContext(
+          context: childContext,
+          ref: ref,
+          state: state,
+          hasLanPort: hasLanPort,
+          isHorizontalLayout: isHorizontalLayout,
+          widgetConfigs: preferences.widgetConfigs,
+          title: const DashboardHomeTitle(),
+          internetWidget: InternetConnectionWidget(
+            key: ValueKey('internet-$internetMode-$useCustom'),
+            displayMode: internetMode,
           ),
-        ),
-        AppGap.lg(),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: layoutContext.colWidth(4),
-              child: Column(
-                children: [
-                  DashboardNetworks(),
-                  AppGap.lg(),
-                  DashboardQuickPanel(),
-                  // _networkInfoTiles(state, isLoading),
-                ],
-              ),
-            ),
-            AppGap.gutter(),
-            SizedBox(
-                width: layoutContext.colWidth(8),
-                child: Column(
-                  children: [
-                    if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
-                      VPNStatusTile(),
-                      AppGap.lg(),
-                    ],
-                    DashboardWiFiGrid(),
-                  ],
-                )),
-          ],
-        ),
-      ],
-    );
-  }
+          networksWidget: DashboardNetworks(
+            key: ValueKey('networks-$networksMode-$useCustom'),
+            displayMode: networksMode,
+          ),
+          wifiGrid: DashboardWiFiGrid(
+            key: ValueKey('wifi-$wifiMode-$useCustom'),
+            displayMode: wifiMode,
+          ),
+          quickPanel: DashboardQuickPanel(
+            key: ValueKey('quick-$quickPanelMode-$useCustom'),
+            displayMode: quickPanelMode,
+          ),
+          vpnTile: isSupportVPN ? const VPNStatusTile() : null,
+          buildPortAndSpeed: (config) => DashboardHomePortAndSpeed(
+            key: ValueKey('port-$portAndSpeedMode-$useCustom'),
+            config: config,
+            displayMode: portAndSpeedMode,
+          ),
+        );
 
-  Widget _desktopHorizontalLayout(BuildContext layoutContext) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                InternetConnectionWidget(),
-                AppGap.lg(),
-                DashboardHomePortAndSpeed(),
-                AppGap.lg(),
-                DashboardWiFiGrid(),
-              ],
-            ),
-          ),
-          AppGap.gutter(),
-          SizedBox(
-              width: layoutContext.colWidth(4),
-              child: Column(
-                children: [
-                  DashboardNetworks(),
-                  AppGap.lg(),
-                  if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
-                    VPNStatusTile(),
-                    AppGap.lg(),
-                  ],
-                  DashboardQuickPanel(),
-                  // _networkInfoTiles(state, isLoading),
-                ],
-              )),
-        ],
-      ),
-    );
-  }
-
-  Widget _desktopVerticalLayout(BuildContext layoutContext) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: layoutContext.colWidth(3),
-            child: Column(
-              children: [
-                DashboardHomePortAndSpeed(),
-                AppGap.lg(),
-                DashboardQuickPanel(),
-              ],
-            ),
-          ),
-          AppGap.gutter(),
-          Expanded(
-            child: Column(
-              children: [
-                InternetConnectionWidget(),
-                AppGap.lg(),
-                DashboardNetworks(),
-                AppGap.lg(),
-                if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
-                  VPNStatusTile(),
-                  AppGap.lg(),
-                ],
-                DashboardWiFiGrid(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _mobileLayout() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DashboardHomeTitle(),
-        AppGap.xl(),
-        InternetConnectionWidget(),
-        AppGap.lg(),
-        DashboardHomePortAndSpeed(),
-        AppGap.lg(),
-        DashboardNetworks(),
-        if (getIt.get<ServiceHelper>().isSupportVPN()) ...[
-          AppGap.lg(),
-          VPNStatusTile(),
-        ],
-        AppGap.lg(),
-        DashboardQuickPanel(),
-        AppGap.lg(),
-        DashboardWiFiGrid(),
-        AppGap.lg(),
-      ],
+        // 3. Delegate to strategy
+        final strategy = useCustom
+            ? const CustomDashboardLayoutStrategy()
+            : DashboardLayoutFactory.create(variant);
+        return strategy.build(layoutContext);
+      },
     );
   }
 
@@ -235,7 +131,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return _FirmwareUpdateCountdownDialog(onFinish: reload);
+        return FirmwareUpdateCountdownDialog(onFinish: reload);
       },
     );
   }
@@ -252,108 +148,5 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         }
       });
     });
-  }
-
-  // void _pushNotificationCheck() {
-  //   if (kIsWeb) {
-  //     return;
-  //   }
-  //   if (!mounted) {
-  //     return;
-  //   }
-  //   if (GoRouter.of(context).routerDelegate.currentConfiguration.fullPath !=
-  //       RoutePath.dashboardHome) {
-  //     return;
-  //   }
-  //   SharedPreferences.getInstance().then((prefs) {
-  //     final isPushPromptShown = prefs.getBool(
-  //             SmartDevicesPrefsHelper.getNidKey(prefs, key: pShowPushPrompt)) ??
-  //         false;
-  //     if (!isPushPromptShown) {
-  //       prefs.setBool(
-  //           SmartDevicesPrefsHelper.getNidKey(prefs, key: pShowPushPrompt),
-  //           true);
-  //       showAdaptiveDialog(
-  //         context: context,
-  //         builder: (context) => AlertDialog(
-  //           title: AppText.bodyLarge('Push Notification'),
-  //           content: AppText.bodyLarge(
-  //               'Do you want to receive Linksys push notifications?'),
-  //           actions: [
-  //             AppTextButton(
-  //               'Yes',
-  //               onTap: () {
-  //                 final deviceToken = prefs.getString(pDeviceToken);
-  //                 if (deviceToken != null) {
-  //                   ref
-  //                       .read(smartDeviceProvider.notifier)
-  //                       .registerSmartDevice(deviceToken);
-  //                 } else {}
-  //                 context.pop();
-  //               },
-  //             ),
-  //             AppTextButton('No', onTap: () {
-  //               context.pop();
-  //             })
-  //           ],
-  //         ),
-  //       );
-  //     }
-  //   });
-  // }
-}
-
-class _FirmwareUpdateCountdownDialog extends StatefulWidget {
-  final VoidCallback onFinish;
-  const _FirmwareUpdateCountdownDialog({required this.onFinish});
-
-  @override
-  State<_FirmwareUpdateCountdownDialog> createState() =>
-      _FirmwareUpdateCountdownDialogState();
-}
-
-class _FirmwareUpdateCountdownDialogState
-    extends State<_FirmwareUpdateCountdownDialog> {
-  int _seconds = 5;
-  late final Timer _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_seconds == 1) {
-        _timer.cancel();
-        Navigator.of(context).pop();
-        widget.onFinish();
-      } else {
-        setState(() {
-          _seconds--;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: AppText.titleLarge(loc(context).firmwareUpdated),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(),
-          AppGap.lg(),
-          AppText.labelLarge(
-            loc(context).firmwareUpdateCountdownMessage(_seconds),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
   }
 }

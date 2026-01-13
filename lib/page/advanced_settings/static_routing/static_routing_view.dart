@@ -271,6 +271,7 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
     if (shouldInitialize) {
       _editingRule = rule;
       Future.microtask(() {
+        _selectedInterface = RoutingSettingInterface.resolve(rule.interface);
         _isInitializing = true;
         try {
           final state = ref.read(staticRoutingProvider);
@@ -307,13 +308,13 @@ class _StaticRoutingViewState extends ConsumerState<StaticRoutingView>
           _destinationIPController.text = rule.destinationIP;
           _subnetMaskController.text = rule.subnetMask;
           _gatewayController.text = rule.gateway;
-          _selectedInterface = RoutingSettingInterface.resolve(rule.interface);
 
           // Clear errors
           _nameError = null;
           _destIpError = null;
           _subnetError = null;
           _gatewayError = null;
+          _sheetStateSetter?.call(() {});
         } finally {
           _isInitializing = false;
         }

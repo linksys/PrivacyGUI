@@ -49,8 +49,8 @@ class _PnpLightOffViewState extends ConsumerState<PnpModemLightsOffView> {
                         onTap: () {
                           showSimpleAppOkDialog(
                             context,
-                            content: SingleChildScrollView(
-                                child: _bottomSheetContent()),
+                            scrollable: true,
+                            content: _bottomSheetContent(),
                           );
                         },
                       ),

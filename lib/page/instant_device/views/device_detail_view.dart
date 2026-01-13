@@ -209,7 +209,14 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge(title),
+                Tooltip(
+                  message: title,
+                  child: AppText.bodyLarge(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 if (description != null) ...[
                   AppGap.xs(),
                   AppText.bodyMedium(description),

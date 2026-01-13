@@ -7,8 +7,6 @@ import 'dart:async' as _i6;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i10;
-import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart'
-    as _i8;
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart'
     as _i2;
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart' as _i9;
@@ -270,16 +268,16 @@ class MockPnpService extends _i1.Mock implements _i3.PnpService {
       ) as _i6.Future<_i3.ConfigurationResult>);
 
   @override
-  _i6.Future<_i8.AutoConfigurationSettings?> autoConfigurationCheck() =>
+  _i6.Future<_i2.AutoConfigurationUIModel?> autoConfigurationCheck() =>
       (super.noSuchMethod(
         Invocation.method(
           #autoConfigurationCheck,
           [],
         ),
-        returnValue: _i6.Future<_i8.AutoConfigurationSettings?>.value(),
+        returnValue: _i6.Future<_i2.AutoConfigurationUIModel?>.value(),
         returnValueForMissingStub:
-            _i6.Future<_i8.AutoConfigurationSettings?>.value(),
-      ) as _i6.Future<_i8.AutoConfigurationSettings?>);
+            _i6.Future<_i2.AutoConfigurationUIModel?>.value(),
+      ) as _i6.Future<_i2.AutoConfigurationUIModel?>);
 
   @override
   _i6.Future<bool> isRouterPasswordSet() => (super.noSuchMethod(

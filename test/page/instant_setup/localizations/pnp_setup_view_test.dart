@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
@@ -105,7 +104,7 @@ class FakePnpNotifier extends BasePnpNotifier {
   Future<ConfigurationResult> checkRouterConfigured() async =>
       ConfigurationResult(status: ConfigStatus.configured);
   @override
-  Future<AutoConfigurationSettings?> autoConfigurationCheck() async => null;
+  Future<AutoConfigurationUIModel?> autoConfigurationCheck() async => null;
   @override
   Future<bool> isRouterPasswordSet() async => true;
   @override

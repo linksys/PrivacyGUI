@@ -168,20 +168,19 @@ class _WiFiMainViewState extends ConsumerState<WiFiMainView>
         newState.current.wifiList.copyWith(mainWiFi: wifiListSettings);
     final result = await showSimpleAppDialog(context,
         title: loc(context).wifiListSaveModalTitle,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
-              ..._mloWarning(previewState),
-              ..._disableBandWarning(previewState),
-              AppGap.lg(),
-              ..._buildNewSettings(previewState),
-              AppGap.lg(),
-              AppText.bodyMedium(loc(context).doYouWantToContinue),
-            ],
-          ),
+        scrollable: true,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppText.bodyMedium(loc(context).wifiListSaveModalDesc),
+            ..._mloWarning(previewState),
+            ..._disableBandWarning(previewState),
+            AppGap.lg(),
+            ..._buildNewSettings(previewState),
+            AppGap.lg(),
+            AppText.bodyMedium(loc(context).doYouWantToContinue),
+          ],
         ),
         actions: [
           AppButton.text(

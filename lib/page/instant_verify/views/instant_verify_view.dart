@@ -20,6 +20,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
+import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_external_widget.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
@@ -720,124 +721,47 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardManagerProvider);
-    return SizedBox(
-      height: context.isMobileLayout ? 224 : 208,
-      width: double.infinity,
-      child: AppCard(
-          key: const ValueKey('portCard'),
-          padding: EdgeInsets.zero,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xxl,
-                ),
-                child: Row(
-                  // mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...state.lanConnections
-                        .mapIndexed((index, e) => Expanded(
-                              child: _portWidget(
-                                  context,
-                                  e == 'None' ? null : e,
-                                  loc(context).indexedPort(index + 1),
-                                  false),
-                            ))
-                        .toList(),
-                    Expanded(
-                      child: _portWidget(
-                          context,
-                          state.wanConnection == 'None'
-                              ? null
-                              : state.wanConnection,
-                          loc(context).wan,
-                          true),
-                    )
-                  ],
-                ),
-              ),
-            ],
-          )),
-    );
-  }
-
-  Widget _portWidget(
-      BuildContext context, String? connection, String label, bool isWan) {
-    final isMobile = context.isMobileLayout;
-    final portLabel = [
-      AppIcon.font(
-        connection == null
-            ? AppFontIcons.circle
-            : AppFontIcons.checkCircleFilled,
-        color: connection == null
-            ? Theme.of(context).colorScheme.surfaceContainerHighest
-            : Theme.of(context).extension<AppColorScheme>()?.semanticSuccess,
-      ),
-      AppGap.sm(),
-      AppText.labelMedium(label),
-    ];
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Wrap(
-          // mainAxisSize: MainAxisSize.min,
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
+    return AppCard(
+        key: const ValueKey('portCard'),
+        padding: EdgeInsets.zero,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            isMobile
-                ? Column(
-                    children: portLabel,
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: portLabel,
-                  )
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: connection == null
-                ? Assets.images.imgPortOff.svg()
-                : Assets.images.imgPortOn.svg(),
-          ),
-        ),
-        if (connection != null)
-          Column(
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxl,
+              ),
+              child: Row(
+                // mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppIcon.font(
-                    AppFontIcons.bidirectional,
-                    color: Theme.of(context).colorScheme.primary,
+                  ...state.lanConnections
+                      .mapIndexed((index, e) => Expanded(
+                            child: PortStatusWidget(
+                              connection: e == 'None' ? null : e,
+                              label: loc(context).indexedPort(index + 1),
+                              isWan: false,
+                              hasLanPorts: true, // Force vertical layout
+                            ),
+                          ))
+                      .toList(),
+                  Expanded(
+                    child: PortStatusWidget(
+                      connection: state.wanConnection == 'None'
+                          ? null
+                          : state.wanConnection,
+                      label: loc(context).wan,
+                      isWan: true,
+                      hasLanPorts: true, // Force vertical layout
+                    ),
                   ),
-                  AppText.bodySmall(connection),
                 ],
               ),
-              SizedBox(
-                width: 70,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: AppText.bodySmall(
-                    loc(context).connectedSpeed,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                  ),
-                ),
-              )
-            ],
-          ),
-        if (isWan) AppText.labelMedium(loc(context).internet),
-      ],
-    );
+            ),
+          ],
+        ));
   }
 
   Widget _headerWidget(String title, [Widget? action]) {
@@ -1037,8 +961,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           title: loc(context).ping,
           icon: Icons.radio_button_checked,
           onTap: () {
-            doSomethingWithSpinner(
-                context, _showPingNetworkModal(context, ref));
+            _showPingNetworkModal(context, ref);
           },
         ),
         AppGap.lg(),
@@ -1048,7 +971,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           title: loc(context).traceroute,
           icon: Icons.route,
           onTap: () {
-            doSomethingWithSpinner(context, _showTracerouteModal(context, ref));
+            _showTracerouteModal(context, ref);
           },
         ),
       ],

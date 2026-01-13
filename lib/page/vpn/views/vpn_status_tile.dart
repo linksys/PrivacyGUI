@@ -10,7 +10,7 @@ import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/page/vpn/views/shared_widgets.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
-import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
+import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class VPNStatusTile extends ConsumerStatefulWidget {
