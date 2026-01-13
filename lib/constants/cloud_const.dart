@@ -1,8 +1,6 @@
 import 'build_config.dart';
 
-import 'client_type/get_client_type.dart'
-    if (dart.library.io) 'client_type/mobile_client_type.dart'
-    if (dart.library.html) 'client_type/web_client_type.dart';
+import 'client_type/client_type.dart';
 
 const kCloudBase = 'CLOUD_BASE_URL';
 const kCloudJNAP = 'CLOUD_JNAP_BASE_URL';
