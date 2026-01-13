@@ -11,10 +11,12 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dar
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
-import 'package:privacy_gui/page/dashboard/strategies/custom_dashboard_layout_strategy.dart';
 import 'package:privacy_gui/page/dashboard/views/sliver_dashboard_view.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
 import 'package:privacy_gui/core/utils/assign_ip/assign_ip.dart';
+import 'package:privacy_gui/page/dashboard/models/dashboard_widget_specs.dart';
+import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
+import 'package:privacy_gui/page/dashboard/providers/sliver_dashboard_controller_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardHomeView extends ConsumerStatefulWidget {
@@ -44,26 +46,21 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final isHorizontalLayout = state.isHorizontalLayout;
     final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
 
+    // LISTEN for dynamic constraints changes (Decoupled from SliverDashboardView)
+    ref.listen(
+      dashboardHomeProvider.select((s) => s.lanPortConnections.isNotEmpty),
+      (_, __) => _updatePortsConstraints(),
+    );
+    ref.listen(
+      dashboardHomeProvider.select((s) => s.isHorizontalLayout),
+      (_, __) => _updatePortsConstraints(),
+    );
+
     // Forced Display Mode Logic
     // If Custom Layout is OFF, force all components to use Normal (Standard) mode.
     // This ensures Legacy Layouts render correctly.
     final useCustom = preferences.useCustomLayout;
 
-    final internetMode = useCustom
-        ? preferences.getMode(DashboardWidgetSpecs.internetStatus.id)
-        : DisplayMode.normal;
-    final networksMode = useCustom
-        ? preferences.getMode(DashboardWidgetSpecs.networks.id)
-        : DisplayMode.normal;
-    final wifiMode = useCustom
-        ? preferences.getMode(DashboardWidgetSpecs.wifiGrid.id)
-        : DisplayMode.normal;
-    final quickPanelMode = useCustom
-        ? preferences.getMode(DashboardWidgetSpecs.quickPanel.id)
-        : DisplayMode.normal;
-    final portAndSpeedMode = useCustom
-        ? preferences.getMode(DashboardWidgetSpecs.portAndSpeed.id)
-        : DisplayMode.normal;
     if (useCustom) {
       // sliver_dashboard breakpoints are adjusted in SliverDashboardView
       // to compensate for UiKitPageView's horizontal margin.
@@ -88,7 +85,7 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         bottom: 16.0,
       ),
       child: (childContext, constraints) {
-        // 1. Determine layout variant (single source of truth)
+        // 1. Determine layout variant (Standard only)
         final variant = DashboardLayoutVariant.fromContext(
           childContext,
           hasLanPort: hasLanPort,
@@ -96,7 +93,6 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         );
 
         // 2. Build layout context (IoC - widgets built here, passed to strategy)
-        // Note: We use keys combining mode and useCustom to force rebuilds when switching strategies.
         final layoutContext = DashboardLayoutContext(
           context: childContext,
           ref: ref,
@@ -106,44 +102,35 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           widgetConfigs: preferences.widgetConfigs,
           title: const DashboardHomeTitle(),
           internetWidget: InternetConnectionWidget(
-            key: ValueKey('internet-$internetMode-$useCustom'),
-            displayMode: internetMode,
-            useAppCard: !useCustom,
+            key: const ValueKey('internet'),
+            displayMode: DisplayMode.normal,
+            useAppCard: true,
           ),
           networksWidget: DashboardNetworks(
-            key: ValueKey('networks-$networksMode-$useCustom'),
-            displayMode: networksMode,
-            useAppCard: !useCustom,
+            key: const ValueKey('networks'),
+            displayMode: DisplayMode.normal,
+            useAppCard: true,
           ),
           wifiGrid: DashboardWiFiGrid(
-            key: ValueKey('wifi-$wifiMode-$useCustom'),
-            displayMode: wifiMode,
+            key: const ValueKey('wifi'),
+            displayMode: DisplayMode.normal,
           ),
           quickPanel: DashboardQuickPanel(
-            key: ValueKey('quick-$quickPanelMode-$useCustom'),
-            displayMode: quickPanelMode,
-            useAppCard: !useCustom,
+            key: const ValueKey('quick'),
+            displayMode: DisplayMode.normal,
+            useAppCard: true,
           ),
           vpnTile: isSupportVPN ? const VPNStatusTile() : null,
           buildPortAndSpeed: (config) => DashboardHomePortAndSpeed(
-            key: ValueKey('port-$portAndSpeedMode-$useCustom'),
+            key: const ValueKey('port'),
             config: config,
-            displayMode: portAndSpeedMode,
-            useAppCard: !useCustom,
+            displayMode: DisplayMode.normal,
+            useAppCard: true,
           ),
-          // Atomic widgets (for Custom Layout only)
-          internetStatusOnly: useCustom ? const CustomInternetStatus() : null,
-          masterNodeInfo: useCustom ? const CustomMasterNodeInfo() : null,
-          portsWidget: useCustom ? const CustomPorts() : null,
-          speedTestWidget: useCustom ? const CustomSpeedTest() : null,
-          networkStats: useCustom ? const CustomNetworkStats() : null,
-          topologyWidget: useCustom ? const CustomTopology() : null,
         );
 
-        // 3. Delegate to strategy
-        final strategy = useCustom
-            ? const CustomDashboardLayoutStrategy()
-            : DashboardLayoutFactory.create(variant);
+        // 3. Delegate to strategy (Standard only)
+        final strategy = DashboardLayoutFactory.create(variant);
         return strategy.build(layoutContext);
       },
     );
@@ -171,5 +158,33 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
         }
       });
     });
+  }
+
+  /// Helper to get spec with dynamic constraints based on state
+  WidgetSpec? _getDynamicSpec(String id) {
+    if (id == DashboardWidgetSpecs.ports.id) {
+      final state = ref.read(dashboardHomeProvider);
+      return DashboardWidgetSpecs.getPortsSpec(
+        hasLanPort: state.lanPortConnections.isNotEmpty,
+        isHorizontal: state.isHorizontalLayout,
+      );
+    }
+    return DashboardWidgetSpecs.getById(id);
+  }
+
+  /// Update constraints for Ports widget when layout context changes
+  void _updatePortsConstraints() {
+    final id = DashboardWidgetSpecs.ports.id;
+    final spec = _getDynamicSpec(id);
+    if (spec == null) return;
+
+    final preferences = ref.read(dashboardPreferencesProvider);
+    final mode = preferences.getMode(id);
+
+    ref.read(sliverDashboardControllerProvider.notifier).updateItemConstraints(
+          id,
+          mode,
+          overrideConstraints: spec.constraints[mode],
+        );
   }
 }

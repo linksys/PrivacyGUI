@@ -25,8 +25,7 @@ class CustomInternetStatus extends DisplayModeConsumerWidget {
 
   @override
   double getLoadingHeight(DisplayMode mode) => switch (mode) {
-        DisplayMode.compact =>
-          60, // Min height to fit LoadingTile default skeleton
+        DisplayMode.compact => 80,
         DisplayMode.normal => 80,
         DisplayMode.expanded => 100,
       };
@@ -38,16 +37,21 @@ class CustomInternetStatus extends DisplayModeConsumerWidget {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.sm),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _statusIndicator(context, isOnline),
-          AppGap.sm(),
-          AppText.labelLarge(
-            isOnline
-                ? loc(context).internetOnline
-                : loc(context).internetOffline,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _statusIndicator(context, isOnline),
+              AppGap.sm(),
+              AppText.labelLarge(
+                isOnline
+                    ? loc(context).internetOnline
+                    : loc(context).internetOffline,
+              ),
+            ],
           ),
-          const Spacer(),
-          if (!Utils.isMobilePlatform()) _refreshButton(ref),
+          if (!Utils.isMobilePlatform()) _refreshButton(context, ref),
         ],
       ),
     );
@@ -85,7 +89,7 @@ class CustomInternetStatus extends DisplayModeConsumerWidget {
               ],
             ),
           ),
-          if (!Utils.isMobilePlatform()) _refreshButton(ref),
+          if (!Utils.isMobilePlatform()) _refreshButton(context, ref),
         ],
       ),
     );
@@ -137,7 +141,7 @@ class CustomInternetStatus extends DisplayModeConsumerWidget {
               ],
             ),
           ),
-          if (!Utils.isMobilePlatform()) _refreshButton(ref),
+          if (!Utils.isMobilePlatform()) _refreshButton(context, ref),
         ],
       ),
     );
@@ -155,9 +159,14 @@ class CustomInternetStatus extends DisplayModeConsumerWidget {
         size: 12.0,
       );
 
-  Widget _refreshButton(WidgetRef ref) => AnimatedRefreshContainer(
+  Widget _refreshButton(BuildContext context, WidgetRef ref) =>
+      AnimatedRefreshContainer(
         builder: (controller) => AppIconButton(
-          icon: AppIcon.font(AppFontIcons.refresh, size: 16),
+          icon: AppIcon.font(
+            AppFontIcons.refresh,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           onTap: () {
             controller.repeat();
             ref.read(pollingProvider.notifier).forcePolling().then((_) {

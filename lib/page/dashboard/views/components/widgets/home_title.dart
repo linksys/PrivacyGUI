@@ -28,7 +28,7 @@ class DashboardHomeTitle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DashboardLoadingWrapper(
-      loadingHeight: 150,
+      loadingHeight: 60,
       builder: (context, ref) => _buildContent(context, ref),
     );
   }
@@ -47,10 +47,9 @@ class DashboardHomeTitle extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Text(
+              child: AppText.titleLarge(
                 helloString(context, localTime),
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             InkWell(
@@ -69,14 +68,11 @@ class DashboardHomeTitle extends ConsumerWidget {
                       color: Theme.of(context).colorScheme.onSurface),
                   Padding(
                     padding: EdgeInsets.only(left: AppSpacing.sm),
-                    child: Text(
-                      loc(context).formalDateTime(localTime, localTime),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: AppText.bodyMedium(
+                        loc(context).formalDateTime(localTime, localTime),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        color: Theme.of(context).colorScheme.onSurface),
                   ),
                 ],
               ),

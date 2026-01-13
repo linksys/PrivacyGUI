@@ -36,7 +36,7 @@ class _CustomQuickPanelState extends ConsumerState<CustomQuickPanel>
     with DisplayModeStateMixin<CustomQuickPanel> {
   @override
   double getLoadingHeight(DisplayMode mode) => switch (mode) {
-        DisplayMode.compact => 100,
+        DisplayMode.compact => 80,
         DisplayMode.normal => 150,
         DisplayMode.expanded => 200,
       };
@@ -49,8 +49,8 @@ class _CustomQuickPanelState extends ConsumerState<CustomQuickPanel>
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
+        horizontal: AppSpacing.sm, // Reduced from lg
+        vertical: AppSpacing.xs, // Reduced from md
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -216,23 +216,23 @@ class _CustomQuickPanelState extends ConsumerState<CustomQuickPanel>
   }) {
     return Tooltip(
       message: label,
-      child: Column(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           InkWell(
             onTap: onTap,
             child: AppIcon.font(
               icon,
-              size: 24,
+              size: 20,
               color: isActive
                   ? Theme.of(context).colorScheme.primary
                   : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          AppGap.xs(),
+          AppGap.sm(),
           SizedBox(
-            width: 48,
-            height: 28,
+            width: 36,
+            height: 24,
             child: FittedBox(
               child: AppSwitch(value: isActive, onChanged: onToggle),
             ),

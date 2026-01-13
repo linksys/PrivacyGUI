@@ -23,7 +23,7 @@ class CustomNetworkStats extends DisplayModeConsumerWidget {
 
   @override
   double getLoadingHeight(DisplayMode mode) => switch (mode) {
-        DisplayMode.compact => 60,
+        DisplayMode.compact => 80,
         DisplayMode.normal => 100,
         DisplayMode.expanded => 120,
       };

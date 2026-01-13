@@ -34,3 +34,4 @@ export 'widgets/atomic/network_stats.dart';
 export 'widgets/atomic/topology.dart'; // CustomTopology
 export 'widgets/atomic/custom_wifi_grid.dart';
 export 'widgets/atomic/custom_quick_panel.dart';
+export 'widgets/atomic/custom_vpn.dart';

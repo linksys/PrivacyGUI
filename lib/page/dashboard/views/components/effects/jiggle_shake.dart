@@ -13,7 +13,7 @@ class JiggleShake extends StatefulWidget {
     super.key,
     required this.active,
     required this.child,
-    this.degrees = 1.0,
+    this.degrees = 0.5,
   });
 
   @override

@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/factories/dashboard_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/models/dashboard_layout_preferences.dart';
+import 'package:privacy_gui/page/dashboard/models/height_strategy.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -151,6 +152,22 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
       violated = true;
     }
 
+    // Enforce Height Constraints
+    // For strict/column-based strategies, height is fixed
+    if (constraints.heightStrategy is ColumnBasedHeightStrategy) {
+      final strictHeight = constraints.getPreferredHeightCells(columns: newW);
+      if (item.h != strictHeight) {
+        newH = strictHeight;
+        violated = true;
+      }
+    } else {
+      // For other strategies, enforce minHeightRows
+      if (item.h < constraints.minHeightRows) {
+        newH = constraints.minHeightRows;
+        violated = true;
+      }
+    }
+
     if (violated) {
       ref
           .read(sliverDashboardControllerProvider.notifier)
@@ -252,47 +269,88 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
         active: true,
         child: Stack(
           fit: StackFit.expand,
+          clipBehavior: Clip.none,
           children: [
             // The widget itself (blocked interactions)
             AbsorbPointer(
               absorbing: true,
               child: displayedWidget,
             ),
-            // Toggle Button (Display Mode)
             Positioned(
               right: 8,
               top: 8,
-              child: GestureDetector(
-                onTap: () {
-                  _cycleDisplayMode(context, item, displayMode);
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                      )
-                    ],
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  // Use dark surface for menu contrast if needed, or default
+                  popupMenuTheme: PopupMenuThemeData(
+                    color: Theme.of(context).colorScheme.surfaceContainer,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _getModeIcon(displayMode),
-                        size: 14,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+                child: PopupMenuButton<DisplayMode>(
+                  initialValue: displayMode,
+                  tooltip: 'Change View Mode',
+                  onSelected: (mode) => _updateDisplayMode(context, item, mode),
+                  offset: const Offset(0, 32),
+                  itemBuilder: (context) => DisplayMode.values.map((mode) {
+                    final isSelected = mode == displayMode;
+                    return PopupMenuItem<DisplayMode>(
+                      value: mode,
+                      height: 40,
+                      child: Row(
+                        children: [
+                          Icon(
+                            _getModeIcon(mode),
+                            size: 16,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
+                          AppGap.sm(),
+                          Text(
+                            mode.name.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
                       ),
-                      AppGap.xs(),
-                      AppText.labelSmall(
-                        displayMode.name.toUpperCase(),
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                    ],
+                    );
+                  }).toList(),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(16),
+                      // Shadow removed from prev step
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getModeIcon(displayMode),
+                          size: 14,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                        AppGap.xs(),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          size: 14,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -318,7 +376,7 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.error,
                       shape: BoxShape.circle,
@@ -331,7 +389,7 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
                     ),
                     child: Icon(
                       Icons.close,
-                      size: 16,
+                      size: 14,
                       color: Theme.of(context).colorScheme.onError,
                     ),
                   ),
@@ -354,12 +412,8 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
     };
   }
 
-  void _cycleDisplayMode(
-      BuildContext context, LayoutItem item, DisplayMode currentMode) {
-    // Cycle: Compact -> Normal -> Expanded -> Compact
-    final nextIndex = (currentMode.index + 1) % DisplayMode.values.length;
-    final nextMode = DisplayMode.values[nextIndex];
-
+  void _updateDisplayMode(
+      BuildContext context, LayoutItem item, DisplayMode nextMode) {
     // 1. Update preferences provider (unified state)
     ref
         .read(dashboardPreferencesProvider.notifier)

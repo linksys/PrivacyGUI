@@ -87,28 +87,6 @@ class DashboardLayoutContext {
   final Widget Function(PortAndSpeedConfig config) buildPortAndSpeed;
 
   // ---------------------------------------------------------------------------
-  // Atomic Widgets (for Bento Grid / Custom Layout)
-  // ---------------------------------------------------------------------------
-
-  /// Internet status only widget (atomic).
-  final Widget? internetStatusOnly;
-
-  /// Master node info widget (atomic).
-  final Widget? masterNodeInfo;
-
-  /// Ports widget (atomic).
-  final Widget? portsWidget;
-
-  /// Speed test widget (atomic).
-  final Widget? speedTestWidget;
-
-  /// Network stats widget (atomic).
-  final Widget? networkStats;
-
-  /// Topology widget (atomic).
-  final Widget? topologyWidget;
-
-  // ---------------------------------------------------------------------------
   // Grid Constraint System
   // ---------------------------------------------------------------------------
 
@@ -130,13 +108,6 @@ class DashboardLayoutContext {
     required this.quickPanel,
     this.vpnTile,
     required this.buildPortAndSpeed,
-    // Atomic widgets (optional - only needed for Custom Layout)
-    this.internetStatusOnly,
-    this.masterNodeInfo,
-    this.portsWidget,
-    this.speedTestWidget,
-    this.networkStats,
-    this.topologyWidget,
     this.widgetConfigs = const {},
   });
 
@@ -279,57 +250,47 @@ class DashboardLayoutContext {
     }).toList();
   }
 
-  /// Gets a map of all atomic widgets keyed by their ID.
-  Map<String, Widget> get _allAtomicWidgets => {
-        if (internetStatusOnly != null)
-          DashboardWidgetSpecs.internetStatusOnly.id: internetStatusOnly!,
-        if (masterNodeInfo != null)
-          DashboardWidgetSpecs.masterNodeInfo.id: masterNodeInfo!,
-        if (portsWidget != null) DashboardWidgetSpecs.ports.id: portsWidget!,
-        if (speedTestWidget != null)
-          DashboardWidgetSpecs.speedTest.id: speedTestWidget!,
-        if (networkStats != null)
-          DashboardWidgetSpecs.networkStats.id: networkStats!,
-        if (topologyWidget != null)
-          DashboardWidgetSpecs.topology.id: topologyWidget!,
-        DashboardWidgetSpecs.wifiGrid.id: wifiGrid,
-        DashboardWidgetSpecs.quickPanel.id: quickPanel,
-        if (vpnTile != null) DashboardWidgetSpecs.vpn.id: vpnTile!,
-      };
-
-  /// Get an atomic widget by its ID.
-  Widget? getAtomicWidgetById(String id) => _allAtomicWidgets[id];
-
-  /// Get ordered list of visible atomic widget specs (for Custom Layout).
-  List<WidgetSpec> get orderedVisibleCustomSpecs {
-    final widgets = _allAtomicWidgets;
-
+  /// Gets the list of visible widgets, ordered and wrapped with constraints.
+  ///
+  /// This is the primary method for flexible layout strategies.
+  List<Widget> get orderedVisibleWidgets {
     // 1. Get ordered specs from configs
-    final orderedSpecs = DashboardWidgetSpecs.customWidgets.toList()
+    final orderedSpecs = DashboardWidgetSpecs.standardWidgets.toList()
       ..sort((a, b) {
         final configA = getConfigFor(a);
         final configB = getConfigFor(b);
         return configA.order.compareTo(configB.order);
       });
 
-    // 2. Filter visible
+    // 2. Filter visible & wrap
     return orderedSpecs.where((spec) {
       final config = getConfigFor(spec);
-      // Only show if visible AND widget exists
-      return config.visible && widgets.containsKey(spec.id);
+      return config.visible;
+    }).map((spec) {
+      final config = getConfigFor(spec);
+      final child = _getStandardWidgetById(spec.id);
+      if (child == null) return const SizedBox.shrink();
+
+      // Wrap based on mode constraints
+      // For Standard Layout, we provide a basic minHeight to ensure visibility
+      // The actual height is determined by the content (Standard Layout is usually a Column/ListView)
+      return ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 120),
+        child: child,
+      );
     }).toList();
   }
 
-  /// Gets the list of visible widgets, ordered and wrapped with constraints.
-  ///
-  /// This is the primary method for flexible layout strategies.
-  List<Widget> get orderedVisibleWidgets {
-    final widgets = _allWidgets;
-    return orderedVisibleSpecs
-        .map((spec) => wrapWidget(
-              widgets[spec.id]!,
-              spec: spec,
-            ))
-        .toList();
+  Widget? _getStandardWidgetById(String id) {
+    if (id == DashboardWidgetSpecs.internetStatus.id) return internetWidget;
+    if (id == DashboardWidgetSpecs.networks.id) return networksWidget;
+    if (id == DashboardWidgetSpecs.wifiGrid.id) return wifiGrid;
+    if (id == DashboardWidgetSpecs.quickPanel.id) return quickPanel;
+    if (id == DashboardWidgetSpecs.vpn.id) return vpnTile;
+    if (id == DashboardWidgetSpecs.portAndSpeed.id) {
+      // For standard layouts in ordered list (e.g. mobile), use default config
+      return buildPortAndSpeed(const PortAndSpeedConfig());
+    }
+    return null;
   }
 }

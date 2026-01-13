@@ -27,14 +27,49 @@ class CustomTopology extends DisplayModeConsumerWidget {
 
   @override
   double getLoadingHeight(DisplayMode mode) => switch (mode) {
-        DisplayMode.compact => 150,
+        DisplayMode.compact => 80,
         DisplayMode.normal => 200,
         DisplayMode.expanded => 400,
       };
 
   @override
   Widget buildCompactView(BuildContext context, WidgetRef ref) {
-    return _buildTopologyView(context, ref, isExpanded: false);
+    final topologyState = ref.watch(instantTopologyProvider);
+    final routerLength =
+        topologyState.root.children.firstOrNull?.toFlatList().length ?? 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
+      ),
+      child: AppInkWell(
+        customColor: Colors.transparent,
+        customBorderWidth: 0,
+        onTap: () => context.pushNamed(RouteNamed.menuInstantTopology),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Row(
+          children: [
+            Icon(
+              Icons.hub,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            AppGap.md(),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.labelLarge('Topology'),
+                AppText.labelSmall(
+                  '$routerLength ${routerLength <= 1 ? loc(context).node : loc(context).nodes}',
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override

@@ -7,6 +7,7 @@ import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/models/dashboard_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
+import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
 
 import 'layout_item_factory.dart';
 
@@ -66,16 +67,26 @@ class SliverDashboardControllerNotifier
   ///
   /// This is used to sync the controller's internal constraints with the
   /// visual display mode (e.g., when switching to Expanded).
-  Future<void> updateItemConstraints(String id, DisplayMode mode) async {
-    // Lookup spec from all specs (since no static helper exists)
-    WidgetSpec? spec;
-    try {
-      spec = DashboardWidgetSpecs.all.firstWhere((s) => s.id == id);
-    } catch (_) {
-      return;
+  Future<void> updateItemConstraints(
+    String id,
+    DisplayMode mode, {
+    WidgetGridConstraints? overrideConstraints,
+  }) async {
+    WidgetGridConstraints? constraints;
+
+    if (overrideConstraints != null) {
+      constraints = overrideConstraints;
+    } else {
+      // Lookup spec from all specs (since no static helper exists)
+      WidgetSpec? spec;
+      try {
+        spec = DashboardWidgetSpecs.all.firstWhere((s) => s.id == id);
+        constraints = spec.constraints[mode];
+      } catch (_) {
+        return;
+      }
     }
 
-    final constraints = spec.constraints[mode];
     if (constraints == null) return;
 
     // Export current layout, modify the specific item, and re-import
@@ -86,7 +97,7 @@ class SliverDashboardControllerNotifier
       if (item is Map && item['id'] == id) {
         final mutableItem = Map<String, dynamic>.from(item);
         // Update constraints using camelCase keys (standard package convention)
-        mutableItem['minW'] = constraints.minColumns;
+        mutableItem['minW'] = constraints!.minColumns;
         mutableItem['maxW'] = constraints.maxColumns.toDouble();
 
         // Also ensure current width respects new min/max

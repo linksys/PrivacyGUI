@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/core/display_mode_widget.dart';
 import 'package:privacy_gui/page/instant_topology/providers/_providers.dart';
+import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -35,27 +36,37 @@ class CustomMasterNodeInfo extends DisplayModeConsumerWidget {
     final master = ref.watch(instantTopologyProvider).root.children.first;
     final masterIcon = ref.watch(dashboardHomeProvider).masterIcon;
 
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            height: 60,
-            child: SharedWidgets.resolveRouterImage(
-              context,
-              masterIcon,
-              size: 60,
-            ),
+    return AppInkWell(
+      customColor: Colors.transparent,
+      customBorderWidth: 0,
+      onTap: () => _navigateToNodeDetail(context, ref, master.data.deviceId),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 48,
+                child: SharedWidgets.resolveRouterImage(
+                  context,
+                  masterIcon,
+                  size: 48,
+                ),
+              ),
+              AppGap.md(),
+              Flexible(
+                child: AppText.labelMedium(
+                  master.data.location,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-          AppGap.sm(),
-          AppText.labelMedium(
-            master.data.location,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -159,15 +170,27 @@ class CustomMasterNodeInfo extends DisplayModeConsumerWidget {
     );
 
     if (isExpanded) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: content),
-        ],
+      return AppInkWell(
+        customColor: Colors.transparent,
+        customBorderWidth: 0,
+        onTap: () => _navigateToNodeDetail(context, ref, master.data.deviceId),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: content),
+          ],
+        ),
       );
     }
 
-    return content;
+    return AppInkWell(
+      customColor: Colors.transparent,
+      customBorderWidth: 0,
+      onTap: () => _navigateToNodeDetail(context, ref, master.data.deviceId),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: content,
+    );
   }
 
   TableRow _buildRow(BuildContext context, String label, String value) {
@@ -210,6 +233,12 @@ class CustomMasterNodeInfo extends DisplayModeConsumerWidget {
         ),
       ],
     );
+  }
+
+  void _navigateToNodeDetail(
+      BuildContext context, WidgetRef ref, String deviceId) {
+    ref.read(nodeDetailIdProvider.notifier).state = deviceId;
+    context.pushNamed(RouteNamed.nodeDetails);
   }
 }
 

@@ -135,27 +135,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                 context.pushNamed(RouteNamed.addNodes);
               },
             ),
-            AppListTile(
-              title: AppText.bodyMedium('Dashboard Layout'),
-              leading: const AppIcon.font(AppFontIcons.widgets),
-              onTap: () {
-                Navigator.of(context).maybePop();
-                _showLayoutSettingsDialog();
-              },
-            ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _showLayoutSettingsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: const DashboardLayoutSettingsPanel(),
         ),
       ),
     );

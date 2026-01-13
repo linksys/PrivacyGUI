@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/core/display_mode_widget.dart';
 import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/port_status_widget.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Atomic widget displaying port status (LAN + WAN).
@@ -40,7 +41,7 @@ class CustomPorts extends DisplayModeConsumerWidget {
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+        vertical: AppSpacing.xs,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -136,7 +137,7 @@ class CustomPorts extends DisplayModeConsumerWidget {
     );
   }
 
-  Widget _buildNoLanPortLayout(BuildContext context, dynamic state) {
+  Widget _buildNoLanPortLayout(BuildContext context, DashboardHomeState state) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -152,7 +153,8 @@ class CustomPorts extends DisplayModeConsumerWidget {
     );
   }
 
-  Widget _buildHorizontalLayout(BuildContext context, dynamic state) {
+  Widget _buildHorizontalLayout(
+      BuildContext context, DashboardHomeState state) {
     final lanPorts = state.lanPortConnections.mapIndexed((index, e) {
       return Expanded(
         child: PortStatusWidget(
@@ -192,7 +194,7 @@ class CustomPorts extends DisplayModeConsumerWidget {
     );
   }
 
-  Widget _buildVerticalLayout(BuildContext context, dynamic state) {
+  Widget _buildVerticalLayout(BuildContext context, DashboardHomeState state) {
     final lanPorts = state.lanPortConnections.mapIndexed((index, e) {
       return Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.lg),

@@ -85,7 +85,8 @@ abstract class DashboardWidgetSpecs {
         minColumns: 6,
         maxColumns: 8,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(2.0),
+        heightStrategy: HeightStrategy.strict(1.0),
+        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 8,
@@ -115,8 +116,8 @@ abstract class DashboardWidgetSpecs {
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(2.0),
-        minHeightRows: 2,
+        heightStrategy: HeightStrategy.strict(1.0),
+        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
@@ -192,6 +193,7 @@ abstract class DashboardWidgetSpecs {
         maxColumns: 6,
         preferredColumns: 4,
         heightStrategy: HeightStrategy.strict(1.0),
+        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
@@ -218,7 +220,8 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(2.0),
+        heightStrategy: HeightStrategy.strict(1.0),
+        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
@@ -240,27 +243,106 @@ abstract class DashboardWidgetSpecs {
     id: 'ports',
     displayName: 'Ports',
     description: 'Status of LAN and WAN ethernet ports.',
-    constraints: {
-      DisplayMode.compact: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(2.0),
-      ),
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 8,
-        preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(3.0),
-      ),
-      DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 6,
-        maxColumns: 12,
-        preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(4.0),
-      ),
-    },
+    constraints: _portsVerticalConstraints,
   );
+
+  // ---------------------------------------------------------------------------
+  // Ports Constraints Variations
+  // ---------------------------------------------------------------------------
+
+  /// Constraints for "No LAN" (WAN only) - Minimal height
+  static const _portsNoLanConstraints = {
+    DisplayMode.compact: WidgetGridConstraints(
+      minColumns: 3,
+      maxColumns: 4,
+      preferredColumns: 4,
+      heightStrategy: HeightStrategy.strict(1.0),
+      minHeightRows: 1,
+    ),
+    DisplayMode.normal: WidgetGridConstraints(
+      minColumns: 4,
+      maxColumns: 6,
+      preferredColumns: 4,
+      heightStrategy: HeightStrategy.strict(2.0),
+    ),
+    DisplayMode.expanded: WidgetGridConstraints(
+      minColumns: 4,
+      maxColumns: 8,
+      preferredColumns: 6,
+      heightStrategy: HeightStrategy.strict(2.0),
+    ),
+  };
+
+  /// Constraints for Horizontal Layout (Row) - Wider, less height
+  static const _portsHorizontalConstraints = {
+    DisplayMode.compact: WidgetGridConstraints(
+      minColumns: 6,
+      maxColumns: 12,
+      preferredColumns: 8,
+      heightStrategy: HeightStrategy.strict(1.0),
+      minHeightRows: 1,
+    ),
+    DisplayMode.normal: WidgetGridConstraints(
+      minColumns: 8,
+      maxColumns: 12,
+      preferredColumns: 12,
+      heightStrategy: HeightStrategy.strict(2.0),
+    ),
+    DisplayMode.expanded: WidgetGridConstraints(
+      minColumns: 8,
+      maxColumns: 12,
+      preferredColumns: 12,
+      heightStrategy: HeightStrategy.strict(2.0),
+    ),
+  };
+
+  /// Constraints for Vertical Layout (Column) - Narrower, more height
+  static const _portsVerticalConstraints = {
+    DisplayMode.compact: WidgetGridConstraints(
+      minColumns: 3,
+      maxColumns: 6,
+      preferredColumns: 4,
+      heightStrategy: HeightStrategy.strict(1.0), // Changed from 2.0 to 1.0
+      minHeightRows: 1,
+    ),
+    DisplayMode.normal: WidgetGridConstraints(
+      minColumns: 4,
+      maxColumns: 8,
+      preferredColumns: 6,
+      heightStrategy: HeightStrategy.strict(3.0),
+    ),
+    DisplayMode.expanded: WidgetGridConstraints(
+      minColumns: 6,
+      maxColumns: 12,
+      preferredColumns: 8,
+      heightStrategy: HeightStrategy.strict(4.0),
+    ),
+  };
+
+  /// Get ports spec with dynamic constraints based on state
+  static WidgetSpec getPortsSpec({
+    required bool hasLanPort,
+    required bool isHorizontal,
+  }) {
+    Map<DisplayMode, WidgetGridConstraints> selectedConstraints;
+
+    if (!hasLanPort) {
+      selectedConstraints = _portsNoLanConstraints;
+    } else if (isHorizontal) {
+      selectedConstraints = _portsHorizontalConstraints;
+    } else {
+      selectedConstraints = _portsVerticalConstraints;
+    }
+
+    return WidgetSpec(
+      id: ports.id,
+      displayName: ports.displayName,
+      description: ports.description,
+      canHide: ports.canHide,
+      requirements: ports.requirements,
+      constraints: selectedConstraints,
+    );
+  }
 
   /// Speed test results
   static const speedTest = WidgetSpec(
@@ -272,7 +354,8 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(2.0),
+        heightStrategy: HeightStrategy.strict(1.0), // Changed from 2.0
+        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
@@ -300,6 +383,7 @@ abstract class DashboardWidgetSpecs {
         maxColumns: 6,
         preferredColumns: 4,
         heightStrategy: HeightStrategy.strict(1.0),
+        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
@@ -326,7 +410,8 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(3.0),
+        heightStrategy: HeightStrategy.strict(1.0), // Changed from 3.0
+        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
@@ -389,7 +474,8 @@ abstract class DashboardWidgetSpecs {
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(2.0),
+        heightStrategy: HeightStrategy.strict(1.0), // Changed from 2.0
+        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,

@@ -38,6 +38,7 @@ class DashboardWidgetFactory {
           ),
         ),
       'networks' => DashboardNetworks(displayMode: displayMode),
+      'vpn' => CustomVPN(displayMode: displayMode),
       _ => null,
     };
   }
