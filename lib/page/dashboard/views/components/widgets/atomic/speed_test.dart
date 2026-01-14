@@ -26,8 +26,8 @@ class CustomSpeedTest extends DisplayModeConsumerWidget {
   @override
   double getLoadingHeight(DisplayMode mode) => switch (mode) {
         DisplayMode.compact => 80,
-        DisplayMode.normal => 150,
-        DisplayMode.expanded => 200,
+        DisplayMode.normal => 200,
+        DisplayMode.expanded => 300,
       };
 
   @override
@@ -196,13 +196,17 @@ class CustomSpeedTest extends DisplayModeConsumerWidget {
       // Internal Speed Test
       if (hasLanPort) {
         return Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: EdgeInsets.all(isExpanded ? AppSpacing.lg : AppSpacing.sm),
           child: SpeedTestWidget(
-            showDetails: isExpanded, // Show details in expanded mode
-            showInfoPanel: true,
+            showDetails: isExpanded,
+            showInfoPanel:
+                isExpanded, // Hide info panel in Normal mode for cleaner look
             showStepDescriptions: false,
+            // Show latest results in both Normal and Expanded modes
             showLatestOnIdle: true,
             layout: SpeedTestLayout.vertical,
+            // Dynamic meter size: 240 for Normal (Vertical layout in 250px height), 220 for Expanded
+            meterSize: isExpanded ? 220 : 240,
           ),
         );
       } else {

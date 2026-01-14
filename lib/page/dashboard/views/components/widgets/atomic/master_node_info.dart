@@ -155,6 +155,18 @@ class CustomMasterNodeInfo extends DisplayModeConsumerWidget {
                       loc(context).serialNo,
                       master.data.serialNumber,
                     ),
+                    if (master.data.ipAddress.isNotEmpty)
+                      _buildRow(
+                        context,
+                        'IP Address', // TODO: Use loc(context).ipAddress if available
+                        master.data.ipAddress,
+                      ),
+                    if (master.data.macAddress.isNotEmpty)
+                      _buildRow(
+                        context,
+                        'MAC Address', // TODO: Use loc(context).macAddress if available
+                        master.data.macAddress,
+                      ),
                     _buildFirmwareRow(
                       context,
                       master.data.fwVersion,

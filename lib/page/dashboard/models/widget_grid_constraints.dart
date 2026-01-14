@@ -18,6 +18,9 @@ class WidgetGridConstraints {
   /// Minimum row height constraints (Optional, default 1)
   final int minHeightRows;
 
+  /// Maximum row height constraints (Optional, default 12)
+  final int maxHeightRows;
+
   /// Height Calculation Strategy
   final HeightStrategy heightStrategy;
 
@@ -27,10 +30,12 @@ class WidgetGridConstraints {
     required this.preferredColumns,
     required this.heightStrategy,
     this.minHeightRows = 1,
+    this.maxHeightRows = 12,
   })  : assert(minColumns >= 1 && minColumns <= 12),
         assert(maxColumns >= minColumns && maxColumns <= 12),
         assert(
-            preferredColumns >= minColumns && preferredColumns <= maxColumns);
+            preferredColumns >= minColumns && preferredColumns <= maxColumns),
+        assert(maxHeightRows >= minHeightRows);
 
   /// Scale proportionally to target max columns
   ///
@@ -73,7 +78,7 @@ class WidgetGridConstraints {
   ///
   /// Used for sliver_dashboard LayoutItem constraints
   (double min, double max) getHeightRange() {
-    return (minHeightRows.toDouble(), 12.0);
+    return (minHeightRows.toDouble(), maxHeightRows.toDouble());
   }
 
   @override

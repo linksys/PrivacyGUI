@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
 
 import 'layout_item_factory.dart';
+import 'dashboard_home_provider.dart';
 
 const _sliverDashboardLayoutKey = 'sliver_dashboard_layout';
 
@@ -18,35 +19,90 @@ const _sliverDashboardLayoutKey = 'sliver_dashboard_layout';
 /// Manages the drag-drop grid layout for the custom dashboard.
 final sliverDashboardControllerProvider = StateNotifierProvider<
     SliverDashboardControllerNotifier, DashboardController>(
-  (ref) => SliverDashboardControllerNotifier(),
+  (ref) => SliverDashboardControllerNotifier(ref),
 );
 
 /// Notifier for managing the Sliver Dashboard Controller.
 class SliverDashboardControllerNotifier
     extends StateNotifier<DashboardController> {
-  SliverDashboardControllerNotifier() : super(_createDefaultController()) {
-    _loadLayout();
+  final Ref _ref;
+
+  SliverDashboardControllerNotifier(this._ref)
+      : super(_createDefaultController()) {
+    _initializeLayout();
   }
 
-  static DashboardController _createDefaultController() {
-    return DashboardController(
-      initialSlotCount: 12,
-      initialLayout: LayoutItemFactory.createDefaultLayout(),
+  /// Creates a spec resolver based on hardware state.
+  ///
+  /// This follows IoC by creating the resolver at the composition root
+  /// and injecting it into the factory.
+  WidgetSpecResolver _createSpecResolver({
+    required bool hasLanPort,
+    required bool isHorizontalLayout,
+  }) {
+    return (WidgetSpec defaultSpec) {
+      // Only Ports widget needs dynamic resolution currently
+      if (defaultSpec.id == DashboardWidgetSpecs.ports.id) {
+        return DashboardWidgetSpecs.getPortsSpec(
+          hasLanPort: hasLanPort,
+          isHorizontal: hasLanPort && isHorizontalLayout,
+        );
+      }
+      return defaultSpec;
+    };
+  }
+
+  /// Gets the current spec resolver based on hardware state.
+  WidgetSpecResolver _getCurrentSpecResolver() {
+    final dashboardState = _ref.read(dashboardHomeProvider);
+    final hasLanPort = dashboardState.lanPortConnections.isNotEmpty;
+    final isHorizontalLayout = dashboardState.isHorizontalLayout;
+
+    return _createSpecResolver(
+      hasLanPort: hasLanPort,
+      isHorizontalLayout: isHorizontalLayout,
     );
   }
 
-  /// Load layout from SharedPreferences.
-  Future<void> _loadLayout() async {
+  static DashboardController _createDefaultController({
+    WidgetSpecResolver? specResolver,
+  }) {
+    return DashboardController(
+      initialSlotCount: 12,
+      initialLayout: LayoutItemFactory.createDefaultLayout(
+        specResolver: specResolver,
+      ),
+    );
+  }
+
+  /// Initialize layout: load from storage or create with dynamic constraints.
+  Future<void> _initializeLayout() async {
     final prefs = await SharedPreferences.getInstance();
     final layoutJson = prefs.getString(_sliverDashboardLayoutKey);
+
     if (layoutJson != null) {
+      // Load saved layout
       try {
         final layoutData = jsonDecode(layoutJson) as List<dynamic>;
         state.importLayout(layoutData);
       } catch (e) {
         debugPrint('Failed to load sliver dashboard layout: $e');
+        // On failure, recreate with dynamic constraints
+        _recreateWithDynamicConstraints();
       }
+    } else {
+      // No saved layout - create new with dynamic constraints
+      _recreateWithDynamicConstraints();
     }
+  }
+
+  /// Recreate controller with dynamic constraints based on current hardware state.
+  void _recreateWithDynamicConstraints() {
+    state = _createDefaultController(
+      specResolver: _getCurrentSpecResolver(),
+    );
+    // Optimize layout to fill gaps and compact the grid
+    state.optimizeLayout();
   }
 
   /// Save layout to SharedPreferences.
@@ -56,9 +112,23 @@ class SliverDashboardControllerNotifier
     await prefs.setString(_sliverDashboardLayoutKey, jsonEncode(layoutData));
   }
 
-  /// Reset layout to defaults.
+  /// Reset layout to defaults using current hardware configuration.
   Future<void> resetLayout() async {
-    state = _createDefaultController();
+    // Get current hardware state
+    final dashboardState = _ref.read(dashboardHomeProvider);
+    final hasLanPort = dashboardState.lanPortConnections.isNotEmpty;
+    final isHorizontalLayout = dashboardState.isHorizontalLayout;
+
+    // Create resolver with current hardware config (IoC)
+    final resolver = _createSpecResolver(
+      hasLanPort: hasLanPort,
+      isHorizontalLayout: isHorizontalLayout,
+    );
+
+    state = _createDefaultController(specResolver: resolver);
+    // Optimize layout to fill gaps and compact the grid
+    state.optimizeLayout();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_sliverDashboardLayoutKey);
   }

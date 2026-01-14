@@ -87,4 +87,13 @@ class DashboardPreferencesNotifier
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefsKey);
   }
+
+  /// Reset only widget display modes to defaults, preserving custom layout toggle
+  Future<void> resetWidgetModes() async {
+    state = DashboardLayoutPreferences(
+      useCustomLayout: state.useCustomLayout,
+      // displayModes will be empty (defaults)
+    );
+    await _saveToPrefs();
+  }
 }

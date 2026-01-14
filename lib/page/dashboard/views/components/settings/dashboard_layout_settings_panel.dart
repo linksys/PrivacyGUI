@@ -43,6 +43,17 @@ class DashboardLayoutSettingsPanel extends ConsumerWidget {
                 ref
                     .read(dashboardPreferencesProvider.notifier)
                     .toggleCustomLayout(value);
+
+                // When toggling OFF, exit edit mode and close panel
+                if (!value) {
+                  final controller =
+                      ref.read(sliverDashboardControllerProvider);
+                  controller.setEditMode(false);
+
+                  if (context.mounted) {
+                    Navigator.pop(context, 'toggle_off');
+                  }
+                }
               },
             ),
           ),
@@ -73,35 +84,36 @@ class DashboardLayoutSettingsPanel extends ConsumerWidget {
 
           if (preferences.useCustomLayout) _buildHiddenWidgets(context, ref),
 
-          // Reset Button
-
-          // Reset Button
+          // Reset Button - Only enabled when custom layout is active
           Align(
             alignment: Alignment.centerRight,
             child: AppButton.text(
               label: 'Reset Layout',
-              onTap: () async {
-                // If custom layout is active, reset the sliver controller
-                if (preferences.useCustomLayout) {
-                  await ref
-                      .read(sliverDashboardControllerProvider.notifier)
-                      .resetLayout();
-                }
+              onTap: preferences.useCustomLayout
+                  ? () async {
+                      // 1. Reset the custom layout positions
+                      await ref
+                          .read(sliverDashboardControllerProvider.notifier)
+                          .resetLayout();
 
-                // Reset general preferences
-                ref
-                    .read(dashboardPreferencesProvider.notifier)
-                    .resetToDefaults();
+                      // 2. Reset widget display modes to defaults
+                      await ref
+                          .read(dashboardPreferencesProvider.notifier)
+                          .resetWidgetModes();
 
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Layout reset to defaults'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
+                      // 3. Close dialog and signal View to exit edit mode
+                      if (context.mounted) {
+                        Navigator.pop(context, 'reset');
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Layout reset to defaults'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    }
+                  : null,
             ),
           ),
         ],

@@ -8,10 +8,10 @@ import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/factories/dashboard_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/models/dashboard_layout_preferences.dart';
-import 'package:privacy_gui/page/dashboard/models/height_strategy.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../providers/dashboard_home_provider.dart';
 import '../providers/sliver_dashboard_controller_provider.dart';
 
 /// Drag-and-drop dashboard view using sliver_dashboard.
@@ -134,10 +134,22 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
     final mode = preferences.getMode(item.id);
 
     WidgetSpec? spec;
-    try {
-      spec = DashboardWidgetSpecs.all.firstWhere((s) => s.id == item.id);
-    } catch (_) {
-      return;
+
+    // Special handling for 'ports' widget - use dynamic constraints
+    if (item.id == DashboardWidgetSpecs.ports.id) {
+      final dashboardState = ref.read(dashboardHomeProvider);
+      final hasLanPort = dashboardState.lanPortConnections.isNotEmpty;
+      final isHorizontal = hasLanPort && dashboardState.isHorizontalLayout;
+      spec = DashboardWidgetSpecs.getPortsSpec(
+        hasLanPort: hasLanPort,
+        isHorizontal: isHorizontal,
+      );
+    } else {
+      try {
+        spec = DashboardWidgetSpecs.all.firstWhere((s) => s.id == item.id);
+      } catch (_) {
+        return;
+      }
     }
 
     final constraints = spec.constraints[mode];
@@ -147,25 +159,25 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
     int newW = item.w;
     int newH = item.h;
 
+    // Enforce Width Constraints
     if (item.w < constraints.minColumns) {
       newW = constraints.minColumns;
       violated = true;
     }
+    if (item.w > constraints.maxColumns) {
+      newW = constraints.maxColumns;
+      violated = true;
+    }
 
-    // Enforce Height Constraints
-    // For strict/column-based strategies, height is fixed
-    if (constraints.heightStrategy is ColumnBasedHeightStrategy) {
-      final strictHeight = constraints.getPreferredHeightCells(columns: newW);
-      if (item.h != strictHeight) {
-        newH = strictHeight;
-        violated = true;
-      }
-    } else {
-      // For other strategies, enforce minHeightRows
-      if (item.h < constraints.minHeightRows) {
-        newH = constraints.minHeightRows;
-        violated = true;
-      }
+    // Enforce Height Constraints using minHeightRows/maxHeightRows range
+    // This allows resizing within the defined range instead of locking to strict height
+    if (item.h < constraints.minHeightRows) {
+      newH = constraints.minHeightRows;
+      violated = true;
+    }
+    if (item.h > constraints.maxHeightRows) {
+      newH = constraints.maxHeightRows;
+      violated = true;
     }
 
     if (violated) {
@@ -197,6 +209,27 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
               color: Theme.of(context).colorScheme.primary,
             ),
             const Spacer(),
+            // Optimize Button - Compact the grid by filling gaps
+            AppIconButton(
+              icon: const Icon(Icons.auto_fix_high),
+              onTap: () {
+                final controller = ref.read(sliverDashboardControllerProvider);
+                controller.optimizeLayout();
+                ref
+                    .read(sliverDashboardControllerProvider.notifier)
+                    .saveLayout();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Layout optimized'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                }
+              },
+            ),
+            AppGap.sm(),
+            // Settings Button
             AppIconButton(
               icon: const Icon(Icons.tune),
               onTap: () => _openLayoutSettings(context),
@@ -219,8 +252,8 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
     );
   }
 
-  void _openLayoutSettings(BuildContext context) {
-    showDialog(
+  Future<void> _openLayoutSettings(BuildContext context) async {
+    final result = await showDialog<String>(
       context: context,
       builder: (context) => AppDialog(
         title: AppText.titleMedium('Dashboard Settings'),
@@ -233,6 +266,15 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
         ],
       ),
     );
+
+    // If reset or toggle_off was triggered, exit edit mode to sync state
+    if ((result == 'reset' || result == 'toggle_off') && mounted) {
+      setState(() {
+        _isEditMode = false;
+        _initialLayoutSnapshot = null;
+        _initialPrefsSnapshot = null;
+      });
+    }
   }
 
   Widget _buildItemWidget(BuildContext context, LayoutItem item,

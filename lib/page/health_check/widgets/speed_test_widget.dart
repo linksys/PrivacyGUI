@@ -60,12 +60,14 @@ class SpeedTestWidget extends ConsumerWidget {
     // Determine the main content based on the current health check status.
     final mainContent = switch (healthCheckState.status) {
       HealthCheckStatus.idle => (showLatestOnIdle && latestPolledResult != null)
-          ? Column(
-              children: [
-                _startButton(context, ref),
-                infoView(context, healthCheckState, latestPolledResult),
-              ],
-            )
+          ? (showInfoPanel
+              ? Column(
+                  children: [
+                    _startButton(context, ref),
+                    infoView(context, healthCheckState, latestPolledResult),
+                  ],
+                )
+              : _startButton(context, ref, lastResult: latestPolledResult))
           : _startButton(context, ref),
       HealthCheckStatus.running =>
         _runningContent(context, healthCheckState, ref),
@@ -191,44 +193,109 @@ class SpeedTestWidget extends ConsumerWidget {
       child: AppGauge(
         size: meterSize ?? context.colWidth(3),
         value: meterValueMbps, // Value must be in Mbps for the meter scale
-        markers: const <double>[
-          0,
-          1,
-          5,
-          10,
-          20,
-          30,
-          50,
-          75,
-          100
-        ], // Markers are in Mbps
+        // Reduce clutter: show minimal or no labels if meter is small
+        markers: (meterSize ?? 220) < 130
+            ? const <double>[0, 100]
+            : const <double>[
+                0,
+                1,
+                5,
+                10,
+                20,
+                30,
+                50,
+                75,
+                100
+              ], // Markers are in Mbps
         centerBuilder: (context, value) {
           // The content inside the meter (e.g., live speed).
+          final isSmall = (meterSize ?? 220) < 130;
+          final titleText = switch (state.step) {
+            HealthCheckStep.downloadBandwidth => loc(context).download,
+            HealthCheckStep.uploadBandwidth => loc(context).upload,
+            _ => '',
+          };
+
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AppText.titleSmall(switch (state.step) {
-                HealthCheckStep.downloadBandwidth => loc(context).download,
-                HealthCheckStep.uploadBandwidth => loc(context).upload,
-                _ => '',
-              }),
-              AppText.displayLarge(
-                  state.step == HealthCheckStep.latency ? '—' : bandwidthValue),
+              isSmall
+                  ? Text(
+                      titleText,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontSize: 10),
+                    )
+                  : AppText.titleSmall(titleText),
+              isSmall
+                  ? Text(
+                      state.step == HealthCheckStep.latency
+                          ? '—'
+                          : bandwidthValue,
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineMedium
+                          ?.copyWith(fontSize: 24, height: 1.0),
+                    )
+                  : AppText.headlineMedium(
+                      state.step == HealthCheckStep.latency
+                          ? '—'
+                          : bandwidthValue,
+                    ),
               if (state.step != HealthCheckStep.latency)
-                AppText.bodyMedium('${bandwidthUnit}ps'),
+                isSmall
+                    ? Text(
+                        '${bandwidthUnit}ps',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(fontSize: 10),
+                      )
+                    : AppText.bodyMedium('${bandwidthUnit}ps'),
             ],
           );
         },
         bottomBuilder: (context, value) {
           // The content below the meter (e.g., ping or "Test Again" button).
-          return state.status == HealthCheckStatus.complete
-              ? AppButton.text(
-                  label: loc(context).testAgain,
-                  onTap: () => ref
-                      .read(healthCheckProvider.notifier)
-                      .runHealthCheck(Module.speedtest),
-                )
-              : pingView(context, state.step, result.latency);
+          if (state.status == HealthCheckStatus.complete) {
+            // Show single-line result with tap-to-retry
+            return InkWell(
+              onTap: () => ref
+                  .read(healthCheckProvider.notifier)
+                  .runHealthCheck(Module.speedtest),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.arrow_downward,
+                        size: 14, color: Theme.of(context).colorScheme.primary),
+                    AppGap.xs(),
+                    AppText.titleSmall(result.downloadSpeed),
+                    AppGap.md(),
+                    Icon(Icons.arrow_upward,
+                        size: 14, color: Theme.of(context).colorScheme.primary),
+                    AppGap.xs(),
+                    AppText.titleSmall(result.uploadSpeed),
+                    AppGap.md(),
+                    Container(
+                      width: 1,
+                      height: 12,
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                    AppGap.md(),
+                    Icon(Icons.replay,
+                        size: 20, color: Theme.of(context).colorScheme.primary),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            return pingView(context, state.step, result.latency);
+          }
         },
       ),
     );
@@ -265,8 +332,11 @@ class SpeedTestWidget extends ConsumerWidget {
                   fontColor: Theme.of(context).colorScheme.primary)
             else ...[
               // Show the final latency value.
-              AppText.bodyMedium('$latency ms',
-                  color: Theme.of(context).colorScheme.primary),
+              Text(
+                '$latency ms',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 12, color: Theme.of(context).colorScheme.primary),
+              ),
             ],
           ],
         ),
@@ -406,7 +476,8 @@ class SpeedTestWidget extends ConsumerWidget {
   }
 
   /// Builds the initial "Go" button to start the test.
-  Widget _startButton(BuildContext context, WidgetRef ref) {
+  Widget _startButton(BuildContext context, WidgetRef ref,
+      {SpeedTestUIModel? lastResult}) {
     return Container(
       alignment: Alignment.center,
       child: AppGauge(
@@ -445,6 +516,36 @@ class SpeedTestWidget extends ConsumerWidget {
             ),
           );
         },
+        bottomBuilder: (lastResult != null && !showInfoPanel)
+            ? (context, value) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.arrow_downward,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary),
+                      AppGap.xs(),
+                      AppText.titleSmall(lastResult.downloadSpeed),
+                      AppGap.md(),
+                      Container(
+                        width: 1,
+                        height: 12,
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      AppGap.md(),
+                      Icon(Icons.arrow_upward,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary),
+                      AppGap.xs(),
+                      AppText.titleSmall(lastResult.uploadSpeed),
+                    ],
+                  ),
+                );
+              }
+            : null,
         value: 0,
       ),
     );

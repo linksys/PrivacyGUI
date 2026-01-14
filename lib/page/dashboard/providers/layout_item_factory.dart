@@ -4,16 +4,29 @@ import '../models/display_mode.dart';
 import '../models/dashboard_widget_specs.dart';
 import '../models/widget_spec.dart';
 
+/// Function type for resolving WidgetSpecs dynamically.
+///
+/// Used by [LayoutItemFactory.createDefaultLayout] to allow callers to
+/// provide pre-resolved specs (e.g., dynamic Ports constraints based on
+/// hardware state).
+typedef WidgetSpecResolver = WidgetSpec Function(WidgetSpec defaultSpec);
+
 /// Factory for creating LayoutItems from DashboardWidgetSpecs.
 ///
 /// Converts UI Kit spec constraints (minColumns, maxColumns, heightStrategy)
 /// to sliver_dashboard's LayoutItem format (minW, maxW, minH, maxH).
+///
+/// This factory follows IoC (Inversion of Control):
+/// - It does NOT resolve dynamic constraints internally
+/// - Callers are responsible for providing already-resolved WidgetSpecs
+/// - Use [specResolver] in [createDefaultLayout] for dynamic specs
 class LayoutItemFactory {
   LayoutItemFactory._();
 
   /// Create a LayoutItem from a WidgetSpec with position and display mode.
   ///
-  /// [spec] - The widget specification containing constraints
+  /// [spec] - The widget specification containing constraints (should be
+  ///          pre-resolved if dynamic constraints are needed)
   /// [x] - Grid X position (column)
   /// [y] - Grid Y position (row)
   /// [w] - Initial width in grid slots (defaults to preferredColumns)
@@ -52,98 +65,137 @@ class LayoutItemFactory {
       h: preferredHeight,
       minW: constraints.minColumns,
       maxW: constraints.maxColumns.toDouble(),
-      minH: spec.constraints[DisplayMode.normal]?.minHeightRows ??
-          1, // Use configured min height, fallback to 1
-      maxH: 12.0, // Max reasonable height
+      minH: constraints.minHeightRows,
+      maxH: constraints.maxHeightRows.toDouble(),
     );
   }
 
   /// Create default layout from customWidgets specs.
   ///
   /// Uses a smart placement algorithm to position widgets.
+  ///
+  /// [specResolver] - Optional function to resolve dynamic specs.
+  ///                  If provided, each spec will be passed through this
+  ///                  resolver before creating the LayoutItem. This allows
+  ///                  callers to inject dynamic constraints (e.g., Ports
+  ///                  constraints based on hardware state) following IoC.
+  ///                  If null, uses the default static specs.
   static List<LayoutItem> createDefaultLayout({
     DisplayMode displayMode = DisplayMode.normal,
+    WidgetSpecResolver? specResolver,
   }) {
     final items = <LayoutItem>[];
-    int currentY = 0;
 
-    // Group 1: Row 0 - Internet Status + Master Node Info
+    // Helper to resolve spec (uses resolver if provided, otherwise identity)
+    WidgetSpec resolve(WidgetSpec spec) => specResolver?.call(spec) ?? spec;
+
+    // Get resolved Ports spec for layout calculations
+    final portsSpec = resolve(DashboardWidgetSpecs.ports);
+    final portsConstraints = portsSpec.constraints[displayMode];
+    final portsPreferredW = portsConstraints?.preferredColumns ?? 4;
+    final portsPreferredH =
+        portsConstraints?.getPreferredHeightCells(columns: portsPreferredW) ??
+            6;
+
+    // Layout based on the target screenshot:
+    // ┌─────────────┬─────────────┬─────────────┐
+    // │ Internet    │   Master    │ Quick Panel │ y=0
+    // │  (4x2)      │   (4x6)     │   (4x3)     │
+    // ├─────────────┤             ├─────────────┤ y=2
+    // │             │             │ NetworkStats│
+    // │   Ports     │             │   (4x2)     │ y=3
+    // │   (4x6+)    ├─────────────┼─────────────┤ y=4/5
+    // │             │  SpeedTest  │  Topology   │
+    // │             │   (4x4)     │   (4x2)     │
+    // ├─────────────┴─────────────┴─────────────┤ y=10
+    // │           WiFi Grid (8x2)               │
+    // └─────────────────────────────────────────┘
+
+    // Row 0: Internet (top-left)
     items.add(fromSpec(
-      DashboardWidgetSpecs.internetStatusOnly,
+      resolve(DashboardWidgetSpecs.internetStatusOnly),
       x: 0,
-      y: currentY,
-      w: 4,
-      h: 2,
-      displayMode: displayMode,
-    ));
-    items.add(fromSpec(
-      DashboardWidgetSpecs.masterNodeInfo,
-      x: 4,
-      y: currentY,
+      y: 0,
       w: 4,
       h: 2,
       displayMode: displayMode,
     ));
 
-    // Group 1: Quick Panel spans 2 rows
+    // Row 0: Master Router (top-middle, spans 4 rows)
     items.add(fromSpec(
-      DashboardWidgetSpecs.quickPanel,
-      x: 8,
-      y: currentY,
+      resolve(DashboardWidgetSpecs.masterNodeInfo),
+      x: 4,
+      y: 0,
       w: 4,
       h: 4,
       displayMode: displayMode,
     ));
 
-    currentY += 2; // Move to row 2
-
-    // Group 2: Row 2 - Ports + Speed Test
+    // Row 0: Quick Panel (top-right)
     items.add(fromSpec(
-      DashboardWidgetSpecs.ports,
-      x: 0,
-      y: currentY,
+      resolve(DashboardWidgetSpecs.quickPanel),
+      x: 8,
+      y: 0,
       w: 4,
-      h: 2,
-      displayMode: displayMode,
-    ));
-    items.add(fromSpec(
-      DashboardWidgetSpecs.speedTest,
-      x: 4,
-      y: currentY,
-      w: 4,
-      h: 2,
-      displayMode: displayMode,
-    ));
-
-    currentY += 2; // Move to row 4
-
-    // Group 3: Row 4 - Network Stats + Topology
-    items.add(fromSpec(
-      DashboardWidgetSpecs.networkStats,
-      x: 0,
-      y: currentY,
-      w: 4,
-      h: 2,
-      displayMode: displayMode,
-    ));
-    items.add(fromSpec(
-      DashboardWidgetSpecs.topology,
-      x: 4,
-      y: currentY,
-      w: 8,
       h: 3,
       displayMode: displayMode,
     ));
 
-    currentY += 3; // Move to row 7
-
-    // Group 4: Row 7 - WiFi Grid
+    // Row 2: Ports (left side, below Internet)
     items.add(fromSpec(
-      DashboardWidgetSpecs.wifiGrid,
+      portsSpec,
       x: 0,
-      y: currentY,
+      y: 2,
+      w: portsPreferredW,
+      h: portsPreferredH,
+      displayMode: displayMode,
+    ));
+
+    // Row 3: Network Stats (right side, below Quick Panel)
+    items.add(fromSpec(
+      resolve(DashboardWidgetSpecs.networkStats),
+      x: 8,
+      y: 3,
+      w: 4,
+      h: 2,
+      displayMode: displayMode,
+    ));
+
+    // Row 5: Topology (right side, below Network Stats)
+    items.add(fromSpec(
+      resolve(DashboardWidgetSpecs.topology),
+      x: 8,
+      y: 5,
+      w: 4,
+      h: 4,
+      displayMode: displayMode,
+    ));
+
+    // Row 6: SpeedTest (middle, below Master Router)
+    final speedTestSpec = resolve(DashboardWidgetSpecs.speedTest);
+    items.add(fromSpec(
+      speedTestSpec,
+      x: 4,
+      y: 6,
+      w: 4,
+      h: 4,
+      displayMode: displayMode,
+    ));
+
+    // Calculate bottom Y (max of Ports, SpeedTest, Topology)
+    final bottomY = [
+      2 + portsPreferredH, // Ports ends at y=2+h
+      6 + 4, // SpeedTest ends at y=10
+      5 + 2, // Topology ends at y=7
+    ].reduce((a, b) => a > b ? a : b);
+
+    // WiFi Grid (spans across bottom)
+    items.add(fromSpec(
+      resolve(DashboardWidgetSpecs.wifiGrid),
+      x: 0,
+      y: bottomY,
       w: 8,
-      h: 6,
+      h: 2,
       displayMode: displayMode,
     ));
 

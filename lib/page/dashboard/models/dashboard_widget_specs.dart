@@ -123,8 +123,8 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(4.0),
-        minHeightRows: 2,
+        heightStrategy: HeightStrategy.strict(3.0),
+        minHeightRows: 3,
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
@@ -199,7 +199,9 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(2.0),
+        heightStrategy: HeightStrategy.intrinsic(),
+        minHeightRows: 2,
+        maxHeightRows: 6,
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
@@ -210,6 +212,7 @@ abstract class DashboardWidgetSpecs {
     },
   );
 
+  /// Master node info (router image, model, serial, firmware)
   /// Master node info (router image, model, serial, firmware)
   static const masterNodeInfo = WidgetSpec(
     id: 'master_node_info',
@@ -226,8 +229,10 @@ abstract class DashboardWidgetSpecs {
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 8,
-        preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(3.0),
+        preferredColumns: 5,
+        heightStrategy: HeightStrategy.strict(4.0),
+        minHeightRows: 3,
+        maxHeightRows: 5,
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 6,
@@ -258,18 +263,23 @@ abstract class DashboardWidgetSpecs {
       preferredColumns: 4,
       heightStrategy: HeightStrategy.strict(1.0),
       minHeightRows: 1,
+      maxHeightRows: 2,
     ),
     DisplayMode.normal: WidgetGridConstraints(
       minColumns: 4,
       maxColumns: 6,
       preferredColumns: 4,
       heightStrategy: HeightStrategy.strict(2.0),
+      minHeightRows: 4,
+      maxHeightRows: 4,
     ),
     DisplayMode.expanded: WidgetGridConstraints(
       minColumns: 4,
       maxColumns: 8,
       preferredColumns: 6,
       heightStrategy: HeightStrategy.strict(2.0),
+      minHeightRows: 4,
+      maxHeightRows: 4,
     ),
   };
 
@@ -281,18 +291,23 @@ abstract class DashboardWidgetSpecs {
       preferredColumns: 8,
       heightStrategy: HeightStrategy.strict(1.0),
       minHeightRows: 1,
+      maxHeightRows: 2,
     ),
     DisplayMode.normal: WidgetGridConstraints(
       minColumns: 8,
       maxColumns: 12,
       preferredColumns: 12,
       heightStrategy: HeightStrategy.strict(2.0),
+      minHeightRows: 4,
+      maxHeightRows: 6,
     ),
     DisplayMode.expanded: WidgetGridConstraints(
       minColumns: 8,
       maxColumns: 12,
       preferredColumns: 12,
       heightStrategy: HeightStrategy.strict(2.0),
+      minHeightRows: 4,
+      maxHeightRows: 6,
     ),
   };
 
@@ -302,20 +317,25 @@ abstract class DashboardWidgetSpecs {
       minColumns: 3,
       maxColumns: 6,
       preferredColumns: 4,
-      heightStrategy: HeightStrategy.strict(1.0), // Changed from 2.0 to 1.0
+      heightStrategy: HeightStrategy.strict(1.0),
       minHeightRows: 1,
+      maxHeightRows: 2,
     ),
     DisplayMode.normal: WidgetGridConstraints(
       minColumns: 4,
       maxColumns: 8,
-      preferredColumns: 6,
-      heightStrategy: HeightStrategy.strict(3.0),
+      preferredColumns: 4,
+      heightStrategy: HeightStrategy.strict(6.0), // Default 6 rows
+      minHeightRows: 6,
+      maxHeightRows: 12,
     ),
     DisplayMode.expanded: WidgetGridConstraints(
       minColumns: 6,
       maxColumns: 12,
       preferredColumns: 8,
-      heightStrategy: HeightStrategy.strict(4.0),
+      heightStrategy: HeightStrategy.strict(8.0), // Match minHeightRows
+      minHeightRows: 8,
+      maxHeightRows: 12,
     ),
   };
 
@@ -359,15 +379,17 @@ abstract class DashboardWidgetSpecs {
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
-        maxColumns: 8,
-        preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(3.0),
+        maxColumns: 4,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(4.0),
+        minHeightRows: 4, // Explicitly enforce minimum height
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 6,
         maxColumns: 12,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(4.0),
+        heightStrategy: HeightStrategy.strict(
+            6.0), // Increased from 4.0 to maintain hierarchy
       ),
     },
   );
@@ -410,13 +432,13 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0), // Changed from 3.0
+        heightStrategy: HeightStrategy.strict(1.0),
         minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 8,
-        preferredColumns: 6,
+        preferredColumns: 4,
         heightStrategy: HeightStrategy.strict(4.0),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
@@ -468,7 +490,7 @@ abstract class DashboardWidgetSpecs {
     id: 'vpn',
     displayName: 'VPN',
     description: 'VPN connection status.',
-    requirements: const [WidgetRequirement.vpnSupported],
+    requirements: [WidgetRequirement.vpnSupported],
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 3,

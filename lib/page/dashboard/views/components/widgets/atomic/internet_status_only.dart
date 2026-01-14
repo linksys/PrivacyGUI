@@ -26,7 +26,7 @@ class CustomInternetStatus extends DisplayModeConsumerWidget {
   @override
   double getLoadingHeight(DisplayMode mode) => switch (mode) {
         DisplayMode.compact => 80,
-        DisplayMode.normal => 80,
+        DisplayMode.normal => 100,
         DisplayMode.expanded => 100,
       };
 
@@ -84,6 +84,22 @@ class CustomInternetStatus extends DisplayModeConsumerWidget {
                     context,
                     geolocationState.value?.name ?? '',
                     geolocationState.value?.displayLocationText ?? '',
+                  ),
+                ],
+                // Added Uptime for Normal Mode
+                if (ref.watch(dashboardHomeProvider).uptime != null &&
+                    isOnline) ...[
+                  AppGap.xs(),
+                  Row(
+                    children: [
+                      AppIcon.font(Icons.access_time, size: 12),
+                      AppGap.xs(),
+                      AppText.bodySmall(
+                        _formatUptime(
+                            context, ref.watch(dashboardHomeProvider).uptime!),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ],
                   ),
                 ],
               ],
