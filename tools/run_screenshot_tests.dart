@@ -35,7 +35,12 @@ void main(List<String> arguments) async {
         abbr: 'o',
         help: 'Path to an output file to write logs to instead of stdout.')
     ..addOption('filter',
-        abbr: 'f', help: 'Filter test paths by key (e.g., "pnp").');
+        abbr: 'f', help: 'Filter test paths by key (e.g., "pnp").')
+    ..addFlag('collect',
+        abbr: 'p',
+        help:
+            'Collect all golden files to snapshots folder after tests complete.',
+        defaultsTo: false);
 
   ArgResults argResults = parser.parse(arguments);
 
@@ -207,6 +212,11 @@ void main(List<String> arguments) async {
 
     await _runTests(selectedFiles, selectedLanguages, selectedResolutions,
         projectRoot, outputSink);
+
+    // Collect golden files to snapshots folder if requested
+    if (argResults['collect'] as bool) {
+      await _copyGoldensToSnapshots(projectRoot, outputSink);
+    }
   } catch (e) {
     _log('An error occurred: $e', outputSink);
     exit(1);
@@ -547,4 +557,34 @@ Future<void> _runTests(List<File> files, List<String> languages,
   } else {
     _log('\nAll tests passed successfully!', outputSink);
   }
+}
+
+/// Copies all golden files from test directories to the snapshots folder.
+Future<void> _copyGoldensToSnapshots(
+    String projectRoot, IOSink? outputSink) async {
+  _log('\n--- Copying goldens to snapshots folder ---', outputSink, true);
+
+  final snapshotsDir = Directory(p.join(projectRoot, 'snapshots'));
+  if (!await snapshotsDir.exists()) {
+    await snapshotsDir.create();
+  }
+
+  int fileCount = 0;
+  final testDir = Directory(p.join(projectRoot, 'test', 'page'));
+  await for (final entity
+      in testDir.list(recursive: true, followLinks: false)) {
+    if (entity is Directory && p.basename(entity.path) == 'goldens') {
+      _log('Copying from: ${p.relative(entity.path, from: projectRoot)}',
+          outputSink);
+      await for (final file in entity.list()) {
+        if (file is File) {
+          final destPath = p.join(snapshotsDir.path, p.basename(file.path));
+          await file.copy(destPath);
+          fileCount++;
+        }
+      }
+    }
+  }
+
+  _log('Copied $fileCount golden files to snapshots folder.', outputSink, true);
 }
