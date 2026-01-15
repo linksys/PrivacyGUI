@@ -352,8 +352,6 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'SPNM62',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'noSpeedTest':
-        true, // @2025/12/03 SPNM62 does not support speed test for now
     'pattern': '^spnm62',
   },
   {
@@ -378,7 +376,6 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'M62',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'noSpeedTest': true, // @2025/12/03 M62 does not support speed test for now
     'pattern': '^m62',
   },
   {
