@@ -281,7 +281,7 @@ class _CustomWiFiGridState extends ConsumerState<CustomWiFiGrid>
         separatorBuilder: (_, __) => AppGap.lg(),
         itemBuilder: (context, index) => SizedBox(
           height: itemHeight,
-          child: _buildWiFiCard(items, index, canBeDisabled),
+          child: _buildWiFiCard(items, index, canBeDisabled, isExpanded: true),
         ),
       ),
     );
@@ -300,6 +300,7 @@ class _CustomWiFiGridState extends ConsumerState<CustomWiFiGrid>
     int index,
     bool canBeDisabled, {
     bool isCompact = false,
+    bool isExpanded = false,
   }) {
     final item = items[index];
     final visibilityKey = '${item.ssid}${item.radios.join()}${item.isGuest}';
@@ -311,6 +312,7 @@ class _CustomWiFiGridState extends ConsumerState<CustomWiFiGrid>
       index: index,
       canBeDisabled: canBeDisabled,
       isCompact: isCompact,
+      isExpanded: isExpanded,
       onTooltipVisibilityChanged: (visible) {
         setState(() {
           if (visible) {

@@ -96,10 +96,11 @@ abstract class DashboardWidgetSpecs {
             HeightStrategy.strict(5.0), // 2 rows of cards (176px * 2 + spacing)
       ),
       DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 12,
+        minColumns: 6,
         maxColumns: 12,
-        preferredColumns: 12,
-        heightStrategy: HeightStrategy.strict(6.0),
+        preferredColumns: 8,
+        heightStrategy: HeightStrategy.strict(7.0),
+        minHeightRows: 7,
       ),
     },
   );
@@ -207,7 +208,9 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 8,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(2.0),
+        heightStrategy: HeightStrategy.strict(3.0),
+        minHeightRows: 3,
+        maxHeightRows: 4,
       ),
     },
   );
@@ -238,7 +241,9 @@ abstract class DashboardWidgetSpecs {
         minColumns: 6,
         maxColumns: 12,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(4.0),
+        heightStrategy: HeightStrategy.strict(6.0),
+        minHeightRows: 5,
+        maxHeightRows: 8,
       ),
     },
   );
@@ -390,6 +395,7 @@ abstract class DashboardWidgetSpecs {
         preferredColumns: 8,
         heightStrategy: HeightStrategy.strict(
             6.0), // Increased from 4.0 to maintain hierarchy
+        minHeightRows: 6,
       ),
     },
   );
@@ -476,10 +482,11 @@ abstract class DashboardWidgetSpecs {
             HeightStrategy.strict(5.0), // 2 rows of cards (176px * 2 + spacing)
       ),
       DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 12,
+        minColumns: 6,
         maxColumns: 12,
-        preferredColumns: 12,
-        heightStrategy: HeightStrategy.strict(6.0),
+        preferredColumns: 8,
+        heightStrategy: HeightStrategy.strict(7.0),
+        minHeightRows: 7,
       ),
     },
   );
@@ -508,8 +515,8 @@ abstract class DashboardWidgetSpecs {
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(4.0),
-        minHeightRows: 2,
+        heightStrategy: HeightStrategy.strict(3.0),
+        minHeightRows: 3,
       ),
     },
   );

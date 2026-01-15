@@ -43,6 +43,9 @@ class SpeedTestWidget extends ConsumerWidget {
   /// The size of the animated meter.
   final double? meterSize;
 
+  /// If true, shows the result summary (download/upload) below the meter when complete.
+  final bool showResultSummary;
+
   const SpeedTestWidget({
     super.key,
     this.showDetails = true,
@@ -51,6 +54,7 @@ class SpeedTestWidget extends ConsumerWidget {
     this.showStepDescriptions = true,
     this.showLatestOnIdle = true,
     this.meterSize,
+    this.showResultSummary = true,
   });
 
   @override
@@ -259,6 +263,16 @@ class SpeedTestWidget extends ConsumerWidget {
         bottomBuilder: (context, value) {
           // The content below the meter (e.g., ping or "Test Again" button).
           if (state.status == HealthCheckStatus.complete) {
+            if (!showResultSummary) {
+              return IconButton(
+                onPressed: () => ref
+                    .read(healthCheckProvider.notifier)
+                    .runHealthCheck(Module.speedtest),
+                icon: Icon(Icons.replay,
+                    color: Theme.of(context).colorScheme.primary),
+                tooltip: loc(context).testAgain,
+              );
+            }
             // Show single-line result with tap-to-retry
             return InkWell(
               onTap: () => ref

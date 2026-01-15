@@ -63,6 +63,26 @@ class _CustomQuickPanelState extends ConsumerState<CustomQuickPanel>
             label: loc(context).instantPrivacy,
             onTap: () => context.pushNamed(RouteNamed.menuInstantPrivacy),
             onToggle: (value) => _handlePrivacyToggle(context, ref, value),
+            badge: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .extension<AppColorScheme>()!
+                    .semanticWarning
+                    .withOpacity(0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'BETA',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context)
+                          .extension<AppColorScheme>()!
+                          .semanticWarning,
+                    ),
+              ),
+            ),
           ),
           if (isCognitive && isSupportNodeLight)
             _compactToggle(
@@ -140,6 +160,12 @@ class _CustomQuickPanelState extends ConsumerState<CustomQuickPanel>
             value: privacyState.status.mode == MacFilterMode.allow,
             onTap: () => context.pushNamed(RouteNamed.menuInstantPrivacy),
             onChanged: (value) => _handlePrivacyToggle(context, ref, value),
+            badge: AppBadge(
+              label: 'BETA',
+              color: Theme.of(context)
+                  .extension<AppColorScheme>()!
+                  .semanticWarning,
+            ),
           ),
           if (isCognitive && isSupportNodeLight) ...[
             const Divider(height: 32),
@@ -213,6 +239,7 @@ class _CustomQuickPanelState extends ConsumerState<CustomQuickPanel>
     required String label,
     VoidCallback? onTap,
     required void Function(bool) onToggle,
+    Widget? badge,
   }) {
     return Tooltip(
       message: label,
@@ -221,12 +248,24 @@ class _CustomQuickPanelState extends ConsumerState<CustomQuickPanel>
         children: [
           InkWell(
             onTap: onTap,
-            child: AppIcon.font(
-              icon,
-              size: 20,
-              color: isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                AppIcon.font(
+                  icon,
+                  size: 20,
+                  color: isActive
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                if (badge != null)
+                  Positioned(
+                    top: -8,
+                    right: -8, // Align to top right corner
+                    child: badge,
+                  ),
+              ],
             ),
           ),
           AppGap.sm(),
@@ -302,6 +341,7 @@ class _CustomQuickPanelState extends ConsumerState<CustomQuickPanel>
     required bool value,
     VoidCallback? onTap,
     required void Function(bool) onChanged,
+    Widget? badge,
   }) {
     return InkWell(
       onTap: onTap,
@@ -312,12 +352,20 @@ class _CustomQuickPanelState extends ConsumerState<CustomQuickPanel>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge(title),
+                Row(
+                  children: [
+                    AppText.labelLarge(title),
+                    if (badge != null) ...[
+                      AppGap.sm(),
+                      badge,
+                    ],
+                  ],
+                ),
                 AppGap.sm(),
                 AppText.bodySmall(
                   description,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  maxLines: 2,
+                  maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],

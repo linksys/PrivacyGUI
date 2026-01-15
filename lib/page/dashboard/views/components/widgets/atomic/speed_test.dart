@@ -189,24 +189,92 @@ class CustomSpeedTest extends DisplayModeConsumerWidget {
     final state = ref.watch(dashboardHomeProvider);
     final hasLanPort = state.lanPortConnections.isNotEmpty;
     final isRemote = BuildConfig.isRemote();
-    final isHealthCheckSupported =
-        ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
+    final healthCheckState = ref.watch(healthCheckProvider);
+    final isHealthCheckSupported = healthCheckState.isSpeedTestModuleSupported;
 
     if (isHealthCheckSupported) {
       // Internal Speed Test
       if (hasLanPort) {
+        if (isExpanded) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Section: Meter + Key Stats
+                // Top Section: Meter + Key Stats
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Meter (Left 60%)
+                    Expanded(
+                      flex: 6,
+                      child: Center(
+                        child: SpeedTestWidget(
+                          showDetails: false,
+                          showInfoPanel:
+                              false, // Hide built-in info, we show manual
+                          showStepDescriptions: false,
+                          showLatestOnIdle: true,
+                          layout: SpeedTestLayout.vertical,
+                          meterSize:
+                              180, // Slightly larger meter since we have space
+                          showResultSummary:
+                              false, // Hide redundant summary to prevent overflow
+                        ),
+                      ),
+                    ),
+                    const VerticalDivider(indent: 10, endIndent: 10),
+                    // Big Stats (Right 40%)
+                    Expanded(
+                      flex: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: AppSpacing.lg),
+                        child: _BigStatsPanel(
+                          state: healthCheckState,
+                          result: healthCheckState.result ??
+                              healthCheckState.latestSpeedTest ??
+                              SpeedTestUIModel.empty(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: AppSpacing.xl),
+
+                // Middle Section: Details (Date, Server, Ping)
+                _DetailsPanel(
+                  result: healthCheckState.result ??
+                      healthCheckState.latestSpeedTest ??
+                      SpeedTestUIModel.empty(),
+                ),
+
+                const SizedBox(height: AppSpacing.lg),
+
+                // Bottom Section: History Chart (Taller)
+                SizedBox(
+                  height: 220, // Increased height
+                  child: _HistoryChart(
+                    history: healthCheckState.historicalSpeedTests,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         return Padding(
-          padding: EdgeInsets.all(isExpanded ? AppSpacing.lg : AppSpacing.sm),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           child: SpeedTestWidget(
-            showDetails: isExpanded,
+            showDetails: false,
             showInfoPanel:
-                isExpanded, // Hide info panel in Normal mode for cleaner look
+                false, // Hide info panel in Normal mode for cleaner look
             showStepDescriptions: false,
             // Show latest results in both Normal and Expanded modes
             showLatestOnIdle: true,
             layout: SpeedTestLayout.vertical,
-            // Dynamic meter size: 240 for Normal (Vertical layout in 250px height), 220 for Expanded
-            meterSize: isExpanded ? 220 : 240,
+            // Dynamic meter size: 240 for Normal (Vertical layout in 250px height)
+            meterSize: 240,
           ),
         );
       } else {
@@ -224,6 +292,302 @@ class CustomSpeedTest extends DisplayModeConsumerWidget {
           child: ExternalSpeedTestLinks(state: state),
         ),
       ),
+    );
+  }
+}
+
+class _HistoryChart extends StatelessWidget {
+  final List<SpeedTestUIModel> history;
+
+  const _HistoryChart({required this.history});
+
+  @override
+  Widget build(BuildContext context) {
+    if (history.isEmpty) {
+      return Center(
+        child: AppText.bodyMedium(
+          'No history available',
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    // Prepare data points (reversed because history is usually new -> old)
+    // We want display left (old) -> right (new)
+    final data = history.reversed.toList();
+
+    // Max 10 points to keep chart readable
+    final displayData =
+        data.length > 10 ? data.sublist(data.length - 10) : data;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.titleSmall('Speed History (${displayData.length} runs)'),
+        const SizedBox(height: AppSpacing.sm),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return CustomPaint(
+                size: Size(constraints.maxWidth, constraints.maxHeight),
+                painter: _HistoryChartPainter(
+                  context: context,
+                  data: displayData,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _LegendItem(
+                color: Theme.of(context).colorScheme.primary,
+                label: loc(context).download),
+            const SizedBox(width: AppSpacing.lg),
+            _LegendItem(
+                color: Theme.of(context).colorScheme.secondary,
+                label: loc(context).upload),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _LegendItem({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        AppText.labelSmall(label),
+      ],
+    );
+  }
+}
+
+class _HistoryChartPainter extends CustomPainter {
+  final BuildContext context;
+  final List<SpeedTestUIModel> data;
+
+  _HistoryChartPainter({required this.context, required this.data});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
+    final padding = 20.0;
+    final chartRect = Rect.fromLTWH(
+        padding, padding, size.width - padding * 2, size.height - padding * 2);
+
+    // Extract values (parse string if kbps is missing, but simpler to rely on parsing logic or just 0)
+    // SpeedTestUIModel has downloadSpeed string "xxx.x" and units.
+    // Ideally we use uploadBandwidthKbps if available.
+    final downloads = data
+        .map((e) => (e.downloadBandwidthKbps ?? 0) / 1024.0)
+        .toList(); // Mbps
+    final uploads =
+        data.map((e) => (e.uploadBandwidthKbps ?? 0) / 1024.0).toList(); // Mbps
+
+    // If kbps is null/0, try parsing string (fallback)
+    for (int i = 0; i < data.length; i++) {
+      if (downloads[i] == 0) {
+        downloads[i] = double.tryParse(data[i].downloadSpeed) ?? 0;
+      }
+      if (uploads[i] == 0) {
+        uploads[i] = double.tryParse(data[i].uploadSpeed) ?? 0;
+      }
+    }
+
+    final allValues = [...downloads, ...uploads];
+    final maxY = allValues.isEmpty
+        ? 100.0
+        : allValues.reduce((a, b) => a > b ? a : b) * 1.2; // 20% buffer
+
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final secondaryColor = Theme.of(context).colorScheme.secondary;
+    final gridColor =
+        Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5);
+
+    // Draw Grid
+    final paintGrid = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1;
+
+    // Horizontal lines (0, 50%, 100%)
+    canvas.drawLine(Offset(chartRect.left, chartRect.bottom),
+        Offset(chartRect.right, chartRect.bottom), paintGrid);
+    canvas.drawLine(
+        Offset(chartRect.left, chartRect.top + chartRect.height * 0.5),
+        Offset(chartRect.right, chartRect.top + chartRect.height * 0.5),
+        paintGrid);
+    canvas.drawLine(Offset(chartRect.left, chartRect.top),
+        Offset(chartRect.right, chartRect.top), paintGrid);
+
+    // Draw Lines
+    _drawLine(canvas, chartRect, downloads, maxY, primaryColor, true);
+    _drawLine(canvas, chartRect, uploads, maxY, secondaryColor, false);
+  }
+
+  void _drawLine(Canvas canvas, Rect rect, List<double> values, double maxY,
+      Color color, bool isFilled) {
+    if (values.isEmpty) return;
+
+    final path = Path();
+    final stepX = rect.width / (values.length - 1 == 0 ? 1 : values.length - 1);
+
+    for (int i = 0; i < values.length; i++) {
+      final x = rect.left + i * stepX;
+      final y =
+          rect.bottom - (values[i] / (maxY == 0 ? 1 : maxY)) * rect.height;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+
+      // Draw point
+      canvas.drawCircle(Offset(x, y), 3, Paint()..color = color);
+    }
+
+    // Stroke
+    canvas.drawPath(
+        path,
+        Paint()
+          ..color = color
+          ..strokeWidth = 2
+          ..style = PaintingStyle.stroke);
+
+    // Fill (Optional, maybe gradient?)
+    if (isFilled) {
+      path.lineTo(rect.right, rect.bottom);
+      path.lineTo(rect.left, rect.bottom);
+      path.close();
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = color.withOpacity(0.1)
+            ..style = PaintingStyle.fill);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _BigStatsPanel extends StatelessWidget {
+  final HealthCheckState state;
+  final SpeedTestUIModel result;
+
+  const _BigStatsPanel({required this.state, required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    if (result.timestamp == '--' && state.status == HealthCheckStatus.idle) {
+      return Center(
+        child: AppText.bodyMedium(
+          'Run a speed test to see details',
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Status Text (e.g. "Running...", "Completed")
+        if (state.status == HealthCheckStatus.running)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: AppText.titleSmall(
+              _getStatusText(context, state),
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+
+        // Main Result (Download / Upload) - Using Wrap to prevent overflow
+        Wrap(
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.sm,
+          children: [
+            _buildBigStat(context, 'Download', result.downloadSpeed,
+                result.downloadUnit, Theme.of(context).colorScheme.primary),
+            _buildBigStat(context, 'Upload', result.uploadSpeed,
+                result.uploadUnit, Theme.of(context).colorScheme.secondary),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _getStatusText(BuildContext context, HealthCheckState state) {
+    if (state.step == HealthCheckStep.latency) return 'Measuring Latency...';
+    if (state.step == HealthCheckStep.downloadBandwidth)
+      return 'Downloading...';
+    if (state.step == HealthCheckStep.uploadBandwidth) return 'Uploading...';
+    return 'Running...';
+  }
+
+  Widget _buildBigStat(BuildContext context, String label, String value,
+      String unit, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.labelSmall(label,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            AppText.headlineSmall(value, color: color),
+            const SizedBox(width: 4),
+            AppText.labelSmall(unit, color: color),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DetailsPanel extends StatelessWidget {
+  final SpeedTestUIModel result;
+
+  const _DetailsPanel({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    // Detailed Info
+    return Wrap(
+      spacing: AppSpacing.xl,
+      runSpacing: AppSpacing.md,
+      children: [
+        _buildDetailItem(context, 'Date', result.timestamp),
+        _buildDetailItem(context, 'Server', result.serverId),
+        _buildDetailItem(context, 'Ping', '${result.latency} ms'),
+      ],
+    );
+  }
+
+  Widget _buildDetailItem(BuildContext context, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.labelSmall(label,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
+        AppText.titleSmall(value),
+      ],
     );
   }
 }
