@@ -11,6 +11,11 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dar
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/internet_status.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/networks.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/port_and_speed.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/quick_panel.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/wifi_grid.dart';
 import 'package:privacy_gui/page/dashboard/views/sliver_dashboard_view.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
 import 'package:privacy_gui/core/utils/assign_ip/assign_ip.dart';
@@ -101,27 +106,27 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
           isHorizontalLayout: isHorizontalLayout,
           widgetConfigs: preferences.widgetConfigs,
           title: const DashboardHomeTitle(),
-          internetWidget: InternetConnectionWidget(
+          internetWidget: FixedInternetConnectionWidget(
             key: const ValueKey('internet'),
             displayMode: DisplayMode.normal,
             useAppCard: true,
           ),
-          networksWidget: DashboardNetworks(
+          networksWidget: FixedDashboardNetworks(
             key: const ValueKey('networks'),
             displayMode: DisplayMode.normal,
             useAppCard: true,
           ),
-          wifiGrid: DashboardWiFiGrid(
+          wifiGrid: FixedDashboardWiFiGrid(
             key: const ValueKey('wifi'),
             displayMode: DisplayMode.normal,
           ),
-          quickPanel: DashboardQuickPanel(
+          quickPanel: FixedDashboardQuickPanel(
             key: const ValueKey('quick'),
             displayMode: DisplayMode.normal,
             useAppCard: true,
           ),
           vpnTile: isSupportVPN ? const VPNStatusTile() : null,
-          buildPortAndSpeed: (config) => DashboardHomePortAndSpeed(
+          buildPortAndSpeed: (config) => FixedDashboardHomePortAndSpeed(
             key: const ValueKey('port'),
             config: config,
             displayMode: DisplayMode.normal,

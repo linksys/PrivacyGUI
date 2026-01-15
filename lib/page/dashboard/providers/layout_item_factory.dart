@@ -133,7 +133,7 @@ class LayoutItemFactory {
 
     // Row 0: Quick Panel (top-right)
     items.add(fromSpec(
-      resolve(DashboardWidgetSpecs.quickPanel),
+      resolve(DashboardWidgetSpecs.quickPanelCustom),
       x: 8,
       y: 0,
       w: 4,
@@ -191,7 +191,7 @@ class LayoutItemFactory {
 
     // WiFi Grid (spans across bottom)
     items.add(fromSpec(
-      resolve(DashboardWidgetSpecs.wifiGrid),
+      resolve(DashboardWidgetSpecs.wifiGridCustom),
       x: 0,
       y: bottomY,
       w: 8,

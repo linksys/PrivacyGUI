@@ -19,17 +19,33 @@ class DashboardWidgetFactory {
     String id, {
     DisplayMode displayMode = DisplayMode.normal,
   }) {
+    // Note: Standard Widgets use the same classes as Custom Widgets for now,
+    // but they are instantiated with different context in DashboardHomeView.
+    // For Custom Layout (where this factory is primarily used), we map IDs to widgets.
+
     return switch (id) {
-      'internet_status' => InternetConnectionWidget(displayMode: displayMode),
+      // --- Custom Layout Widgets ---
       'internet_status_only' => CustomInternetStatus(displayMode: displayMode),
       'master_node_info' => CustomMasterNodeInfo(displayMode: displayMode),
       'ports' => CustomPorts(displayMode: displayMode),
       'speed_test' => CustomSpeedTest(displayMode: displayMode),
       'network_stats' => CustomNetworkStats(displayMode: displayMode),
       'topology' => CustomTopology(displayMode: displayMode),
-      'wifi_grid' => CustomWiFiGrid(displayMode: displayMode),
-      'quick_panel' => CustomQuickPanel(displayMode: displayMode),
-      // Composite Widgets
+
+      // Isolated Custom Widgets
+      'wifi_grid_custom' => CustomWiFiGrid(displayMode: displayMode),
+      'quick_panel_custom' => CustomQuickPanel(displayMode: displayMode),
+      'vpn_custom' => CustomVPN(displayMode: displayMode),
+
+      // --- Legacy/Standard IDs (Fallback if needed, or if shared logic remains) ---
+      'wifi_grid' =>
+        CustomWiFiGrid(displayMode: displayMode), // Keep for safety
+      'quick_panel' =>
+        CustomQuickPanel(displayMode: displayMode), // Keep for safety
+      'vpn' => CustomVPN(displayMode: displayMode), // Keep for safety
+
+      // --- Composite Widgets (Standard Layout Only - usually not built via this factory) ---
+      'internet_status' => InternetConnectionWidget(displayMode: displayMode),
       'port_and_speed' => DashboardHomePortAndSpeed(
           displayMode: displayMode,
           config: const PortAndSpeedConfig(
@@ -38,7 +54,6 @@ class DashboardWidgetFactory {
           ),
         ),
       'networks' => DashboardNetworks(displayMode: displayMode),
-      'vpn' => CustomVPN(displayMode: displayMode),
       _ => null,
     };
   }
@@ -49,7 +64,9 @@ class DashboardWidgetFactory {
   static bool shouldWrapInCard(String id) {
     return switch (id) {
       'wifi_grid' => false,
+      'wifi_grid_custom' => false,
       'vpn' => false,
+      'vpn_custom' => false,
       _ => true,
     };
   }

@@ -451,6 +451,98 @@ abstract class DashboardWidgetSpecs {
     },
   );
 
+  // ---------------------------------------------------------------------------
+  // Custom Layout Specific Widgets (Duplicated for Isolation)
+  // ---------------------------------------------------------------------------
+
+  /// Wi-Fi Grid for Custom Layout
+  static const wifiGridCustom = WidgetSpec(
+    id: 'wifi_grid_custom',
+    displayName: 'Wi-Fi Networks',
+    description: 'Overview of Wi-Fi networks and guest access.',
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 6,
+        maxColumns: 8,
+        preferredColumns: 8,
+        heightStrategy: HeightStrategy.strict(1.0),
+        minHeightRows: 1,
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 8,
+        maxColumns: 12,
+        preferredColumns: 8,
+        heightStrategy:
+            HeightStrategy.strict(5.0), // 2 rows of cards (176px * 2 + spacing)
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 12,
+        maxColumns: 12,
+        preferredColumns: 12,
+        heightStrategy: HeightStrategy.strict(6.0),
+      ),
+    },
+  );
+
+  /// Quick Panel for Custom Layout
+  static const quickPanelCustom = WidgetSpec(
+    id: 'quick_panel_custom',
+    displayName: 'Quick Panel',
+    description: 'Quick access to common settings and actions.',
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 3,
+        maxColumns: 4,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(1.0),
+        minHeightRows: 1,
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 4,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(3.0),
+        minHeightRows: 3,
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(4.0),
+        minHeightRows: 2,
+      ),
+    },
+  );
+
+  /// VPN for Custom Layout
+  static const vpnCustom = WidgetSpec(
+    id: 'vpn_custom',
+    displayName: 'VPN',
+    description: 'VPN connection status.',
+    requirements: [WidgetRequirement.vpnSupported],
+    constraints: {
+      DisplayMode.compact: WidgetGridConstraints(
+        minColumns: 3,
+        maxColumns: 4,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(1.0),
+        minHeightRows: 1,
+      ),
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 4,
+        preferredColumns: 4,
+        heightStrategy: HeightStrategy.strict(4.0),
+      ),
+      DisplayMode.expanded: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 6,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(4.0),
+      ),
+    },
+  );
+
   /// Custom layout widgets (atomic components)
   static const List<WidgetSpec> customWidgets = [
     internetStatusOnly,
@@ -459,9 +551,9 @@ abstract class DashboardWidgetSpecs {
     speedTest,
     networkStats,
     topology,
-    wifiGrid,
-    quickPanel,
-    vpn,
+    wifiGridCustom,
+    quickPanelCustom,
+    vpnCustom,
   ];
 
   // ---------------------------------------------------------------------------
@@ -481,11 +573,13 @@ abstract class DashboardWidgetSpecs {
     speedTest,
     networkStats,
     topology,
+    wifiGridCustom,
+    quickPanelCustom,
+    vpnCustom,
   ];
 
-  // ---------------------------------------------------------------------------
-  // VPN (if supported)
-  // ---------------------------------------------------------------------------
+  // ... (Standard VPN def remains but is now used only for standard list logic if any)
+  // Actually we need to keep standard VPN def for standard lists
   static const vpn = WidgetSpec(
     id: 'vpn',
     displayName: 'VPN',
@@ -496,7 +590,7 @@ abstract class DashboardWidgetSpecs {
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0), // Changed from 2.0
+        heightStrategy: HeightStrategy.strict(1.0),
         minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(

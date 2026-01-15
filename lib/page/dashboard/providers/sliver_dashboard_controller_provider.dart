@@ -164,7 +164,7 @@ class SliverDashboardControllerNotifier
     bool changed = false;
 
     final newLayout = currentLayout.map((item) {
-      if (item is Map && item['id'] == id) {
+      if (item['id'] == id) {
         final mutableItem = Map<String, dynamic>.from(item);
         // Update constraints using camelCase keys (standard package convention)
         mutableItem['minW'] = constraints!.minColumns;
@@ -199,7 +199,7 @@ class SliverDashboardControllerNotifier
     bool changed = false;
 
     final newLayout = currentLayout.map((item) {
-      if (item is Map && item['id'] == id) {
+      if (item['id'] == id) {
         final mutableItem = Map<String, dynamic>.from(item);
         if (mutableItem['w'] != w || mutableItem['h'] != h) {
           mutableItem['w'] = w;

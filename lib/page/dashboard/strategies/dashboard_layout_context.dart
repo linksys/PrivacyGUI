@@ -267,7 +267,6 @@ class DashboardLayoutContext {
       final config = getConfigFor(spec);
       return config.visible;
     }).map((spec) {
-      final config = getConfigFor(spec);
       final child = _getStandardWidgetById(spec.id);
       if (child == null) return const SizedBox.shrink();
 
