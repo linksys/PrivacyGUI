@@ -3,65 +3,92 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
+import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
+import 'package:privacy_gui/core/data/providers/ethernet_ports_provider.dart';
+import 'package:privacy_gui/core/data/providers/system_stats_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 
 /// Test data builder for DashboardHomeService tests.
 ///
-/// Provides factory methods to create DashboardManagerState and DeviceManagerState
+/// Provides factory methods to create domain provider states and DeviceManagerState
 /// with sensible defaults for testing the service transformation logic.
 ///
 /// Per constitution Section 1.6.2
 class DashboardHomeTestData {
   // ============================================
-  // DashboardManagerState Builders
+  // DeviceInfoState Builders
   // ============================================
 
-  /// Create a DashboardManagerState with default values
-  static DashboardManagerState createDashboardManagerState({
+  /// Create a DeviceInfoState with default values
+  static DeviceInfoState createDeviceInfoState({
     NodeDeviceInfo? deviceInfo,
+    String? skuModelNumber,
+  }) {
+    return DeviceInfoState(
+      deviceInfo: deviceInfo ?? createNodeDeviceInfo(),
+      skuModelNumber: skuModelNumber,
+    );
+  }
+
+  // ============================================
+  // WifiRadiosState Builders
+  // ============================================
+
+  /// Create a WifiRadiosState with default values
+  static WifiRadiosState createWifiRadiosState({
     List<RouterRadio>? mainRadios,
     List<GuestRadioInfo>? guestRadios,
     bool isGuestNetworkEnabled = false,
-    int uptimes = 86400,
-    String? wanConnection = 'Linked-1000Mbps',
-    List<String> lanConnections = const ['Linked-1000Mbps', 'None', 'None'],
   }) {
-    return DashboardManagerState(
-      deviceInfo: deviceInfo ?? createNodeDeviceInfo(),
+    return WifiRadiosState(
       mainRadios: mainRadios ?? createDefaultMainRadios(),
       guestRadios: guestRadios ?? const [],
       isGuestNetworkEnabled: isGuestNetworkEnabled,
-      uptimes: uptimes,
+    );
+  }
+
+  /// Create WifiRadiosState with guest network enabled
+  static WifiRadiosState createWifiRadiosStateWithGuest({
+    List<RouterRadio>? mainRadios,
+    List<GuestRadioInfo>? guestRadios,
+  }) {
+    return createWifiRadiosState(
+      mainRadios: mainRadios,
+      guestRadios: guestRadios ?? createDefaultGuestRadios(),
+      isGuestNetworkEnabled: true,
+    );
+  }
+
+  // ============================================
+  // EthernetPortsState Builders
+  // ============================================
+
+  /// Create a EthernetPortsState with default values
+  static EthernetPortsState createEthernetPortsState({
+    String? wanConnection = 'Linked-1000Mbps',
+    List<String> lanConnections = const ['Linked-1000Mbps', 'None', 'None'],
+  }) {
+    return EthernetPortsState(
       wanConnection: wanConnection,
       lanConnections: lanConnections,
     );
   }
 
-  /// Create DashboardManagerState with guest network enabled
-  static DashboardManagerState createDashboardManagerStateWithGuest({
-    NodeDeviceInfo? deviceInfo,
-    List<RouterRadio>? mainRadios,
-    List<GuestRadioInfo>? guestRadios,
-    int uptimes = 86400,
-  }) {
-    return createDashboardManagerState(
-      deviceInfo: deviceInfo,
-      mainRadios: mainRadios,
-      guestRadios: guestRadios ?? createDefaultGuestRadios(),
-      isGuestNetworkEnabled: true,
-      uptimes: uptimes,
-    );
-  }
+  // ============================================
+  // SystemStatsState Builders
+  // ============================================
 
-  /// Create empty DashboardManagerState (no radios)
-  static DashboardManagerState createEmptyDashboardManagerState() {
-    return const DashboardManagerState(
-      mainRadios: [],
-      guestRadios: [],
-      isGuestNetworkEnabled: false,
-      uptimes: 0,
-      lanConnections: [],
+  /// Create a SystemStatsState with default values
+  static SystemStatsState createSystemStatsState({
+    int uptimes = 86400,
+    String? cpuLoad,
+    String? memoryLoad,
+  }) {
+    return SystemStatsState(
+      uptimes: uptimes,
+      cpuLoad: cpuLoad,
+      memoryLoad: memoryLoad,
     );
   }
 

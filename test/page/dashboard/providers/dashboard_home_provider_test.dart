@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
+import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
+import 'package:privacy_gui/core/data/providers/ethernet_ports_provider.dart';
+import 'package:privacy_gui/core/data/providers/system_stats_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/jnap/models/device.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/services/dashboard_home_service.dart';
@@ -11,20 +14,6 @@ import 'package:privacy_gui/page/health_check/providers/health_check_provider.da
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 
 import '../../../mocks/test_data/dashboard_home_test_data.dart';
-
-/// Mock DashboardManagerNotifier for testing
-class MockDashboardManagerNotifier extends Notifier<DashboardManagerState>
-    implements DashboardManagerNotifier {
-  final DashboardManagerState _state;
-
-  MockDashboardManagerNotifier(this._state);
-
-  @override
-  DashboardManagerState build() => _state;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
 
 /// Mock DeviceManagerNotifier for testing
 class MockDeviceManagerNotifier extends Notifier<DeviceManagerState>
@@ -63,19 +52,28 @@ class MockHealthCheckNotifier extends Notifier<HealthCheckState>
 class MockDashboardHomeService implements DashboardHomeService {
   DashboardHomeState? returnState;
   int buildCallCount = 0;
-  DashboardManagerState? lastDashboardManagerState;
+  DeviceInfoState? lastDeviceInfoState;
+  WifiRadiosState? lastWifiRadiosState;
+  EthernetPortsState? lastEthernetPortsState;
+  SystemStatsState? lastSystemStatsState;
   DeviceManagerState? lastDeviceManagerState;
   List<LinksysDevice>? lastDeviceList;
 
   @override
   DashboardHomeState buildDashboardHomeState({
-    required DashboardManagerState dashboardManagerState,
+    required DeviceInfoState deviceInfoState,
+    required WifiRadiosState wifiRadiosState,
+    required EthernetPortsState ethernetPortsState,
+    required SystemStatsState systemStatsState,
     required DeviceManagerState deviceManagerState,
     required String Function(LinksysDevice device) getBandForDevice,
     required List<LinksysDevice> deviceList,
   }) {
     buildCallCount++;
-    lastDashboardManagerState = dashboardManagerState;
+    lastDeviceInfoState = deviceInfoState;
+    lastWifiRadiosState = wifiRadiosState;
+    lastEthernetPortsState = ethernetPortsState;
+    lastSystemStatsState = systemStatsState;
     lastDeviceManagerState = deviceManagerState;
     lastDeviceList = deviceList;
     return returnState ?? const DashboardHomeState();
@@ -97,8 +95,11 @@ void main() {
   group('DashboardHomeNotifier', () {
     test('build() calls service.buildDashboardHomeState', () {
       // Arrange
-      final dashboardManagerState =
-          DashboardHomeTestData.createDashboardManagerState();
+      final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+      final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+      final ethernetPortsState =
+          DashboardHomeTestData.createEthernetPortsState();
+      final systemStatsState = DashboardHomeTestData.createSystemStatsState();
       final deviceManagerState =
           DashboardHomeTestData.createDeviceManagerState();
 
@@ -112,8 +113,10 @@ void main() {
       container = ProviderContainer(
         overrides: [
           dashboardHomeServiceProvider.overrideWithValue(mockService),
-          dashboardManagerProvider.overrideWith(
-              () => MockDashboardManagerNotifier(dashboardManagerState)),
+          deviceInfoProvider.overrideWithValue(deviceInfoState),
+          wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+          ethernetPortsProvider.overrideWithValue(ethernetPortsState),
+          systemStatsProvider.overrideWithValue(systemStatsState),
           deviceManagerProvider.overrideWith(
               () => MockDeviceManagerNotifier(deviceManagerState)),
           healthCheckProvider.overrideWith(() => MockHealthCheckNotifier()),
@@ -128,12 +131,21 @@ void main() {
       expect(mockService.buildCallCount, 1);
     });
 
-    test('build() passes correct dashboardManagerState to service', () {
+    test('build() passes correct domain states to service', () {
       // Arrange
-      final dashboardManagerState =
-          DashboardHomeTestData.createDashboardManagerState(
-        uptimes: 172800,
+      final deviceInfoState = DashboardHomeTestData.createDeviceInfoState(
+        deviceInfo: DashboardHomeTestData.createNodeDeviceInfo(
+          modelNumber: 'LN16',
+        ),
+      );
+      final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState(
+        mainRadios: DashboardHomeTestData.createDefaultMainRadios(),
+      );
+      final ethernetPortsState = DashboardHomeTestData.createEthernetPortsState(
         wanConnection: 'Linked-100Mbps',
+      );
+      final systemStatsState = DashboardHomeTestData.createSystemStatsState(
+        uptimes: 172800,
       );
       final deviceManagerState =
           DashboardHomeTestData.createDeviceManagerState();
@@ -141,8 +153,10 @@ void main() {
       container = ProviderContainer(
         overrides: [
           dashboardHomeServiceProvider.overrideWithValue(mockService),
-          dashboardManagerProvider.overrideWith(
-              () => MockDashboardManagerNotifier(dashboardManagerState)),
+          deviceInfoProvider.overrideWithValue(deviceInfoState),
+          wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+          ethernetPortsProvider.overrideWithValue(ethernetPortsState),
+          systemStatsProvider.overrideWithValue(systemStatsState),
           deviceManagerProvider.overrideWith(
               () => MockDeviceManagerNotifier(deviceManagerState)),
           healthCheckProvider.overrideWith(() => MockHealthCheckNotifier()),
@@ -153,16 +167,22 @@ void main() {
       container.read(dashboardHomeProvider);
 
       // Assert
-      expect(mockService.lastDashboardManagerState, dashboardManagerState);
-      expect(mockService.lastDashboardManagerState?.uptimes, 172800);
-      expect(mockService.lastDashboardManagerState?.wanConnection,
-          'Linked-100Mbps');
+      expect(mockService.lastDeviceInfoState, deviceInfoState);
+      expect(mockService.lastDeviceInfoState?.deviceInfo?.modelNumber, 'LN16');
+      expect(mockService.lastWifiRadiosState, wifiRadiosState);
+      expect(mockService.lastWifiRadiosState?.mainRadios.length, 2);
+      expect(
+          mockService.lastEthernetPortsState?.wanConnection, 'Linked-100Mbps');
+      expect(mockService.lastSystemStatsState?.uptimes, 172800);
     });
 
     test('build() passes correct deviceManagerState to service', () {
       // Arrange
-      final dashboardManagerState =
-          DashboardHomeTestData.createDashboardManagerState();
+      final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+      final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+      final ethernetPortsState =
+          DashboardHomeTestData.createEthernetPortsState();
+      final systemStatsState = DashboardHomeTestData.createSystemStatsState();
       final deviceManagerState = DashboardHomeTestData.createDeviceManagerState(
         lastUpdateTime: 1234567890,
       );
@@ -170,8 +190,10 @@ void main() {
       container = ProviderContainer(
         overrides: [
           dashboardHomeServiceProvider.overrideWithValue(mockService),
-          dashboardManagerProvider.overrideWith(
-              () => MockDashboardManagerNotifier(dashboardManagerState)),
+          deviceInfoProvider.overrideWithValue(deviceInfoState),
+          wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+          ethernetPortsProvider.overrideWithValue(ethernetPortsState),
+          systemStatsProvider.overrideWithValue(systemStatsState),
           deviceManagerProvider.overrideWith(
               () => MockDeviceManagerNotifier(deviceManagerState)),
           healthCheckProvider.overrideWith(() => MockHealthCheckNotifier()),
@@ -188,8 +210,11 @@ void main() {
 
     test('build() passes deviceList from deviceManagerProvider', () {
       // Arrange
-      final dashboardManagerState =
-          DashboardHomeTestData.createDashboardManagerState();
+      final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+      final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+      final ethernetPortsState =
+          DashboardHomeTestData.createEthernetPortsState();
+      final systemStatsState = DashboardHomeTestData.createSystemStatsState();
       final deviceList = [
         DashboardHomeTestData.createMasterDevice(),
         DashboardHomeTestData.createMainWifiDevice(deviceId: 'device-001'),
@@ -202,8 +227,10 @@ void main() {
       container = ProviderContainer(
         overrides: [
           dashboardHomeServiceProvider.overrideWithValue(mockService),
-          dashboardManagerProvider.overrideWith(
-              () => MockDashboardManagerNotifier(dashboardManagerState)),
+          deviceInfoProvider.overrideWithValue(deviceInfoState),
+          wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+          ethernetPortsProvider.overrideWithValue(ethernetPortsState),
+          systemStatsProvider.overrideWithValue(systemStatsState),
           deviceManagerProvider.overrideWith(
               () => MockDeviceManagerNotifier(deviceManagerState)),
           healthCheckProvider.overrideWith(() => MockHealthCheckNotifier()),
@@ -220,8 +247,11 @@ void main() {
 
     test('returns service result directly', () {
       // Arrange
-      final dashboardManagerState =
-          DashboardHomeTestData.createDashboardManagerState();
+      final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+      final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+      final ethernetPortsState =
+          DashboardHomeTestData.createEthernetPortsState();
+      final systemStatsState = DashboardHomeTestData.createSystemStatsState();
       final deviceManagerState =
           DashboardHomeTestData.createDeviceManagerState();
 
@@ -251,8 +281,10 @@ void main() {
       container = ProviderContainer(
         overrides: [
           dashboardHomeServiceProvider.overrideWithValue(mockService),
-          dashboardManagerProvider.overrideWith(
-              () => MockDashboardManagerNotifier(dashboardManagerState)),
+          deviceInfoProvider.overrideWithValue(deviceInfoState),
+          wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+          ethernetPortsProvider.overrideWithValue(ethernetPortsState),
+          systemStatsProvider.overrideWithValue(systemStatsState),
           deviceManagerProvider.overrideWith(
               () => MockDeviceManagerNotifier(deviceManagerState)),
           healthCheckProvider.overrideWith(() => MockHealthCheckNotifier()),
@@ -276,18 +308,25 @@ void main() {
       expect(state.detectedWANType, 'DHCP');
     });
 
-    test('provider listens to dashboardManagerProvider changes', () {
+    test('provider listens to domain providers changes', () {
       // Arrange
-      final dashboardManagerState1 =
-          DashboardHomeTestData.createDashboardManagerState(uptimes: 1000);
+      final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+      final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+      final ethernetPortsState =
+          DashboardHomeTestData.createEthernetPortsState();
+      final systemStatsState = DashboardHomeTestData.createSystemStatsState(
+        uptimes: 1000,
+      );
       final deviceManagerState =
           DashboardHomeTestData.createDeviceManagerState();
 
       container = ProviderContainer(
         overrides: [
           dashboardHomeServiceProvider.overrideWithValue(mockService),
-          dashboardManagerProvider.overrideWith(
-              () => MockDashboardManagerNotifier(dashboardManagerState1)),
+          deviceInfoProvider.overrideWithValue(deviceInfoState),
+          wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+          ethernetPortsProvider.overrideWithValue(ethernetPortsState),
+          systemStatsProvider.overrideWithValue(systemStatsState),
           deviceManagerProvider.overrideWith(
               () => MockDeviceManagerNotifier(deviceManagerState)),
           healthCheckProvider.overrideWith(() => MockHealthCheckNotifier()),
@@ -299,13 +338,16 @@ void main() {
 
       // Assert - service was called
       expect(mockService.buildCallCount, 1);
-      expect(mockService.lastDashboardManagerState?.uptimes, 1000);
+      expect(mockService.lastSystemStatsState?.uptimes, 1000);
     });
 
     test('provider listens to deviceManagerProvider changes', () {
       // Arrange
-      final dashboardManagerState =
-          DashboardHomeTestData.createDashboardManagerState();
+      final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+      final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+      final ethernetPortsState =
+          DashboardHomeTestData.createEthernetPortsState();
+      final systemStatsState = DashboardHomeTestData.createSystemStatsState();
       final deviceManagerState = DashboardHomeTestData.createDeviceManagerState(
         lastUpdateTime: 0, // First polling
       );
@@ -313,8 +355,10 @@ void main() {
       container = ProviderContainer(
         overrides: [
           dashboardHomeServiceProvider.overrideWithValue(mockService),
-          dashboardManagerProvider.overrideWith(
-              () => MockDashboardManagerNotifier(dashboardManagerState)),
+          deviceInfoProvider.overrideWithValue(deviceInfoState),
+          wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+          ethernetPortsProvider.overrideWithValue(ethernetPortsState),
+          systemStatsProvider.overrideWithValue(systemStatsState),
           deviceManagerProvider.overrideWith(
               () => MockDeviceManagerNotifier(deviceManagerState)),
           healthCheckProvider.overrideWith(() => MockHealthCheckNotifier()),
@@ -331,16 +375,21 @@ void main() {
 
     test('provider listens to healthCheckProvider (for reactivity)', () {
       // Arrange
-      final dashboardManagerState =
-          DashboardHomeTestData.createDashboardManagerState();
+      final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+      final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+      final ethernetPortsState =
+          DashboardHomeTestData.createEthernetPortsState();
+      final systemStatsState = DashboardHomeTestData.createSystemStatsState();
       final deviceManagerState =
           DashboardHomeTestData.createDeviceManagerState();
 
       container = ProviderContainer(
         overrides: [
           dashboardHomeServiceProvider.overrideWithValue(mockService),
-          dashboardManagerProvider.overrideWith(
-              () => MockDashboardManagerNotifier(dashboardManagerState)),
+          deviceInfoProvider.overrideWithValue(deviceInfoState),
+          wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+          ethernetPortsProvider.overrideWithValue(ethernetPortsState),
+          systemStatsProvider.overrideWithValue(systemStatsState),
           deviceManagerProvider.overrideWith(
               () => MockDeviceManagerNotifier(deviceManagerState)),
           healthCheckProvider.overrideWith(() => MockHealthCheckNotifier()),

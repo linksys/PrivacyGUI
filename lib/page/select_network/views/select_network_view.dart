@@ -3,7 +3,7 @@ import 'package:animated_list_plus/transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
@@ -124,10 +124,9 @@ class _SelectNetworkViewState extends ConsumerState<SelectNetworkView> {
                 context.pop();
               } else {
                 // Select another network
-                await ref
-                    .read(dashboardManagerProvider.notifier)
-                    .saveSelectedNetwork(network.network.routerSerialNumber,
-                        network.network.networkId);
+                await ref.read(sessionProvider.notifier).saveSelectedNetwork(
+                    network.network.routerSerialNumber,
+                    network.network.networkId);
                 goRouter.goNamed('prepareDashboard');
               }
             }

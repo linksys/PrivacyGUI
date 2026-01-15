@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -69,7 +69,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
           return;
         } else {
           await ref
-              .read(dashboardManagerProvider.notifier)
+              .read(sessionProvider.notifier)
               .saveSelectedNetwork(serialNumber, networkId);
         }
       }
@@ -85,7 +85,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
           .then<String>(
               (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
       await ref
-          .read(dashboardManagerProvider.notifier)
+          .read(sessionProvider.notifier)
           .saveSelectedNetwork(newSerialNumber, '');
     }
     logger.d('Go to dashboard');
@@ -93,7 +93,7 @@ class _PrepareDashboardViewState extends ConsumerState<PrepareDashboardView> {
         .read(linksysCacheManagerProvider)
         .loadCache(serialNumber: serialNumber ?? '');
     final nodeDeviceInfo = await ref
-        .read(dashboardManagerProvider.notifier)
+        .read(sessionProvider.notifier)
         .checkDeviceInfo(null)
         .then<NodeDeviceInfo?>((nodeDeviceInfo) {
       // Build/Update better actions

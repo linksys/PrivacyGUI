@@ -1,4 +1,4 @@
-const dashboardManagerChrry7TestState = {
+const sessionProviderCherry7TestState = {
   "deviceInfo": {
     "modelNumber": "LN16",
     "firmwareVersion": "1.0.4.216421",
@@ -347,7 +347,7 @@ const dashboardManagerChrry7TestState = {
   "memoryLoad": "0.79"
 };
 
-const dashboardManagerPinnacleTestState = {
+const sessionProviderPinnacleTestState = {
   "deviceInfo": {
     "modelNumber": "SPNM60",
     "firmwareVersion": "1.0.4.216421",
@@ -696,7 +696,7 @@ const dashboardManagerPinnacleTestState = {
   "memoryLoad": "0.79"
 };
 
-const dashboardManagerTestState = {
+const sessionProviderTestState = {
   "deviceInfo": {
     "modelNumber": "MBE70",
     "firmwareVersion": "1.0.12.216226",

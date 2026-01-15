@@ -9,7 +9,7 @@ import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/model/region_code.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -378,9 +378,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     String networkId,
     String serialNumber,
   ) async {
-    // Update selected network via dashboard manager
+    // Update selected network via session provider
     await ref
-        .read(dashboardManagerProvider.notifier)
+        .read(sessionProvider.notifier)
         .saveSelectedNetwork(serialNumber, networkId);
 
     // Delegate to AuthService

@@ -2,13 +2,13 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 
-/// Test data builder for DashboardManagerService tests.
+/// Test data builder for SessionManagerService tests.
 ///
 /// Provides factory methods to create JNAP mock responses with sensible defaults.
 /// This centralizes test data and makes tests more readable.
 ///
 /// Per constitution Section 1.6.2
-class DashboardManagerTestData {
+class SessionTestData {
   // === Individual JNAP Response Builders ===
 
   /// Create default getDeviceInfo success response

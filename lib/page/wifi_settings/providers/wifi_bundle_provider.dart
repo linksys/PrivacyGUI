@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -33,26 +33,25 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
             WifiBundleState> {
   @override
   WifiBundleState build() {
-    final dashboardManagerState = ref.read(dashboardManagerProvider);
+    final wifiRadiosState = ref.read(wifiRadiosProvider);
     final deviceManagerState = ref.read(deviceManagerProvider);
     final homeState = ref.read(dashboardHomeProvider);
 
     // Use service layer to create initial WiFi list settings
     // This avoids importing JNAP models directly in the provider
-    final initialWifiListSettings = ref
-        .read(wifiSettingsServiceProvider)
-        .createInitialWifiListSettings(
-          mainRadios: dashboardManagerState.mainRadios,
-          isGuestNetworkEnabled: dashboardManagerState.isGuestNetworkEnabled,
-          guestSSID: dashboardManagerState.guestRadios.firstOrNull?.guestSSID,
-          guestPassword:
-              dashboardManagerState.guestRadios.firstOrNull?.guestWPAPassphrase,
-          mainWifiDevices: deviceManagerState.mainWifiDevices,
-          guestWifiDevicesCount: deviceManagerState.guestWifiDevices.length,
-          getBandConnectedBy: (device) => ref
-              .read(deviceManagerProvider.notifier)
-              .getBandConnectedBy(device),
-        );
+    final initialWifiListSettings =
+        ref.read(wifiSettingsServiceProvider).createInitialWifiListSettings(
+              mainRadios: wifiRadiosState.mainRadios,
+              isGuestNetworkEnabled: wifiRadiosState.isGuestNetworkEnabled,
+              guestSSID: wifiRadiosState.guestRadios.firstOrNull?.guestSSID,
+              guestPassword:
+                  wifiRadiosState.guestRadios.firstOrNull?.guestWPAPassphrase,
+              mainWifiDevices: deviceManagerState.mainWifiDevices,
+              guestWifiDevicesCount: deviceManagerState.guestWifiDevices.length,
+              getBandConnectedBy: (device) => ref
+                  .read(deviceManagerProvider.notifier)
+                  .getBandConnectedBy(device),
+            );
 
     final initialWifiListStatus = WiFiListStatus(
         canDisableMainWiFi: homeState.lanPortConnections.isNotEmpty);
