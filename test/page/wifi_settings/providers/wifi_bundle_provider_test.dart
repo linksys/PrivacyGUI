@@ -4,8 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -24,10 +23,6 @@ class MockWifiSettingsService extends Mock implements WifiSettingsService {}
 
 class FakeLinksysDevice extends Fake implements LinksysDevice {}
 
-class MockDashboardManagerNotifier extends Notifier<DashboardManagerState>
-    with Mock
-    implements DashboardManagerNotifier {}
-
 class MockDashboardHomeNotifier extends Notifier<DashboardHomeState>
     with Mock
     implements DashboardHomeNotifier {}
@@ -42,19 +37,19 @@ class MockServiceHelper extends Mock implements ServiceHelper {}
 
 void main() {
   late MockWifiSettingsService mockWifiSettingsService;
-  late MockDashboardManagerNotifier mockDashboardManagerNotifier;
   late MockDashboardHomeNotifier mockDashboardHomeNotifier;
   late MockDeviceManagerNotifier mockDeviceManagerNotifier;
   late MockRouterRepository mockRouterRepository;
   late ProviderContainer container;
+  late WifiRadiosState wifiRadiosState;
 
   setUp(() {
     // Mock Init
     mockWifiSettingsService = MockWifiSettingsService();
-    mockDashboardManagerNotifier = MockDashboardManagerNotifier();
     mockDashboardHomeNotifier = MockDashboardHomeNotifier();
     mockDeviceManagerNotifier = MockDeviceManagerNotifier();
     mockRouterRepository = MockRouterRepository();
+    wifiRadiosState = const WifiRadiosState();
 
     // Stub ServiceHelper
     final helper = MockServiceHelper();
@@ -86,8 +81,6 @@ void main() {
     ));
 
     // Default Stubs
-    when(() => mockDashboardManagerNotifier.build())
-        .thenReturn(const DashboardManagerState());
     when(() => mockDashboardHomeNotifier.build())
         .thenReturn(const DashboardHomeState());
     when(() => mockDeviceManagerNotifier.build())
@@ -120,8 +113,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         wifiSettingsServiceProvider.overrideWithValue(mockWifiSettingsService),
-        dashboardManagerProvider
-            .overrideWith(() => mockDashboardManagerNotifier),
+        wifiRadiosProvider.overrideWithValue(wifiRadiosState),
         dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
         deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
         routerRepositoryProvider.overrideWithValue(mockRouterRepository),
@@ -170,8 +162,7 @@ void main() {
               channel: 36,
               security: WifiSecurityType.wpa2Personal.value)),
     ];
-    when(() => mockDashboardManagerNotifier.build())
-        .thenReturn(DashboardManagerState(mainRadios: radios));
+    wifiRadiosState = WifiRadiosState(mainRadios: radios);
 
     // Create WiFiItems matching the seeded radios for the mock
     final wifiItems = [
@@ -222,8 +213,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         wifiSettingsServiceProvider.overrideWithValue(mockWifiSettingsService),
-        dashboardManagerProvider
-            .overrideWith(() => mockDashboardManagerNotifier),
+        wifiRadiosProvider.overrideWithValue(wifiRadiosState),
         dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
         deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
         routerRepositoryProvider.overrideWithValue(mockRouterRepository),

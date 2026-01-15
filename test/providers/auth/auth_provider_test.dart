@@ -7,7 +7,7 @@ import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
@@ -23,8 +23,7 @@ class MockPollingNotifier extends Mock implements PollingNotifier {}
 
 class MockDeviceManagerNotifier extends Mock implements DeviceManagerNotifier {}
 
-class MockDashboardManagerNotifier extends Mock
-    implements DashboardManagerNotifier {}
+class MockSessionNotifier extends Mock implements SessionNotifier {}
 
 class MockRASessionNotifier extends Mock implements RASessionNotifier {}
 
@@ -32,14 +31,14 @@ void main() {
   late MockAuthService mockAuthService;
   late MockPollingNotifier mockPollingNotifier;
   late MockDeviceManagerNotifier mockDeviceManagerNotifier;
-  late MockDashboardManagerNotifier mockDashboardManagerNotifier;
+  late MockSessionNotifier mockSessionNotifier;
   late MockRASessionNotifier mockRaSessionNotifier;
 
   setUp(() {
     mockAuthService = MockAuthService();
     mockPollingNotifier = MockPollingNotifier();
     mockDeviceManagerNotifier = MockDeviceManagerNotifier();
-    mockDashboardManagerNotifier = MockDashboardManagerNotifier();
+    mockSessionNotifier = MockSessionNotifier();
     mockRaSessionNotifier = MockRASessionNotifier();
 
     // Setup default behaviors
@@ -49,7 +48,7 @@ void main() {
     when(() => mockRaSessionNotifier.stopMonitorSession()).thenReturn(null);
     when(() => mockRaSessionNotifier.raLogout())
         .thenAnswer((_) async => Future.value());
-    when(() => mockDashboardManagerNotifier.saveSelectedNetwork(any(), any()))
+    when(() => mockSessionNotifier.saveSelectedNetwork(any(), any()))
         .thenAnswer((_) async => Future.value());
   });
 
@@ -59,8 +58,7 @@ void main() {
         authServiceProvider.overrideWithValue(mockAuthService),
         pollingProvider.overrideWith(() => mockPollingNotifier),
         deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
-        dashboardManagerProvider
-            .overrideWith(() => mockDashboardManagerNotifier),
+        sessionProvider.overrideWith(() => mockSessionNotifier),
         raSessionProvider.overrideWith(() => mockRaSessionNotifier),
       ],
     );
@@ -308,7 +306,7 @@ void main() {
     });
   });
 
-  // Note: raLogin() tests require complex provider mocking with DashboardManager
+  // Note: raLogin() tests require complex provider mocking with SessionProvider
   // These are better covered by integration tests
 
   // Note: logout() tests are complex due to provider dependencies

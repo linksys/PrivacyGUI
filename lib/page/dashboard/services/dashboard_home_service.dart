@@ -2,7 +2,10 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
+import 'package:privacy_gui/core/data/providers/ethernet_ports_provider.dart';
+import 'package:privacy_gui/core/data/providers/system_stats_provider.dart';
+import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
@@ -26,23 +29,26 @@ class DashboardHomeService {
   /// This method orchestrates all the data transformation logic required
   /// to build the UI state for the dashboard home view.
   DashboardHomeState buildDashboardHomeState({
-    required DashboardManagerState dashboardManagerState,
+    required DeviceInfoState deviceInfoState,
+    required WifiRadiosState wifiRadiosState,
+    required EthernetPortsState ethernetPortsState,
+    required SystemStatsState systemStatsState,
     required DeviceManagerState deviceManagerState,
     required String Function(LinksysDevice device) getBandForDevice,
     required List<LinksysDevice> deviceList,
   }) {
     // Build WiFi list
     final wifiList = _buildMainWiFiItems(
-      mainRadios: dashboardManagerState.mainRadios,
+      mainRadios: wifiRadiosState.mainRadios,
       mainWifiDevices: deviceManagerState.mainWifiDevices,
       getBandForDevice: getBandForDevice,
     );
 
     // Add guest WiFi if exists
     final guestWifi = _buildGuestWiFiItem(
-      guestRadios: dashboardManagerState.guestRadios,
+      guestRadios: wifiRadiosState.guestRadios,
       guestWifiDevices: deviceManagerState.guestWifiDevices,
-      isGuestNetworkEnabled: dashboardManagerState.isGuestNetworkEnabled,
+      isGuestNetworkEnabled: wifiRadiosState.isGuestNetworkEnabled,
     );
     if (guestWifi != null) {
       wifiList.add(guestWifi);
@@ -66,7 +72,7 @@ class DashboardHomeService {
     );
 
     // Determine port layout
-    final deviceInfo = dashboardManagerState.deviceInfo;
+    final deviceInfo = deviceInfoState.deviceInfo;
     final horizontalPortLayout = isHorizontalPorts(
       modelNumber: deviceInfo?.modelNumber ?? '',
       hardwareVersion: deviceInfo?.hardwareVersion ?? '1',
@@ -74,9 +80,9 @@ class DashboardHomeService {
 
     return DashboardHomeState(
       wifis: wifiList,
-      uptime: dashboardManagerState.uptimes,
-      wanPortConnection: dashboardManagerState.wanConnection,
-      lanPortConnections: dashboardManagerState.lanConnections,
+      uptime: systemStatsState.uptimes,
+      wanPortConnection: ethernetPortsState.wanConnection,
+      lanPortConnections: ethernetPortsState.lanConnections,
       isFirstPolling: isFirstPolling,
       masterIcon: masterIcon,
       isAnyNodesOffline: isAnyNodesOffline,

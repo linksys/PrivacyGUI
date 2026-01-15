@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/core/cache/utility.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';

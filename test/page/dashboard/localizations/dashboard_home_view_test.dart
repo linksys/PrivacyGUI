@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -366,10 +365,6 @@ void main() {
       when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
         DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
             .copyWith(wanPortConnection: () => 'None'),
-      );
-      when(testHelper.mockDashboardManagerNotifier.build()).thenReturn(
-        DashboardManagerState.fromMap(dashboardManagerChrry7TestState)
-            .copyWith(wanConnection: 'None'),
       );
 
       final context = await pumpDashboard(

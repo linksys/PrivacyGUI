@@ -26,8 +26,7 @@ void main() async {
   setUp(() {
     testHelper.setup();
 
-    when(testHelper.mockDashboardManagerNotifier.checkDeviceInfo(null))
-        .thenAnswer(
+    when(testHelper.mockSessionNotifier.checkDeviceInfo(null)).thenAnswer(
       (_) async =>
           NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
     );

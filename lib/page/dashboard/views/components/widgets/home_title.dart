@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/router_time_provider.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
@@ -26,9 +26,9 @@ class DashboardHomeTitle extends ConsumerWidget {
 
   Widget _buildContent(BuildContext context, WidgetRef ref) {
     final wanStatus = ref.watch(internetStatusProvider);
-    final state = ref.watch(dashboardManagerProvider);
+    final routerTime = ref.watch(routerTimeProvider);
     final isOnline = wanStatus == InternetStatus.online;
-    final localTime = DateTime.fromMillisecondsSinceEpoch(state.localTime);
+    final localTime = DateTime.fromMillisecondsSinceEpoch(routerTime);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
