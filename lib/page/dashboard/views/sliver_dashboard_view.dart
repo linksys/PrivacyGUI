@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/page/dashboard/models/dashboard_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
@@ -76,54 +77,86 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
     // This gets the correct column count accounting for page margins
     final uiKitColumns = context.currentMaxColumns;
 
-    return Column(
-      children: [
-        // Top padding to match Standard Layout
-        const SizedBox(height: 32.0),
+    // ScrollController for DashboardOverlay
+    final scrollController = ScrollController();
 
-        // Edit Toolbar (visible only in edit mode)
-        if (_isEditMode) _buildEditToolbar(context),
+    // Grid style only applied to the dashboard area
+    final editModeGridStyle = GridStyle(
+      lineColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+      lineWidth: 1,
+      fillColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+    );
 
-        // Fixed Home Title
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
-          child: DashboardHomeTitle(
-            showSettings: !_isEditMode,
-            onEditPressed: _isEditMode ? null : _enterEditMode,
-          ),
-        ),
+    return SafeArea(
+      child: Column(
+        children: [
+          // TopBar - fixed at top (most important navigation element)
+          const TopBar(),
 
-        // Dashboard grid
-        Expanded(
-          child: Dashboard(
-            controller: controller,
-            // Use a single-point breakpoint map based on UI Kit's calculation
-            // This ensures column count matches UI Kit's responsive system
-            breakpoints: {0: uiKitColumns},
-            slotAspectRatio: 1.0,
-            mainAxisSpacing: AppSpacing.lg,
-            crossAxisSpacing: AppSpacing.lg,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            gridStyle: GridStyle(
-              lineColor:
-                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-              lineWidth: 1,
-              fillColor:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+          // Edit Toolbar (visible only in edit mode) - fixed below TopBar
+          if (_isEditMode) _buildEditToolbar(context),
+
+          // Home Title - fixed below toolbar
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: context.pageMargin,
+              vertical: AppSpacing.md,
             ),
-            itemBuilder: (context, item) {
-              final mode = preferences.getMode(item.id);
-              return _buildItemWidget(context, item, mode, _isEditMode);
-            },
-            onItemResizeEnd: (item) {
-              _handleResizeEnd(context, item);
-            },
+            child: DashboardHomeTitle(
+              showSettings: !_isEditMode,
+              onEditPressed: _isEditMode ? null : _enterEditMode,
+            ),
           ),
-        ),
-      ],
+
+          // Dashboard grid area - scrollable with grid background only here
+          Expanded(
+            child: DashboardOverlay(
+              controller: controller,
+              scrollController: scrollController,
+              itemBuilder: (context, item) {
+                final mode = preferences.getMode(item.id);
+                return _buildItemWidget(context, item, mode, _isEditMode);
+              },
+              slotAspectRatio: 1.0,
+              mainAxisSpacing: AppSpacing.lg,
+              crossAxisSpacing: AppSpacing.lg,
+              padding: EdgeInsets.symmetric(horizontal: context.pageMargin),
+              // Grid background only in the dashboard area
+              gridStyle: _isEditMode ? editModeGridStyle : null,
+              onItemResizeEnd: (item) {
+                _handleResizeEnd(context, item);
+              },
+              child: CustomScrollView(
+                controller: scrollController,
+                slivers: [
+                  // Dashboard grid - SliverDashboard with padding
+                  SliverPadding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: context.pageMargin),
+                    sliver: SliverDashboard(
+                      itemBuilder: (context, item) {
+                        final mode = preferences.getMode(item.id);
+                        return _buildItemWidget(
+                            context, item, mode, _isEditMode);
+                      },
+                      slotAspectRatio: 1.0,
+                      mainAxisSpacing: AppSpacing.lg,
+                      crossAxisSpacing: AppSpacing.lg,
+                      breakpoints: {0: uiKitColumns},
+                      gridStyle: _isEditMode ? editModeGridStyle : null,
+                    ),
+                  ),
+
+                  // Bottom padding
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.md),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -193,8 +226,8 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
 
   Widget _buildEditToolbar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
+      padding: EdgeInsets.symmetric(
+        horizontal: context.pageMargin,
         vertical: AppSpacing.sm,
       ),
       child: AppCard(

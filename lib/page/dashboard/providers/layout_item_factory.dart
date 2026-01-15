@@ -195,7 +195,7 @@ class LayoutItemFactory {
       x: 0,
       y: bottomY,
       w: 8,
-      h: 2,
+      // h: removed to use preferredHeight from spec (5 in Normal mode)
       displayMode: displayMode,
     ));
 

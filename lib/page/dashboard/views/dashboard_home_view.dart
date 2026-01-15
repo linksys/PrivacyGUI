@@ -19,10 +19,9 @@ import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/wifi_gr
 import 'package:privacy_gui/page/dashboard/views/sliver_dashboard_view.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_status_tile.dart';
 import 'package:privacy_gui/core/utils/assign_ip/assign_ip.dart';
-import 'package:privacy_gui/page/dashboard/models/dashboard_widget_specs.dart';
-import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/sliver_dashboard_controller_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class DashboardHomeView extends ConsumerStatefulWidget {
   const DashboardHomeView({Key? key}) : super(key: key);
@@ -67,14 +66,9 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
     final useCustom = preferences.useCustomLayout;
 
     if (useCustom) {
-      // sliver_dashboard breakpoints are adjusted in SliverDashboardView
-      // to compensate for UiKitPageView's horizontal margin.
-      return UiKitPageView(
-        scrollable: false,
-        appBarStyle: UiKitAppBarStyle.none,
-        backState: UiKitBackState.none,
-        child: (_, __) => const SliverDashboardView(),
-      );
+      // SliverDashboardView now contains TopBar and SafeArea internally
+      // using DashboardOverlay + CustomScrollView + SliverDashboard architecture
+      return const SliverDashboardView();
     }
 
     // Standard Layout: use strategy pattern
@@ -85,10 +79,8 @@ class _DashboardHomeViewState extends ConsumerState<DashboardHomeView> {
       },
       appBarStyle: UiKitAppBarStyle.none,
       backState: UiKitBackState.none,
-      padding: EdgeInsets.only(
-        top: 32.0,
-        bottom: 16.0,
-      ),
+      padding:
+          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
       child: (childContext, constraints) {
         // 1. Determine layout variant (Standard only)
         final variant = DashboardLayoutVariant.fromContext(
