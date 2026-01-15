@@ -3,7 +3,6 @@ import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart'
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/services/dashboard_home_service.dart';
-import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 
 final dashboardHomeProvider =
     NotifierProvider<DashboardHomeNotifier, DashboardHomeState>(
@@ -15,8 +14,6 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
   DashboardHomeState build() {
     final dashboardManagerState = ref.watch(dashboardManagerProvider);
     final deviceManagerState = ref.watch(deviceManagerProvider);
-    // Watch healthCheckProvider to maintain reactivity (even though we don't use it directly)
-    ref.watch(healthCheckProvider);
 
     final service = ref.read(dashboardHomeServiceProvider);
     return service.buildDashboardHomeState(

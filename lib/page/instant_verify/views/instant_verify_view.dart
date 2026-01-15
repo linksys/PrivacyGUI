@@ -18,8 +18,6 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
@@ -722,7 +720,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardHomeProvider);
+    final state = ref.watch(dashboardManagerProvider);
     return AppCard(
         key: const ValueKey('portCard'),
         padding: EdgeInsets.zero,
@@ -739,7 +737,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ...state.lanPortConnections
+                  ...state.lanConnections
                       .mapIndexed((index, e) => Expanded(
                             child: PortStatusWidget(
                               connection: e == 'None' ? null : e,
@@ -751,9 +749,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                       .toList(),
                   Expanded(
                     child: PortStatusWidget(
-                      connection: state.wanPortConnection == 'None'
+                      connection: state.wanConnection == 'None'
                           ? null
-                          : state.wanPortConnection,
+                          : state.wanConnection,
                       label: loc(context).wan,
                       isWan: true,
                       hasLanPorts: true, // Force vertical layout
