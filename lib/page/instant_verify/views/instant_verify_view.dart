@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/providers/router_time_provider.dart';
 import 'package:privacy_gui/core/data/providers/system_stats_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/ethernet_ports_provider.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/wan_external_provider.dart';
@@ -723,7 +724,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardManagerProvider);
+    final state = ref.watch(ethernetPortsProvider);
     return AppCard(
         key: const ValueKey('portCard'),
         padding: EdgeInsets.zero,

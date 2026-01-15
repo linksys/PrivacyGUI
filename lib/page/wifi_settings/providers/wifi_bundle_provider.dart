@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/ethernet_ports_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
@@ -34,6 +35,7 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
   WifiBundleState build() {
     final wifiRadiosState = ref.read(wifiRadiosProvider);
     final deviceManagerState = ref.read(deviceManagerProvider);
+    final ethernetPortsState = ref.read(ethernetPortsProvider);
 
     // Use service layer to create initial WiFi list settings
     // This avoids importing JNAP models directly in the provider
@@ -52,7 +54,7 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
             );
 
     final initialWifiListStatus = WiFiListStatus(
-        canDisableMainWiFi: dashboardManagerState.lanConnections.isNotEmpty);
+        canDisableMainWiFi: ethernetPortsState.lanConnections.isNotEmpty);
 
     const initialAdvancedSettings = WifiAdvancedSettingsState();
     final initialPrivacySettings = InstantPrivacySettings.init();
@@ -81,7 +83,7 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
   @override
   Future<(WifiBundleSettings?, WifiBundleStatus?)> performFetch(
       {bool forceRemote = false, bool updateStatusOnly = false}) async {
-    final dashboardManagerState = ref.read(dashboardManagerProvider);
+    final ethernetPortsState = ref.read(ethernetPortsProvider);
     final deviceManagerState = ref.read(deviceManagerProvider);
     final (newSettings, newStatus) =
         await ref.read(wifiSettingsServiceProvider).fetchBundleSettings(
@@ -90,7 +92,7 @@ class WifiBundleNotifier extends Notifier<WifiBundleState>
               mainWifiDevices: deviceManagerState.mainWifiDevices,
               guestWifiDevices: deviceManagerState.guestWifiDevices,
               allDevices: deviceManagerState.deviceList,
-              isLanConnected: dashboardManagerState.lanConnections.isNotEmpty,
+              isLanConnected: ethernetPortsState.lanConnections.isNotEmpty,
               getBandConnectedBy: (device) => ref
                   .read(deviceManagerProvider.notifier)
                   .getBandConnectedBy(device),
