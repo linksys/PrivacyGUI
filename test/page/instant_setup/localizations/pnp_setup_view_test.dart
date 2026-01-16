@@ -125,6 +125,9 @@ class FakePnpNotifier extends BasePnpNotifier {
   @override
   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase() =>
       (name: 'MyGuestWiFi', password: 'MyGuestPassword');
+
+  @override
+  bool get isLoggedIn => true; // Default to logged in for tests
 }
 
 void main() {

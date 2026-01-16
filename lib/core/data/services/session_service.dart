@@ -95,4 +95,28 @@ class SessionService {
       _ => UnexpectedError(originalError: error, message: error.result),
     };
   }
+
+  // === Force Fetch Device Info ===
+
+  /// Force fetches device info from router, bypassing all caches.
+  ///
+  /// Unlike [checkDeviceInfo], this method always makes an API call
+  /// regardless of cached values. Use this when you need guaranteed
+  /// fresh data, such as during initial session setup or after
+  /// configuration changes.
+  ///
+  /// Returns: Fresh [NodeDeviceInfo] from router API call
+  ///
+  /// Throws: [ServiceError] on API failure
+  Future<NodeDeviceInfo> forceFetchDeviceInfo() async {
+    try {
+      final result = await _routerRepository.send(
+        JNAPAction.getDeviceInfo,
+        fetchRemote: true,
+      );
+      return NodeDeviceInfo.fromJson(result.output);
+    } on JNAPError catch (e) {
+      throw _mapJnapError(e);
+    }
+  }
 }

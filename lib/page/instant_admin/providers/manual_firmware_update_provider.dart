@@ -39,7 +39,7 @@ class ManualFirmwareUpdateNotifier
 
   Future<bool> manualFirmwareUpdate(String filename, List<int> bytes) async {
     final localPassword = ref.read(authProvider).value?.localPassword;
-    final localIp = getLocalIp(ref);
+    final localIp = getLocalIp(ref.read);
     ref.read(pollingProvider.notifier).stopPolling();
     return ref
         .read(manualFirmwareUpdateServiceProvider)

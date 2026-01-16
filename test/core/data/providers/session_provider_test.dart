@@ -269,4 +269,103 @@ void main() {
       );
     });
   });
+
+  group('SessionNotifier - forceFetchDeviceInfo', () {
+    test('delegates to service.forceFetchDeviceInfo', () async {
+      // Arrange
+      final freshDeviceInfo = NodeDeviceInfo.fromJson(
+        SessionTestData.createDeviceInfoSuccess(serialNumber: 'FRESH_SN')
+            .output,
+      );
+
+      when(() => mockService.forceFetchDeviceInfo())
+          .thenAnswer((_) async => freshDeviceInfo);
+
+      container = ProviderContainer(
+        overrides: [
+          sessionServiceProvider.overrideWithValue(mockService),
+          deviceInfoProvider.overrideWithValue(const DeviceInfoState()),
+        ],
+      );
+
+      // Act
+      final result =
+          await container.read(sessionProvider.notifier).forceFetchDeviceInfo();
+
+      // Assert
+      verify(() => mockService.forceFetchDeviceInfo()).called(1);
+      expect(result.serialNumber, equals('FRESH_SN'));
+    });
+
+    test('always fetches fresh data, ignoring cache', () async {
+      // Arrange - Cached device info exists but should be ignored
+      final cachedDeviceInfo = NodeDeviceInfo.fromJson(
+        SessionTestData.createDeviceInfoSuccess(serialNumber: 'CACHED_SN')
+            .output,
+      );
+      final freshDeviceInfo = NodeDeviceInfo.fromJson(
+        SessionTestData.createDeviceInfoSuccess(serialNumber: 'FRESH_SN')
+            .output,
+      );
+
+      when(() => mockService.forceFetchDeviceInfo())
+          .thenAnswer((_) async => freshDeviceInfo);
+
+      container = ProviderContainer(
+        overrides: [
+          sessionServiceProvider.overrideWithValue(mockService),
+          deviceInfoProvider
+              .overrideWithValue(DeviceInfoState(deviceInfo: cachedDeviceInfo)),
+        ],
+      );
+
+      // Act
+      final result =
+          await container.read(sessionProvider.notifier).forceFetchDeviceInfo();
+
+      // Assert - Should return fresh data, not cached
+      expect(result.serialNumber, equals('FRESH_SN'));
+      verify(() => mockService.forceFetchDeviceInfo()).called(1);
+    });
+
+    test('propagates UnauthorizedError from service', () async {
+      // Arrange
+      when(() => mockService.forceFetchDeviceInfo()).thenThrow(
+        const UnauthorizedError(),
+      );
+
+      container = ProviderContainer(
+        overrides: [
+          sessionServiceProvider.overrideWithValue(mockService),
+          deviceInfoProvider.overrideWithValue(const DeviceInfoState()),
+        ],
+      );
+
+      // Act & Assert
+      await expectLater(
+        () => container.read(sessionProvider.notifier).forceFetchDeviceInfo(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+    });
+
+    test('propagates ResourceNotFoundError from service', () async {
+      // Arrange
+      when(() => mockService.forceFetchDeviceInfo()).thenThrow(
+        const ResourceNotFoundError(),
+      );
+
+      container = ProviderContainer(
+        overrides: [
+          sessionServiceProvider.overrideWithValue(mockService),
+          deviceInfoProvider.overrideWithValue(const DeviceInfoState()),
+        ],
+      );
+
+      // Act & Assert
+      await expectLater(
+        () => container.read(sessionProvider.notifier).forceFetchDeviceInfo(),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+    });
+  });
 }

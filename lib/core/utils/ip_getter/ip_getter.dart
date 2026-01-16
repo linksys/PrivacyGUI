@@ -6,7 +6,11 @@
 /// ```dart
 /// import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 ///
-/// final ip = getLocalIp(ref);
+/// // In a Provider (with Ref)
+/// final ip = getLocalIp(ref.read);
+///
+/// // In a Widget (with WidgetRef)
+/// final ip = getLocalIp(ref.read);
 /// ```
 ///
 /// The correct platform implementation is automatically selected at compile time.

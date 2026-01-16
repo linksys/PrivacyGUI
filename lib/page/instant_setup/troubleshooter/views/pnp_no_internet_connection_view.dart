@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/constants/_constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
@@ -116,7 +116,7 @@ class _PnpNoInternetConnectionState
                         .checkAdminPassword(attachedPassword);
                   } catch (_) {}
                 }
-                if (ref.read(routerRepositoryProvider).isLoggedIn()) {
+                if (ref.read(pnpProvider.notifier).isLoggedIn) {
                   goRoute(RouteNamed.pnpIspTypeSelection);
                 } else {
                   final isLoggedIn = await goRoute(RouteNamed.pnpIspAuth);

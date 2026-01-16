@@ -12,7 +12,6 @@ import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
@@ -283,7 +282,7 @@ class RouterNotifier extends ChangeNotifier {
   FutureOr<String?> goPnp(String query) {
     FlutterNativeSplash.remove();
     final queryParams = query.isEmpty
-        ? Uri.tryParse(getFullLocation(_ref))?.query ?? ''
+        ? Uri.tryParse(getFullLocation(_ref.read))?.query ?? ''
         : query;
     final path = '${RoutePath.pnp}?$queryParams';
     logger.i('[Route]: Go to PnP, URI=$path');
@@ -439,15 +438,12 @@ class RouterNotifier extends ChangeNotifier {
       return null;
     }
 
-    final routerRepository = _ref.read(routerRepositoryProvider);
+    // Use sessionProvider.forceFetchDeviceInfo() instead of direct RouterRepository access
+    // This adheres to Clean Architecture: Route -> Provider -> Service -> Repository
+    final deviceInfo =
+        await _ref.read(sessionProvider.notifier).forceFetchDeviceInfo();
+    final newSerialNumber = deviceInfo.serialNumber;
 
-    final newSerialNumber = await routerRepository
-        .send(
-          JNAPAction.getDeviceInfo,
-          fetchRemote: true,
-        )
-        .then<String>(
-            (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
     if (serialNumber == newSerialNumber) {
       return null;
     }

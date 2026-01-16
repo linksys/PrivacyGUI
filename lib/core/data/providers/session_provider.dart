@@ -91,6 +91,27 @@ class SessionNotifier extends Notifier<void> {
     await pref.setString(pSelectedNetworkId, networkId);
     ref.read(selectedNetworkIdProvider.notifier).state = networkId;
   }
+
+  /// Force fetches device info from router, bypassing all caches.
+  ///
+  /// This method always makes an API call to get fresh device info,
+  /// regardless of any cached values. Use this when you need guaranteed
+  /// fresh data, such as:
+  /// - During initial session setup (prepare dashboard)
+  /// - After configuration changes
+  /// - When validating router connectivity
+  ///
+  /// Returns: Fresh [NodeDeviceInfo] from router
+  ///
+  /// Throws: [ServiceError] on API failure
+  Future<NodeDeviceInfo> forceFetchDeviceInfo() async {
+    final benchMark = BenchMarkLogger(name: 'forceFetchDeviceInfo');
+    benchMark.start();
+    final service = ref.read(sessionServiceProvider);
+    final nodeDeviceInfo = await service.forceFetchDeviceInfo();
+    benchMark.end();
+    return nodeDeviceInfo;
+  }
 }
 
 /// State provider for the currently selected network ID.

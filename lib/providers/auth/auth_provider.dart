@@ -316,13 +316,6 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     );
   }
 
-  Future<void> getDeviceInfo() async {
-    final routerRepository = ref.read(routerRepositoryProvider);
-    await routerRepository.send(
-      JNAPAction.getDeviceInfo,
-    );
-  }
-
   /// Performs logout by delegating to AuthService for credential cleanup.
   ///
   /// This method delegates credential clearing to AuthService while maintaining
