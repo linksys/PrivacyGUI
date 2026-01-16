@@ -6,7 +6,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:privacy_gui/core/jnap/models/back_haul_info.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
+import 'package:privacy_gui/core/data/providers/system_stats_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -62,21 +63,22 @@ class InstantVerifyPdfService {
   }
 
   static List<pw.Widget> _buildInfo(BuildContext context, WidgetRef ref) {
-    final dashboardState = ref.read(dashboardManagerProvider);
+    final deviceInfoState = ref.read(deviceInfoProvider);
+    final systemStatsState = ref.read(systemStatsProvider);
     final deviceManagerState = ref.read(deviceManagerProvider);
     final devicesState = ref.read(deviceManagerProvider);
     final healthCheckState = ref.read(healthCheckProvider);
     final systemConnectivityState = ref.read(instantVerifyProvider);
 
     final uptime = DateFormatUtils.formatDuration(
-        Duration(seconds: dashboardState.uptimes), context);
+        Duration(seconds: systemStatsState.uptimes), context);
     final master = devicesState.masterDevice;
     final guestWiFi =
         systemConnectivityState.guestRadioSettings.radios.firstOrNull;
     final isSupportHealthCheck =
         ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
-    final cpuLoad = dashboardState.cpuLoad;
-    final memoryLoad = dashboardState.memoryLoad;
+    final cpuLoad = systemStatsState.cpuLoad;
+    final memoryLoad = systemStatsState.memoryLoad;
     return [
       //
       pw.Text(loc(context).deviceInfo),
@@ -84,7 +86,7 @@ class InstantVerifyPdfService {
           '${loc(context).systemTestDateFormat(DateTime.now())} ${loc(context).systemTestDateTime(DateTime.now())}'),
       pw.Text('${loc(context).uptime}: $uptime'),
       pw.Text('${loc(context).model}: ${master.modelNumber ?? '--'}'),
-      pw.Text('${loc(context).sku}: ${dashboardState.skuModelNumber ?? '--'}'),
+      pw.Text('${loc(context).sku}: ${deviceInfoState.skuModelNumber ?? '--'}'),
       pw.Text(
           '${loc(context).serialNumber}: ${master.unit.serialNumber ?? '--'}'),
       pw.Text('${loc(context).macAddress}: ${master.getMacAddress()}'),

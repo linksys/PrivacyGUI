@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -68,7 +68,7 @@ class _DevicesFilterWidgetState extends ConsumerState<DevicesFilterWidget> {
       wifiState.settings.current.wifiList.guestWiFi.ssid,
     ];
     final radios = (ref
-            .watch(dashboardManagerProvider.select((value) => value.mainRadios))
+            .watch(wifiRadiosProvider.select((value) => value.mainRadios))
             .unique((x) => x.band)
             .map((e) => e.band)
             .toList()

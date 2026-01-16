@@ -2,7 +2,7 @@ export 'add_nodes_notifier_mocks.dart';
 export 'administration_settings_notifier_mocks.dart';
 export 'apps_and_gaming_view_notifier_mocks.dart';
 export 'dashboard_home_notifier_mocks.dart';
-export 'dashboard_manager_notifier_mocks.dart';
+export 'session_notifier_mocks.dart';
 export 'ddns_notifier_mocks.dart';
 export 'device_filter_config_notifier_mocks.dart';
 export 'device_list_notifier_mock.dart';

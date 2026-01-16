@@ -175,7 +175,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     //       .then((prefs) {
     //     final currentSN = prefs.getString(pCurrentSN);
     //     if (currentSN != null &&
-    //         ref.read(dashboardManagerProvider).deviceInfo?.serialNumber !=
+    //         ref.read(sessionProvider).deviceInfo?.serialNumber !=
     //             currentSN) {
     //       // if (mounted) {
     //       //   showRouterNotFoundAlert(context, ref);

@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
+import 'package:privacy_gui/core/data/providers/router_time_provider.dart';
+import 'package:privacy_gui/core/data/providers/system_stats_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/ethernet_ports_provider.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/wan_external_provider.dart';
@@ -538,15 +541,16 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _deviceInfoCard(BuildContext context, WidgetRef ref) {
-    final dashboardState = ref.watch(dashboardManagerProvider);
+    final deviceInfoState = ref.watch(deviceInfoProvider);
+    final systemStatsState = ref.watch(systemStatsProvider);
+    final routerTime = ref.watch(routerTimeProvider);
     final devicesState = ref.watch(deviceManagerProvider);
     final uptime = DateFormatUtils.formatDuration(
-        Duration(seconds: dashboardState.uptimes), context, true);
-    final localTime =
-        DateTime.fromMillisecondsSinceEpoch(dashboardState.localTime);
+        Duration(seconds: systemStatsState.uptimes), context, true);
+    final localTime = DateTime.fromMillisecondsSinceEpoch(routerTime);
     final master = devicesState.masterDevice;
-    final cpuLoad = dashboardState.cpuLoad;
-    final memoryLoad = dashboardState.memoryLoad;
+    final cpuLoad = systemStatsState.cpuLoad;
+    final memoryLoad = systemStatsState.memoryLoad;
 
     return AppCard(
         key: const ValueKey('deviceInfoCard'),
@@ -631,7 +635,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 children: [
                   AppText.bodySmall(loc(context).sku),
                   AppText.labelMedium(
-                    dashboardState.skuModelNumber ?? '--',
+                    deviceInfoState.skuModelNumber ?? '--',
                     selectable: true,
                   ),
                 ],
@@ -720,7 +724,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardManagerProvider);
+    final state = ref.watch(ethernetPortsProvider);
     return AppCard(
         key: const ValueKey('portCard'),
         padding: EdgeInsets.zero,

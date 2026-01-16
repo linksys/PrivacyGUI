@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -109,7 +109,7 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
     logger.i(
         'Filter<$deviceUUID>:: Collect additional radios from connected devices: $radios');
     return (ref
-            .read(dashboardManagerProvider)
+            .read(wifiRadiosProvider)
             .mainRadios
             .unique((x) => x.band)
             .map((e) => e.band)

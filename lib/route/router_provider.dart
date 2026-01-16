@@ -9,7 +9,8 @@ import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/session_provider.dart';
+import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -368,7 +369,7 @@ class RouterNotifier extends ChangeNotifier {
         .loadCache(serialNumber: serialNumber ?? '');
     logger.d('[Prepare]: device info check - $serialNumber');
     final nodeDeviceInfo = await _ref
-        .read(dashboardManagerProvider.notifier)
+        .read(sessionProvider.notifier)
         .checkDeviceInfo(serialNumber)
         .then<NodeDeviceInfo?>((nodeDeviceInfo) {
       // Build/Update better actions
@@ -409,7 +410,7 @@ class RouterNotifier extends ChangeNotifier {
         return null;
       }
       await _ref
-          .read(dashboardManagerProvider.notifier)
+          .read(sessionProvider.notifier)
           .saveSelectedNetwork(serialNumber, '');
     } else if (_ref.read(selectedNetworkIdProvider) == null) {
       _ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
@@ -417,7 +418,7 @@ class RouterNotifier extends ChangeNotifier {
         return RoutePath.selectNetwork;
       }
       await _ref
-          .read(dashboardManagerProvider.notifier)
+          .read(sessionProvider.notifier)
           .saveSelectedNetwork(serialNumber, networkId);
     }
     return null;
@@ -451,7 +452,7 @@ class RouterNotifier extends ChangeNotifier {
 
     // Save serial number if serial number changed
     await _ref
-        .read(dashboardManagerProvider.notifier)
+        .read(sessionProvider.notifier)
         .saveSelectedNetwork(newSerialNumber, '');
 
     return null;
@@ -461,7 +462,7 @@ class RouterNotifier extends ChangeNotifier {
       serialNumber != null &&
       serialNumber == _getStateDeviceInfo()?.serialNumber;
   NodeDeviceInfo? _getStateDeviceInfo() =>
-      _ref.read(dashboardManagerProvider).deviceInfo;
+      _ref.read(deviceInfoProvider).deviceInfo;
 }
 
 final autoParentFirstLoginStateProvider = StateProvider<bool>((ref) {

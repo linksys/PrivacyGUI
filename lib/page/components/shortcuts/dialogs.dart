@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -364,7 +364,7 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
           label: loc(context).tryAgain,
           onTap: () async {
             await ref
-                .read(dashboardManagerProvider.notifier)
+                .read(sessionProvider.notifier)
                 .checkRouterIsBack()
                 .then((_) {
               logger.d('[RouterNotFound] Found!');
