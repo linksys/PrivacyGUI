@@ -78,7 +78,7 @@ import 'screen.dart';
 import 'testable_router.dart';
 
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
@@ -92,7 +92,6 @@ import '../test_data/_index.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/providers/apps_and_gaming_state.dart';
 import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/providers/ddns_state.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -111,7 +110,7 @@ class TestHelper {
   late MockPortRangeTriggeringRuleNotifier mockPortRangeTriggeringRuleNotifier;
   late MockDMZSettingsNotifier mockDMZSettingsNotifier;
   late MockDashboardHomeNotifier mockDashboardHomeNotifier;
-  late MockDashboardManagerNotifier mockDashboardManagerNotifier;
+  late MockSessionNotifier mockSessionNotifier;
   late MockFirmwareUpdateNotifier mockFirmwareUpdateNotifier;
   late MockDeviceManagerNotifier mockDeviceManagerNotifier;
   late MockInstantPrivacyNotifier mockInstantPrivacyNotifier;
@@ -176,7 +175,7 @@ class TestHelper {
     mockPortRangeTriggeringRuleNotifier = MockPortRangeTriggeringRuleNotifier();
     mockDMZSettingsNotifier = MockDMZSettingsNotifier();
     mockDashboardHomeNotifier = MockDashboardHomeNotifier();
-    mockDashboardManagerNotifier = MockDashboardManagerNotifier();
+    mockSessionNotifier = MockSessionNotifier();
     mockFirmwareUpdateNotifier = MockFirmwareUpdateNotifier();
     mockDeviceManagerNotifier = MockDeviceManagerNotifier();
     mockInstantPrivacyNotifier = MockInstantPrivacyNotifier();
@@ -284,8 +283,7 @@ class TestHelper {
         .thenReturn(DMZSettingsState.fromMap(dmzSettingsTestState));
     when(mockDashboardHomeNotifier.build())
         .thenReturn(DashboardHomeState.fromMap(dashboardHomePinnacleTestState));
-    when(mockDashboardManagerNotifier.build()).thenReturn(
-        DashboardManagerState.fromMap(dashboardManagerPinnacleTestState));
+    // SessionNotifier now uses void state - no build() mock needed
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.fromMap(firmwareUpdateTestData));
     when(mockDeviceManagerNotifier.build())
@@ -400,8 +398,7 @@ class TestHelper {
             .overrideWith(() => mockPortRangeTriggeringRuleNotifier),
         dmzSettingsProvider.overrideWith(() => mockDMZSettingsNotifier),
         dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
-        dashboardManagerProvider
-            .overrideWith(() => mockDashboardManagerNotifier),
+        sessionProvider.overrideWith(() => mockSessionNotifier),
         firmwareUpdateProvider.overrideWith(() => mockFirmwareUpdateNotifier),
         deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
         instantPrivacyProvider.overrideWith(() => mockInstantPrivacyNotifier),

@@ -15,10 +15,13 @@ void main() {
     group('buildDashboardHomeState', () {
       test('returns correct state with main WiFi networks grouped by band', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState(
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState(
           mainRadios: DashboardHomeTestData.createDefaultMainRadios(),
         );
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState(
           deviceList: [
@@ -42,7 +45,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -62,8 +68,12 @@ void main() {
 
       test('returns correct state with guest WiFi when guest radios exist', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerStateWithGuest();
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState =
+            DashboardHomeTestData.createWifiRadiosStateWithGuest();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState(
           deviceList: [
@@ -78,7 +88,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -95,8 +108,17 @@ void main() {
 
       test('returns empty WiFi list when no radios exist', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createEmptyDashboardManagerState();
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState(
+          mainRadios: const [],
+        );
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState(
+          wanConnection: null,
+          lanConnections: const [],
+        );
+        final systemStatsState =
+            DashboardHomeTestData.createSystemStatsState(uptimes: 0);
         final deviceManagerState =
             DashboardHomeTestData.createEmptyDeviceManagerState();
         final getBandForDevice =
@@ -104,7 +126,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -116,8 +141,11 @@ void main() {
 
       test('sets isAnyNodesOffline true when nodes are offline', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState();
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerStateWithOfflineNodes();
         final getBandForDevice =
@@ -125,7 +153,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -137,8 +168,11 @@ void main() {
 
       test('sets isAnyNodesOffline false when all nodes are online', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState();
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState(
           deviceList: [
@@ -151,7 +185,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -163,8 +200,11 @@ void main() {
 
       test('sets isFirstPolling true when lastUpdateTime is zero', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState();
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createFirstPollingDeviceManagerState();
         final getBandForDevice =
@@ -172,7 +212,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -184,8 +227,11 @@ void main() {
 
       test('sets isFirstPolling false when lastUpdateTime is non-zero', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState();
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState(
           lastUpdateTime: 1234567890,
@@ -195,7 +241,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -207,10 +256,13 @@ void main() {
 
       test('handles null deviceInfo for port layout determination', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState(
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState(
           deviceInfo: null,
         );
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState();
         final getBandForDevice =
@@ -218,7 +270,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -237,10 +292,13 @@ void main() {
 
       test('correctly counts connected devices per band', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState(
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState(
           mainRadios: DashboardHomeTestData.createDefaultMainRadios(),
         );
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState(
           deviceList: [
@@ -274,7 +332,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -293,12 +354,15 @@ void main() {
 
       test('does not add guest WiFi when guest radios are empty', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState(
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState(
           guestRadios: const [],
           isGuestNetworkEnabled:
               true, // Even if enabled, no radios = no guest WiFi
         );
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState();
         final getBandForDevice =
@@ -306,7 +370,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -318,8 +385,11 @@ void main() {
 
       test('correctly extracts WAN type from wanStatus', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState();
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState(
           wanStatus: DashboardHomeTestData.createWanStatus(wanType: 'PPPoE'),
@@ -329,7 +399,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -341,8 +414,11 @@ void main() {
 
       test('correctly extracts detectedWANType from wanStatus', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState();
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState(
           wanStatus: DashboardHomeTestData.createWanStatus(
@@ -354,7 +430,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -366,8 +445,11 @@ void main() {
 
       test('correctly determines master icon from deviceList', () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState();
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceList = [
           DashboardHomeTestData.createMasterDevice(modelNumber: 'MX5300'),
         ];
@@ -380,7 +462,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceList,
@@ -394,13 +479,16 @@ void main() {
 
       test('correctly determines horizontal port layout', () {
         // Arrange - LN11 has horizontal ports
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState(
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState(
           deviceInfo: DashboardHomeTestData.createNodeDeviceInfo(
             modelNumber: 'LN11',
             hardwareVersion: '1',
           ),
         );
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState();
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState();
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState();
         final getBandForDevice =
@@ -408,7 +496,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,
@@ -421,11 +512,15 @@ void main() {
       test('passes through uptime, wanConnection, lanConnections correctly',
           () {
         // Arrange
-        final dashboardManagerState =
-            DashboardHomeTestData.createDashboardManagerState(
-          uptimes: 172800, // 2 days in seconds
+        final deviceInfoState = DashboardHomeTestData.createDeviceInfoState();
+        final wifiRadiosState = DashboardHomeTestData.createWifiRadiosState();
+        final ethernetPortsState =
+            DashboardHomeTestData.createEthernetPortsState(
           wanConnection: 'Linked-100Mbps',
           lanConnections: ['Linked-1000Mbps', 'Linked-100Mbps', 'None', 'None'],
+        );
+        final systemStatsState = DashboardHomeTestData.createSystemStatsState(
+          uptimes: 172800, // 2 days in seconds
         );
         final deviceManagerState =
             DashboardHomeTestData.createDeviceManagerState();
@@ -434,7 +529,10 @@ void main() {
 
         // Act
         final result = service.buildDashboardHomeState(
-          dashboardManagerState: dashboardManagerState,
+          deviceInfoState: deviceInfoState,
+          wifiRadiosState: wifiRadiosState,
+          ethernetPortsState: ethernetPortsState,
+          systemStatsState: systemStatsState,
           deviceManagerState: deviceManagerState,
           getBandForDevice: getBandForDevice,
           deviceList: deviceManagerState.deviceList,

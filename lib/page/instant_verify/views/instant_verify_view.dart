@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
+import 'package:privacy_gui/core/data/providers/router_time_provider.dart';
+import 'package:privacy_gui/core/data/providers/system_stats_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
+import 'package:privacy_gui/core/data/providers/ethernet_ports_provider.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/wan_external_provider.dart';
@@ -18,8 +21,6 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
@@ -540,15 +541,16 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _deviceInfoCard(BuildContext context, WidgetRef ref) {
-    final dashboardState = ref.watch(dashboardManagerProvider);
+    final deviceInfoState = ref.watch(deviceInfoProvider);
+    final systemStatsState = ref.watch(systemStatsProvider);
+    final routerTime = ref.watch(routerTimeProvider);
     final devicesState = ref.watch(deviceManagerProvider);
     final uptime = DateFormatUtils.formatDuration(
-        Duration(seconds: dashboardState.uptimes), context, true);
-    final localTime =
-        DateTime.fromMillisecondsSinceEpoch(dashboardState.localTime);
+        Duration(seconds: systemStatsState.uptimes), context, true);
+    final localTime = DateTime.fromMillisecondsSinceEpoch(routerTime);
     final master = devicesState.masterDevice;
-    final cpuLoad = dashboardState.cpuLoad;
-    final memoryLoad = dashboardState.memoryLoad;
+    final cpuLoad = systemStatsState.cpuLoad;
+    final memoryLoad = systemStatsState.memoryLoad;
 
     return AppCard(
         key: const ValueKey('deviceInfoCard'),
@@ -633,7 +635,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 children: [
                   AppText.bodySmall(loc(context).sku),
                   AppText.labelMedium(
-                    dashboardState.skuModelNumber ?? '--',
+                    deviceInfoState.skuModelNumber ?? '--',
                     selectable: true,
                   ),
                 ],
@@ -722,7 +724,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   Widget _portsCard(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(dashboardHomeProvider);
+    final state = ref.watch(ethernetPortsProvider);
     return AppCard(
         key: const ValueKey('portCard'),
         padding: EdgeInsets.zero,
@@ -739,7 +741,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ...state.lanPortConnections
+                  ...state.lanConnections
                       .mapIndexed((index, e) => Expanded(
                             child: PortStatusWidget(
                               connection: e == 'None' ? null : e,
@@ -751,9 +753,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                       .toList(),
                   Expanded(
                     child: PortStatusWidget(
-                      connection: state.wanPortConnection == 'None'
+                      connection: state.wanConnection == 'None'
                           ? null
-                          : state.wanPortConnection,
+                          : state.wanConnection,
                       label: loc(context).wan,
                       isWan: true,
                       hasLanPorts: true, // Force vertical layout

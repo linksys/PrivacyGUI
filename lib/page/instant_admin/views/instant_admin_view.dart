@@ -5,8 +5,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_provider.dart';
-import 'package:privacy_gui/core/data/providers/dashboard_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -71,15 +70,15 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     final isFwAutoUpdate = ref.watch(firmwareUpdateProvider
             .select((value) => value.settings.updatePolicy)) ==
         FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
-    final dashboardManagerState = ref.watch(dashboardManagerProvider);
+    final deviceInfoState = ref.watch(deviceInfoProvider);
     final timezoneState = ref.watch(timezoneProvider);
     final powerTableState = ref.watch(powerTableProvider);
 
     final widgets = [
       _buildPasswordWidget(context, routerPasswordState),
       _buildAutoFirmwareWidget(context, isFwAutoUpdate),
-      if (dashboardManagerState.skuModelNumber?.endsWith('AH') != true)
-        _buildManualFirmwareWidget(context, dashboardManagerState),
+      if (deviceInfoState.skuModelNumber?.endsWith('AH') != true)
+        _buildManualFirmwareWidget(context, deviceInfoState),
       _buildTimezoneWidget(context, timezoneState),
       if (powerTableState.isPowerTableSelectable)
         _buildTransmitRegionWidget(context, powerTableState),
@@ -162,9 +161,9 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
 
   Widget _buildManualFirmwareWidget(
     BuildContext context,
-    DashboardManagerState dashboardManagerState,
+    DeviceInfoState deviceInfoState,
   ) {
-    final firmwareVersion = dashboardManagerState.deviceInfo?.firmwareVersion;
+    final firmwareVersion = deviceInfoState.deviceInfo?.firmwareVersion;
     return _buildListCard(
       title: loc(context).manualFirmwareUpdate,
       description: firmwareVersion ?? '--',
