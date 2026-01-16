@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/data/providers/session_provider.dart';
@@ -62,8 +63,8 @@ void main() {
 
       // Assert
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('currentSN'), equals('TEST_SN'));
-      expect(prefs.getString('selectedNetworkId'), equals('TEST_NETWORK_ID'));
+      expect(prefs.getString(pCurrentSN), equals('TEST_SN'));
+      expect(prefs.getString(pSelectedNetworkId), equals('TEST_NETWORK_ID'));
       expect(
           container.read(selectedNetworkIdProvider), equals('TEST_NETWORK_ID'));
     });
@@ -84,8 +85,8 @@ void main() {
 
       // Assert
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('currentSN'), equals('LOCAL_SN'));
-      expect(prefs.getString('selectedNetworkId'), equals(''));
+      expect(prefs.getString(pCurrentSN), equals('LOCAL_SN'));
+      expect(prefs.getString(pSelectedNetworkId), equals(''));
       expect(container.read(selectedNetworkIdProvider), equals(''));
     });
   });
@@ -94,7 +95,7 @@ void main() {
     setUp(() {
       // Mock SharedPreferences for checkRouterIsBack tests
       SharedPreferences.setMockInitialValues({
-        'currentSN': 'MOCK_SN',
+        pCurrentSN: 'MOCK_SN',
       });
     });
 
@@ -126,7 +127,7 @@ void main() {
     test('falls back to pnpConfiguredSN if currentSN is null', () async {
       // Arrange
       SharedPreferences.setMockInitialValues({
-        'pnpConfiguredSN': 'PNP_SN',
+        pPnpConfiguredSN: 'PNP_SN',
       });
 
       final expectedDeviceInfo = NodeDeviceInfo.fromJson(
