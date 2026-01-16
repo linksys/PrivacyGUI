@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/data/providers/ethernet_ports_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
@@ -114,6 +115,7 @@ void main() {
       overrides: [
         wifiSettingsServiceProvider.overrideWithValue(mockWifiSettingsService),
         wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+        ethernetPortsProvider.overrideWithValue(const EthernetPortsState()),
         dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
         deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
         routerRepositoryProvider.overrideWithValue(mockRouterRepository),
@@ -125,14 +127,15 @@ void main() {
     GetIt.I.reset();
   });
 
-  void seedWithRadios() {
+  /// Creates test data for radios and returns both RouterRadios and WiFiItems.
+  (List<RouterRadio>, List<WiFiItem>) createRadiosTestData() {
     final radios = [
       RouterRadio(
           radioID: 'RADIO_2.4GHz',
           physicalRadioID: '1',
           bssid: '00:00:00:00:00:01',
           band: '2.4GHz',
-          supportedModes: const [], // Empty to avoid crash
+          supportedModes: const [],
           supportedChannelsForChannelWidths: const [],
           supportedSecurityTypes: [WifiSecurityType.wpa2Personal.value],
           maxRadiusSharedKeyLength: 64,
@@ -162,9 +165,7 @@ void main() {
               channel: 36,
               security: WifiSecurityType.wpa2Personal.value)),
     ];
-    wifiRadiosState = WifiRadiosState(mainRadios: radios);
 
-    // Create WiFiItems matching the seeded radios for the mock
     final wifiItems = [
       WiFiItem.fromMap(const {
         'radioID': 'RADIO_2.4GHz',
@@ -192,7 +193,20 @@ void main() {
       }),
     ];
 
-    // Stub createInitialWifiListSettings to return the matching WiFiItems
+    return (radios, wifiItems);
+  }
+
+  /// Seeds the container with radio data by:
+  /// 1. Creating test data first
+  /// 2. Setting up the mock stub
+  /// 3. Creating a NEW container with the proper state override
+  void seedWithRadios() {
+    final (radios, wifiItems) = createRadiosTestData();
+
+    // First: Prepare the state BEFORE creating the container
+    wifiRadiosState = WifiRadiosState(mainRadios: radios);
+
+    // Second: Set up mock stub to return matching WiFiItems
     when(() => mockWifiSettingsService.createInitialWifiListSettings(
           mainRadios: any(named: 'mainRadios'),
           isGuestNetworkEnabled: any(named: 'isGuestNetworkEnabled'),
@@ -209,17 +223,19 @@ void main() {
       simpleModeWifi: wifiItems.first,
     ));
 
-    // Re-create container to pick up new stub
+    // Third: Create container with the prepared state
     container = ProviderContainer(
       overrides: [
         wifiSettingsServiceProvider.overrideWithValue(mockWifiSettingsService),
         wifiRadiosProvider.overrideWithValue(wifiRadiosState),
+        ethernetPortsProvider.overrideWithValue(const EthernetPortsState()),
         dashboardHomeProvider.overrideWith(() => mockDashboardHomeNotifier),
         deviceManagerProvider.overrideWith(() => mockDeviceManagerNotifier),
         routerRepositoryProvider.overrideWithValue(mockRouterRepository),
       ],
     );
-    // Trigger build
+
+    // Trigger build to initialize provider
     container.read(wifiBundleProvider);
   }
 
