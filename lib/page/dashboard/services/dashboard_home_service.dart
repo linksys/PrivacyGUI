@@ -89,8 +89,8 @@ class DashboardHomeService {
       isHorizontalLayout: horizontalPortLayout,
       wanType: wanType,
       detectedWANType: detectedWANType,
-      cpuLoad: dashboardManagerState.cpuLoad,
-      memoryLoad: dashboardManagerState.memoryLoad,
+      cpuLoad: systemStatsState.cpuLoad,
+      memoryLoad: systemStatsState.memoryLoad,
     );
   }
 
