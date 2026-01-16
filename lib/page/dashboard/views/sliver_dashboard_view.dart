@@ -218,10 +218,10 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
       ref
           .read(sliverDashboardControllerProvider.notifier)
           .updateItemSize(item.id, newW, newH);
-    } else {
-      // Save layout on normal resize end
-      ref.read(sliverDashboardControllerProvider.notifier).saveLayout();
     }
+    // Always save the layout after a resize operation, whether it was
+    // a valid user resize or an automatic correction.
+    ref.read(sliverDashboardControllerProvider.notifier).saveLayout();
   }
 // ... (rest of class)
 

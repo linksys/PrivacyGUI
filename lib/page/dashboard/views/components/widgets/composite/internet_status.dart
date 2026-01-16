@@ -97,9 +97,10 @@ class _InternetConnectionWidgetState
               icon: AppIcon.font(AppFontIcons.refresh, size: 16),
               onTap: () {
                 controller.repeat();
-                ref.read(pollingProvider.notifier).forcePolling().then((_) {
-                  controller.stop();
-                });
+                ref
+                    .read(pollingProvider.notifier)
+                    .forcePolling()
+                    .whenComplete(() => controller.stop());
               },
             ),
           ),
@@ -125,7 +126,12 @@ class _InternetConnectionWidgetState
     final wanStatus = ref.watch(internetStatusProvider);
     final isOnline = wanStatus == InternetStatus.online;
     final geolocationState = ref.watch(geolocationProvider);
-    final master = ref.watch(instantTopologyProvider).root.children.first;
+    final topology = ref.watch(instantTopologyProvider);
+    // Guard against empty children list to prevent crash
+    if (topology.root.children.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final master = topology.root.children.first;
     final masterIcon = ref.watch(dashboardHomeProvider).masterIcon;
     final wanPortConnection =
         ref.watch(dashboardHomeProvider).wanPortConnection;
@@ -186,9 +192,7 @@ class _InternetConnectionWidgetState
                           ref
                               .read(pollingProvider.notifier)
                               .forcePolling()
-                              .then((value) {
-                            controller.stop();
-                          });
+                              .whenComplete(() => controller.stop());
                         },
                       ),
                     );
@@ -295,7 +299,12 @@ class _InternetConnectionWidgetState
     final wanStatus = ref.watch(internetStatusProvider);
     final isOnline = wanStatus == InternetStatus.online;
     final geolocationState = ref.watch(geolocationProvider);
-    final master = ref.watch(instantTopologyProvider).root.children.first;
+    final topology = ref.watch(instantTopologyProvider);
+    // Guard against empty children list to prevent crash
+    if (topology.root.children.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final master = topology.root.children.first;
     final masterIcon = ref.watch(dashboardHomeProvider).masterIcon;
     final wanPortConnection =
         ref.watch(dashboardHomeProvider).wanPortConnection;
@@ -370,9 +379,7 @@ class _InternetConnectionWidgetState
                           ref
                               .read(pollingProvider.notifier)
                               .forcePolling()
-                              .then((_) {
-                            controller.stop();
-                          });
+                              .whenComplete(() => controller.stop());
                         },
                       ),
                     );
