@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+
 import 'package:privacy_gui/page/nodes/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -109,14 +109,16 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
           _compactToggle(
             context,
             icon: AppFontIcons.darkMode,
-            isActive: nodeLightState.isNightModeEnable,
+            isActive: nodeLightState.isNightModeEnabled,
             label: loc(context).nightMode,
             onToggle: (value) {
               final notifier = ref.read(nodeLightSettingsProvider.notifier);
               if (value) {
-                notifier.setSettings(NodeLightSettings.night());
+                notifier.setSettings(nodeLightState.copyWith(
+                    isNightModeEnabled: true, allDayOff: false));
               } else {
-                notifier.setSettings(NodeLightSettings.on());
+                notifier.setSettings(nodeLightState.copyWith(
+                    isNightModeEnabled: false, allDayOff: false));
               }
               doSomethingWithSpinner(context, notifier.save());
             },
@@ -234,7 +236,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
           ),
           toggleTileWidget(
               title: loc(context).nightMode,
-              value: nodeLightState.isNightModeEnable,
+              value: nodeLightState.isNightModeEnabled,
               subTitle:
                   ref.read(nodeLightSettingsProvider.notifier).currentStatus ==
                           NodeLightStatus.night
@@ -248,9 +250,11 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
               onChanged: (value) {
                 final notifier = ref.read(nodeLightSettingsProvider.notifier);
                 if (value) {
-                  notifier.setSettings(NodeLightSettings.night());
+                  notifier.setSettings(nodeLightState.copyWith(
+                      isNightModeEnabled: true, allDayOff: false));
                 } else {
-                  notifier.setSettings(NodeLightSettings.on());
+                  notifier.setSettings(nodeLightState.copyWith(
+                      isNightModeEnabled: false, allDayOff: false));
                 }
                 doSomethingWithSpinner(context, notifier.save());
               },
@@ -319,13 +323,15 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
             context,
             title: loc(context).nightMode,
             description: loc(context).nightModeTips,
-            value: nodeLightState.isNightModeEnable,
+            value: nodeLightState.isNightModeEnabled,
             onChanged: (value) {
               final notifier = ref.read(nodeLightSettingsProvider.notifier);
               if (value) {
-                notifier.setSettings(NodeLightSettings.night());
+                notifier.setSettings(nodeLightState.copyWith(
+                    isNightModeEnabled: true, allDayOff: false));
               } else {
-                notifier.setSettings(NodeLightSettings.on());
+                notifier.setSettings(nodeLightState.copyWith(
+                    isNightModeEnabled: false, allDayOff: false));
               }
               doSomethingWithSpinner(context, notifier.save());
             },

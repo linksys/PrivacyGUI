@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+import 'package:privacy_gui/page/nodes/providers/node_light_state.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
@@ -208,7 +208,8 @@ void main() {
     'dashboard home view - node night mode enabled',
     (tester, screen) async {
       when(testHelper.mockNodeLightSettingsNotifier.build()).thenReturn(
-        NodeLightSettings(isNightModeEnable: true, startHour: 20, endHour: 8),
+        const NodeLightState(
+            isNightModeEnabled: true, startHour: 20, endHour: 8),
       );
 
       final context = await pumpDashboard(tester, screen);
