@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -18,7 +19,6 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 import 'package:privacy_gui/core/utils/devices.dart';
-import 'package:privacy_gui/core/utils/icon_device_category.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 
 /// A card widget displaying WiFi network information with toggle and share.
@@ -456,8 +456,7 @@ class _ExpandedPasswordSectionState extends State<_ExpandedPasswordSection> {
             icon: const Icon(Icons.copy, size: 18),
             onTap: () {
               // Copy to clipboard
-              // Clipboard.setData(ClipboardData(text: widget.password));
-              // TODO: Add toast
+              Clipboard.setData(ClipboardData(text: widget.password));
             },
           ),
           Container(
@@ -491,7 +490,7 @@ class _ExpandedDevicePreview extends ConsumerWidget {
               size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
           AppGap.sm(),
           AppText.bodySmall(
-            'No devices connected',
+            loc(context).noDevicesConnected,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ],

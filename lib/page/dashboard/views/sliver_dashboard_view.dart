@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
 import 'package:privacy_gui/page/dashboard/models/dashboard_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
@@ -289,11 +290,11 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AppDialog(
-        title: AppText.titleMedium('Dashboard Settings'),
+        title: AppText.titleMedium(loc(context).dashboardSettings),
         content: const DashboardLayoutSettingsPanel(),
         actions: [
           AppButton(
-            label: 'Close',
+            label: loc(context).close,
             onTap: () => Navigator.pop(context),
           ),
         ],
@@ -322,7 +323,8 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
     if (widget == null) {
       return AppCard(
         child: Center(
-          child: AppText.bodyMedium('Unknown: ${item.id}'),
+          child:
+              AppText.bodyMedium(loc(context).dashboardUnknownWidget(item.id)),
         ),
       );
     }
@@ -366,7 +368,7 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
                 ),
                 child: PopupMenuButton<DisplayMode>(
                   initialValue: displayMode,
-                  tooltip: 'Change View Mode',
+                  tooltip: loc(context).dashboardChangeViewMode,
                   onSelected: (mode) => _updateDisplayMode(context, item, mode),
                   offset: const Offset(0, 32),
                   itemBuilder: (context) => DisplayMode.values.map((mode) {

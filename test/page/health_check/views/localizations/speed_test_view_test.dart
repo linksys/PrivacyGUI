@@ -154,9 +154,8 @@ void main() {
         // The following line will fail if `speedTestResultUltra` is not in your localization files.
         expect(find.text(testHelper.loc(context).speedUltraDescription),
             findsOneWidget);
-        expect(
-            find.widgetWithText(AppButton, testHelper.loc(context).testAgain),
-            findsOneWidget);
+        // Implementation uses IconButton with replay icon instead of AppButton with text
+        expect(find.byIcon(Icons.replay), findsOneWidget);
       },
       goldenFilename: 'STV-SUCCESS-01-ultra',
       helper: testHelper,
@@ -251,8 +250,8 @@ void main() {
 
       expect(find.text(testHelper.loc(context).speedTestConfigurationError),
           findsOneWidget);
-      expect(find.widgetWithText(AppButton, testHelper.loc(context).testAgain),
-          findsOneWidget);
+      // Implementation uses IconButton with replay icon instead of AppButton with text
+      expect(find.byIcon(Icons.replay), findsOneWidget);
     },
     goldenFilename: 'STV-ERROR-01-error_state',
     helper: testHelper,

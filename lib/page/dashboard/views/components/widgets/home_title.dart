@@ -96,11 +96,11 @@ class DashboardHomeTitle extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AppDialog(
-        title: AppText.titleMedium('Dashboard Settings'),
+        title: AppText.titleMedium(loc(context).dashboardSettings),
         content: const DashboardLayoutSettingsPanel(),
         actions: [
           AppButton(
-            label: 'Close',
+            label: loc(context).close,
             onTap: () => Navigator.pop(context),
           ),
         ],

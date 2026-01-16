@@ -4,10 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sliver_dashboard/sliver_dashboard.dart';
 
 // Import internal dependencies - Assuming path correctness based on file structure
-import 'package:privacy_gui/page/dashboard/models/dashboard_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/height_strategy.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
@@ -52,7 +50,7 @@ void main() {
       // We must wait for microtasks.
       await Future.delayed(Duration.zero);
 
-      final state = notifier.debugState; // debugState acts as 'state' in tests
+      final state = notifier.state; // debugState acts as 'state' in tests
 
       expect(state.exportLayout(), isNotEmpty);
       // Verify default layout content (e.g. InternetStatus is present)
@@ -83,7 +81,7 @@ void main() {
       final notifier = SliverDashboardControllerNotifier(mockRef);
       await Future.delayed(Duration.zero);
 
-      final state = notifier.debugState;
+      final state = notifier.state;
       final layout = state.exportLayout();
 
       expect(layout.length, 1);
@@ -94,13 +92,13 @@ void main() {
       final notifier = SliverDashboardControllerNotifier(mockRef);
       await Future.delayed(Duration.zero);
 
-      final initialCount = notifier.debugState.exportLayout().length;
+      final initialCount = notifier.state.exportLayout().length;
 
       // Add a widget that definitely isn't in default layout?
       // Default layout uses almost all widgets.
       // Let's remove one first, then add it back.
       await notifier.removeWidget('internet_status_only');
-      final afterRemoveCount = notifier.debugState.exportLayout().length;
+      final afterRemoveCount = notifier.state.exportLayout().length;
       expect(afterRemoveCount, initialCount - 1);
 
       // Verify remove saved to prefs
@@ -112,7 +110,7 @@ void main() {
       // Add back
       await notifier.addWidget('internet_status_only');
 
-      final finalLayout = notifier.debugState.exportLayout();
+      final finalLayout = notifier.state.exportLayout();
       expect(finalLayout.length, initialCount);
 
       // Verify persistence
@@ -139,7 +137,7 @@ void main() {
               preferredColumns: 8,
               heightStrategy: HeightStrategy.intrinsic()));
 
-      final layout = notifier.debugState.exportLayout();
+      final layout = notifier.state.exportLayout();
       final item = layout
           .firstWhere((i) => (i as Map)['id'] == 'internet_status_only') as Map;
 
@@ -160,7 +158,7 @@ void main() {
 
       // Verify modified
       expect(
-          notifier.debugState
+          notifier.state
               .exportLayout()
               .any((i) => (i as Map)['id'] == 'internet_status_only'),
           isFalse);
@@ -170,7 +168,7 @@ void main() {
 
       // 3. Verify Default Restored
       expect(
-          notifier.debugState
+          notifier.state
               .exportLayout()
               .any((i) => (i as Map)['id'] == 'internet_status_only'),
           isTrue);

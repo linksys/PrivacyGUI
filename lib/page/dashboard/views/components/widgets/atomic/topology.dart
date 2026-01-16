@@ -59,7 +59,7 @@ class CustomTopology extends DisplayModeConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.labelLarge('Topology'),
+                AppText.labelLarge(loc(context).topology),
                 AppText.labelSmall(
                   '$routerLength ${routerLength <= 1 ? loc(context).node : loc(context).nodes}',
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

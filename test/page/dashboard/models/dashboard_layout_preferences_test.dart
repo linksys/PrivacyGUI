@@ -119,15 +119,6 @@ void main() {
       });
 
       test('Handles invalid new format gracefully', () {
-        final json = {
-          "useCustomLayout": true,
-          "widgetConfigs": {
-            "w1": {
-              "widgetId": "w1",
-              "invalid": "data"
-            } // Missing required fields might throw
-          }
-        };
         // GridWidgetConfig.fromJson might throw if required fields are missing, let's see how DashboardLayoutPreferences handles it.
         // Source: try { ... } catch (_) { // Ignore invalid entries }
 
@@ -147,18 +138,7 @@ void main() {
         final prefs = DashboardLayoutPreferences.fromJson(validJson);
         expect(prefs.widgetConfigs.length, 1);
 
-        // Now invalid
-        final invalidJson = {
-          "useCustomLayout": true,
-          "widgetConfigs": {
-            "w1": {
-              "widgetId": "w1"
-            } // Missing order? fromJson uses "as int? ?? 0", so it's safe.
-            // Missing displayMode? "as String? ?? 'normal'". Safe.
-            // All fields seem to have defaults or are nullable except widgetId.
-          }
-        };
-        // Try passing something that causes cast error
+        // Now test with data that causes cast error
         final castErrorJson = {
           "useCustomLayout": true,
           "widgetConfigs": {

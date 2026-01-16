@@ -84,6 +84,35 @@ enum LocalWhereToGo {
   ;
 }
 
+final appRoutes = [
+  localLoginRoute,
+  autoParentFirstLoginRoute,
+  cloudLoginAuthRoute,
+  cloudLoginRoute,
+  homeRoute,
+  // ref.read(otpRouteProvider),
+  LinksysRoute(
+    name: RouteNamed.prepareDashboard,
+    path: RoutePath.prepareDashboard,
+    config: LinksysRouteConfig(
+      column: ColumnGrid(column: 4, centered: true),
+    ),
+    builder: (context, state) => const PrepareDashboardView(),
+  ),
+  LinksysRoute(
+    name: RouteNamed.selectNetwork,
+    path: RoutePath.selectNetwork,
+    config: const LinksysRouteConfig(
+      noNaviRail: true,
+    ),
+    builder: (context, state) => const SelectNetworkView(),
+  ),
+  dashboardRoute,
+  pnpRoute,
+  pnpTroubleshootingRoute,
+  addNodesRoute,
+];
+
 final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
@@ -92,47 +121,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: router,
     observers: [ref.read(routerLoggerProvider)],
     initialLocation: '/',
-    routes: [
-      localLoginRoute,
-      autoParentFirstLoginRoute,
-      cloudLoginAuthRoute,
-      cloudLoginRoute,
-      homeRoute,
-      // ref.read(otpRouteProvider),
-      LinksysRoute(
-        name: RouteNamed.prepareDashboard,
-        path: RoutePath.prepareDashboard,
-        config: LinksysRouteConfig(
-          column: ColumnGrid(column: 4, centered: true),
-        ),
-        builder: (context, state) => const PrepareDashboardView(),
-      ),
-      LinksysRoute(
-        name: RouteNamed.selectNetwork,
-        path: RoutePath.selectNetwork,
-        config: const LinksysRouteConfig(
-          noNaviRail: true,
-        ),
-        builder: (context, state) => const SelectNetworkView(),
-      ),
-      dashboardRoute,
-      pnpRoute,
-      pnpTroubleshootingRoute,
-      addNodesRoute,
-    ],
+    routes: appRoutes,
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
-        return router._autoConfigurationLogic(state);
+        return router.autoConfigurationLogic(state);
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
-        router._autoConfigurationLogic(state);
-        return router._redirectLogic(state);
+        router.autoConfigurationLogic(state);
+        return router.redirectLogic(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
-        return router._goPnpPath(state);
+        return router.goPnpPath(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
         return state.uri.toString();
       }
-      return router._redirectLogic(state);
+      return router.redirectLogic(state);
     },
     debugLogDiagnostics: true,
   );
@@ -155,7 +157,7 @@ class RouterNotifier extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<String?> _autoConfigurationLogic(GoRouterState state) async {
+  Future<String?> autoConfigurationLogic(GoRouterState state) async {
     await _ref.read(connectivityProvider.notifier).forceUpdate();
     final loginType = _ref.read(authProvider
         .select((value) => value.value?.loginType ?? LoginType.none));
@@ -221,20 +223,20 @@ class RouterNotifier extends ChangeNotifier {
     if (whereToGo == LocalWhereToGo.pnp) {
       // PnP case -
       await _ref.read(authProvider.notifier).logout();
-      return _goPnp(state.uri.query);
+      return goPnp(state.uri.query);
     } else if (whereToGo == LocalWhereToGo.firstTimeLogin) {
       // First Time Login case -
       if (!_ref.read(autoParentFirstLoginStateProvider)) {
         await _ref.read(authProvider.notifier).logout();
       }
-      return _goFirstTimeLogin(state);
+      return goFirstTimeLogin(state);
     } else {
       // Login case -
-      return _authCheck(state);
+      return authCheck(state);
     }
   }
 
-  Future<String?> _redirectLogic(GoRouterState state) async {
+  Future<String?> redirectLogic(GoRouterState state) async {
     final loginType =
         _ref.watch(authProvider.select((data) => data.value?.loginType));
 
@@ -277,7 +279,7 @@ class RouterNotifier extends ChangeNotifier {
         : await (_prepare(state).then((_) => null));
   }
 
-  FutureOr<String?> _goPnp(String query) {
+  FutureOr<String?> goPnp(String query) {
     FlutterNativeSplash.remove();
     final queryParams = query.isEmpty
         ? Uri.tryParse(getFullLocation(_ref))?.query ?? ''
@@ -287,13 +289,13 @@ class RouterNotifier extends ChangeNotifier {
     return path;
   }
 
-  FutureOr<String?> _goFirstTimeLogin(GoRouterState state) {
+  FutureOr<String?> goFirstTimeLogin(GoRouterState state) {
     logger.i('[Route]: Mark First Time Login');
     _ref.read(autoParentFirstLoginStateProvider.notifier).state = true;
-    return _authCheck(state);
+    return authCheck(state);
   }
 
-  Future<String?> _authCheck(GoRouterState state) {
+  Future<String?> authCheck(GoRouterState state) {
     return _ref.read(authProvider.notifier).init().then((authState) async {
       logger.i(
           '[Route]: Check credentials done: Login type = ${authState?.loginType}');
@@ -332,9 +334,9 @@ class RouterNotifier extends ChangeNotifier {
         : '${RoutePath.cloudLoginAuth}?$query';
   }
 
-  FutureOr<String?> _goPnpPath(GoRouterState state) {
+  FutureOr<String?> goPnpPath(GoRouterState state) {
     if (_ref.read(pnpProvider).deviceInfo == null) {
-      return _goPnp(state.uri.query);
+      return goPnp(state.uri.query);
     } else {
       // bypass any pnp views
       return state.uri.toString();

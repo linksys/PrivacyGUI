@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/sliver_dashboard_controller_provider.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -34,7 +35,8 @@ class DashboardLayoutSettingsPanel extends ConsumerWidget {
           AppCard(
             child: SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: AppText.labelLarge('Enable Custom Layout'),
+              title:
+                  AppText.labelLarge(loc(context).dashboardEnableCustomLayout),
               subtitle: AppText.bodySmall(
                 'Unlock full control over widget order, width, and display modes. Defaults to unified flexible grid.',
               ),
@@ -88,7 +90,7 @@ class DashboardLayoutSettingsPanel extends ConsumerWidget {
           Align(
             alignment: Alignment.centerRight,
             child: AppButton.text(
-              label: 'Reset Layout',
+              label: loc(context).dashboardResetLayout,
               onTap: preferences.useCustomLayout
                   ? () async {
                       // 1. Reset the custom layout positions
@@ -140,7 +142,7 @@ class DashboardLayoutSettingsPanel extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText.labelLarge('Hidden Widgets'),
+        AppText.labelLarge(loc(context).dashboardHiddenWidgets),
         AppGap.sm(),
         AppCard(
           padding: EdgeInsets.zero,
