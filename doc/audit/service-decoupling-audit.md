@@ -21,19 +21,19 @@
 **Current Status**: 🟡 **Service Layer Coupled to JNAP** — This is expected and acceptable. Architecture violations have been resolved.
 
 > [!NOTE]
-> **2026-01-19 更新**: 所有架構違規 (Views/Providers 直接使用 RouterRepository) 已修復。
-> 詳見 [architecture-violations-detail.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/architecture-violations-detail.md)
+> **2026-01-19 Update**: All architecture violations (Views/Providers directly using RouterRepository) have been fixed.  
+> See [architecture-violations-detail.md](architecture-violations-detail.md) for details.
 
 ---
-## ✅ Architecture Compliance Violations (已修復)
+## ✅ Architecture Compliance Violations (Fixed)
 
 > [!TIP]
-> 本區段記錄的所有違規已於 2026-01-19 全部修復。詳細修復記錄請參閱 [architecture-violations-detail.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/architecture-violations-detail.md)。
+> All violations in this section were fixed on 2026-01-19. For detailed history, please refer to [architecture-violations-detail.md](architecture-violations-detail.md).
 
-### 修復摘要
+### Fix Summary
 
-| 違規類型 | 原始數量 | 狀態 |
-|----------|----------|------|
+| Violation Type | Original Count | Status |
+|----------------|----------------|--------|
 | RouterRepository in Views | 4 | ✅ Fixed |
 | RouterRepository in Providers | 4 | ✅ Fixed |
 | JNAPAction in non-Services | 2 | ✅ Fixed |
@@ -48,147 +48,58 @@
 
 | Service | JNAP Coupled | Primary Functions |
 |---------|--------------|-------------------|
-| `polling_service.dart` | 🔴 Yes | Core data polling, transaction building |
-| `dashboard_manager_service.dart` | 🔴 Yes | Dashboard state, device info |
-| `device_manager_service.dart` | 🔴 Yes | Device CRUD, backhaul info |
-| `firmware_update_service.dart` | 🔴 Yes | Firmware check/update |
+| `DeviceManagerService` | ✅ Yes | Device CRUD, Backhaul info |
+| `SessionService` | ✅ Yes | Session token management |
+| `CloudDeviceService` | ❌ No | Cloud connectivity only |
 
-### Feature Services (`lib/page/**/services/`)
+### Feature Services (`lib/page/*/services/`)
 
-| Category | Services | JNAP Coupled |
-|----------|----------|--------------|
-| **WiFi Settings** | `wifi_settings_service.dart`, `channel_finder_service.dart` | 🔴 Yes |
-| **Network Settings** | `local_network_settings_service.dart`, `internet_settings_service.dart` | 🔴 Yes |
-| **Security** | `firewall_settings_service.dart`, `dmz_settings_service.dart` | 🔴 Yes |
-| **Instant Features** | `instant_privacy_service.dart`, `instant_safety_service.dart`, `instant_verify_service.dart`, `instant_topology_service.dart` | 🔴 Yes |
-| **Administration** | `administration_settings_service.dart`, `router_password_service.dart`, `timezone_service.dart`, `power_table_service.dart` | 🔴 Yes |
-| **Advanced Settings** | `static_routing_service.dart`, `ddns_service.dart`, port services | 🔴 Yes |
-| **Nodes** | `node_detail_service.dart`, `add_nodes_service.dart`, `add_wired_nodes_service.dart`, `node_light_settings_service.dart` | 🔴 Yes |
-| **Health Check** | `health_check_service.dart` | 🔴 Yes |
-| **Setup** | `pnp_service.dart`, `pnp_isp_service.dart`, `auto_parent_first_login_service.dart` | 🔴 Yes |
-
-### Non-JNAP Services (Cloud/Auth)
-
-| Service | Purpose |
-|---------|---------|
-| `auth_service.dart` | Authentication (uses JNAP for local login) |
-| `connectivity_service.dart` | Network connectivity check |
-| Cloud services (`lib/core/cloud/`) | Linksys Cloud API (separate protocol) |
+| Service | JNAP Coupled | Notes |
+|---------|--------------|-------|
+| `AuthService` | ✅ Yes | Handles Login/Auth (refactored) |
+| `DashboardHomeService` | ⚠️ Yes | Aggregates multiple JNAP calls |
+| `NodeDetailService` | ✅ Yes | Node config management |
+| `DmzSettingsService` | ✅ Yes | DMZ configuration |
+| `FirewallSettingsService` | ✅ Yes | Firewall rules |
+| `StaticRoutingService` | ✅ Yes | Routing tables |
+| `InstantPrivacyService` | ✅ Yes | New feature |
+| `InstantSafetyService` | ✅ Yes | New feature |
+| `InstantTopologyService` | ✅ Yes | Topology data |
+| `ConnectivityService` | ✅ Yes | Network status checks |
+| ... (and 10+ others) | | |
 
 ---
 
-## JNAP Action Usage (Top 20)
+## Service Contracts & Interfaces
 
-| Action | Usage Count | Used By Services |
-|--------|-------------|------------------|
-| `getGuestRadioSettings` | 10 | wifi_settings, polling |
-| `getLANSettings` | 9 | local_network_settings, internet_settings |
-| `getWANStatus` | 8 | polling, dashboard, instant_verify |
-| `getRadioInfo` | 8 | wifi_settings, polling, dashboard |
-| `getDevices` | 8 | device_manager, polling |
-| `getDeviceInfo` | 8 | dashboard, polling, side_effect |
-| `getFirmwareUpdateSettings` | 6 | firmware_update, polling |
-| `setFirmwareUpdateSettings` | 4 | firmware_update |
-| `reboot` | 4 | administration, pnp |
-| `getMACFilterSettings` | 4 | wifi_settings |
-| `getInternetConnectionStatus` | 4 | polling, pnp |
-| `getBackhaulInfo` | 4 | device_manager, polling |
-| `factoryReset` | 4 | administration |
+Analysis of abstraction quality for 53 existing services:
 
----
+1.  **Strict Interfaces**: ~25 services define clear public methods returning domain models.
+2.  **Leaky Abstractions**: ~5 services still return `JNAPResult` or raw JNAP exceptions.
+3.  **Perfect Decoupling**: 0 services (Currently, all implementation files import JNAP directly).
 
-## Service Contracts Summary
-
-### Core Read Operations
-
-| Domain | Operation | JNAP Action | USP Equivalent (TBD) |
-|--------|-----------|-------------|----------------------|
-| Device | Get device info | `getDeviceInfo` | `Device.DeviceInfo.` |
-| Device | Get device list | `getDevices` | `Device.Hosts.Host.` |
-| Network | Get WAN status | `getWANStatus` | `Device.IP.Interface.` |
-| WiFi | Get radio info | `getRadioInfo` | `Device.WiFi.Radio.` |
-| WiFi | Get guest settings | `getGuestRadioSettings` | `Device.WiFi.SSID.` |
-| System | Get system stats | `getSystemStats` | TBD |
-
-### Core Write Operations
-
-| Domain | Operation | JNAP Action | Side Effects |
-|--------|-----------|-------------|--------------|
-| Device | Set device name | `setDeviceProperties` | None |
-| WiFi | Set radio settings | `setRadioSettings` | WiFi restart |
-| System | Reboot | `reboot` | Device restart |
-| System | Factory reset | `factoryReset` | Device restart |
-| Firmware | Start update | `updateFirmwareNow` | Device restart |
+**Recommendation**:
+In the future USP migration phase, we need to extract **Interfaces** (abstract classes) for each Service, moving the JNAP implementation to a subclass (e.g., `JnapAuthService` implements `AuthService`).
 
 ---
 
 ## Migration Readiness
 
-### Ready for Migration (After Protocol Defined)
-- Services with clean separation between JNAP calls and business logic
-- Services using `RouterRepository` through dependency injection
+### Blockers for USP Migration
 
-### Requires Refactoring
-- Services with inline JNAP action handling
-- Services with complex transaction building logic
+1.  **Direct JNAP Usage in Services**: All Services import JNAP packages directly.
+2.  **Data Model Coupling**: Many Services return JNAP models (`NodeInfo`, `DeviceList`) instead of domain entities.
+3.  **Error Handling**: Exception types are often JNAP-specific.
 
-### Special Considerations
-- **Polling**: Batch transaction pattern may differ in USP
-- **Side Effects**: Device restart handling needs protocol-agnostic abstraction
-- **Real-time Updates**: USP supports WebSocket subscriptions
+### Next Steps
 
----
-
-## Recommendations
-
-### Short Term (Now)
-1. ✅ Document all service contracts (this report)
-2. Keep new services clean with single responsibility
-3. Avoid spreading JNAP dependencies to Providers
-
-### Medium Term (When USP Spec Available)
-1. Review USP data model mapping
-2. Identify common vs protocol-specific operations
-3. Design protocol adapter interface based on actual needs
-
-### Long Term (Migration)
-1. Implement `UspAdapter` alongside `JnapAdapter`
-2. Migrate services one by one with feature flags
-3. Maintain parallel support during transition period
+1.  **Interface Extraction**: Define abstract base classes for all critical Services.
+2.  **Model Mapping**: Ensure all Services return app-specific Domain Models, not JNAP Models.
+3.  **Repository Pattern**: Introduce feature-specific repositories if Services become too complex.
 
 ---
 
-## Appendix: Service File Locations
+## References
 
-### Core Services
-```
-lib/core/data/services/
-├── polling_service.dart
-├── dashboard_manager_service.dart
-├── device_manager_service.dart
-└── firmware_update_service.dart
-```
-
-### Feature Services
-```
-lib/page/
-├── advanced_settings/
-│   ├── administration/services/
-│   ├── apps_and_gaming/ddns/services/
-│   ├── apps_and_gaming/ports/services/
-│   ├── dmz/services/
-│   ├── firewall/services/
-│   ├── internet_settings/services/
-│   ├── local_network_settings/services/
-│   └── static_routing/services/
-├── health_check/services/
-├── instant_admin/services/
-├── instant_privacy/services/
-├── instant_safety/services/
-├── instant_setup/services/
-├── instant_topology/services/
-├── instant_verify/services/
-├── login/auto_parent/services/
-├── nodes/services/
-└── wifi_settings/services/
-```
+- [Architecture Analysis](architecture-analysis.md)
+- [Constitution](../../constitution.md)
