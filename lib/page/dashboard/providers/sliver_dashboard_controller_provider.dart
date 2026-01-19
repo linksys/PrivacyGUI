@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
 
 import 'layout_item_factory.dart';
 import 'dashboard_home_provider.dart';
+import '../a2ui/renderer/a2ui_widget_renderer.dart';
 
 const _sliverDashboardLayoutKey = 'sliver_dashboard_layout';
 
@@ -227,8 +228,18 @@ class SliverDashboardControllerNotifier
       return; // Already exists
     }
 
-    // 2. Get spec
-    final spec = DashboardWidgetSpecs.getById(id);
+    // 2. Get spec (Native or A2UI)
+    WidgetSpec? spec = DashboardWidgetSpecs.getById(id);
+
+    // If not found in native specs, try A2UI registry
+    if (spec == null) {
+      final registry = _ref.read(a2uiWidgetRegistryProvider);
+      final a2uiDef = registry.get(id);
+      if (a2uiDef != null) {
+        spec = a2uiDef.toWidgetSpec();
+      }
+    }
+
     if (spec == null) return;
 
     // 3. Calculate position (bottom)

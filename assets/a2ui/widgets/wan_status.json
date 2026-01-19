@@ -1,0 +1,45 @@
+{
+    "widgetId": "a2ui_wan_status",
+    "displayName": "WAN Status",
+    "description": "Shows the WAN connection status",
+    "constraints": {
+        "minColumns": 2,
+        "maxColumns": 4,
+        "preferredColumns": 3,
+        "minRows": 1,
+        "maxRows": 2,
+        "preferredRows": 1
+    },
+    "template": {
+        "type": "Row",
+        "properties": {
+            "mainAxisAlignment": "center",
+            "crossAxisAlignment": "center",
+            "mainAxisSize": "min"
+        },
+        "children": [
+            {
+                "type": "AppIcon",
+                "properties": {
+                    "icon": "network",
+                    "size": 24.0
+                }
+            },
+            {
+                "type": "SizedBox",
+                "properties": {
+                    "width": 8.0
+                }
+            },
+            {
+                "type": "AppText",
+                "properties": {
+                    "text": {
+                        "$bind": "router.wanStatus"
+                    },
+                    "variant": "body"
+                }
+            }
+        ]
+    }
+}

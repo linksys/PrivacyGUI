@@ -1,0 +1,52 @@
+{
+    "widgetId": "a2ui_node_count",
+    "displayName": "Mesh Nodes",
+    "description": "Shows the number of mesh nodes",
+    "constraints": {
+        "minColumns": 2,
+        "maxColumns": 4,
+        "preferredColumns": 3,
+        "minRows": 2,
+        "maxRows": 3,
+        "preferredRows": 2
+    },
+    "template": {
+        "type": "Column",
+        "properties": {
+            "mainAxisAlignment": "center",
+            "crossAxisAlignment": "center",
+            "mainAxisSize": "min"
+        },
+        "children": [
+            {
+                "type": "AppIcon",
+                "properties": {
+                    "icon": "router",
+                    "size": 32.0
+                }
+            },
+            {
+                "type": "SizedBox",
+                "properties": {
+                    "height": 8.0
+                }
+            },
+            {
+                "type": "AppText",
+                "properties": {
+                    "text": {
+                        "$bind": "router.nodeCount"
+                    },
+                    "variant": "headline"
+                }
+            },
+            {
+                "type": "AppText",
+                "properties": {
+                    "text": "Mesh Nodes",
+                    "variant": "label"
+                }
+            }
+        ]
+    }
+}

@@ -1,0 +1,52 @@
+{
+    "widgetId": "a2ui_device_count",
+    "displayName": "Connected Devices",
+    "description": "Shows the number of connected devices",
+    "constraints": {
+        "minColumns": 2,
+        "maxColumns": 4,
+        "preferredColumns": 3,
+        "minRows": 2,
+        "maxRows": 3,
+        "preferredRows": 2
+    },
+    "template": {
+        "type": "Column",
+        "properties": {
+            "mainAxisAlignment": "center",
+            "crossAxisAlignment": "center",
+            "mainAxisSize": "min"
+        },
+        "children": [
+            {
+                "type": "AppIcon",
+                "properties": {
+                    "icon": "devices",
+                    "size": 32.0
+                }
+            },
+            {
+                "type": "SizedBox",
+                "properties": {
+                    "height": 8.0
+                }
+            },
+            {
+                "type": "AppText",
+                "properties": {
+                    "text": {
+                        "$bind": "router.deviceCount"
+                    },
+                    "variant": "headline"
+                }
+            },
+            {
+                "type": "AppText",
+                "properties": {
+                    "text": "Connected Devices",
+                    "variant": "label"
+                }
+            }
+        ]
+    }
+}
