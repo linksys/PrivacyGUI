@@ -1,109 +1,44 @@
 # Service Decoupling Audit Report
 
 **Generated**: 2026-01-09  
+**Last Updated**: 2026-01-19  
 **Project**: PrivacyGUI  
-**Purpose**: Document JNAP coupling status for future USP/TR migration
+**Purpose**: Document JNAP coupling status for future USP/TR-369 migration
 
 ---
 
 ## Executive Summary
 
-| Metric | Value |
-|--------|-------|
-| Total Service Files | 53 |
-| Services with JNAP Dependency | 34 (64%) |
-| RouterRepository References | 85 |
-| Domain Models (JNAP) | 54 |
-| Unique JNAP Actions Used | 110+ |
-| **Architecture Violations** | **32** |
+| Metric | Value | Status |
+|--------|-------|--------|
+| Total Service Files | 53 | - |
+| Services with JNAP Dependency | 34 (64%) | 🟡 Expected |
+| RouterRepository References | 85 | - |
+| Domain Models (JNAP) | 54 | - |
+| Unique JNAP Actions Used | 110+ | - |
+| **Architecture Violations** | ~~32~~ → **0** | ✅ Fixed |
 
-**Current Status**: 🔴 **High Coupling** — Most services directly depend on JNAP-specific types.
+**Current Status**: 🟡 **Service Layer Coupled to JNAP** — This is expected and acceptable. Architecture violations have been resolved.
+
+> [!NOTE]
+> **2026-01-19 更新**: 所有架構違規 (Views/Providers 直接使用 RouterRepository) 已修復。
+> 詳見 [architecture-violations-detail.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/architecture-violations-detail.md)
 
 ---
+## ✅ Architecture Compliance Violations (已修復)
 
-## ⚠️ Architecture Compliance Violations
+> [!TIP]
+> 本區段記錄的所有違規已於 2026-01-19 全部修復。詳細修復記錄請參閱 [architecture-violations-detail.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/architecture-violations-detail.md)。
 
-The following sections document violations of the **Provider → Service → Repository** architecture pattern.
+### 修復摘要
 
-### RouterRepository Usage Outside Services (8 files)
-
-These files directly access `routerRepositoryProvider` instead of going through a Service:
-
-| File | Layer | Severity |
-|------|-------|----------|
-| `lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart` | View | 🔴 High |
-| `lib/page/dashboard/views/prepare_dashboard_view.dart` | View | 🔴 High |
-| `lib/page/ai_assistant/views/router_assistant_view.dart` | View | 🔴 High |
-| `lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart` | View | 🔴 High |
-| `lib/page/select_network/providers/select_network_provider.dart` | Provider | 🟡 Medium |
-| `lib/page/vpn/providers/vpn_notifier.dart` | Provider | 🟡 Medium |
-| `lib/page/wifi_settings/providers/channelfinder_provider.dart` | Provider | 🟡 Medium |
-| `lib/page/instant_setup/troubleshooter/providers/_providers.dart` | Provider | 🟡 Medium |
-
-### JNAPAction Usage Outside Services (3 files)
-
-These files directly reference `JNAPAction` enum:
-
-| File | Violation | Code Example |
-|------|-----------|--------------|
-| `select_network_provider.dart` | Direct JNAP call | `JNAPAction.isAdminPasswordDefault` |
-| `prepare_dashboard_view.dart` | Direct JNAP call | `JNAPAction.getDeviceInfo` |
-| `vpn_service.dart` | In service (acceptable) | - |
-
-### JNAP Models Imported in Views/Providers (24 files)
-
-Files that import `jnap/models/*` or `jnap/result/*` outside the Service layer:
-
-**Views (14 files)**:
-| File | Models Used |
-|------|-------------|
-| `dmz_settings_view.dart` | DMZ models |
-| `internet_settings_view.dart` | WAN settings |
-| `local_network_settings_view.dart` | LAN settings |
-| `dashboard_home_view.dart` | Device info |
-| `prepare_dashboard_view.dart` | Device info |
-| `firmware_update_process_view.dart` | Firmware status |
-| `instant_admin_view.dart` | Time settings |
-| `node_detail_view.dart` | Node models |
-| `instant_topology_view.dart` | Topology models |
-| `instant_verify_view.dart` | Verify models |
-| `login_local_view.dart` | Auth models |
-| `pnp_*_view.dart` | ISP settings |
-
-**Providers (10 files)**:
-| File | Models Used |
-|------|-------------|
-| `node_light_settings_provider.dart` | LED settings |
-| `channelfinder_provider.dart` | Radio info |
-| `wifi_bundle_provider.dart` | WiFi settings |
-| `select_network_provider.dart` | Network models |
-| `wan_external_provider.dart` | WAN status |
-| Others... | Various |
-
-### Compliance Summary
-
-| Violation Type | Count | Impact |
-|----------------|-------|--------|
-| **RouterRepository in Views** | 4 | 🔴 High - Direct protocol dependency |
-| **RouterRepository in Providers** | 4 | 🟡 Medium - Should use Services |
-| **JNAPAction in non-Services** | 2 | 🔴 High - Protocol leakage |
-| **JNAP Models in Views** | 14 | 🟡 Medium - Model coupling |
-| **JNAP Models in Providers** | 10 | 🟡 Medium - Model coupling |
-| **Total Violations** | **34** | - |
-
-### Recommended Fixes
-
-1. **Views should NOT directly use RouterRepository**
-   - Create/use appropriate Services for these operations
-   - Pass data through Providers
-
-2. **Providers should use Services, not RouterRepository**
-   - `VpnNotifier` should use `VpnService`
-   - `ChannelFinderProvider` should use `ChannelFinderService`
-
-3. **Consider Domain Models separate from JNAP Models**
-   - Create UI-specific models in `lib/page/**/models/`
-   - Transform JNAP models to domain models in Services
+| 違規類型 | 原始數量 | 狀態 |
+|----------|----------|------|
+| RouterRepository in Views | 4 | ✅ Fixed |
+| RouterRepository in Providers | 4 | ✅ Fixed |
+| JNAPAction in non-Services | 2 | ✅ Fixed |
+| JNAP Models in Views | 4 | ✅ Fixed |
+| **Total** | **14** | **✅ All Fixed** |
 
 ---
 

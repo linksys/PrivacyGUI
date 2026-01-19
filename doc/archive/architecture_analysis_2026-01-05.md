@@ -472,15 +472,15 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.da
 
 ##### 3.5.3 跨頁面依賴完整清單
 
-| 來源 Provider | 目標 Provider | 耦合類型 | 風險等級 |
-|--------------|--------------|----------|----------|
-| `wifi_bundle_provider` | `dashboard_home_provider` | 狀態讀取 | 🔴 高 |
-| `wifi_bundle_provider` | `instant_privacy_state` | 類型引用 | 🟡 中 |
-| `dashboard_home_provider` | `health_check_provider` | 反應式監聽 | 🔴 高 |
-| `device_filtered_list_provider` | `wifi_bundle_provider` | 狀態讀取 | 🟡 中 |
-| `displayed_mac_filtering_devices_provider` | `wifi_bundle_provider` | 狀態讀取 | 🟡 中 |
-| `instant_privacy_device_list_provider` | `instant_privacy_provider` | 同模組 | 🟢 低 |
-| `node_detail_provider` | `device_list_provider` | 數據共享 | 🟡 中 |
+| 來源 Provider                                | 目標 Provider                | 耦合類型  | 風險等級 |
+| ------------------------------------------ | -------------------------- | ----- | ---- |
+| `wifi_bundle_provider`                     | `dashboard_home_provider`  | 狀態讀取  | 🔴 高 |
+| `wifi_bundle_provider`                     | `instant_privacy_state`    | 類型引用  | 🟡 中 |
+| `dashboard_home_provider`                  | `health_check_provider`    | 反應式監聽 | 🔴 高 |
+| `device_filtered_list_provider`            | `wifi_bundle_provider`     | 狀態讀取  | 🟡 中 |
+| `displayed_mac_filtering_devices_provider` | `wifi_bundle_provider`     | 狀態讀取  | 🟡 中 |
+| `instant_privacy_device_list_provider`     | `instant_privacy_provider` | 同模組   | 🟢 低 |
+| `node_detail_provider`                     | `device_list_provider`     | 數據共享  | 🟡 中 |
 
 ---
 
@@ -504,12 +504,12 @@ import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.da
 
 #### 3.6 巨型檔案
 
-| 檔案 | 大小 | 問題 |
-|------|------|------|
-| `core/usp/jnap_tr181_mapper.dart` | 42.5KB | JNAP↔TR-181 映射邏輯過於集中 |
-| `route/router_provider.dart` | 19.8KB | 路由邏輯與認證邏輯混合 |
-| `core/jnap/router_repository.dart` | 15.6KB | 多種命令類型處理混合 |
-| `core/cloud/linksys_cloud_repository.dart` | 16KB | 雲端功能過於集中 |
+| 檔案                                         | 大小     | 問題                   |
+| ------------------------------------------ | ------ | -------------------- |
+| `core/usp/jnap_tr181_mapper.dart`          | 42.5KB | JNAP↔TR-181 映射邏輯過於集中 |
+| `route/router_provider.dart`               | 19.8KB | 路由邏輯與認證邏輯混合          |
+| `core/jnap/router_repository.dart`         | 15.6KB | 多種命令類型處理混合           |
+| `core/cloud/linksys_cloud_repository.dart` | 16KB   | 雲端功能過於集中             |
 
 ---
 
@@ -639,13 +639,13 @@ graph TD
 
 ### 4.4 修復優先級矩陣
 
-| 優先級 | 問題 | 影響範圍 | 修復難度 | 建議時程 |
-|--------|------|---------|---------|---------|
-| P0 | Provider 直接引用 Data 模型 | 5 個檔案 | 中 | 1-2 週 |
-| P1 | `wifi_bundle` ↔ `dashboard` 耦合 | 3 個檔案 | 高 | 2-3 週 |
-| P2 | `dashboard` → `health_check` 耦合 | 2 個檔案 | 中 | 1 週 |
-| P3 | 其他跨頁面依賴 | 5+ 個檔案 | 中 | 持續進行 |
-| P4 | 巨型檔案拆分 | 4 個檔案 | 高 | 按需進行 |
+| 優先級 | 問題                              | 影響範圍   | 修復難度 | 建議時程  |
+| --- | ------------------------------- | ------ | ---- | ----- |
+| P0  | Provider 直接引用 Data 模型           | 5 個檔案  | 中    | 1-2 週 |
+| P1  | `wifi_bundle` ↔ `dashboard` 耦合  | 3 個檔案  | 高    | 2-3 週 |
+| P2  | `dashboard` → `health_check` 耦合 | 2 個檔案  | 中    | 1 週   |
+| P3  | 其他跨頁面依賴                         | 5+ 個檔案 | 中    | 持續進行  |
+| P4  | 巨型檔案拆分                          | 4 個檔案  | 高    | 按需進行  |
 
 ---
 
