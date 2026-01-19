@@ -6,9 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
@@ -371,11 +370,10 @@ class RouterNotifier extends ChangeNotifier {
     logger.d('[Prepare]: device info check - $serialNumber');
     final nodeDeviceInfo = await _ref
         .read(sessionProvider.notifier)
-        .checkDeviceInfo(serialNumber)
+        .fetchDeviceInfoAndInitializeServices()
         .then<NodeDeviceInfo?>((nodeDeviceInfo) {
-      // Build/Update better actions
-      logger.d('[Prepare]: build better actions');
-      buildBetterActions(nodeDeviceInfo.services);
+      logger.d(
+          '[Prepare]: Services initialized via fetchDeviceInfoAndInitializeServices');
       return nodeDeviceInfo;
     }).onError((error, stackTrace) => null);
 

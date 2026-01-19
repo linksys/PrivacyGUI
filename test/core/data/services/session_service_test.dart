@@ -2,7 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/data/services/session_service.dart';
@@ -136,10 +137,10 @@ void main() {
     // T044: checkDeviceInfo returns cached value immediately when available
     test('returns cached value immediately when available', () async {
       // Arrange
-      final cachedDeviceInfo = NodeDeviceInfo.fromJson(
+      final cachedDeviceInfo = JnapDeviceInfoRaw.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'CACHED_SN')
             .output,
-      );
+      ).toUIModel();
 
       // Act
       final result = await service.checkDeviceInfo(cachedDeviceInfo);

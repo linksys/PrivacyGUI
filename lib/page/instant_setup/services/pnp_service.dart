@@ -8,7 +8,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
@@ -50,7 +50,7 @@ class ConfigurationResult {
 class PnpService with AvailabilityChecker {
   final Ref _ref;
 
-  NodeDeviceInfo? _rawDeviceInfo;
+  JnapDeviceInfoRaw? _rawDeviceInfo;
   Map<JNAPAction, JNAPResult> _rawData = {};
 
   PnpService(this._ref);
@@ -103,8 +103,8 @@ class PnpService with AvailabilityChecker {
     return (uiModel, capabilities);
   }
 
-  /// Fetches the raw NodeDeviceInfo from the router repository.
-  Future<NodeDeviceInfo> _fetchRawDeviceInfo() async {
+  /// Fetches the raw JnapDeviceInfoRaw from the router repository.
+  Future<JnapDeviceInfoRaw> _fetchRawDeviceInfo() async {
     try {
       final result = await _ref.read(routerRepositoryProvider).send(
             JNAPAction.getDeviceInfo,
@@ -112,7 +112,7 @@ class PnpService with AvailabilityChecker {
             retries: 10,
             timeoutMs: 3000,
           );
-      return NodeDeviceInfo.fromJson(result.output);
+      return JnapDeviceInfoRaw.fromJson(result.output);
     } catch (e) {
       logger.e('[PnP]: Service - Failed to fetch device info.', error: e);
       throw ExceptionFetchDeviceInfo();
@@ -340,7 +340,7 @@ class PnpService with AvailabilityChecker {
           cacheLevel: CacheLevel.noCache,
           retries: 0,
           timeoutMs: 3000);
-      final deviceInfo = NodeDeviceInfo.fromJson(result.output);
+      final deviceInfo = JnapDeviceInfoRaw.fromJson(result.output).toUIModel();
       final isConnected =
           _rawDeviceInfo?.serialNumber == deviceInfo.serialNumber;
       if (!isConnected) {

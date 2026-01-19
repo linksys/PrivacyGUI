@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
 import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/services/session_service.dart';
@@ -101,9 +101,9 @@ void main() {
 
     test('delegates to service.checkRouterIsBack with currentSN', () async {
       // Arrange
-      final expectedDeviceInfo = NodeDeviceInfo.fromJson(
+      final expectedDeviceInfo = JnapDeviceInfoRaw.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'MOCK_SN').output,
-      );
+      ).toUIModel();
 
       when(() => mockService.checkRouterIsBack('MOCK_SN'))
           .thenAnswer((_) async => expectedDeviceInfo);
@@ -130,9 +130,9 @@ void main() {
         pPnpConfiguredSN: 'PNP_SN',
       });
 
-      final expectedDeviceInfo = NodeDeviceInfo.fromJson(
+      final expectedDeviceInfo = JnapDeviceInfoRaw.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'PNP_SN').output,
-      );
+      ).toUIModel();
 
       when(() => mockService.checkRouterIsBack('PNP_SN'))
           .thenAnswer((_) async => expectedDeviceInfo);
@@ -197,10 +197,10 @@ void main() {
   group('SessionNotifier - checkDeviceInfo', () {
     test('delegates to service.checkDeviceInfo with cached state', () async {
       // Arrange
-      final cachedDeviceInfo = NodeDeviceInfo.fromJson(
+      final cachedDeviceInfo = JnapDeviceInfoRaw.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'CACHED_SN')
             .output,
-      );
+      ).toUIModel();
       final deviceInfoState = DeviceInfoState(deviceInfo: cachedDeviceInfo);
 
       when(() => mockService.checkDeviceInfo(cachedDeviceInfo))
@@ -225,10 +225,10 @@ void main() {
     test('delegates to service.checkDeviceInfo with null when no cache',
         () async {
       // Arrange
-      final freshDeviceInfo = NodeDeviceInfo.fromJson(
+      final freshDeviceInfo = JnapDeviceInfoRaw.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'FRESH_SN')
             .output,
-      );
+      ).toUIModel();
 
       when(() => mockService.checkDeviceInfo(null))
           .thenAnswer((_) async => freshDeviceInfo);
@@ -273,10 +273,10 @@ void main() {
   group('SessionNotifier - forceFetchDeviceInfo', () {
     test('delegates to service.forceFetchDeviceInfo', () async {
       // Arrange
-      final freshDeviceInfo = NodeDeviceInfo.fromJson(
+      final freshDeviceInfo = JnapDeviceInfoRaw.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'FRESH_SN')
             .output,
-      );
+      ).toUIModel();
 
       when(() => mockService.forceFetchDeviceInfo())
           .thenAnswer((_) async => freshDeviceInfo);
@@ -299,14 +299,14 @@ void main() {
 
     test('always fetches fresh data, ignoring cache', () async {
       // Arrange - Cached device info exists but should be ignored
-      final cachedDeviceInfo = NodeDeviceInfo.fromJson(
+      final cachedDeviceInfo = JnapDeviceInfoRaw.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'CACHED_SN')
             .output,
-      );
-      final freshDeviceInfo = NodeDeviceInfo.fromJson(
+      ).toUIModel();
+      final freshDeviceInfo = JnapDeviceInfoRaw.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'FRESH_SN')
             .output,
-      );
+      ).toUIModel();
 
       when(() => mockService.forceFetchDeviceInfo())
           .thenAnswer((_) async => freshDeviceInfo);

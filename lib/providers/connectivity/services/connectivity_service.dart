@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/errors/jnap_error_mapper.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/extensions/_extensions.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
@@ -50,7 +50,7 @@ class ConnectivityService {
           cacheLevel: CacheLevel.noCache,
         )
         .then<String>(
-            (value) => NodeDeviceInfo.fromJson(value.output).serialNumber)
+            (value) => JnapDeviceInfoRaw.fromJson(value.output).serialNumber)
         .onError((error, stackTrace) => '');
 
     if (routerSN.isEmpty) {
