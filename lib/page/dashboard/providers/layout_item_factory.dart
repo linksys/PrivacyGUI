@@ -189,21 +189,6 @@ class LayoutItemFactory {
       5 + 2, // Topology ends at y=7
     ].reduce((a, b) => a > b ? a : b);
 
-    // A2UI Widget Test: Device Count (added below other widgets)
-    items.add(fromSpec(
-      WidgetSpec(
-        id: 'a2ui_device_count',
-        displayName: 'A2UI Devices',
-        description: 'A2UI Device Count Widget',
-        constraints: {}, // Will be resolved by Factory using Registry
-      ),
-      x: 8,
-      y: bottomY, // Place to the right
-      w: 4,
-      h: 2,
-      displayMode: displayMode,
-    ));
-
     // WiFi Grid (spans across bottom)
     items.add(fromSpec(
       resolve(DashboardWidgetSpecs.wifiGridCustom),

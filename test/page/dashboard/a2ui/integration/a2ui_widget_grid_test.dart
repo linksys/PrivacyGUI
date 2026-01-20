@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/dashboard/a2ui/models/a2ui_widget_definition.dart';
 import 'package:privacy_gui/page/dashboard/a2ui/presets/preset_widgets.dart';
 import 'package:privacy_gui/page/dashboard/a2ui/renderer/a2ui_widget_renderer.dart';
+// ignore: unused_import
 import 'package:privacy_gui/page/dashboard/a2ui/registry/a2ui_widget_registry.dart';
 import 'package:privacy_gui/page/dashboard/factories/dashboard_widget_factory.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
@@ -134,11 +134,8 @@ void main() {
               home: Scaffold(
                 body: Consumer(
                   builder: (context, ref, _) {
-                    final registry = ref.watch(a2uiWidgetRegistryProvider);
-                    final widget = DashboardWidgetFactory.buildAtomicWidget(
-                      'a2ui_device_count',
-                      registry: registry,
-                    );
+                    final factory = ref.watch(dashboardWidgetFactoryProvider);
+                    final widget = factory.buildAtomicWidget('a2ui_device_count');
                     return widget ?? const Text('Not found');
                   },
                 ),
@@ -152,35 +149,37 @@ void main() {
         expect(find.text('Connected Devices'), findsOneWidget);
       });
 
-      testWidgets(
-          'buildAtomicWidget returns null for unknown widget without ref',
-          (tester) async {
-        final widget =
-            DashboardWidgetFactory.buildAtomicWidget('a2ui_device_count');
-
-        // Without ref, A2UI widgets cannot be looked up
-        expect(widget, isNull);
-      });
-
-      test('getSpec returns WidgetSpec for A2UI widget via registry', () {
+      test('factory hasWidget returns true for A2UI widgets', () {
         final container = ProviderContainer();
         addTearDown(container.dispose);
 
-        // Test the registry directly since getSpec requires WidgetRef
-        final registry = container.read(a2uiWidgetRegistryProvider);
-        final definition = registry.get('a2ui_device_count');
+        final factory = container.read(dashboardWidgetFactoryProvider);
 
-        expect(definition, isNotNull);
+        // A2UI widgets should be detected
+        expect(factory.hasWidget('a2ui_device_count'), isTrue);
+        expect(factory.hasWidget('a2ui_node_count'), isTrue);
+        expect(factory.hasWidget('unknown_widget'), isFalse);
+      });
 
-        final spec = definition!.toWidgetSpec();
-        expect(spec.id, 'a2ui_device_count');
+      test('getSpec returns WidgetSpec for A2UI widget via factory', () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final factory = container.read(dashboardWidgetFactoryProvider);
+        final spec = factory.getSpec('a2ui_device_count');
+
+        expect(spec, isNotNull);
+        expect(spec!.id, 'a2ui_device_count');
         expect(spec.displayName, 'Connected Devices');
         expect(spec.defaultConstraints, isNotNull);
       });
 
       test('shouldWrapInCard returns true for A2UI widgets', () {
-        final result =
-            DashboardWidgetFactory.shouldWrapInCard('a2ui_device_count');
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final factory = container.read(dashboardWidgetFactoryProvider);
+        final result = factory.shouldWrapInCard('a2ui_device_count');
         expect(result, isTrue);
       });
     });

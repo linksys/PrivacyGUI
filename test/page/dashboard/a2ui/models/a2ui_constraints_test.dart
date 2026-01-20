@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/dashboard/a2ui/models/a2ui_constraints.dart';
-import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 
 void main() {
   group('A2UIConstraints', () {
@@ -120,6 +119,48 @@ void main() {
 
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
+    });
+
+    test('throws assertions error when minColumns is not positive', () {
+      expect(
+        () => A2UIConstraints(
+          minColumns: 0,
+          maxColumns: 6,
+          preferredColumns: 4,
+          minRows: 1,
+          maxRows: 3,
+          preferredRows: 2,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('throws assertions error when maxColumns < minColumns', () {
+      expect(
+        () => A2UIConstraints(
+          minColumns: 4,
+          maxColumns: 2,
+          preferredColumns: 4,
+          minRows: 1,
+          maxRows: 3,
+          preferredRows: 2,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('throws assertions error when preferredColumns is out of range', () {
+      expect(
+        () => A2UIConstraints(
+          minColumns: 2,
+          maxColumns: 6,
+          preferredColumns: 8,
+          minRows: 1,
+          maxRows: 3,
+          preferredRows: 2,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
     });
   });
 }

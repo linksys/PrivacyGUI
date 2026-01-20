@@ -17,10 +17,34 @@ class JnapDataResolver implements DataPathResolver {
 
   @override
   dynamic resolve(String path) {
-    // For static resolution, we can use _ref.read if needed,
-    // but the UI should primarily use watch() for reactivity.
-    // Returning null here to encourage usage of watch().
-    return null;
+    // Static resolution using _ref.read for one-time values
+    return switch (path) {
+      'router.deviceCount' => _ref.read(deviceManagerProvider).deviceList
+          .where((d) => d.nodeType == null && d.isOnline())
+          .length,
+      'router.nodeCount' => _ref.read(deviceManagerProvider).deviceList
+          .where((d) => d.nodeType != null)
+          .length,
+      'router.wanStatus' => _resolveWanStatus(_ref.read(dashboardHomeProvider)),
+      'router.uptime' => _formatUptime(_ref.read(dashboardHomeProvider).uptime ?? 0),
+      'wifi.ssid' => _ref.read(dashboardHomeProvider).mainSSID,
+      _ => null,
+    };
+  }
+
+  // Helper methods for resolve()
+  String _resolveWanStatus(DashboardHomeState state) {
+    final status = state.wanPortConnection;
+    return status != null && status.toLowerCase().contains('connected')
+        ? 'Online'
+        : 'Offline';
+  }
+
+  String _formatUptime(int seconds) {
+    final days = seconds ~/ 86400;
+    final hours = (seconds % 86400) ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    return '${days}d ${hours}h ${minutes}m';
   }
 
   @override

@@ -16,7 +16,6 @@ import 'package:ui_kit_library/ui_kit.dart';
 import '../providers/dashboard_home_provider.dart';
 import '../providers/sliver_dashboard_controller_provider.dart';
 import '../a2ui/renderer/a2ui_widget_renderer.dart';
-import '../a2ui/registry/a2ui_widget_registry.dart';
 
 /// Drag-and-drop dashboard view using sliver_dashboard.
 ///
@@ -77,8 +76,8 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
     final preferences = ref.watch(dashboardPreferencesProvider);
     // Watch loader state to handle loading/error
     final a2uiLoaderState = ref.watch(a2uiLoaderProvider);
-    // Watch registry ONLY HERE and pass to helpers
-    final a2uiRegistry = ref.watch(a2uiWidgetRegistryProvider);
+    // Watch factory with injected dependencies (replaces registry)
+    final factory = ref.watch(dashboardWidgetFactoryProvider);
 
     // Use UI Kit's currentMaxColumns to stay synchronized with main padding
     // This gets the correct column count accounting for page margins
@@ -118,14 +117,14 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
           // Dashboard grid area - scrollable with grid background only here
           Expanded(
             child: DashboardOverlay(
-              // Key forces rebuild when registry changes (widgets loaded from assets)
-              key: ValueKey('overlay_${a2uiRegistry.length}'),
+              // Key forces rebuild when factory dependencies change
+              key: ValueKey('overlay_${factory.hashCode}'),
               controller: controller,
               scrollController: scrollController,
               itemBuilder: (context, item) {
                 final mode = preferences.getMode(item.id);
                 return _buildItemWidget(context, item, mode, _isEditMode,
-                    a2uiLoaderState, a2uiRegistry);
+                    a2uiLoaderState, factory);
               },
               slotAspectRatio: 1.0,
               mainAxisSpacing: AppSpacing.lg,
@@ -144,12 +143,12 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
                     padding:
                         EdgeInsets.symmetric(horizontal: context.pageMargin),
                     sliver: SliverDashboard(
-                      // Key forces rebuild when registry changes
-                      key: ValueKey('sliver_${a2uiRegistry.length}'),
+                      // Key forces rebuild when factory dependencies change
+                      key: ValueKey('sliver_${factory.hashCode}'),
                       itemBuilder: (context, item) {
                         final mode = preferences.getMode(item.id);
                         return _buildItemWidget(context, item, mode,
-                            _isEditMode, a2uiLoaderState, a2uiRegistry);
+                            _isEditMode, a2uiLoaderState, factory);
                       },
                       slotAspectRatio: 1.0,
                       mainAxisSpacing: AppSpacing.lg,
@@ -191,9 +190,8 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
       );
     } else {
       // Use factory to get spec (supports native and A2UI widgets)
-      // Get registry for dependency injection
-      final registry = ref.read(a2uiWidgetRegistryProvider);
-      spec = DashboardWidgetFactory.getSpec(item.id, registry: registry);
+      final factory = ref.read(dashboardWidgetFactoryProvider);
+      spec = factory.getSpec(item.id);
       if (spec == null) return;
     }
 
@@ -328,12 +326,11 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
       DisplayMode displayMode,
       bool isEditMode,
       AsyncValue a2uiLoaderState,
-      A2UIWidgetRegistry registry) {
-    // Use factory to build widget with the registry passed from build()
-    final widget = DashboardWidgetFactory.buildAtomicWidget(
+      DashboardWidgetFactory factory) {
+    // Use injected factory to build widget (no registry parameter needed)
+    final widget = factory.buildAtomicWidget(
       item.id,
       displayMode: displayMode,
-      registry: registry,
     );
 
     // Handle unknown widget
@@ -366,7 +363,7 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
 
     // Wrap in AppCard based on factory rules
     final Widget displayedWidget;
-    if (!DashboardWidgetFactory.shouldWrapInCard(item.id)) {
+    if (!factory.shouldWrapInCard(item.id)) {
       displayedWidget = widget;
     } else {
       displayedWidget = AppCard(

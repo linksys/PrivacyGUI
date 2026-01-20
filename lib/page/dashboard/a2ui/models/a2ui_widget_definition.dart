@@ -33,7 +33,8 @@ class A2UIWidgetDefinition extends Equatable {
     this.description,
     required this.constraints,
     required this.template,
-  });
+  })  : assert(widgetId.length > 0, 'widgetId cannot be empty'),
+        assert(displayName.length > 0, 'displayName cannot be empty');
 
   /// Creates a widget definition from JSON.
   ///

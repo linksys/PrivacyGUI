@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/a2ui_widget_definition.dart';
 
@@ -26,7 +27,7 @@ class JsonWidgetLoader {
         widgets.add(A2UIWidgetDefinition.fromJson(json));
       } catch (e) {
         // Log error but continue loading other widgets
-        print('Error loading A2UI widget from $filename: $e');
+        debugPrint('Error loading A2UI widget from $filename: $e');
       }
     }
 

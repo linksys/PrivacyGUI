@@ -34,7 +34,15 @@ class A2UIConstraints extends Equatable {
     required this.minRows,
     required this.maxRows,
     required this.preferredRows,
-  });
+  })  : assert(minColumns > 0, 'minColumns must be positive'),
+        assert(maxColumns >= minColumns, 'maxColumns must be >= minColumns'),
+        assert(maxColumns <= 12, 'maxColumns must be <= 12'),
+        assert(preferredColumns >= minColumns && preferredColumns <= maxColumns,
+            'preferredColumns must be between min and max'),
+        assert(minRows > 0, 'minRows must be positive'),
+        assert(maxRows >= minRows, 'maxRows must be >= minRows'),
+        assert(preferredRows >= minRows && preferredRows <= maxRows,
+            'preferredRows must be between min and max');
 
   /// Creates constraints from JSON.
   factory A2UIConstraints.fromJson(Map<String, dynamic> json) {

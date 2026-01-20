@@ -16,11 +16,17 @@ final a2uiLoaderProvider =
 
 /// Provider for the A2UI widget registry.
 ///
-/// Populates registry from [a2uiLoaderProvider].
+/// Populates registry with preset widgets and watches for async loaded widgets.
 final a2uiWidgetRegistryProvider = Provider<A2UIWidgetRegistry>((ref) {
   final registry = A2UIWidgetRegistry();
 
-  // Load from async loader
+  // Always register preset widgets first (for tests and immediate availability)
+  final presetWidgets = ref.read(presetWidgetsProvider);
+  for (final widget in presetWidgets) {
+    registry.register(widget);
+  }
+
+  // Watch async loaded widgets and merge them in
   final asyncWidgets = ref.watch(a2uiLoaderProvider);
   asyncWidgets.whenData((widgets) {
     for (final widget in widgets) {
@@ -29,6 +35,79 @@ final a2uiWidgetRegistryProvider = Provider<A2UIWidgetRegistry>((ref) {
   });
 
   return registry;
+});
+
+/// Provider for preset widgets.
+final presetWidgetsProvider = Provider<List<A2UIWidgetDefinition>>((ref) {
+  // Import preset widgets here
+  return [
+    // Device count widget
+    A2UIWidgetDefinition.fromJson(const {
+      "widgetId": "a2ui_device_count",
+      "displayName": "Connected Devices",
+      "constraints": {
+        "minColumns": 2,
+        "maxColumns": 6,
+        "preferredColumns": 4,
+        "minRows": 1,
+        "maxRows": 3,
+        "preferredRows": 2
+      },
+      "template": {
+        "type": "Column",
+        "properties": {"mainAxisAlignment": "center"},
+        "children": [
+          {"type": "AppIcon", "properties": {"icon": "Icons.devices"}},
+          {"type": "AppText", "properties": {"text": {"\$bind": "router.deviceCount"}}},
+          {"type": "AppText", "properties": {"text": "Connected Devices"}}
+        ]
+      }
+    }),
+    // Node count widget
+    A2UIWidgetDefinition.fromJson(const {
+      "widgetId": "a2ui_node_count",
+      "displayName": "Mesh Nodes",
+      "constraints": {
+        "minColumns": 2,
+        "maxColumns": 6,
+        "preferredColumns": 4,
+        "minRows": 1,
+        "maxRows": 3,
+        "preferredRows": 2
+      },
+      "template": {
+        "type": "Column",
+        "properties": {"mainAxisAlignment": "center"},
+        "children": [
+          {"type": "AppIcon", "properties": {"icon": "Icons.router"}},
+          {"type": "AppText", "properties": {"text": {"\$bind": "router.nodeCount"}}},
+          {"type": "AppText", "properties": {"text": "Mesh Nodes"}}
+        ]
+      }
+    }),
+    // WAN status widget
+    A2UIWidgetDefinition.fromJson(const {
+      "widgetId": "a2ui_wan_status",
+      "displayName": "WAN Status",
+      "constraints": {
+        "minColumns": 3,
+        "maxColumns": 8,
+        "preferredColumns": 6,
+        "minRows": 1,
+        "maxRows": 2,
+        "preferredRows": 1
+      },
+      "template": {
+        "type": "Row",
+        "properties": {"mainAxisAlignment": "center"},
+        "children": [
+          {"type": "AppIcon", "properties": {"icon": "Icons.lan"}},
+          {"type": "AppText", "properties": {"text": {"\$bind": "router.wanStatus"}}},
+          {"type": "AppText", "properties": {"text": "Connected"}}
+        ]
+      }
+    }),
+  ];
 });
 
 /// Renders an A2UI widget by ID.

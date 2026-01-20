@@ -106,5 +106,27 @@ void main() {
       expect(spec.defaultConstraints, isNotNull);
       expect(spec.defaultConstraints!.minColumns, 3);
     });
+
+    test('throws assertions error when widgetId is empty', () {
+      expect(
+        () => A2UIWidgetDefinition.fromJson(const {
+          'widgetId': '',
+          'displayName': 'Test Widget',
+          'template': {'type': 'Container'},
+        }),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('throws assertions error when displayName is empty', () {
+      expect(
+        () => A2UIWidgetDefinition.fromJson(const {
+          'widgetId': 'test_widget',
+          'displayName': '',
+          'template': {'type': 'Container'},
+        }),
+        throwsA(isA<AssertionError>()),
+      );
+    });
   });
 }
