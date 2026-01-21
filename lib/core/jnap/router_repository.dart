@@ -9,6 +9,8 @@ import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/core/bluetooth/bluetooth.dart';
@@ -70,6 +72,28 @@ class RouterRepository {
 
   bool get isEnableBTSetup => _btSetupMode;
 
+  /// Checks if the given JNAP action is a SET operation.
+  ///
+  /// A JNAP action is considered a SET operation if its action value
+  /// (URL path) ends with a segment starting with 'Set' (case-insensitive).
+  /// Example: "http://linksys.com/jnap/router/SetWANSettings" -> true
+  bool _isSetOperation(JNAPAction action) {
+    final actionValue = action.actionValue;
+    // Extract the last segment of the URL path (after the last '/')
+    final lastSegment = actionValue.split('/').last.toLowerCase();
+    return lastSegment.startsWith('set');
+  }
+
+  /// Checks if the application is in remote read-only mode.
+  ///
+  /// Returns true when:
+  /// - User is logged in remotely (LoginType.remote), OR
+  /// - Compile-time forced remote mode (BuildConfig.forceCommandType == ForceCommand.remote)
+  bool _isRemoteReadOnly() {
+    final remoteAccess = ref.read(remoteAccessProvider);
+    return remoteAccess.isRemoteReadOnly;
+  }
+
   Future<JNAPSuccess> send(
     JNAPAction action, {
     Map<String, dynamic> data = const {},
@@ -82,6 +106,13 @@ class RouterRepository {
     int retries = 1,
     SideEffectPollConfig? pollConfig,
   }) async {
+    // Defensive check: Block SET operations in remote read-only mode
+    if (_isSetOperation(action) && _isRemoteReadOnly()) {
+      throw const UnexpectedError(
+        message: 'SET operations are not allowed in remote read-only mode',
+      );
+    }
+
     cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
         ? CacheLevel.noCache
         : CacheLevel.localCached;
@@ -115,6 +146,16 @@ class RouterRepository {
     int retries = 1,
     SideEffectPollConfig? pollConfig,
   }) async {
+    // Defensive check: Block transactions containing SET operations in remote read-only mode
+    if (_isRemoteReadOnly()) {
+      final hasSetOperation = builder.commands.any((entry) => _isSetOperation(entry.key));
+      if (hasSetOperation) {
+        throw const UnexpectedError(
+          message: 'SET operations are not allowed in remote read-only mode',
+        );
+      }
+    }
+
     cacheLevel =
         builder.commands.any((entry) => isMatchedJNAPNoCachePolicy(entry.key))
             ? CacheLevel.noCache
