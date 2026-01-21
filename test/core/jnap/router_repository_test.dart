@@ -57,7 +57,7 @@ void main() {
         // Success - the defensive check caught it
         expect(
           e.message,
-          'SET operations are not allowed in remote read-only mode',
+          'Write operations are not allowed in remote read-only mode',
         );
       } catch (e) {
         fail('Expected UnexpectedError but got: ${e.runtimeType}: $e');
@@ -170,7 +170,7 @@ void main() {
       }
     });
 
-    test('send() allows non-SET operations in remote mode', () async {
+    test('send() allows read-only operations in remote mode', () async {
       // Arrange
       final container = ProviderContainer(
         overrides: [
@@ -185,17 +185,85 @@ void main() {
 
       final repository = container.read(routerRepositoryProvider);
 
-      // Act & Assert: Non-SET operations should NOT throw our defensive error
+      // Act & Assert: Should NOT throw for safe read operations
       try {
-        await repository.send(JNAPAction.reboot);
+        await repository.send(JNAPAction.getDeviceInfo);
         fail('Expected error due to missing network, but got success');
       } on UnexpectedError catch (e) {
         if (e.message?.contains('remote read-only') ?? false) {
-          fail('Non-SET operation should not be blocked');
+          fail('Read-only GET operation should not be blocked by defensive check');
+        }
+        // Other UnexpectedErrors are OK (missing network, etc)
+      } catch (e) {
+        // Expected: Will fail due to missing network/SharedPreferences/etc
+        // But NOT because of our remote read-only check
+      }
+
+      try {
+        await repository.send(JNAPAction.getWANSettings);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('Read-only GET operation should not be blocked by defensive check');
         }
       } catch (e) {
         // Expected: Will fail due to missing network/SharedPreferences/etc
       }
+
+      try {
+        await repository.send(JNAPAction.isAdminPasswordDefault);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('Read-only IS operation should not be blocked by defensive check');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/SharedPreferences/etc
+      }
+    });
+
+    test('send() blocks destructive operations like reboot in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert - Should throw for destructive operations
+      expect(
+        () => repository.send(JNAPAction.reboot),
+        throwsA(isA<UnexpectedError>().having(
+          (e) => e.message,
+          'message',
+          'Write operations are not allowed in remote read-only mode',
+        )),
+      );
+
+      expect(
+        () => repository.send(JNAPAction.factoryReset),
+        throwsA(isA<UnexpectedError>().having(
+          (e) => e.message,
+          'message',
+          'Write operations are not allowed in remote read-only mode',
+        )),
+      );
+
+      expect(
+        () => repository.send(JNAPAction.deleteDevice),
+        throwsA(isA<UnexpectedError>().having(
+          (e) => e.message,
+          'message',
+          'Write operations are not allowed in remote read-only mode',
+        )),
+      );
     });
 
     test(
@@ -226,7 +294,7 @@ void main() {
       } on UnexpectedError catch (e) {
         expect(
           e.message,
-          'SET operations are not allowed in remote read-only mode',
+          'Write operations are not allowed in remote read-only mode',
         );
       } catch (e) {
         fail('Expected UnexpectedError but got: ${e.runtimeType}: $e');

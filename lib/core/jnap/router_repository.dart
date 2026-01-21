@@ -72,16 +72,24 @@ class RouterRepository {
 
   bool get isEnableBTSetup => _btSetupMode;
 
-  /// Checks if the given JNAP action is a SET operation.
+  /// Checks if the given JNAP action is a read-only operation.
   ///
-  /// A JNAP action is considered a SET operation if its action value
-  /// (URL path) ends with a segment starting with 'Set' (case-insensitive).
-  /// Example: "http://linksys.com/jnap/router/SetWANSettings" -> true
-  bool _isSetOperation(JNAPAction action) {
+  /// Only operations that do NOT modify router configuration are considered safe.
+  /// Safe operations include Get*, Is*, and Check* operations.
+  /// All other operations are blocked in remote read-only mode.
+  bool _isReadOnlyOperation(JNAPAction action) {
     final actionValue = action.actionValue;
     // Extract the last segment of the URL path (after the last '/')
     final lastSegment = actionValue.split('/').last.toLowerCase();
-    return lastSegment.startsWith('set');
+
+    // Allowlist of safe read-only operation prefixes
+    const safePrefixes = [
+      'get',      // Get operations (getDeviceInfo, getWANSettings, etc.)
+      'is',       // Status checks (isAdminPasswordDefault, etc.)
+      'check',    // Validation operations (checkAdminPassword, etc.)
+    ];
+
+    return safePrefixes.any((prefix) => lastSegment.startsWith(prefix));
   }
 
   /// Checks if the application is in remote read-only mode.
@@ -106,10 +114,10 @@ class RouterRepository {
     int retries = 1,
     SideEffectPollConfig? pollConfig,
   }) async {
-    // Defensive check: Block SET operations in remote read-only mode
-    if (_isSetOperation(action) && _isRemoteReadOnly()) {
+    // Defensive check: Block write operations in remote read-only mode
+    if (!_isReadOnlyOperation(action) && _isRemoteReadOnly()) {
       throw const UnexpectedError(
-        message: 'SET operations are not allowed in remote read-only mode',
+        message: 'Write operations are not allowed in remote read-only mode',
       );
     }
 
@@ -146,12 +154,12 @@ class RouterRepository {
     int retries = 1,
     SideEffectPollConfig? pollConfig,
   }) async {
-    // Defensive check: Block transactions containing SET operations in remote read-only mode
+    // Defensive check: Block transactions containing write operations in remote read-only mode
     if (_isRemoteReadOnly()) {
-      final hasSetOperation = builder.commands.any((entry) => _isSetOperation(entry.key));
-      if (hasSetOperation) {
+      final hasWriteOperation = builder.commands.any((entry) => !_isReadOnlyOperation(entry.key));
+      if (hasWriteOperation) {
         throw const UnexpectedError(
-          message: 'SET operations are not allowed in remote read-only mode',
+          message: 'Write operations are not allowed in remote read-only mode',
         );
       }
     }
