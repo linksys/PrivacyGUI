@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
+import 'package:privacy_gui/page/components/views/remote_read_only_banner.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
 
@@ -73,6 +74,16 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                 _buildLayout(Container(child: widget.child ?? const Center()),
                     constraints),
                 ..._handleConnectivity(ref),
+                // Add remote read-only banner at the top (respects safe area)
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: RemoteReadOnlyBanner(),
+                  ),
+                ),
               ],
             ),
           ),
