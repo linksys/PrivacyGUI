@@ -19,26 +19,28 @@ class RemoteReadOnlyBanner extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.orange.shade100,
+        color: colorScheme.secondaryContainer,
       ),
       child: Row(
         children: [
           Icon(
             Icons.info_outline,
-            color: Colors.orange.shade900,
+            color: colorScheme.onSecondaryContainer,
             size: 20,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Remote View Mode - Setting changes are disabled',
-              style: TextStyle(
-                color: Colors.orange.shade900,
-                fontSize: 14,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSecondaryContainer,
                 fontWeight: FontWeight.w500,
               ),
             ),

@@ -79,6 +79,8 @@ void main() {
       );
 
       // Act
+      final context = tester.element(find.byType(RemoteReadOnlyBanner));
+      final colorScheme = Theme.of(context).colorScheme;
       final banner = find.byType(RemoteReadOnlyBanner);
       final bannerSize = tester.getSize(banner);
       final container = tester.widget<Container>(find.byType(Container).first);
@@ -87,9 +89,9 @@ void main() {
       // Verify banner takes full available width
       expect(bannerSize.width, greaterThan(0));
 
-      // Verify decoration color
+      // Verify decoration uses theme colors
       final decoration = container.decoration as BoxDecoration?;
-      expect(decoration?.color, equals(Colors.orange.shade100));
+      expect(decoration?.color, equals(colorScheme.secondaryContainer));
     });
   });
 }
