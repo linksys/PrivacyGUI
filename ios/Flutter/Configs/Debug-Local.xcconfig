@@ -1,0 +1,13 @@
+//
+//  Debug-Local.xcconfig
+//  Runner
+//
+//  Created by Hank Yu on 2026/1/21.
+//
+
+// Include Local variables
+#include "Local.xcconfig"
+
+// Include Pods Debug settings
+// Note: After running `pod install`, CocoaPods will generate corresponding files based on the Configuration name.
+#include "../../Pods/Target Support Files/Pods-Runner/Pods-Runner.debug-local.xcconfig"
