@@ -69,19 +69,21 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
           color: Theme.of(context).colorScheme.surface,
           child: CompositedTransformTarget(
             link: _link,
-            child: Stack(
+            child: Column(
               children: [
-                _buildLayout(Container(child: widget.child ?? const Center()),
-                    constraints),
-                ..._handleConnectivity(ref),
-                // Add remote read-only banner at the top (respects safe area)
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: SafeArea(
-                    bottom: false,
-                    child: RemoteReadOnlyBanner(),
+                // Remote read-only banner at the top (respects safe area)
+                const SafeArea(
+                  bottom: false,
+                  child: RemoteReadOnlyBanner(),
+                ),
+                // Main content with connectivity overlay
+                Expanded(
+                  child: Stack(
+                    children: [
+                      _buildLayout(Container(child: widget.child ?? const Center()),
+                          constraints),
+                      ..._handleConnectivity(ref),
+                    ],
                   ),
                 ),
               ],
