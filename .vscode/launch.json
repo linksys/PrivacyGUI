@@ -41,7 +41,8 @@
             "toolArgs": [
                 "--flavor",
                 "Local"
-            ]
+            ],
+            "program": "lib/main.dart"
         },
         {
             "name": "linksys - iOS (Remote)",
@@ -50,7 +51,8 @@
             "toolArgs": [
                 "--flavor",
                 "Remote"
-            ]
+            ],
+            "program": "lib/main.dart"
         }
     ]
 }
