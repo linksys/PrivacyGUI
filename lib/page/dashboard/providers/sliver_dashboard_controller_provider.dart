@@ -187,7 +187,12 @@ class SliverDashboardControllerNotifier
     }).toList();
 
     if (changed) {
-      state.importLayout(newLayout);
+      // Create new controller to force state notification
+      final newController = _createDefaultController(
+        specResolver: _getCurrentSpecResolver(),
+      );
+      newController.importLayout(newLayout);
+      state = newController;
       await saveLayout();
     }
   }
@@ -213,7 +218,12 @@ class SliverDashboardControllerNotifier
     }).toList();
 
     if (changed) {
-      state.importLayout(newLayout);
+      // Create new controller to force state notification
+      final newController = _createDefaultController(
+        specResolver: _getCurrentSpecResolver(),
+      );
+      newController.importLayout(newLayout);
+      state = newController;
       await saveLayout();
     }
   }
@@ -288,7 +298,12 @@ class SliverDashboardControllerNotifier
 
     final newLayout = [...currentLayout, newItemMap];
 
-    state.importLayout(newLayout);
+    // Create new controller to force state notification
+    final newController = _createDefaultController(
+      specResolver: _getCurrentSpecResolver(),
+    );
+    newController.importLayout(newLayout);
+    state = newController;
     await saveLayout();
   }
 
@@ -299,7 +314,12 @@ class SliverDashboardControllerNotifier
         currentLayout.where((item) => (item as Map)['id'] != id).toList();
 
     if (newLayout.length != currentLayout.length) {
-      state.importLayout(newLayout);
+      // Create new controller to force state notification
+      final newController = _createDefaultController(
+        specResolver: _getCurrentSpecResolver(),
+      );
+      newController.importLayout(newLayout);
+      state = newController;
       await saveLayout();
     }
   }

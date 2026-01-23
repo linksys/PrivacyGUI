@@ -1,0 +1,203 @@
+{
+  "widgetId": "a2ui_router_control",
+  "displayName": "Router Control Panel",
+  "description": "Interactive router control with restart and reset capabilities",
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 6,
+    "preferredColumns": 4,
+    "minRows": 3,
+    "maxRows": 5,
+    "preferredRows": 4
+  },
+  "template": {
+    "type": "Column",
+    "properties": {
+      "mainAxisAlignment": "spaceEvenly",
+      "crossAxisAlignment": "stretch",
+      "padding": 16.0
+    },
+    "children": [
+      {
+        "type": "Row",
+        "properties": {
+          "mainAxisAlignment": "spaceBetween",
+          "children": []
+        },
+        "children": [
+          {
+            "type": "Icon",
+            "properties": {
+              "icon": "router",
+              "size": 32.0
+            }
+          },
+          {
+            "type": "Column",
+            "properties": {
+              "crossAxisAlignment": "end"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "properties": {
+                  "text": {
+                    "$bind": "router.wanStatus"
+                  },
+                  "variant": "bodyMedium"
+                }
+              },
+              {
+                "type": "Text",
+                "properties": {
+                  "text": {
+                    "$bind": "router.uptime"
+                  },
+                  "variant": "bodySmall",
+                  "color": "onSurfaceVariant"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Text",
+        "properties": {
+          "text": "Router Control",
+          "variant": "titleMedium",
+          "textAlign": "center"
+        }
+      },
+      {
+        "type": "Column",
+        "properties": {
+          "mainAxisSize": "min",
+          "children": []
+        },
+        "children": [
+          {
+            "type": "Button",
+            "properties": {
+              "label": "Power Control",
+              "variant": "filled",
+              "icon": "power",
+              "onPressed": {
+                "$action": "router.power"
+              }
+            }
+          },
+          {
+            "type": "SizedBox",
+            "properties": {
+              "height": 8.0
+            }
+          },
+          {
+            "type": "Button",
+            "properties": {
+              "label": "Restart Router",
+              "variant": "outlined",
+              "icon": "restart_alt",
+              "onPressed": {
+                "$action": "ui.showConfirmation",
+                "params": {
+                  "title": "Restart Router",
+                  "message": "This will temporarily interrupt internet access. Continue?",
+                  "onConfirm": {
+                    "$action": "router.restart"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "SizedBox",
+            "properties": {
+              "height": 8.0
+            }
+          },
+          {
+            "type": "Button",
+            "properties": {
+              "label": "Factory Reset",
+              "variant": "outlined",
+              "icon": "settings_backup_restore",
+              "style": "destructive",
+              "onPressed": {
+                "$action": "ui.showConfirmation",
+                "params": {
+                  "title": "Factory Reset",
+                  "message": "⚠️ This will erase ALL settings and data. This action cannot be undone. Are you absolutely sure?",
+                  "confirmLabel": "Yes, Reset Everything",
+                  "cancelLabel": "Cancel",
+                  "onConfirm": {
+                    "$action": "router.factoryReset"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Row",
+        "properties": {
+          "mainAxisAlignment": "spaceAround"
+        },
+        "children": [
+          {
+            "type": "Column",
+            "properties": {
+              "mainAxisSize": "min",
+              "crossAxisAlignment": "center"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "properties": {
+                  "text": {
+                    "$bind": "router.deviceCount"
+                  },
+                  "variant": "titleLarge"
+                }
+              },
+              {
+                "type": "Text",
+                "properties": {
+                  "text": "Devices",
+                  "variant": "bodySmall"
+                }
+              }
+            ]
+          },
+          {
+            "type": "Column",
+            "properties": {
+              "mainAxisSize": "min",
+              "crossAxisAlignment": "center"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "properties": {
+                  "text": {
+                    "$bind": "router.nodeCount"
+                  },
+                  "variant": "titleLarge"
+                }
+              },
+              {
+                "type": "Text",
+                "properties": {
+                  "text": "Nodes",
+                  "variant": "bodySmall"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

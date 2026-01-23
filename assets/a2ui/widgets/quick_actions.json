@@ -1,0 +1,206 @@
+{
+    "widgetId": "a2ui_quick_actions",
+    "displayName": "Quick Actions",
+    "description": "Quick access to common router actions and settings",
+    "constraints": {
+        "minColumns": 3,
+        "maxColumns": 6,
+        "preferredColumns": 4,
+        "minRows": 2,
+        "maxRows": 4,
+        "preferredRows": 3
+    },
+    "template": {
+        "type": "Card",
+        "properties": {
+            "padding": 16.0,
+            "style": {
+                "elevation": 2,
+                "borderRadius": 12
+            }
+        },
+        "children": [
+            {
+                "type": "Column",
+                "properties": {
+                    "mainAxisAlignment": "spaceEvenly",
+                    "crossAxisAlignment": "stretch",
+                    "mainAxisSize": "max"
+                },
+                "children": [
+                    {
+                        "type": "Text",
+                        "properties": {
+                            "text": "Quick Actions",
+                            "variant": "titleMedium",
+                            "textAlign": "center",
+                            "color": "primary"
+                        }
+                    },
+                    {
+                        "type": "SizedBox",
+                        "properties": {
+                            "height": 12.0
+                        }
+                    },
+                    {
+                        "type": "Row",
+                        "properties": {
+                            "mainAxisAlignment": "spaceEvenly"
+                        },
+                        "children": [
+                            {
+                                "type": "Column",
+                                "properties": {
+                                    "mainAxisSize": "min",
+                                    "crossAxisAlignment": "center"
+                                },
+                                "children": [
+                                    {
+                                        "type": "IconButton",
+                                        "properties": {
+                                            "variant": "filled",
+                                            "size": "small",
+                                            "icon": "wifi",
+                                            "onPressed": {
+                                                "$action": "navigation.push",
+                                                "params": {
+                                                    "route": "menuIncredibleWiFi"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "SizedBox",
+                                        "properties": {
+                                            "height": 4.0
+                                        }
+                                    },
+                                    {
+                                        "type": "Text",
+                                        "properties": {
+                                            "text": "WiFi",
+                                            "variant": "bodySmall",
+                                            "textAlign": "center"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "Column",
+                                "properties": {
+                                    "mainAxisSize": "min",
+                                    "crossAxisAlignment": "center"
+                                },
+                                "children": [
+                                    {
+                                        "type": "IconButton",
+                                        "properties": {
+                                            "variant": "outlined",
+                                            "size": "small",
+                                            "icon": "security",
+                                            "onPressed": {
+                                                "$action": "navigation.push",
+                                                "params": {
+                                                    "route": "menuInstantSafety"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "SizedBox",
+                                        "properties": {
+                                            "height": 4.0
+                                        }
+                                    },
+                                    {
+                                        "type": "Text",
+                                        "properties": {
+                                            "text": "Security",
+                                            "variant": "bodySmall",
+                                            "textAlign": "center"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "Column",
+                                "properties": {
+                                    "mainAxisSize": "min",
+                                    "crossAxisAlignment": "center"
+                                },
+                                "children": [
+                                    {
+                                        "type": "IconButton",
+                                        "properties": {
+                                            "variant": "outlined",
+                                            "size": "small",
+                                            "icon": "refresh",
+                                            "onPressed": {
+                                                "$action": "ui.refresh"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "type": "SizedBox",
+                                        "properties": {
+                                            "height": 4.0
+                                        }
+                                    },
+                                    {
+                                        "type": "Text",
+                                        "properties": {
+                                            "text": "Refresh",
+                                            "variant": "bodySmall",
+                                            "textAlign": "center"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SizedBox",
+                        "properties": {
+                            "height": 8.0
+                        }
+                    },
+                    {
+                        "type": "Row",
+                        "properties": {
+                            "mainAxisAlignment": "spaceEvenly"
+                        },
+                        "children": [
+                            {
+                                "type": "Expanded",
+                                "children": [
+                                    {
+                                        "type": "Button",
+                                        "properties": {
+                                            "label": "重啟路由器",
+                                            "variant": "outlined",
+                                            "size": "small",
+                                            "icon": "restart_alt",
+                                            "onPressed": {
+                                                "$action": "ui.showConfirmation",
+                                                "params": {
+                                                    "title": "Restart Router",
+                                                    "message": "This will temporarily interrupt internet access. Continue?",
+                                                    "confirmLabel": "Restart",
+                                                    "cancelLabel": "Cancel",
+                                                    "onConfirm": {
+                                                        "$action": "router.restart"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

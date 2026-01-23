@@ -95,6 +95,7 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
         instanceName: 'darkThemeData');
 
     return MaterialApp.router(
+      showSemanticsDebugger: true,
       onGenerateTitle: (context) => '${loc(context).appTitle} (Demo)',
       theme: themeData,
       darkTheme: darkTheme,

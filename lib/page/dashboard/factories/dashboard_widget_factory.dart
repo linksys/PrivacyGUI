@@ -131,6 +131,8 @@ class DashboardWidgetFactory {
 }
 
 /// Riverpod Provider for DashboardWidgetFactory with injected dependencies
+///
+/// Watches the A2UI registry via ChangeNotifierProvider for efficient rebuilds.
 final dashboardWidgetFactoryProvider = Provider<DashboardWidgetFactory>((ref) {
   final a2uiRegistry = ref.watch(a2uiWidgetRegistryProvider);
   return DashboardWidgetFactory(a2uiRegistry);
