@@ -349,6 +349,12 @@ extension NetworkUtils on Utils {
     if (bits <= 0) return (value: '0', unit: "b");
     const suffixes = ["b", "Kb", "Mb", "Gb", "Tb", "Pb"];
     var i = (log(bits) / log(1000)).floor();
+    // Clamp i to the last index of suffixes to avoid range error
+    if (i < 0) {
+      i = 0;
+    } else if (i >= suffixes.length) {
+      i = suffixes.length - 1;
+    }
     var number = (bits / pow(1000, i));
     return (
       value: number

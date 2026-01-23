@@ -136,9 +136,10 @@ class DashboardHomeNotifier extends Notifier<DashboardHomeState> {
     }
     // The speed is in kilobits per second
     String speedText = NetworkUtils.formatBits(speed * 1000);
+    final parts = speedText.split(' ');
     return DashboardSpeedItem(
-      value: speedText.split(' ').first,
-      unit: speedText.split(' ').last,
+      value: parts.first,
+      unit: parts.last,
     );
   }
 }
