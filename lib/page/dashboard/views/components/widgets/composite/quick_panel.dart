@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+
 import 'package:privacy_gui/page/nodes/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -27,10 +27,14 @@ class DashboardQuickPanel extends ConsumerStatefulWidget {
   const DashboardQuickPanel({
     super.key,
     this.displayMode = DisplayMode.normal,
+    this.useAppCard = true,
   });
 
   /// The display mode for this widget
   final DisplayMode displayMode;
+
+  /// Whether to wrap the content in an AppCard (default true).
+  final bool useAppCard;
 
   @override
   ConsumerState<DashboardQuickPanel> createState() =>
@@ -72,58 +76,71 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
         modelNumber: master.data.model,
         hardwareVersion: master.data.hardwareVersion);
 
-    return AppCard(
+    final content = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        // Privacy toggle
+        _compactToggle(
+          context,
+          icon: Icons.shield,
+          isActive: privacyState.status.mode == MacFilterMode.allow,
+          label: loc(context).instantPrivacy,
+          onTap: () => context.pushNamed(RouteNamed.menuInstantPrivacy),
+          onToggle: (value) {
+            showInstantPrivacyConfirmDialog(context, value).then((isOk) {
+              if (isOk != true) return;
+              final notifier = ref.read(instantPrivacyProvider.notifier);
+              if (value) {
+                final macAddressList = ref
+                    .read(instantPrivacyDeviceListProvider)
+                    .map((e) => e.macAddress.toUpperCase())
+                    .toList();
+                notifier.setMacAddressList(macAddressList);
+              }
+              notifier.setEnable(value);
+              if (context.mounted) {
+                doSomethingWithSpinner(context, notifier.save());
+              }
+            });
+          },
+        ),
+        // Night mode toggle
+        if (isCognitive && isSupportNodeLight)
+          _compactToggle(
+            context,
+            icon: AppFontIcons.darkMode,
+            isActive: nodeLightState.isNightModeEnabled,
+            label: loc(context).nightMode,
+            onToggle: (value) {
+              final notifier = ref.read(nodeLightSettingsProvider.notifier);
+              if (value) {
+                notifier.setSettings(nodeLightState.copyWith(
+                    isNightModeEnabled: true, allDayOff: false));
+              } else {
+                notifier.setSettings(nodeLightState.copyWith(
+                    isNightModeEnabled: false, allDayOff: false));
+              }
+              doSomethingWithSpinner(context, notifier.save());
+            },
+          ),
+      ],
+    );
+
+    if (widget.useAppCard) {
+      return AppCard(
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: content,
+      );
+    }
+    return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          // Privacy toggle
-          _compactToggle(
-            context,
-            icon: Icons.shield,
-            isActive: privacyState.status.mode == MacFilterMode.allow,
-            label: loc(context).instantPrivacy,
-            onTap: () => context.pushNamed(RouteNamed.menuInstantPrivacy),
-            onToggle: (value) {
-              showInstantPrivacyConfirmDialog(context, value).then((isOk) {
-                if (isOk != true) return;
-                final notifier = ref.read(instantPrivacyProvider.notifier);
-                if (value) {
-                  final macAddressList = ref
-                      .read(instantPrivacyDeviceListProvider)
-                      .map((e) => e.macAddress.toUpperCase())
-                      .toList();
-                  notifier.setMacAddressList(macAddressList);
-                }
-                notifier.setEnable(value);
-                if (context.mounted) {
-                  doSomethingWithSpinner(context, notifier.save());
-                }
-              });
-            },
-          ),
-          // Night mode toggle
-          if (isCognitive && isSupportNodeLight)
-            _compactToggle(
-              context,
-              icon: AppFontIcons.darkMode,
-              isActive: nodeLightState.isNightModeEnable,
-              label: loc(context).nightMode,
-              onToggle: (value) {
-                final notifier = ref.read(nodeLightSettingsProvider.notifier);
-                if (value) {
-                  notifier.setSettings(NodeLightSettings.night());
-                } else {
-                  notifier.setSettings(NodeLightSettings.on());
-                }
-                doSomethingWithSpinner(context, notifier.save());
-              },
-            ),
-        ],
-      ),
+      child: content,
     );
   }
 
@@ -176,105 +193,26 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
         modelNumber: master.data.model,
         hardwareVersion: master.data.hardwareVersion);
 
-    return AppCard(
-      padding: EdgeInsets.all(AppSpacing.xxl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          toggleTileWidget(
-              title: loc(context).instantPrivacy,
-              value: privacyState.status.mode == MacFilterMode.allow,
-              leading: AppBadge(
-                label: 'BETA',
-                color: Theme.of(context)
-                    .extension<AppColorScheme>()!
-                    .semanticWarning,
-              ),
-              onTap: () {
-                context.pushNamed(RouteNamed.menuInstantPrivacy);
-              },
-              onChanged: (value) {
-                showInstantPrivacyConfirmDialog(context, value).then((isOk) {
-                  if (isOk != true) {
-                    return;
-                  }
-                  final notifier = ref.read(instantPrivacyProvider.notifier);
-                  if (value) {
-                    final macAddressList = ref
-                        .read(instantPrivacyDeviceListProvider)
-                        .map((e) => e.macAddress.toUpperCase())
-                        .toList();
-                    notifier.setMacAddressList(macAddressList);
-                  }
-                  notifier.setEnable(value);
-                  if (context.mounted) {
-                    doSomethingWithSpinner(context, notifier.save());
-                  }
-                });
-              },
-              tips: loc(context).instantPrivacyInfo,
-              semantics: 'quick instant privacy switch'),
-          if (isCognitive && isSupportNodeLight) ...[
-            const Divider(
-              height: 48,
-              thickness: 1.0,
-            ),
-            toggleTileWidget(
-                title: loc(context).nightMode,
-                value: nodeLightState.isNightModeEnable,
-                subTitle: ref
-                            .read(nodeLightSettingsProvider.notifier)
-                            .currentStatus ==
-                        NodeLightStatus.night
-                    ? loc(context).nightModeTime
-                    : ref
-                                .read(nodeLightSettingsProvider.notifier)
-                                .currentStatus ==
-                            NodeLightStatus.off
-                        ? loc(context).allDayOff
-                        : null,
-                onChanged: (value) {
-                  final notifier = ref.read(nodeLightSettingsProvider.notifier);
-                  if (value) {
-                    notifier.setSettings(NodeLightSettings.night());
-                  } else {
-                    notifier.setSettings(NodeLightSettings.on());
-                  }
-                  doSomethingWithSpinner(context, notifier.save());
-                },
-                tips: loc(context).nightModeTips,
-                semantics: 'quick night mode switch'),
-          ]
-        ],
-      ),
-    );
-  }
-
-  /// Expanded view: Toggles with full descriptions
-  Widget _buildExpandedView(BuildContext context, WidgetRef ref) {
-    final privacyState = ref.watch(instantPrivacyProvider);
-    final nodeLightState = ref.watch(nodeLightSettingsProvider);
-    final master = ref.watch(instantTopologyProvider).root.children.first;
-    bool isSupportNodeLight = serviceHelper.isSupportLedMode();
-    bool isCognitive = isCognitiveMeshRouter(
-        modelNumber: master.data.model,
-        hardwareVersion: master.data.hardwareVersion);
-
-    return AppCard(
-      padding: EdgeInsets.all(AppSpacing.xxl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _expandedToggleTile(
-            context,
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        toggleTileWidget(
             title: loc(context).instantPrivacy,
-            description: loc(context).instantPrivacyInfo,
             value: privacyState.status.mode == MacFilterMode.allow,
-            onTap: () => context.pushNamed(RouteNamed.menuInstantPrivacy),
+            leading: AppBadge(
+              label: 'BETA',
+              color: Theme.of(context)
+                  .extension<AppColorScheme>()!
+                  .semanticWarning,
+            ),
+            onTap: () {
+              context.pushNamed(RouteNamed.menuInstantPrivacy);
+            },
             onChanged: (value) {
               showInstantPrivacyConfirmDialog(context, value).then((isOk) {
-                if (isOk != true) return;
+                if (isOk != true) {
+                  return;
+                }
                 final notifier = ref.read(instantPrivacyProvider.notifier);
                 if (value) {
                   final macAddressList = ref
@@ -289,27 +227,132 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                 }
               });
             },
+            tips: loc(context).instantPrivacyInfo,
+            semantics: 'quick instant privacy switch'),
+        if (isCognitive && isSupportNodeLight) ...[
+          const Divider(
+            height: 48,
+            thickness: 1.0,
           ),
-          if (isCognitive && isSupportNodeLight) ...[
-            const Divider(height: 32),
-            _expandedToggleTile(
-              context,
+          toggleTileWidget(
               title: loc(context).nightMode,
-              description: loc(context).nightModeTips,
-              value: nodeLightState.isNightModeEnable,
+              value: nodeLightState.isNightModeEnabled,
+              subTitle:
+                  ref.read(nodeLightSettingsProvider.notifier).currentStatus ==
+                          NodeLightStatus.night
+                      ? loc(context).nightModeTime
+                      : ref
+                                  .read(nodeLightSettingsProvider.notifier)
+                                  .currentStatus ==
+                              NodeLightStatus.off
+                          ? loc(context).allDayOff
+                          : null,
               onChanged: (value) {
                 final notifier = ref.read(nodeLightSettingsProvider.notifier);
                 if (value) {
-                  notifier.setSettings(NodeLightSettings.night());
+                  notifier.setSettings(nodeLightState.copyWith(
+                      isNightModeEnabled: true, allDayOff: false));
                 } else {
-                  notifier.setSettings(NodeLightSettings.on());
+                  notifier.setSettings(nodeLightState.copyWith(
+                      isNightModeEnabled: false, allDayOff: false));
                 }
                 doSomethingWithSpinner(context, notifier.save());
               },
-            ),
-          ]
-        ],
-      ),
+              tips: loc(context).nightModeTips,
+              semantics: 'quick night mode switch'),
+        ]
+      ],
+    );
+
+    if (widget.useAppCard) {
+      return AppCard(
+        padding: EdgeInsets.zero,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: content,
+        ),
+      );
+    }
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: content,
+    );
+  }
+
+  /// Expanded view: Toggles with full descriptions
+  Widget _buildExpandedView(BuildContext context, WidgetRef ref) {
+    final privacyState = ref.watch(instantPrivacyProvider);
+    final nodeLightState = ref.watch(nodeLightSettingsProvider);
+    final master = ref.watch(instantTopologyProvider).root.children.first;
+    bool isSupportNodeLight = serviceHelper.isSupportLedMode();
+    bool isCognitive = isCognitiveMeshRouter(
+        modelNumber: master.data.model,
+        hardwareVersion: master.data.hardwareVersion);
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _expandedToggleTile(
+          context,
+          title: loc(context).instantPrivacy,
+          description: loc(context).instantPrivacyInfo,
+          value: privacyState.status.mode == MacFilterMode.allow,
+          onTap: () => context.pushNamed(RouteNamed.menuInstantPrivacy),
+          onChanged: (value) {
+            showInstantPrivacyConfirmDialog(context, value).then((isOk) {
+              if (isOk != true) return;
+              final notifier = ref.read(instantPrivacyProvider.notifier);
+              if (value) {
+                final macAddressList = ref
+                    .read(instantPrivacyDeviceListProvider)
+                    .map((e) => e.macAddress.toUpperCase())
+                    .toList();
+                notifier.setMacAddressList(macAddressList);
+              }
+              notifier.setEnable(value);
+              if (context.mounted) {
+                doSomethingWithSpinner(context, notifier.save());
+              }
+            });
+          },
+        ),
+        if (isCognitive && isSupportNodeLight) ...[
+          const Divider(height: 32),
+          _expandedToggleTile(
+            context,
+            title: loc(context).nightMode,
+            description: loc(context).nightModeTips,
+            value: nodeLightState.isNightModeEnabled,
+            onChanged: (value) {
+              final notifier = ref.read(nodeLightSettingsProvider.notifier);
+              if (value) {
+                notifier.setSettings(nodeLightState.copyWith(
+                    isNightModeEnabled: true, allDayOff: false));
+              } else {
+                notifier.setSettings(nodeLightState.copyWith(
+                    isNightModeEnabled: false, allDayOff: false));
+              }
+              doSomethingWithSpinner(context, notifier.save());
+            },
+          ),
+        ]
+      ],
+    );
+
+    if (widget.useAppCard) {
+      return AppCard(
+        padding: EdgeInsets.zero,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: content,
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: content,
     );
   }
 

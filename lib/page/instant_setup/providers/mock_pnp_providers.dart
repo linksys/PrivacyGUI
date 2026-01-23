@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
+// removed unused import
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_setup/model/pnp_step.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
+import 'package:privacy_gui/constants/_constants.dart';
 
 /// Base Mock Notifier with common simulation logic for PnP flows.
 /// This class extends [BasePnpNotifier] and provides mock implementations
@@ -268,6 +269,9 @@ class BaseMockPnpNotifier extends BasePnpNotifier {
           state.defaultSettings?.guestWifiPassword ?? 'mock-guest-password'
     );
   }
+
+  @override
+  bool get isLoggedIn => true; // Default to logged in for mocks
 }
 
 /// --- Scenario: Unconfigured Router (Factory Reset) ---

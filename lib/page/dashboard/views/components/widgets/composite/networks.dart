@@ -27,10 +27,14 @@ class DashboardNetworks extends ConsumerWidget {
   const DashboardNetworks({
     super.key,
     this.displayMode = DisplayMode.normal,
+    this.useAppCard = true,
   });
 
   /// The display mode for this widget
   final DisplayMode displayMode;
+
+  /// Whether to wrap the content in an AppCard (default true).
+  final bool useAppCard;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -67,53 +71,62 @@ class DashboardNetworks extends ConsumerWidget {
         .where((e) => e.isOnline())
         .length;
 
-    return AppCard(
-      child: InkWell(
-        onTap: () => context.pushNamed(RouteNamed.menuInstantTopology),
-        child: Row(
-          children: [
-            // Nodes section
-            Expanded(
+    final content = InkWell(
+      onTap: () => context.pushNamed(RouteNamed.menuInstantTopology),
+      child: Row(
+        children: [
+          // Nodes section
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                hasOffline
+                    ? AppIcon.font(AppFontIcons.infoCircle,
+                        color: Theme.of(context).colorScheme.error, size: 18)
+                    : AppIcon.font(AppFontIcons.networkNode, size: 18),
+                AppGap.sm(),
+                AppText.titleMedium('${nodes.length}'),
+                AppGap.xs(),
+                AppText.bodySmall(
+                  nodes.length == 1 ? loc(context).node : loc(context).nodes,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 36, child: VerticalDivider()),
+          // Devices section
+          Expanded(
+            child: InkWell(
+              onTap: () => context.pushNamed(RouteNamed.menuInstantDevices),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  hasOffline
-                      ? AppIcon.font(AppFontIcons.infoCircle,
-                          color: Theme.of(context).colorScheme.error, size: 18)
-                      : AppIcon.font(AppFontIcons.networkNode, size: 18),
+                  AppIcon.font(AppFontIcons.devices, size: 18),
                   AppGap.sm(),
-                  AppText.titleMedium('${nodes.length}'),
+                  AppText.titleMedium('$externalDeviceCount'),
                   AppGap.xs(),
                   AppText.bodySmall(
-                    nodes.length == 1 ? loc(context).node : loc(context).nodes,
+                    externalDeviceCount == 1
+                        ? loc(context).device
+                        : loc(context).devices,
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 36, child: VerticalDivider()),
-            // Devices section
-            Expanded(
-              child: InkWell(
-                onTap: () => context.pushNamed(RouteNamed.menuInstantDevices),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AppIcon.font(AppFontIcons.devices, size: 18),
-                    AppGap.sm(),
-                    AppText.titleMedium('$externalDeviceCount'),
-                    AppGap.xs(),
-                    AppText.bodySmall(
-                      externalDeviceCount == 1
-                          ? loc(context).device
-                          : loc(context).devices,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+
+    if (useAppCard) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: content,
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: content,
     );
   }
 
@@ -135,24 +148,34 @@ class DashboardNetworks extends ConsumerWidget {
         : min(routerLength * topologyItemHeight, 3 * topologyItemHeight);
     final showAllTopology = context.isMobileLayout || routerLength <= 3;
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppGap.lg(),
-          _buildNetworkHeader(context, ref, state),
-          SizedBox(
-            height: nodeTopologyHeight + treeViewBaseHeight,
-            child: _buildTopologyView(
-              context,
-              ref,
-              meshTopology,
-              topologyState,
-              showAllTopology,
-            ),
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppGap.lg(),
+        _buildNetworkHeader(context, ref, state),
+        SizedBox(
+          height: nodeTopologyHeight + treeViewBaseHeight,
+          child: _buildTopologyView(
+            context,
+            ref,
+            meshTopology,
+            topologyState,
+            showAllTopology,
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+
+    if (useAppCard) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: content,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: content,
     );
   }
 
@@ -171,24 +194,33 @@ class DashboardNetworks extends ConsumerWidget {
         topologyState.root.children.firstOrNull?.toFlatList().length ?? 1;
     final double nodeTopologyHeight = routerLength * topologyItemHeight;
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppGap.lg(),
-          _buildNetworkHeader(context, ref, state),
-          SizedBox(
-            height: nodeTopologyHeight + treeViewBaseHeight,
-            child: _buildTopologyView(
-              context,
-              ref,
-              meshTopology,
-              topologyState,
-              true, // Always show all in expanded mode
-            ),
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppGap.lg(),
+        _buildNetworkHeader(context, ref, state),
+        SizedBox(
+          height: nodeTopologyHeight + treeViewBaseHeight,
+          child: _buildTopologyView(
+            context,
+            ref,
+            meshTopology,
+            topologyState,
+            true, // Always show all in expanded mode
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+
+    if (useAppCard) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: content,
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: content,
     );
   }
 

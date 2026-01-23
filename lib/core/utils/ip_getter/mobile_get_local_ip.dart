@@ -1,8 +1,9 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 
-String getLocalIp(Ref ref) =>
-    ref.read(connectivityProvider).connectivityInfo.gatewayIp ?? '';
+import 'get_local_ip.dart';
 
-String getFullLocation(Ref ref) =>
+String getLocalIp(ProviderReader read) =>
+    read(connectivityProvider).connectivityInfo.gatewayIp ?? '';
+
+String getFullLocation(ProviderReader read) =>
     throw UnsupportedError('[Platform ERROR] Get Full Location');

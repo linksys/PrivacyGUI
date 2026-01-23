@@ -1,141 +1,330 @@
-# PrivacyGUI Architecture Violations History
+# PrivacyGUI 架構違規清單 (Architecture Violations Report)
 
-**Initial Report**: 2026-01-16  
-**Fix Completion**: 2026-01-19  
-**Status**: ✅ **All Complete** — This document serves as a historical record of fixes.
-
-> [!TIP]
-> All 14 architecture violations were fully resolved on 2026-01-19. This document is retained for historical reference of the remediation process.
+**報告日期**: 2026-01-16  
+**目的**: 記錄所有不符合 Clean Architecture 原則的程式碼，以便進行有計畫的重構
 
 ---
 
-## Violation Summary
+## 違規統計摘要
 
-| Violation Type | Original Count | Fixed | Remaining |
-|----------------|----------------|-------|-----------|
-| RouterRepository in Views | 4 | 4 | ✅ 0 |
-| RouterRepository in Providers | 4 | 4 | ✅ 0 |
-| JNAPAction in non-Services | 2 | 2 | ✅ 0 |
-| JNAP Models in Views | 4 | 4 | ✅ 0 |
-| **Total** | **14** | **14** | **✅ 0** |
-
----
-
-## 🔴 P0: RouterRepository Direct Usage in Views
-
-### Violation Principle
-Views (Presentation Layer) must not access RouterRepository (Data Layer) directly. Access must be routed via Provider → Service.
+| 違規類型 | 數量 | 嚴重性 |
+|----------|------|--------|
+| RouterRepository 在 Views 中使用 | ~~4~~ 2 | 🔴 高 |
+| RouterRepository 在 Providers 中使用 | 2 | 🟡 中 |
+| JNAPAction 在非 Services 中使用 | ~~2~~ 1 | 🔴 高 |
+| JNAP Models 在 Views 中引用 | 4 | 🟡 中 |
+| **總計** | **~~12~~ 9** | - |
 
 ---
 
-### 1. `prepare_dashboard_view.dart` ✅ Fixed
+## 🔴 P0: RouterRepository 在 Views 中直接使用
 
-**File**: [lib/page/dashboard/views/prepare_dashboard_view.dart](../../lib/page/dashboard/views/prepare_dashboard_view.dart)
+### 違規原則
+Views (展示層) 不應直接存取 RouterRepository (資料層)，應透過 Provider → Service 的路徑。
+
+---
+
+### 1. `prepare_dashboard_view.dart` ✅ 已修復
+
+**檔案路徑**: [lib/page/dashboard/views/prepare_dashboard_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/dashboard/views/prepare_dashboard_view.dart)
 
 > [!NOTE]
-> **Resolution**: ✅ Fixed on 2026-01-16
+> **修復狀態**: ✅ 已於 2026-01-16 修復
 >
-> **Method**: Added `forceFetchDeviceInfo()` to `SessionService`, encapsulating JNAP operations within the Service layer.
+> **修復方式**: 在 `SessionService` 新增 `forceFetchDeviceInfo()` 方法，將 JNAP 操作封裝在 Service 層。
 
-**Original Violation**: Lines 78-86
-Directly reading `routerRepositoryProvider` and calling `send(JNAPAction.getDeviceInfo)`.
+**原違規行號**: 78-86
 
----
+**原違規程式碼**:
+```dart
+} else if (loginType == LoginType.local) {
+  logger.i('PREPARE LOGIN:: local');
+  final routerRepository = ref.read(routerRepositoryProvider);  // ❌ 直接讀取
 
-### 2. `login_local_view.dart` ✅ Fixed
-
-**File**: [lib/page/login/views/login_local_view.dart](../../lib/page/login/views/login_local_view.dart)
-
-> [!NOTE]
-> **Resolution**: ✅ Fixed on 2026-01-16
->
-> **Method**: `AuthService` now handles all login logic. The View calls `ref.read(authServiceProvider).loginLocal(...)`.
-
-**Original Violation**: Lines 112-120
-Direct usage of `RouterRepository` for login transactions.
-
----
-
-### 3. `pnp_no_internet_connection_view.dart` ✅ Fixed
-
-**File**: `lib/page/pnp/views/pnp_no_internet_connection_view.dart`
-
-> [!NOTE]
-> **Resolution**: ✅ Fixed on 2026-01-19
->
-> **Method**: Logic moved to `AuthService.isLoggedIn()`.
-
-**Original Violation**:
-Direct call to `RouterRepository.isLoggedIn()`.
-
----
-
-### 4. `internet_settings_view.dart` ✅ Fixed
-
-**File**: `lib/page/advanced_settings/internet_settings/views/internet_settings_view.dart`
-
-> [!NOTE]
-> **Resolution**: ✅ Fixed on 2026-01-19
->
-> **Method**: Created `InternetSettingsService` to handle WAN checks.
-
-**Original Violation**:
-Direct call to `RouterRepository` for checking WAN status.
-
----
-
-## 🔴 P1: RouterRepository Direct Usage in Providers
-
-### Violation Principle
-Providers (Application Layer) should delegate business logic to Services. They should not orchestrate JNAP calls directly.
-
----
-
-### 1. `dashboard_manager_provider.dart` ✅ Fixed
-
-> [!NOTE]
-> **Resolution**: ✅ Fixed on 2026-01-19
->
-> **Method**: Refactored into `device_manager_service_extraction`. Direct repo usage removed.
-
-**Original Violation**:
-Directly orchestrating 5+ JNAP calls for dashboard data.
-
----
-
-### 2. `auth_provider.dart` ✅ Fixed
-
-> [!NOTE]
-> **Resolution**: ✅ Fixed on 2026-01-10 (Spec 005)
->
-> **Method**: `AuthService` introduced. Provider now only handles state.
-
-**Original Violation**:
-Handling token storage and login JNAP calls directly.
-
----
-
-## 🟡 P2: Other Violations
-
-### JNAP Models in Views
-
-1.  **`firmware_update_process_view.dart`** ✅ Fixed 2026-01-19
-    -   Removed `FirmwareUpdateState` (JNAP coupled) import.
-    -   Using provider-level UI state properties.
-
-2.  **`instant_admin_view.dart`** ✅ Fixed 2026-01-19
-    -   Removed `TimeSettings` (JNAP model) import.
-    -   Using formatted strings from Provider.
-
----
-
-## Verification
-
-To verify all fixes, run the following grep command (should return 0 results in Views/Providers):
-
-```bash
-grep -r "RouterRepository" lib/page/*/views/
-grep -r "JNAPAction" lib/page/*/views/
+  final newSerialNumber = await routerRepository
+      .send(
+        JNAPAction.getDeviceInfo,  // ❌ 直接使用 JNAPAction
+        fetchRemote: true,
+      )
+      .then<String>(
+          (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
 ```
 
-*(Note: Some legitimate usages might exist in `core/` or dedicated wrappers, but Business Views are clean.)*
+**修復後程式碼**:
+```dart
+} else if (loginType == LoginType.local) {
+  logger.i('PREPARE LOGIN:: local');
+  // Use sessionProvider.forceFetchDeviceInfo() instead of direct RouterRepository access
+  // This adheres to Clean Architecture: View -> Provider -> Service -> Repository
+  final deviceInfo = await ref
+      .read(sessionProvider.notifier)
+      .forceFetchDeviceInfo();  // ✅ 透過 Provider/Service
+  await ref
+      .read(sessionProvider.notifier)
+      .saveSelectedNetwork(deviceInfo.serialNumber, '');
+}
+```
+
+**相關測試**:
+- [session_service_test.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/test/core/data/services/session_service_test.dart) - `forceFetchDeviceInfo` 測試群組
+- [session_provider_test.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/test/core/data/providers/session_provider_test.dart) - `forceFetchDeviceInfo` 測試群組
+
+---
+
+### 2. `router_assistant_view.dart` ✅ 已修復
+
+**檔案路徑**: [lib/page/ai_assistant/views/router_assistant_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/ai_assistant/views/router_assistant_view.dart)
+
+> [!NOTE]
+> **修復狀態**: ✅ 已於 2026-01-16 修復
+>
+> **修復方式**: 將 `routerCommandProviderProvider` 移動到專用的 Provider 檔案 `lib/page/ai_assistant/providers/router_command_provider.dart`，並在 View 中導入使用。
+
+**相關變更**:
+- [router_command_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/ai_assistant/providers/router_command_provider.dart) - 新建立的 Provider 檔案
+- [router_assistant_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/ai_assistant/views/router_assistant_view.dart) - 移除 View 內的 Provider 定義
+
+---
+
+### 3. `local_network_settings_view.dart` ✅ 已修復
+
+**檔案路徑**: [lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart)
+
+> [!NOTE]
+> **修復狀態**: ✅ 已於 2026-01-16 修復
+>
+> **修復方式**: 將 `getLocalIp()` 函數改為接受 `ProviderReader` 型別，支援 `Ref` 與 `WidgetRef` 共用。
+
+**原違規行號**: 270, 308
+
+**原違規程式碼**:
+```dart
+// Line 270 - 在 _saveSettings 錯誤處理中
+final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();  // ❌
+
+// Line 308 - 在 _finishSaveSettings 中
+final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();  // ❌
+```
+
+**修復後程式碼**:
+```dart
+// 使用平台感知的 getLocalIp 工具函數
+final currentUrl = getLocalIp(ref.read);  // ✅ 不再依賴 RouterRepository
+```
+
+**相關變更**:
+- [get_local_ip.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/core/utils/ip_getter/get_local_ip.dart) - 新增 `ProviderReader` typedef
+- [mobile_get_local_ip.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/core/utils/ip_getter/mobile_get_local_ip.dart) - 更新簽名
+- [web_get_local_ip.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/core/utils/ip_getter/web_get_local_ip.dart) - 更新簽名
+
+---
+
+### 4. `pnp_no_internet_connection_view.dart` ✅ 已修復
+
+**檔案路徑**: [lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart)
+
+```dart
+// 使用 AuthProvider 檢查登入狀態
+final loginType = ref.read(authProvider.select((value) => value.value?.loginType));
+if (loginType != null && loginType != LoginType.none) {
+  goRoute(RouteNamed.pnpIspTypeSelection);
+}
+
+// 或透過 PnpProvider 暴露狀態
+if (ref.read(pnpProvider.notifier).isLoggedIn) {
+  goRoute(RouteNamed.pnpIspTypeSelection);
+}
+```
+
+---
+
+## 🟡 P1: RouterRepository 在 Providers 中直接使用
+
+### 違規原則
+Providers (應用層) 應透過 Service (服務層) 存取 RouterRepository，而不是直接呼叫。
+
+---
+
+### 1. `select_network_provider.dart` ✅ 已修復
+
+**檔案路徑**: [lib/page/select_network/providers/select_network_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/select_network/providers/select_network_provider.dart)
+
+> [!NOTE]
+> **修復狀態**: ✅ 已於 2026-01-16 修復
+>
+> **修復方式**: 建立了 `NetworkAvailabilityService` 並將 `select_network_provider.dart` 中的 `RouterRepository` 依賴轉移至該 Service。
+
+**原違規行號**: 54-64
+
+**原違規程式碼**:
+```dart
+Future<SelectNetworkState> _checkNetworkOnline(CloudNetworkModel network) async {
+  final routerRepository = ref.read(routerRepositoryProvider);  // ❌
+  bool isOnline = await routerRepository
+      .send(JNAPAction.isAdminPasswordDefault,  // ❌ 直接使用 JNAPAction
+          extraHeaders: {
+            kJNAPNetworkId: network.network.networkId,
+          },
+          type: CommandType.remote,
+          fetchRemote: true,
+          cacheLevel: CacheLevel.noCache)
+      .then((value) => value.result == 'OK')
+      .onError((error, stackTrace) => false);
+  //...
+}
+```
+
+      final result = await _repository.send(
+        JNAPAction.isAdminPasswordDefault,
+        extraHeaders: {kJNAPNetworkId: networkId},
+        type: CommandType.remote,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+      );
+      return result.result == 'OK';
+    } catch (_) {
+      return false;
+    }
+  }
+}
+```
+
+---
+
+### 2. `channelfinder_provider.dart` ✅ 已修復
+
+**檔案路徑**: [lib/page/wifi_settings/providers/channelfinder_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/wifi_settings/providers/channelfinder_provider.dart)
+
+> [!NOTE]
+> **修復狀態**: ✅ 已於 2026-01-16 修復
+>
+> **修復方式**: 將 `channelFinderServiceProvider` 定義移動至 Service 檔案 `channel_finder_service.dart` 中，解決了組織結構上的違規。
+
+**原違規行號**: 7-9
+
+**原違規程式碼**:
+```dart
+final channelFinderServiceProvider = Provider((ref) {
+  return ChannelFinderService(ref.watch(routerRepositoryProvider));  // ⚠️
+});
+```
+
+**相關變更**:
+- [channel_finder_service.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/wifi_settings/services/channel_finder_service.dart) - 包含 Provider 定義
+- [channelfinder_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/wifi_settings/providers/channelfinder_provider.dart) - 移除 Provider 定義與 Repo 依賴
+
+---
+
+## 🟡 P2: JNAP Models 在 Views 中引用
+
+### 違規原則
+Views 應使用 UI Models，不應直接引用 JNAP Data Models。
+
+---
+
+### 1. `login_local_view.dart`
+
+**檔案路徑**: [lib/page/login/views/login_local_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/login/views/login_local_view.dart)
+
+**違規行號**: 8
+
+**違規程式碼**:
+```dart
+import 'package:privacy_gui/core/jnap/models/device_info.dart';  // ❌
+```
+
+**問題描述**: View 引用 JNAP 資料模型
+
+---
+
+### 2. `prepare_dashboard_view.dart`
+
+**檔案路徑**: [lib/page/dashboard/views/prepare_dashboard_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/dashboard/views/prepare_dashboard_view.dart)
+
+**違規行號**: 16
+
+**違規程式碼**:
+```dart
+import 'package:privacy_gui/core/jnap/models/device_info.dart';  // ❌
+```
+
+**問題描述**: View 引用 JNAP 資料模型 (與 P0 #1 相關)
+
+---
+
+### 3. `firmware_update_process_view.dart`
+
+**檔案路徑**: [lib/page/firmware_update/views/firmware_update_process_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/firmware_update/views/firmware_update_process_view.dart)
+
+**違規行號**: 4
+
+**違規程式碼**:
+```dart
+import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';  // ❌
+```
+
+**問題描述**: View 引用 JNAP 資料模型
+
+---
+
+### 4. `instant_admin_view.dart`
+
+**檔案路徑**: [lib/page/instant_admin/views/instant_admin_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/instant_admin/views/instant_admin_view.dart)
+
+**違規行號**: 7
+
+**違規程式碼**:
+```dart
+import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';  // ❌
+```
+
+**問題描述**: View 引用 JNAP 資料模型
+
+---
+
+## 修復優先級建議
+
+| 優先級 | 違規 | 預估工時 | 影響範圍 | 狀態 |
+|--------|------|----------|----------|------|
+| **P0-1** | `prepare_dashboard_view.dart` | 2-4 小時 | 登入流程 | ✅ 已修復 |
+| **P0-2** | `pnp_no_internet_connection_view.dart` | 1-2 小時 | PnP 流程 | ✅ 已修復 |
+| **P0-3** | `local_network_settings_view.dart` | 1-2 小時 | 網路設定 | ✅ 已修復 |
+| **P0-4** | `router_assistant_view.dart` | 1 小時 | AI 助手 | ✅ 已修復 |
+| **P1-1** | `select_network_provider.dart` | 2-3 小時 | 網路選擇 | ✅ 已修復 |
+| **P1-2** | `channelfinder_provider.dart` | 30 分鐘 | WiFi 最佳化 | ✅ 已修復 |
+| **P2** | JNAP Models imports | 各 30 分鐘 | 低風險 | 待修復 |
+
+---
+
+## 最佳實踐範例
+
+### DMZ 模組 (參考範例)
+
+```
+lib/page/advanced_settings/dmz/
+├── _dmz.dart                           # Barrel Export
+├── views/
+│   ├── dmz_view.dart                  # ✅ 只引用 Provider
+│   └── dmz_settings_view.dart
+├── providers/
+│   ├── _providers.dart                # Barrel Export
+│   ├── dmz_settings_provider.dart     # ✅ 透過 Service 存取資料
+│   ├── dmz_settings_state.dart        # ✅ UI Models
+│   └── dmz_status.dart
+└── services/
+    └── dmz_settings_service.dart      # ✅ 封裝所有 JNAP 操作
+```
+
+**關鍵原則**:
+1. ✅ Views 只引用 Providers
+2. ✅ Providers 透過 Services 存取 RouterRepository
+3. ✅ Services 負責 Data Model ↔ UI Model 轉換
+4. ✅ UI Models 與 JNAP Data Models 完全隔離
+
+---
+
+## 相關文件
+
+- [service-decoupling-audit.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/service-decoupling-audit.md) - 服務解耦審計 (更廣泛的分析)
+- [architecture_analysis_2026-01-16.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/architecture_analysis_2026-01-16.md) - 整體架構分析
+- [DMZ Service](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/advanced_settings/dmz/services/dmz_settings_service.dart) - 最佳實踐範例

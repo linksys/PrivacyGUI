@@ -46,6 +46,8 @@ class BuildConfig {
   static bool showColumnOverlay =
       const bool.fromEnvironment('overlay', defaultValue: false);
   static const bool caLogin = bool.fromEnvironment('ca', defaultValue: false);
+  static const bool customLayout =
+      bool.fromEnvironment('custom_layout', defaultValue: false);
 
   static const int refreshTimeInterval =
       int.fromEnvironment('refresh_time', defaultValue: 60);
