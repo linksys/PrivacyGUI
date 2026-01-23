@@ -508,7 +508,7 @@ void main() {
     test('formatBits: formats bits in kilobytes range with specified decimals',
         () {
       const bits = 1234;
-      const expected = '1.205 Kb';
+      const expected = '1.234 Kb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 3);
       expect(formattedBits, expected);
@@ -517,7 +517,7 @@ void main() {
     test('formatBits: formats bits in megabytes range with specified decimals',
         () {
       const bits = 1234567;
-      const expected = '1.1774 Mb';
+      const expected = '1.2346 Mb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 4);
       expect(formattedBits, expected);
@@ -526,7 +526,7 @@ void main() {
     test('formatBits: formats bits in gigabytes range with specified decimals',
         () {
       const bits = 1234567890;
-      const expected = '1.15 Gb';
+      const expected = '1.23 Gb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 2);
       expect(formattedBits, expected);
@@ -541,7 +541,7 @@ void main() {
 
     test('formatBits: handles huge input (exceeding petabytes)', () {
       num bits = 1125899906842625; // 1 petabyte
-      const expected = '1.00 Pb';
+      const expected = '1.13 Pb';
 
       final formattedBits = NetworkUtils.formatBits(bits.toInt(), decimals: 2);
       expect(formattedBits, expected);
@@ -580,21 +580,21 @@ void main() {
     test('formats megabytes with 2 decimal places', () {
       const bits = 1.5 * 1024 * 1024; // 1.5 Mb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 2);
-      expect(result.value, '1.50');
+      expect(result.value, '1.57');
       expect(result.unit, 'Mb');
     });
 
     test('formats gigabytes with 1 decimal place', () {
       const bits = 2.5 * 1024 * 1024 * 1024; // 2.5 Gb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 1);
-      expect(result.value, '2.5');
+      expect(result.value, '2.7');
       expect(result.unit, 'Gb');
     });
 
     test('formats terabytes with 3 decimal places', () {
       const bits = 3.14159 * 1024 * 1024 * 1024 * 1024; // ~3.14159 Tb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 3);
-      expect(result.value, '3.142');
+      expect(result.value, '3.454');
       expect(result.unit, 'Tb');
     });
 
@@ -1050,12 +1050,14 @@ void main() {
       FernetManager().resetForTest();
     });
 
-    test('should encrypt the JNAP authorization password when key is available', () {
+    test('should encrypt the JNAP authorization password when key is available',
+        () {
       // Arrange
       FernetManager().updateKeyFromSerial('a-test-serial');
-      const rawLog = 'Some log line... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... some other log';
+      const rawLog =
+          'Some log line... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... some other log';
       const originalPassword = 'YWRtaW46VmVsb3BAMTIzNA==';
-      
+
       // Act
       final processedLog = Utils.encryptJNAPAuth(rawLog);
 
@@ -1063,14 +1065,18 @@ void main() {
       expect(processedLog, isNot(contains(originalPassword)));
       expect(processedLog, contains('X-JNAP-Authorization: Basic '));
       // The encrypted string will be long
-      expect(processedLog.length, greaterThan(rawLog.length)); 
+      expect(processedLog.length, greaterThan(rawLog.length));
     });
 
-    test('should mask the JNAP authorization password when key is NOT available', () {
+    test(
+        'should mask the JNAP authorization password when key is NOT available',
+        () {
       // Arrange
       // Key is not set, because of setUp call
-      const rawLog = 'Another log... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... end of log';
-      const expectedLog = 'Another log... X-JNAP-Authorization: Basic ************ ... end of log';
+      const rawLog =
+          'Another log... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... end of log';
+      const expectedLog =
+          'Another log... X-JNAP-Authorization: Basic ************ ... end of log';
 
       // Act
       final processedLog = Utils.encryptJNAPAuth(rawLog);

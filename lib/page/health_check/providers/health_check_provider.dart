@@ -93,7 +93,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
         }
         final step = _getCurrentStep(result);
         if (step.isNotEmpty) {
-          final randomValue = _randomDouble(-3, 15) * 1024;
+          final randomValue = _randomDouble(-3, 15) * 1000;
           final speedtestTempResult = SpeedTestResult.fromJson(
               (result as JNAPSuccess).output['speedTestResult']);
           var meterValue = 0.0;
