@@ -78,7 +78,7 @@
 | "Services SHALL handle all JNAP API communication" (Art VI §6.2) | spec.md FR-001, contract | :white_check_mark: |
 | "Services SHALL return domain/UI models, not raw API responses" (Art VI §6.2) | contract: returns void, throws ServiceError | :white_check_mark: |
 | "Services SHALL be stateless" (Art VI §6.2) | contract: no internal state | :white_check_mark: |
-| "Provider 層只處理 ServiceError 類型" (Art XIII §13.4) | spec.md FR-010 | :white_check_mark: |
+| "Provider layer only handles ServiceError types" (Art XIII §13.4) | spec.md FR-010 | :white_check_mark: |
 | "Test data builders: `test/mocks/test_data/[feature]_test_data.dart`" (Art I §1.5) | plan.md: `test/mocks/test_data/instant_topology_test_data.dart` | :white_check_mark: |
 
 ---

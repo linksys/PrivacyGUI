@@ -3,7 +3,7 @@
 **Feature Branch**: `003-firewall-refactor`
 **Created**: 2025-12-09
 **Status**: Draft
-**Input**: User description: "根據憲章重構advanced_setting/firewall"
+**Input**: User description: "Refactor advanced_setting/firewall according to constitution"
 
 ## Overview
 
