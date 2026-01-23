@@ -1,5 +1,11 @@
 import 'package:equatable/equatable.dart';
 
+/// UI layer DeviceInfo Model
+///
+/// This class is used to pass device information between Provider and View layers.
+/// It does not contain JNAP protocol details (such as services list).
+///
+/// For raw JNAP response, use [JnapDeviceInfoRaw].
 class NodeDeviceInfo extends Equatable {
   const NodeDeviceInfo({
     required this.modelNumber,
@@ -9,21 +15,7 @@ class NodeDeviceInfo extends Equatable {
     required this.manufacturer,
     required this.serialNumber,
     required this.hardwareVersion,
-    required this.services,
   });
-
-  factory NodeDeviceInfo.fromJson(Map<String, dynamic> json) {
-    return NodeDeviceInfo(
-      modelNumber: json['modelNumber'],
-      firmwareVersion: json['firmwareVersion'],
-      description: json['description'],
-      firmwareDate: json['firmwareDate'],
-      manufacturer: json['manufacturer'],
-      serialNumber: json['serialNumber'],
-      hardwareVersion: json['hardwareVersion'],
-      services: List.from(json['services']),
-    );
-  }
 
   final String modelNumber;
   final String firmwareVersion;
@@ -32,7 +24,6 @@ class NodeDeviceInfo extends Equatable {
   final String manufacturer;
   final String serialNumber;
   final String hardwareVersion;
-  final List<String> services;
 
   Map<String, dynamic> toJson() {
     return {
@@ -43,7 +34,6 @@ class NodeDeviceInfo extends Equatable {
       'manufacturer': manufacturer,
       'serialNumber': serialNumber,
       'hardwareVersion': hardwareVersion,
-      'services': services,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -55,7 +45,6 @@ class NodeDeviceInfo extends Equatable {
     String? manufacturer,
     String? serialNumber,
     String? hardwareVersion,
-    List<String>? services,
   }) {
     return NodeDeviceInfo(
       modelNumber: modelNumber ?? this.modelNumber,
@@ -65,7 +54,6 @@ class NodeDeviceInfo extends Equatable {
       manufacturer: manufacturer ?? this.manufacturer,
       serialNumber: serialNumber ?? this.serialNumber,
       hardwareVersion: hardwareVersion ?? this.hardwareVersion,
-      services: services ?? this.services,
     );
   }
 

@@ -46,10 +46,18 @@ class DashboardLoadingWrapper extends ConsumerWidget {
     if (isLoading) {
       return AppCard(
         padding: EdgeInsets.zero,
-        child: SizedBox(
-          width: loadingWidth ?? double.infinity,
-          height: loadingHeight,
-          child: const LoadingTile(),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final effectiveHeight = constraints.hasBoundedHeight &&
+                    constraints.maxHeight < loadingHeight
+                ? constraints.maxHeight
+                : loadingHeight;
+            return SizedBox(
+              width: loadingWidth ?? double.infinity,
+              height: effectiveHeight,
+              child: const LoadingTile(),
+            );
+          },
         ),
       );
     }

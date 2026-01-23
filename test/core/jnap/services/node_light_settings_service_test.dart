@@ -2,9 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/nodes/services/node_light_settings_service.dart';
+import 'package:privacy_gui/page/nodes/providers/node_light_state.dart';
+import 'package:privacy_gui/page/nodes/providers/node_detail_state.dart';
 
 import '../../../mocks/test_data/node_light_settings_test_data.dart';
 
@@ -23,8 +24,8 @@ void main() {
     service = NodeLightSettingsService(mockRepository);
   });
 
-  group('NodeLightSettingsService - fetchSettings', () {
-    test('returns NodeLightSettings from JNAP response', () async {
+  group('NodeLightSettingsService - fetchState', () {
+    test('returns NodeLightState converted from JNAP response', () async {
       // Arrange
       when(() => mockRepository.send(
                 any(),
@@ -35,12 +36,13 @@ void main() {
               (_) async => NodeLightSettingsTestData.createNightModeSettings());
 
       // Act
-      final result = await service.fetchSettings();
+      final result = await service.fetchState();
 
       // Assert
-      expect(result.isNightModeEnable, true);
+      expect(result.isNightModeEnabled, true);
       expect(result.startHour, 20);
       expect(result.endHour, 8);
+      expect(result.status, NodeLightStatus.night);
     });
 
     test('passes forceRemote=false by default', () async {
@@ -54,7 +56,7 @@ void main() {
               (_) async => NodeLightSettingsTestData.createLedOnSettings());
 
       // Act
-      await service.fetchSettings();
+      await service.fetchState();
 
       // Assert
       verify(() => mockRepository.send(
@@ -75,7 +77,7 @@ void main() {
               (_) async => NodeLightSettingsTestData.createLedOnSettings());
 
       // Act
-      await service.fetchSettings(forceRemote: true);
+      await service.fetchState(forceRemote: true);
 
       // Assert
       verify(() => mockRepository.send(
@@ -95,7 +97,7 @@ void main() {
 
       // Act & Assert
       expect(
-        () => service.fetchSettings(),
+        () => service.fetchState(),
         throwsA(isA<UnauthorizedError>()),
       );
     });
@@ -112,16 +114,20 @@ void main() {
 
       // Act & Assert
       expect(
-        () => service.fetchSettings(),
+        () => service.fetchState(),
         throwsA(isA<UnexpectedError>()),
       );
     });
   });
 
-  group('NodeLightSettingsService - saveSettings', () {
-    test('sends correct data to JNAP and returns refreshed settings', () async {
+  group('NodeLightSettingsService - saveState', () {
+    test('converts state to JNAP Map and returns refreshed state', () async {
       // Arrange
-      final settingsToSave = NodeLightSettings.night();
+      const stateToSave = NodeLightState(
+          isNightModeEnabled: true,
+          startHour: 20,
+          endHour: 8,
+          allDayOff: false);
 
       when(() => mockRepository.send(
                 JNAPAction.setLedNightModeSetting,
@@ -140,7 +146,7 @@ void main() {
               (_) async => NodeLightSettingsTestData.createNightModeSettings());
 
       // Act
-      final result = await service.saveSettings(settingsToSave);
+      final result = await service.saveState(stateToSave);
 
       // Assert
       verify(() => mockRepository.send(
@@ -160,13 +166,50 @@ void main() {
             fetchRemote: true,
           )).called(1);
 
-      expect(result.isNightModeEnable, true);
+      expect(result.isNightModeEnabled, true);
+      expect(result.startHour, 20);
+      expect(result.endHour, 8);
     });
 
-    test('excludes null fields from request', () async {
+    test('sends correct data for All AllDayOff (LED OFF)', () async {
       // Arrange
-      final settingsToSave =
-          NodeLightSettings.on(); // Has null startHour/endHour
+      // "Off" state means allDayOff=true.
+      const stateToSave =
+          NodeLightState(isNightModeEnabled: false, allDayOff: true);
+
+      when(() => mockRepository.send(
+                JNAPAction.setLedNightModeSetting,
+                data: any(named: 'data'),
+                auth: any(named: 'auth'),
+              ))
+          .thenAnswer(
+              (_) async => NodeLightSettingsTestData.createSaveSuccess());
+
+      when(() => mockRepository.send(
+                JNAPAction.getLedNightModeSetting,
+                auth: any(named: 'auth'),
+                fetchRemote: any(named: 'fetchRemote'),
+              ))
+          .thenAnswer(
+              (_) async => NodeLightSettingsTestData.createLedOffSettings());
+
+      // Act
+      await service.saveState(stateToSave);
+
+      // Assert
+      // Implementation maps allDayOff to Enable=true, Start=0, End=24
+      verify(() => mockRepository.send(
+            JNAPAction.setLedNightModeSetting,
+            data: {'Enable': true, 'StartingTime': 0, 'EndingTime': 24},
+            auth: true,
+          )).called(1);
+    });
+
+    test('sends Enable=false when turning Night Mode OFF (LED ON)', () async {
+      // Arrange
+      const stateToSave = NodeLightState(
+          isNightModeEnabled: false, allDayOff: false); // Normal/On
+      // Defaults: startHour=20, endHour=6
 
       when(() => mockRepository.send(
                 JNAPAction.setLedNightModeSetting,
@@ -185,19 +228,20 @@ void main() {
               (_) async => NodeLightSettingsTestData.createLedOnSettings());
 
       // Act
-      await service.saveSettings(settingsToSave);
+      await service.saveState(stateToSave);
 
-      // Assert - only Enable should be sent, no StartingTime or EndingTime
+      // Assert
+      // Implementation sends current hours even if disabled
       verify(() => mockRepository.send(
             JNAPAction.setLedNightModeSetting,
-            data: {'Enable': false},
+            data: {'Enable': false, 'StartingTime': 20, 'EndingTime': 6},
             auth: true,
           )).called(1);
     });
 
     test('throws UnauthorizedError on save auth failure', () async {
       // Arrange
-      final settingsToSave = NodeLightSettings.night();
+      const stateToSave = NodeLightState(isNightModeEnabled: true);
 
       when(() => mockRepository.send(
             JNAPAction.setLedNightModeSetting,
@@ -207,14 +251,14 @@ void main() {
 
       // Act & Assert
       expect(
-        () => service.saveSettings(settingsToSave),
+        () => service.saveState(stateToSave),
         throwsA(isA<UnauthorizedError>()),
       );
     });
 
     test('throws UnexpectedError on save generic error', () async {
       // Arrange
-      final settingsToSave = NodeLightSettings.night();
+      const stateToSave = NodeLightState(isNightModeEnabled: true);
 
       when(() => mockRepository.send(
                 JNAPAction.setLedNightModeSetting,
@@ -226,7 +270,7 @@ void main() {
 
       // Act & Assert
       expect(
-        () => service.saveSettings(settingsToSave),
+        () => service.saveState(stateToSave),
         throwsA(isA<UnexpectedError>()),
       );
     });

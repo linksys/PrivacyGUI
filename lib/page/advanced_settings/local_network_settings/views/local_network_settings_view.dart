@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
+import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/views/dhcp_server_view.dart';
@@ -267,7 +267,7 @@ class _LocalNetworkSettingsViewState
     ).catchError((error) {
       if (!mounted) return;
       final state = ref.read(localNetworkSettingProvider);
-      final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
+      final currentUrl = getLocalIp(ref.read);
       final regex = RegExp(r'(www\.)?myrouter\.info');
 
       // check is url start with www.myrouter.info or myrouter.info
@@ -305,7 +305,7 @@ class _LocalNetworkSettingsViewState
       return;
     }
     final state = ref.read(localNetworkSettingProvider);
-    final currentUrl = ref.read(routerRepositoryProvider).getLocalIP();
+    final currentUrl = getLocalIp(ref.read);
     final regex = RegExp(r'(www\.)?myrouter\.info');
     // check is url start with www.myrouter.info or myrouter.info
     if (regex.hasMatch(currentUrl)) {

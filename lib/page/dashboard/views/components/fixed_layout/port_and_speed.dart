@@ -8,9 +8,9 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dar
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/dashboard/strategies/dashboard_layout_context.dart';
 import 'package:privacy_gui/page/dashboard/views/components/core/dashboard_loading_wrapper.dart';
-import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/external_speed_test_links.dart';
-import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/internal_speed_test_result.dart';
-import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/port_status_widget.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/external_speed_test_links.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/internal_speed_test_result.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/port_status_widget.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -25,11 +25,12 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// - [DisplayMode.compact]: Minimal port status only
 /// - [DisplayMode.normal]: Ports with speed test
 /// - [DisplayMode.expanded]: Detailed port and speed info
-class DashboardHomePortAndSpeed extends ConsumerWidget {
-  const DashboardHomePortAndSpeed({
+class FixedDashboardHomePortAndSpeed extends ConsumerWidget {
+  const FixedDashboardHomePortAndSpeed({
     super.key,
     required this.config,
     this.displayMode = DisplayMode.normal,
+    this.useAppCard = true,
   });
 
   /// Configuration provided by the parent Strategy.
@@ -37,6 +38,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
 
   /// The display mode for this widget
   final DisplayMode displayMode;
+
+  /// Whether to wrap the content in an AppCard (default true).
+  final bool useAppCard;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -100,33 +104,45 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     WidgetRef ref,
     DashboardHomeState state,
   ) {
-    return AppCard(
+    final content = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        // LAN ports in compact mode
+        ...state.lanPortConnections.mapIndexed((index, e) {
+          final isConnected = e != 'None';
+          return _compactPortIcon(
+            context,
+            label: 'LAN${index + 1}',
+            isConnected: isConnected,
+            isWan: false,
+          );
+        }),
+        // WAN port
+        _compactPortIcon(
+          context,
+          label: loc(context).wan,
+          isConnected: state.wanPortConnection != 'None',
+          isWan: true,
+        ),
+      ],
+    );
+
+    if (useAppCard) {
+      return AppCard(
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: content,
+      );
+    }
+
+    return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          // LAN ports in compact mode
-          ...state.lanPortConnections.mapIndexed((index, e) {
-            final isConnected = e != 'None';
-            return _compactPortIcon(
-              context,
-              label: 'LAN${index + 1}',
-              isConnected: isConnected,
-              isWan: false,
-            );
-          }),
-          // WAN port
-          _compactPortIcon(
-            context,
-            label: loc(context).wan,
-            isConnected: state.wanPortConnection != 'None',
-            isWan: true,
-          ),
-        ],
-      ),
+      child: content,
     );
   }
 
@@ -177,35 +193,40 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     // If auto-layout, we rely on intrinsic sizing primarily, but can keep minHeight for consistency if needed.
     // final minHeight = _calculateMinHeight(isVertical, hasLanPort);
 
-    return Container(
+    final content = SizedBox(
       width: double.infinity,
       // constraints: BoxConstraints(minHeight: minHeight),
-      child: AppCard(
-        padding: EdgeInsets.zero,
-        child: Column(
-          mainAxisSize:
-              config.portsHeight == null ? MainAxisSize.min : MainAxisSize.max,
-          mainAxisAlignment: isVertical
-              ? MainAxisAlignment.spaceBetween
-              : MainAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: config.portsHeight,
-              child: Padding(
-                padding: config.portsPadding,
-                child: _buildPortsSection(context, state, direction),
-              ),
+      child: Column(
+        mainAxisSize:
+            config.portsHeight == null ? MainAxisSize.min : MainAxisSize.max,
+        mainAxisAlignment: isVertical
+            ? MainAxisAlignment.spaceBetween
+            : MainAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: config.portsHeight,
+            child: Padding(
+              padding: config.portsPadding,
+              child: _buildPortsSection(context, state, direction),
             ),
-            if (config.showSpeedTest)
-              SizedBox(
-                width: double.infinity,
-                height: config.speedTestHeight,
-                child: _buildSpeedTestSection(context, ref, state, hasLanPort),
-              ),
-          ],
-        ),
+          ),
+          if (config.showSpeedTest)
+            SizedBox(
+              width: double.infinity,
+              height: config.speedTestHeight,
+              child: _buildSpeedTestSection(context, ref, state, hasLanPort),
+            ),
+        ],
       ),
     );
+
+    if (useAppCard) {
+      return AppCard(
+        padding: EdgeInsets.zero,
+        child: content,
+      );
+    }
+    return content;
   }
 
   /// Expanded view: Detailed port and speed info
@@ -217,37 +238,42 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
   ) {
     final hasLanPort = state.lanPortConnections.isNotEmpty;
 
-    return Container(
+    final content = Container(
       width: double.infinity,
       constraints: BoxConstraints(minHeight: 400),
-      child: AppCard(
-        padding: EdgeInsets.zero,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Expanded port section with more details
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Expanded port section with more details
+          Padding(
+            padding: EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText.titleSmall(loc(context).ports),
+                AppGap.lg(),
+                _buildPortsSection(context, state, direction),
+              ],
+            ),
+          ),
+          if (config.showSpeedTest) ...[
+            const Divider(),
             Padding(
               padding: EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.titleSmall(loc(context).ports),
-                  AppGap.lg(),
-                  _buildPortsSection(context, state, direction),
-                ],
-              ),
+              child: _buildSpeedTestSection(context, ref, state, hasLanPort),
             ),
-            if (config.showSpeedTest) ...[
-              const Divider(),
-              Padding(
-                padding: EdgeInsets.all(AppSpacing.xl),
-                child: _buildSpeedTestSection(context, ref, state, hasLanPort),
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
+
+    if (useAppCard) {
+      return AppCard(
+        padding: EdgeInsets.zero,
+        child: content,
+      );
+    }
+    return content;
   }
 
   Widget _buildPortsSection(

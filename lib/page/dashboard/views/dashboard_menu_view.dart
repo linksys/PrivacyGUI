@@ -14,7 +14,6 @@ import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -135,27 +134,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
                 context.pushNamed(RouteNamed.addNodes);
               },
             ),
-            // AppListTile(
-            //   title: AppText.bodyMedium('Dashboard Layout'),
-            //   leading: const AppIcon.font(AppFontIcons.widgets),
-            //   onTap: () {
-            //     Navigator.of(context).maybePop();
-            //     _showLayoutSettingsDialog();
-            //   },
-            // ),
           ],
-        ),
-      ),
-    );
-  }
-
-  void _showLayoutSettingsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: const DashboardLayoutSettingsPanel(),
         ),
       ),
     );

@@ -1,14 +1,16 @@
 import 'package:web/web.dart';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 
-String getLocalIp(Ref ref) => BuildConfig.forceCommandType == ForceCommand.local
-    ? window.location.host
-    : (ref.read(connectivityProvider).connectivityInfo.gatewayIp ?? '');
+import 'get_local_ip.dart';
 
-String getFullLocation(Ref ref) =>
+String getLocalIp(ProviderReader read) =>
+    BuildConfig.forceCommandType == ForceCommand.local
+        ? window.location.host
+        : (read(connectivityProvider).connectivityInfo.gatewayIp ?? '');
+
+String getFullLocation(ProviderReader read) =>
     BuildConfig.forceCommandType == ForceCommand.local
         ? window.location.toString()
         : '';

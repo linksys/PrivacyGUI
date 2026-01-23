@@ -30,7 +30,9 @@
             ],
             "toolArgs": [
                 "--dart-define",
-                "force=local"
+                "force=local",
+                "--dart-define",
+                "custom_layout=true"
             ],
             "program": "lib/main.dart"
         }

@@ -275,12 +275,11 @@ class MockAuthNotifier extends _i2.AsyncNotifier<_i3.AuthState>
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<Map<String, dynamic>?> getAdminPasswordAuthStatus(
-          List<String>? services) =>
+  _i5.Future<Map<String, dynamic>?> getAdminPasswordAuthStatus() =>
       (super.noSuchMethod(
         Invocation.method(
           #getAdminPasswordAuthStatus,
-          [services],
+          [],
         ),
         returnValue: _i5.Future<Map<String, dynamic>?>.value(),
         returnValueForMissingStub: _i5.Future<Map<String, dynamic>?>.value(),

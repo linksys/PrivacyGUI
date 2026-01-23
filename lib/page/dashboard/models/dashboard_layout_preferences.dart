@@ -51,6 +51,35 @@ class DashboardLayoutPreferences extends Equatable {
     return allConfigs;
   }
 
+  /// Get custom layout widgets in order (atomic widgets only, no VPN)
+  ///
+  /// Used by the settings panel to show only atomic widgets for Custom Layout.
+  /// Get custom layout widgets in order (atomic widgets only, no VPN in settings usually, but here strict to custom list)
+  ///
+  /// Used by the settings panel to show only atomic widgets for Custom Layout.
+  List<GridWidgetConfig> get customWidgetsOrdered {
+    // We want all widgets defined in DashboardWidgetSpecs.customWidgets.
+    // VPN is typically allowed in custom layout, so we include it.
+    // If we need to filter specific ones out (like if VPN is not supported), logic belongs elsewhere or via requirements.
+    // However, the original code filtered out VPN explicitly from the ordered list for some reason.
+    // If the intention is "editable widgets", then VPN is usually editable.
+    // Let's stick to returning configs for all declared customWidgets.
+    // Note: The previous logic filtered out `DashboardWidgetSpecs.vpn.id`.
+    // Now we have `vpn_custom`. We should check if we need to filter `vpn_custom`.
+    // Assuming we want to show all available atomic widgets.
+
+    final atomicSpecs = DashboardWidgetSpecs.customWidgets;
+
+    // Note: The original code had: .where((spec) => spec.id != DashboardWidgetSpecs.vpn.id)
+    // This implies VPN wasn't meant to be reorderable/toggleable in the simplified list?
+    // Or maybe it was just not part of the "custom atomic" set at that time.
+    // For now, let's include everything in customWidgets, as that list is now explicit.
+
+    final allConfigs = atomicSpecs.map((spec) => getConfig(spec.id)).toList();
+    allConfigs.sort((a, b) => a.order.compareTo(b.order));
+    return allConfigs;
+  }
+
   // ---------------------------------------------------------------------------
   // Configuration Setters
   // ---------------------------------------------------------------------------
@@ -92,7 +121,7 @@ class DashboardLayoutPreferences extends Equatable {
     ));
   }
 
-  /// Reorder widgets
+  /// Reorder widgets (all widgets)
   DashboardLayoutPreferences reorder(int oldIndex, int newIndex) {
     final ordered = allWidgetsOrdered.toList();
     if (oldIndex < 0 || oldIndex >= ordered.length) return this;
@@ -102,6 +131,28 @@ class DashboardLayoutPreferences extends Equatable {
     ordered.insert(newIndex, item);
 
     final newConfigs = <String, GridWidgetConfig>{};
+    for (var i = 0; i < ordered.length; i++) {
+      final config = ordered[i];
+      newConfigs[config.widgetId] = config.copyWith(order: i);
+    }
+
+    return DashboardLayoutPreferences(
+      useCustomLayout: useCustomLayout,
+      widgetConfigs: newConfigs,
+    );
+  }
+
+  /// Reorder custom widgets (atomic widgets only)
+  DashboardLayoutPreferences reorderCustomWidget(int oldIndex, int newIndex) {
+    final ordered = customWidgetsOrdered.toList();
+    if (oldIndex < 0 || oldIndex >= ordered.length) return this;
+    if (newIndex < 0 || newIndex >= ordered.length) return this;
+
+    final item = ordered.removeAt(oldIndex);
+    ordered.insert(newIndex, item);
+
+    // Update order for custom widgets only
+    final newConfigs = Map<String, GridWidgetConfig>.from(widgetConfigs);
     for (var i = 0; i < ordered.length; i++) {
       final config = ordered[i];
       newConfigs[config.widgetId] = config.copyWith(order: i);
