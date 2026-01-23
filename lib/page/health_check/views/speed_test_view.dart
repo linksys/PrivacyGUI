@@ -197,8 +197,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
 
     final bandwidth = NetworkUtils.formatBitsWithUnit(
         state.status == 'COMPLETE'
-            ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024
-            : (state.meterValue * 1024).toInt(),
+            ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1000
+            : (state.meterValue * 1000).toInt(),
         decimals: 1);
 
     return ResponsiveLayout(
@@ -310,10 +310,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final result = state.result.firstOrNull;
 
     final downloadBandwidth = NetworkUtils.formatBitsWithUnit(
-        (result?.speedTestResult?.downloadBandwidth ?? 0) * 1024,
+        (result?.speedTestResult?.downloadBandwidth ?? 0) * 1000,
         decimals: 1);
     final uploadBandwidth = NetworkUtils.formatBitsWithUnit(
-        (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024,
+        (result?.speedTestResult?.uploadBandwidth ?? 0) * 1000,
         decimals: 1);
     final step = state.step;
 
@@ -440,10 +440,10 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     final result =
         state.status == 'IDLE' ? latestSpeedTest : state.result.firstOrNull;
     final downloadBandWidth = NetworkUtils.formatBitsWithUnit(
-        (result?.speedTestResult?.downloadBandwidth ?? 0) * 1024,
+        (result?.speedTestResult?.downloadBandwidth ?? 0) * 1000,
         decimals: 1);
     final uploadBandWidth = NetworkUtils.formatBitsWithUnit(
-        (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024,
+        (result?.speedTestResult?.uploadBandwidth ?? 0) * 1000,
         decimals: 1);
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';
 
@@ -555,14 +555,14 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   (String, String, String) _getDataText(SpeedTestResult? result) {
     var latency = result?.latency?.toStringAsFixed(0) ?? '—';
     var downloadBandWidth =
-        ((result?.downloadBandwidth ?? 0) / 1024.0).toStringAsFixed(1);
+        ((result?.downloadBandwidth ?? 0) / 1000.0).toStringAsFixed(1);
     var uploadBandWidth =
-        ((result?.uploadBandwidth ?? 0) / 1024.0).toStringAsFixed(1);
+        ((result?.uploadBandwidth ?? 0) / 1000.0).toStringAsFixed(1);
     return (latency, downloadBandWidth, uploadBandWidth);
   }
 
   (String, String) _getTestResultDesc(SpeedTestResult? result) {
-    var downloadBandWidth = (result?.downloadBandwidth ?? 0) / 1024.0;
+    var downloadBandWidth = (result?.downloadBandwidth ?? 0) / 1000.0;
     var resultTitle = switch (downloadBandWidth) {
       < 50 => loc(context).speedOkay,
       < 100 => loc(context).speedGood,

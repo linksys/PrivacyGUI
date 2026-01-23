@@ -333,17 +333,23 @@ extension MediaQueryUtils on Utils {
 }
 
 extension NetworkUtils on Utils {
+  /// Formats a bit count into a human-readable string with SI units (base 1000).
+  ///
+  /// Example: 1000 bits -> "1 Kb"
   static String formatBits(int bits, {int decimals = 0}) {
     final result = formatBitsWithUnit(bits, decimals: decimals);
     return '${result.value} ${result.unit}';
   }
 
+  /// Formats a bit count into a value and SI unit (base 1000) pair.
+  ///
+  /// Returns a record with `value` (as String) and `unit` (e.g., "Mb", "Gb").
   static ({String value, String unit}) formatBitsWithUnit(int bits,
       {int decimals = 0}) {
     if (bits <= 0) return (value: '0', unit: "b");
     const suffixes = ["b", "Kb", "Mb", "Gb", "Tb", "Pb"];
-    var i = (log(bits) / log(1024)).floor();
-    var number = (bits / pow(1024, i));
+    var i = (log(bits) / log(1000)).floor();
+    var number = (bits / pow(1000, i));
     return (
       value: number
           .toStringAsFixed(number.truncateToDouble() == number ? 0 : decimals),
