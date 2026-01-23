@@ -578,23 +578,23 @@ void main() {
     });
 
     test('formats megabytes with 2 decimal places', () {
-      const bits = 1.5 * 1024 * 1024; // 1.5 Mb
+      const bits = 1.5 * 1000 * 1000; // 1.5 Mb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 2);
-      expect(result.value, '1.57');
+      expect(result.value, '1.50');
       expect(result.unit, 'Mb');
     });
 
     test('formats gigabytes with 1 decimal place', () {
-      const bits = 2.5 * 1024 * 1024 * 1024; // 2.5 Gb
+      const bits = 2.5 * 1000 * 1000 * 1000; // 2.5 Gb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 1);
-      expect(result.value, '2.7');
+      expect(result.value, '2.5');
       expect(result.unit, 'Gb');
     });
 
     test('formats terabytes with 3 decimal places', () {
-      const bits = 3.14159 * 1024 * 1024 * 1024 * 1024; // ~3.14159 Tb
+      const bits = 3.14159 * 1000 * 1000 * 1000 * 1000; // ~3.14159 Tb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 3);
-      expect(result.value, '3.454');
+      expect(result.value, '3.142');
       expect(result.unit, 'Tb');
     });
 
@@ -613,9 +613,18 @@ void main() {
     });
 
     test('handles exactly 1 petabyte', () {
-      final onePb = BigInt.from(1024).pow(5).toInt(); // Exactly 1 PiB
+      final onePb = BigInt.from(1000).pow(5).toInt(); // Exactly 1 Pb (SI)
       final result = NetworkUtils.formatBitsWithUnit(onePb);
       expect(result.value, '1');
+      expect(result.unit, 'Pb');
+    });
+
+    test('handles values exceeding max unit (Exabyte+)', () {
+      // 1 Exabyte = 1000^6.
+      final bits = BigInt.from(1000).pow(6).toInt();
+      // Should cap at Pb, so 1000 Pb
+      final result = NetworkUtils.formatBitsWithUnit(bits);
+      expect(result.value, '1000');
       expect(result.unit, 'Pb');
     });
   });
