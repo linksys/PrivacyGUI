@@ -113,5 +113,45 @@ void main() {
       // Verify onChanged is null (disabled)
       expect(appSwitch.onChanged, isNull);
     });
+
+    testWidgets('displays correct value in remote mode', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith(() => TestAuthNotifier(
+                  const AsyncValue.data(
+                    AuthState(loginType: LoginType.remote),
+                  ),
+                )),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(
+              extensions: [
+                GlassDesignTheme.light(),
+              ],
+            ),
+            home: Scaffold(
+              body: RemoteAwareSwitch(
+                value: true,
+                onChanged: (value) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Find the switch
+      final switchFinder = find.byType(AppSwitch);
+      expect(switchFinder, findsOneWidget);
+
+      // Get the switch widget
+      final appSwitch = tester.widget<AppSwitch>(switchFinder);
+
+      // Verify value is preserved
+      expect(appSwitch.value, true);
+
+      // Verify it's disabled
+      expect(appSwitch.onChanged, isNull);
+    });
   });
 }
