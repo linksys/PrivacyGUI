@@ -68,7 +68,7 @@ void main() async {
 
   container.read(linksysCacheManagerProvider);
 
-  BuildConfig.load();
+  await BuildConfig.load();
   initBetterActions();
   if (!kIsWeb) {
     HttpOverrides.global = MyHTTPOverrides();
