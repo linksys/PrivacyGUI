@@ -72,5 +72,46 @@ void main() {
       // Verify callback was invoked
       expect(callbackValue, true);
     });
+
+    testWidgets('is disabled in remote mode', (WidgetTester tester) async {
+      bool? callbackValue;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith(() => TestAuthNotifier(
+                  const AsyncValue.data(
+                    AuthState(loginType: LoginType.remote),
+                  ),
+                )),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(
+              extensions: [
+                GlassDesignTheme.light(),
+              ],
+            ),
+            home: Scaffold(
+              body: RemoteAwareSwitch(
+                value: false,
+                onChanged: (value) {
+                  callbackValue = value;
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Find the switch
+      final switchFinder = find.byType(AppSwitch);
+      expect(switchFinder, findsOneWidget);
+
+      // Get the switch widget
+      final appSwitch = tester.widget<AppSwitch>(switchFinder);
+
+      // Verify onChanged is null (disabled)
+      expect(appSwitch.onChanged, isNull);
+    });
   });
 }
