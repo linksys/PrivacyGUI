@@ -153,5 +153,47 @@ void main() {
       // Verify it's disabled
       expect(appSwitch.onChanged, isNull);
     });
+
+    testWidgets('updates state when loginType changes', (WidgetTester tester) async {
+      // Create a notifier we can control
+      final authNotifier = TestAuthNotifier(
+        const AsyncValue.data(AuthState(loginType: LoginType.local)),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith(() => authNotifier),
+          ],
+          child: MaterialApp(
+            theme: ThemeData(
+              extensions: [
+                GlassDesignTheme.light(),
+              ],
+            ),
+            home: Scaffold(
+              body: RemoteAwareSwitch(
+                value: false,
+                onChanged: (value) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Initially enabled (local mode)
+      var appSwitch = tester.widget<AppSwitch>(find.byType(AppSwitch));
+      expect(appSwitch.onChanged, isNotNull);
+
+      // Change to remote mode
+      authNotifier.state = const AsyncValue.data(
+        AuthState(loginType: LoginType.remote),
+      );
+      await tester.pump();
+
+      // Now should be disabled
+      appSwitch = tester.widget<AppSwitch>(find.byType(AppSwitch));
+      expect(appSwitch.onChanged, isNull);
+    });
   });
 }
