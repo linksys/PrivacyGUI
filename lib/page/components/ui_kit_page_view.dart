@@ -37,6 +37,7 @@ class UiKitBottomBarConfig {
   final bool isPositiveEnabled;
   final bool isNegativeEnabled;
   final bool isDestructive;
+  final bool checkRemoteReadOnly;
 
   const UiKitBottomBarConfig({
     this.positiveLabel,
@@ -46,6 +47,7 @@ class UiKitBottomBarConfig {
     this.isPositiveEnabled = true,
     this.isNegativeEnabled = true,
     this.isDestructive = false,
+    this.checkRemoteReadOnly = true,
   });
 }
 
