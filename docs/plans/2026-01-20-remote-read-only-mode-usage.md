@@ -9,7 +9,56 @@ When users connect remotely via Linksys Cloud, all router configuration changes 
 
 ## Quick Start
 
-### 1. Check Remote Read-Only Status
+### 1. Using RemoteAwareSwitch (Recommended for Immediate Actions)
+
+For switches that directly trigger JNAP operations (immediate effect):
+
+```dart
+import 'package:privacy_gui/page/components/views/remote_aware_switch.dart';
+
+RemoteAwareSwitch(
+  value: isFeatureEnabled,
+  onChanged: (value) {
+    ref.read(myProvider.notifier).toggleFeature(value);
+  },
+)
+```
+
+**When to use RemoteAwareSwitch:**
+- ✅ Switch onChanged directly calls a provider method
+- ✅ That provider method triggers JNAP SET operations
+- ✅ Changes apply immediately (no Save button)
+
+**Do NOT use RemoteAwareSwitch when:**
+- ❌ Page has a Save button (use regular AppSwitch - auto-protected)
+- ❌ Switch only modifies local UI state
+- ❌ Switch controls pure frontend behavior
+
+### 2. Form Pages with Save Buttons (Automatic Protection)
+
+No changes needed! All pages using `UiKitBottomBarConfig` automatically have their Save buttons disabled in remote mode.
+
+```dart
+// This is automatically protected - no changes needed
+bottomBar: UiKitBottomBarConfig(
+  isPositiveEnabled: state.isDirty,  // Auto-disabled in remote mode
+  onPositiveTap: _saveSettings,
+),
+```
+
+**Opt-out (rare cases):**
+
+```dart
+bottomBar: UiKitBottomBarConfig(
+  checkRemoteReadOnly: false,  // Opt out of auto-disable
+  isPositiveEnabled: state.isDirty,
+  onPositiveTap: _saveUIPreferences,  // Non-JNAP operation
+),
+```
+
+### 3. Manual Remote Read-Only Check (Advanced)
+
+For custom controls that don't fit the above patterns:
 
 ```dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +81,7 @@ class MySettingsWidget extends ConsumerWidget {
 }
 ```
 
-### 2. Disable Different Control Types
+### 4. Disable Different Control Types
 
 #### Buttons
 ```dart
@@ -228,13 +277,19 @@ This will force the app into remote read-only mode regardless of actual `loginTy
 - [lib/providers/remote_access/remote_access_provider.dart](../../lib/providers/remote_access/remote_access_provider.dart) - Provider logic
 - [lib/providers/remote_access/remote_access_state.dart](../../lib/providers/remote_access/remote_access_state.dart) - State class
 - [lib/page/components/views/remote_read_only_banner.dart](../../lib/page/components/views/remote_read_only_banner.dart) - Banner widget
+- [lib/page/components/views/remote_aware_switch.dart](../../lib/page/components/views/remote_aware_switch.dart) - **NEW: RemoteAwareSwitch component**
+- [lib/page/components/ui_kit_page_view.dart](../../lib/page/components/ui_kit_page_view.dart) - **UPDATED: UiKitBottomBarConfig auto-protection**
 - [lib/core/jnap/router_repository.dart](../../lib/core/jnap/router_repository.dart) - Defensive checks
 
 ### Tests
 - [test/providers/remote_access/remote_access_provider_test.dart](../../test/providers/remote_access/remote_access_provider_test.dart)
 - [test/providers/remote_access/remote_access_state_test.dart](../../test/providers/remote_access/remote_access_state_test.dart)
 - [test/page/components/views/remote_read_only_banner_test.dart](../../test/page/components/views/remote_read_only_banner_test.dart)
+- [test/page/components/views/remote_aware_switch_test.dart](../../test/page/components/views/remote_aware_switch_test.dart) - **NEW: RemoteAwareSwitch tests**
 - [test/core/jnap/router_repository_test.dart](../../test/core/jnap/router_repository_test.dart) - Defensive checks tests
+
+### Documentation
+- [docs/plans/2026-01-26-switch-replacement-catalog.md](./2026-01-26-switch-replacement-catalog.md) - **NEW: AppSwitch usage catalog and replacement guide**
 
 ## Future Enhancements
 
