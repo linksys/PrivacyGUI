@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/components/views/remote_aware_switch.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -310,7 +311,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     return Row(
       children: [
         Expanded(child: AppText.labelLarge(title)),
-        AppSwitch(
+        RemoteAwareSwitch(
           value: value,
           onChanged: (newValue) async {
             await onChanged(newValue);
