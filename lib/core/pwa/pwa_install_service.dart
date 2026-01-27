@@ -2,32 +2,17 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:js_interop';
-import 'dart:js_interop_unsafe';
-import 'package:web/web.dart';
 
-// --- JS Interop Definitions ---
+import 'pwa_logic.dart';
 
-extension type BeforeInstallPromptEvent._(JSObject _) implements Event {
-  external JSPromise prompt();
-  external JSPromise<UserChoice> get userChoice;
-}
-
-extension type UserChoice._(JSObject _) implements JSObject {
-  external String get outcome;
-  external String get platform;
-}
-
-// Extension to safely access window properties
-extension WindowExtension on Window {
-  external JSObject? get deferredBeforeInstallPromptEvent;
-}
-
-// --- Service Implementation ---
+// Re-export types needed by the service interface if they are used publically,
+// but since they are conditional, we might need to abstract them or rely on dynamic if exposed.
+// However, PwaInstallService internalizes the event, so we just need to import pwa_logic which exports the stub/web classes.
 
 enum PwaMode { none, native, ios, mac }
 
 class PwaInstallService extends Notifier<PwaMode> {
+  // Use dynamic or the exported type. Since pwa_logic exports the type (Stub or Web), it is safe.
   BeforeInstallPromptEvent? _deferredPrompt;
   static const _kDismissedKey = 'pwa_prompt_dismissed_timestamp';
 
@@ -89,50 +74,29 @@ class PwaInstallService extends Notifier<PwaMode> {
   }
 
   void _initListeners() {
-    // Check for early-captured event in window.deferredBeforeInstallPromptEvent
-    final globalContext = window as JSObject;
-    final earlyEvent =
-        globalContext.getProperty('deferredBeforeInstallPromptEvent'.toJS);
+    if (!kIsWeb) return;
 
-    if (earlyEvent != null && !earlyEvent.isUndefined && !earlyEvent.isNull) {
-      debugPrint(
-          'PWA: Found early deferred event in window.deferredBeforeInstallPromptEvent');
-      _handleBeforeInstallPrompt(earlyEvent as BeforeInstallPromptEvent);
-    }
-
-    // Listen for 'beforeinstallprompt'
-    final onBeforeInstallPrompt = (Event event) {
-      debugPrint('PWA: Event fired - beforeinstallprompt (Listener)');
-      _handleBeforeInstallPrompt(event as BeforeInstallPromptEvent);
-    }.toJS;
-
-    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-
-    // Listen for 'appinstalled'
-    final onAppInstalled = (Event event) {
-      debugPrint('PWA: App was installed');
-      _deferredPrompt = null;
-      state = PwaMode.none;
-    }.toJS;
-
-    window.addEventListener('appinstalled', onAppInstalled);
-  }
-
-  void _handleBeforeInstallPrompt(BeforeInstallPromptEvent event) {
-    event.preventDefault();
-    _deferredPrompt = event;
-
-    // Check persistence before showing
-    isDismissedRecently().then((recentlyDismissed) {
-      debugPrint('PWA: recentlyDismissed=$recentlyDismissed');
-      if (!recentlyDismissed) {
-        state = PwaMode.native;
-        debugPrint(
-            'PWA: State set to NATIVE. Captured beforeinstallprompt event');
-      } else {
-        debugPrint('PWA: Prompt suppressed due to recent dismissal');
-      }
-    });
+    // Use the Logic Loader (conditionally imported class)
+    PwaLogic().initListeners(
+      onBeforeInstallPrompt: (event) {
+        _deferredPrompt = event;
+        // Check persistence
+        isDismissedRecently().then((recentlyDismissed) {
+          debugPrint('PWA: recentlyDismissed=$recentlyDismissed');
+          if (!recentlyDismissed) {
+            state = PwaMode.native;
+            debugPrint(
+                'PWA: State set to NATIVE. Captured beforeinstallprompt event');
+          } else {
+            debugPrint('PWA: Prompt suppressed due to recent dismissal');
+          }
+        });
+      },
+      onAppInstalled: () {
+        _deferredPrompt = null;
+        state = PwaMode.none;
+      },
+    );
   }
 
   Future<void> promptInstall() async {
@@ -142,12 +106,7 @@ class PwaInstallService extends Notifier<PwaMode> {
     }
 
     // Show the install prompt
-    await _deferredPrompt!.prompt().toDart;
-
-    // Wait for the user to respond to the prompt
-    final choice = await _deferredPrompt!.userChoice.toDart;
-
-    debugPrint('PWA: User choice: ${choice.outcome}');
+    await PwaLogic().prompt(_deferredPrompt!);
 
     // We've used the prompt, so we can't use it again.
     _deferredPrompt = null;
@@ -156,26 +115,17 @@ class PwaInstallService extends Notifier<PwaMode> {
 
   bool get isIOS {
     if (!kIsWeb) return false;
-    final userAgent = window.navigator.userAgent.toLowerCase();
-    return userAgent.contains('iphone') ||
-        userAgent.contains('ipad') ||
-        userAgent.contains('ipod');
+    return PwaLogic().isIOS;
   }
 
   bool get isMacSafari {
     if (!kIsWeb) return false;
-    final userAgent = window.navigator.userAgent.toLowerCase();
-    // Mac detection: 'macintosh' is in UA.
-    // Safari detection: 'safari' is in UA, but 'chrome' is NOT (Chrome's UA contains 'Safari').
-    final isMac = userAgent.contains('macintosh');
-    final isSafari =
-        userAgent.contains('safari') && !userAgent.contains('chrome');
-    return isMac && isSafari;
+    return PwaLogic().isMacSafari;
   }
 
   bool get isStandalone {
     if (!kIsWeb) return false;
-    return window.matchMedia('(display-mode: standalone)').matches;
+    return PwaLogic().isStandalone;
   }
 }
 

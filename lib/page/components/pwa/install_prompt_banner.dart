@@ -12,8 +12,7 @@ class InstallPromptBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Only show on Web
-    if (!kIsWeb) return const SizedBox.shrink();
+    // Only show on Web - logic handled by provider state (PwaMode.none if not web)
 
     final mode = ref.watch(pwaInstallServiceProvider);
     final pwaNotifier = ref.read(pwaInstallServiceProvider.notifier);
@@ -50,6 +49,7 @@ class InstallPromptBanner extends ConsumerWidget {
             ),
             AppFilledButton(
               loc(context).pwaInstallButton,
+              key: const Key('pwa_install_button'),
               color: Colors.white.withValues(alpha: 0.2),
               textStyle: const TextStyle(
                 color: Colors.white,
@@ -60,12 +60,14 @@ class InstallPromptBanner extends ConsumerWidget {
                   case PwaMode.ios:
                     showModalBottomSheet(
                       context: context,
+                      useRootNavigator: false,
                       builder: (c) => const IosInstallInstructionSheet(),
                     );
                     break;
                   case PwaMode.mac:
                     showModalBottomSheet(
                       context: context,
+                      useRootNavigator: false,
                       builder: (c) => const MacSafariInstallInstructionSheet(),
                     );
                     break;
