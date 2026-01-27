@@ -1,4 +1,7 @@
-<!DOCTYPE html><html><head>
+<!DOCTYPE html>
+<html>
+
+<head>
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
@@ -22,6 +25,16 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Linksys Now">
+
+  <script>
+    // Capture PWA install prompt event early prevents missing it due to Flutter loading time.
+    window.deferredBeforeInstallPromptEvent = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.deferredBeforeInstallPromptEvent = e;
+      console.log('PWA: Early capture of beforeinstallprompt');
+    });
+  </script>
   <link rel="apple-touch-icon" sizes="180x180" href="logo_icons/logo-icon-180.png">
 
   <!-- Favicon -->
@@ -38,6 +51,7 @@
     [data-theme='dark'] {
       --background-color: #121316;
     }
+
     html {
       height: 100%
     }
@@ -59,19 +73,22 @@
     }
 
     .contain {
-      display:block;
-      width:100%; height:100%;
+      display: block;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
     }
 
     .stretch {
-      display:block;
-      width:100%; height:100%;
+      display: block;
+      width: 100%;
+      height: 100%;
     }
 
     .cover {
-      display:block;
-      width:100%; height:100%;
+      display: block;
+      width: 100%;
+      height: 100%;
       object-fit: cover;
     }
 
@@ -96,7 +113,7 @@
     }
   </style>
   <script>
-    (function() {
+    (function () {
       const appSettingsString = window.localStorage.getItem('flutter.AppSettings');
 
       if (appSettingsString) {
@@ -128,14 +145,21 @@
     }
   </script>
 </head>
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 </head>
+
 <body>
   <script src="./flutter_bootstrap.js" async></script>
   <picture id="splash-branding">
-    <source srcset="splash/img/branding-1x.png 1x, splash/img/branding-2x.png 2x, splash/img/branding-3x.png 3x, splash/img/branding-4x.png 4x" media="(prefers-color-scheme: light)">
-    <source srcset="splash/img/branding-dark-1x.png 1x, splash/img/branding-dark-2x.png 2x, splash/img/branding-dark-3x.png 3x, splash/img/branding-dark-4x.png 4x" media="(prefers-color-scheme: dark)">
+    <source
+      srcset="splash/img/branding-1x.png 1x, splash/img/branding-2x.png 2x, splash/img/branding-3x.png 3x, splash/img/branding-4x.png 4x"
+      media="(prefers-color-scheme: light)">
+    <source
+      srcset="splash/img/branding-dark-1x.png 1x, splash/img/branding-dark-2x.png 2x, splash/img/branding-dark-3x.png 3x, splash/img/branding-dark-4x.png 4x"
+      media="(prefers-color-scheme: dark)">
     <img class="center" aria-hidden="true" src="splash/img/branding-1x.png" alt="">
   </picture>
 
-</body></html>
+</body>
+
+</html>
