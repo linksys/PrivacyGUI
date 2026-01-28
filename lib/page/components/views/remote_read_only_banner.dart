@@ -38,7 +38,7 @@ class RemoteReadOnlyBanner extends ConsumerWidget {
       child: Row(
         children: [
           Icon(
-            Icons.shield_outlined,
+            Icons.info_outline,
             color: colorScheme.onErrorContainer,
             size: 24,
           ),
