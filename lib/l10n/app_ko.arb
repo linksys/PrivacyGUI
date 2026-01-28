@@ -215,6 +215,7 @@
   "faqVisitLinksysSupport": "Linksys 지원 방문",
   "faqs": "FAQ",
   "featureUnavailableInRemoteMode": "이 기능은 원격 모드에서 사용할 수 없습니다",
+  "remoteViewModeActive": "원격 보기 모드 - 설정 변경이 비활성화되었습니다",
   "filterAnonymous": "익명의 인터넷 요청 필터링",
   "filterIdent": "ID 필터링(포트 113)",
   "filterInternetNATRedirection": "인터넷 NAT 리디렉션 필터링",

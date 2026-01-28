@@ -492,7 +492,8 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
 
     // Check remote read-only mode
     final isRemoteReadOnly = bottomBar.checkRemoteReadOnly
-        ? ref.watch(remoteAccessProvider.select((state) => state.isRemoteReadOnly))
+        ? ref.watch(
+            remoteAccessProvider.select((state) => state.isRemoteReadOnly))
         : false;
 
     // T078: Native PrivacyGUI localization support

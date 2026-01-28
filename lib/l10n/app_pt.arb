@@ -233,6 +233,7 @@
   "faqVisitLinksysSupport": "Acesse o Suporte Linksys",
   "faqs": "Perguntas Frequentes",
   "featureUnavailableInRemoteMode": "Este recurso não está disponível no modo remoto",
+  "remoteViewModeActive": "Modo de visualização remota - As alterações de configuração estão desativadas",
   "filterAnonymous": "Filtrar solicitações de Internet anônimas",
   "filterIdent": "Filtrar ident (Porta 113)",
   "filterInternetNATRedirection": "Filtrar redirecionamento NAT da Internet",

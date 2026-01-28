@@ -32,8 +32,7 @@ void main() {
   });
 
   group('RouterRepository - Remote Read-Only Mode Defensive Checks', () {
-    test(
-        'send() throws UnexpectedError when calling SET action in remote mode',
+    test('send() throws UnexpectedError when calling SET action in remote mode',
         () async {
       // Arrange: Create container with remote login state
       final container = ProviderContainer(
@@ -64,7 +63,8 @@ void main() {
       }
     });
 
-    test('send() throws UnexpectedError for various SET operations in remote mode',
+    test(
+        'send() throws UnexpectedError for various SET operations in remote mode',
         () async {
       // Arrange
       final container = ProviderContainer(
@@ -98,7 +98,8 @@ void main() {
           // Success
           expect(e.message, contains('remote read-only'));
         } catch (e) {
-          fail('Expected UnexpectedError for ${action.name} but got: ${e.runtimeType}');
+          fail(
+              'Expected UnexpectedError for ${action.name} but got: ${e.runtimeType}');
         }
       }
     });
@@ -162,11 +163,13 @@ void main() {
       } catch (e) {
         // Expected: Will fail due to missing network/SharedPreferences/etc
         // But NOT because of our remote read-only check
-        expect(e, isNot(isA<UnexpectedError>().having(
-          (e) => e.message,
-          'message',
-          contains('remote read-only'),
-        )));
+        expect(
+            e,
+            isNot(isA<UnexpectedError>().having(
+              (e) => e.message,
+              'message',
+              contains('remote read-only'),
+            )));
       }
     });
 
@@ -191,7 +194,8 @@ void main() {
         fail('Expected error due to missing network, but got success');
       } on UnexpectedError catch (e) {
         if (e.message?.contains('remote read-only') ?? false) {
-          fail('Read-only GET operation should not be blocked by defensive check');
+          fail(
+              'Read-only GET operation should not be blocked by defensive check');
         }
         // Other UnexpectedErrors are OK (missing network, etc)
       } catch (e) {
@@ -204,7 +208,8 @@ void main() {
         fail('Expected error due to missing network, but got success');
       } on UnexpectedError catch (e) {
         if (e.message?.contains('remote read-only') ?? false) {
-          fail('Read-only GET operation should not be blocked by defensive check');
+          fail(
+              'Read-only GET operation should not be blocked by defensive check');
         }
       } catch (e) {
         // Expected: Will fail due to missing network/SharedPreferences/etc
@@ -215,14 +220,16 @@ void main() {
         fail('Expected error due to missing network, but got success');
       } on UnexpectedError catch (e) {
         if (e.message?.contains('remote read-only') ?? false) {
-          fail('Read-only IS operation should not be blocked by defensive check');
+          fail(
+              'Read-only IS operation should not be blocked by defensive check');
         }
       } catch (e) {
         // Expected: Will fail due to missing network/SharedPreferences/etc
       }
     });
 
-    test('send() blocks destructive operations like reboot in remote mode', () async {
+    test('send() blocks destructive operations like reboot in remote mode',
+        () async {
       // Arrange
       final container = ProviderContainer(
         overrides: [
@@ -397,11 +404,213 @@ void main() {
         }
       } catch (e) {
         // Expected: Will fail due to missing network/SharedPreferences/etc
-        expect(e, isNot(isA<UnexpectedError>().having(
-          (e) => e.message,
-          'message',
-          contains('remote read-only'),
-        )));
+        expect(
+            e,
+            isNot(isA<UnexpectedError>().having(
+              (e) => e.message,
+              'message',
+              contains('remote read-only'),
+            )));
+      }
+    });
+
+    test('send() allows LED blinking operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: LED blinking operations should NOT throw defensive error
+      // StartBlinkingNodeLed
+      try {
+        await repository.send(JNAPAction.startBlinkingNodeLed);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('LED blinking should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // StopBlinkingNodeLed
+      try {
+        await repository.send(JNAPAction.stopBlinkingNodeLed);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('LED blinking should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+    });
+
+    test('send() allows speed test operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: Speed test operations should NOT throw defensive error
+      // GetHealthCheckResults
+      try {
+        await repository.send(JNAPAction.getHealthCheckResults);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('GetHealthCheckResults should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // RunHealthCheck
+      try {
+        await repository.send(JNAPAction.runHealthCheck);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('RunHealthCheck should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // StopHealthCheck
+      try {
+        await repository.send(JNAPAction.stopHealthCheck);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StopHealthCheck should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+    });
+
+    test('send() allows ping operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: Ping operations should NOT throw defensive error
+      // StartPing
+      try {
+        await repository.send(JNAPAction.startPing);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StartPing should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // StopPing
+      try {
+        await repository.send(JNAPAction.stopPing);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StopPing should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // GetPingStatus
+      try {
+        await repository.send(JNAPAction.getPingStatus);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('GetPingStatus should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+    });
+
+    test('send() allows traceroute operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: Traceroute operations should NOT throw defensive error
+      // StartTracroute
+      try {
+        await repository.send(JNAPAction.startTracroute);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StartTracroute should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // StopTracroute
+      try {
+        await repository.send(JNAPAction.stopTracroute);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StopTracroute should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // GetTracerouteStatus
+      try {
+        await repository.send(JNAPAction.getTracerouteStatus);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('GetTracerouteStatus should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
       }
     });
   });

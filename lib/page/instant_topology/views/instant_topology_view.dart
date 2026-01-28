@@ -127,7 +127,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
           onNodeTap(context, ref, originalNode);
         }
       },
-      nodeMenuBuilder: _menuHelper.buildNodeMenu,
+      nodeMenuBuilder: (context, meshNode) =>
+          _menuHelper.buildNodeMenu(context, ref, meshNode),
       onNodeMenuSelected: (nodeId, action) => _handleNodeMenuAction(
         context,
         ref,

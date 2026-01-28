@@ -75,7 +75,8 @@ class RouterRepository {
   /// Checks if the given JNAP action is a read-only operation.
   ///
   /// Only operations that do NOT modify router configuration are considered safe.
-  /// Safe operations include Get*, Is*, and Check* operations.
+  /// Safe operations include Get*, Is*, Check*, LED blinking, speed test,
+  /// and network diagnostic operations (ping, traceroute).
   /// All other operations are blocked in remote read-only mode.
   bool _isReadOnlyOperation(JNAPAction action) {
     final actionValue = action.actionValue;
@@ -84,12 +85,25 @@ class RouterRepository {
 
     // Allowlist of safe read-only operation prefixes
     const safePrefixes = [
-      'get',      // Get operations (getDeviceInfo, getWANSettings, etc.)
-      'is',       // Status checks (isAdminPasswordDefault, etc.)
-      'check',    // Validation operations (checkAdminPassword, etc.)
+      'get', // Get operations (getDeviceInfo, getWANSettings, etc.)
+      'is', // Status checks (isAdminPasswordDefault, etc.)
+      'check', // Validation operations (checkAdminPassword, etc.)
     ];
 
-    return safePrefixes.any((prefix) => lastSegment.startsWith(prefix));
+    // Allowlist of specific safe operations that don't modify configuration
+    const safeOperations = [
+      'startblinkingnodeled', // LED blinking operations
+      'stopblinkingnodeled',
+      'runhealthcheck', // Speed test operations (read-only, no config changes)
+      'stophealthcheck',
+      'startping', // Network diagnostic operations (read-only)
+      'stopping',
+      'starttraceroute',
+      'stoptraceroute',
+    ];
+
+    return safePrefixes.any((prefix) => lastSegment.startsWith(prefix)) ||
+        safeOperations.contains(lastSegment);
   }
 
   /// Checks if the application is in remote read-only mode.
@@ -156,7 +170,8 @@ class RouterRepository {
   }) async {
     // Defensive check: Block transactions containing write operations in remote read-only mode
     if (_isRemoteReadOnly()) {
-      final hasWriteOperation = builder.commands.any((entry) => !_isReadOnlyOperation(entry.key));
+      final hasWriteOperation =
+          builder.commands.any((entry) => !_isReadOnlyOperation(entry.key));
       if (hasWriteOperation) {
         throw const UnexpectedError(
           message: 'Write operations are not allowed in remote read-only mode',

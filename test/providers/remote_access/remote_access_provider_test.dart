@@ -114,8 +114,8 @@ void main() {
       // Arrange
       final container = ProviderContainer(
         overrides: [
-          authProvider.overrideWith(
-              () => TestAuthNotifier(const AsyncValue.loading())),
+          authProvider
+              .overrideWith(() => TestAuthNotifier(const AsyncValue.loading())),
         ],
       );
       addTearDown(container.dispose);

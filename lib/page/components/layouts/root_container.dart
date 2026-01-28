@@ -80,7 +80,8 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
                 Expanded(
                   child: Stack(
                     children: [
-                      _buildLayout(Container(child: widget.child ?? const Center()),
+                      _buildLayout(
+                          Container(child: widget.child ?? const Center()),
                           constraints),
                       ..._handleConnectivity(ref),
                     ],

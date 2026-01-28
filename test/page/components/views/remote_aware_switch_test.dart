@@ -114,7 +114,8 @@ void main() {
       expect(appSwitch.onChanged, isNull);
     });
 
-    testWidgets('displays correct value in remote mode', (WidgetTester tester) async {
+    testWidgets('displays correct value in remote mode',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -154,7 +155,8 @@ void main() {
       expect(appSwitch.onChanged, isNull);
     });
 
-    testWidgets('updates state when loginType changes', (WidgetTester tester) async {
+    testWidgets('updates state when loginType changes',
+        (WidgetTester tester) async {
       // Create a notifier we can control
       final authNotifier = TestAuthNotifier(
         const AsyncValue.data(AuthState(loginType: LoginType.local)),

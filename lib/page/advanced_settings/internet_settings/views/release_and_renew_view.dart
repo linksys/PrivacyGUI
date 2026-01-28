@@ -13,6 +13,7 @@ import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/i
 import 'package:privacy_gui/page/advanced_settings/internet_settings/views/internet_settings_view.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -34,6 +35,9 @@ class ReleaseAndRenewView extends ConsumerWidget {
         ref.watch(deviceManagerProvider.select((state) => state.wanStatus));
     final wanIpv6Type = WanIPv6Type.resolve(
         internetSettingsState.settings.current.ipv6Setting.ipv6ConnectionType);
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
 
     return SingleChildScrollView(
       child: Padding(
@@ -64,7 +68,7 @@ class ReleaseAndRenewView extends ConsumerWidget {
                     AppButton.text(
                       key: const ValueKey('ipv4ReleaseRenewButton'),
                       label: loc(context).releaseAndRenew,
-                      onTap: isBridgeMode
+                      onTap: isBridgeMode || isRemoteReadOnly
                           ? null
                           : () {
                               _showRenewIPAlert(
@@ -97,7 +101,8 @@ class ReleaseAndRenewView extends ConsumerWidget {
                       key: const ValueKey('ipv6ReleaseRenewButton'),
                       label: loc(context).releaseAndRenew,
                       onTap: isBridgeMode ||
-                              wanIpv6Type == WanIPv6Type.passThrough
+                              wanIpv6Type == WanIPv6Type.passThrough ||
+                              isRemoteReadOnly
                           ? null
                           : () {
                               _showRenewIPAlert(

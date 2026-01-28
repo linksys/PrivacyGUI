@@ -215,6 +215,7 @@
   "faqVisitLinksysSupport": "Käy Linksys-tuessa",
   "faqs": "UKK",
   "featureUnavailableInRemoteMode": "Tämä ominaisuus ei ole käytettävissä etätilassa",
+  "remoteViewModeActive": "Etäkatselutila - Asetusten muuttaminen on poistettu käytöstä",
   "filterAnonymous": "Suodata anonyymit Internet-pyynnöt",
   "filterIdent": "Suodata ident (portti 113)",
   "filterInternetNATRedirection": "Suodata Internetin NAT-uudelleenohjaus",

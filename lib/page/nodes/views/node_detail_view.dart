@@ -26,6 +26,7 @@ import 'package:privacy_gui/page/instant_device/views/device_list_widget.dart';
 import 'package:privacy_gui/page/instant_device/views/devices_filter_widget.dart';
 import 'package:privacy_gui/page/nodes/_nodes.dart';
 import 'package:privacy_gui/page/nodes/views/blink_node_light_widget.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/utils.dart';
@@ -345,6 +346,9 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
 
   Widget _avatarCard(NodeDetailState state) {
     final isOnline = ref.watch(internetStatusProvider) == InternetStatus.online;
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
     return _nodeDetailBackgroundCard(
       child: SizedBox(
         // height: 160,
@@ -367,11 +371,18 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
               ),
               _avatarInfoCard(
                 title: state.location,
-                trailing: AppIconButton(
-                  icon: AppIcon.font(AppFontIcons.edit),
-                  onTap: () {
-                    _showEditNodeNameDialog(state);
-                  },
+                trailing: Tooltip(
+                  message: isRemoteReadOnly
+                      ? loc(context).featureUnavailableInRemoteMode
+                      : '',
+                  child: AppIconButton(
+                    icon: AppIcon.font(AppFontIcons.edit),
+                    onTap: isRemoteReadOnly
+                        ? null
+                        : () {
+                            _showEditNodeNameDialog(state);
+                          },
+                  ),
                 ),
               ),
               _avatarInfoCard(

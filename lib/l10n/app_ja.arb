@@ -233,6 +233,7 @@
   "faqVisitLinksysSupport": "Linksysサポートへ",
   "faqs": "よくある質問",
   "featureUnavailableInRemoteMode": "この機能はリモートモードでは利用できません",
+  "remoteViewModeActive": "リモート表示モード - 設定変更は無効になっています",
   "filterAnonymous": "匿名インターネット リクエストをフィルター処理します",
   "filterIdent": "フィルター ID (ポート 113)",
   "filterInternetNATRedirection": "インターネット NAT リダイレクトをフィルター",

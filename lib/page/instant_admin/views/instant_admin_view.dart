@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
@@ -16,6 +15,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/components/views/remote_aware_switch.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/timezone.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
@@ -103,6 +103,10 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     BuildContext context,
     RouterPasswordState routerPasswordState,
   ) {
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
+
     return AppCard(
       padding: EdgeInsets.symmetric(
         vertical: AppSpacing.lg,
@@ -110,16 +114,23 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
       ),
       child: Column(
         children: [
-          _buildListRow(
-            key: const Key('passwordCard'),
-            title: loc(context).routerPassword,
-            description: AppText.labelLarge(
-              '•' * (routerPasswordState.adminPassword.length.clamp(0, 16)),
+          Tooltip(
+            message: isRemoteReadOnly
+                ? loc(context).featureUnavailableInRemoteMode
+                : '',
+            child: _buildListRow(
+              key: const Key('passwordCard'),
+              title: loc(context).routerPassword,
+              description: AppText.labelLarge(
+                '•' * (routerPasswordState.adminPassword.length.clamp(0, 16)),
+              ),
+              trailing: AppIcon.font(AppFontIcons.edit),
+              onTap: isRemoteReadOnly
+                  ? null
+                  : () {
+                      _showRouterPasswordModal(routerPasswordState.hint);
+                    },
             ),
-            trailing: AppIcon.font(AppFontIcons.edit),
-            onTap: () {
-              _showRouterPasswordModal(routerPasswordState.hint);
-            },
           ),
           const Divider(),
           _buildListRow(
@@ -165,17 +176,19 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
     DeviceInfoState deviceInfoState,
   ) {
     final firmwareVersion = deviceInfoState.deviceInfo?.firmwareVersion;
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
     return _buildListCard(
       title: loc(context).manualFirmwareUpdate,
       description: firmwareVersion ?? '--',
       trailing: Tooltip(
-        message: BuildConfig.isRemote()
-            ? loc(context).featureUnavailableInRemoteMode
-            : '',
+        message:
+            isRemoteReadOnly ? loc(context).featureUnavailableInRemoteMode : '',
         child: AppButton.text(
           label: loc(context).manualUpdate,
           key: const Key('manualUpdateButton'),
-          onTap: BuildConfig.isRemote()
+          onTap: isRemoteReadOnly
               ? null
               : () {
                   context.goNamed(RouteNamed.manualFirmwareUpdate);

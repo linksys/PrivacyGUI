@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
@@ -17,6 +16,7 @@ import 'package:privacy_gui/page/advanced_settings/local_network_settings/provid
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/local_network_settings_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/core/utils/assign_ip/assign_ip.dart';
 
@@ -73,7 +73,10 @@ class _LocalNetworkSettingsViewState
 
   @override
   Widget build(BuildContext context) {
-    if (!BuildConfig.isRemote()) {
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
+    if (!isRemoteReadOnly) {
       ref.listen(redirectionProvider, (previous, next) {
         if (kIsWeb &&
             next != null &&
@@ -312,8 +315,8 @@ class _LocalNetworkSettingsViewState
       return;
     }
     // ip case
-    if (state.settings.current.ipAddress != currentUrl &&
-        !BuildConfig.isRemote()) {
+    final isRemoteReadOnly = ref.read(remoteAccessProvider).isRemoteReadOnly;
+    if (state.settings.current.ipAddress != currentUrl && !isRemoteReadOnly) {
       _doRedirect(state.settings.current.ipAddress);
     }
   }

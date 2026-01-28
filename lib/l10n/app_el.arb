@@ -215,6 +215,7 @@
   "faqVisitLinksysSupport": "Επισκεφθείτε την Υποστήριξη Linksys",
   "faqs": "Συχνές ερωτήσεις",
   "featureUnavailableInRemoteMode": "Αυτή η λειτουργία δεν είναι διαθέσιμη σε λειτουργία απομακρυσμένης πρόσβασης",
+  "remoteViewModeActive": "Λειτουργία απομακρυσμένης προβολής - Οι αλλαγές ρυθμίσεων είναι απενεργοποιημένες",
   "filterAnonymous": "Φιλτράρισμα ανώνυμων αιτημάτων Internet",
   "filterIdent": "Φιλτράρισμα ident (Θύρα 113)",
   "filterInternetNATRedirection": "Ανακατεύθυνση φιλτραρίσματος Internet NAT",

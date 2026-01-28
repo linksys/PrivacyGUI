@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/topology_adapter.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/topology_model.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Helper class for building and handling topology node menu items.
@@ -20,8 +21,10 @@ class TopologyMenuHelper {
   ///
   /// Returns null for Internet nodes or empty menu.
   /// Menu items are based on node type and device capabilities.
+  /// In remote read-only mode, only Details and Blink Device Light are enabled.
   List<AppPopupMenuItem<String>>? buildNodeMenu(
     BuildContext context,
+    WidgetRef ref,
     MeshNode meshNode,
   ) {
     // Don't show menu for internet nodes
@@ -29,6 +32,9 @@ class TopologyMenuHelper {
 
     final items = <AppPopupMenuItem<String>>[];
     final isOffline = meshNode.status == MeshNodeStatus.offline;
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
 
     // Always add details for all online node types
     if (!meshNode.isOffline) {
@@ -50,48 +56,53 @@ class TopologyMenuHelper {
 
     // Extender and Gateway menu items
     if (meshNode.isExtender || meshNode.isGateway) {
-      // Reboot action
+      // Reboot action (disabled in remote mode)
       if (supportChildReboot) {
         items.add(AppPopupMenuItem(
           value: 'reboot',
           label: loc(context).rebootUnit,
           icon: Icons.restart_alt,
+          enabled: !isRemoteReadOnly,
         ));
       }
 
-      // Blink device light
+      // Blink device light (always enabled, even in remote mode)
       items.add(AppPopupMenuItem(
         value: 'blink',
         label: loc(context).blinkDeviceLight,
         icon: Icons.lightbulb_outline,
       ));
 
-      // Pairing options for gateway
+      // Pairing options for gateway (disabled in remote mode)
       if (meshNode.isGateway && autoOnboarding) {
         items.add(AppPopupMenuItem(
           value: 'pair',
           label: loc(context).instantPair,
           icon: Icons.link,
+          enabled: !isRemoteReadOnly,
           children: [
             AppPopupMenuItem(
               value: 'pairWired',
               label: loc(context).pairWiredNode,
               icon: Icons.cable,
+              enabled: !isRemoteReadOnly,
             ),
             AppPopupMenuItem(
               value: 'pairWireless',
               label: loc(context).pairWirelessNode,
               icon: Icons.wifi,
+              enabled: !isRemoteReadOnly,
             ),
           ],
         ));
       }
 
-      // Factory reset for extenders and gateway
+      // Factory reset for extenders and gateway (disabled in remote mode)
       items.add(AppPopupMenuItem(
         value: 'reset',
         label: loc(context).resetToFactoryDefault,
         icon: Icons.restore,
+        enabled: !isRemoteReadOnly,
       ));
     }
 

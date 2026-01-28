@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 
 /// A banner widget that displays when the application is in remote read-only mode.
@@ -24,24 +25,30 @@ class RemoteReadOnlyBanner extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer,
+        color: colorScheme.errorContainer,
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.error.withValues(alpha: 0.3),
+            width: 2,
+          ),
+        ),
       ),
       child: Row(
         children: [
           Icon(
-            Icons.info_outline,
-            color: colorScheme.onSecondaryContainer,
-            size: 20,
+            Icons.shield_outlined,
+            color: colorScheme.onErrorContainer,
+            size: 24,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Remote View Mode - Setting changes are disabled',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSecondaryContainer,
-                fontWeight: FontWeight.w500,
+              loc(context).remoteViewModeActive,
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
