@@ -133,6 +133,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/healthcheck/ClearHealthCheckHistory'),
   getHealthCheckResults(
       value: 'http://linksys.com/jnap/healthcheck/GetHealthCheckResults'),
+  getCloseHealthCheckServers(
+      value: 'http://linksys.com/jnap/healthcheck/GetCloseHealthCheckServers'),
   getHealthCheckStatus(
       value: 'http://linksys.com/jnap/healthcheck/GetHealthCheckStatus'),
   getSupportedHealthCheckModules(
@@ -287,9 +289,12 @@ enum _JNAPActionValue {
   verifyRouterResetCode(
       value: 'http://linksys.com/jnap/nodes/setup/VerifyRouterResetCode'),
   getVersionInfo(value: 'http://linksys.com/jnap/nodes/setup/GetVersionInfo'),
-    // SmartConnect
-  getSmartConnectPin(value: 'http://linksys.com/jnap/nodes/smartconnect/GetSmartConnectPIN'),
-  getSmartConnectStatus(value: 'http://linksys.com/jnap/nodes/smartconnect/GetSmartConnectStatus'),
+  // SmartConnect
+  getSmartConnectPin(
+      value: 'http://linksys.com/jnap/nodes/smartconnect/GetSmartConnectPIN'),
+  getSmartConnectStatus(
+      value:
+          'http://linksys.com/jnap/nodes/smartconnect/GetSmartConnectStatus'),
   getDeviceMode(value: 'http://linksys.com/jnap/nodes/smartmode/GetDeviceMode'),
   getSupportedDeviceModes(
       value: 'http://linksys.com/jnap/nodes/smartmode/GetSupportedDeviceModes'),
@@ -357,8 +362,12 @@ enum _JNAPActionValue {
   startBluetoothAutoOnboarding2(
       value:
           'http://linksys.com/jnap/nodes/autoonboarding/StartBluetoothAutoOnboarding2'),
-  setWiredAutoOnboardingSettings(value: 'http://linksys.com/jnap/nodes/autoonboarding/SetWiredAutoOnboardingSettings'),
-  getWiredAutoOnboardingSettings(value: 'http://linksys.com/jnap/nodes/autoonboarding/GetWiredAutoOnboardingSettings'),
+  setWiredAutoOnboardingSettings(
+      value:
+          'http://linksys.com/jnap/nodes/autoonboarding/SetWiredAutoOnboardingSettings'),
+  getWiredAutoOnboardingSettings(
+      value:
+          'http://linksys.com/jnap/nodes/autoonboarding/GetWiredAutoOnboardingSettings'),
   btGetScanUnconfiguredResult2(
       value:
           'http://linksys.com/jnap/nodes/bluetooth/BTGetScanUnconfiguredResult2'),

@@ -8,11 +8,14 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/components/customs/animated_digital_text.dart';
 import 'package:privacy_gui/page/health_check/providers/speed_test_display.dart';
 import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/di.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -20,6 +23,7 @@ import 'package:privacygui_widgets/widgets/animation/breath_dot.dart';
 import 'package:privacygui_widgets/widgets/card/card.dart';
 import 'package:privacygui_widgets/widgets/container/animated_meter.dart';
 import 'package:privacygui_widgets/widgets/container/responsive_layout.dart';
+import 'package:privacygui_widgets/widgets/dropdown/dropdown_button.dart';
 
 class SpeedTestView extends ArgumentsConsumerStatefulView {
   const SpeedTestView({
@@ -32,9 +36,29 @@ class SpeedTestView extends ArgumentsConsumerStatefulView {
 }
 
 class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
+  // bool _loading = false; // Removed unused
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _fetchServers();
+    });
+  }
+
+  Future<void> _fetchServers() async {
+    final serviceHelper = getIt<ServiceHelper>();
+    if (serviceHelper.isSupportHealthCheckManager2()) {
+      final notifier = ref.read(healthCheckProvider.notifier);
+      await notifier.updateServers();
+      // State is updated in provider, use ref.read to check
+      if (mounted) {
+        // final state = ref.read(healthCheckProvider);
+        // if (state.servers.isNotEmpty && state.selectedServer == null) {
+        //   notifier.setSelectedServer(state.servers.first);
+        // }
+      }
+    }
   }
 
   @override
@@ -58,9 +82,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                     positiveLabel: loc(context).testAgain,
                     isPositiveEnabled: true,
                     onPositiveTap: () {
-                      ref
-                          .read(healthCheckProvider.notifier)
-                          .runHealthCheck(Module.speedtest);
+                      ref.read(healthCheckProvider.notifier).resetState();
                     },
                   )
                 : null,
@@ -146,31 +168,74 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
             child: _gradientBackground(),
           )
         : _gradientBackground();
+
+    final state = ref.watch(healthCheckProvider);
+    final selectedServer = state.selectedServer;
+    final serviceHelper = getIt<ServiceHelper>();
+    final isSupportHealthCheckManager2 =
+        serviceHelper.isSupportHealthCheckManager2();
+    // If servers list is present, selection is mandatory for running test
+    final bool isSelectionRequired =
+        isSupportHealthCheckManager2 && state.servers.isNotEmpty;
+    final bool isGoEnabled = !isSelectionRequired || selectedServer != null;
+
     return Stack(
       children: [
         background,
         Container(
           alignment: Alignment.center,
-          child: InkWell(
-            key: const Key('goBtn'),
-            onTap: () {
-              ref
-                  .read(healthCheckProvider.notifier)
-                  .runHealthCheck(Module.speedtest);
-            },
-            child: Container(
-              width: 240,
-              height: 240,
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.primary),
-              child: Center(
-                child: AppText.displayLarge(
-                  loc(context).go,
-                  color: Theme.of(context).colorScheme.onPrimary,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                key: const Key('goBtn'),
+                onTap: isGoEnabled
+                    ? () {
+                        ref
+                            .read(healthCheckProvider.notifier)
+                            .runHealthCheck(Module.speedtest);
+                      }
+                    : null,
+                child: Opacity(
+                  opacity: isGoEnabled ? 1.0 : 0.5,
+                  child: Container(
+                    width: 240,
+                    height: 240,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Theme.of(context).colorScheme.primary),
+                    child: Center(
+                      child: AppText.displayLarge(
+                        loc(context).go,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
+              if (isSelectionRequired) ...[
+                const AppGap.medium(),
+                SizedBox(
+                  width: 300,
+                  child: AppDropdownButton<HealthCheckServer>(
+                    selected: selectedServer,
+                    items: [HealthCheckServer.empty(), ...state.servers],
+                    label: (server) => server.toString(),
+                    onChanged: (server) {
+                      if (server == HealthCheckServer.empty()) {
+                        ref
+                            .read(healthCheckProvider.notifier)
+                            .setSelectedServer(null);
+                      } else {
+                        ref
+                            .read(healthCheckProvider.notifier)
+                            .setSelectedServer(server);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         if (supportedBy == 'Ookla')
@@ -580,7 +645,7 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
 
   String _getTestResultDate(String? timestamp) {
     var date = '—';
-    if (timestamp != null) {
+    if (timestamp != null && timestamp.isNotEmpty) {
       final millisecondsSinceEpoch = DateFormat("yyyy-MM-ddThh:mm:ssZ")
           .parse(timestamp, true)
           .millisecondsSinceEpoch;
