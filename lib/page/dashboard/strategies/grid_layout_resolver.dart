@@ -91,35 +91,6 @@ class GridLayoutResolver {
     };
   }
 
-  /// Calculate grid main axis cell count (height in grid units)
-  ///
-  /// Returns null for intrinsic sizing (use StaggeredGridTile.fit)
-  num? resolveGridMainAxisCellCount(
-    WidgetSpec spec,
-    DisplayMode mode, {
-    int? availableColumns,
-    int? overrideColumns,
-  }) {
-    final constraints = spec.getConstraints(mode);
-    final columns = resolveColumns(
-      spec,
-      mode,
-      availableColumns: availableColumns,
-      overrideColumns: overrideColumns,
-    );
-
-    return switch (constraints.heightStrategy) {
-      IntrinsicHeightStrategy() => null,
-      // In column-based strategy, the multiplier is essentially the row count
-      // relative to a single column width.
-      ColumnBasedHeightStrategy(multiplier: final m) => m,
-      // ratio = width / height
-      // height = width / ratio
-      // heightUnits = columnUnits / ratio
-      AspectRatioHeightStrategy(ratio: final r) => columns / r,
-    };
-  }
-
   /// Build constrained SizedBox wrapper
   ///
   /// Height is null when using intrinsic sizing

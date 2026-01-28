@@ -3,10 +3,10 @@ import 'height_strategy.dart';
 import 'widget_grid_constraints.dart';
 import 'widget_spec.dart';
 
-/// Specifications for all Dashboard components.
+/// Dashboard 所有元件的規格定義
 ///
-/// Defines grid constraints for each component across different [DisplayMode]s.
-/// All column values are based on a 12-column layout.
+/// 定義各元件在不同 [DisplayMode] 下的 grid 約束。
+/// 所有 column 數值基於 12-column 設計。
 abstract class DashboardWidgetSpecs {
   DashboardWidgetSpecs._();
 
@@ -15,60 +15,53 @@ abstract class DashboardWidgetSpecs {
   // ---------------------------------------------------------------------------
   static const internetStatus = WidgetSpec(
     id: 'internet_status',
-    displayName: 'Internet Status (Combined)',
-    description:
-        'Combined status including internet connectivity and master router info.',
-    canHide: false,
+    displayName: 'Internet Status',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 6,
         maxColumns: 8,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(4.0),
-        minHeightRows: 2,
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 8,
         maxColumns: 12,
         preferredColumns: 12,
-        heightStrategy: HeightStrategy.strict(4.0),
-        minHeightRows: 2,
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
 
   // ---------------------------------------------------------------------------
-  // Networks (Node Status)
+  // Networks (節點狀態)
   // ---------------------------------------------------------------------------
   static const networks = WidgetSpec(
     id: 'networks',
     displayName: 'Networks',
-    description: 'Combined view of network topology and device counts.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(2.0),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(6.0),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(8.0),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
@@ -79,28 +72,24 @@ abstract class DashboardWidgetSpecs {
   static const wifiGrid = WidgetSpec(
     id: 'wifi_grid',
     displayName: 'Wi-Fi Networks',
-    description: 'Overview of Wi-Fi networks and guest access.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 6,
         maxColumns: 8,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
+        heightStrategy: HeightStrategy.aspectRatio(4.0), // 橫向卡片
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 8,
         maxColumns: 12,
         preferredColumns: 8,
-        heightStrategy:
-            HeightStrategy.strict(5.0), // 2 rows of cards (176px * 2 + spacing)
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 6,
+        minColumns: 12,
         maxColumns: 12,
-        preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(7.0),
-        minHeightRows: 7,
+        preferredColumns: 12,
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
@@ -111,28 +100,24 @@ abstract class DashboardWidgetSpecs {
   static const quickPanel = WidgetSpec(
     id: 'quick_panel',
     displayName: 'Quick Panel',
-    description: 'Quick access to common settings and actions.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(3.0),
-        minHeightRows: 3,
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(4.0),
-        minHeightRows: 2,
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
@@ -143,428 +128,30 @@ abstract class DashboardWidgetSpecs {
   static const portAndSpeed = WidgetSpec(
     id: 'port_and_speed',
     displayName: 'Ports & Speed',
-    description: 'Combined view of ethernet ports and speed test results.',
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(2.0),
-      ),
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 8,
-        preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(4.0),
-      ),
-      DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 8,
-        maxColumns: 12,
-        preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(4.0),
-      ),
-    },
-  );
-
-  // ---------------------------------------------------------------------------
-  // Standard Widgets (used in Standard Layout)
-  // ---------------------------------------------------------------------------
-  static const List<WidgetSpec> standardWidgets = [
-    internetStatus,
-    networks,
-    wifiGrid,
-    quickPanel,
-    portAndSpeed,
-    vpn,
-  ];
-
-  // ---------------------------------------------------------------------------
-  // Atomic Widgets (used in Custom/Bento Layout)
-  // ---------------------------------------------------------------------------
-
-  /// Internet status only (online/offline, geolocation, uptime)
-  static const internetStatusOnly = WidgetSpec(
-    id: 'internet_status_only',
-    displayName: 'Internet Status',
-    description: 'Shows internet connectivity status only.',
-    canHide: false,
-    constraints: {
-      DisplayMode.compact: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
-      ),
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 4,
         heightStrategy: HeightStrategy.intrinsic(),
-        minHeightRows: 2,
-        maxHeightRows: 6,
-      ),
-      DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 8,
-        preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(3.0),
-        minHeightRows: 3,
-        maxHeightRows: 4,
-      ),
-    },
-  );
-
-  /// Master node info (router image, model, serial, firmware)
-  /// Master node info (router image, model, serial, firmware)
-  static const masterNodeInfo = WidgetSpec(
-    id: 'master_node_info',
-    displayName: 'Master Router',
-    description: 'Information about the master node (model, serial, firmware).',
-    constraints: {
-      DisplayMode.compact: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 8,
-        preferredColumns: 5,
-        heightStrategy: HeightStrategy.strict(4.0),
-        minHeightRows: 3,
-        maxHeightRows: 5,
-      ),
-      DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 6,
-        maxColumns: 12,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(6.0),
-        minHeightRows: 5,
-        maxHeightRows: 8,
-      ),
-    },
-  );
-
-  /// Ports status (LAN + WAN)
-  static const ports = WidgetSpec(
-    id: 'ports',
-    displayName: 'Ports',
-    description: 'Status of LAN and WAN ethernet ports.',
-    constraints: _portsVerticalConstraints,
-  );
-
-  // ---------------------------------------------------------------------------
-  // Ports Constraints Variations
-  // ---------------------------------------------------------------------------
-
-  /// Constraints for "No LAN" (WAN only) - Minimal height
-  static const _portsNoLanConstraints = {
-    DisplayMode.compact: WidgetGridConstraints(
-      minColumns: 3,
-      maxColumns: 4,
-      preferredColumns: 4,
-      heightStrategy: HeightStrategy.strict(1.0),
-      minHeightRows: 1,
-      maxHeightRows: 2,
-    ),
-    DisplayMode.normal: WidgetGridConstraints(
-      minColumns: 4,
-      maxColumns: 6,
-      preferredColumns: 4,
-      heightStrategy: HeightStrategy.strict(2.0),
-      minHeightRows: 4,
-      maxHeightRows: 4,
-    ),
-    DisplayMode.expanded: WidgetGridConstraints(
-      minColumns: 4,
-      maxColumns: 8,
-      preferredColumns: 6,
-      heightStrategy: HeightStrategy.strict(2.0),
-      minHeightRows: 4,
-      maxHeightRows: 4,
-    ),
-  };
-
-  /// Constraints for Horizontal Layout (Row) - Wider, less height
-  static const _portsHorizontalConstraints = {
-    DisplayMode.compact: WidgetGridConstraints(
-      minColumns: 6,
-      maxColumns: 12,
-      preferredColumns: 8,
-      heightStrategy: HeightStrategy.strict(1.0),
-      minHeightRows: 1,
-      maxHeightRows: 2,
-    ),
-    DisplayMode.normal: WidgetGridConstraints(
-      minColumns: 8,
-      maxColumns: 12,
-      preferredColumns: 12,
-      heightStrategy: HeightStrategy.strict(2.0),
-      minHeightRows: 4,
-      maxHeightRows: 6,
-    ),
-    DisplayMode.expanded: WidgetGridConstraints(
-      minColumns: 8,
-      maxColumns: 12,
-      preferredColumns: 12,
-      heightStrategy: HeightStrategy.strict(2.0),
-      minHeightRows: 4,
-      maxHeightRows: 6,
-    ),
-  };
-
-  /// Constraints for Vertical Layout (Column) - Narrower, more height
-  static const _portsVerticalConstraints = {
-    DisplayMode.compact: WidgetGridConstraints(
-      minColumns: 3,
-      maxColumns: 6,
-      preferredColumns: 4,
-      heightStrategy: HeightStrategy.strict(1.0),
-      minHeightRows: 1,
-      maxHeightRows: 2,
-    ),
-    DisplayMode.normal: WidgetGridConstraints(
-      minColumns: 4,
-      maxColumns: 8,
-      preferredColumns: 4,
-      heightStrategy: HeightStrategy.strict(6.0), // Default 6 rows
-      minHeightRows: 6,
-      maxHeightRows: 12,
-    ),
-    DisplayMode.expanded: WidgetGridConstraints(
-      minColumns: 6,
-      maxColumns: 12,
-      preferredColumns: 8,
-      heightStrategy: HeightStrategy.strict(8.0), // Match minHeightRows
-      minHeightRows: 8,
-      maxHeightRows: 12,
-    ),
-  };
-
-  /// Get ports spec with dynamic constraints based on state
-  static WidgetSpec getPortsSpec({
-    required bool hasLanPort,
-    required bool isHorizontal,
-  }) {
-    Map<DisplayMode, WidgetGridConstraints> selectedConstraints;
-
-    if (!hasLanPort) {
-      selectedConstraints = _portsNoLanConstraints;
-    } else if (isHorizontal) {
-      selectedConstraints = _portsHorizontalConstraints;
-    } else {
-      selectedConstraints = _portsVerticalConstraints;
-    }
-
-    return WidgetSpec(
-      id: ports.id,
-      displayName: ports.displayName,
-      description: ports.description,
-      canHide: ports.canHide,
-      requirements: ports.requirements,
-      constraints: selectedConstraints,
-    );
-  }
-
-  /// Speed test results
-  static const speedTest = WidgetSpec(
-    id: 'speed_test',
-    displayName: 'Speed Test',
-    description: 'Internet speed test results and history.',
-    constraints: {
-      DisplayMode.compact: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0), // Changed from 2.0
-        minHeightRows: 1,
-      ),
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 4,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(4.0),
-        minHeightRows: 4, // Explicitly enforce minimum height
-      ),
-      DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 6,
-        maxColumns: 12,
-        preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(
-            6.0), // Increased from 4.0 to maintain hierarchy
-        minHeightRows: 6,
-      ),
-    },
-  );
-
-  /// Network stats (nodes/devices count)
-  static const networkStats = WidgetSpec(
-    id: 'network_stats',
-    displayName: 'Network Stats',
-    description: 'Counts of connected nodes and devices.',
-    constraints: {
-      DisplayMode.compact: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
-      ),
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(2.0),
-      ),
-      DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 8,
-        preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(2.0),
-      ),
-    },
-  );
-
-  /// Mesh topology tree view
-  static const topology = WidgetSpec(
-    id: 'topology',
-    displayName: 'Topology',
-    description: 'Visual map of your mesh network topology.',
-    constraints: {
-      DisplayMode.compact: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
-      ),
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 8,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(4.0),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 8,
         maxColumns: 12,
         preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(6.0),
-        minHeightRows: 5,
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
 
   // ---------------------------------------------------------------------------
-  // Custom Layout Specific Widgets (Duplicated for Isolation)
-  // ---------------------------------------------------------------------------
-
-  /// Wi-Fi Grid for Custom Layout
-  static const wifiGridCustom = WidgetSpec(
-    id: 'wifi_grid_custom',
-    displayName: 'Wi-Fi Networks',
-    description: 'Overview of Wi-Fi networks and guest access.',
-    constraints: {
-      DisplayMode.compact: WidgetGridConstraints(
-        minColumns: 6,
-        maxColumns: 8,
-        preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
-      ),
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 8,
-        maxColumns: 12,
-        preferredColumns: 8,
-        heightStrategy:
-            HeightStrategy.strict(5.0), // 2 rows of cards (176px * 2 + spacing)
-      ),
-      DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 6,
-        maxColumns: 12,
-        preferredColumns: 8,
-        heightStrategy: HeightStrategy.strict(7.0),
-        minHeightRows: 7,
-      ),
-    },
-  );
-
-  /// Quick Panel for Custom Layout
-  static const quickPanelCustom = WidgetSpec(
-    id: 'quick_panel_custom',
-    displayName: 'Quick Panel',
-    description: 'Quick access to common settings and actions.',
-    constraints: {
-      DisplayMode.compact: WidgetGridConstraints(
-        minColumns: 3,
-        maxColumns: 4,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
-      ),
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 4,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(3.0),
-        minHeightRows: 3,
-      ),
-      DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(3.0),
-        minHeightRows: 3,
-      ),
-    },
-  );
-
-  /// VPN for Custom Layout
-  static const vpnCustom = WidgetSpec(
-    id: 'vpn_custom',
-    displayName: 'VPN',
-    description: 'VPN connection status.',
-    requirements: [WidgetRequirement.vpnSupported],
-    constraints: {
-      DisplayMode.compact: WidgetGridConstraints(
-        minColumns: 3,
-        maxColumns: 4,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
-      ),
-      DisplayMode.normal: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 4,
-        preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(4.0),
-      ),
-      DisplayMode.expanded: WidgetGridConstraints(
-        minColumns: 4,
-        maxColumns: 6,
-        preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(4.0),
-      ),
-    },
-  );
-
-  /// Custom layout widgets (atomic components)
-  static const List<WidgetSpec> customWidgets = [
-    internetStatusOnly,
-    masterNodeInfo,
-    ports,
-    speedTest,
-    networkStats,
-    topology,
-    wifiGridCustom,
-    quickPanelCustom,
-    vpnCustom,
-  ];
-
-  // ---------------------------------------------------------------------------
-  // All Specs List (for UI iteration)
+  // 所有規格列表（用於設定 UI 迭代）
   // ---------------------------------------------------------------------------
   static const List<WidgetSpec> all = [
     internetStatus,
@@ -573,49 +160,37 @@ abstract class DashboardWidgetSpecs {
     quickPanel,
     portAndSpeed,
     vpn,
-    // Atomic widgets
-    internetStatusOnly,
-    masterNodeInfo,
-    ports,
-    speedTest,
-    networkStats,
-    topology,
-    wifiGridCustom,
-    quickPanelCustom,
-    vpnCustom,
   ];
 
-  // ... (Standard VPN def remains but is now used only for standard list logic if any)
-  // Actually we need to keep standard VPN def for standard lists
+  // ---------------------------------------------------------------------------
+  // VPN (if supported)
+  // ---------------------------------------------------------------------------
   static const vpn = WidgetSpec(
     id: 'vpn',
     displayName: 'VPN',
-    description: 'VPN connection status.',
-    requirements: [WidgetRequirement.vpnSupported],
     constraints: {
       DisplayMode.compact: WidgetGridConstraints(
         minColumns: 3,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(1.0),
-        minHeightRows: 1,
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 4,
         preferredColumns: 4,
-        heightStrategy: HeightStrategy.strict(4.0),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
       DisplayMode.expanded: WidgetGridConstraints(
         minColumns: 4,
         maxColumns: 6,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(4.0),
+        heightStrategy: HeightStrategy.intrinsic(),
       ),
     },
   );
 
-  /// Get spec by ID
+  /// 根據 ID 查詢規格
   static WidgetSpec? getById(String id) {
     for (final spec in all) {
       if (spec.id == id) return spec;

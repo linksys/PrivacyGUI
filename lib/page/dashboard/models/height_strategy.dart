@@ -1,33 +1,27 @@
-/// Height Calculation Strategy
+/// 高度計算策略
 ///
-/// Defines how the height of Dashboard components is calculated.
-/// Uses a sealed class to ensure type-safe pattern matching.
+/// 定義 Dashboard 元件的高度計算方式。
+/// 使用 sealed class 確保類型安全的模式匹配。
 sealed class HeightStrategy {
   const HeightStrategy();
 
-  /// Let the component determine its own height (intrinsic sizing)
+  /// 讓元件自己決定高度（intrinsic sizing）
   const factory HeightStrategy.intrinsic() = IntrinsicHeightStrategy;
 
-  /// Height = Single column width * multiplier
+  /// 高度 = 單個 column 寬度 × 倍數
   ///
-  /// Example: multiplier=2.0 means height is 2 times the column width
+  /// 例：multiplier=2.0 表示高度為 2 個 column 寬度
   const factory HeightStrategy.columnBased(double multiplier) =
       ColumnBasedHeightStrategy;
 
-  /// Specialized for Bento Grid: Force specify the "Row Span" of the grid
+  /// 固定寬高比
   ///
-  /// Logically equivalent to [ColumnBasedHeightStrategy], but semantically clearer.
-  /// Example: rows=2 means the component occupies 2 units of height.
-  const factory HeightStrategy.strict(double rows) = ColumnBasedHeightStrategy;
-
-  /// Fixed Aspect Ratio
-  ///
-  /// [ratio] = width / height, e.g., 16/9 = 1.78
+  /// [ratio] = width / height，例：16/9 = 1.78
   const factory HeightStrategy.aspectRatio(double ratio) =
       AspectRatioHeightStrategy;
 }
 
-/// Let component determine height
+/// 讓元件自行決定高度
 class IntrinsicHeightStrategy extends HeightStrategy {
   const IntrinsicHeightStrategy();
 
@@ -38,9 +32,9 @@ class IntrinsicHeightStrategy extends HeightStrategy {
   int get hashCode => runtimeType.hashCode;
 }
 
-/// Height based on column width multiplier
+/// 基於欄寬倍數的高度
 class ColumnBasedHeightStrategy extends HeightStrategy {
-  /// Column width multiplier, height = singleColumnWidth * multiplier
+  /// 欄寬倍數，高度 = singleColumnWidth * multiplier
   final double multiplier;
 
   const ColumnBasedHeightStrategy(this.multiplier);
@@ -53,9 +47,9 @@ class ColumnBasedHeightStrategy extends HeightStrategy {
   int get hashCode => multiplier.hashCode;
 }
 
-/// Fixed Aspect Ratio
+/// 固定寬高比
 class AspectRatioHeightStrategy extends HeightStrategy {
-  /// Aspect ratio (width / height)
+  /// 寬高比 (width / height)
   final double ratio;
 
   const AspectRatioHeightStrategy(this.ratio);

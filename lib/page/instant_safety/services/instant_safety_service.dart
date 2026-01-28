@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/lan_settings.dart';
 import 'package:privacy_gui/core/jnap/models/set_lan_settings.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
@@ -161,7 +161,7 @@ class InstantSafetyService {
     }
 
     try {
-      final info = JnapDeviceInfoRaw.fromJson(deviceInfo).toUIModel();
+      final info = NodeDeviceInfo.fromJson(deviceInfo);
       final compatibilityItems = _compatibilityMap.where((e) {
         final regex = RegExp(e.modelRegExp, caseSensitive: false);
         return regex.hasMatch(info.modelNumber);

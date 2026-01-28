@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/data/providers/router_time_provider.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/views/components/core/dashboard_loading_wrapper.dart';
-import 'package:privacy_gui/page/dashboard/views/components/settings/dashboard_layout_settings_panel.dart';
 import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
 import 'package:privacy_gui/page/instant_setup/troubleshooter/providers/pnp_troubleshooter_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -16,19 +14,12 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 
 class DashboardHomeTitle extends ConsumerWidget {
-  final VoidCallback? onEditPressed;
-  final bool showSettings;
-
-  const DashboardHomeTitle({
-    super.key,
-    this.onEditPressed,
-    this.showSettings = true,
-  });
+  const DashboardHomeTitle({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DashboardLoadingWrapper(
-      loadingHeight: 60,
+      loadingHeight: 150,
       builder: (context, ref) => _buildContent(context, ref),
     );
   }
@@ -47,9 +38,10 @@ class DashboardHomeTitle extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: AppText.titleLarge(
+              child: Text(
                 helloString(context, localTime),
                 overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             InkWell(
@@ -68,43 +60,22 @@ class DashboardHomeTitle extends ConsumerWidget {
                       color: Theme.of(context).colorScheme.onSurface),
                   Padding(
                     padding: EdgeInsets.only(left: AppSpacing.sm),
-                    child: AppText.bodyMedium(
-                        loc(context).formalDateTime(localTime, localTime),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        color: Theme.of(context).colorScheme.onSurface),
+                    child: Text(
+                      loc(context).formalDateTime(localTime, localTime),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
             ),
-            if (showSettings && BuildConfig.customLayout) ...[
-              AppGap.lg(),
-              AppIconButton.icon(
-                size: AppButtonSize.small,
-                icon: const Icon(Icons.settings_outlined),
-                onTap: onEditPressed ?? () => _openLayoutSettings(context),
-              ),
-            ],
           ],
         ),
         if (!isOnline) _troubleshooting(context, ref),
       ],
-    );
-  }
-
-  void _openLayoutSettings(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AppDialog(
-        title: AppText.titleMedium(loc(context).dashboardSettings),
-        content: const DashboardLayoutSettingsPanel(),
-        actions: [
-          AppButton(
-            label: loc(context).close,
-            onTap: () => Navigator.pop(context),
-          ),
-        ],
-      ),
     );
   }
 

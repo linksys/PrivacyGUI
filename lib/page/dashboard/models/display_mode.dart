@@ -1,13 +1,13 @@
-/// Component Display Mode
+/// 元件顯示模式
 ///
-/// Defines three levels of display density for Dashboard components.
+/// 定義 Dashboard 元件的三種顯示密度級別。
 enum DisplayMode {
-  /// Compact display, showing only key information
+  /// 最小化顯示，只顯示關鍵資訊
   compact,
 
-  /// Default standard display
+  /// 預設標準顯示
   normal,
 
-  /// Expanded display, full information
+  /// 放大顯示，完整資訊
   expanded,
 }

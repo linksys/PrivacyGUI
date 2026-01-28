@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
@@ -9,10 +8,6 @@ import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/channel_data.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/channelfinder_info.dart';
-
-final channelFinderServiceProvider = Provider((ref) {
-  return ChannelFinderService(ref.watch(routerRepositoryProvider));
-});
 
 class ChannelFinderService {
   final RouterRepository _repo;

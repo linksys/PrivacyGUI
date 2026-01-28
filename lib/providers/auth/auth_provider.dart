@@ -8,11 +8,13 @@ import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/cloud/model/guardians_remote_assistance.dart';
 import 'package:privacy_gui/core/cloud/model/region_code.dart';
 import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_state.dart';
@@ -305,11 +307,19 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// Retrieves admin password auth status by delegating to AuthService.
   ///
   /// This method maintains backward compatibility while delegating to AuthService.
-  Future<Map<String, dynamic>?> getAdminPasswordAuthStatus() async {
-    final result = await _authService.getAdminPasswordAuthStatus();
+  Future<Map<String, dynamic>?> getAdminPasswordAuthStatus(
+      List<String> services) async {
+    final result = await _authService.getAdminPasswordAuthStatus(services);
     return result.when(
       success: (status) => status,
       failure: (_) => null, // Return null on failure for backward compatibility
+    );
+  }
+
+  Future<void> getDeviceInfo() async {
+    final routerRepository = ref.read(routerRepositoryProvider);
+    await routerRepository.send(
+      JNAPAction.getDeviceInfo,
     );
   }
 

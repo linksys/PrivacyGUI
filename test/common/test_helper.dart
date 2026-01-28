@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
@@ -84,7 +85,6 @@ import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provi
 import 'package:privacy_gui/page/instant_topology/providers/instant_topology_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/node_light_settings_provider.dart';
-import 'package:privacy_gui/page/nodes/providers/node_light_state.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
@@ -295,7 +295,7 @@ class TestHelper {
     when(mockGeolocationNotifer.build()).thenAnswer(
         (_) async => GeolocationState.fromMap(geolocationTestState));
     when(mockNodeLightSettingsNotifier.build())
-        .thenReturn(NodeLightState.initial());
+        .thenReturn(NodeLightSettings(isNightModeEnable: false));
     when(mockPollingNotifier.build()).thenReturn(
         CoreTransactionData(lastUpdate: 0, isReady: true, data: const {}));
     when(mockVPNNotifier.build()).thenReturn(VPNTestState.defaultState);

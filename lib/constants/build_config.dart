@@ -46,8 +46,6 @@ class BuildConfig {
   static bool showColumnOverlay =
       const bool.fromEnvironment('overlay', defaultValue: false);
   static const bool caLogin = bool.fromEnvironment('ca', defaultValue: false);
-  static const bool customLayout =
-      bool.fromEnvironment('custom_layout', defaultValue: false);
 
   static const int refreshTimeInterval =
       int.fromEnvironment('refresh_time', defaultValue: 60);
@@ -82,37 +80,12 @@ class BuildConfig {
   static bool get enableShimmer => (liquidGlassEffects & 16) != 0;
 
   @pragma('vm:entry-point')
-  static Future<void> load() async {
+  static load() async {
     logger.d('load build configuration');
     final prefs = await SharedPreferences.getInstance();
     final envStr = prefs.getString(pCloudEnv);
     cloudEnvTarget = CloudEnvironment.get(envStr ?? '') ?? cloudEnvTarget;
     logger.d('Cloud Env: $cloudEnvTarget');
-
-    // For non-Web platforms (iOS/Android): determine force mode from bundle ID
-    // Web uses String.fromEnvironment('force') set at compile time
-    //
-    // iOS: Bundle ID is set via PRODUCT_BUNDLE_IDENTIFIER in xcconfig
-    //   - Local: com.linksys.privacygui.local
-    //   - Remote: com.linksys.privacygui.remote
-    //
-    // Android: Application ID should be configured in build.gradle with flavors:
-    //   flavorDimensions "mode"
-    //   productFlavors {
-    //       local { applicationIdSuffix ".local" }
-    //       remote { applicationIdSuffix ".remote" }
-    //   }
-    if (!kIsWeb) {
-      final packageInfo = await PackageInfo.fromPlatform();
-      final bundleId = packageInfo.packageName;
-      if (bundleId.endsWith('.local')) {
-        forceCommandType = ForceCommand.local;
-      } else if (bundleId.endsWith('.remote')) {
-        forceCommandType = ForceCommand.remote;
-      }
-      // Otherwise, keep ForceCommand.none (default)
-      logger.d('Non-Web platforms: Force command type: $forceCommandType');
-    }
   }
 
   static bool isRemote() {

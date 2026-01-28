@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/page/login/views/login_local_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -28,8 +28,7 @@ void main() async {
 
     when(testHelper.mockSessionNotifier.checkDeviceInfo(null)).thenAnswer(
       (_) async =>
-          JnapDeviceInfoRaw.fromJson(jsonDecode(testDeviceInfo)['output'])
-              .toUIModel(),
+          NodeDeviceInfo.fromJson(jsonDecode(testDeviceInfo)['output']),
     );
     when(testHelper.mockAuthNotifier.build()).thenAnswer(
       (_) async => Future.value(
@@ -38,7 +37,7 @@ void main() async {
     );
     when(testHelper.mockAuthNotifier.getPasswordHint())
         .thenAnswer((_) async {});
-    when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus())
+    when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus(any))
         .thenAnswer((_) async => null);
   });
 
@@ -121,7 +120,7 @@ void main() async {
   testLocalizations(
     'login local view - error countdown',
     (tester, screen) async {
-      when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus())
+      when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus(any))
           .thenAnswer((_) async {
         return {
           'attemptsRemaining': 4,
@@ -162,7 +161,7 @@ void main() async {
   testLocalizations(
     'login local view - lockout message when attempts exhausted',
     (tester, screen) async {
-      when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus())
+      when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus(any))
           .thenAnswer((_) async {
         return {
           'attemptsRemaining': 0,
@@ -199,7 +198,7 @@ void main() async {
     'login local view - generic incorrect password error',
     (tester, screen) async {
       // As long as one of the two parameters is missing, it will display generic incorrect password error
-      when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus())
+      when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus(any))
           .thenAnswer((_) async {
         return {
           'attemptsRemaining': null,

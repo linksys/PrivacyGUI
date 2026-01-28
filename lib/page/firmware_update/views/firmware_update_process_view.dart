@@ -1,7 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/firmware_update/models/firmware_update_ui_model.dart';
+import 'package:privacy_gui/core/jnap/models/firmware_update_status.dart';
+import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
+import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -48,7 +50,7 @@ enum FirmwareUpdateStep {
 }
 
 class FirmwareUpdateProcessView extends ConsumerStatefulWidget {
-  final FirmwareUpdateUIModel? current;
+  final (LinksysDevice, FirmwareUpdateStatus)? current;
   const FirmwareUpdateProcessView({super.key, this.current});
 
   @override
@@ -60,15 +62,17 @@ class _FirmwareUpdateProcessViewState
     extends ConsumerState<FirmwareUpdateProcessView> {
   @override
   Widget build(BuildContext context) {
-    final step = FirmwareUpdateStep.resolve(widget.current?.operation ?? '0');
-    final percent = widget.current?.progressPercent;
+    final step = FirmwareUpdateStep.resolve(
+        widget.current?.$2.pendingOperation?.operation ?? '0');
+    final percent = widget.current?.$2.pendingOperation?.progressPercent;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Center(child: AppLoader()),
         AppGap.lg(),
         if (percent != null) ...[
-          AppText.labelLarge('${widget.current?.deviceName ?? ''} - $percent%'),
+          AppText.labelLarge(
+              '${widget.current?.$1.getDeviceName() ?? ''} - $percent%'),
           AppGap.lg(),
           AppText.titleSmall(step.getTitle(context)),
           AppGap.lg(),

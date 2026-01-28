@@ -7,7 +7,6 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_step_state.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
-import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import '../troubleshooter/providers/pnp_troubleshooter_provider.dart';
 
 /// The main Riverpod provider for the PnP feature.
@@ -172,11 +171,6 @@ abstract class BasePnpNotifier extends Notifier<PnpState> {
   ///
   /// Returns a record containing the name and password.
   ({String name, String password}) getDefaultGuestWiFiNameAndPassPhrase();
-
-  /// Checks if the user is currently logged in to the router.
-  ///
-  /// Returns true if login type is not [LoginType.none].
-  bool get isLoggedIn;
 
   //endregion
 }
@@ -507,11 +501,5 @@ class PnpNotifier extends BasePnpNotifier {
         ),
       );
     }
-  }
-
-  @override
-  bool get isLoggedIn {
-    final loginType = ref.read(authProvider).value?.loginType;
-    return loginType != null && loginType != LoginType.none;
   }
 }

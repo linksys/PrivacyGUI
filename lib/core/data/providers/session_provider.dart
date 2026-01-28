@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/services/session_service.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
@@ -90,50 +90,6 @@ class SessionNotifier extends Notifier<void> {
     await pref.setString(pCurrentSN, serialNumber);
     await pref.setString(pSelectedNetworkId, networkId);
     ref.read(selectedNetworkIdProvider.notifier).state = networkId;
-  }
-
-  /// Force fetches device info from router, bypassing all caches.
-  ///
-  /// This method always makes an API call to get fresh device info,
-  /// regardless of any cached values. Use this when you need guaranteed
-  /// fresh data, such as:
-  /// - During initial session setup (prepare dashboard)
-  /// - After configuration changes
-  /// - When validating router connectivity
-  ///
-  /// Returns: Fresh [NodeDeviceInfo] from router
-  ///
-  /// Throws: [ServiceError] on API failure
-  Future<NodeDeviceInfo> forceFetchDeviceInfo() async {
-    final benchMark = BenchMarkLogger(name: 'forceFetchDeviceInfo');
-    benchMark.start();
-    final service = ref.read(sessionServiceProvider);
-    final nodeDeviceInfo = await service.forceFetchDeviceInfo();
-    benchMark.end();
-    return nodeDeviceInfo;
-  }
-
-  /// Fetches device info and initializes router services (better actions).
-  ///
-  /// This method should be called during login/session initialization to:
-  /// 1. Fetch fresh device info from router
-  /// 2. Configure the JNAP action system for the connected router
-  /// 3. Return device info for UI display
-  ///
-  /// Use this instead of [checkDeviceInfo] when you need to ensure
-  /// buildBetterActions is called with the current router's services.
-  ///
-  /// Returns: [NodeDeviceInfo] UI model
-  ///
-  /// Throws: [ServiceError] on API failure
-  Future<NodeDeviceInfo> fetchDeviceInfoAndInitializeServices() async {
-    final benchMark =
-        BenchMarkLogger(name: 'fetchDeviceInfoAndInitializeServices');
-    benchMark.start();
-    final service = ref.read(sessionServiceProvider);
-    final nodeDeviceInfo = await service.fetchDeviceInfoAndInitializeServices();
-    benchMark.end();
-    return nodeDeviceInfo;
   }
 }
 

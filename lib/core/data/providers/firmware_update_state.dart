@@ -13,10 +13,6 @@ class FirmwareUpdateState extends Equatable {
   final bool isRetryMaxReached;
   final bool isWaitingChildrenAfterUpdating;
 
-  /// Returns true if firmware update policy is set to auto
-  bool get isAutoUpdateEnabled =>
-      settings.updatePolicy == FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
-
   const FirmwareUpdateState({
     required this.settings,
     required this.nodesStatus,

@@ -68,11 +68,13 @@ dependencies:
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.10.6
+      ref: v2.10.4
+  # ui_kit_library:
+  #   path: ../../ui_kit
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.10.6
+      ref: v2.10.4
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
@@ -90,7 +92,6 @@ dependencies:
   web: ^1.1.1
   file_picker: ^8.0.7
   flutter_staggered_grid_view: ^0.7.0
-  sliver_dashboard: ^0.9.0
   async: ^2.11.0
   path: ^1.9.0
   flutter_dotenv: ^5.0.2

@@ -48,16 +48,6 @@ class FirmwareUpdateNotifier extends Notifier<FirmwareUpdateState> {
     state = state.copyWith(settings: updatedSettings);
   }
 
-  /// Sets the firmware update policy to auto or manual.
-  /// This method encapsulates the JNAP policy constants for View layer usage.
-  Future setAutoUpdateEnabled(bool enabled) async {
-    await setFirmwareUpdatePolicy(
-      enabled
-          ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
-          : FirmwareUpdateSettings.firmwareUpdatePolicyManual,
-    );
-  }
-
   Future fetchAvailableFirmwareUpdates() async {
     final cachedCandidates = ref.read(firmwareUpdateCandidateProvider);
     final statusRecord = await _firmwareUpdateService

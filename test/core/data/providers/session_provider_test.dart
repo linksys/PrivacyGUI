@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/services/session_service.dart';
@@ -101,9 +101,9 @@ void main() {
 
     test('delegates to service.checkRouterIsBack with currentSN', () async {
       // Arrange
-      final expectedDeviceInfo = JnapDeviceInfoRaw.fromJson(
+      final expectedDeviceInfo = NodeDeviceInfo.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'MOCK_SN').output,
-      ).toUIModel();
+      );
 
       when(() => mockService.checkRouterIsBack('MOCK_SN'))
           .thenAnswer((_) async => expectedDeviceInfo);
@@ -130,9 +130,9 @@ void main() {
         pPnpConfiguredSN: 'PNP_SN',
       });
 
-      final expectedDeviceInfo = JnapDeviceInfoRaw.fromJson(
+      final expectedDeviceInfo = NodeDeviceInfo.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'PNP_SN').output,
-      ).toUIModel();
+      );
 
       when(() => mockService.checkRouterIsBack('PNP_SN'))
           .thenAnswer((_) async => expectedDeviceInfo);
@@ -197,10 +197,10 @@ void main() {
   group('SessionNotifier - checkDeviceInfo', () {
     test('delegates to service.checkDeviceInfo with cached state', () async {
       // Arrange
-      final cachedDeviceInfo = JnapDeviceInfoRaw.fromJson(
+      final cachedDeviceInfo = NodeDeviceInfo.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'CACHED_SN')
             .output,
-      ).toUIModel();
+      );
       final deviceInfoState = DeviceInfoState(deviceInfo: cachedDeviceInfo);
 
       when(() => mockService.checkDeviceInfo(cachedDeviceInfo))
@@ -225,10 +225,10 @@ void main() {
     test('delegates to service.checkDeviceInfo with null when no cache',
         () async {
       // Arrange
-      final freshDeviceInfo = JnapDeviceInfoRaw.fromJson(
+      final freshDeviceInfo = NodeDeviceInfo.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'FRESH_SN')
             .output,
-      ).toUIModel();
+      );
 
       when(() => mockService.checkDeviceInfo(null))
           .thenAnswer((_) async => freshDeviceInfo);
@@ -265,105 +265,6 @@ void main() {
       // Act & Assert
       expect(
         () => container.read(sessionProvider.notifier).checkDeviceInfo(null),
-        throwsA(isA<ResourceNotFoundError>()),
-      );
-    });
-  });
-
-  group('SessionNotifier - forceFetchDeviceInfo', () {
-    test('delegates to service.forceFetchDeviceInfo', () async {
-      // Arrange
-      final freshDeviceInfo = JnapDeviceInfoRaw.fromJson(
-        SessionTestData.createDeviceInfoSuccess(serialNumber: 'FRESH_SN')
-            .output,
-      ).toUIModel();
-
-      when(() => mockService.forceFetchDeviceInfo())
-          .thenAnswer((_) async => freshDeviceInfo);
-
-      container = ProviderContainer(
-        overrides: [
-          sessionServiceProvider.overrideWithValue(mockService),
-          deviceInfoProvider.overrideWithValue(const DeviceInfoState()),
-        ],
-      );
-
-      // Act
-      final result =
-          await container.read(sessionProvider.notifier).forceFetchDeviceInfo();
-
-      // Assert
-      verify(() => mockService.forceFetchDeviceInfo()).called(1);
-      expect(result.serialNumber, equals('FRESH_SN'));
-    });
-
-    test('always fetches fresh data, ignoring cache', () async {
-      // Arrange - Cached device info exists but should be ignored
-      final cachedDeviceInfo = JnapDeviceInfoRaw.fromJson(
-        SessionTestData.createDeviceInfoSuccess(serialNumber: 'CACHED_SN')
-            .output,
-      ).toUIModel();
-      final freshDeviceInfo = JnapDeviceInfoRaw.fromJson(
-        SessionTestData.createDeviceInfoSuccess(serialNumber: 'FRESH_SN')
-            .output,
-      ).toUIModel();
-
-      when(() => mockService.forceFetchDeviceInfo())
-          .thenAnswer((_) async => freshDeviceInfo);
-
-      container = ProviderContainer(
-        overrides: [
-          sessionServiceProvider.overrideWithValue(mockService),
-          deviceInfoProvider
-              .overrideWithValue(DeviceInfoState(deviceInfo: cachedDeviceInfo)),
-        ],
-      );
-
-      // Act
-      final result =
-          await container.read(sessionProvider.notifier).forceFetchDeviceInfo();
-
-      // Assert - Should return fresh data, not cached
-      expect(result.serialNumber, equals('FRESH_SN'));
-      verify(() => mockService.forceFetchDeviceInfo()).called(1);
-    });
-
-    test('propagates UnauthorizedError from service', () async {
-      // Arrange
-      when(() => mockService.forceFetchDeviceInfo()).thenThrow(
-        const UnauthorizedError(),
-      );
-
-      container = ProviderContainer(
-        overrides: [
-          sessionServiceProvider.overrideWithValue(mockService),
-          deviceInfoProvider.overrideWithValue(const DeviceInfoState()),
-        ],
-      );
-
-      // Act & Assert
-      await expectLater(
-        () => container.read(sessionProvider.notifier).forceFetchDeviceInfo(),
-        throwsA(isA<UnauthorizedError>()),
-      );
-    });
-
-    test('propagates ResourceNotFoundError from service', () async {
-      // Arrange
-      when(() => mockService.forceFetchDeviceInfo()).thenThrow(
-        const ResourceNotFoundError(),
-      );
-
-      container = ProviderContainer(
-        overrides: [
-          sessionServiceProvider.overrideWithValue(mockService),
-          deviceInfoProvider.overrideWithValue(const DeviceInfoState()),
-        ],
-      );
-
-      // Act & Assert
-      await expectLater(
-        () => container.read(sessionProvider.notifier).forceFetchDeviceInfo(),
         throwsA(isA<ResourceNotFoundError>()),
       );
     });

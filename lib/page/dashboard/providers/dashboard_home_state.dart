@@ -139,8 +139,6 @@ class DashboardHomeState extends Equatable {
   final List<DashboardWiFiUIModel> wifis;
   final String? wanType;
   final String? detectedWANType;
-  final String? cpuLoad;
-  final String? memoryLoad;
 
   const DashboardHomeState({
     this.isFirstPolling = false,
@@ -153,8 +151,6 @@ class DashboardHomeState extends Equatable {
     this.wifis = const [],
     this.wanType,
     this.detectedWANType,
-    this.cpuLoad,
-    this.memoryLoad,
   });
 
   Map<String, dynamic> toMap() {
@@ -169,8 +165,6 @@ class DashboardHomeState extends Equatable {
       'wifis': wifis.map((x) => x.toMap()).toList(),
       'wanType': wanType,
       'detectedWANType': detectedWANType,
-      'cpuLoad': cpuLoad,
-      'memoryLoad': memoryLoad,
     };
   }
 
@@ -187,8 +181,6 @@ class DashboardHomeState extends Equatable {
           map['wifis']?.map((x) => DashboardWiFiUIModel.fromMap(x))),
       wanType: map['wanType'],
       detectedWANType: map['detectedWANType'],
-      cpuLoad: map['cpuLoad'],
-      memoryLoad: map['memoryLoad'],
     );
   }
 
@@ -213,8 +205,6 @@ class DashboardHomeState extends Equatable {
       wifis,
       wanType,
       detectedWANType,
-      cpuLoad,
-      memoryLoad,
     ];
   }
 
@@ -229,8 +219,6 @@ class DashboardHomeState extends Equatable {
     List<DashboardWiFiUIModel>? wifis,
     ValueGetter<String?>? wanType,
     ValueGetter<String?>? detectedWANType,
-    ValueGetter<String?>? cpuLoad,
-    ValueGetter<String?>? memoryLoad,
   }) {
     return DashboardHomeState(
       isFirstPolling: isFirstPolling ?? this.isFirstPolling,
@@ -246,14 +234,12 @@ class DashboardHomeState extends Equatable {
       wanType: wanType != null ? wanType() : this.wanType,
       detectedWANType:
           detectedWANType != null ? detectedWANType() : this.detectedWANType,
-      cpuLoad: cpuLoad != null ? cpuLoad() : this.cpuLoad,
-      memoryLoad: memoryLoad != null ? memoryLoad() : this.memoryLoad,
     );
   }
 
   @override
   String toString() {
-    return 'DashboardHomeState(isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType, cpuLoad: $cpuLoad, memoryLoad: $memoryLoad)';
+    return 'DashboardHomeState(isFirstPolling: $isFirstPolling, isHorizontalLayout: $isHorizontalLayout, masterIcon: $masterIcon, isAnyNodesOffline: $isAnyNodesOffline, uptime: $uptime, wanPortConnection: $wanPortConnection, lanPortConnections: $lanPortConnections, wifis: $wifis, wanType: $wanType, detectedWANType: $detectedWANType)';
   }
 }
 

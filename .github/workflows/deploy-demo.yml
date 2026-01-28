@@ -12,11 +12,6 @@ on:
         options:
           - demo
           - staging
-      custom_layout:
-        description: 'Enable custom dashboard layout'
-        required: false
-        default: true
-        type: boolean
 
 # 設定 GitHub Pages 所需的權限
 permissions:
@@ -61,7 +56,6 @@ jobs:
         run: |
           flutter build web \
             --release \
-            --dart-define=custom_layout=${{ inputs.custom_layout }} \
             --target=lib/main_demo.dart \
             --base-href "/PrivacyGUI/demo/"
 

@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
-import 'package:privacy_gui/core/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
@@ -83,35 +85,6 @@ enum LocalWhereToGo {
   ;
 }
 
-final appRoutes = [
-  localLoginRoute,
-  autoParentFirstLoginRoute,
-  cloudLoginAuthRoute,
-  cloudLoginRoute,
-  homeRoute,
-  // ref.read(otpRouteProvider),
-  LinksysRoute(
-    name: RouteNamed.prepareDashboard,
-    path: RoutePath.prepareDashboard,
-    config: LinksysRouteConfig(
-      column: ColumnGrid(column: 4, centered: true),
-    ),
-    builder: (context, state) => const PrepareDashboardView(),
-  ),
-  LinksysRoute(
-    name: RouteNamed.selectNetwork,
-    path: RoutePath.selectNetwork,
-    config: const LinksysRouteConfig(
-      noNaviRail: true,
-    ),
-    builder: (context, state) => const SelectNetworkView(),
-  ),
-  dashboardRoute,
-  pnpRoute,
-  pnpTroubleshootingRoute,
-  addNodesRoute,
-];
-
 final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   final router = RouterNotifier(ref);
@@ -120,20 +93,47 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: router,
     observers: [ref.read(routerLoggerProvider)],
     initialLocation: '/',
-    routes: appRoutes,
+    routes: [
+      localLoginRoute,
+      autoParentFirstLoginRoute,
+      cloudLoginAuthRoute,
+      cloudLoginRoute,
+      homeRoute,
+      // ref.read(otpRouteProvider),
+      LinksysRoute(
+        name: RouteNamed.prepareDashboard,
+        path: RoutePath.prepareDashboard,
+        config: LinksysRouteConfig(
+          column: ColumnGrid(column: 4, centered: true),
+        ),
+        builder: (context, state) => const PrepareDashboardView(),
+      ),
+      LinksysRoute(
+        name: RouteNamed.selectNetwork,
+        path: RoutePath.selectNetwork,
+        config: const LinksysRouteConfig(
+          noNaviRail: true,
+        ),
+        builder: (context, state) => const SelectNetworkView(),
+      ),
+      dashboardRoute,
+      pnpRoute,
+      pnpTroubleshootingRoute,
+      addNodesRoute,
+    ],
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
-        return router.autoConfigurationLogic(state);
+        return router._autoConfigurationLogic(state);
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
-        router.autoConfigurationLogic(state);
-        return router.redirectLogic(state);
+        router._autoConfigurationLogic(state);
+        return router._redirectLogic(state);
       } else if (state.matchedLocation.startsWith('/pnp')) {
-        return router.goPnpPath(state);
+        return router._goPnpPath(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
         return state.uri.toString();
       }
-      return router.redirectLogic(state);
+      return router._redirectLogic(state);
     },
     debugLogDiagnostics: true,
   );
@@ -156,7 +156,7 @@ class RouterNotifier extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<String?> autoConfigurationLogic(GoRouterState state) async {
+  Future<String?> _autoConfigurationLogic(GoRouterState state) async {
     await _ref.read(connectivityProvider.notifier).forceUpdate();
     final loginType = _ref.read(authProvider
         .select((value) => value.value?.loginType ?? LoginType.none));
@@ -222,20 +222,20 @@ class RouterNotifier extends ChangeNotifier {
     if (whereToGo == LocalWhereToGo.pnp) {
       // PnP case -
       await _ref.read(authProvider.notifier).logout();
-      return goPnp(state.uri.query);
+      return _goPnp(state.uri.query);
     } else if (whereToGo == LocalWhereToGo.firstTimeLogin) {
       // First Time Login case -
       if (!_ref.read(autoParentFirstLoginStateProvider)) {
         await _ref.read(authProvider.notifier).logout();
       }
-      return goFirstTimeLogin(state);
+      return _goFirstTimeLogin(state);
     } else {
       // Login case -
-      return authCheck(state);
+      return _authCheck(state);
     }
   }
 
-  Future<String?> redirectLogic(GoRouterState state) async {
+  Future<String?> _redirectLogic(GoRouterState state) async {
     final loginType =
         _ref.watch(authProvider.select((data) => data.value?.loginType));
 
@@ -278,23 +278,23 @@ class RouterNotifier extends ChangeNotifier {
         : await (_prepare(state).then((_) => null));
   }
 
-  FutureOr<String?> goPnp(String query) {
+  FutureOr<String?> _goPnp(String query) {
     FlutterNativeSplash.remove();
     final queryParams = query.isEmpty
-        ? Uri.tryParse(getFullLocation(_ref.read))?.query ?? ''
+        ? Uri.tryParse(getFullLocation(_ref))?.query ?? ''
         : query;
     final path = '${RoutePath.pnp}?$queryParams';
     logger.i('[Route]: Go to PnP, URI=$path');
     return path;
   }
 
-  FutureOr<String?> goFirstTimeLogin(GoRouterState state) {
+  FutureOr<String?> _goFirstTimeLogin(GoRouterState state) {
     logger.i('[Route]: Mark First Time Login');
     _ref.read(autoParentFirstLoginStateProvider.notifier).state = true;
-    return authCheck(state);
+    return _authCheck(state);
   }
 
-  Future<String?> authCheck(GoRouterState state) {
+  Future<String?> _authCheck(GoRouterState state) {
     return _ref.read(authProvider.notifier).init().then((authState) async {
       logger.i(
           '[Route]: Check credentials done: Login type = ${authState?.loginType}');
@@ -333,9 +333,9 @@ class RouterNotifier extends ChangeNotifier {
         : '${RoutePath.cloudLoginAuth}?$query';
   }
 
-  FutureOr<String?> goPnpPath(GoRouterState state) {
+  FutureOr<String?> _goPnpPath(GoRouterState state) {
     if (_ref.read(pnpProvider).deviceInfo == null) {
-      return goPnp(state.uri.query);
+      return _goPnp(state.uri.query);
     } else {
       // bypass any pnp views
       return state.uri.toString();
@@ -370,10 +370,11 @@ class RouterNotifier extends ChangeNotifier {
     logger.d('[Prepare]: device info check - $serialNumber');
     final nodeDeviceInfo = await _ref
         .read(sessionProvider.notifier)
-        .fetchDeviceInfoAndInitializeServices()
+        .checkDeviceInfo(serialNumber)
         .then<NodeDeviceInfo?>((nodeDeviceInfo) {
-      logger.d(
-          '[Prepare]: Services initialized via fetchDeviceInfoAndInitializeServices');
+      // Build/Update better actions
+      logger.d('[Prepare]: build better actions');
+      buildBetterActions(nodeDeviceInfo.services);
       return nodeDeviceInfo;
     }).onError((error, stackTrace) => null);
 
@@ -436,12 +437,15 @@ class RouterNotifier extends ChangeNotifier {
       return null;
     }
 
-    // Use sessionProvider.forceFetchDeviceInfo() instead of direct RouterRepository access
-    // This adheres to Clean Architecture: Route -> Provider -> Service -> Repository
-    final deviceInfo =
-        await _ref.read(sessionProvider.notifier).forceFetchDeviceInfo();
-    final newSerialNumber = deviceInfo.serialNumber;
+    final routerRepository = _ref.read(routerRepositoryProvider);
 
+    final newSerialNumber = await routerRepository
+        .send(
+          JNAPAction.getDeviceInfo,
+          fetchRemote: true,
+        )
+        .then<String>(
+            (value) => NodeDeviceInfo.fromJson(value.output).serialNumber);
     if (serialNumber == newSerialNumber) {
       return null;
     }

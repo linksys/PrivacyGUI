@@ -7,7 +7,7 @@ import 'dart:async' as _i5;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/core/models/device_info.dart' as _i3;
+import 'package:privacy_gui/core/jnap/models/device_info.dart' as _i3;
 import 'package:privacy_gui/core/data/providers/session_provider.dart' as _i4;
 
 // ignore_for_file: type=lint
@@ -135,30 +135,6 @@ class MockSessionNotifier extends _i2.Notifier<void>
           Invocation.method(
             #checkDeviceInfo,
             [serialNumber],
-          ),
-        )),
-      ) as _i5.Future<_i3.NodeDeviceInfo>);
-
-  @override
-  _i5.Future<_i3.NodeDeviceInfo> fetchDeviceInfoAndInitializeServices() =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #fetchDeviceInfoAndInitializeServices,
-          [],
-        ),
-        returnValue: _i5.Future<_i3.NodeDeviceInfo>.value(_FakeNodeDeviceInfo_1(
-          this,
-          Invocation.method(
-            #fetchDeviceInfoAndInitializeServices,
-            [],
-          ),
-        )),
-        returnValueForMissingStub:
-            _i5.Future<_i3.NodeDeviceInfo>.value(_FakeNodeDeviceInfo_1(
-          this,
-          Invocation.method(
-            #fetchDeviceInfoAndInitializeServices,
-            [],
           ),
         )),
       ) as _i5.Future<_i3.NodeDeviceInfo>);

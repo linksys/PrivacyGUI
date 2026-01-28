@@ -163,20 +163,6 @@ class DashboardLayoutContext {
     );
   }
 
-  /// Wraps a widget in a standard AppCard.
-  ///
-  /// Used by layout strategies to provide a consistent visual container
-  /// for "stripped" widgets.
-  Widget wrapWithStandardCard(
-    Widget child, {
-    EdgeInsetsGeometry? padding,
-  }) {
-    return AppCard(
-      padding: padding,
-      child: child,
-    );
-  }
-
   /// Wraps a widget with size constraints based on its spec and user preferences.
   Widget wrapWidget(
     Widget child, {
@@ -227,69 +213,31 @@ class DashboardLayoutContext {
         if (vpnTile != null) DashboardWidgetSpecs.vpn.id: vpnTile!,
       };
 
-  /// Get a widget by its ID.
-  Widget? getWidgetById(String id) => _allWidgets[id];
-
-  /// Get ordered list of visible widget specs.
-  List<WidgetSpec> get orderedVisibleSpecs {
-    final widgets = _allWidgets;
-
-    // 1. Get ordered specs from configs
-    final orderedSpecs = DashboardWidgetSpecs.standardWidgets.toList()
-      ..sort((a, b) {
-        final configA = getConfigFor(a);
-        final configB = getConfigFor(b);
-        return configA.order.compareTo(configB.order);
-      });
-
-    // 2. Filter visible
-    return orderedSpecs.where((spec) {
-      final config = getConfigFor(spec);
-      // Only show if visible AND widget exists (e.g. VPN might be null)
-      return config.visible && widgets.containsKey(spec.id);
-    }).toList();
-  }
-
   /// Gets the list of visible widgets, ordered and wrapped with constraints.
   ///
   /// This is the primary method for flexible layout strategies.
   List<Widget> get orderedVisibleWidgets {
+    final widgets = _allWidgets;
+
     // 1. Get ordered specs from configs
-    final orderedSpecs = DashboardWidgetSpecs.standardWidgets.toList()
+    final orderedSpecs = DashboardWidgetSpecs.all.toList()
       ..sort((a, b) {
         final configA = getConfigFor(a);
         final configB = getConfigFor(b);
         return configA.order.compareTo(configB.order);
       });
 
-    // 2. Filter visible & wrap
-    return orderedSpecs.where((spec) {
-      final config = getConfigFor(spec);
-      return config.visible;
-    }).map((spec) {
-      final child = _getStandardWidgetById(spec.id);
-      if (child == null) return const SizedBox.shrink();
-
-      // Wrap based on mode constraints
-      // For Standard Layout, we provide a basic minHeight to ensure visibility
-      // The actual height is determined by the content (Standard Layout is usually a Column/ListView)
-      return ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 120),
-        child: child,
-      );
-    }).toList();
-  }
-
-  Widget? _getStandardWidgetById(String id) {
-    if (id == DashboardWidgetSpecs.internetStatus.id) return internetWidget;
-    if (id == DashboardWidgetSpecs.networks.id) return networksWidget;
-    if (id == DashboardWidgetSpecs.wifiGrid.id) return wifiGrid;
-    if (id == DashboardWidgetSpecs.quickPanel.id) return quickPanel;
-    if (id == DashboardWidgetSpecs.vpn.id) return vpnTile;
-    if (id == DashboardWidgetSpecs.portAndSpeed.id) {
-      // For standard layouts in ordered list (e.g. mobile), use default config
-      return buildPortAndSpeed(const PortAndSpeedConfig());
-    }
-    return null;
+    // 2. Filter visible and map to widgets
+    return orderedSpecs
+        .where((spec) {
+          final config = getConfigFor(spec);
+          // Only show if visible AND widget exists (e.g. VPN might be null)
+          return config.visible && widgets.containsKey(spec.id);
+        })
+        .map((spec) => wrapWidget(
+              widgets[spec.id]!,
+              spec: spec,
+            ))
+        .toList();
   }
 }

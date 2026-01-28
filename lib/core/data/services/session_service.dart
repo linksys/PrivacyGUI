@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/models/device_info.dart';
-import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 
@@ -40,8 +39,7 @@ class SessionService {
         fetchRemote: true,
         retries: 0,
       );
-      final nodeDeviceInfo =
-          JnapDeviceInfoRaw.fromJson(result.output).toUIModel();
+      final nodeDeviceInfo = NodeDeviceInfo.fromJson(result.output);
 
       if (expectedSerialNumber.isNotEmpty &&
           expectedSerialNumber != nodeDeviceInfo.serialNumber) {
@@ -82,7 +80,7 @@ class SessionService {
         retries: 0,
         timeoutMs: 3000,
       );
-      return JnapDeviceInfoRaw.fromJson(result.output).toUIModel();
+      return NodeDeviceInfo.fromJson(result.output);
     } on JNAPError catch (e) {
       throw _mapJnapError(e);
     }
@@ -96,63 +94,5 @@ class SessionService {
       'ErrorInvalidInput' => InvalidInputError(message: error.error),
       _ => UnexpectedError(originalError: error, message: error.result),
     };
-  }
-
-  // === Force Fetch Device Info ===
-
-  /// Force fetches device info from router, bypassing all caches.
-  ///
-  /// Unlike [checkDeviceInfo], this method always makes an API call
-  /// regardless of cached values. Use this when you need guaranteed
-  /// fresh data, such as during initial session setup or after
-  /// configuration changes.
-  ///
-  /// Returns: Fresh [NodeDeviceInfo] from router API call
-  ///
-  /// Throws: [ServiceError] on API failure
-  Future<NodeDeviceInfo> forceFetchDeviceInfo() async {
-    try {
-      final result = await _routerRepository.send(
-        JNAPAction.getDeviceInfo,
-        fetchRemote: true,
-      );
-      return JnapDeviceInfoRaw.fromJson(result.output).toUIModel();
-    } on JNAPError catch (e) {
-      throw _mapJnapError(e);
-    }
-  }
-
-  // === Session Initialization ===
-
-  /// Fetches device info and initializes router services.
-  ///
-  /// This method:
-  /// 1. Fetches fresh device info from router
-  /// 2. Calls [buildBetterActions] with the services list
-  /// 3. Returns the UI model for display
-  ///
-  /// Use this method during login/session initialization to ensure
-  /// the JNAP action system is properly configured for the connected router.
-  ///
-  /// Returns: [NodeDeviceInfo] UI model
-  ///
-  /// Throws: [ServiceError] on API failure
-  Future<NodeDeviceInfo> fetchDeviceInfoAndInitializeServices() async {
-    try {
-      final result = await _routerRepository.send(
-        JNAPAction.getDeviceInfo,
-        fetchRemote: true,
-        retries: 0,
-        timeoutMs: 3000,
-      );
-      final rawInfo = JnapDeviceInfoRaw.fromJson(result.output);
-
-      // Initialize better actions with router's supported services
-      buildBetterActions(rawInfo.services);
-
-      return rawInfo.toUIModel();
-    } on JNAPError catch (e) {
-      throw _mapJnapError(e);
-    }
   }
 }

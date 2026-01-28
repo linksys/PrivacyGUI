@@ -117,35 +117,6 @@
   "dashboardSupportCallbackTitle": "Get a Callback",
   "dashboardSupportFAQDesc": "Read most common help articles sorted by topic",
   "dashboardSupportFAQTitle": "View FAQ",
-  "dashboardSettings": "Dashboard Settings",
-  "dashboardEnableCustomLayout": "Enable Custom Layout",
-  "dashboardHiddenWidgets": "Hidden Widgets",
-  "dashboardResetLayout": "Reset Layout",
-  "dashboardLayoutOptimized": "Layout optimized",
-  "dashboardLayoutResetToDefaults": "Layout reset to defaults",
-  "dashboardUnknownWidget": "Unknown: {widgetId}",
-  "@dashboardUnknownWidget": {
-    "placeholders": {
-      "widgetId": {
-        "type": "String",
-        "example": "widget_id"
-      }
-    }
-  },
-  "dashboardSpeedHistory": "Speed History ({count} runs)",
-  "@dashboardSpeedHistory": {
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "5"
-      }
-    }
-  },
-  "dashboardStartSpeedTest": "Start Speed Test",
-  "dashboardChangeViewMode": "Change View Mode",
-  "beta": "BETA",
-  "topology": "Topology",
-  "noDevicesConnected": "No devices connected",
   "dateAndTime": "Date & Time",
   "daylightSavingsTime": "Automatically adjust for Daylight Savings Time",
   "ddns": "DDNS",

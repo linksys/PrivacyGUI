@@ -4,20 +4,14 @@ import 'package:privacy_gui/core/retry_strategy/retry.dart';
 void main() {
   group('RetryStrategy', () {
     test('should execute successfully on first attempt', () async {
-      final strategy = ExponentialBackoffRetryStrategy(
-        maxRetries: 3,
-        initialDelay: const Duration(milliseconds: 1),
-      );
+      final strategy = ExponentialBackoffRetryStrategy(maxRetries: 3);
       final result = await strategy.execute(() async => 'success');
       expect(result, 'success');
     });
 
     test('should retry until success', () async {
       int attempt = 0;
-      final strategy = ExponentialBackoffRetryStrategy(
-        maxRetries: 3,
-        initialDelay: const Duration(milliseconds: 1),
-      );
+      final strategy = ExponentialBackoffRetryStrategy(maxRetries: 3);
 
       final result = await strategy.execute(
         () async {
@@ -34,10 +28,7 @@ void main() {
 
     test('should throw MaxRetriesExceededException when max retries reached',
         () async {
-      final strategy = ExponentialBackoffRetryStrategy(
-        maxRetries: 2,
-        initialDelay: const Duration(milliseconds: 1),
-      );
+      final strategy = ExponentialBackoffRetryStrategy(maxRetries: 2);
 
       expect(
         () => strategy.execute(
@@ -49,10 +40,7 @@ void main() {
 
     test('should call onRetry callback for each retry', () async {
       int retryCount = 0;
-      final strategy = ExponentialBackoffRetryStrategy(
-        maxRetries: 3,
-        initialDelay: const Duration(milliseconds: 1),
-      );
+      final strategy = ExponentialBackoffRetryStrategy(maxRetries: 3);
 
       try {
         await strategy.execute(
@@ -168,10 +156,7 @@ void main() {
 
   test('should use shouldRetry callback to determine retry', () async {
     int attempt = 0;
-    final strategy = ExponentialBackoffRetryStrategy(
-      maxRetries: 3,
-      initialDelay: const Duration(milliseconds: 1),
-    );
+    final strategy = ExponentialBackoffRetryStrategy(maxRetries: 3);
 
     final result = await strategy.execute(
       () async => attempt++,
@@ -182,7 +167,7 @@ void main() {
     expect(attempt, 3);
   });
 
-  test('should throw MaxRetriesExceededException when shouldRetry returns true',
+  test('should throw ShouldRetryException when shouldRetry returns true',
       () async {
     final strategy = ExponentialBackoffRetryStrategy(maxRetries: 0);
 

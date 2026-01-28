@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/_constants.dart';
+import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/page/select_network/models/cloud_network_model.dart';
-import 'package:privacy_gui/page/select_network/services/network_availability_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final selectNetworkProvider =
@@ -48,9 +51,17 @@ class SelectNetworkNotifier extends AsyncNotifier<SelectNetworkState> {
 
   Future<SelectNetworkState> _checkNetworkOnline(
       CloudNetworkModel network) async {
-    final networkService = ref.read(networkAvailabilityServiceProvider);
-    final isOnline =
-        await networkService.checkNetworkOnline(network.network.networkId);
+    final routerRepository = ref.read(routerRepositoryProvider);
+    bool isOnline = await routerRepository
+        .send(JNAPAction.isAdminPasswordDefault,
+            extraHeaders: {
+              kJNAPNetworkId: network.network.networkId,
+            },
+            type: CommandType.remote,
+            fetchRemote: true,
+            cacheLevel: CacheLevel.noCache)
+        .then((value) => value.result == 'OK')
+        .onError((error, stackTrace) => false);
     final cloudNetworkModel = CloudNetworkModel(
       network: network.network,
       isOnline: isOnline,

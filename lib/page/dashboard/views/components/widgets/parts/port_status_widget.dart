@@ -44,26 +44,18 @@ class PortStatusWidget extends StatelessWidget {
       ],
     ];
 
-    // Port image - use colorFilter for connected state (green)
-    final isConnected = connection != null;
-    final portColor = isConnected
-        ? Theme.of(context).extension<AppColorScheme>()?.semanticSuccess ??
-            Colors.green
-        : Theme.of(context).colorScheme.surfaceContainerHighest;
-
+    // Port image
     final portImage = Padding(
       padding: const EdgeInsets.all(AppSpacing.sm),
-      child: isConnected
-          ? Assets.images.imgPortOn.svg(
+      child: connection == null
+          ? Assets.images.imgPortOff.svg(
               width: 40,
               height: 40,
-              colorFilter: ColorFilter.mode(portColor, BlendMode.srcIn),
               semanticsLabel: 'port status image',
             )
-          : Assets.images.imgPortOff.svg(
+          : Assets.images.imgPortOn.svg(
               width: 40,
               height: 40,
-              colorFilter: ColorFilter.mode(portColor, BlendMode.srcIn),
               semanticsLabel: 'port status image',
             ),
     );

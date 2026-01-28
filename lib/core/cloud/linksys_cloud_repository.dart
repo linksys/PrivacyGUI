@@ -29,7 +29,7 @@ import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
       httpClient: LinksysHttpClient(getHost: () {
         if (BuildConfig.forceCommandType == ForceCommand.local) {
-          var localIP = getLocalIp(ref.read);
+          var localIP = getLocalIp(ref);
           localIP = localIP.startsWith('http') ? localIP : 'https://$localIP';
           return localIP;
         }
@@ -38,7 +38,7 @@ final cloudRepositoryProvider = Provider((ref) => LinksysCloudRepository(
         if (routerType == RouterType.others) {
           return null;
         } else {
-          var localIP = getLocalIp(ref.read);
+          var localIP = getLocalIp(ref);
           localIP = localIP.startsWith('http') ? localIP : 'https://$localIP';
           return localIP;
         }

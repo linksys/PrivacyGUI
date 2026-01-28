@@ -1,39 +1,46 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+import 'package:privacy_gui/page/nodes/services/node_light_settings_service.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_state.dart';
-import 'package:privacy_gui/page/nodes/providers/node_light_state.dart';
-import 'package:privacy_gui/page/nodes/services/node_light_settings_service.dart';
 
 final nodeLightSettingsProvider =
-    NotifierProvider<NodeLightSettingsNotifier, NodeLightState>(
+    NotifierProvider<NodeLightSettingsNotifier, NodeLightSettings>(
         () => NodeLightSettingsNotifier());
 
-class NodeLightSettingsNotifier extends Notifier<NodeLightState> {
+class NodeLightSettingsNotifier extends Notifier<NodeLightSettings> {
   @override
-  NodeLightState build() {
-    return NodeLightState.initial();
+  NodeLightSettings build() {
+    return NodeLightSettings(isNightModeEnable: false);
   }
 
-  /// Fetches the latest settings from the router and updates the state.
-  Future<NodeLightState> fetch({bool forceRemote = false}) async {
+  Future<NodeLightSettings> fetch([bool forceRemote = false]) async {
     final service = ref.read(nodeLightSettingsServiceProvider);
-    state = await service.fetchState(forceRemote: forceRemote);
-    logger.d('[State]:[NodeLightSettings]: Updated to $state');
+    state = await service.fetchSettings(forceRemote: forceRemote);
+    logger.d('[State]:[NodeLightSettings]: ${state.toJson()}');
     return state;
   }
 
-  /// Saves the current state configurations to the router.
-  Future<NodeLightState> save() async {
+  Future<NodeLightSettings> save() async {
     final service = ref.read(nodeLightSettingsServiceProvider);
-    state = await service.saveState(state);
+    state = await service.saveSettings(state);
     return state;
   }
 
-  /// Updates the local state (e.g., from UI interactions) before saving.
-  void setSettings(NodeLightState settings) {
+  void setSettings(NodeLightSettings settings) {
     state = settings;
   }
 
-  /// Helper getter for UI consumption, consistent with previous API
-  NodeLightStatus get currentStatus => state.status;
+  /// Returns the current node light status based on settings.
+  /// This provides a UI-friendly enum value derived from the raw settings.
+  NodeLightStatus get currentStatus {
+    if ((state.allDayOff ?? false) ||
+        (state.startHour == 0 && state.endHour == 24)) {
+      return NodeLightStatus.off;
+    } else if (!state.isNightModeEnable) {
+      return NodeLightStatus.on;
+    } else {
+      return NodeLightStatus.night;
+    }
+  }
 }

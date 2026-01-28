@@ -1,9 +1,0 @@
-//
-//  Release-Local.xcconfig
-//  Runner
-//
-//  Created by Hank Yu on 2026/1/21.
-//
-
-#include "Local.xcconfig"
-#include "../../Pods/Target Support Files/Pods-Runner/Pods-Runner.release-local.xcconfig"

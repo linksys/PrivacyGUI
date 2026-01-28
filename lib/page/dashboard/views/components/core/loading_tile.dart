@@ -188,60 +188,33 @@ class _LoadingTileState extends State<LoadingTile> {
     final baseColor = widget.baseColor;
     final highlightColor = widget.shimmerColor;
 
-    // Use LayoutBuilder to adapt content based on available space
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final content = Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppSkeleton(
-                width: double.infinity,
-                height: 24,
-                baseColor: baseColor,
-                highlightColor: highlightColor,
-              ),
-              if (constraints.maxHeight > 80) ...[
-                AppGap.lg(),
-                AppSkeleton(
-                  width: 200,
-                  height: 16,
-                  baseColor: baseColor,
-                  highlightColor: highlightColor,
-                ),
-              ],
-              if (constraints.maxHeight > 120) ...[
-                AppGap.sm(),
-                AppSkeleton(
-                  width: 150,
-                  height: 16,
-                  baseColor: baseColor,
-                  highlightColor: highlightColor,
-                ),
-              ],
-            ],
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSkeleton(
+            width: double.infinity,
+            height: 24,
+            baseColor: baseColor,
+            highlightColor: highlightColor,
           ),
-        );
-
-        // If height is very small, just show a single centered skeleton bar
-        if (constraints.maxHeight < 56) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: AppSkeleton(
-                width: double.infinity,
-                height: 24, // Consistent height
-                baseColor: baseColor,
-                highlightColor: highlightColor,
-              ),
-            ),
-          );
-        }
-
-        return content;
-      },
+          AppGap.lg(),
+          AppSkeleton(
+            width: 200,
+            height: 16,
+            baseColor: baseColor,
+            highlightColor: highlightColor,
+          ),
+          AppGap.sm(),
+          AppSkeleton(
+            width: 150,
+            height: 16,
+            baseColor: baseColor,
+            highlightColor: highlightColor,
+          ),
+        ],
+      ),
     );
   }
 }

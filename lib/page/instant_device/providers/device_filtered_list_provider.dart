@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/utils/devices.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_filtered_list_state.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_provider.dart';
-
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 import 'package:privacy_gui/util/extensions.dart';
 
 final filteredDeviceListProvider = Provider((ref) {
@@ -80,14 +80,14 @@ class DeviceFilterConfigNotifier extends Notifier<DeviceFilterConfigState> {
   }
 
   List<String> getWifiNames() {
-    final wifiRadiosState = ref.read(wifiRadiosProvider);
+    final wifiState = ref.read(wifiBundleProvider);
     return [
-      ...wifiRadiosState.mainRadios
-          .map((e) => e.settings.ssid)
+      ...wifiState.settings.current.wifiList.mainWiFi
+          .map((e) => e.ssid)
           .toList()
           .unique(),
-      ...wifiRadiosState.guestRadios.map((e) => e.guestSSID).toList().unique(),
-    ].unique();
+      wifiState.settings.current.wifiList.guestWiFi.ssid,
+    ];
   }
 
   List<String> getBands([String? deviceUUID]) {

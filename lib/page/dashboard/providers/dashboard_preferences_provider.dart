@@ -57,18 +57,6 @@ class DashboardPreferencesNotifier
     await _saveToPrefs();
   }
 
-  /// Reorder custom widgets (atomic widgets only)
-  Future<void> reorderCustomWidget(int oldIndex, int newIndex) async {
-    state = state.reorderCustomWidget(oldIndex, newIndex);
-    await _saveToPrefs();
-  }
-
-  /// Restore preferences from a snapshot
-  Future<void> restoreSnapshot(DashboardLayoutPreferences snapshot) async {
-    state = snapshot;
-    await _saveToPrefs();
-  }
-
   /// Toggle custom layout usage
   Future<void> toggleCustomLayout(bool enabled) async {
     state = state.toggleCustomLayout(enabled);
@@ -86,14 +74,5 @@ class DashboardPreferencesNotifier
     state = const DashboardLayoutPreferences();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefsKey);
-  }
-
-  /// Reset only widget display modes to defaults, preserving custom layout toggle
-  Future<void> resetWidgetModes() async {
-    state = DashboardLayoutPreferences(
-      useCustomLayout: state.useCustomLayout,
-      // displayModes will be empty (defaults)
-    );
-    await _saveToPrefs();
   }
 }

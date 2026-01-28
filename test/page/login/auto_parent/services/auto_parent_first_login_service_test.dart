@@ -7,8 +7,6 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/login/auto_parent/services/auto_parent_first_login_service.dart';
 
-import 'package:privacy_gui/core/retry_strategy/retry.dart'; // import RetryStrategy
-
 import '../../../../mocks/test_data/auto_parent_first_login_test_data.dart';
 
 // Mocks
@@ -26,16 +24,7 @@ void main() {
 
   setUp(() {
     mockRepository = MockRouterRepository();
-    // Use LinearBackoffRetryStrategy with 0 delay for testing to speed up tests
-    final testRetryStrategy = LinearBackoffRetryStrategy(
-      maxRetries: 5,
-      initialDelay: Duration.zero,
-      increment: Duration.zero,
-    );
-    service = AutoParentFirstLoginService(
-      mockRepository,
-      retryStrategy: testRetryStrategy,
-    );
+    service = AutoParentFirstLoginService(mockRepository);
   });
 
   // ===========================================================================

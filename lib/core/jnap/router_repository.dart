@@ -48,7 +48,7 @@ class CommandWrap {
   Map<String, dynamic> data;
 }
 
-// defaultAdminPassword moved to constants/defaults.dart
+const defaultAdminPassword = 'admin';
 
 final routerRepositoryProvider = Provider((ref) {
   return RouterRepository(ref);
@@ -519,7 +519,7 @@ class RouterRepository {
 
 extension RouterRepositoryUtil on RouterRepository {
   String getLocalIP() {
-    return getLocalIp(ref.read);
+    return getLocalIp(ref);
   }
 
   String _getNetworkId() {

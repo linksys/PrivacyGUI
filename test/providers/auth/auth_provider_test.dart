@@ -396,19 +396,21 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final container = makeProviderContainer();
 
+      final testServices = ['service1', 'service2'];
       final testStatus = {'isAdminPasswordDefault': false};
 
-      when(() => mockAuthService.getAdminPasswordAuthStatus())
+      when(() => mockAuthService.getAdminPasswordAuthStatus(testServices))
           .thenAnswer((_) async => AuthSuccess(testStatus));
 
       // Act
       final status = await container
           .read(authProvider.notifier)
-          .getAdminPasswordAuthStatus();
+          .getAdminPasswordAuthStatus(testServices);
 
       // Assert
       expect(status, testStatus);
-      verify(() => mockAuthService.getAdminPasswordAuthStatus()).called(1);
+      verify(() => mockAuthService.getAdminPasswordAuthStatus(testServices))
+          .called(1);
 
       container.dispose();
     });

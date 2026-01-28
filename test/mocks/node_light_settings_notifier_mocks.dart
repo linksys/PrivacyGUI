@@ -7,7 +7,7 @@ import 'dart:async' as _i6;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:privacy_gui/page/nodes/providers/node_light_state.dart' as _i3;
+import 'package:privacy_gui/core/jnap/models/node_light_settings.dart' as _i3;
 import 'package:privacy_gui/page/nodes/providers/node_light_settings_provider.dart'
     as _i4;
 import 'package:privacy_gui/page/nodes/providers/node_detail_state.dart' as _i5;
@@ -38,9 +38,9 @@ class _FakeNotifierProviderRef_0<T> extends _i1.SmartFake
         );
 }
 
-class _FakeNodeLightState_1 extends _i1.SmartFake
-    implements _i3.NodeLightState {
-  _FakeNodeLightState_1(
+class _FakeNodeLightSettings_1 extends _i1.SmartFake
+    implements _i3.NodeLightSettings {
+  _FakeNodeLightSettings_1(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -52,7 +52,7 @@ class _FakeNodeLightState_1 extends _i1.SmartFake
 /// A class which mocks [NodeLightSettingsNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockNodeLightSettingsNotifier extends _i2.Notifier<_i3.NodeLightState>
+class MockNodeLightSettingsNotifier extends _i2.Notifier<_i3.NodeLightSettings>
     with _i1.Mock
     implements _i4.NodeLightSettingsNotifier {
   @override
@@ -63,34 +63,34 @@ class MockNodeLightSettingsNotifier extends _i2.Notifier<_i3.NodeLightState>
       ) as _i5.NodeLightStatus);
 
   @override
-  _i2.NotifierProviderRef<_i3.NodeLightState> get ref => (super.noSuchMethod(
+  _i2.NotifierProviderRef<_i3.NodeLightSettings> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),
-        returnValue: _FakeNotifierProviderRef_0<_i3.NodeLightState>(
+        returnValue: _FakeNotifierProviderRef_0<_i3.NodeLightSettings>(
           this,
           Invocation.getter(#ref),
         ),
         returnValueForMissingStub:
-            _FakeNotifierProviderRef_0<_i3.NodeLightState>(
+            _FakeNotifierProviderRef_0<_i3.NodeLightSettings>(
           this,
           Invocation.getter(#ref),
         ),
-      ) as _i2.NotifierProviderRef<_i3.NodeLightState>);
+      ) as _i2.NotifierProviderRef<_i3.NodeLightSettings>);
 
   @override
-  _i3.NodeLightState get state => (super.noSuchMethod(
+  _i3.NodeLightSettings get state => (super.noSuchMethod(
         Invocation.getter(#state),
-        returnValue: _FakeNodeLightState_1(
+        returnValue: _FakeNodeLightSettings_1(
           this,
           Invocation.getter(#state),
         ),
-        returnValueForMissingStub: _FakeNodeLightState_1(
+        returnValueForMissingStub: _FakeNodeLightSettings_1(
           this,
           Invocation.getter(#state),
         ),
-      ) as _i3.NodeLightState);
+      ) as _i3.NodeLightSettings);
 
   @override
-  set state(_i3.NodeLightState? value) => super.noSuchMethod(
+  set state(_i3.NodeLightSettings? value) => super.noSuchMethod(
         Invocation.setter(
           #state,
           value,
@@ -99,61 +99,60 @@ class MockNodeLightSettingsNotifier extends _i2.Notifier<_i3.NodeLightState>
       );
 
   @override
-  _i3.NodeLightState build() => (super.noSuchMethod(
+  _i3.NodeLightSettings build() => (super.noSuchMethod(
         Invocation.method(
           #build,
           [],
         ),
-        returnValue: _FakeNodeLightState_1(
+        returnValue: _FakeNodeLightSettings_1(
           this,
           Invocation.method(
             #build,
             [],
           ),
         ),
-        returnValueForMissingStub: _FakeNodeLightState_1(
+        returnValueForMissingStub: _FakeNodeLightSettings_1(
           this,
           Invocation.method(
             #build,
             [],
           ),
         ),
-      ) as _i3.NodeLightState);
+      ) as _i3.NodeLightSettings);
 
   @override
-  _i6.Future<_i3.NodeLightState> fetch({bool forceRemote = false}) =>
+  _i6.Future<_i3.NodeLightSettings> fetch([bool? forceRemote = false]) =>
       (super.noSuchMethod(
         Invocation.method(
           #fetch,
-          [],
-          {#forceRemote: forceRemote},
+          [forceRemote],
         ),
-        returnValue: _i6.Future<_i3.NodeLightState>.value(_FakeNodeLightState_1(
+        returnValue:
+            _i6.Future<_i3.NodeLightSettings>.value(_FakeNodeLightSettings_1(
           this,
           Invocation.method(
             #fetch,
-            [],
-            {#forceRemote: forceRemote},
+            [forceRemote],
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<_i3.NodeLightState>.value(_FakeNodeLightState_1(
+            _i6.Future<_i3.NodeLightSettings>.value(_FakeNodeLightSettings_1(
           this,
           Invocation.method(
             #fetch,
-            [],
-            {#forceRemote: forceRemote},
+            [forceRemote],
           ),
         )),
-      ) as _i6.Future<_i3.NodeLightState>);
+      ) as _i6.Future<_i3.NodeLightSettings>);
 
   @override
-  _i6.Future<_i3.NodeLightState> save() => (super.noSuchMethod(
+  _i6.Future<_i3.NodeLightSettings> save() => (super.noSuchMethod(
         Invocation.method(
           #save,
           [],
         ),
-        returnValue: _i6.Future<_i3.NodeLightState>.value(_FakeNodeLightState_1(
+        returnValue:
+            _i6.Future<_i3.NodeLightSettings>.value(_FakeNodeLightSettings_1(
           this,
           Invocation.method(
             #save,
@@ -161,17 +160,17 @@ class MockNodeLightSettingsNotifier extends _i2.Notifier<_i3.NodeLightState>
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<_i3.NodeLightState>.value(_FakeNodeLightState_1(
+            _i6.Future<_i3.NodeLightSettings>.value(_FakeNodeLightSettings_1(
           this,
           Invocation.method(
             #save,
             [],
           ),
         )),
-      ) as _i6.Future<_i3.NodeLightState>);
+      ) as _i6.Future<_i3.NodeLightSettings>);
 
   @override
-  void setSettings(_i3.NodeLightState? settings) => super.noSuchMethod(
+  void setSettings(_i3.NodeLightSettings? settings) => super.noSuchMethod(
         Invocation.method(
           #setSettings,
           [settings],
@@ -182,8 +181,8 @@ class MockNodeLightSettingsNotifier extends _i2.Notifier<_i3.NodeLightState>
   @override
   void listenSelf(
     void Function(
-      _i3.NodeLightState?,
-      _i3.NodeLightState,
+      _i3.NodeLightSettings?,
+      _i3.NodeLightSettings,
     )? listener, {
     void Function(
       Object,
@@ -201,8 +200,8 @@ class MockNodeLightSettingsNotifier extends _i2.Notifier<_i3.NodeLightState>
 
   @override
   bool updateShouldNotify(
-    _i3.NodeLightState? previous,
-    _i3.NodeLightState? next,
+    _i3.NodeLightSettings? previous,
+    _i3.NodeLightSettings? next,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
