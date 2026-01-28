@@ -57,7 +57,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
         JNAPAction.runHealthCheck,
         data: {
           "runHealthCheckModule": module.value,
-          "targetServerID": targetServerId,
+          "targetServerID": '$targetServerId',
         }..removeWhere((key, value) => value == null),
         auth: true,
         fetchRemote: true,
