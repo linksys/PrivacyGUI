@@ -33,7 +33,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
@@ -338,7 +339,8 @@ class SideEffectNotifier extends Notifier<SideEffectState> {
           cacheLevel: CacheLevel.noCache,
           timeoutMs: 3000,
           retries: 0)
-      .then((response) => NodeDeviceInfo.fromJson(response.output));
+      .then((response) =>
+          JnapDeviceInfoRaw.fromJson(response.output).toUIModel());
 
   _updateProgress(
     int currentRetry,

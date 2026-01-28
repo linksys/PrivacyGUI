@@ -1,5 +1,5 @@
 import 'package:privacy_gui/core/jnap/models/device.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 import 'package:privacy_gui/core/jnap/models/wan_status.dart';
@@ -423,16 +423,15 @@ class DashboardHomeTestData {
     String hardwareVersion = '1',
     String serialNumber = 'SN123456789',
   }) {
-    return NodeDeviceInfo.fromJson({
-      'serialNumber': serialNumber,
-      'modelNumber': modelNumber,
-      'hardwareVersion': hardwareVersion,
-      'manufacturer': 'Linksys',
-      'description': 'Test Router',
-      'firmwareVersion': '1.0.0',
-      'firmwareDate': '2024-01-01T00:00:00Z',
-      'services': const ['http://linksys.com/jnap/core/Core'],
-    });
+    return NodeDeviceInfo(
+      serialNumber: serialNumber,
+      modelNumber: modelNumber,
+      hardwareVersion: hardwareVersion,
+      manufacturer: 'Linksys',
+      description: 'Test Router',
+      firmwareVersion: '1.0.0',
+      firmwareDate: '2024-01-01T00:00:00Z',
+    );
   }
 
   /// Create RouterWANStatus for testing

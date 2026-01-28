@@ -4,13 +4,7 @@ import 'package:generative_ui/generative_ui.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 import 'package:privacy_gui/ai/_ai.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
-
-/// Provider for the command provider.
-final routerCommandProviderProvider = Provider<IRouterCommandProvider>((ref) {
-  final router = ref.watch(routerRepositoryProvider);
-  return JnapCommandProvider(router);
-});
+import 'package:privacy_gui/page/ai_assistant/providers/router_command_provider.dart';
 
 /// Main view for the Router AI Assistant.
 ///

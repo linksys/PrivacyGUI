@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/data/providers/wifi_radios_provider.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/ethernet_ports_provider.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/core/models/privacy_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_advanced_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_state.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_item.dart';

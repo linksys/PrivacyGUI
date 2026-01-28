@@ -1,0 +1,16 @@
+//
+//  Remote.xcconfig
+//  Runner
+//
+//  Created by Hank Yu on 2026/1/20.
+//
+
+#include "Shared.xcconfig"
+
+// Bundle ID (append a suffix to clearly distinguish variants)
+PRODUCT_BUNDLE_IDENTIFIER = $(BASE_BUNDLE_ID).remote
+
+// App display name
+APP_DISPLAY_NAME = Linksys (Remote)
+
+// Note: DART_DEFINES is intentionally not set here.

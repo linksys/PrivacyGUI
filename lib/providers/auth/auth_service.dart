@@ -8,8 +8,8 @@ import 'package:privacy_gui/core/cloud/linksys_cloud_repository.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_session_model.dart';
 import 'package:privacy_gui/core/cloud/model/error_response.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -338,6 +338,11 @@ class AuthService {
         loginType: LoginType.local,
         localPassword: password,
       ));
+    } on JNAPError catch (e) {
+      // Rethrow JNAPError to preserve error data (e.g., attemptsRemaining, delayTimeRemaining)
+      // This is needed for the View layer to display countdown and attempts correctly
+      logger.e('[AuthService]: Local login failed: $e');
+      rethrow;
     } catch (e) {
       logger.e('[AuthService]: Local login failed: $e');
       return AuthFailure(NetworkError(message: e.toString()));
@@ -425,26 +430,14 @@ class AuthService {
 
   /// Retrieves the admin password authentication status from the router.
   ///
-  /// This method checks if the router supports the admin password auth status
-  /// feature and retrieves the current authentication status if supported.
-  ///
-  /// Parameters:
-  /// - [services]: List of supported JNAP service names
+  /// This method retrieves the current authentication status for password
+  /// lockout tracking (delay time, remaining attempts).
   ///
   /// Returns:
-  /// - [AuthSuccess] with status map if feature is supported and retrieval succeeded
-  /// - [AuthSuccess] with null if feature is not supported
+  /// - [AuthSuccess] with status map if retrieval succeeded
   /// - [AuthFailure] with appropriate error if retrieval failed
-  Future<AuthResult<Map<String, dynamic>?>> getAdminPasswordAuthStatus(
-      List<String> services) async {
+  Future<AuthResult<Map<String, dynamic>?>> getAdminPasswordAuthStatus() async {
     try {
-      // Check if the feature is supported
-      if (serviceHelper.isSupportAdminPasswordAuthStatus(services) != true) {
-        logger.d(
-            '[AuthService]: Admin password auth status not supported by router');
-        return const AuthSuccess(null);
-      }
-
       final result = await _routerRepository.send(
         JNAPAction.getAdminPasswordAuthStatus,
       );

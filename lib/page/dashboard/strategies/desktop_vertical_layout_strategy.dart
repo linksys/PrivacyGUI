@@ -28,7 +28,7 @@ class DesktopVerticalLayoutStrategy extends DashboardLayoutStrategy {
                 children: [
                   ctx.buildPortAndSpeed(const PortAndSpeedConfig(
                     direction: Axis.vertical,
-                    showSpeedTest: false,
+                    showSpeedTest: true,
                     portsHeight: 752,
                     portsPadding: EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,

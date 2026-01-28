@@ -27,9 +27,17 @@ final autoParentFirstLoginServiceProvider =
 /// - Stateless (no internal state)
 /// - Dependencies injected via constructor
 class AutoParentFirstLoginService {
-  AutoParentFirstLoginService(this._routerRepository);
+  AutoParentFirstLoginService(this._routerRepository,
+      {RetryStrategy? retryStrategy})
+      : _retryStrategy = retryStrategy ??
+            ExponentialBackoffRetryStrategy(
+              maxRetries: 5,
+              initialDelay: const Duration(seconds: 2),
+              maxDelay: const Duration(seconds: 2),
+            );
 
   final RouterRepository _routerRepository;
+  final RetryStrategy _retryStrategy;
 
   /// Sets userAcknowledgedAutoConfiguration flag on the router.
   ///
@@ -121,13 +129,7 @@ class AutoParentFirstLoginService {
   /// Throws: Nothing (returns false on all error conditions)
   Future<bool> checkInternetConnection() async {
     // Make up to 5 attempts to check internet connection total 10 seconds
-    final retryStrategy = ExponentialBackoffRetryStrategy(
-      maxRetries: 5,
-      initialDelay: const Duration(seconds: 2),
-      maxDelay: const Duration(seconds: 2),
-    );
-
-    return retryStrategy.execute<bool>(() async {
+    return _retryStrategy.execute<bool>(() async {
       final result = await _routerRepository.send(
         JNAPAction.getInternetConnectionStatus,
         fetchRemote: true,

@@ -13,7 +13,7 @@ import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
-import 'widgets/demo_theme_settings_fab.dart';
+import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
 
 /// Demo version of the Linksys application.
 ///
@@ -50,13 +50,13 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
     final systemLocaleStr = Intl.getCurrentLocale();
     final systemLocale = Locale(getLanguageData(systemLocaleStr)['value']);
 
-    // Watch demo theme config for dynamic updates
+    // Watch configuration and UI state
     final demoConfig = ref.watch(demoThemeConfigProvider);
 
     // Use demo seedColor if set, otherwise fall back to appSettings
     final effectiveSeedColor = demoConfig.seedColor ?? appSettings.themeColor;
 
-    // Build dynamic theme from demo config
+    // Build dynamic theme (Same as before)
     final themeData = _buildThemeData(
       brightness: appSettings.themeMode == ThemeMode.dark
           ? Brightness.dark
@@ -65,18 +65,29 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
       globalOverlay: demoConfig.globalOverlay,
       visualEffects: demoConfig.visualEffects,
       userThemeColor: effectiveSeedColor,
+      primary: demoConfig.primary,
+      secondary: demoConfig.secondary,
+      tertiary: demoConfig.tertiary,
+      surface: demoConfig.surface,
+      error: demoConfig.error,
+      overrides: demoConfig.overrides,
     );
-
+    // ... Dark Theme Build ...
     final darkTheme = _buildThemeData(
       brightness: Brightness.dark,
       style: demoConfig.style,
       globalOverlay: demoConfig.globalOverlay,
       visualEffects: demoConfig.visualEffects,
       userThemeColor: effectiveSeedColor,
+      primary: demoConfig.primary,
+      secondary: demoConfig.secondary,
+      tertiary: demoConfig.tertiary,
+      surface: demoConfig.surface,
+      error: demoConfig.error,
+      overrides: demoConfig.overrides,
     );
 
-    // Update GetIt with the new dark theme so BottomNavigationMenu (TopBar) picks it up.
-    // This is safe because GetIt lookup is synchronous and we update before subtree builds.
+    // Update GetIt ...
     if (getIt.isRegistered<ThemeData>(instanceName: 'darkThemeData')) {
       getIt.unregister<ThemeData>(instanceName: 'darkThemeData');
     }
@@ -96,18 +107,20 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
           context,
           Stack(
             children: [
+              // Main App Content (Full Screen)
+              // Note: Theme Panel and FAB are now provided by the ShellRoute
+              // in demo_router_provider.dart
               AppRootContainer(
                 route: _currentRoute,
                 child: child,
               ),
+
               // Demo mode banner
               const Positioned(
                 top: 0,
                 right: 0,
                 child: _DemoModeBanner(),
               ),
-              // Theme settings FAB
-              const DemoThemeSettingsFab(),
             ],
           ),
         ),
@@ -125,6 +138,13 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
     GlobalOverlayType? globalOverlay,
     int visualEffects = AppThemeConfig.effectAll,
     Color? userThemeColor,
+    // Add override params
+    Color? primary,
+    Color? secondary,
+    Color? tertiary,
+    Color? surface,
+    Color? error,
+    AppThemeOverrides? overrides,
   }) {
     // Get base JSON config
     final themeConfig = getIt<ThemeJsonConfig>();
@@ -146,6 +166,21 @@ class _DemoLinksysAppState extends ConsumerState<DemoLinksysApp> {
     if (userThemeColor != null) {
       dynamicJson['seedColor'] =
           '#${userThemeColor.toARGB32().toRadixString(16).substring(2)}';
+    }
+
+    // Inject Granular Color Overrides (Standard Layer)
+    String? colorToHex(Color? c) =>
+        c != null ? '#${c.toARGB32().toRadixString(16).substring(2)}' : null;
+
+    if (primary != null) dynamicJson['primary'] = colorToHex(primary);
+    if (secondary != null) dynamicJson['secondary'] = colorToHex(secondary);
+    if (tertiary != null) dynamicJson['tertiary'] = colorToHex(tertiary);
+    if (surface != null) dynamicJson['surface'] = colorToHex(surface);
+    if (error != null) dynamicJson['error'] = colorToHex(error);
+
+    // Inject Advanced Overrides (Semantic & Component Layer)
+    if (overrides != null) {
+      dynamicJson['overrides'] = overrides.toJson();
     }
 
     // Build design theme
