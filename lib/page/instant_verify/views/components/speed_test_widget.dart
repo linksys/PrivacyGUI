@@ -55,8 +55,8 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
 
     final bandwidth = NetworkUtils.formatBitsWithUnit(
         state.status == 'COMPLETE'
-            ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024
-            : (state.meterValue * 1024).toInt(),
+            ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1000
+            : (state.meterValue * 1000).toInt(),
         decimals: 1);
 
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '0';
@@ -428,8 +428,8 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
   }
 
   Widget _resultCard(SpeedTestResult? result) {
-    final downloadBandWidthIntBits = (result?.downloadBandwidth ?? 0) * 1024;
-    final uploadBandWidthIntBits = (result?.uploadBandwidth ?? 0) * 1024;
+    final downloadBandWidthIntBits = (result?.downloadBandwidth ?? 0) * 1000;
+    final uploadBandWidthIntBits = (result?.uploadBandwidth ?? 0) * 1000;
     final downloadFormat =
         NetworkUtils.formatBitsWithUnit(downloadBandWidthIntBits, decimals: 1);
     final uploadFormat =

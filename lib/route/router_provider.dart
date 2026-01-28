@@ -62,6 +62,7 @@ import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
+import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
 import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
@@ -382,6 +383,9 @@ class RouterNotifier extends ChangeNotifier {
       // Build/Update better actions
       logger.d('[Prepare]: build better actions');
       buildBetterActions(nodeDeviceInfo.services);
+      // Update global model number
+      _ref.read(globalModelNumberProvider.notifier).state =
+          nodeDeviceInfo.modelNumber;
       return nodeDeviceInfo;
     }).onError((error, stackTrace) => null);
 

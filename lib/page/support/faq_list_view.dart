@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'package:privacy_gui/utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
+import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/consts.dart';
@@ -12,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
+import 'package:privacy_gui/providers/brand_asset_provider.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
@@ -43,8 +43,7 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
 
   @override
   Widget build(BuildContext context) {
-    final supImgPath =
-        Theme.of(context).brightness == Brightness.dark ? 'assets/brand/brand_img_sup_dark' : 'assets/brand/brand_img_sup';
+    final modelNumber = ref.watch(globalModelNumberProvider);
     return StyledAppPageView(
       title: loc(context).faqs,
       backState: StyledBackState.none,
@@ -56,18 +55,22 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
             runSpacing: Spacing.small2,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              FutureBuilder<String?>(
-                future: BrandUtils.resolveAsset(supImgPath),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data != null) {
-                    return Image.asset(
-                      snapshot.data!,
-                      height: 48,
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
+              ref
+                  .watch(brandAssetProvider(
+                      (modelNumber: modelNumber, asset: BrandAsset.imgSup)))
+                  .when(
+                    data: (path) {
+                      if (path != null) {
+                        return Image.asset(
+                          path,
+                          height: 48,
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
               AppText.bodySmall(loc(context).faqLookingFor),
             ],
           ),
