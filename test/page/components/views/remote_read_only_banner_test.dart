@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/components/views/remote_read_only_banner.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_state.dart';
+import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
 void main() {
   group('RemoteReadOnlyBanner', () {
@@ -18,6 +19,8 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: RemoteReadOnlyBanner(),
             ),
@@ -45,6 +48,8 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: RemoteReadOnlyBanner(),
             ),
@@ -71,6 +76,8 @@ void main() {
             ),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: RemoteReadOnlyBanner(),
             ),
@@ -91,7 +98,7 @@ void main() {
 
       // Verify decoration uses theme colors
       final decoration = container.decoration as BoxDecoration?;
-      expect(decoration?.color, equals(colorScheme.secondaryContainer));
+      expect(decoration?.color, equals(colorScheme.errorContainer));
     });
   });
 }
