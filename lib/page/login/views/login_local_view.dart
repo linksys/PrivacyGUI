@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:usp_ui_flutter/constants/build_config.dart';
 import 'package:usp_ui_flutter/constants/error_code.dart';
+import 'package:usp_ui_flutter/constants/pref_key.dart';
 import 'package:usp_ui_flutter/core/jnap/actions/better_action.dart';
 import 'package:usp_ui_flutter/core/jnap/models/device_info.dart';
 import 'package:usp_ui_flutter/core/jnap/providers/dashboard_manager_provider.dart';
@@ -358,6 +360,14 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
     final result = await uspAuth.login(_passwordController.text);
 
     if (result.success) {
+      // Store password in secure storage so authProvider recognizes login
+      const storage = FlutterSecureStorage();
+      await storage.write(key: pLocalPassword, value: _passwordController.text);
+
+      // Update authProvider state to reflect local login
+      // This ensures redirect logic allows access to dashboard
+      await ref.read(authProvider.notifier).init();
+
       // Login successful, navigate to dashboard
       if (mounted) {
         context.go(RoutePath.dashboardHome);

@@ -360,6 +360,17 @@ class RouterNotifier extends ChangeNotifier {
 
   Future<String?> _prepare(GoRouterState state, [String? goToPath]) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
+
+    // USP mode: Skip all JNAP-dependent preparation
+    // When force=local is set, the router runs USP bridge (not JNAP),
+    // so JNAP calls will fail. Go directly to the requested path.
+    if (BuildConfig.forceCommandType == ForceCommand.local) {
+      logger.i('[Prepare]: USP mode - skipping JNAP preparation');
+      final naviPath = goToPath ?? state.uri.toString();
+      logger.d('[Prepare]: USP mode - going to $naviPath');
+      return naviPath;
+    }
+
     await _ref.read(connectivityProvider.notifier).forceUpdate();
     final prefs = await SharedPreferences.getInstance();
     String? serialNumber = prefs.getString(pCurrentSN);
