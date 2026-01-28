@@ -93,6 +93,19 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                   final speedtestTempResult = state.result
                       .firstWhereOrNull((e) => e.timestamp == state.timestamp)
                       ?.speedTestResult;
+
+                  if (speedtestTempResult?.exitCode != 'Success' &&
+                      speedtestTempResult?.exitCode != 'Unavailable') {
+                    state = state.copyWith(
+                      step: 'error',
+                      status: 'COMPLETE',
+                      error: JNAPError(
+                          result:
+                              speedtestTempResult?.exitCode ?? 'Unknown Error'),
+                    );
+                    return;
+                  }
+
                   state = state.copyWith(
                       step: 'success',
                       status: 'COMPLETE',
@@ -108,6 +121,18 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
         logger.d('[SpeedTest] Get Health Check Result - $result');
         if (result is JNAPError) {
           state = state.copyWith(error: result);
+          return;
+        }
+        if (_getErrorCode(result)) {
+          state = state.copyWith(
+            step: 'error',
+            status: 'COMPLETE',
+            error: JNAPError(
+                result: (result as JNAPSuccess)
+                        .output['speedTestResult']?['exitCode']
+                        ?.toString() ??
+                    'Unknown Error'),
+          );
           return;
         }
         final step = _getCurrentStep(result);
@@ -291,6 +316,9 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
 
   String _getCurrentStep(JNAPResult result) {
     if (result is JNAPSuccess) {
+      if (_getErrorCode(result)) {
+        return 'error';
+      }
       final speedTestResult =
           SpeedTestResult.fromJson(result.output['speedTestResult']);
       if (result.output['healthCheckModuleCurrentlyRunning'] == 'SpeedTest') {
