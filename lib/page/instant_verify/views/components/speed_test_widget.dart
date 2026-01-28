@@ -213,6 +213,30 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
 
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';
 
+    if (state.step == 'error') {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+            child: Wrap(
+              direction: Axis.vertical,
+              children: [
+                AppText.labelMedium(
+                  loc(context).generalError,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const AppGap.small2(),
+                AppText.bodySmall(
+                    state.error?.result ?? loc(context).unknownError),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
