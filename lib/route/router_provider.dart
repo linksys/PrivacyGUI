@@ -4,69 +4,69 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:usp_ui_flutter/constants/build_config.dart';
-import 'package:usp_ui_flutter/constants/pref_key.dart';
-import 'package:usp_ui_flutter/core/cache/linksys_cache_manager.dart';
-import 'package:usp_ui_flutter/core/jnap/actions/better_action.dart';
-import 'package:usp_ui_flutter/core/jnap/models/auto_configuration_settings.dart';
-import 'package:usp_ui_flutter/core/jnap/models/device_info.dart';
-import 'package:usp_ui_flutter/core/jnap/providers/dashboard_manager_provider.dart';
-import 'package:usp_ui_flutter/core/jnap/providers/polling_provider.dart';
-import 'package:usp_ui_flutter/core/jnap/router_repository.dart';
-import 'package:usp_ui_flutter/core/utils/logger.dart';
-import 'package:usp_ui_flutter/page/advanced_settings/_advanced_settings.dart';
-import 'package:usp_ui_flutter/page/advanced_settings/static_routing/static_routing_rule_view.dart';
-import 'package:usp_ui_flutter/page/advanced_settings/static_routing/static_routing_view.dart';
-import 'package:usp_ui_flutter/page/components/picker/region_picker_view.dart';
-import 'package:usp_ui_flutter/page/components/settings_view/editable_card_list_edit_view.dart';
-import 'package:usp_ui_flutter/page/dashboard/_dashboard.dart';
-import 'package:usp_ui_flutter/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
-import 'package:usp_ui_flutter/page/instant_device/_instant_device.dart';
-import 'package:usp_ui_flutter/page/instant_device/views/select_device_view.dart';
-import 'package:usp_ui_flutter/page/firmware_update/_firmware_update.dart';
-import 'package:usp_ui_flutter/page/health_check/_health_check.dart';
-import 'package:usp_ui_flutter/page/instant_privacy/views/instant_privacy_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
-import 'package:usp_ui_flutter/page/landing/_landing.dart';
+import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/models/auto_configuration_settings.dart';
+import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/providers/dashboard_manager_provider.dart';
+import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_rule_view.dart';
+import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
+import 'package:privacy_gui/page/components/picker/region_picker_view.dart';
+import 'package:privacy_gui/page/components/settings_view/editable_card_list_edit_view.dart';
+import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
+import 'package:privacy_gui/page/instant_device/_instant_device.dart';
+import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
+import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
+import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
+import 'package:privacy_gui/page/landing/_landing.dart';
 
-import 'package:usp_ui_flutter/page/login/views/_views.dart';
-import 'package:usp_ui_flutter/page/login/auto_parent/views/auto_parent_first_login_view.dart';
-import 'package:usp_ui_flutter/page/login/views/local_reset_router_password_view.dart';
-import 'package:usp_ui_flutter/page/login/views/login_cloud_auth_view.dart';
-import 'package:usp_ui_flutter/page/instant_admin/_instant_admin.dart';
-import 'package:usp_ui_flutter/page/nodes/_nodes.dart';
-import 'package:usp_ui_flutter/page/nodes/views/add_nodes_view.dart';
-import 'package:usp_ui_flutter/page/otp_flow/providers/_providers.dart';
-import 'package:usp_ui_flutter/page/otp_flow/views/_views.dart';
-import 'package:usp_ui_flutter/page/instant_setup/data/pnp_provider.dart';
-import 'package:usp_ui_flutter/page/instant_setup/pnp_admin_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/pnp_setup_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/troubleshooter/views/pnp_modem_lights_off_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/troubleshooter/views/pnp_unplug_modem_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart';
-import 'package:usp_ui_flutter/page/instant_safety/views/instant_safety_view.dart';
-import 'package:usp_ui_flutter/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart';
-import 'package:usp_ui_flutter/page/select_network/_select_network.dart';
-import 'package:usp_ui_flutter/page/instant_verify/views/instant_verify_view.dart';
-import 'package:usp_ui_flutter/page/support/faq_list_view.dart';
-import 'package:usp_ui_flutter/page/instant_topology/views/instant_topology_view.dart';
-import 'package:usp_ui_flutter/page/troubleshooting/_troubleshooting.dart';
-import 'package:usp_ui_flutter/page/vpn/views/vpn_settings_page.dart';
-import 'package:usp_ui_flutter/page/wifi_settings/_wifi_settings.dart';
-import 'package:usp_ui_flutter/providers/auth/_auth.dart';
-import 'package:usp_ui_flutter/providers/auth/ra_session_provider.dart';
-import 'package:usp_ui_flutter/providers/connectivity/_connectivity.dart';
-import 'package:usp_ui_flutter/route/route_model.dart';
-import 'package:usp_ui_flutter/route/router_logger.dart';
+import 'package:privacy_gui/page/login/views/_views.dart';
+import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
+import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
+import 'package:privacy_gui/page/login/views/login_cloud_auth_view.dart';
+import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
+import 'package:privacy_gui/page/nodes/_nodes.dart';
+import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
+import 'package:privacy_gui/page/otp_flow/providers/_providers.dart';
+import 'package:privacy_gui/page/otp_flow/views/_views.dart';
+import 'package:privacy_gui/page/instant_setup/data/pnp_provider.dart';
+import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
+import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_save_settings_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_modem_lights_off_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_unplug_modem_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart';
+import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
+import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart';
+import 'package:privacy_gui/page/select_network/_select_network.dart';
+import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
+import 'package:privacy_gui/page/support/faq_list_view.dart';
+import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
+import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
+import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
+import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
+import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
+import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacy_gui/route/router_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
-import 'package:usp_ui_flutter/core/jnap/providers/ip_getter/get_local_ip.dart'
-    if (dart.library.io) 'package:usp_ui_flutter/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
-    if (dart.library.html) 'package:usp_ui_flutter/core/jnap/providers/ip_getter/web_get_local_ip.dart';
+import 'package:privacy_gui/core/jnap/providers/ip_getter/get_local_ip.dart'
+    if (dart.library.io) 'package:privacy_gui/core/jnap/providers/ip_getter/mobile_get_local_ip.dart'
+    if (dart.library.html) 'package:privacy_gui/core/jnap/providers/ip_getter/web_get_local_ip.dart';
 
 part 'route_home.dart';
 part 'route_cloud_login.dart';
@@ -169,17 +169,8 @@ class RouterNotifier extends ChangeNotifier {
     LocalWhereToGo whereToGo = LocalWhereToGo.login;
     final routerType =
         _ref.read(connectivityProvider).connectivityInfo.routerType;
-
-    // USP mode: Skip JNAP-dependent auto-configuration checks
-    // When force=local is set, the router runs USP bridge (not JNAP),
-    // so JNAP calls will fail. Go directly to login and use USP auth.
-    if (BuildConfig.forceCommandType == ForceCommand.local) {
-      logger.i('[Route]: [AutoConfigurationLogic]: USP mode - skipping JNAP checks, going to login');
-      FlutterNativeSplash.remove();
-      return _authCheck(state);
-    }
-
-    if ((routerType != RouterType.others && loginType != LoginType.remote)) {
+    if (BuildConfig.forceCommandType == ForceCommand.local ||
+        (routerType != RouterType.others && loginType != LoginType.remote)) {
       whereToGo = await pnp
           .fetchDeviceInfo(false)
           .then((_) async => await pnp.autoConfigurationCheck())
@@ -360,17 +351,6 @@ class RouterNotifier extends ChangeNotifier {
 
   Future<String?> _prepare(GoRouterState state, [String? goToPath]) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
-
-    // USP mode: Skip all JNAP-dependent preparation
-    // When force=local is set, the router runs USP bridge (not JNAP),
-    // so JNAP calls will fail. Go directly to the requested path.
-    if (BuildConfig.forceCommandType == ForceCommand.local) {
-      logger.i('[Prepare]: USP mode - skipping JNAP preparation');
-      final naviPath = goToPath ?? state.uri.toString();
-      logger.d('[Prepare]: USP mode - going to $naviPath');
-      return naviPath;
-    }
-
     await _ref.read(connectivityProvider.notifier).forceUpdate();
     final prefs = await SharedPreferences.getInstance();
     String? serialNumber = prefs.getString(pCurrentSN);
