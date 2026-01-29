@@ -43,7 +43,7 @@ Future<void> main() async {
     when(mockDashboardHomeNotifier.build()).thenReturn(
         DashboardHomeState.fromMap(dashboardHomeCherry7TestState)
             .copyWith(healthCheckModule: () => 'Ookla'));
-    
+
     final widget = testableSingleRoute(
       overrides: [
         healthCheckProvider.overrideWith(() => mockHealthCheckProvider),
@@ -223,7 +223,7 @@ class MockHealthCheckSuccessProvider extends HealthCheckProvider with Mock {
       HealthCheckState.fromJson(healthCheckStateSuccessUltra);
 
   @override
-  Future runHealthCheck(Module module) async {
+  Future runHealthCheck(Module module, {int? serverId}) async {
     await Future.delayed(const Duration(seconds: 1));
     state = state.copyWith(step: 'success');
   }
@@ -258,7 +258,7 @@ class HealthCheckErrorProvider extends MockHealthCheckSuccessProvider {
   HealthCheckState build() => HealthCheckState.fromJson(healthCheckStateError);
 
   @override
-  Future runHealthCheck(Module module) async {
+  Future runHealthCheck(Module module, {int? serverId}) async {
     await Future.delayed(const Duration(seconds: 1));
     state = HealthCheckState.fromJson(healthCheckStateError);
   }

@@ -19,7 +19,6 @@ picker=$5
 ca=$6
 YEAR=$(date +%Y)
 
-
 enableHTMLRenderer=""
 if [ "$FlutterVersion" == "3.27.1" ]; then
     enableHTMLRenderer="--web-renderer html"
