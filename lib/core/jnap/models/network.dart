@@ -1,6 +1,6 @@
 // import 'package:equatable/equatable.dart';
 // import 'package:privacy_gui/core/jnap/models/device.dart';
-// import 'package:privacy_gui/core/jnap/models/device_info.dart';
+// import 'package:privacy_gui/core/models/device_info.dart';
 // import 'package:privacy_gui/core/jnap/models/guest_radio_settings.dart';
 // import 'package:privacy_gui/core/jnap/models/radio_info.dart';
 // import 'package:privacy_gui/core/jnap/models/wan_status.dart';

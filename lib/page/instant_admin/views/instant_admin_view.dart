@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/jnap/models/firmware_update_settings.dart';
 import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -68,9 +67,8 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
   @override
   Widget build(BuildContext context) {
     final routerPasswordState = ref.watch(routerPasswordProvider);
-    final isFwAutoUpdate = ref.watch(firmwareUpdateProvider
-            .select((value) => value.settings.updatePolicy)) ==
-        FirmwareUpdateSettings.firmwareUpdatePolicyAuto;
+    final isFwAutoUpdate = ref.watch(
+        firmwareUpdateProvider.select((value) => value.isAutoUpdateEnabled));
     final deviceInfoState = ref.watch(deviceInfoProvider);
     final timezoneState = ref.watch(timezoneProvider);
     final powerTableState = ref.watch(powerTableProvider);
@@ -160,9 +158,7 @@ class _InstantAdminViewState extends ConsumerState<InstantAdminView> {
                 context,
                 ref
                     .read(firmwareUpdateProvider.notifier)
-                    .setFirmwareUpdatePolicy(value
-                        ? FirmwareUpdateSettings.firmwareUpdatePolicyAuto
-                        : FirmwareUpdateSettings.firmwareUpdatePolicyManual),
+                    .setAutoUpdateEnabled(value),
               );
             },
           ),

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/node_light_settings_provider.dart';
@@ -737,13 +737,23 @@ class _NodeDetailViewState extends ConsumerState<NodeDetailView>
         ],
       );
     }, event: () async {
-      ref
-          .read(nodeLightSettingsProvider.notifier)
-          .setSettings(NodeLightSettings.fromStatus(nodeLightStatus));
-      await ref
-          .read(nodeLightSettingsProvider.notifier)
-          .save()
-          .then((_) => showChangesSavedSnackBar());
+      final state = ref.read(nodeLightSettingsProvider);
+      final notifier = ref.read(nodeLightSettingsProvider.notifier);
+      switch (nodeLightStatus) {
+        case NodeLightStatus.night:
+          notifier.setSettings(
+              state.copyWith(isNightModeEnabled: true, allDayOff: false));
+          break;
+        case NodeLightStatus.off:
+          notifier.setSettings(
+              state.copyWith(isNightModeEnabled: false, allDayOff: true));
+          break;
+        case NodeLightStatus.on:
+          notifier.setSettings(
+              state.copyWith(isNightModeEnabled: false, allDayOff: false));
+          break;
+      }
+      await notifier.save().then((_) => showChangesSavedSnackBar());
     });
   }
 }

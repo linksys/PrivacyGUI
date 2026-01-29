@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:privacy_gui/core/jnap/models/node_light_settings.dart';
+import 'package:privacy_gui/page/nodes/providers/node_light_state.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/views/components/widgets/home_title.dart';
-import 'package:privacy_gui/page/dashboard/views/components/widgets/networks.dart';
-import 'package:privacy_gui/page/dashboard/views/components/widgets/port_and_speed.dart';
-import 'package:privacy_gui/page/dashboard/views/components/widgets/quick_panel.dart';
-import 'package:privacy_gui/page/dashboard/views/components/widgets/wifi_grid.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/networks.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/port_and_speed.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/quick_panel.dart';
+import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/wifi_grid.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -99,20 +99,20 @@ void main() {
   }
 
   Future<void> scrollToQuickPanel(WidgetTester tester) async {
-    final panel = find.byType(DashboardQuickPanel).first;
+    final panel = find.byType(FixedDashboardQuickPanel).first;
     await tester.ensureVisible(panel);
     await tester.pumpAndSettle();
   }
 
   Future<void> scrollToWifiGrid(WidgetTester tester) async {
-    final grid = find.byType(DashboardWiFiGrid).first;
+    final grid = find.byType(FixedDashboardWiFiGrid).first;
     await tester.ensureVisible(grid);
     await tester.pumpAndSettle();
   }
 
   Future<void> toggleInstantPrivacy(WidgetTester tester) async {
     await scrollToQuickPanel(tester);
-    final quickPanel = find.byType(DashboardQuickPanel).first;
+    final quickPanel = find.byType(FixedDashboardQuickPanel).first;
     final privacySwitch = find.descendant(
       of: quickPanel,
       matching: find.byType(AppSwitch),
@@ -130,8 +130,8 @@ void main() {
 
       expect(find.byType(DashboardHomeTitle), findsOneWidget);
       expect(find.text(loc.internetOnline), findsOneWidget);
-      expect(find.byType(DashboardQuickPanel), findsOneWidget);
-      expect(find.byType(DashboardWiFiGrid), findsOneWidget);
+      expect(find.byType(FixedDashboardQuickPanel), findsOneWidget);
+      expect(find.byType(FixedDashboardWiFiGrid), findsOneWidget);
     },
     screens: _noLanScreens,
     goldenFilename: 'DHOME-NOLAN_BASE_01_layout',
@@ -146,7 +146,7 @@ void main() {
           .thenReturn(topologyTestData.testTopologySingalsSlaveState);
 
       await pumpDashboard(tester, screen);
-      expect(find.byType(DashboardNetworks), findsOneWidget);
+      expect(find.byType(FixedDashboardNetworks), findsOneWidget);
     },
     screens: _noLanScreens,
     goldenFilename: 'DHOME-NOLAN_SIGNAL_01_signals',
@@ -208,7 +208,8 @@ void main() {
     'dashboard home view - node night mode enabled',
     (tester, screen) async {
       when(testHelper.mockNodeLightSettingsNotifier.build()).thenReturn(
-        NodeLightSettings(isNightModeEnable: true, startHour: 20, endHour: 8),
+        const NodeLightState(
+            isNightModeEnabled: true, startHour: 20, endHour: 8),
       );
 
       final context = await pumpDashboard(tester, screen);
@@ -245,7 +246,7 @@ void main() {
     (tester, screen) async {
       await pumpDashboard(tester, screen);
       expect(find.byType(DashboardHomeTitle), findsOneWidget);
-      expect(find.byType(DashboardWiFiGrid), findsOneWidget);
+      expect(find.byType(FixedDashboardWiFiGrid), findsOneWidget);
     },
     screens: _verticalScreens,
     goldenFilename: 'DHOME-VERT_BASE_01_layout',
@@ -282,7 +283,7 @@ void main() {
         ),
       );
       await pumpDashboard(tester, screen);
-      expect(find.byType(DashboardHomePortAndSpeed), findsOneWidget);
+      expect(find.byType(FixedDashboardHomePortAndSpeed), findsOneWidget);
     },
     screens: _verticalScreens,
     goldenFilename: 'DHOME-VERT_SPEED_INIT_01_init',
@@ -344,7 +345,7 @@ void main() {
     (tester, screen) async {
       await pumpDashboard(tester, screen);
       await scrollToWifiGrid(tester);
-      final wifiGrid = find.byType(DashboardWiFiGrid).first;
+      final wifiGrid = find.byType(FixedDashboardWiFiGrid).first;
       final shareButton = find.descendant(
         of: wifiGrid,
         matching: find.byType(AppIconButton),

@@ -2,7 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/models/device_info.dart';
+import 'package:privacy_gui/core/models/device_info.dart';
+import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/data/services/session_service.dart';
@@ -136,10 +137,10 @@ void main() {
     // T044: checkDeviceInfo returns cached value immediately when available
     test('returns cached value immediately when available', () async {
       // Arrange
-      final cachedDeviceInfo = NodeDeviceInfo.fromJson(
+      final cachedDeviceInfo = JnapDeviceInfoRaw.fromJson(
         SessionTestData.createDeviceInfoSuccess(serialNumber: 'CACHED_SN')
             .output,
-      );
+      ).toUIModel();
 
       // Act
       final result = await service.checkDeviceInfo(cachedDeviceInfo);
@@ -194,6 +195,85 @@ void main() {
       expect(
         () => service.checkDeviceInfo(null),
         throwsA(isA<ResourceNotFoundError>()),
+      );
+    });
+  });
+
+  group('SessionService - forceFetchDeviceInfo', () {
+    // T047: forceFetchDeviceInfo always makes API call
+    test('always makes API call to fetch fresh device info', () async {
+      // Arrange
+      final deviceInfoOutput =
+          SessionTestData.createDeviceInfoSuccess(serialNumber: 'FRESH_SN')
+              .output;
+
+      when(() => mockRouterRepository.send(
+                JNAPAction.getDeviceInfo,
+                fetchRemote: true,
+              ))
+          .thenAnswer(
+              (_) async => JNAPSuccess(result: 'OK', output: deviceInfoOutput));
+
+      // Act
+      final result = await service.forceFetchDeviceInfo();
+
+      // Assert
+      expect(result, isA<NodeDeviceInfo>());
+      expect(result.serialNumber, equals('FRESH_SN'));
+      verify(() => mockRouterRepository.send(
+            JNAPAction.getDeviceInfo,
+            fetchRemote: true,
+          )).called(1);
+    });
+
+    // T048: forceFetchDeviceInfo throws UnauthorizedError on unauthorized
+    test('throws UnauthorizedError on _ErrorUnauthorized', () async {
+      // Arrange
+      when(() => mockRouterRepository.send(
+                JNAPAction.getDeviceInfo,
+                fetchRemote: true,
+              ))
+          .thenThrow(const JNAPError(
+              result: '_ErrorUnauthorized', error: 'Unauthorized'));
+
+      // Act & Assert
+      expect(
+        () => service.forceFetchDeviceInfo(),
+        throwsA(isA<UnauthorizedError>()),
+      );
+    });
+
+    // T049: forceFetchDeviceInfo throws ResourceNotFoundError
+    test('throws ResourceNotFoundError on ErrorDeviceNotFound', () async {
+      // Arrange
+      when(() => mockRouterRepository.send(
+                JNAPAction.getDeviceInfo,
+                fetchRemote: true,
+              ))
+          .thenThrow(const JNAPError(
+              result: 'ErrorDeviceNotFound', error: 'Device not found'));
+
+      // Act & Assert
+      expect(
+        () => service.forceFetchDeviceInfo(),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+    });
+
+    // T050: forceFetchDeviceInfo throws UnexpectedError on unknown error
+    test('throws UnexpectedError on unknown JNAP error', () async {
+      // Arrange
+      when(() => mockRouterRepository.send(
+                JNAPAction.getDeviceInfo,
+                fetchRemote: true,
+              ))
+          .thenThrow(const JNAPError(
+              result: 'UnknownError', error: 'Something went wrong'));
+
+      // Act & Assert
+      expect(
+        () => service.forceFetchDeviceInfo(),
+        throwsA(isA<UnexpectedError>()),
       );
     });
   });

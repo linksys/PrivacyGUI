@@ -19,6 +19,8 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
+import 'package:privacy_gui/route/router_provider.dart';
+import 'demo_router_provider.dart';
 
 /// Demo provider overrides for the Demo application.
 ///
@@ -47,6 +49,9 @@ class DemoProviders {
 
         // 4. Polling: Auto-start
         pollingProvider.overrideWith(() => _DemoPollingNotifier()),
+
+        // 5. Router: Wrap with ShellRoute for Theme Panel Overlay
+        routerProvider.overrideWithProvider(demoRouterProvider),
 
         // 5. Geolocation: Bypass cloud service call
         geolocationProvider.overrideWith(() => _DemoGeolocationNotifier()),
