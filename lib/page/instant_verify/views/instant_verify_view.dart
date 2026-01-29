@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/providers/router_time_provider.dart';
 import 'package:privacy_gui/core/data/providers/system_stats_provider.dart';
@@ -34,6 +33,7 @@ import 'package:privacy_gui/page/instant_topology/helpers/topology_menu_helper.d
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
 import 'package:privacy_gui/page/instant_topology/views/widgets/instant_topology_card.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/route/constants.dart';
 
@@ -137,7 +137,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
               context.pushNamed(RouteNamed.nodeDetails);
             }
           },
-          nodeMenuBuilder: _menuHelper.buildNodeMenu,
+          nodeMenuBuilder: (context, meshNode) =>
+              _menuHelper.buildNodeMenu(context, ref, meshNode),
           nodeBuilder: (context, meshNode, isOffline) {
             // Special handling for Internet node
             if (meshNode.type == MeshNodeType.internet) {
@@ -1018,6 +1019,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   Widget _speedTestContent(BuildContext context) {
     final isHealthCheckSupported =
         ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
     return AppCard(
       key: const ValueKey('speedTestCard'),
       padding: EdgeInsets.all(AppSpacing.xxl),
@@ -1031,9 +1035,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                   child: Tooltip(
                     message: loc(context).featureUnavailableInRemoteMode,
                     child: Opacity(
-                      opacity: BuildConfig.isRemote() ? 0.5 : 1,
+                      opacity: isRemoteReadOnly ? 0.5 : 1,
                       child: AbsorbPointer(
-                        absorbing: BuildConfig.isRemote(),
+                        absorbing: isRemoteReadOnly,
                         child: const SpeedTestExternalWidget(),
                       ),
                     ),

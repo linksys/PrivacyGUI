@@ -215,6 +215,7 @@
   "faqVisitLinksysSupport": "Truy cập Hỗ trợ Linksys",
   "faqs": "FAQ",
   "featureUnavailableInRemoteMode": "Tính năng này không khả dụng trong chế độ từ xa",
+  "remoteViewModeActive": "Chế độ xem từ xa - Thay đổi cài đặt bị vô hiệu hóa",
   "filterAnonymous": "Lọc các yêu cầu Internet ẩn danh",
   "filterIdent": "Lọc nhận dạng (cổng 113)",
   "filterInternetNATRedirection": "Lọc Chuyển hướng Internet NAT",

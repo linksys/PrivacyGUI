@@ -7,6 +7,7 @@ import 'package:privacy_gui/page/nodes/providers/node_light_settings_provider.da
 import 'package:privacy_gui/core/utils/nodes.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/views/remote_aware_switch.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/views/components/core/dashboard_loading_wrapper.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
@@ -172,7 +173,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
             width: 48,
             height: 28,
             child: FittedBox(
-              child: AppSwitch(
+              child: RemoteAwareSwitch(
                 value: isActive,
                 onChanged: onToggle,
               ),
@@ -385,7 +386,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
             ),
           ),
           AppGap.lg(),
-          AppSwitch(value: value, onChanged: onChanged),
+          RemoteAwareSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -443,7 +444,7 @@ class _DashboardQuickPanelState extends ConsumerState<DashboardQuickPanel> {
                 ],
               ),
             ),
-            AppSwitch(
+            RemoteAwareSwitch(
               key: ValueKey(semantics),
               value: value,
               onChanged: onChanged,

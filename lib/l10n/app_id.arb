@@ -215,6 +215,7 @@
   "faqVisitLinksysSupport": "Kunjungi Dukungan Linksys",
   "faqs": "FAQ",
   "featureUnavailableInRemoteMode": "Fitur ini tidak tersedia dalam mode jarak jauh",
+  "remoteViewModeActive": "Mode Tampilan Jarak Jauh - Perubahan pengaturan dinonaktifkan",
   "filterAnonymous": "Filter permintaan Internet anonim",
   "filterIdent": "Filter ident (Port 113)",
   "filterInternetNATRedirection": "Filter pengalihan NAT Internet",

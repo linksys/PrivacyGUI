@@ -22,6 +22,7 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/instant_device/_instant_device.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:privacy_gui/page/components/composed/app_loadable_widget.dart';
@@ -117,6 +118,9 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
   }
 
   Widget _avatarCard(BuildContext context, ExternalDeviceDetailState state) {
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
     return SelectionArea(
       child: AppCard(
         padding: EdgeInsets.all(AppSpacing.sm),
@@ -135,9 +139,14 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
             _buildSettingRow(
               context,
               title: state.item.name,
-              trailing: AppIconButton(
-                icon: AppIcon.font(AppFontIcons.edit),
-                onTap: _showEdidDeviceModal,
+              trailing: Tooltip(
+                message: isRemoteReadOnly
+                    ? loc(context).featureUnavailableInRemoteMode
+                    : '',
+                child: AppIconButton(
+                  icon: AppIcon.font(AppFontIcons.edit),
+                  onTap: isRemoteReadOnly ? null : _showEdidDeviceModal,
+                ),
               ),
             ),
             _buildSettingRow(
@@ -335,11 +344,15 @@ class _DeviceDetailViewState extends ConsumerState<DeviceDetailView> {
 
   Widget _buildIpAddressCard(
       BuildContext context, ExternalDeviceDetailState state, bool isBridge) {
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
     final showReserveButton = !isBridge &&
         state.item.isOnline &&
         state.item.ipv4Address.isNotEmpty &&
         state.item.type != WifiConnectionType.guest &&
-        isReservedIp != null;
+        isReservedIp != null &&
+        !isRemoteReadOnly;
 
     return AppCard(
       padding: EdgeInsets.symmetric(

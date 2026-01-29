@@ -141,43 +141,36 @@ class _ThemeStudioPanelState extends ConsumerState<ThemeStudioPanel> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Export Configuration'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SelectableText(
-                jsonString,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+          content: SingleChildScrollView(
+            child: SelectableText(
+              jsonString,
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AppButton.text(
-                    label: 'Close',
-                    onTap: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(width: 8),
-                  AppButton.primary(
-                    label: 'Copy to Clipboard',
-                    onTap: () async {
-                      await Clipboard.setData(ClipboardData(text: jsonString));
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          const SnackBar(
-                              content: Text('Config copied to clipboard!')),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
+          actions: [
+            AppButton.text(
+              label: 'Close',
+              onTap: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(width: 8),
+            AppButton.primary(
+              label: 'Copy to Clipboard',
+              onTap: () async {
+                await Clipboard.setData(ClipboardData(text: jsonString));
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(
+                        content: Text('Config copied to clipboard!')),
+                  );
+                }
+              },
+            ),
+          ],
         );
       },
     );

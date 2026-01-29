@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/views/remote_aware_switch.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
@@ -143,7 +144,7 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
                     .join('/')),
           ),
         ),
-        AppSwitch(
+        RemoteAwareSwitch(
           value: widget.item.isEnabled,
           onChanged: widget.item.isGuest ||
                   !widget.item.isEnabled ||

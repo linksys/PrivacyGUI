@@ -233,6 +233,7 @@
   "faqVisitLinksysSupport": "瀏覽Linksys支援網站",
   "faqs": "常見問題解答",
   "featureUnavailableInRemoteMode": "此功能在遠端模式下無法使用",
+  "remoteViewModeActive": "遠端檢視模式 - 無法修改設定",
   "filterAnonymous": "篩選匿名網際網路請求",
   "filterIdent": "篩選器身份（連接埠 113）",
   "filterInternetNATRedirection": "篩選網際網路 NAT 重新導向",

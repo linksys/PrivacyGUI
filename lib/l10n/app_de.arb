@@ -233,6 +233,7 @@
   "faqVisitLinksysSupport": "Linksys Support besuchen",
   "faqs": "FAQs",
   "featureUnavailableInRemoteMode": "Diese Funktion ist im Fernzugriffsmodus nicht verfügbar",
+  "remoteViewModeActive": "Fernansichtsmodus - Einstellungsänderungen sind deaktiviert",
   "filterAnonymous": "Anonyme Internetanfragen filtern",
   "filterIdent": "Ident-Port 113 filtern",
   "filterInternetNATRedirection": "Internet-NAT-Umleitung filtern",

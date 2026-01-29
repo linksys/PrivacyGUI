@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/components/shared_widgets.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/page/components/views/remote_aware_switch.dart';
 import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
 import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
@@ -310,7 +311,7 @@ class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
         child: Row(
       children: [
         Expanded(child: AppText.labelLarge(loc(context).instantPrivacy)),
-        AppSwitch(
+        RemoteAwareSwitch(
           value: state.settings.current.mode == MacFilterMode.allow,
           onChanged: (value) {
             _showEnableDialog(value);

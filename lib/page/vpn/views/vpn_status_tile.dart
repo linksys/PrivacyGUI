@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/views/remote_aware_switch.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/vpn/models/vpn_models.dart';
 import 'package:privacy_gui/page/vpn/providers/vpn_notifier.dart';
@@ -56,7 +57,7 @@ class _VPNStatusTile extends ConsumerState<VPNStatusTile> {
             children: [
               AppText.titleMedium(loc(context).vpn),
               AppGap.sm(),
-              AppSwitch(
+              RemoteAwareSwitch(
                   value: vpnState.settings.serviceSettings.enabled,
                   onChanged: (value) {
                     final settings = vpnState.settings.serviceSettings;

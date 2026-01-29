@@ -215,6 +215,7 @@
   "faqVisitLinksysSupport": "Linksys Desteği'ni ziyaret edin",
   "faqs": "SSS",
   "featureUnavailableInRemoteMode": "Bu özellik uzak modda kullanılamaz",
+  "remoteViewModeActive": "Uzaktan Görüntüleme Modu - Ayar değişiklikleri devre dışı",
   "filterAnonymous": "Anonim İnternet isteklerini engelle",
   "filterIdent": "Ident filtresi (Port 113)",
   "filterInternetNATRedirection": "İnternet NAT yeniden yönlendirmeyi engelle",
