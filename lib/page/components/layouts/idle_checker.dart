@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/pwa/pwa_install_service.dart';
 import 'package:privacy_gui/route/constants.dart';
 
 const List<String> idleCheckWhiteList = [RouteNamed.addNodes];
 
-class IdleChecker extends StatefulWidget {
+class IdleChecker extends ConsumerStatefulWidget {
   final Duration idleTime;
   final Widget child;
   final Function? onIdle;
@@ -17,10 +19,10 @@ class IdleChecker extends StatefulWidget {
   });
 
   @override
-  _IdleCheckerState createState() => _IdleCheckerState();
+  ConsumerState<IdleChecker> createState() => _IdleCheckerState();
 }
 
-class _IdleCheckerState extends State<IdleChecker> {
+class _IdleCheckerState extends ConsumerState<IdleChecker> {
   Timer? _timer;
   Timer? _debounce;
 
@@ -39,6 +41,13 @@ class _IdleCheckerState extends State<IdleChecker> {
 
   void _resetTimer() {
     _timer?.cancel();
+
+    // In PWA Standalone mode (installed app), disable idle cleaner
+    final pwaService = ref.read(pwaInstallServiceProvider.notifier);
+    if (pwaService.isStandalone) {
+      return;
+    }
+
     _timer = Timer(widget.idleTime, () {
       widget.onIdle?.call();
     });
