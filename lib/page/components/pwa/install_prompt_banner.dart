@@ -1,11 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/pwa/pwa_install_service.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/pwa/ios_install_instruction_sheet.dart';
 import 'package:privacy_gui/page/components/pwa/mac_safari_install_instruction_sheet.dart';
-import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class InstallPromptBanner extends ConsumerWidget {
@@ -14,18 +12,9 @@ class InstallPromptBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Only show on Web - logic handled by provider state (PwaMode.none if not web)
-    // Only show on 'DU' model
+    // Only show on 'DU' model (Logic moved to provider)
     final mode = ref.watch(pwaInstallServiceProvider);
     final pwaNotifier = ref.read(pwaInstallServiceProvider.notifier);
-
-    final modelNumber = ref.watch(globalModelNumberProvider);
-
-    //
-    // Install only on DU model
-    //
-    if (!modelNumber.contains('DU-')) {
-      return const SizedBox.shrink();
-    }
 
     if (mode == PwaMode.none) {
       return const SizedBox.shrink();
