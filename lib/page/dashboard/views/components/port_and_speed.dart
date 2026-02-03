@@ -193,7 +193,7 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     return state.isHealthCheckSupported && showSpeedTest
-        ? hasLanPort
+        ? portState.hasLanPort
             ? Column(
                 children: const [
                   Divider(),

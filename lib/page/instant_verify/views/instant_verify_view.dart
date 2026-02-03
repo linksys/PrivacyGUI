@@ -403,6 +403,7 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           vertical: Spacing.large2,
         ),
         child: const PortsLayoutWidget(axis: Axis.horizontal),
+      ),
     );
   }
 
