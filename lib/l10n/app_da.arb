@@ -233,6 +233,7 @@
   "faqVisitLinksysSupport": "Besøg Linksys Support",
   "faqs": "Ofte stillede spørgsmål",
   "featureUnavailableInRemoteMode": "Denne funktion er ikke tilgængelig i fjernbetjeningsfunktionen",
+  "remoteViewModeActive": "Fjernsyn tilstand - Indstillingsændringer er deaktiveret",
   "filterAnonymous": "Filtrer anonyme internetanmodninger",
   "filterIdent": "Filter-ident (port 113)",
   "filterInternetNATRedirection": "NAT-omdirigering af internetfilter",

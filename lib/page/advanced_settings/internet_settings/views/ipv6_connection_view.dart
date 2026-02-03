@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/constants/build_config.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_provider.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/providers/internet_settings_state.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/optional_settings_form.dart';
 import 'package:privacy_gui/page/advanced_settings/internet_settings/widgets/wan_forms/ipv6/ipv6_wan_form_factory.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class Ipv6ConnectionView extends StatelessWidget {
+class Ipv6ConnectionView extends ConsumerWidget {
   final bool isEditing;
   final bool isBridgeMode;
   final InternetSettingsState internetSettingsState;
@@ -25,7 +26,7 @@ class Ipv6ConnectionView extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -35,7 +36,7 @@ class Ipv6ConnectionView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _infoCard(context),
+                  _infoCard(context, ref),
                   AppGap.xl(),
                   OptionalSettingsForm(
                     isEditing: isEditing,
@@ -48,7 +49,7 @@ class Ipv6ConnectionView extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Expanded(
-                    child: _infoCard(context),
+                    child: _infoCard(context, ref),
                   ),
                   AppGap.gutter(),
                   Expanded(
@@ -63,7 +64,7 @@ class Ipv6ConnectionView extends StatelessWidget {
     );
   }
 
-  Widget _infoCard(BuildContext context) {
+  Widget _infoCard(BuildContext context, WidgetRef ref) {
     final infoCards = _buildInfoCards(context);
     return AppCard(
       padding: const EdgeInsets.symmetric(
@@ -83,7 +84,7 @@ class Ipv6ConnectionView extends StatelessWidget {
                 AppText.titleMedium(
                     loc(context).internetConnectionType.capitalizeWords()),
                 const Spacer(),
-                _editButton(context),
+                _editButton(context, ref),
               ],
             ),
           ),
@@ -93,16 +94,19 @@ class Ipv6ConnectionView extends StatelessWidget {
     );
   }
 
-  Widget _editButton(BuildContext context) {
-    final isRemote = BuildConfig.isRemote();
+  Widget _editButton(BuildContext context, WidgetRef ref) {
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
     return Tooltip(
-        message: isRemote ? loc(context).featureUnavailableInRemoteMode : '',
+        message:
+            isRemoteReadOnly ? loc(context).featureUnavailableInRemoteMode : '',
         child: AppIconButton(
           key: const Key('ipv6EditButton'),
           icon: Icon(
             isEditing ? AppFontIcons.close : AppFontIcons.edit,
           ),
-          onTap: isRemote ? null : onEditToggle,
+          onTap: isRemoteReadOnly ? null : onEditToggle,
         ));
   }
 

@@ -1,0 +1,617 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
+import 'package:privacy_gui/providers/auth/auth_state.dart';
+import 'package:privacy_gui/providers/auth/auth_types.dart';
+
+// Test helper to create AuthNotifier with specific state
+class TestAuthNotifier extends AuthNotifier {
+  final AsyncValue<AuthState> testState;
+
+  TestAuthNotifier(this.testState);
+
+  @override
+  Future<AuthState> build() async {
+    state = testState;
+    return testState.when(
+      data: (data) => data,
+      loading: () => AuthState.empty(),
+      error: (_, __) => AuthState.empty(),
+    );
+  }
+}
+
+void main() {
+  // Initialize JNAP action map before all tests
+  setUpAll(() {
+    initBetterActions();
+  });
+
+  group('RouterRepository - Remote Read-Only Mode Defensive Checks', () {
+    test('send() throws UnexpectedError when calling SET action in remote mode',
+        () async {
+      // Arrange: Create container with remote login state
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: Attempt to call SET operation should throw immediately
+      try {
+        await repository.send(JNAPAction.setWANSettings);
+        fail('Expected UnexpectedError to be thrown');
+      } on UnexpectedError catch (e) {
+        // Success - the defensive check caught it
+        expect(
+          e.message,
+          'Write operations are not allowed in remote read-only mode',
+        );
+      } catch (e) {
+        fail('Expected UnexpectedError but got: ${e.runtimeType}: $e');
+      }
+    });
+
+    test(
+        'send() throws UnexpectedError for various SET operations in remote mode',
+        () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: Test multiple SET operations
+      final setActions = [
+        JNAPAction.setWANSettings,
+        JNAPAction.setRadioSettings,
+        JNAPAction.setGuestNetworkSettings,
+        JNAPAction.setDMZSettings,
+        JNAPAction.setFirewallSettings,
+        JNAPAction.setDeviceProperties,
+      ];
+
+      for (final action in setActions) {
+        try {
+          await repository.send(action);
+          fail('Expected UnexpectedError for ${action.name}');
+        } on UnexpectedError catch (e) {
+          // Success
+          expect(e.message, contains('remote read-only'));
+        } catch (e) {
+          fail(
+              'Expected UnexpectedError for ${action.name} but got: ${e.runtimeType}');
+        }
+      }
+    });
+
+    test('send() does not throw for GET operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: GET operations should NOT throw our defensive error
+      // They will fail later due to lack of network/bindings, but that's expected
+      try {
+        await repository.send(JNAPAction.getWANSettings);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('GET operation should not be blocked by defensive check');
+        }
+        // Other UnexpectedErrors are OK (missing network, etc)
+      } catch (e) {
+        // Expected: Will fail due to missing network/SharedPreferences/etc
+        // But NOT because of our remote read-only check
+        expect(e, isNot(isA<UnexpectedError>()));
+      }
+    });
+
+    test('send() allows SET operations in local mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.local),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: SET operations in local mode should NOT throw our defensive error
+      try {
+        await repository.send(JNAPAction.setWANSettings);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('SET operation in local mode should not be blocked');
+        }
+        // Other UnexpectedErrors are OK
+      } catch (e) {
+        // Expected: Will fail due to missing network/SharedPreferences/etc
+        // But NOT because of our remote read-only check
+        expect(
+            e,
+            isNot(isA<UnexpectedError>().having(
+              (e) => e.message,
+              'message',
+              contains('remote read-only'),
+            )));
+      }
+    });
+
+    test('send() allows read-only operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: Should NOT throw for safe read operations
+      try {
+        await repository.send(JNAPAction.getDeviceInfo);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail(
+              'Read-only GET operation should not be blocked by defensive check');
+        }
+        // Other UnexpectedErrors are OK (missing network, etc)
+      } catch (e) {
+        // Expected: Will fail due to missing network/SharedPreferences/etc
+        // But NOT because of our remote read-only check
+      }
+
+      try {
+        await repository.send(JNAPAction.getWANSettings);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail(
+              'Read-only GET operation should not be blocked by defensive check');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/SharedPreferences/etc
+      }
+
+      try {
+        await repository.send(JNAPAction.isAdminPasswordDefault);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail(
+              'Read-only IS operation should not be blocked by defensive check');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/SharedPreferences/etc
+      }
+    });
+
+    test('send() blocks destructive operations like reboot in remote mode',
+        () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert - Should throw for destructive operations
+      expect(
+        () => repository.send(JNAPAction.reboot),
+        throwsA(isA<UnexpectedError>().having(
+          (e) => e.message,
+          'message',
+          'Write operations are not allowed in remote read-only mode',
+        )),
+      );
+
+      expect(
+        () => repository.send(JNAPAction.factoryReset),
+        throwsA(isA<UnexpectedError>().having(
+          (e) => e.message,
+          'message',
+          'Write operations are not allowed in remote read-only mode',
+        )),
+      );
+
+      expect(
+        () => repository.send(JNAPAction.deleteDevice),
+        throwsA(isA<UnexpectedError>().having(
+          (e) => e.message,
+          'message',
+          'Write operations are not allowed in remote read-only mode',
+        )),
+      );
+    });
+
+    test(
+        'transaction() throws UnexpectedError when transaction contains SET operation in remote mode',
+        () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+      final builder = JNAPTransactionBuilder(commands: [
+        MapEntry(JNAPAction.getWANSettings, {}),
+        MapEntry(JNAPAction.setWANSettings, {'test': 'data'}),
+      ]);
+
+      // Act & Assert
+      try {
+        await repository.transaction(builder);
+        fail('Expected UnexpectedError to be thrown');
+      } on UnexpectedError catch (e) {
+        expect(
+          e.message,
+          'Write operations are not allowed in remote read-only mode',
+        );
+      } catch (e) {
+        fail('Expected UnexpectedError but got: ${e.runtimeType}: $e');
+      }
+    });
+
+    test(
+        'transaction() throws UnexpectedError even if SET operation is not the first command',
+        () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+      final builder = JNAPTransactionBuilder(commands: [
+        MapEntry(JNAPAction.getDeviceInfo, {}),
+        MapEntry(JNAPAction.getWANSettings, {}),
+        MapEntry(JNAPAction.setRadioSettings, {'test': 'data'}),
+      ]);
+
+      // Act & Assert
+      try {
+        await repository.transaction(builder);
+        fail('Expected UnexpectedError to be thrown');
+      } on UnexpectedError catch (e) {
+        expect(e.message, contains('remote read-only'));
+      } catch (e) {
+        fail('Expected UnexpectedError but got: ${e.runtimeType}');
+      }
+    });
+
+    test('transaction() allows only GET operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+      final builder = JNAPTransactionBuilder(commands: [
+        MapEntry(JNAPAction.getWANSettings, {}),
+        MapEntry(JNAPAction.getDeviceInfo, {}),
+        MapEntry(JNAPAction.getRadioInfo, {}),
+      ]);
+
+      // Act & Assert: Should NOT throw our defensive error
+      try {
+        await repository.transaction(builder);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('GET-only transaction should not be blocked');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/SharedPreferences/etc
+      }
+    });
+
+    test('transaction() allows SET operations in local mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.local),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+      final builder = JNAPTransactionBuilder(commands: [
+        MapEntry(JNAPAction.getWANSettings, {}),
+        MapEntry(JNAPAction.setWANSettings, {'test': 'data'}),
+        MapEntry(JNAPAction.setRadioSettings, {'test': 'data'}),
+      ]);
+
+      // Act & Assert: Should NOT throw our defensive error in local mode
+      try {
+        await repository.transaction(builder);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('SET operations in local mode should not be blocked');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/SharedPreferences/etc
+        expect(
+            e,
+            isNot(isA<UnexpectedError>().having(
+              (e) => e.message,
+              'message',
+              contains('remote read-only'),
+            )));
+      }
+    });
+
+    test('send() allows LED blinking operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: LED blinking operations should NOT throw defensive error
+      // StartBlinkingNodeLed
+      try {
+        await repository.send(JNAPAction.startBlinkingNodeLed);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('LED blinking should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // StopBlinkingNodeLed
+      try {
+        await repository.send(JNAPAction.stopBlinkingNodeLed);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('LED blinking should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+    });
+
+    test('send() allows speed test operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: Speed test operations should NOT throw defensive error
+      // GetHealthCheckResults
+      try {
+        await repository.send(JNAPAction.getHealthCheckResults);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('GetHealthCheckResults should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // RunHealthCheck
+      try {
+        await repository.send(JNAPAction.runHealthCheck);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('RunHealthCheck should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // StopHealthCheck
+      try {
+        await repository.send(JNAPAction.stopHealthCheck);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StopHealthCheck should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+    });
+
+    test('send() allows ping operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: Ping operations should NOT throw defensive error
+      // StartPing
+      try {
+        await repository.send(JNAPAction.startPing);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StartPing should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // StopPing
+      try {
+        await repository.send(JNAPAction.stopPing);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StopPing should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // GetPingStatus
+      try {
+        await repository.send(JNAPAction.getPingStatus);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('GetPingStatus should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+    });
+
+    test('send() allows traceroute operations in remote mode', () async {
+      // Arrange
+      final container = ProviderContainer(
+        overrides: [
+          authProvider.overrideWith(() => TestAuthNotifier(
+                const AsyncValue.data(
+                  AuthState(loginType: LoginType.remote),
+                ),
+              )),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final repository = container.read(routerRepositoryProvider);
+
+      // Act & Assert: Traceroute operations should NOT throw defensive error
+      // StartTracroute
+      try {
+        await repository.send(JNAPAction.startTracroute);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StartTracroute should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // StopTracroute
+      try {
+        await repository.send(JNAPAction.stopTracroute);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('StopTracroute should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+
+      // GetTracerouteStatus
+      try {
+        await repository.send(JNAPAction.getTracerouteStatus);
+        fail('Expected error due to missing network, but got success');
+      } on UnexpectedError catch (e) {
+        if (e.message?.contains('remote read-only') ?? false) {
+          fail('GetTracerouteStatus should not be blocked in remote mode');
+        }
+      } catch (e) {
+        // Expected: Will fail due to missing network/etc
+      }
+    });
+  });
+}

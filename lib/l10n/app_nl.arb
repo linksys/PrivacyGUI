@@ -233,6 +233,7 @@
   "faqVisitLinksysSupport": "Ga naar Linksys-ondersteuning",
   "faqs": "Veelgestelde vragen",
   "featureUnavailableInRemoteMode": "Deze functie is niet beschikbaar in de externe modus",
+  "remoteViewModeActive": "Externe weergavemodus - Instellingswijzigingen zijn uitgeschakeld",
   "filterAnonymous": "Anonieme internetverzoeken filteren",
   "filterIdent": "IDENT filteren (poort 113)",
   "filterInternetNATRedirection": "Filter Doorsturen NAT",

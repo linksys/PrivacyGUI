@@ -215,6 +215,7 @@
   "faqVisitLinksysSupport": "Посетить службу поддержки Linksys",
   "faqs": "Часто задаваемые вопросы",
   "featureUnavailableInRemoteMode": "Эта функция недоступна в удаленном режиме",
+  "remoteViewModeActive": "Режим удаленного просмотра - Изменение настроек отключено",
   "filterAnonymous": "Фильтрация анонимных интернет-запросов",
   "filterIdent": "Фильтрация IDENT (Порт 113)",
   "filterInternetNATRedirection": "Фильтрация интернет-переадресации NAT",

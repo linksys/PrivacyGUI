@@ -271,6 +271,7 @@
   "filteredDevices": "Filtered devices",
   "filters": "Filters",
   "featureUnavailableInRemoteMode": "This feature is unavailable in remote mode",
+  "remoteViewModeActive": "Remote View Mode - Setting changes are disabled",
   "firewall": "Firewall",
   "firmwareDownloadingMessage1": "You can use your WiFi during this update.",
   "firmwareDownloadingMessage2": "But things might be slower than usual while we improve your system.",

@@ -233,6 +233,7 @@
   "faqVisitLinksysSupport": "访问Linksys支持网站",
   "faqs": "常见问题解答",
   "featureUnavailableInRemoteMode": "此功能在远程模式下不可用",
+  "remoteViewModeActive": "远程查看模式 - 无法修改设置",
   "filterAnonymous": "过滤匿名Internet请求",
   "filterIdent": "过滤ident协议（端口号113）",
   "filterInternetNATRedirection": "过滤Internet NAT重定向",

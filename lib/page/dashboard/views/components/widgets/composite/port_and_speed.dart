@@ -1,7 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
@@ -13,6 +12,7 @@ import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/intern
 import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/port_status_widget.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Dashboard widget showing port connections and speed test results.
@@ -334,7 +334,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     DashboardHomeState state,
     bool hasLanPort,
   ) {
-    final isRemote = BuildConfig.isRemote();
+    final isRemoteReadOnly = ref.watch(
+      remoteAccessProvider.select((state) => state.isRemoteReadOnly),
+    );
     final isHealthCheckSupported =
         ref.watch(healthCheckProvider).isSpeedTestModuleSupported;
 
@@ -359,9 +361,9 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
     return Tooltip(
       message: loc(context).featureUnavailableInRemoteMode,
       child: Opacity(
-        opacity: isRemote ? 0.5 : 1,
+        opacity: isRemoteReadOnly ? 0.5 : 1,
         child: AbsorbPointer(
-          absorbing: isRemote,
+          absorbing: isRemoteReadOnly,
           child: ExternalSpeedTestLinks(state: state),
         ),
       ),

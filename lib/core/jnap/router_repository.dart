@@ -9,6 +9,8 @@ import 'package:privacy_gui/core/data/providers/session_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
+import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/constants/jnap_const.dart';
 import 'package:privacy_gui/core/bluetooth/bluetooth.dart';
@@ -70,6 +72,50 @@ class RouterRepository {
 
   bool get isEnableBTSetup => _btSetupMode;
 
+  /// Checks if the given JNAP action is a read-only operation.
+  ///
+  /// Only operations that do NOT modify router configuration are considered safe.
+  /// Safe operations include Get*, Is*, Check*, LED blinking, speed test,
+  /// and network diagnostic operations (ping, traceroute).
+  /// All other operations are blocked in remote read-only mode.
+  bool _isReadOnlyOperation(JNAPAction action) {
+    final actionValue = action.actionValue;
+    // Extract the last segment of the URL path (after the last '/')
+    final lastSegment = actionValue.split('/').last.toLowerCase();
+
+    // Allowlist of safe read-only operation prefixes
+    const safePrefixes = [
+      'get', // Get operations (getDeviceInfo, getWANSettings, etc.)
+      'is', // Status checks (isAdminPasswordDefault, etc.)
+      'check', // Validation operations (checkAdminPassword, etc.)
+    ];
+
+    // Allowlist of specific safe operations that don't modify configuration
+    const safeOperations = [
+      'startblinkingnodeled', // LED blinking operations
+      'stopblinkingnodeled',
+      'runhealthcheck', // Speed test operations (read-only, no config changes)
+      'stophealthcheck',
+      'startping', // Network diagnostic operations (read-only)
+      'stopping',
+      'starttraceroute',
+      'stoptraceroute',
+    ];
+
+    return safePrefixes.any((prefix) => lastSegment.startsWith(prefix)) ||
+        safeOperations.contains(lastSegment);
+  }
+
+  /// Checks if the application is in remote read-only mode.
+  ///
+  /// Returns true when:
+  /// - User is logged in remotely (LoginType.remote), OR
+  /// - Compile-time forced remote mode (BuildConfig.forceCommandType == ForceCommand.remote)
+  bool _isRemoteReadOnly() {
+    final remoteAccess = ref.read(remoteAccessProvider);
+    return remoteAccess.isRemoteReadOnly;
+  }
+
   Future<JNAPSuccess> send(
     JNAPAction action, {
     Map<String, dynamic> data = const {},
@@ -82,6 +128,13 @@ class RouterRepository {
     int retries = 1,
     SideEffectPollConfig? pollConfig,
   }) async {
+    // Defensive check: Block write operations in remote read-only mode
+    if (!_isReadOnlyOperation(action) && _isRemoteReadOnly()) {
+      throw const UnexpectedError(
+        message: 'Write operations are not allowed in remote read-only mode',
+      );
+    }
+
     cacheLevel ??= isMatchedJNAPNoCachePolicy(action)
         ? CacheLevel.noCache
         : CacheLevel.localCached;
@@ -115,6 +168,17 @@ class RouterRepository {
     int retries = 1,
     SideEffectPollConfig? pollConfig,
   }) async {
+    // Defensive check: Block transactions containing write operations in remote read-only mode
+    if (_isRemoteReadOnly()) {
+      final hasWriteOperation =
+          builder.commands.any((entry) => !_isReadOnlyOperation(entry.key));
+      if (hasWriteOperation) {
+        throw const UnexpectedError(
+          message: 'Write operations are not allowed in remote read-only mode',
+        );
+      }
+    }
+
     cacheLevel =
         builder.commands.any((entry) => isMatchedJNAPNoCachePolicy(entry.key))
             ? CacheLevel.noCache

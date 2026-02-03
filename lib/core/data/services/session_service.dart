@@ -141,7 +141,6 @@ class SessionService {
     try {
       final result = await _routerRepository.send(
         JNAPAction.getDeviceInfo,
-        fetchRemote: true,
         retries: 0,
         timeoutMs: 3000,
       );

@@ -233,6 +233,7 @@
   "faqVisitLinksysSupport": "قم بزيارة دعم Linksys",
   "faqs": "الأسئلة الشائعة",
   "featureUnavailableInRemoteMode": "هذه الميزة غير متوفرة في وضع التحكم عن بُعد",
+  "remoteViewModeActive": "وضع العرض عن بُعد - تغييرات الإعدادات معطلة",
   "filterAnonymous": "تصفية طلبات إنترنت المجهولة",
   "filterIdent": "تصفية التعريف (المنفذ 113)",
   "filterInternetNATRedirection": "تصفية إعادة توجيه NAT عبر إنترنت",
