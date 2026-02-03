@@ -115,7 +115,12 @@ To run tests that are specifically tagged for UI widgets (and are not screenshot
 
 ```bash
 flutter test --tags ui
+
 ```
+
+## ♿ Accessibility (WCAG)
+
+PrivacyGUI adheres to WCAG 2.1 Level AA standards. For detailed documentation on accessibility testing, integration, and compliance analysis, please refer to the **[Accessibility Documentation](doc/accessibility/README.md)**.
 
 ## Contributing
 

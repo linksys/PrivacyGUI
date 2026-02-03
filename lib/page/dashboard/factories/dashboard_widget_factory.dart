@@ -113,7 +113,8 @@ class DashboardWidgetFactory {
 
   /// Checks if a widget ID exists in either native or A2UI registries.
   bool hasWidget(String id) {
-    return DashboardWidgetSpecs.getById(id) != null || _a2uiRegistry.contains(id);
+    return DashboardWidgetSpecs.getById(id) != null ||
+        _a2uiRegistry.contains(id);
   }
 
   /// Gets all available widget specs (native + A2UI).

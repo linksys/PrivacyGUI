@@ -3,98 +3,102 @@
 **Feature Branch**: `017-a2ui-dashboard-widgets`  
 **Created**: 2026-01-19  
 **Status**: Approved  
-**Input**: User description: "透過 A2UI 協議來擴充 Dashboard Widget，保留現有原生元件，支援資料綁定與 USP 相容性設計"
+**Input**: User description: "Extend Dashboard Widgets via the A2UI protocol, preserving existing native components, supporting data binding and USP compatibility design."
 
 ## User Scenarios & Testing
 
-### User Story 1 - 預定義 A2UI Widget 顯示於 Dashboard (Priority: P1)
+### User Story 1 - Predefined A2UI Widgets Displayed on Dashboard (Priority: P1)
 
-系統預載 A2UI Widget 定義，使用者進入 Dashboard 時可看到這些擴充 Widget 與原生 Widget 並列顯示。
+The system preloads A2UI Widget definitions. When users enter the Dashboard, they can see these extended Widgets displayed alongside native Widgets.
 
-**Why this priority**: 這是 A2UI 擴充功能的核心價值驗證，確保基礎架構正確運作。
+**Why this priority**: This is the core value verification for A2UI extensions, ensuring the underlying architecture functions correctly.
 
-**Independent Test**: 啟動應用後，進入 Dashboard 即可驗證預定義 Widget 是否正確渲染。
+**Independent Test**: After launching the application, enter the Dashboard to verify if predefined Widgets are rendered correctly.
 
 **Acceptance Scenarios**:
 
-1. **Given** 應用啟動且 A2UI Registry 已載入預定義 Widget, **When** 使用者進入 Dashboard, **Then** A2UI Widget 與原生 Widget 並列顯示於 Grid 中
-2. **Given** A2UI Widget 已顯示, **When** Widget 需要顯示資料綁定值, **Then** 正確顯示來自 Router 的即時資料
+1. **Given** the app has launched and A2UI Registry has loaded predefined Widgets, **When** the user enters the Dashboard, **Then** A2UI Widgets are displayed alongside native Widgets in the Grid.
+2. **Given** an A2UI Widget is displayed, **When** the Widget needs to show a data-bound value, **Then** it correctly displays real-time data from the Router.
 
 ---
 
-### User Story 2 - A2UI Widget 拖拉縮放 (Priority: P1)
+### User Story 2 - A2UI Widget Drag-and-Drop Scaling (Priority: P1)
 
-使用者可以在 Dashboard 編輯模式中對 A2UI Widget 進行拖拉、縮放操作，且操作受 Widget 約束限制。
+Users can drag and scale A2UI Widgets in Dashboard Edit Mode, with operations subject to Widget constraints.
 
-**Why this priority**: 與原生 Widget 的操作一致性是核心需求。
+**Why this priority**: Consistency with native Widget operations is a core requirement.
 
-**Independent Test**: 進入編輯模式，對 A2UI Widget 進行拖拉/縮放操作。
+**Independent Test**: Enter Edit Mode and perform drag/scale operations on an A2UI Widget.
 
 **Acceptance Scenarios**:
 
-1. **Given** Dashboard 處於編輯模式, **When** 使用者拖拉 A2UI Widget, **Then** Widget 移動至新位置
-2. **Given** Dashboard 處於編輯模式, **When** 使用者縮放 A2UI Widget 超出約束範圍, **Then** Widget 回彈至約束邊界
+1. **Given** Dashboard is in Edit Mode, **When** the user drags an A2UI Widget, **Then** the Widget moves to the new position.
+2. **Given** Dashboard is in Edit Mode, **When** the user scales an A2UI Widget beyond its constraints, **Then** the Widget snaps back to the constraint boundary.
 
 ---
 
-### User Story 3 - 資料綁定即時更新 (Priority: P2)
+---
 
-A2UI Widget 的資料綁定值能隨 Router 狀態變化即時更新顯示。
+### User Story 3 - Real-time Data Binding Updates (Priority: P2)
 
-**Why this priority**: 確保動態資料顯示功能正確運作。
+Data-bound values in A2UI Widgets update in real-time as Router states change.
 
-**Independent Test**: 觀察設備數量變化時 Widget 是否即時更新。
+**Why this priority**: Ensure dynamic data display works correctly.
+
+**Independent Test**: Observe if the Widget updates immediately when the number of devices changes.
 
 **Acceptance Scenarios**:
 
-1. **Given** A2UI Widget 綁定 `router.deviceCount`, **When** 設備數量變化, **Then** Widget 顯示的數值即時更新
+1. **Given** an A2UI Widget is bound to `router.deviceCount`, **When** the device count changes, **Then** the value displayed in the Widget updates in real-time.
 
 ---
 
-### User Story 4 - 版面持久化 (Priority: P2)
+### User Story 4 - Layout Persistence (Priority: P2)
 
-包含 A2UI Widget 的 Dashboard 版面可以正確儲存與載入。
+Dashboard layouts containing A2UI Widgets can be correctly saved and loaded.
 
-**Why this priority**: 確保使用者自訂版面不會遺失。
+**Why this priority**: Ensure user-defined layouts are not lost.
 
-**Independent Test**: 調整版面後重新載入頁面，確認版面維持。
+**Independent Test**: After adjusting the layout, reload the page and confirm the layout is maintained.
 
 **Acceptance Scenarios**:
 
-1. **Given** 使用者調整了 A2UI Widget 位置, **When** 離開並重新進入 Dashboard, **Then** A2UI Widget 維持調整後的位置
+1. **Given** a user has adjusted the position of an A2UI Widget, **When** leaving and re-entering the Dashboard, **Then** the A2UI Widget maintains its adjusted position.
 
 ---
 
 ### Edge Cases
 
-- A2UI Widget 定義的 widgetId 與原生 Widget 衝突時如何處理？
-- 資料路徑不存在時 Widget 如何顯示？
-- Widget JSON 格式錯誤時如何優雅降級？
+- How to handle conflicts between A2UI Widget `widgetId` and native Widget IDs?
+- How is the Widget displayed when the data path does not exist?
+- How to degrade gracefully when Widget JSON formatting is incorrect?
+
+## Requirements
 
 ## Requirements
 
 ### Functional Requirements
 
-- **FR-001**: 系統 MUST 支援從預定義 JSON 註冊 A2UI Widget
-- **FR-002**: A2UI Widget MUST 能在 SliverDashboard Grid 中顯示
-- **FR-003**: A2UI Widget MUST 支援拖拉/縮放操作
-- **FR-004**: A2UI Widget MUST 遵守定義的 Grid 約束（min/max columns/rows）
-- **FR-005**: A2UI Widget MUST 支援資料綁定（`$bind` 語法）
-- **FR-006**: 資料路徑 MUST 使用點分隔抽象格式（如 `router.deviceCount`）
-- **FR-007**: A2UI Widget 定義 MUST 可指定單一約束（DisplayMode 為可選）
-- **FR-008**: 版面持久化 MUST 正確儲存/載入 A2UI Widget 位置與大小
+- **FR-001**: The system MUST support registering A2UI Widgets from predefined JSON.
+- **FR-002**: A2UI Widgets MUST be displayable in the SliverDashboard Grid.
+- **FR-003**: A2UI Widgets MUST support drag-and-drop/scaling operations.
+- **FR-004**: A2UI Widgets MUST comply with defined Grid constraints (min/max columns/rows).
+- **FR-005**: A2UI Widgets MUST support data binding (`$bind` syntax).
+- **FR-006**: Data paths MUST use a dot-separated abstract format (e.g., `router.deviceCount`).
+- **FR-007**: A2UI Widget definitions MUST allow specifying a single constraint (DisplayMode is optional).
+- **FR-008**: Layout persistence MUST correctly save/load A2UI Widget positions and sizes.
 
 ### Key Entities
 
-- **A2UIWidgetDefinition**: Widget 完整定義，包含 id、約束、模板
-- **A2UITemplateNode**: 模板節點樹，定義 UI 結構
-- **DataPath**: 抽象資料路徑，映射至實際資料來源
+- **A2UIWidgetDefinition**: Full definition of a Widget, including ID, constraints, and template.
+- **A2UITemplateNode**: Template node tree defining the UI structure.
+- **DataPath**: Abstract data path mapping to actual data sources.
 
 ## Success Criteria
 
 ### Measurable Outcomes
 
-- **SC-001**: 預定義 A2UI Widget 100% 正確渲染於 Dashboard
-- **SC-002**: A2UI Widget 拖拉/縮放操作與原生 Widget 行為一致
-- **SC-003**: 資料綁定更新延遲 < 100ms
-- **SC-004**: 版面持久化成功率 100%
+- **SC-001**: Predefined A2UI Widgets render 100% correctly on the Dashboard.
+- **SC-002**: Drag-and-drop/scaling for A2UI Widgets is consistent with native Widget behavior.
+- **SC-003**: Data binding update latency < 100ms.
+- **SC-004**: Layout persistence success rate 100%.

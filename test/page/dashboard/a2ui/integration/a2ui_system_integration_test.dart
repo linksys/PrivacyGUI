@@ -37,7 +37,8 @@ void main() {
     });
 
     group('End-to-End Widget Loading and Rendering', () {
-      testWidgets('loads widgets from assets and renders successfully', (tester) async {
+      testWidgets('loads widgets from assets and renders successfully',
+          (tester) async {
         // Test the complete flow: JsonWidgetLoader -> Registry -> Renderer
         await tester.pumpWidget(
           ProviderScope(
@@ -97,7 +98,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should show error widget instead of crashing
-        expect(find.text('A2UI Widget not found: nonexistent-widget'), findsOneWidget);
+        expect(find.text('A2UI Widget not found: nonexistent-widget'),
+            findsOneWidget);
         expect(find.byIcon(Icons.error_outline), findsOneWidget);
       });
     });
@@ -183,7 +185,8 @@ void main() {
     });
 
     group('Data Resolution Integration', () {
-      testWidgets('resolver integrates with renderer for data binding', (tester) async {
+      testWidgets('resolver integrates with renderer for data binding',
+          (tester) async {
         // Create a widget with data binding
         const widgetJson = {
           'widgetId': 'data_binding_test_widget',
@@ -244,7 +247,8 @@ void main() {
       });
 
       test('resolver provides consistent data across multiple calls', () {
-        final resolver = container.read(jnapDataResolverProvider) as JnapDataResolver;
+        final resolver =
+            container.read(jnapDataResolverProvider) as JnapDataResolver;
 
         final paths = [
           'router.deviceCount',
@@ -260,7 +264,8 @@ void main() {
 
           // Should return consistent values
           expect(firstCall, equals(secondCall),
-              reason: 'Resolver should return consistent values for path: $path');
+              reason:
+                  'Resolver should return consistent values for path: $path');
         }
       });
     });
@@ -308,21 +313,21 @@ void main() {
         final flexibleSuggestion = validator.suggestValidResize(
           widgetId: 'flexible_widget',
           requestedColumns: 15, // Above max
-          requestedRows: 10,    // Above max
+          requestedRows: 10, // Above max
         );
 
         expect(flexibleSuggestion.columns, 12); // Clamped to max
-        expect(flexibleSuggestion.rows, 8);     // Clamped to max
+        expect(flexibleSuggestion.rows, 8); // Clamped to max
         expect(flexibleSuggestion.adjusted, isTrue);
 
         final rigidSuggestion = validator.suggestValidResize(
           widgetId: 'rigid_widget',
           requestedColumns: 5, // Above max
-          requestedRows: 1,    // Below min
+          requestedRows: 1, // Below min
         );
 
         expect(rigidSuggestion.columns, 3); // Clamped to exact size
-        expect(rigidSuggestion.rows, 2);    // Clamped to exact size
+        expect(rigidSuggestion.rows, 2); // Clamped to exact size
         expect(rigidSuggestion.adjusted, isTrue);
       });
 
@@ -394,7 +399,8 @@ void main() {
     });
 
     group('Error Recovery and System Resilience', () {
-      testWidgets('system handles asset loading failures gracefully', (tester) async {
+      testWidgets('system handles asset loading failures gracefully',
+          (tester) async {
         // Test that the system doesn't crash when asset loading fails
         await tester.pumpWidget(
           ProviderScope(
@@ -407,9 +413,11 @@ void main() {
                     final asyncWidgets = ref.watch(a2uiLoaderProvider);
 
                     return asyncWidgets.when(
-                      data: (widgets) => Text('Loaded ${widgets.length} widgets'),
+                      data: (widgets) =>
+                          Text('Loaded ${widgets.length} widgets'),
                       loading: () => const CircularProgressIndicator(),
-                      error: (error, stack) => Text('Loading failed: ${error.toString()}'),
+                      error: (error, stack) =>
+                          Text('Loading failed: ${error.toString()}'),
                     );
                   },
                 ),
@@ -472,7 +480,8 @@ void main() {
       });
 
       test('data resolver handles provider exceptions', () {
-        final resolver = container.read(jnapDataResolverProvider) as JnapDataResolver;
+        final resolver =
+            container.read(jnapDataResolverProvider) as JnapDataResolver;
 
         // These should not throw exceptions even if underlying providers have issues
         expect(() => resolver.resolve('router.deviceCount'), returnsNormally);
@@ -517,7 +526,8 @@ void main() {
         expect(notificationCount, greaterThan(initialCount));
       });
 
-      testWidgets('widget renderer disposes resources properly', (tester) async {
+      testWidgets('widget renderer disposes resources properly',
+          (tester) async {
         await tester.pumpWidget(
           ProviderScope(
             parent: container,

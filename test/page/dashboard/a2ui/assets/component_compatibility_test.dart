@@ -39,7 +39,8 @@ void main() {
         if (builder != null) {
           print('✅ $component: Available');
         } else {
-          print('❌ $component: NOT AVAILABLE - This will cause rendering errors!');
+          print(
+              '❌ $component: NOT AVAILABLE - This will cause rendering errors!');
         }
       }
 
@@ -49,7 +50,8 @@ void main() {
         if (builder != null) {
           print('✅ $component: Available');
         } else {
-          print('⚠️  $component: Not available - Need to find alternative or remove usage');
+          print(
+              '⚠️  $component: Not available - Need to find alternative or remove usage');
         }
       }
 
@@ -57,10 +59,26 @@ void main() {
       final allComponents = <String>[];
       // Note: We can't directly enumerate registry contents, but we can test known components
       final testComponents = [
-        'AppCard', 'AppText', 'AppIcon', 'AppButton', 'AppGap',
-        'Column', 'Row', 'SizedBox', 'Container', 'Stack', 'Expanded',
-        'Positioned', 'AppSwitch', 'AppToggle', 'AppSlider',
-        'Padding', 'Center', 'Align', 'Flex', 'Wrap'
+        'AppCard',
+        'AppText',
+        'AppIcon',
+        'AppButton',
+        'AppGap',
+        'Column',
+        'Row',
+        'SizedBox',
+        'Container',
+        'Stack',
+        'Expanded',
+        'Positioned',
+        'AppSwitch',
+        'AppToggle',
+        'AppSlider',
+        'Padding',
+        'Center',
+        'Align',
+        'Flex',
+        'Wrap'
       ];
 
       print('\n=== Available UI Kit Components ===');
@@ -78,11 +96,13 @@ void main() {
       // Check core components are available
       for (final required in requiredComponents) {
         expect(registry.lookup(required), isNotNull,
-            reason: 'Required component "$required" must be available in UI Kit');
+            reason:
+                'Required component "$required" must be available in UI Kit');
       }
     });
 
-    testWidgets('tests rendering of basic A2UI widget structure', (tester) async {
+    testWidgets('tests rendering of basic A2UI widget structure',
+        (tester) async {
       // Test a simplified version of our widget structure
       const testWidget = {
         "type": "AppCard",
@@ -99,16 +119,11 @@ void main() {
             "children": [
               {
                 "type": "AppIcon",
-                "properties": {
-                  "icon": "devices",
-                  "size": 32.0
-                }
+                "properties": {"icon": "devices", "size": 32.0}
               },
               {
                 "type": "SizedBox",
-                "properties": {
-                  "height": 8.0
-                }
+                "properties": {"height": 8.0}
               },
               {
                 "type": "AppText",

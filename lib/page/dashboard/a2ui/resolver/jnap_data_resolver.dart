@@ -21,20 +21,29 @@ class JnapDataResolver implements DataPathResolver {
     try {
       // Static resolution using _ref.read for one-time values
       return switch (path) {
-        'router.deviceCount' => _ref.read(deviceManagerProvider).deviceList
+        'router.deviceCount' => _ref
+            .read(deviceManagerProvider)
+            .deviceList
             .where((d) => d.nodeType == null && d.isOnline())
-            .length.toString(),
-        'router.nodeCount' => _ref.read(deviceManagerProvider).deviceList
+            .length
+            .toString(),
+        'router.nodeCount' => _ref
+            .read(deviceManagerProvider)
+            .deviceList
             .where((d) => d.nodeType != null)
-            .length.toString(),
-        'router.wanStatus' => _resolveWanStatus(_ref.read(dashboardHomeProvider)),
-        'router.uptime' => _formatUptime(_ref.read(dashboardHomeProvider).uptime ?? 0),
-        'router.uploadSpeed' => '2.5 MB/s',  // Static placeholder
+            .length
+            .toString(),
+        'router.wanStatus' =>
+          _resolveWanStatus(_ref.read(dashboardHomeProvider)),
+        'router.uptime' =>
+          _formatUptime(_ref.read(dashboardHomeProvider).uptime ?? 0),
+        'router.uploadSpeed' => '2.5 MB/s', // Static placeholder
         'router.downloadSpeed' => '8.3 MB/s', // Static placeholder
-        'system.cpuUsage' => '25% CPU',     // Static placeholder
-        'system.memoryUsage' => '68% 記憶體',  // Static placeholder
-        'system.temperature' => '42°C',     // Static placeholder
-        'system.uptime' => _formatUptime(_ref.read(dashboardHomeProvider).uptime ?? 0),
+        'system.cpuUsage' => '25% CPU', // Static placeholder
+        'system.memoryUsage' => '68% 記憶體', // Static placeholder
+        'system.temperature' => '42°C', // Static placeholder
+        'system.uptime' =>
+          _formatUptime(_ref.read(dashboardHomeProvider).uptime ?? 0),
         'wifi.ssid' => _ref.read(dashboardHomeProvider).mainSSID,
         _ => _getDefaultValue(path),
       };
@@ -105,7 +114,8 @@ class JnapDataResolver implements DataPathResolver {
         try {
           return state.deviceList
               .where((d) => d.nodeType == null && d.isOnline())
-              .length.toString();
+              .length
+              .toString();
         } catch (e) {
           debugPrint('Error counting devices: $e');
           return '0'; // Default value
@@ -121,7 +131,10 @@ class JnapDataResolver implements DataPathResolver {
     try {
       return deviceManagerProvider.select((state) {
         try {
-          return state.deviceList.where((d) => d.nodeType != null).length.toString();
+          return state.deviceList
+              .where((d) => d.nodeType != null)
+              .length
+              .toString();
         } catch (e) {
           debugPrint('Error counting nodes: $e');
           return '0'; // Default value

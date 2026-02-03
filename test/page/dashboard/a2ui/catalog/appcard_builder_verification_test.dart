@@ -26,7 +26,7 @@ void main() {
         'Column',
         'Row',
         'SizedBox',
-        'AppSwitch'  // Used in guest_network widget
+        'AppSwitch' // Used in guest_network widget
       ];
 
       for (final component in requiredComponents) {
@@ -67,7 +67,8 @@ void main() {
       }
 
       expect(actionCapableCount, greaterThan(0),
-          reason: 'At least some action-capable components should be available');
+          reason:
+              'At least some action-capable components should be available');
 
       print('✅ Action-capable components available: $actionCapableCount');
     });

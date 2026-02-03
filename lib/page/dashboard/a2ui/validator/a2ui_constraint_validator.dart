@@ -160,7 +160,8 @@ class A2UIConstraintValidator {
       constraints.maxRows,
     );
 
-    final wasAdjusted = validColumns != requestedColumns || validRows != requestedRows;
+    final wasAdjusted =
+        validColumns != requestedColumns || validRows != requestedRows;
 
     return ResizeSuggestion(
       columns: validColumns,
@@ -179,9 +180,9 @@ class A2UIConstraintValidator {
     final bBottom = b.row + b.rows;
 
     return !(a.column >= bRight ||
-             b.column >= aRight ||
-             a.row >= bBottom ||
-             b.row >= aBottom);
+        b.column >= aRight ||
+        a.row >= bBottom ||
+        b.row >= aBottom);
   }
 }
 

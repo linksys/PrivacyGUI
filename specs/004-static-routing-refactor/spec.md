@@ -3,7 +3,7 @@
 **Feature Branch**: `004-static-routing-refactor`
 **Created**: 2025-12-12
 **Status**: Draft
-**Input**: User description: "根據 @.specify/memory/constitution.md 重構 lib/page/advanced_settings/static_routing"
+**Input**: User description: "Refactor lib/page/advanced_settings/static_routing according to constitution.md"
 
 ## User Scenarios & Testing *(mandatory)*
 

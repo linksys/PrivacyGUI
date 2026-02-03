@@ -5,25 +5,25 @@
 
 ## Summary
 
-透過 A2UI 協議擴充 Dashboard Widget，保留現有原生元件，新增獨立 A2UI 模組處理 Widget 註冊、渲染與資料綁定。採用 DataPathResolver 抽象層以支援未來 USP 協議相容。
+Extend Dashboard Widgets via the A2UI protocol while preserving existing native components. A new independent A2UI module will be added to handle Widget registration, rendering, and data binding. The DataPathResolver abstraction layer is used to support future USP protocol compatibility.
 
 ## Technical Context
 
 **Language/Version**: Dart 3.x / Flutter 3.13+  
-**Primary Dependencies**: flutter, flutter_riverpod, sliver_dashboard, generative_ui (部分概念)  
-**Storage**: SharedPreferences (版面持久化)  
+**Primary Dependencies**: flutter, flutter_riverpod, sliver_dashboard, generative_ui (partial concepts)  
+**Storage**: SharedPreferences (Layout persistence)  
 **Testing**: flutter_test, mocktail  
 **Target Platform**: Web, iOS, Android  
 **Project Type**: Mobile/Web Application  
-**Performance Goals**: 資料綁定更新 < 100ms  
-**Constraints**: 與現有 Dashboard 架構相容，最小化程式碼改動  
-**Scale/Scope**: 初期 3-5 個預定義 Widget
+**Performance Goals**: Data binding updates < 100ms  
+**Constraints**: Compatible with existing Dashboard architecture, minimize code changes  
+**Scale/Scope**: 3-5 predefined Widgets initially
 
 ## Constitution Check
 
-- [x] 高內聚：A2UI 程式碼集中於單一模組
-- [x] 低耦合：對現有程式碼影響最小
-- [x] 可擴展：支援未來 USP 協議
+- [x] High cohesion: A2UI code is concentrated in a single module.
+- [x] Low coupling: Minimal impact on existing code.
+- [x] Extensible: Supports future USP protocol.
 
 ## Project Structure
 
@@ -40,28 +40,28 @@ specs/017-a2ui-dashboard-widgets/
 
 ```text
 lib/page/dashboard/
-├── a2ui/                                    # A2UI 擴充模組（高內聚）
+├── a2ui/                                    # A2UI Extension Module (High Cohesion)
 │   ├── _a2ui.dart                          # Barrel export
 │   ├── models/
-│   │   ├── a2ui_widget_definition.dart     # Widget 定義
-│   │   ├── a2ui_template.dart              # 模板結構
-│   │   └── a2ui_constraints.dart           # Grid 約束
+│   │   ├── a2ui_widget_definition.dart     # Widget definition
+│   │   ├── a2ui_template.dart              # Template structure
+│   │   └── a2ui_constraints.dart           # Grid constraints
 │   ├── registry/
-│   │   └── a2ui_widget_registry.dart       # 註冊與查詢
+│   │   └── a2ui_widget_registry.dart       # Registration and lookup
 │   ├── resolver/
-│   │   ├── data_path_resolver.dart         # 抽象介面
-│   │   └── jnap_data_resolver.dart         # JNAP 實作
+│   │   ├── data_path_resolver.dart         # Abstract interface
+│   │   └── jnap_data_resolver.dart         # JNAP implementation
 │   ├── renderer/
-│   │   ├── a2ui_widget_renderer.dart       # 渲染入口
-│   │   └── template_builder.dart           # 模板建構
+│   │   ├── a2ui_widget_renderer.dart       # Rendering entry point
+│   │   └── template_builder.dart           # Template construction
 │   └── presets/
-│       └── preset_widgets.dart             # 預定義 Widget
+│       └── preset_widgets.dart             # Predefined Widgets
 
 ├── models/
-│   └── widget_spec.dart                    # [修改]
+│   └── widget_spec.dart                    # [Modified]
 
 └── factories/
-    └── dashboard_widget_factory.dart       # [修改]
+    └── dashboard_widget_factory.dart       # [Modified]
 
 test/page/dashboard/a2ui/
 ├── models/
@@ -74,7 +74,7 @@ test/page/dashboard/a2ui/
     └── template_builder_test.dart
 ```
 
-**Structure Decision**: 所有 A2UI 相關程式碼集中於 `lib/page/dashboard/a2ui/` 模組，對外僅透過 `_a2ui.dart` barrel export 公開介面。
+**Structure Decision**: All A2UI-related code is concentrated in the `lib/page/dashboard/a2ui/` module, with only public interfaces exposed via the `_a2ui.dart` barrel export.
 
 ---
 
@@ -150,7 +150,7 @@ abstract class DataPathResolver {
 }
 
 class JnapDataResolver implements DataPathResolver {
-  // 映射抽象路徑至 Riverpod Provider
+  // Maps abstract paths to Riverpod Providers
 }
 ```
 
@@ -196,7 +196,7 @@ class TemplateBuilder {
 ```json
 {
   "widgetId": "custom_device_count",
-  "displayName": "連線設備數",
+  "displayName": "Connected Devices",
   "constraints": {
     "minColumns": 2, "maxColumns": 4, "preferredColumns": 3,
     "minRows": 1, "maxRows": 2, "preferredRows": 1
@@ -207,7 +207,7 @@ class TemplateBuilder {
     "children": [
       {"type": "AppIcon", "props": {"icon": "devices"}},
       {"type": "AppText", "props": {"text": {"$bind": "router.deviceCount"}, "variant": "headline"}},
-      {"type": "AppText", "props": {"text": "連線設備", "variant": "label"}}
+      {"type": "AppText", "props": {"text": "Connected Devices", "variant": "label"}}
     ]
   }
 }
@@ -273,4 +273,4 @@ static Widget? buildAtomicWidget(String id, {DisplayMode? displayMode, WidgetRef
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| DataPathResolver Abstraction | USP 相容性需求 | 直接綁定 Provider 無法適應未來協議變更 |
+| DataPathResolver Abstraction | USP compatibility requirement | Direct Provider binding cannot adapt to future protocol changes |

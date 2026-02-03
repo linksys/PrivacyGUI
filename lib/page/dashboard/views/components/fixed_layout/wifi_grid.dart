@@ -39,7 +39,7 @@ class _FixedDashboardWiFiGridState
   }
 
   double _calculateLoadingHeight(BuildContext context) {
-    const itemHeight = 176.0;
+    const itemHeight = 184.0;
     final mainSpacing =
         AppLayoutConfig.gutter(MediaQuery.of(context).size.width);
     return itemHeight * 2 + mainSpacing * 1;
@@ -96,7 +96,7 @@ class _FixedDashboardWiFiGridState
     // Use layout gutter for horizontal spacing to match Dashboard Layout
     final mainSpacing =
         AppLayoutConfig.gutter(MediaQuery.of(context).size.width);
-    const itemHeight = 176.0;
+    const itemHeight = 184.0;
     final mainAxisCount = (items.length / crossAxisCount).ceil();
 
     final enabledWiFiCount =

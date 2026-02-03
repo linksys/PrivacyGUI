@@ -5,7 +5,8 @@ import 'package:privacy_gui/page/dashboard/a2ui/actions/a2ui_action_handler.dart
 
 void main() {
   group('Navigation Action Integration Tests', () {
-    test('NavigationActionHandler correctly handles navigation.push action', () {
+    test('NavigationActionHandler correctly handles navigation.push action',
+        () {
       // Test the navigation action handler logic
       final handler = NavigationActionHandler();
 
@@ -54,7 +55,8 @@ void main() {
         expect(handler.canHandle(action), isTrue);
       }
 
-      print('✅ All navigation action types supported: ${actionTypes.join(', ')}');
+      print(
+          '✅ All navigation action types supported: ${actionTypes.join(', ')}');
     });
 
     test('Navigation actions have correct action type prefix', () {

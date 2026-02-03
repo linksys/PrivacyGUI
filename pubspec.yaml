@@ -66,16 +66,14 @@ dependencies:
     path: packages/usp_protocol_common
 
   ui_kit_library:
-    path: ../../ui_kit
-    # git:
-    #   url: https://github.com/linksys/privacyGUI-UI-kit.git
-    #   ref: v2.10.6
+    git:
+      url: https://github.com/linksys/privacyGUI-UI-kit.git
+      ref: v2.12.2
   generative_ui:
-    path: ../../ui_kit/generative_ui
-    # git:
-    #   url: https://github.com/linksys/privacyGUI-UI-kit.git
-    #   ref: v2.10.6
-    #   path: generative_ui
+    git:
+      url: https://github.com/linksys/privacyGUI-UI-kit.git
+      ref: v2.12.2
+      path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
   encrypt: ^5.0.3

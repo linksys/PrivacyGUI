@@ -192,7 +192,7 @@ class _NetworkStatusCard extends StatelessWidget {
     final lower = status.toLowerCase();
     return lower == 'connected' ||
         lower == 'online' ||
-        lower == '已連線' ||
+        lower == 'connected' ||
         lower.contains('connect');
   }
 
@@ -375,7 +375,7 @@ class _EthernetPortsCard extends StatelessWidget {
     final isConnected = status.toLowerCase() == 'connected' ||
         status.toLowerCase() == 'online' ||
         status.toLowerCase() == 'up' ||
-        status.toLowerCase() == '已連線';
+        status.toLowerCase() == 'connected';
 
     final color = isConnected
         ? theme.colorScheme.primary

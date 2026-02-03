@@ -27,7 +27,8 @@ class JsonWidgetLoader {
       // First attempt: Dynamic discovery via AssetManifest
       final dynamicFiles = await _discoverWidgetFiles();
       if (dynamicFiles.isNotEmpty) {
-        debugPrint('A2UI: Using dynamic asset discovery, found ${dynamicFiles.length} files');
+        debugPrint(
+            'A2UI: Using dynamic asset discovery, found ${dynamicFiles.length} files');
         return await _loadWidgetFiles(dynamicFiles);
       }
     } catch (e) {
@@ -35,7 +36,8 @@ class JsonWidgetLoader {
     }
 
     // Fallback: Use hardcoded list (normal behavior)
-    debugPrint('A2UI: Using fallback asset list (normal behavior in some environments)');
+    debugPrint(
+        'A2UI: Using fallback asset list (normal behavior in some environments)');
     return await _loadWidgetFiles(_fallbackWidgetFiles);
   }
 
@@ -60,16 +62,19 @@ class JsonWidgetLoader {
       // Sort files for consistent loading order
       widgetFiles.sort();
 
-      debugPrint('A2UI: Discovered ${widgetFiles.length} widget files: $widgetFiles');
+      debugPrint(
+          'A2UI: Discovered ${widgetFiles.length} widget files: $widgetFiles');
       return widgetFiles;
     } catch (e) {
-      debugPrint('A2UI: AssetManifest.json not accessible: $e (fallback will be used)');
+      debugPrint(
+          'A2UI: AssetManifest.json not accessible: $e (fallback will be used)');
       return [];
     }
   }
 
   /// Loads widget definitions from a list of filenames.
-  Future<List<A2UIWidgetDefinition>> _loadWidgetFiles(List<String> filenames) async {
+  Future<List<A2UIWidgetDefinition>> _loadWidgetFiles(
+      List<String> filenames) async {
     final widgets = <A2UIWidgetDefinition>[];
     final loadResults = <String, bool>{};
 
@@ -81,7 +86,8 @@ class JsonWidgetLoader {
         final widget = A2UIWidgetDefinition.fromJson(json);
         widgets.add(widget);
         loadResults[filename] = true;
-        debugPrint('A2UI: Successfully loaded widget "${widget.widgetId}" from $filename');
+        debugPrint(
+            'A2UI: Successfully loaded widget "${widget.widgetId}" from $filename');
       } catch (e) {
         loadResults[filename] = false;
         debugPrint('A2UI: Error loading widget from $filename: $e');
@@ -91,7 +97,8 @@ class JsonWidgetLoader {
     // Report loading summary
     final successCount = loadResults.values.where((success) => success).length;
     final totalCount = loadResults.length;
-    debugPrint('A2UI: Loaded $successCount/$totalCount widget files successfully');
+    debugPrint(
+        'A2UI: Loaded $successCount/$totalCount widget files successfully');
 
     // Report failed files for debugging
     final failedFiles = loadResults.entries
@@ -192,7 +199,8 @@ class AssetDiscoveryInfo {
     final buffer = StringBuffer();
     buffer.writeln('AssetManifest available: $manifestAvailable');
     buffer.writeln('Discovered files: ${discoveredFiles.length}');
-    buffer.writeln('Fallback files available: ${fallbackAvailability.values.where((v) => v).length}/${fallbackFiles.length}');
+    buffer.writeln(
+        'Fallback files available: ${fallbackAvailability.values.where((v) => v).length}/${fallbackFiles.length}');
     buffer.write('Total available: $availableFileCount');
     return buffer.toString();
   }

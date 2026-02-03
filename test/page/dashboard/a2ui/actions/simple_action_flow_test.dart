@@ -18,7 +18,8 @@ void main() {
                       final actionManager = ref.read(a2uiActionManagerProvider);
 
                       // Test the callback format conversion
-                      final callback = actionManager.createActionCallback(ref, widgetId: 'test');
+                      final callback = actionManager.createActionCallback(ref,
+                          widgetId: 'test');
 
                       // This is the format that UI Kit AppCard builder should pass
                       final actionData = {
@@ -32,7 +33,8 @@ void main() {
                             onPressed: () {
                               print('🔄 Testing action callback with format:');
                               print('   Data: $actionData');
-                              print('   Expected: action manager should receive this and convert to A2UIAction');
+                              print(
+                                  '   Expected: action manager should receive this and convert to A2UIAction');
                               callback(actionData);
                             },
                             child: const Text('Test Action Callback'),
@@ -51,8 +53,11 @@ void main() {
                               print('   Params: ${action.params}');
                               print('   Source: ${action.sourceWidgetId}');
 
-                              actionManager.executeAction(action, ref).then((result) {
-                                print('   Result: ${result.success ? 'SUCCESS' : 'FAILED'}');
+                              actionManager
+                                  .executeAction(action, ref)
+                                  .then((result) {
+                                print(
+                                    '   Result: ${result.success ? 'SUCCESS' : 'FAILED'}');
                                 if (!result.success) {
                                   print('   Error: ${result.error}');
                                 } else {
@@ -65,7 +70,8 @@ void main() {
                             child: const Text('Test Direct Action'),
                           ),
                           const SizedBox(height: 20),
-                          const Text('Check debug console for action flow results'),
+                          const Text(
+                              'Check debug console for action flow results'),
                         ],
                       );
                     },
@@ -99,9 +105,7 @@ void main() {
       // A2UI format from JSON
       final a2uiFormat = {
         r'$action': 'navigation.push',
-        'params': {
-          'route': '/devices'
-        }
+        'params': {'route': '/devices'}
       };
 
       // Expected ActionManager format

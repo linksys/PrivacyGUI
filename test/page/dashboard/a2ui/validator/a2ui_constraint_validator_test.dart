@@ -42,7 +42,8 @@ void main() {
         expect(result.messages.length, 1);
         expect(result.messages.first, contains('Minimum width violation'));
         expect(result.messages.first, contains('requires 2 columns'));
-        expect(result.messages.first, contains('attempting to set to 1 columns'));
+        expect(
+            result.messages.first, contains('attempting to set to 1 columns'));
       });
 
       test('reports maximum width violation', () {
@@ -57,7 +58,8 @@ void main() {
         expect(result.messages.length, 1);
         expect(result.messages.first, contains('Maximum width violation'));
         expect(result.messages.first, contains('maximum 6 columns'));
-        expect(result.messages.first, contains('attempting to set to 7 columns'));
+        expect(
+            result.messages.first, contains('attempting to set to 7 columns'));
       });
 
       test('reports minimum height violation', () {
@@ -94,14 +96,20 @@ void main() {
         final result = validator.validateResize(
           widgetId: 'test_widget_normal',
           newColumns: 1, // Below minColumns: 2
-          newRows: 4,    // Above maxRows: 3
+          newRows: 4, // Above maxRows: 3
         );
 
         expect(result.isValid, isFalse);
         expect(result.type, ValidationResultType.violation);
         expect(result.messages.length, 2);
-        expect(result.messages.any((msg) => msg.contains('Minimum width violation')), isTrue);
-        expect(result.messages.any((msg) => msg.contains('Maximum height violation')), isTrue);
+        expect(
+            result.messages
+                .any((msg) => msg.contains('Minimum width violation')),
+            isTrue);
+        expect(
+            result.messages
+                .any((msg) => msg.contains('Maximum height violation')),
+            isTrue);
       });
 
       test('returns error for unknown widget', () {
@@ -113,14 +121,15 @@ void main() {
 
         expect(result.isValid, isFalse);
         expect(result.type, ValidationResultType.error);
-        expect(result.primaryMessage, contains('Widget definition not found: unknown_widget'));
+        expect(result.primaryMessage,
+            contains('Widget definition not found: unknown_widget'));
       });
 
       test('handles edge case constraints', () {
         final result = validator.validateResize(
           widgetId: 'test_widget_strict',
           newColumns: 2, // Exactly at min/max
-          newRows: 1,    // Exactly at min/max
+          newRows: 1, // Exactly at min/max
         );
 
         expect(result.isValid, isTrue);
@@ -170,7 +179,8 @@ void main() {
         expect(result.isValid, isFalse);
         expect(result.type, ValidationResultType.violation);
         expect(result.messages.length, 1);
-        expect(result.messages.first, contains('Position cannot be negative: (-1, 0)'));
+        expect(result.messages.first,
+            contains('Position cannot be negative: (-1, 0)'));
       });
 
       test('reports grid boundary violation', () {
@@ -188,7 +198,8 @@ void main() {
         expect(result.type, ValidationResultType.violation);
         expect(result.messages.length, 1);
         expect(result.messages.first, contains('Width exceeds grid boundary'));
-        expect(result.messages.first, contains('position 10 + width 4 = 14 > grid width 12'));
+        expect(result.messages.first,
+            contains('position 10 + width 4 = 14 > grid width 12'));
       });
 
       test('detects overlap with existing widget', () {
@@ -207,7 +218,7 @@ void main() {
           column: 1,
           row: 1,
           columns: 3, // 1-4 overlaps with 2-5
-          rows: 2,    // 1-3 overlaps with 1-3
+          rows: 2, // 1-3 overlaps with 1-3
           gridColumns: 12,
           existingPlacements: existingPlacements,
         );
@@ -215,8 +226,10 @@ void main() {
         expect(result.isValid, isFalse);
         expect(result.type, ValidationResultType.violation);
         expect(result.messages.length, 1);
-        expect(result.messages.first, contains('Overlaps with existing widget'));
-        expect(result.messages.first, contains('"test_widget_normal" overlaps with "existing_widget"'));
+        expect(
+            result.messages.first, contains('Overlaps with existing widget'));
+        expect(result.messages.first,
+            contains('"test_widget_normal" overlaps with "existing_widget"'));
       });
 
       test('allows adjacent widgets without overlap', () {
@@ -398,7 +411,7 @@ void main() {
         final suggestion = validator.suggestValidResize(
           widgetId: 'test_widget_normal',
           requestedColumns: 1, // Below minColumns: 2
-          requestedRows: 5,    // Above maxRows: 3
+          requestedRows: 5, // Above maxRows: 3
         );
 
         expect(suggestion.columns, 2);
@@ -424,7 +437,7 @@ void main() {
         final suggestion = validator.suggestValidResize(
           widgetId: 'test_widget_strict',
           requestedColumns: 5, // Will be clamped to 2
-          requestedRows: 3,    // Will be clamped to 1
+          requestedRows: 3, // Will be clamped to 1
         );
 
         expect(suggestion.columns, 2);

@@ -9,9 +9,7 @@ void main() {
       // Input: A2UI action format from JSON
       final a2uiActionData = {
         r'$action': 'navigation.push',
-        'params': {
-          'route': '/devices'
-        }
+        'params': {'route': '/devices'}
       };
 
       // Expected output: Action manager format
@@ -89,15 +87,27 @@ void main() {
     test('Multiple navigation actions format correctly', () {
       final testCases = [
         {
-          'input': {r'$action': 'navigation.push', 'params': {'route': '/devices'}},
+          'input': {
+            r'$action': 'navigation.push',
+            'params': {'route': '/devices'}
+          },
           'expected': {'action': 'navigation.push', 'route': '/devices'},
         },
         {
-          'input': {r'$action': 'navigation.push', 'params': {'route': '/network-settings'}},
-          'expected': {'action': 'navigation.push', 'route': '/network-settings'},
+          'input': {
+            r'$action': 'navigation.push',
+            'params': {'route': '/network-settings'}
+          },
+          'expected': {
+            'action': 'navigation.push',
+            'route': '/network-settings'
+          },
         },
         {
-          'input': {r'$action': 'navigation.push', 'params': {'route': '/mesh-network'}},
+          'input': {
+            r'$action': 'navigation.push',
+            'params': {'route': '/mesh-network'}
+          },
           'expected': {'action': 'navigation.push', 'route': '/mesh-network'},
         },
       ];

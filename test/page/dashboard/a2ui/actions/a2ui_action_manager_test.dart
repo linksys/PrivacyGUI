@@ -21,13 +21,14 @@ class TestActionHandler extends A2UIActionHandler {
     bool shouldSucceed = true,
     bool shouldValidate = true,
     String? customError,
-  }) : _shouldSucceed = shouldSucceed,
-       _shouldValidate = shouldValidate,
-       _customError = customError;
+  })  : _shouldSucceed = shouldSucceed,
+        _shouldValidate = shouldValidate,
+        _customError = customError;
 
   @override
   Future<A2UIActionResult> handle(A2UIAction action, WidgetRef ref) async {
-    await Future.delayed(const Duration(milliseconds: 10)); // Simulate async work
+    await Future.delayed(
+        const Duration(milliseconds: 10)); // Simulate async work
 
     if (_customError != null) {
       throw Exception(_customError);
@@ -84,7 +85,11 @@ void main() {
         manager.registerHandler(handler2);
 
         // Should only have one 'test' handler (the second one)
-        expect(manager.registeredActionTypes.where((type) => type == 'test').length, equals(1));
+        expect(
+            manager.registeredActionTypes
+                .where((type) => type == 'test')
+                .length,
+            equals(1));
       });
     });
 
@@ -193,7 +198,8 @@ void main() {
         final testHandler = TestActionHandler();
         manager.registerHandler(testHandler);
 
-        final callback = manager.createActionCallback(mockRef, widgetId: 'test_widget');
+        final callback =
+            manager.createActionCallback(mockRef, widgetId: 'test_widget');
 
         final callbackData = {
           'action': 'test.callback',

@@ -1,46 +1,46 @@
-# PrivacyGUI 專案架構完整分析報告
+# PrivacyGUI Project Architecture Comprehensive Analysis Report
 
-本報告詳細分析 PrivacyGUI 專案的整體架構，聚焦於 **Clean Architecture**、**分層架構** 以及 **領域解耦** 三大面向。
+This report provides a detailed analysis of the overall architecture of the PrivacyGUI project, focusing on three major aspects: **Clean Architecture**, **Layered Architecture**, and **Domain Decoupling**.
 
 ---
 
-## 1. 高階架構圖 (High-Level Architecture)
+## 1. High-Level Architecture
 
 ```mermaid
 graph TB
-    subgraph External["外部服務"]
+    subgraph External["External Services"]
         Router["Router / JNAP"]
         Cloud["Linksys Cloud"]
         USP["USP Protocol"]
     end
     
-    subgraph PresentationLayer["展示層 Presentation Layer"]
+    subgraph PresentationLayer["Presentation Layer"]
         Views["Views<br/>(Flutter Widgets)"]
-        Components["共用元件<br/>(page/components/)"]
-        UIKit["UI Kit Library<br/>(外部 package)"]
+        Components["Shared Components<br/>(page/components/)"]
+        UIKit["UI Kit Library<br/>(External package)"]
     end
     
-    subgraph ApplicationLayer["應用層 Application Layer"]
-        PageProviders["頁面 Providers<br/>(page/*/providers/)"]
-        GlobalProviders["全局 Providers<br/>(lib/providers/)"]
-        CoreProviders["核心 Providers<br/>(core/jnap/providers/)"]
+    subgraph ApplicationLayer["Application Layer"]
+        PageProviders["Page Providers<br/>(page/*/providers/)"]
+        GlobalProviders["Global Providers<br/>(lib/providers/)"]
+        CoreProviders["Core Providers<br/>(core/jnap/providers/)"]
     end
     
-    subgraph ServiceLayer["服務層 Service Layer"]
-        PageServices["頁面 Services<br/>(page/*/services/)"]
-        AuthService["認證服務<br/>(providers/auth/auth_service.dart)"]
-        CloudService["雲端服務<br/>(core/cloud/linksys_device_cloud_service.dart)"]
+    subgraph ServiceLayer["Service Layer"]
+        PageServices["Page Services<br/>(page/*/services/)"]
+        AuthService["Authentication Service<br/>(providers/auth/auth_service.dart)"]
+        CloudService["Cloud Services<br/>(core/cloud/linksys_device_cloud_service.dart)"]
     end
     
-    subgraph DataLayer["資料層 Data Layer"]
+    subgraph DataLayer["Data Layer"]
         RouterRepo["RouterRepository<br/>(core/jnap/router_repository.dart)"]
         CloudRepo["LinksysCloudRepository<br/>(core/cloud/linksys_cloud_repository.dart)"]
         JnapModels["JNAP Models<br/>(core/jnap/models/)"]
         CloudModels["Cloud Models<br/>(core/cloud/model/)"]
-        Cache["快取層<br/>(core/cache/)"]
+        Cache["Cache Layer<br/>(core/cache/)"]
     end
     
-    subgraph PackagesLayer["獨立套件 Packages"]
+    subgraph PackagesLayer["Independent Packages"]
         UspCore["usp_client_core"]
         UspCommon["usp_protocol_common"]
     end
@@ -75,68 +75,68 @@ graph TB
 
 ---
 
-## 2. 專案目錄結構與職責
+## 2. Project Directory Structure and Responsibilities
 
 ```
 PrivacyGUI/
 ├── lib/
-│   ├── main.dart                 # 應用程式入口
-│   ├── app.dart                  # MaterialApp 配置
-│   ├── di.dart                   # 依賴注入配置
+│   ├── main.dart                 # Application Entry Point
+│   ├── app.dart                  # MaterialApp configuration
+│   ├── di.dart                   # Dependency Injection Configuration
 │   │
-│   ├── core/                     # 📦 核心基礎設施層 (173 files)
-│   │   ├── jnap/                 # JNAP 協議層 (76 files)
-│   │   │   ├── actions/          # JNAP 指令定義
-│   │   │   ├── command/          # 指令執行器
-│   │   │   ├── models/           # JNAP 資料模型 (55 files)
-│   │   │   ├── providers/        # 核心狀態管理
-│   │   │   └── router_repository.dart  # 主要 Repository
-│   │   ├── cloud/                # 雲端服務層 (31 files)
-│   │   ├── cache/                # 快取機制 (6 files)
-│   │   ├── data/                 # 共享資料層
-│   │   │   ├── providers/        # 資料狀態管理
-│   │   │   └── services/         # 資料服務
-│   │   ├── http/                 # HTTP 客戶端
-│   │   ├── usp/                  # USP 協議層 (11 files)
-│   │   └── utils/                # 工具函數
+│   ├── core/                     # 📦 Core Infrastructure Layer (173 files)
+│   │   ├── jnap/                 # JNAP Protocol Layer (76 files)
+│   │   │   ├── actions/          # JNAP Action Definitions
+│   │   │   ├── command/          # Command Executors
+│   │   │   ├── models/           # JNAP Data Models (55 files)
+│   │   │   ├── providers/        # Core State Management
+│   │   │   └── router_repository.dart  # Main Repository
+│   │   ├── cloud/                # Cloud Service Layer (31 files)
+│   │   ├── cache/                # Cache Mechanism (6 files)
+│   │   ├── data/                 # Shared Data Layer
+│   │   │   ├── providers/        # Data State Management
+│   │   │   └── services/         # Data Services
+│   │   ├── http/                 # HTTP Client
+│   │   ├── usp/                  # USP Protocol Layer (11 files)
+│   │   └── utils/                # Utility Functions
 │   │
-│   ├── page/                     # 📱 頁面功能模組 (453 files)
-│   │   ├── dashboard/            # 控制面板
-│   │   ├── wifi_settings/        # WiFi 設定
-│   │   ├── advanced_settings/    # 進階設定 (136 files)
-│   │   │   ├── dmz/              # ⭐ 範例模組 (完整分層)
+│   ├── page/                     # 📱 Page Feature Modules (453 files)
+│   │   ├── dashboard/            # Dashboard
+│   │   ├── wifi_settings/        # WiFi Set up
+│   │   ├── advanced_settings/    # Advanced Settings (136 files)
+│   │   │   ├── dmz/              # ⭐ Example Module (Complete Layering)
 │   │   │   ├── firewall/
 │   │   │   ├── port_forwarding/
 │   │   │   └── ...
-│   │   ├── instant_device/       # 裝置管理
-│   │   ├── instant_topology/     # 網路拓撲
-│   │   ├── nodes/                # 節點管理
-│   │   └── ...                   # (共 21 個功能模組)
+│   │   ├── instant_device/       # Device Management
+│   │   ├── instant_topology/     # Network Topology
+│   │   ├── nodes/                # Node Management
+│   │   └── ...                   # (Total of 21 feature modules)
 │   │
-│   ├── providers/                # 🔗 全局狀態管理 (25 files)
-│   │   ├── auth/                 # 認證狀態 (8 files)
-│   │   ├── connectivity/         # 連線狀態
-│   │   └── app_settings/         # 應用設定
+│   ├── providers/                # 🔗 Global State Management (25 files)
+│   │   ├── auth/                 # Authentication State (8 files)
+│   │   ├── connectivity/         # Connectivity State
+│   │   └── app_settings/         # App Settings
 │   │
-│   ├── route/                    # 🗺️ 路由配置 (14 files)
-│   │   ├── router_provider.dart  # 路由狀態管理
-│   │   ├── route_*.dart          # 各頁面路由定義
-│   │   └── constants.dart        # 路由常數
+│   ├── route/                    # 🗺️ Route Configuration (14 files)
+│   │   ├── router_provider.dart  # RouteStatus管理
+│   │   ├── route_*.dart          # Per-page Route Definitions
+│   │   └── constants.dart        # Route Constants
 │   │
-│   ├── constants/                # 常數定義 (13 files)
-│   ├── util/                     # 工具類 (30 files)
-│   └── l10n/                     # 國際化 (26 files)
+│   ├── constants/                # Constant Definitions (13 files)
+│   ├── util/                     # Utility Classes (30 files)
+│   └── l10n/                     # Internationalization (l10n) (26 files)
 │
-└── packages/                     # 📦 獨立套件
-    ├── usp_client_core/          # USP 協議核心
-    └── usp_protocol_common/      # USP 協議共用
+└── packages/                     # 📦 Independent Packages
+    ├── usp_client_core/          # USP protocolCore
+    └── usp_protocol_common/      # USP protocol共用
 ```
 
 ---
 
-## 3. Clean Architecture 分層分析
+## 3. Clean Architecture Layered Analysis
 
-### 3.1 四層架構模型
+### 3.1 Four-Layer Architecture Model
 
 ```mermaid
 graph LR
@@ -178,33 +178,33 @@ graph LR
     style Layer4 fill:#bbdefb
 ```
 
-### 3.2 層次職責定義
+### 3.2 Layer Responsibility Definitions
 
-| 層次 | 位置 | 職責 | 可引用的層次 |
+| Layer | Location | Responsibilities | Referencable Layers |
 |------|------|------|--------------|
-| **Data Layer** | `core/jnap/models/`, `core/cloud/model/` | 協議資料模型、序列化/反序列化 | 無 (最底層) |
-| **Service Layer** | `page/*/services/`, `providers/auth/auth_service.dart` | Data ↔ UI 模型轉換、協議處理 | Data Layer |
-| **Application Layer** | `page/*/providers/`, `lib/providers/`, `core/*/providers/` | 狀態管理、反應式訂閱 | Service Layer |
-| **Presentation Layer** | `page/*/views/`, `page/components/` | Flutter Widgets、使用者互動 | Application Layer |
+| **Data Layer** | `core/jnap/models/`, `core/cloud/model/` | Protocol Data Models, Serialization/Deserialization | None (Bottom Layer) |
+| **Service Layer** | `page/*/services/`, `providers/auth/auth_service.dart` | Data ↔ UI Model Conversion, Protocol Handling | Data Layer |
+| **Application Layer** | `page/*/providers/`, `lib/providers/`, `core/*/providers/` | State Management, Reactive Subscriptions | Service Layer |
+| **Presentation Layer** | `page/*/views/`, `page/components/` | Flutter Widgets、User Interactions | Application Layer |
 
 ---
 
-## 4. 模組區塊圖 (Module Block Diagram)
+## 4. Module區塊圖 (Module Block Diagram)
 
-### 4.1 功能模組總覽
+### 4.1 Feature Modules Overview
 
 ```mermaid
 graph TB
-    subgraph CoreModules["核心模組 (lib/core/)"]
-        JNAP["JNAP 協議<br/>76 files"]
-        Cloud["雲端服務<br/>31 files"]
-        Data["資料層<br/>18 files"]
-        Cache["快取<br/>6 files"]
+    subgraph CoreModules["Core Modules (lib/core/)"]
+        JNAP["JNAP protocol<br/>76 files"]
+        Cloud["Cloud Services<br/>31 files"]
+        Data["dataLayer<br/>18 files"]
+        Cache["Cache<br/>6 files"]
         HTTP["HTTP<br/>5 files"]
         USP["USP<br/>11 files"]
     end
     
-    subgraph FeatureModules["功能模組 (lib/page/)"]
+    subgraph FeatureModules["Feature Modules (lib/page/)"]
         Dashboard["Dashboard<br/>74 files"]
         WiFi["WiFi Settings<br/>36 files"]
         Advanced["Advanced Settings<br/>136 files"]
@@ -218,13 +218,13 @@ graph TB
         Login["Login<br/>10 files"]
     end
     
-    subgraph SharedModules["共享模組"]
-        GlobalProviders["全局 Providers<br/>(lib/providers/)"]
-        Route["路由<br/>(lib/route/)"]
-        Components["共用元件<br/>(page/components/)"]
+    subgraph SharedModules["Shared Modules"]
+        GlobalProviders["Global Providers<br/>(lib/providers/)"]
+        Route["Route<br/>(lib/route/)"]
+        Components["Shared Components<br/>(page/components/)"]
     end
     
-    subgraph Packages["獨立套件"]
+    subgraph Packages["Independent Packages"]
         UspClient["usp_client_core"]
         UspCommon["usp_protocol_common"]
     end
@@ -240,7 +240,7 @@ graph TB
     style Packages fill:#fce4ec
 ```
 
-### 4.2 範例模組結構 (DMZ - 最佳實踐)
+### 4.2 ExampleModuleStructure (DMZ - Best Practice)
 
 ```mermaid
 graph TB
@@ -254,7 +254,7 @@ graph TB
     subgraph Dependencies["Dependencies"]
         CoreJNAP["core/jnap/models/<br/>dmz_settings.dart"]
         RouterRepo["core/jnap/<br/>router_repository.dart"]
-        UIModels["UI Models<br/>(provider 內定義)"]
+        UIModels["UI Models<br/>(provider Defined in)"]
     end
     
     Views --> Providers
@@ -271,58 +271,58 @@ graph TB
 
 ---
 
-## 5. 領域解耦分析
+## 5. Domain Decoupling Analysis
 
-### 5.1 解耦評估矩陣
+### 5.1 Decoupling Evaluation Matrix
 
-| 模組 | 分層完整性 | 依賴方向 | 模型隔離 | 評分 |
+| Module | Layer Integrity | Dependency Direction | Model Isolation | Score |
 |------|------------|----------|----------|------|
-| **AI 模組** (`lib/ai/`) | ✅ 完整 | ✅ 正確 | ✅ 抽象介面 | ⭐⭐⭐⭐⭐ |
-| **USP 套件** (`packages/`) | ✅ 獨立 | ✅ 正確 | ✅ 完全隔離 | ⭐⭐⭐⭐⭐ |
-| **DMZ 模組** | ✅ 完整 | ✅ 正確 | ✅ UI 模型 | ⭐⭐⭐⭐⭐ |
-| **Auth 模組** | ✅ 完整 | ✅ 正確 | ✅ Service 層 | ⭐⭐⭐⭐ |
-| **WiFi Settings** | ✅ 完整 | ⚠️ 跨頁面 | ✅ UI 模型 | ⭐⭐⭐⭐ |
-| **Dashboard** | ✅ 完整 | ⚠️ 跨頁面 | ⚠️ 部分違規 | ⭐⭐⭐ |
-| **Nodes** | ✅ 完整 | ⚠️ 跨頁面 | ✅ UI 模型 | ⭐⭐⭐⭐ |
+| **AI Module** (`lib/ai/`) | ✅ Complete | ✅ Correct | ✅ Abstract Interface | ⭐⭐⭐⭐⭐ |
+| **USP 套件** (`packages/`) | ✅ Independent | ✅ Correct | ✅ Fully Isolated | ⭐⭐⭐⭐⭐ |
+| **DMZ Module** | ✅ Complete | ✅ Correct | ✅ UI model | ⭐⭐⭐⭐⭐ |
+| **Auth Module** | ✅ Complete | ✅ Correct | ✅ Service Layer | ⭐⭐⭐⭐ |
+| **WiFi Settings** | ✅ Complete | ⚠️ Cross-page | ✅ UI model | ⭐⭐⭐⭐ |
+| **Dashboard** | ✅ Complete | ⚠️ Cross-page | ⚠️ 部minutesviolations | ⭐⭐⭐ |
+| **Nodes** | ✅ Complete | ⚠️ Cross-page | ✅ UI model | ⭐⭐⭐⭐ |
 
-### 5.2 依賴關係圖
+### 5.2 Dependency Graph
 
 ```mermaid
 graph LR
-    subgraph CorrectFlow["✅ 正確的依賴方向"]
+    subgraph CorrectFlow["✅ Correct Dependency Direction"]
         direction TB
         V1["Views"] --> P1["Providers"]
         P1 --> S1["Services"]
         S1 --> D1["Data Models"]
     end
     
-    subgraph Violations["⚠️ 違規依賴"]
+    subgraph Violations["⚠️ Violating Dependencies"]
         direction TB
-        P2["add_nodes_provider"] -.-> |直接引用| D2["BackHaulInfoData"]
-        P3["pnp_provider"] -.-> |直接引用| D3["AutoConfigurationSettings"]
-        P4["wifi_bundle_provider"] -.-> |跨頁面| P5["dashboard_home_provider"]
+        P2["add_nodes_provider"] -.-> |Direct Reference| D2["BackHaulInfoData"]
+        P3["pnp_provider"] -.-> |Direct Reference| D3["AutoConfigurationSettings"]
+        P4["wifi_bundle_provider"] -.-> |Cross-page| P5["dashboard_home_provider"]
     end
     
     style CorrectFlow fill:#c8e6c9
     style Violations fill:#ffcdd2
 ```
 
-### 5.3 跨模組依賴熱點
+### 5.3 Cross-module Dependency Hotspots
 
 ```mermaid
 graph TD
-    subgraph HotSpots["高耦合熱點"]
+    subgraph HotSpots["High Coupling Hotspots"]
         WBP["wifi_bundle_provider"]
         DHP["dashboard_home_provider"]
         HCP["health_check_provider"]
         DLP["device_list_provider"]
     end
     
-    WBP --> |讀取 lanPortConnections| DHP
-    DHP --> |監聽健康檢查| HCP
-    WBP --> |需要 privacy state| IPP["instant_privacy_state"]
-    DFLP["device_filtered_list_provider"] --> |需要 WiFi 資訊| WBP
-    NDP["node_detail_provider"] --> |需要裝置列表| DLP
+    WBP --> |Read lanPortConnections| DHP
+    DHP --> |Listen to Health Check| HCP
+    WBP --> |Needs privacy state| IPP["instant_privacy_state"]
+    DFLP["device_filtered_list_provider"] --> |Needs WiFi Info| WBP
+    NDP["node_detail_provider"] --> |Needs裝置List| DLP
     
     style WBP fill:#ffab91
     style DHP fill:#ffab91
@@ -330,9 +330,9 @@ graph TD
 
 ---
 
-## 6. Data Flow 資料流分析
+## 6. Data Flow Analysis
 
-### 6.1 JNAP 指令執行流程
+### 6.1 JNAP Command Execution Flow
 
 ```mermaid
 sequenceDiagram
@@ -342,37 +342,37 @@ sequenceDiagram
     participant R as RouterRepository
     participant J as JNAP Router
     
-    V->>P: 觸發動作 (e.g., 儲存設定)
-    P->>S: 調用 Service 方法
-    S->>S: 將 UI Model 轉換為 Data Model
+    V->>P: Trigger Action (e.g., Save Settings)
+    P->>S: Call Service Method
+    S->>S: Convert UI Model to Data Model
     S->>R: send(JNAPAction, data)
     R->>J: HTTP POST /JNAP/
     J-->>R: Response (JSON)
     R-->>S: JNAPResult
-    S->>S: 將 Data Model 轉換為 UI Model
+    S->>S: Convert Data Model to UI Model
     S-->>P: UI Model
-    P->>P: 更新狀態
-    P-->>V: 通知 rebuild
+    P->>P: Update State
+    P-->>V: Notify rebuild
 ```
 
-### 6.2 狀態管理架構
+### 6.2 State Management Architecture
 
 ```mermaid
 graph TB
-    subgraph StateManagement["Riverpod 狀態管理"]
-        subgraph PageState["頁面狀態"]
+    subgraph StateManagement["Riverpod Status管理"]
+        subgraph PageState["Page State"]
             PN["Page Notifiers<br/>(StateNotifier)"]
             PS["Page State<br/>(Freezed models)"]
         end
         
-        subgraph GlobalState["全局狀態"]
+        subgraph GlobalState["Global State"]
             AM["AuthManager"]
             DM["DashboardManager"]
             DevM["DeviceManager"]
             PM["PollingManager"]
         end
         
-        subgraph CoreState["核心狀態"]
+        subgraph CoreState["Core State"]
             WAN["WAN Provider"]
             FW["Firmware Provider"]
             SE["SideEffect Provider"]
@@ -391,22 +391,22 @@ graph TB
 
 ---
 
-## 7. 協議抽象層
+## 7. Protocol Abstraction Layer
 
-### 7.1 多協議支援架構
+### 7.1 Multi-protocol Support Architecture
 
 ```mermaid
 graph TB
-    subgraph AbstractionLayer["抽象層"]
+    subgraph AbstractionLayer["Abstraction Layer"]
         IProvider["IRouterCommandProvider<br/>(lib/ai/abstraction/)"]
     end
     
-    subgraph Implementations["實現層"]
+    subgraph Implementations["Implementation Layer"]
         JNAPImpl["JNAP Implementation"]
         USPImpl["USP Implementation"]
     end
     
-    subgraph Protocols["協議層"]
+    subgraph Protocols["Protocol Layer"]
         JNAP["JNAP Protocol<br/>(core/jnap/)"]
         USP["USP Protocol<br/>(packages/usp_client_core/)"]
         Bridge["USP Bridge<br/>(core/usp/)"]
@@ -423,7 +423,7 @@ graph TB
     style Protocols fill:#c8e6c9
 ```
 
-### 7.2 AI 模組架構 (MCP 模式)
+### 7.2 AI Module架構 (MCP Pattern)
 
 ```mermaid
 graph LR
@@ -452,67 +452,67 @@ graph LR
 
 ---
 
-## 8. 問題識別與改進建議
+## 8. Issue Identification and Improvement Suggestions
 
-### 8.1 主要問題分類
+### 8.1 majorIssueminutes類
 
 ```mermaid
-pie title 架構問題分布
-    "Provider 直接引用 Data Model" : 4
-    "跨頁面 Provider 依賴" : 7
-    "巨型檔案" : 4
-    "缺少 Service 層" : 2
+pie title Architecture Issue Distribution
+    "Provider Direct Reference Data Model" : 4
+    "Cross-page Provider Dependency" : 7
+    "巨型File" : 4
+    "Missing Service Layer" : 2
 ```
 
-### 8.2 改進優先級
+### 8.2 Improvement Priorities
 
-| 優先級 | 問題 | 影響範圍 | 建議修復時程 |
+| priority | Issue | impactScope | SuggestionFixTimeline |
 |--------|------|----------|--------------|
-| **P0** | Provider 直接引用 Data 模型 | 1 個檔案 | 1 週 |
-| **P1** | 跨頁面 Provider 依賴 | 3 個檔案 | 2-3 週 |
-| **P2** | 巨型檔案拆分 | 4 個檔案 | 按需進行 |
+| **P0** | Provider Direct Reference Data model | 1 File | 1 weeks |
+| **P1** | Cross-page Provider Dependency | 3 File | 2-3 weeks |
+| **P2** | 巨型FileSplit | 4 File | 按需進 |
 
 ---
 
-## 9. 詳細問題檔案清單
+## 9. 詳細IssueFileList
 
 > [!IMPORTANT]
-> 完整的架構違規詳細報告請參閱 [architecture-violations-detail.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/architecture-violations-detail.md)，包含具體的程式碼行號、違規程式碼片段與建議修復方式。
+> Completeof架構violations詳細Report請參閱 [architecture-violations-detail.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/audit/architecture-violations-detail.md)，containsspecific code line numbers, violating code snippets, and suggested fixes。
 
-### 🔴 P0: RouterRepository 在 Views 中直接使用
+### 🔴 P0: RouterRepository Used directly in Views
 
-| 檔案 | 行號 | 問題 | 修復方式 |
+| File | Line Number | Issue | Fix方式 |
 |------|------|------|----------|
-| [prepare_dashboard_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/dashboard/views/prepare_dashboard_view.dart) | 78-86 | 直接使用 RouterRepository 與 JNAPAction | 建立 DashboardPrepareService |
-| [router_assistant_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/ai_assistant/views/router_assistant_view.dart) | 9-12 | 在 View 檔案中定義 Provider | 移動至 providers/ 目錄 |
-| [local_network_settings_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart) | 270, 308 | 直接呼叫 `getLocalIP()` | 透過 Provider 暴露 |
-| [pnp_no_internet_connection_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart) | 119 | 直接檢查 `isLoggedIn()` | 使用 AuthProvider |
+| [prepare_dashboard_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/dashboard/views/prepare_dashboard_view.dart) | 78-86 | 直接Use RouterRepository and JNAPAction | Create DashboardPrepareService |
+| [router_assistant_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/ai_assistant/views/router_assistant_view.dart) | 9-12 | Defining Provider in View file | Move to providers/ Directory |
+| [local_network_settings_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/advanced_settings/local_network_settings/views/local_network_settings_view.dart) | 270, 308 | Direct call `getLocalIP()` | Expose through Provider |
+| [pnp_no_internet_connection_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart) | 119 | Direct check `isLoggedIn()` | Use AuthProvider |
 
 ---
 
-### 🔴 P0: JNAPAction 在非 Services 中使用
+### 🔴 P0: JNAPAction Used outside of Services
 
-| 檔案 | 行號 | 問題 | 修復方式 |
+| File | Line Number | Issue | Fix方式 |
 |------|------|------|----------|
-| [prepare_dashboard_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/dashboard/views/prepare_dashboard_view.dart) | 82 | 直接使用 `JNAPAction.getDeviceInfo` | 封裝至 Service |
-| [select_network_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/select_network/providers/select_network_provider.dart) | 56 | 直接使用 `JNAPAction.isAdminPasswordDefault` | 建立 SelectNetworkService |
+| [prepare_dashboard_view.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/dashboard/views/prepare_dashboard_view.dart) | 82 | 直接Use `JNAPAction.getDeviceInfo` | Encapsulate into Service |
+| [select_network_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/select_network/providers/select_network_provider.dart) | 56 | 直接Use `JNAPAction.isAdminPasswordDefault` | Create SelectNetworkService |
 
 ---
 
-### 🟠 P1: 跨頁面 Provider 依賴
+### 🟠 P1: Cross-page Provider Dependency
 
-| 來源檔案 | 被引用檔案 | 行號 | 問題描述 | 狀態 |
+| 來源File | 被ReferenceFile | Line Number | Issue描述 | Status |
 |----------|------------|------|----------|------|
-| [device_filtered_list_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/instant_device/providers/device_filtered_list_provider.dart) | `wifi_bundle_provider` | 9, 83-91 | 跨 `instant_device` → `wifi_settings` 讀取 WiFi SSID 列表 | ✅ 已修復 |
-| [wifi_bundle_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/wifi_settings/providers/wifi_bundle_provider.dart) | `instant_privacy_state` | 9, 60-61 | 跨 `wifi_settings` → `instant_privacy` 引用 State 類型 | ✅ 已修復 |
-| [displayed_mac_filtering_devices_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/wifi_settings/providers/displayed_mac_filtering_devices_provider.dart) | `instant_device/_instant_device` | 2 | 跨模組取得裝置資訊 | ✅ 已修復 |
+| [device_filtered_list_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/instant_device/providers/device_filtered_list_provider.dart) | `wifi_bundle_provider` | 9, 83-91 | 跨 `instant_device` → `wifi_settings` Read WiFi SSID List | ✅ Fixed |
+| [wifi_bundle_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/wifi_settings/providers/wifi_bundle_provider.dart) | `instant_privacy_state` | 9, 60-61 | 跨 `wifi_settings` → `instant_privacy` Reference State Type | ✅ Fixed |
+| [displayed_mac_filtering_devices_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/wifi_settings/providers/displayed_mac_filtering_devices_provider.dart) | `instant_device/_instant_device` | 2 | 跨Module取得裝置Info | ✅ Fixed |
 
-**device_filtered_list_provider.dart 問題程式碼:**
+**device_filtered_list_provider.dart IssueCode:**
 ```dart
-// line 9 - 跨頁面引用
+// line 9 - Cross-page Reference
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
 
-// line 83-91 - 直接讀取其他頁面 Provider 狀態
+// line 83-91 - Directly reading other page Provider state
 List<String> getWifiNames() {
   final wifiState = ref.read(wifiBundleProvider);
   return [
@@ -522,47 +522,47 @@ List<String> getWifiNames() {
 }
 ```
 
-**建議修復:** 將 WiFi SSID 列表提取到 `core/data/providers/wifi_radios_provider.dart` 或創建共享的 `lib/providers/wifi_names_provider.dart`。
+**SuggestionFix:** 將 WiFi SSID List提取到 `core/data/providers/wifi_radios_provider.dart` 或創建Sharedof `lib/providers/wifi_names_provider.dart`。
 
 ---
 
-### 🟡 P2: 巨型檔案 (需拆分)
+### 🟡 P2: Large Files (Need Splitting)
 
-| 檔案 | 大小 | 問題 | 建議拆分方式 |
+| File | 大小 | Issue | Suggested Splitting Method |
 |------|------|------|--------------|
-| [jnap_tr181_mapper.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/core/usp/jnap_tr181_mapper.dart) | ~42KB | JNAP ↔ TR-181 映射邏輯過於集中 | 按功能域拆分 (WiFi, Device, Network) |
-| [router_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/route/router_provider.dart) | ~19KB | 路由邏輯與認證邏輯混合 | 分離 `auth_guard.dart` 與 `route_config.dart` |
-| [router_repository.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/core/jnap/router_repository.dart) | ~15KB | 多種命令類型處理混合 | 拆分 HTTP/BT/Remote 命令處理 |
-| [linksys_cloud_repository.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/core/cloud/linksys_cloud_repository.dart) | ~16KB | 雲端功能過於集中 | 按功能拆分 (Auth, Device, User) |
+| [jnap_tr181_mapper.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/core/usp/jnap_tr181_mapper.dart) | ~42KB | JNAP ↔ TR-181 mappingLogic過於Concentrated | Split by functional domain (WiFi, Device, Network) |
+| [router_provider.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/route/router_provider.dart) | ~19KB | RouteLogicandAuthLogicMixed | Separate `auth_guard.dart` and `route_config.dart` |
+| [router_repository.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/core/jnap/router_repository.dart) | ~15KB | Multiple命令TypeHandlingMixed | Split HTTP/BT/Remote 命令Handling |
+| [linksys_cloud_repository.dart](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/core/cloud/linksys_cloud_repository.dart) | ~16KB | CloudFunction過於Concentrated | 按FunctionSplit (Auth, Device, User) |
 
 ---
 
-### ✅ 已修復的良好範例
+### ✅ Good Examples of Fixed Code
 
-| 模組 | 結構 | 特點 |
+| Module | Structure | Features |
 |------|------|------|
-| [dashboard/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/dashboard/) | providers + services + views | `dashboard_home_provider.dart` 已使用 Service 層 |
-| [dmz/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/advanced_settings/dmz/) | providers + services + views | 完整 4 層分離，是最佳範例 |
+| [dashboard/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/dashboard/) | providers + services + views | `dashboard_home_provider.dart` 已Use Service Layer |
+| [dmz/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/advanced_settings/dmz/) | providers + services + views | Complete 4 LayerSeparate，是最佳Example |
 | [add_nodes/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/nodes/providers/add_nodes_provider.dart) | providers + services | 已委派給 `add_nodes_service.dart` |
-| [nodes/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/nodes/) | providers + services + state | `NodeLightSettings` 已重構為 Clean Architecture |
-| [nodes/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/nodes/) | providers + services + state | `NodeLightSettings` 已重構為 Clean Architecture |
-| [ai/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/ai/) | abstraction + orchestrator | 使用 `IRouterCommandProvider` 抽象介面 |
-| **Cross-Page Refs** | Shared Models in Core | `DeviceListItem`, `InstantPrivacySettings` 已移動至核心層共享 |
+| [nodes/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/nodes/) | providers + services + state | `NodeLightSettings` Refactored to Clean Architecture |
+| [nodes/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/page/nodes/) | providers + services + state | `NodeLightSettings` Refactored to Clean Architecture |
+| [ai/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/lib/ai/) | abstraction + orchestrator | Use `IRouterCommandProvider` Abstract Interface |
+| **Cross-Page Refs** | Shared Models in Core | `DeviceListItem`, `InstantPrivacySettings` 已Moved to core layer shared |
 
 ---
 
-## 10. 具體改進方案
+## 10. Concrete Improvement Plans
 
-### 方案 A: 提取共享狀態到核心層
+### 方案 A: Extract Shared State to Core Layer
 
 ```mermaid
 graph LR
-    subgraph Before["目前"]
+    subgraph Before["Before"]
         WBP1["wifi_bundle_provider"] --> DHP1["dashboard_home_provider"]
     end
     
-    subgraph After["改進後"]
-        WBP2["wifi_bundle_provider"] --> CSP["connectivity_status_provider<br/>(核心共享層)"]
+    subgraph After["After"]
+        WBP2["wifi_bundle_provider"] --> CSP["connectivity_status_provider<br/>(CoreSharedLayer)"]
         DHP2["dashboard_home_provider"] --> CSP
     end
     
@@ -570,40 +570,40 @@ graph LR
     style After fill:#c8e6c9
 ```
 
-### 方案 B: 建立模組 Barrel Export
+### 方案 B: Establish Module Barrel Export
 
 ```dart
 // lib/page/wifi_settings/_wifi_settings.dart (Barrel Export)
-// 只暴露公開 API
+// Only expose public API
 
 export 'providers/wifi_bundle_provider.dart' show wifiBundleProvider;
 export 'models/wifi_status.dart';
-// 隱藏內部實現細節
+// 隱藏內部ImplementationDetails
 ```
 
 ---
 
-## 9. 總結評分
+## 9. Summary Scores
 
-| 維度 | 評分 | 說明 |
+| Dimension | Score | Description |
 |------|------|------|
-| 整體架構設計 | ⭐⭐⭐⭐ | 4 層架構清晰，有文件化規範 |
-| 協議抽象 | ⭐⭐⭐⭐⭐ | AI、USP 模組解耦優秀 |
-| 頁面模組解耦 | ⭐⭐⭐ | 存在跨模組依賴問題 |
-| Provider 層純淨度 | ⭐⭐⭐ | 5 處 Data Model 違規 |
-| 模組邊界清晰度 | ⭐⭐⭐ | Barrel export 使用不一致 |
+| 整體架構Design | ⭐⭐⭐⭐ | 4 Layer架構Clear，有文件化spec |
+| protocolAbstraction | ⭐⭐⭐⭐⭐ | AI、USP ModuleDecouplingExcellent |
+| 頁面ModuleDecoupling | ⭐⭐⭐ | 存in跨ModuleDependencyIssue |
+| Provider Layer純淨level | ⭐⭐⭐ | 5 places Data Model violations |
+| ModuleBoundaryClearlevel | ⭐⭐⭐ | Barrel export Use不一致 |
 
-**總體評分: 3.6 / 5 ⭐**
+**總體Score: 3.6 / 5 ⭐**
 
-專案架構設計良好，核心模組 (AI、USP、DMZ) 展現了優秀的解耦實踐。主要改進重點在於：
-1. Provider 層不應直接引用 Data Model
-2. 減少跨功能模組的 Provider 依賴
-3. 統一建立模組 Barrel Export 機制
+Project架構DesignGood，Core Modules (AI、USP、DMZ) 展現了ExcellentofDecouplingPractices。majorImprovement重點in於：
+1. Provider Layer不應Direct Reference Data Model
+2. 減少跨Feature Modulesof Provider Dependency
+3. UnifiedEstablish Module Barrel Export 機制
 
 ---
 
 ## 10. 參考資源
 
-- 現有架構分析: [architecture_analysis_2026-01-05.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/architecture_analysis_2026-01-05.md)
-- DMZ 重構規範: [specs/002-dmz-refactor/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/specs/002-dmz-refactor/)
+- 現有架構Analysis: [architecture_analysis_2026-01-05.md](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/doc/architecture_analysis_2026-01-05.md)
+- DMZ 重構spec: [specs/002-dmz-refactor/](file:///Users/austin.chang/flutter-workspaces/privacyGUI/PrivacyGUI/specs/002-dmz-refactor/)
 - UI Kit Library: [privacyGUI-UI-kit](file:///Users/austin.chang/flutter-workspaces/ui_kit)

@@ -7,7 +7,8 @@ import 'a2ui_action_handler.dart';
 /// Manages A2UI actions - registration, routing, and execution
 class A2UIActionManager {
   final Map<String, A2UIActionHandler> _handlers = {};
-  final StreamController<A2UIActionResult> _resultStream = StreamController.broadcast();
+  final StreamController<A2UIActionResult> _resultStream =
+      StreamController.broadcast();
 
   /// Stream of action execution results
   Stream<A2UIActionResult> get results => _resultStream.stream;
@@ -31,7 +32,8 @@ class A2UIActionManager {
   }
 
   /// Executes an action and returns the result
-  Future<A2UIActionResult> executeAction(A2UIAction action, WidgetRef ref) async {
+  Future<A2UIActionResult> executeAction(
+      A2UIAction action, WidgetRef ref) async {
     try {
       debugPrint('A2UI: Executing action: ${action.action}');
 
@@ -39,19 +41,15 @@ class A2UIActionManager {
       final handler = _findHandler(action);
       if (handler == null) {
         final result = A2UIActionResult.failure(
-          action,
-          'No handler found for action type: ${action.action}'
-        );
+            action, 'No handler found for action type: ${action.action}');
         _resultStream.add(result);
         return result;
       }
 
       // Validate action
       if (!handler.validateAction(action)) {
-        final result = A2UIActionResult.failure(
-          action,
-          'Action validation failed'
-        );
+        final result =
+            A2UIActionResult.failure(action, 'Action validation failed');
         _resultStream.add(result);
         return result;
       }
@@ -78,7 +76,8 @@ class A2UIActionManager {
   }
 
   /// Creates a GenUi-compatible action callback
-  void Function(Map<String, dynamic>) createActionCallback(WidgetRef ref, {String? widgetId}) {
+  void Function(Map<String, dynamic>) createActionCallback(WidgetRef ref,
+      {String? widgetId}) {
     return (Map<String, dynamic> data) async {
       try {
         // Extract action from the data
@@ -146,7 +145,7 @@ class A2UISecurityContext {
 
     // Check exact match or wildcard
     return allowedActions.contains(action) ||
-           allowedActions.any((allowed) => _matchesPattern(action, allowed));
+        allowedActions.any((allowed) => _matchesPattern(action, allowed));
   }
 
   /// Checks if a data path can be accessed
@@ -156,7 +155,7 @@ class A2UISecurityContext {
 
     // Check exact match or wildcard
     return allowedDataPaths.contains(path) ||
-           allowedDataPaths.any((allowed) => _matchesPattern(path, allowed));
+        allowedDataPaths.any((allowed) => _matchesPattern(path, allowed));
   }
 
   bool _matchesPattern(String value, String pattern) {

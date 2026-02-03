@@ -126,8 +126,8 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
               scrollController: scrollController,
               itemBuilder: (context, item) {
                 final mode = preferences.getMode(item.id);
-                return _buildItemWidget(context, item, mode, _isEditMode,
-                    a2uiLoaderState, factory);
+                return _buildItemWidget(
+                    context, item, mode, _isEditMode, a2uiLoaderState, factory);
               },
               slotAspectRatio: 1.0,
               mainAxisSpacing: AppSpacing.lg,
@@ -250,24 +250,28 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
       if (item.w < constraints.minColumns) {
         newW = constraints.minColumns;
         violated = true;
-        violationMessages.add('Minimum width violation: requires ${constraints.minColumns} columns');
+        violationMessages.add(
+            'Minimum width violation: requires ${constraints.minColumns} columns');
       }
       if (item.w > constraints.maxColumns) {
         newW = constraints.maxColumns;
         violated = true;
-        violationMessages.add('Maximum width violation: maximum ${constraints.maxColumns} columns');
+        violationMessages.add(
+            'Maximum width violation: maximum ${constraints.maxColumns} columns');
       }
 
       // Enforce Height Constraints using minHeightRows/maxHeightRows range
       if (item.h < constraints.minHeightRows) {
         newH = constraints.minHeightRows;
         violated = true;
-        violationMessages.add('Minimum height violation: requires ${constraints.minHeightRows} rows');
+        violationMessages.add(
+            'Minimum height violation: requires ${constraints.minHeightRows} rows');
       }
       if (item.h > constraints.maxHeightRows) {
         newH = constraints.maxHeightRows;
         violated = true;
-        violationMessages.add('Maximum height violation: maximum ${constraints.maxHeightRows} rows');
+        violationMessages.add(
+            'Maximum height violation: maximum ${constraints.maxHeightRows} rows');
       }
 
       // Show user feedback for native widget constraint violations

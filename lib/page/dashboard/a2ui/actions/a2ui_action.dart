@@ -22,7 +22,8 @@ class A2UIAction extends Equatable {
   }) : timestamp = timestamp ?? DateTime.now();
 
   /// Creates an action from JSON widget definition
-  factory A2UIAction.fromJson(Map<String, dynamic> json, {String? sourceWidgetId}) {
+  factory A2UIAction.fromJson(Map<String, dynamic> json,
+      {String? sourceWidgetId}) {
     return A2UIAction(
       action: json[r'$action'] as String,
       params: Map<String, dynamic>.from(json['params'] ?? {}),
@@ -31,7 +32,8 @@ class A2UIAction extends Equatable {
   }
 
   /// Creates an action from resolved template properties
-  factory A2UIAction.fromResolvedProperties(Map<String, dynamic> resolvedProps, {String? sourceWidgetId}) {
+  factory A2UIAction.fromResolvedProperties(Map<String, dynamic> resolvedProps,
+      {String? sourceWidgetId}) {
     return A2UIAction(
       action: resolvedProps[r'$action'] as String,
       params: Map<String, dynamic>.from(resolvedProps['params'] ?? {}),
@@ -81,7 +83,8 @@ class A2UIActionResult extends Equatable {
   });
 
   /// Factory for successful results
-  factory A2UIActionResult.success(A2UIAction action, [Map<String, dynamic>? data]) {
+  factory A2UIActionResult.success(A2UIAction action,
+      [Map<String, dynamic>? data]) {
     return A2UIActionResult(
       success: true,
       action: action,

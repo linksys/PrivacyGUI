@@ -192,21 +192,27 @@ void main() {
 
   group('A2UIActionType', () {
     test('fromAction identifies router actions', () {
-      expect(A2UIActionType.fromAction('router.restart'), equals(A2UIActionType.router));
-      expect(A2UIActionType.fromAction('router.factoryReset'), equals(A2UIActionType.router));
+      expect(A2UIActionType.fromAction('router.restart'),
+          equals(A2UIActionType.router));
+      expect(A2UIActionType.fromAction('router.factoryReset'),
+          equals(A2UIActionType.router));
     });
 
     test('fromAction identifies device actions', () {
-      expect(A2UIActionType.fromAction('device.block'), equals(A2UIActionType.device));
-      expect(A2UIActionType.fromAction('device.unblock'), equals(A2UIActionType.device));
+      expect(A2UIActionType.fromAction('device.block'),
+          equals(A2UIActionType.device));
+      expect(A2UIActionType.fromAction('device.unblock'),
+          equals(A2UIActionType.device));
     });
 
     test('fromAction identifies navigation actions', () {
-      expect(A2UIActionType.fromAction('navigation.push'), equals(A2UIActionType.navigation));
+      expect(A2UIActionType.fromAction('navigation.push'),
+          equals(A2UIActionType.navigation));
     });
 
     test('fromAction identifies ui actions', () {
-      expect(A2UIActionType.fromAction('ui.showConfirmation'), equals(A2UIActionType.ui));
+      expect(A2UIActionType.fromAction('ui.showConfirmation'),
+          equals(A2UIActionType.ui));
     });
 
     test('fromAction returns null for unknown actions', () {
