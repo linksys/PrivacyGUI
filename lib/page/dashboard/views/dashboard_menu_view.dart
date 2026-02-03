@@ -16,6 +16,7 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dar
 import 'package:privacy_gui/page/components/styled/status_label.dart';
 import 'package:privacy_gui/page/components/styled/styled_page_view.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
+import 'package:privacy_gui/page/health_check/providers/speed_test_display.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
@@ -146,6 +147,7 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
         ref.watch(dashboardHomeProvider).isHealthCheckSupported;
     final isSupportVPN = getIt.get<ServiceHelper>().isSupportVPN();
     final isSupportDualWAN = getIt.get<ServiceHelper>().isSupportDualWAN();
+    final showSpeedTest = isDisplaySpeedTest(ref);
     return [
       AppSectionItemData(
           title: loc(context).incredibleWiFi,
@@ -214,22 +216,24 @@ class _DashboardMenuViewState extends ConsumerState<DashboardMenuView> {
             onTap: () {
               _navigateTo(RouteNamed.settingsVPN);
             }),
-      if (!isSupportHealthCheck && isBehindRouter)
-        AppSectionItemData(
-            title: loc(context).externalSpeedText,
-            description: loc(context).speedTestInternetToDeviceDesc,
-            iconData: LinksysIcons.networkCheck,
-            onTap: () {
-              _navigateTo(RouteNamed.speedTestExternal);
-            }),
-      if (isSupportHealthCheck)
-        AppSectionItemData(
-            title: loc(context).speedTest,
-            description: loc(context).speedTestInternetToRouterDesc,
-            iconData: LinksysIcons.networkCheck,
-            onTap: () {
-              _navigateTo(RouteNamed.dashboardSpeedTest);
-            }),
+      if (showSpeedTest) ...[
+        if (!isSupportHealthCheck && isBehindRouter)
+          AppSectionItemData(
+              title: loc(context).externalSpeedText,
+              description: loc(context).speedTestInternetToDeviceDesc,
+              iconData: LinksysIcons.networkCheck,
+              onTap: () {
+                _navigateTo(RouteNamed.speedTestExternal);
+              }),
+        if (isSupportHealthCheck)
+          AppSectionItemData(
+              title: loc(context).speedTest,
+              description: loc(context).speedTestInternetToRouterDesc,
+              iconData: LinksysIcons.networkCheck,
+              onTap: () {
+                _navigateTo(RouteNamed.dashboardSpeedTest);
+              }),
+      ],
       if (isSupportDualWAN)
         AppSectionItemData(
             title: loc(context).dualWan,

@@ -116,6 +116,8 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.healthCheckManager:
       break;
+    case JNAPService.healthCheckManager2:
+      break;
     case JNAPService.locale:
       break;
     case JNAPService.locale2:
@@ -514,6 +516,8 @@ void initBetterActions() {
       _JNAPActionValue.clearHealthCheckHistory.value;
   _betterActionMap[JNAPAction.getHealthCheckResults] =
       _JNAPActionValue.getHealthCheckResults.value;
+  _betterActionMap[JNAPAction.getCloseHealthCheckServers] =
+      _JNAPActionValue.getCloseHealthCheckServers.value;
   _betterActionMap[JNAPAction.getHealthCheckStatus] =
       _JNAPActionValue.getHealthCheckStatus.value;
   _betterActionMap[JNAPAction.getSupportedHealthCheckModules] =

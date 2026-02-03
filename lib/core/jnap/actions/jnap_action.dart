@@ -87,6 +87,7 @@ enum JNAPAction {
   // healthCheckManager
   clearHealthCheckHistory,
   getHealthCheckResults,
+  getCloseHealthCheckServers,
   getHealthCheckStatus,
   getSupportedHealthCheckModules,
   runHealthCheck,

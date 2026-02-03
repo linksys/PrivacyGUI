@@ -336,7 +336,6 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'SPNM60',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'isHidingRipRouting': true,
     'pattern': '^spnm60',
   },
   {
@@ -345,7 +344,6 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'SPNM61',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'isHidingRipRouting': true,
     'pattern': '^spnm61',
   },
   {
@@ -354,7 +352,6 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'SPNM62',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'isHidingRipRouting': true,
     'pattern': '^spnm62',
   },
   {
@@ -363,7 +360,6 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'M60',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'isHidingRipRouting': true,
     'pattern': '^m60',
   },
   {
@@ -372,7 +368,6 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'M61',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'isHidingRipRouting': true,
     'pattern': '^m61',
   },
   {
@@ -381,7 +376,6 @@ const List<Map<String, dynamic>> _velopModelMap = [
     'seriesModel': 'M62',
     'isMeshRouter': false,
     'isCognitiveMesh': true,
-    'isHidingRipRouting': true,
     'pattern': '^m62',
   },
   {
@@ -514,12 +508,13 @@ bool isHorizontalPorts({
         paramName: 'isHorizontalPorts') ??
     false;
 
-bool isHidingRipRouting({
+bool isShowSpeedTest({
   required String modelNumber,
-  required String hardwareVersion,
-}) =>
-    doVelopModelTests(
-        modelNumber: modelNumber,
-        hardwareVersion: hardwareVersion,
-        paramName: 'isHidingRipRouting') ??
-    false;
+  String hardwareVersion = '1',
+}) {
+  return !(doVelopModelTests(
+          modelNumber: modelNumber,
+          hardwareVersion: hardwareVersion,
+          paramName: 'noSpeedTest') ??
+      false);
+}

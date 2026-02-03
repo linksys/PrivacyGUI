@@ -1,0 +1,79 @@
+name: 🚀 Deploy Demo to GitHub Pages
+
+# 手動觸發
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'demo'
+        type: choice
+        options:
+          - demo
+          - staging
+
+# 設定 GitHub Pages 所需的權限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 避免同時部署衝突
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 🏗️ Build Demo Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      # Setup SSH for private dependencies (same as ci.yml)
+      - name: 🔑 Setup SSH for Private Deps
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      - name: 🔄 Configure Git to use SSH
+        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+      - name: 📦 Install Dependencies
+        run: flutter pub get
+
+      - name: 🌐 Build Web (Demo Mode)
+        run: |
+          flutter build web \
+            --release \
+            --target=lib/main_demo.dart \
+            --base-href "/PrivacyGUI/demo/"
+
+      - name: 📤 Upload Build Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    name: 🚀 Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: 🌍 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

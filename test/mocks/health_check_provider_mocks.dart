@@ -61,7 +61,8 @@ class _FakeJNAPResult_2 extends _i1.SmartFake implements _i4.JNAPResult {
 /// A class which mocks [HealthCheckProvider].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockHealthCheckProvider extends _i2.Notifier<_i3.HealthCheckState> with _i1.Mock
+class MockHealthCheckProvider extends _i2.Notifier<_i3.HealthCheckState>
+    with _i1.Mock
     implements _i5.HealthCheckProvider {
   @override
   _i2.NotifierProviderRef<_i3.HealthCheckState> get ref => (super.noSuchMethod(
@@ -122,10 +123,15 @@ class MockHealthCheckProvider extends _i2.Notifier<_i3.HealthCheckState> with _i
       ) as _i3.HealthCheckState);
 
   @override
-  _i6.Future<void> runHealthCheck(_i5.Module? module) => (super.noSuchMethod(
+  _i6.Future<void> runHealthCheck(
+    _i5.Module? module, {
+    int? serverId,
+  }) =>
+      (super.noSuchMethod(
         Invocation.method(
           #runHealthCheck,
           [module],
+          {#serverId: serverId},
         ),
         returnValue: _i6.Future<void>.value(),
         returnValueForMissingStub: _i6.Future<void>.value(),

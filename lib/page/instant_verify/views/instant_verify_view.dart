@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/dashboard/_dashboard.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
+import 'package:privacy_gui/page/health_check/providers/speed_test_display.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/speed_test_external_widget.dart';
@@ -119,6 +120,8 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   Widget _instantInfo(BuildContext context, WidgetRef ref) {
     final dashboardHomeState = ref.watch(dashboardHomeProvider);
     final desktopCol = 4.col;
+    final showSpeedTest = isDisplaySpeedTest(ref);
+
     return StyledAppPageView.innerPage(
       onRefresh: () {
         return ref.read(pollingProvider.notifier).forcePolling();
@@ -130,8 +133,10 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                 const AppGap.medium(),
                 _connectivityContentWidget(context, ref),
                 const AppGap.medium(),
-                _speedTestContent(context),
-                const AppGap.medium(),
+                if (showSpeedTest) ...[
+                  _speedTestContent(context),
+                  const AppGap.medium(),
+                ],
                 _portsCard(context, ref),
               ],
             )
@@ -154,7 +159,9 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                             const AppGap.gutter(),
                             SizedBox(
                               width: desktopCol,
-                              child: _speedTestContent(context),
+                              child: showSpeedTest
+                                  ? _speedTestContent(context)
+                                  : _portsCardVertical(context, ref),
                             ),
                           ],
                         ),
@@ -182,12 +189,16 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
                           const AppGap.gutter(),
                           SizedBox(
                             width: desktopCol,
-                            child: _speedTestContent(context),
+                            child: showSpeedTest
+                                ? _speedTestContent(context)
+                                : _portsCardVertical(context, ref),
                           ),
                         ],
                       ),
-                const AppGap.medium(),
-                _portsCard(context, ref),
+                if (showSpeedTest) ...[
+                  const AppGap.medium(),
+                  _portsCard(context, ref),
+                ],
               ],
             ),
     );
@@ -392,6 +403,20 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
           vertical: Spacing.large2,
         ),
         child: const PortsLayoutWidget(axis: Axis.horizontal),
+    );
+  }
+
+  Widget _portsCardVertical(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      height: ResponsiveLayout.isMobileLayout(context) ? 224 : 752,
+      width: double.infinity,
+      child: AppCard(
+        key: const ValueKey('portCardVertical'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.small2,
+          vertical: Spacing.large2,
+        ),
+        child: const PortsLayoutWidget(axis: Axis.vertical),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:privacy_gui/utils.dart';
 import 'package:test/test.dart';
+import 'package:privacy_gui/core/utils/fernet_manager.dart';
 
 import 'test_data/const_test_data.dart';
 
@@ -507,7 +508,7 @@ void main() {
     test('formatBits: formats bits in kilobytes range with specified decimals',
         () {
       const bits = 1234;
-      const expected = '1.205 Kb';
+      const expected = '1.234 Kb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 3);
       expect(formattedBits, expected);
@@ -516,7 +517,7 @@ void main() {
     test('formatBits: formats bits in megabytes range with specified decimals',
         () {
       const bits = 1234567;
-      const expected = '1.1774 Mb';
+      const expected = '1.2346 Mb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 4);
       expect(formattedBits, expected);
@@ -525,7 +526,7 @@ void main() {
     test('formatBits: formats bits in gigabytes range with specified decimals',
         () {
       const bits = 1234567890;
-      const expected = '1.15 Gb';
+      const expected = '1.23 Gb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 2);
       expect(formattedBits, expected);
@@ -540,7 +541,7 @@ void main() {
 
     test('formatBits: handles huge input (exceeding petabytes)', () {
       num bits = 1125899906842625; // 1 petabyte
-      const expected = '1.00 Pb';
+      const expected = '1.13 Pb';
 
       final formattedBits = NetworkUtils.formatBits(bits.toInt(), decimals: 2);
       expect(formattedBits, expected);
@@ -577,21 +578,21 @@ void main() {
     });
 
     test('formats megabytes with 2 decimal places', () {
-      const bits = 1.5 * 1024 * 1024; // 1.5 Mb
+      const bits = 1.5 * 1000 * 1000; // 1.5 Mb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 2);
       expect(result.value, '1.50');
       expect(result.unit, 'Mb');
     });
 
     test('formats gigabytes with 1 decimal place', () {
-      const bits = 2.5 * 1024 * 1024 * 1024; // 2.5 Gb
+      const bits = 2.5 * 1000 * 1000 * 1000; // 2.5 Gb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 1);
       expect(result.value, '2.5');
       expect(result.unit, 'Gb');
     });
 
     test('formats terabytes with 3 decimal places', () {
-      const bits = 3.14159 * 1024 * 1024 * 1024 * 1024; // ~3.14159 Tb
+      const bits = 3.14159 * 1000 * 1000 * 1000 * 1000; // ~3.14159 Tb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 3);
       expect(result.value, '3.142');
       expect(result.unit, 'Tb');
@@ -612,9 +613,18 @@ void main() {
     });
 
     test('handles exactly 1 petabyte', () {
-      final onePb = BigInt.from(1024).pow(5).toInt(); // Exactly 1 PiB
+      final onePb = BigInt.from(1000).pow(5).toInt(); // Exactly 1 Pb (SI)
       final result = NetworkUtils.formatBitsWithUnit(onePb);
       expect(result.value, '1');
+      expect(result.unit, 'Pb');
+    });
+
+    test('handles values exceeding max unit (Exabyte+)', () {
+      // 1 Exabyte = 1000^6.
+      final bits = BigInt.from(1000).pow(6).toInt();
+      // Should cap at Pb, so 1000 Pb
+      final result = NetworkUtils.formatBitsWithUnit(bits);
+      expect(result.value, '1000');
       expect(result.unit, 'Pb');
     });
   });
@@ -1040,6 +1050,59 @@ void main() {
       expect(NetworkUtils.isMtuValid('unknown', 1000), false);
       expect(
           NetworkUtils.isMtuValid('', 576), false); // Empty string as unknown
+    });
+  });
+
+  group('encryptJNAPAuth', () {
+    setUp(() {
+      // Reset the fernet manager before each test in this group
+      FernetManager().resetForTest();
+    });
+
+    test('should encrypt the JNAP authorization password when key is available',
+        () {
+      // Arrange
+      FernetManager().updateKeyFromSerial('a-test-serial');
+      const rawLog =
+          'Some log line... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... some other log';
+      const originalPassword = 'YWRtaW46VmVsb3BAMTIzNA==';
+
+      // Act
+      final processedLog = Utils.encryptJNAPAuth(rawLog);
+
+      // Assert
+      expect(processedLog, isNot(contains(originalPassword)));
+      expect(processedLog, contains('X-JNAP-Authorization: Basic '));
+      // The encrypted string will be long
+      expect(processedLog.length, greaterThan(rawLog.length));
+    });
+
+    test(
+        'should mask the JNAP authorization password when key is NOT available',
+        () {
+      // Arrange
+      // Key is not set, because of setUp call
+      const rawLog =
+          'Another log... X-JNAP-Authorization: Basic YWRtaW46VmVsb3BAMTIzNA== ... end of log';
+      const expectedLog =
+          'Another log... X-JNAP-Authorization: Basic ************ ... end of log';
+
+      // Act
+      final processedLog = Utils.encryptJNAPAuth(rawLog);
+
+      // Assert
+      expect(processedLog, expectedLog);
+    });
+
+    test('should not change the string if the pattern is not found', () {
+      // Arrange
+      const rawLog = 'This is a log line without any authorization header.';
+
+      // Act
+      final processedLog = Utils.encryptJNAPAuth(rawLog);
+
+      // Assert
+      expect(processedLog, rawLog);
     });
   });
 }

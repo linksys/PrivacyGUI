@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
+import 'package:privacy_gui/page/health_check/providers/speed_test_display.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/speed_test_widget.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dashboard/views/components/loading_tile.dart';
@@ -187,16 +188,17 @@ class DashboardHomePortAndSpeed extends ConsumerWidget {
       DashboardHomeState state, EthernetPortConnectionState portState,
       [bool mobile = false]) {
     final isRemote = BuildConfig.isRemote();
-    return state.isHealthCheckSupported
-        ? portState.hasLanPort
+    final showSpeedTest = isDisplaySpeedTest(ref);
+    if (!showSpeedTest) {
+      return const SizedBox.shrink();
+    }
+    return state.isHealthCheckSupported && showSpeedTest
+        ? hasLanPort
             ? Column(
-                children: [
+                children: const [
                   Divider(),
                   SpeedTestWidget(
-                      showDetails: false,
-                      layout: mobile
-                          ? SpeedTestLayout.horizontal
-                          : SpeedTestLayout.vertical),
+                      showDetails: false, layout: SpeedTestLayout.vertical),
                   AppGap.large2(),
                 ],
               )

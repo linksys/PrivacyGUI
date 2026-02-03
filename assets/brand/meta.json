@@ -1,0 +1,26 @@
+{
+    "brand_settings": {
+        "brand_logo": {
+            "default": {
+                "url": "assets/brand/brand_logo.webp"
+            },
+            "dark": {
+                "url": "assets/brand/brand_logo_dark.webp"
+            },
+            "alt_text": "Main Brand Logo",
+            "width": 144,
+            "height": 144
+        },
+        "brand_img_sup": {
+            "default": {
+                "url": "assets/brand/brand_img_sup.webp"
+            },
+            "dark": {
+                "url": "assets/brand/brand_img_sup_dark.webp"
+            },
+            "alt_text": "Support Page Image",
+            "width": 144,
+            "height": 144
+        }
+    }
+}

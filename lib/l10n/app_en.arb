@@ -1145,5 +1145,8 @@
   "wired": "Wired",
   "wiredPairComplete": "Pairing is complete. The child node has been successfully paired with the parent node using a wired connection.",
   "wiredPairCompleteNotFound": "No connected child node was found. Please make sure your child node is powered on and properly connected to the parent node via an Ethernet cable and try again.",
-  "wireless": "Wireless"
+  "wireless": "Wireless",
+  "wifiModeNotAvailable": "Mode change resets channel width to auto.",
+  "quickSetup": "Quick Setup",
+  "quickSetupDescription": "Apply the same WiFi settings to all bands at once"
 }

@@ -10,6 +10,11 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dar
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
+import 'package:privacy_gui/page/health_check/views/components/speed_test_server_selection_dialog.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart'; // For serviceHelper
+import 'package:privacy_gui/di.dart'; // For getIt
 import 'package:privacygui_widgets/icons/linksys_icons.dart';
 import 'package:privacygui_widgets/theme/_theme.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
@@ -50,8 +55,8 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
 
     final bandwidth = NetworkUtils.formatBitsWithUnit(
         state.status == 'COMPLETE'
-            ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1024
-            : (state.meterValue * 1024).toInt(),
+            ? (result?.speedTestResult?.uploadBandwidth ?? 0) * 1000
+            : (state.meterValue * 1000).toInt(),
         decimals: 1);
 
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '0';
@@ -208,6 +213,30 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
 
     final latency = result?.speedTestResult?.latency?.toStringAsFixed(0) ?? '-';
 
+    if (state.step == 'error') {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Spacing.medium),
+            child: Wrap(
+              direction: Axis.vertical,
+              children: [
+                AppText.labelMedium(
+                  loc(context).generalError,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const AppGap.small2(),
+                AppText.bodySmall(
+                    state.error?.result ?? loc(context).unknownError),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
@@ -284,16 +313,85 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
     );
   }
 
-  void run() {
+  Future<void> run() async {
     setState(() {
       _loading = true;
     });
-    ref.read(healthCheckProvider.notifier).runHealthCheck(Module.speedtest);
-    Future.delayed(const Duration(seconds: 5), () {
-      setState(() {
-        _loading = false;
+
+    final notifier = ref.read(healthCheckProvider.notifier);
+    final serviceHelper = getIt<ServiceHelper>();
+    HealthCheckServer? targetServer;
+
+    try {
+      if (serviceHelper.isSupportHealthCheckManager2()) {
+        final servers = await notifier.updateServers();
+        // Check state after fetch
+        if (servers.isNotEmpty) {
+          if (mounted) {
+            final selectionNotifier =
+                ValueNotifier<HealthCheckServer?>(servers.firstOrNull);
+
+            final selected = await showSimpleAppDialog<HealthCheckServer>(
+              context,
+              title: 'Select Speed Test Server',
+              content: SpeedTestServerSelectionList(
+                servers: servers,
+                notifier: selectionNotifier,
+              ),
+              actions: [
+                AppTextButton(
+                  loc(context).cancel,
+                  onTap: () => context.pop(),
+                ),
+                ValueListenableBuilder<HealthCheckServer?>(
+                    valueListenable: selectionNotifier,
+                    builder: (context, value, child) {
+                      return AppTextButton(
+                        loc(context).ok,
+                        onTap: value != null ? () => context.pop(value) : null,
+                      );
+                    })
+              ],
+            );
+
+            if (selected == null) {
+              // User cancelled
+              setState(() {
+                _loading = false;
+              });
+              return;
+            }
+            targetServer = selected;
+          } else {
+            setState(() {
+              _loading = false;
+            });
+            return;
+          }
+        }
+      }
+
+      int? serverId;
+      if (targetServer != null) {
+        serverId = int.tryParse(targetServer.serverID);
+      }
+
+      notifier.runHealthCheck(Module.speedtest, serverId: serverId);
+
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+          });
+        }
       });
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
   }
 
   String _getDateTimeText(String? timestamp) {
@@ -354,8 +452,8 @@ class _SpeedTestWidgetState extends ConsumerState<SpeedTestWidget> {
   }
 
   Widget _resultCard(SpeedTestResult? result) {
-    final downloadBandWidthIntBits = (result?.downloadBandwidth ?? 0) * 1024;
-    final uploadBandWidthIntBits = (result?.uploadBandwidth ?? 0) * 1024;
+    final downloadBandWidthIntBits = (result?.downloadBandwidth ?? 0) * 1000;
+    final uploadBandWidthIntBits = (result?.uploadBandwidth ?? 0) * 1000;
     final downloadFormat =
         NetworkUtils.formatBitsWithUnit(downloadBandWidthIntBits, decimals: 1);
     final uploadFormat =

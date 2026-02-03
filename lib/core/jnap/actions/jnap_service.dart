@@ -54,6 +54,8 @@ enum JNAPService {
   guestNetwork5(value: 'http://linksys.com/jnap/guestnetwork/GuestNetwork5'),
   healthCheckManager(
       value: 'http://linksys.com/jnap/healthcheck/HealthCheckManager'),
+  healthCheckManager2(
+      value: 'http://linksys.com/jnap/healthcheck/HealthCheckManager2'),
   locale(value: 'http://linksys.com/jnap/locale/Locale'),
   locale2(value: 'http://linksys.com/jnap/locale/Locale2'),
   locale3(value: 'http://linksys.com/jnap/locale/Locale3'),

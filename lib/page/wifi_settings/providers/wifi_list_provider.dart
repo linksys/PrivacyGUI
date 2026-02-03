@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meta/meta.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
@@ -86,7 +87,7 @@ class WifiListNotifier extends Notifier<WiFiState> {
       mainWiFi: wifiItems,
       guestWiFi: guestWiFi,
     );
-
+    _setupSimpleMode();
     logger.d('[State]:[wiFiList]: ${state.toJson()}');
     return state;
   }
@@ -115,7 +116,9 @@ class WifiListNotifier extends Notifier<WiFiState> {
             password: dashboardManagerState
                     .guestRadios.firstOrNull?.guestWPAPassphrase ??
                 '',
-            numOfDevices: deviceManagerState.guestWifiDevices.length));
+            numOfDevices: deviceManagerState.guestWifiDevices.length),
+        simpleModeWifi:
+            wifiItems.firstWhereOrNull((e) => e.isEnabled) ?? wifiItems.first);
   }
 
   Future<WiFiState> save() async {
@@ -174,8 +177,8 @@ class WifiListNotifier extends Notifier<WiFiState> {
       // if (isGuestChanged)
       MapEntry(JNAPAction.setRadioSettings, newSettings.toMap()),
       if (isSupportGuestWiFi)
-        MapEntry(
-            JNAPAction.setGuestRadioSettings, newSetGuestRadioSettings?.toMap() ?? {}),
+        MapEntry(JNAPAction.setGuestRadioSettings,
+            newSetGuestRadioSettings?.toMap() ?? {}),
     ]);
     return routerRepository
         .transaction(
@@ -382,5 +385,80 @@ class WifiListNotifier extends Notifier<WiFiState> {
       state =
           state.copyWith(mainWiFi: List.from(state.mainWiFi)..[index] = newOne);
     }
+  }
+
+  void _setupSimpleMode() {
+    if (state.mainWiFi.isEmpty) {
+      return;
+    }
+    // Use 2.4G band for primary security type list
+    final wifiForSecurityList = state.mainWiFi.firstWhere(
+      (wifi) => wifi.radioID == WifiRadioBand.radio_24,
+      orElse: () => state.mainWiFi.first, // Fallback, or handle error
+    );
+    final availableSecurityTypeList =
+        getSimpleModeAvailableSecurityTypeList([wifiForSecurityList]);
+    final firstEnabledWifi =
+        state.mainWiFi.firstWhereOrNull((e) => e.isEnabled) ??
+            state.mainWiFi.first;
+    // Check if all WiFi radios have identical settings (enabled/disabled, SSID, and password)
+    // This determines if we should use simple mode, where changes apply to all radios
+    final isSimple = state.mainWiFi.every((wifi) =>
+        wifi.isEnabled == firstEnabledWifi.isEnabled &&
+        wifi.ssid == firstEnabledWifi.ssid &&
+        wifi.password == firstEnabledWifi.password);
+    final simpleModeWifi = firstEnabledWifi.copyWith(
+      securityType: getSimpleModeAvailableSecurityType(
+          firstEnabledWifi.securityType, availableSecurityTypeList),
+      availableSecurityTypes: availableSecurityTypeList,
+    );
+    state =
+        state.copyWith(isSimpleMode: isSimple, simpleModeWifi: simpleModeWifi);
+  }
+
+  void setSimpleMode(bool isSimple) {
+    state = state.copyWith(isSimpleMode: isSimple);
+  }
+
+  void setSimpleModeWifi(WiFiItem wifi) {
+    state = state.copyWith(simpleModeWifi: wifi);
+  }
+
+  @visibleForTesting
+  WifiSecurityType getSimpleModeAvailableSecurityType(
+      WifiSecurityType currentSecurityType,
+      List<WifiSecurityType> availableSecurityTypeList) {
+    // 1. Return the current security type if availableSecurityTypeList is empty
+    if (availableSecurityTypeList.isEmpty) {
+      return currentSecurityType;
+    }
+    // 2. Return the current security type if it is available
+    if (availableSecurityTypeList.contains(currentSecurityType)) {
+      return currentSecurityType;
+    }
+    // 3. Return the first available security type in priority order
+    const priorityOrder = [
+      WifiSecurityType.wpa3Personal,
+      WifiSecurityType.wpa2Or3MixedPersonal,
+      WifiSecurityType.wpa2Personal,
+    ];
+    for (final type in priorityOrder) {
+      if (availableSecurityTypeList.contains(type)) {
+        return type;
+      }
+    }
+    // 4. Return the first available security type
+    return availableSecurityTypeList.first;
+  }
+
+  @visibleForTesting
+  List<WifiSecurityType> getSimpleModeAvailableSecurityTypeList(
+      List<WiFiItem> wifiList) {
+    return wifiList.isEmpty
+        ? <WifiSecurityType>[]
+        : wifiList
+            .map((e) => e.availableSecurityTypes.toSet())
+            .reduce((value, element) => value.intersection(element))
+            .toList();
   }
 }
