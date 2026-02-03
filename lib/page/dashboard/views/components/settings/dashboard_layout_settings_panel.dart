@@ -8,6 +8,7 @@ import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/page/dashboard/models/dashboard_widget_specs.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:ui_kit_library/ui_kit.dart';
+import '../../../a2ui/renderer/a2ui_widget_renderer.dart';
 
 /// Settings panel for customizing dashboard layout.
 ///
@@ -132,7 +133,11 @@ class DashboardLayoutSettingsPanel extends ConsumerWidget {
     final currentIds =
         currentLayout.map((e) => (e as Map)['id'] as String).toSet();
 
-    final hiddenSpecs = DashboardWidgetSpecs.all.where((spec) {
+    // Get A2UI specs from registry
+    final a2uiRegistry = ref.watch(a2uiWidgetRegistryProvider);
+    final allSpecs = [...DashboardWidgetSpecs.all, ...a2uiRegistry.widgetSpecs];
+
+    final hiddenSpecs = allSpecs.where((spec) {
       if (!_checkRequirements(spec)) return false;
       return !currentIds.contains(spec.id);
     }).toList();
@@ -148,8 +153,20 @@ class DashboardLayoutSettingsPanel extends ConsumerWidget {
           padding: EdgeInsets.zero,
           child: Column(
             children: hiddenSpecs.map((spec) {
+              final isA2UI = a2uiRegistry.contains(spec.id);
               return ListTile(
-                title: AppText.bodyMedium(spec.displayName),
+                title: Row(
+                  children: [
+                    Flexible(child: AppText.bodyMedium(spec.displayName)),
+                    if (isA2UI) ...[
+                      AppGap.sm(),
+                      AppTag(
+                        label: 'A2UI',
+                        color: Theme.of(context).colorScheme.tertiary,
+                      ),
+                    ],
+                  ],
+                ),
                 subtitle: spec.description != null
                     ? AppText.bodySmall(
                         spec.description!,

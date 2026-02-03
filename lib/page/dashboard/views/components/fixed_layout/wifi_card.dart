@@ -50,11 +50,17 @@ class _WiFiCardState extends ConsumerState<WiFiCard> {
     }
 
     return LayoutBuilder(builder: (context, constraint) {
+      // Adaptive padding: reduce padding if vertical space is limited
+      final isVerticalConstrained = constraint.maxHeight < 200;
+      final defaultPadding = isVerticalConstrained
+          ? const EdgeInsets.all(AppSpacing.lg)
+          : const EdgeInsets.symmetric(
+              vertical: AppSpacing.xxl, horizontal: AppSpacing.xxl);
+
       return AppCard(
-        padding: widget.padding ??
-            const EdgeInsets.symmetric(
-                vertical: AppSpacing.xxl, horizontal: AppSpacing.xxl),
+        padding: widget.padding ?? defaultPadding,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context),

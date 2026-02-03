@@ -1,0 +1,74 @@
+{
+    "widgetId": "a2ui_node_count",
+    "displayName": "Mesh Nodes",
+    "description": "Shows mesh node count with navigation to mesh network settings",
+    "constraints": {
+        "minColumns": 2,
+        "maxColumns": 4,
+        "preferredColumns": 3,
+        "minRows": 2,
+        "maxRows": 3,
+        "preferredRows": 2
+    },
+    "template": {
+        "type": "Card",
+        "properties": {
+            "padding": 16.0,
+            "onTap": {
+                "$action": "navigation.push",
+                "params": {
+                    "route": "menuInstantTopology"
+                }
+            },
+            "style": {
+                "elevation": 2,
+                "borderRadius": 12
+            }
+        },
+        "children": [
+            {
+                "type": "Column",
+                "properties": {
+                    "mainAxisAlignment": "center",
+                    "crossAxisAlignment": "center",
+                    "mainAxisSize": "min"
+                },
+                "children": [
+                    {
+                        "type": "Icon",
+                        "properties": {
+                            "icon": "router",
+                            "size": 32.0,
+                            "color": "primary"
+                        }
+                    },
+                    {
+                        "type": "SizedBox",
+                        "properties": {
+                            "height": 8.0
+                        }
+                    },
+                    {
+                        "type": "Text",
+                        "properties": {
+                            "text": {
+                                "$bind": "router.nodeCount"
+                            },
+                            "variant": "headlineMedium",
+                            "color": "primary"
+                        }
+                    },
+                    {
+                        "type": "Text",
+                        "properties": {
+                            "text": "Mesh Nodes",
+                            "variant": "bodyMedium",
+                            "color": "onSurfaceVariant",
+                            "textAlign": "center"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

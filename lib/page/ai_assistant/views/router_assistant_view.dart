@@ -388,11 +388,11 @@ class _MockConversationGenerator implements IConversationGenerator {
     final userText = (lastMessage.content as String).toLowerCase();
 
     // Simple keyword matching for demo
-    if (userText.contains('設備') || userText.contains('device')) {
+    if (userText.contains('device')) {
       return _createDeviceListResponse();
-    } else if (userText.contains('wifi') || userText.contains('密碼')) {
+    } else if (userText.contains('wifi') || userText.contains('password')) {
       return _createWifiResponse();
-    } else if (userText.contains('網路') || userText.contains('狀態')) {
+    } else if (userText.contains('network') || userText.contains('status')) {
       return _createStatusResponse();
     }
 

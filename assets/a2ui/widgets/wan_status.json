@@ -1,0 +1,81 @@
+{
+    "widgetId": "a2ui_wan_status",
+    "displayName": "WAN Status",
+    "description": "Shows WAN connection status with navigation to network settings",
+    "constraints": {
+        "minColumns": 2,
+        "maxColumns": 5,
+        "preferredColumns": 4,
+        "minRows": 1,
+        "maxRows": 2,
+        "preferredRows": 2
+    },
+    "template": {
+        "type": "Card",
+        "properties": {
+            "padding": 12.0,
+            "onTap": {
+                "$action": "navigation.push",
+                "params": {
+                    "route": "internetSettings"
+                }
+            },
+            "style": {
+                "elevation": 2,
+                "borderRadius": 8
+            }
+        },
+        "children": [
+            {
+                "type": "Column",
+                "properties": {
+                    "mainAxisAlignment": "center",
+                    "crossAxisAlignment": "center",
+                    "mainAxisSize": "min"
+                },
+                "children": [
+                    {
+                        "type": "Row",
+                        "properties": {
+                            "mainAxisAlignment": "center",
+                            "crossAxisAlignment": "center",
+                            "mainAxisSize": "min"
+                        },
+                        "children": [
+                            {
+                                "type": "Icon",
+                                "properties": {
+                                    "icon": {
+                                        "$bind": "router.wanStatus === 'Online' ? 'wifi' : 'wifi_off'"
+                                    },
+                                    "size": 24.0,
+                                    "color": {
+                                        "$bind": "router.wanStatus === 'Online' ? 'success' : 'error'"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "SizedBox",
+                                "properties": {
+                                    "width": 8.0
+                                }
+                            },
+                            {
+                                "type": "Text",
+                                "properties": {
+                                    "text": {
+                                        "$bind": "router.wanStatus"
+                                    },
+                                    "variant": "bodyMedium",
+                                    "color": {
+                                        "$bind": "router.wanStatus === 'Online' ? 'success' : 'error'"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -1,0 +1,73 @@
+{
+    "widgetId": "a2ui_device_count",
+    "displayName": "Connected Devices",
+    "description": "Shows the number of connected devices with navigation to device list",
+    "constraints": {
+        "minColumns": 2,
+        "maxColumns": 4,
+        "preferredColumns": 3,
+        "minRows": 2,
+        "maxRows": 3,
+        "preferredRows": 2
+    },
+    "template": {
+        "type": "Card",
+        "properties": {
+            "padding": 16.0,
+            "onTap": {
+                "$action": "navigation.push",
+                "params": {
+                    "route": "menuInstantDevices"
+                }
+            },
+            "style": {
+                "elevation": 2,
+                "borderRadius": 12
+            }
+        },
+        "children": [
+            {
+                "type": "Column",
+                "properties": {
+                    "mainAxisAlignment": "center",
+                    "crossAxisAlignment": "center",
+                    "mainAxisSize": "min"
+                },
+                "children": [
+                    {
+                        "type": "Icon",
+                        "properties": {
+                            "icon": "devices",
+                            "size": 32.0,
+                            "color": "primary"
+                        }
+                    },
+                    {
+                        "type": "SizedBox",
+                        "properties": {
+                            "height": 8.0
+                        }
+                    },
+                    {
+                        "type": "Text",
+                        "properties": {
+                            "text": {
+                                "$bind": "router.deviceCount"
+                            },
+                            "variant": "headlineMedium",
+                            "color": "primary"
+                        }
+                    },
+                    {
+                        "type": "Text",
+                        "properties": {
+                            "text": "Connected Devices",
+                            "variant": "bodyMedium",
+                            "textAlign": "center"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

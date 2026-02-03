@@ -193,7 +193,7 @@ class LayoutItemFactory {
     items.add(fromSpec(
       resolve(DashboardWidgetSpecs.wifiGridCustom),
       x: 0,
-      y: bottomY,
+      y: bottomY + 2, // Push down to make room for A2UI widget
       w: 8,
       // h: removed to use preferredHeight from spec (5 in Normal mode)
       displayMode: displayMode,

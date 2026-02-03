@@ -23,50 +23,42 @@ All business logic, state management, and UI changes MUST have corresponding tes
 * **Unit tests** - Required for all Services and Providers before code review
 * **Screenshot tests** - Required for UI changes (see `doc/screenshot_testing_guideline.md`)
 
-**詳細測試策略、工具使用、組織方式參見 Article VIII: Testing Strategy**
+**Refer to Article VIII: Testing Strategy for detailed testing strategies, tool usage, and organization methods.**
 
 **Section 1.3: Test Scope Definition**
 
-* ✅ 只測試當前正在進行修改工作的範圍即可
-* ❌ 不測試整個 `lib/` 目錄
-* ❌ 不測試整個 `test/` 目錄
-* ❌ 不修復其他無關的 lint warnings
-* 原則：只為當下的任務撰寫測試並且執行測試，不需要包括其他功能
+* ✅ Only test the scope of the current modification.
+* ❌ Do not test the entire `lib/` directory.
+* ❌ Do not test the entire `test/` directory.
+* ❌ Do not fix unrelated lint warnings.
+* Principle: Only write and execute tests for the current task; do not include other features.
 
-**測試範圍界定範例**：
+**Test Scope Definition Examples**:
 
-**場景：新增 DMZ Service**
-- ✅ 必須測試：`lib/page/advanced_settings/dmz/services/dmz_service.dart`（新增的 Service）
-- ✅ 必須測試：`lib/page/advanced_settings/dmz/providers/dmz_settings_provider.dart`（直接使用 DMZService）
-- ✅ 必須測試：`lib/page/advanced_settings/dmz/models/dmz_ui_settings.dart`（如果是新增的 Model）
-- ❌ 不需要測試：其他使用 RouterRepository 的 Services
-- ❌ 不需要測試：DMZ 相關的 UI Views
-- ❌ 不需要測試：整個 `advanced_settings` module 的其他功能
+**Section 1.4: Expected Coverage**
 
-**Section 1.4: 預期覆蓋率**
-
-| 層級 | 覆蓋率 | 說明 |
+| Level | Coverage | Description |
 |:---|:---|:---|
-| Service 層 | ≥90% | 資料層最關鍵 |
-| Provider 層 | ≥85% | 業務邏輯協調 |
-| State 層 | ≥90% | 資料模型必須完整 |
-| **整體** | ≥80% | 加權平均 |
+| Service Layer | ≥90% | Most critical data layer |
+| Provider Layer | ≥85% | Business logic coordination |
+| State Layer | ≥90% | Data models must be complete |
+| **Overall** | ≥80% | Weighted average |
 
-**測量工具**: 使用 `flutter test --coverage` 生成覆蓋率報告
-**未達標處理**: Code review 時需說明原因，特殊情況可豁免
+**Measurement Tool**: Use `flutter test --coverage` to generate coverage reports.
+**Failure to Meet Standards**: Explain the reason during code review; exemptions may be granted in special cases.
 
 **Section 1.5: Test Organization**
 Tests MUST be organized as follows:
 * Unit tests:
   - Service tests: `test/page/[feature]/services/`
   - Provider tests: `test/page/[feature]/providers/`
-  - State tests: `test/page/[feature]/providers/` (與 Provider 測試同目錄)
-  - UI Model tests: `test/page/[feature]/models/` (僅當有獨立 UI Model 類別時)
+* State tests: `test/page/[feature]/providers/` (same directory as Provider tests)
+  - UI Model tests: `test/page/[feature]/models/` (only when there is an independent UI Model class)
 * Mock classes: Created inline in test files or in `test/mocks/` for shared mocks
 * Test data builders: `test/mocks/test_data/[feature_name]_test_data.dart`
 * Screenshot tests: `test/page/[feature]/localizations/*_test.dart` (tool uses pattern `localizations/.*_test.dart`)
 * Screenshot test tool: `dart tools/run_screenshot_tests.dart` automatically discovers all tests in `localizations/` subdirectories
-* 所有的 test cases 的命名，不需要給予編號，只需要闡述測試的目的即可
+* All test case names do not need numbering; they should only describe the purpose of the test.
 
 **Section 1.6: Mock Creation**
 
@@ -80,19 +72,19 @@ For Provider and Service mocking:
 * Use `when(() => mock.method()).thenReturn(value)` for stubbing
 * Use `verify(() => mock.method()).called(n)` for verification
 
-**Section 1.6.2: Test Data Builder 模式**
+**Section 1.6.2: Test Data Builder Pattern**
 
-**目的**：為 Service 層測試提供可重用的 JNAP mock responses
+**Purpose**: To provide reusable JNAP mock responses for Service layer testing.
 
-**檔案組織**：
-* Test data builders 統一放在 `test/mocks/test_data/` 目錄
-* 命名規則：`[feature_name]_test_data.dart`
-* Class 命名：`[FeatureName]TestData`
-* 不要在寫測試時臨時建立 mock data
-* 如需調整資料，使用 named parameters 或 `copyWith()` 方法
+**File Organization**:
+* Test data builders are unified in the `test/mocks/test_data/` directory.
+* Naming convention: `[feature_name]_test_data.dart`.
+* Class naming: `[FeatureName]TestData`.
+* Do not create mock data temporarily when writing tests.
+* If data adjustment is needed, use named parameters or the `copyWith()` method.
 
-**使用場景**：
-當測試 Service 時，mock 的是 **RouterRepository 的返回值**（JNAP responses），而非 Service 本身。
+**Usage Scenarios**:
+When testing a Service, the **return value of RouterRepository** (JNAP responses) is mocked, rather than the Service itself.
 
 **Test Data Builder 範例**：
 ```dart
@@ -117,16 +109,16 @@ class [FeatureName]TestData {
 
   /// Create a complete successful JNAP transaction response
   ///
-  /// 支持部分覆蓋(partial override)設計：只指定需要改變的字段，其他字段使用預設值
+  /// Supports partial override design: only specify fields that need to change, others use default values.
   static JNAPTransactionSuccessWrap createSuccessfulTransaction({
     Map<String, dynamic>? setting1,
     Map<String, dynamic>? setting2,
   }) {
-    // 定義預設值
+    // Define default values
     final defaultSetting1 = { /* ... */ };
     final defaultSetting2 = { /* ... */ };
 
-    // 合併預設值和覆蓋值
+    // Merge default and override values
     return JNAPTransactionSuccessWrap(
       result: 'ok',
       data: [
@@ -153,7 +145,7 @@ class [FeatureName]TestData {
     required JNAPAction errorAction,
     String errorMessage = 'Operation failed',
   }) {
-    // ... 返回包含錯誤的交易
+    // ... Returns a transaction containing an error
   }
 
   // Private helpers for default values
@@ -176,14 +168,14 @@ void main() {
   });
 
   test('fetchSettings returns UI model on success', () async {
-    // Arrange: Mock RouterRepository 返回 JNAP response
+    // Arrange: Mock RouterRepository returns JNAP response
     when(() => mockRepo.send(any()))
         .thenAnswer((_) async => DMZTestData.createSuccessResponse());
 
-    // Act: 調用 Service 方法
+    // Act: Call Service method
     final result = await service.fetchSettings();
 
-    // Assert: 驗證轉換後的 UI model
+    // Assert: Verify converted UI model
     expect(result, isA<DMZSettingsUIModel>());
   });
 }
@@ -191,11 +183,11 @@ void main() {
 
 **Section 1.7: State Class and UI Model Testing**
 
-Provider 所使用的 State class 及 UI Model 類別**必須**有獨立的測試檔案
+Independent test files **MUST** be provided for State classes and UI Model classes used by Providers.
 
-**說明**：
-* State class 的測試與 Provider 測試放在同一個 `providers/` 目錄
-* 只有獨立建立的 UI Model class（名稱以 `UIModel` 結尾）才需要放在獨立的 `models/` 目錄
+**Notes**:
+* State class tests are located in the same `providers/` directory as Provider tests.
+* Only independently created UI Model classes (names ending in `UIModel`) need to be placed in an independent `models/` directory.
 
 ---
 
@@ -212,13 +204,13 @@ Any modifications to this constitution require:
 
 ---
 
-## Article III: 命名規範 (Naming Conventions)
+## Article III: Naming Conventions
 
-**Section 3.1: 基本原則**
-所有命名必須遵守：
-* **描述性** - 清楚表達目的和功能
-* **一致性** - 遵循專案統一模式
-* **明確性** - 避免縮寫，除非是廣泛理解的術語（如 UI, ID, HTTP, JNAP, RA）
+**Section 3.1: Basic Principles**
+All names must comply with:
+* **Descriptive** - Clearly express purpose and function.
+* **Consistent** - Follow the project's unified pattern.
+* **Explicit** - Avoid abbreviations unless they are widely understood terms (e.g., UI, ID, HTTP, JNAP, RA).
 
 ---
 
@@ -235,13 +227,13 @@ Any modifications to this constitution require:
 | Test | `[file_name]_test.dart` | `auth_service_test.dart` |
 | Test Data Builder | `[feature]_test_data.dart` | `dmz_test_data.dart`, `auth_test_data.dart` |
 
-**注意**：檔案名稱使用**單數**形式（`service.dart`，而非 `services.dart`）
+**Note**: File names use the **singular** form (`service.dart`, not `services.dart`).
 
 ---
 
-**Section 3.3: Class 命名**
+**Section 3.3: Class Naming**
 
-所有 class 必須使用 `UpperCamelCase`：
+All classes must use `UpperCamelCase`:
 
 **3.3.1: Service Classes**
 ```dart
@@ -269,7 +261,7 @@ class DMZSettingsState extends FeatureState<DMZSettingsUIModel, DMZStatus> { ...
 
 **UI Models** (Presentation Layer):
 ```dart
-// 命名模式：[Feature][Type]UIModel（必須以 UIModel 結尾）
+// Naming pattern: [Feature][Type]UIModel (must end with UIModel)
 class DMZSettingsUIModel extends Equatable { ... }
 class WirelessConfigUIModel extends Equatable { ... }
 class SpeedTestUIModel extends Equatable { ... }
@@ -278,7 +270,7 @@ class FirmwareUpdateUIModel extends Equatable { ... }
 
 **Data Models** (JNAP/Cloud):
 ```dart
-// 命名模式：依照 JNAP domain 名稱
+// Naming pattern: According to JNAP domain name
 class DMZSettings extends Equatable { ... }  // JNAP model
 class WirelessSettings extends Equatable { ... }
 class DeviceInfo extends Equatable { ... }
@@ -326,9 +318,9 @@ class MockAuthNotifier extends Mock implements AuthNotifier {}
 
 ---
 
-**Section 3.4: Provider 命名**
+**Section 3.4: Provider Naming**
 
-所有 provider 必須使用 `lowerCamelCase`：
+All providers must use `lowerCamelCase`:
 
 **3.4.1: Service Providers**
 ```dart
@@ -339,7 +331,7 @@ final dmzServiceProvider = Provider<DMZService>((ref) => ...);
 
 **3.4.2: State Notifier Providers**
 ```dart
-// 命名模式：[feature]Provider（不需要 "Notifier" 後綴）
+// Naming pattern: [feature]Provider (no "Notifier" suffix required)
 final authProvider = AsyncNotifierProvider<AuthNotifier, AuthState>(() => ...);
 final dmzSettingsProvider = NotifierProvider<DMZSettingsNotifier, DMZSettingsState>(() => ...);
 ```
@@ -353,26 +345,26 @@ final cloudRepositoryProvider = Provider<LinksysCloudRepository>((ref) => ...);
 
 ---
 
-**Section 3.5: 目錄命名**
+**Section 3.5: Directory Naming**
 
-所有目錄必須使用 `snake_case`：
+All directories must use `snake_case`:
 
-**3.5.1: Feature 目錄**
+**3.5.1: Feature Directory**
 ```
-lib/page/advanced_settings/     # 單數或複數視語意
+lib/page/advanced_settings/     # Singular or plural based on semantics
 lib/page/instant_setup/
 lib/page/health_check/
 ```
 
-**3.5.2: 組件目錄**
+**3.5.2: Component Directory**
 ```
-lib/page/[feature]/views/       # 複數 - 容器目錄
-lib/page/[feature]/providers/   # 複數 - 容器目錄
-lib/page/[feature]/services/    # 複數 - 容器目錄
-lib/page/[feature]/models/      # 複數 - 容器目錄
+lib/page/[feature]/views/       # Plural - Container directory
+lib/page/[feature]/providers/   # Plural - Container directory
+lib/page/[feature]/services/    # Plural - Container directory
+lib/page/[feature]/models/      # Plural - Container directory
 ```
 
-**3.5.3: 測試目錄**
+**3.5.3: Test Directory**
 ```
 test/page/[feature]/services/
 test/page/[feature]/providers/
@@ -382,21 +374,21 @@ test/mocks/test_data/
 
 ---
 
-**Section 3.6: 測試命名**
+**Section 3.6: Test Naming**
 
-**3.6.1: Test Case 命名**
+**3.6.1: Test Case Naming**
 ```dart
-// ✅ 正確：描述測試目的，無編號
+// ✅ Correct: Describe test purpose, no numbering
 test('cloudLogin returns success with valid credentials', () { ... });
 test('localLogin handles invalid password', () { ... });
 test('fetchSettings transforms JNAP model to UI model', () { ... });
 
-// ❌ 錯誤：使用編號
+// ❌ Incorrect: Use numbering
 test('TC001: login test', () { ... });
 test('Test case 1', () { ... });
 ```
 
-**3.6.2: Test Group 命名**
+**3.6.2: Test Group Naming**
 ```dart
 // 命名模式：[ClassName] - [Feature/Category]
 group('AuthService - Session Token Management', () { ... });
@@ -404,7 +396,7 @@ group('AuthNotifier - Cloud Login', () { ... });
 group('DMZService - Settings Transformation', () { ... });
 ```
 
-**3.6.3: 測試檔案組織**
+**3.6.3: Test File Organization**
 ```dart
 // test/page/advanced_settings/dmz/services/dmz_service_test.dart
 void main() {
@@ -439,79 +431,79 @@ Each feature should follow a consistent, minimal structure:
 * `lib/page/[feature]/services/` - Business logic (when needed)
 * `lib/page/[feature]/models/` - UI models (when needed)
 
-**Section 5.3: 架構層次與職責分離**
+**Section 5.3: Architectural Layers and Separation of Concerns**
 
-**原則**: 嚴格遵守三層架構，依賴方向**永遠向下**，不允許反向依賴。
+**Principle**: Strictly follow the three-tier architecture. The dependency direction must **always be downward**, and reverse dependencies are not allowed.
 
 ```
 ┌─────────────────────────────────┐
-│  Presentation (UI/頁面)          │  ← 只負責顯示和用戶互動
+│  Presentation (UI/Pages)         │  ← Responsible only for display and user interaction
 │  lib/page/*/views/              │
 └────────────┬────────────────────┘
-             │ 依賴
+             │ Dependency
 ┌────────────▼────────────────────┐
-│ Application (業務邏輯層)          │  ← 狀態管理與業務邏輯
-│  - lib/page/*/providers/        │  ← Notifiers (狀態管理)
-│  - lib/page/*/services/         │  ← Services (業務邏輯)
+│ Application (Business Logic Layer)│  ← State management and business logic
+│  - lib/page/*/providers/        │  ← Notifiers (State Management)
+│  - lib/page/*/services/         │  ← Services (Business Logic)
 └────────────┬────────────────────┘
-             │ 依賴
+             │ Dependency
 ┌────────────▼────────────────────┐
-│  Data (資料層)                   │  ← 數據獲取、本地存儲、解析
+│  Data (Data Layer)               │  ← Data acquisition, local storage, parsing
 │  lib/core/jnap/, lib/core/cloud/│
 └─────────────────────────────────┘
 ```
 
-**每層職責**:
-- **Presentation**: UI 呈現、用戶輸入、狀態觀察（只訪問 Provider）
+**Responsibilities of Each Layer**:
+- **Presentation**: UI rendering, user input, state observation (access only Providers).
 - **Application**:
-  - **Providers (Notifiers)**: 狀態管理、用戶交互協調
-  - **Services**: 業務邏輯、API 通信、數據轉換
-- **Data**: API 調用（JNAP、Cloud）、資料庫訪問、數據模型定義
+  - **Providers (Notifiers)**: State management, user interaction coordination.
+  - **Services**: Business logic, API communication, data transformation.
+- **Data**: API calls (JNAP, Cloud), database access, data model definitions.
 
-**關鍵原則**: 不同層級應該使用**不同的數據模型**，每層的模型只在該層及下層使用。
+**Key Principle**: Different levels should use **different data models**, and the models for each layer should only be used in that layer and below.
 
-**Section 5.3.1: 模型層級分類**
+**Section 5.3.1: Model Hierarchy Categorization**
 
 ```
 ┌─────────────────────────────────────────┐
 │  Presentation Layer Models (UI Models)  │
-│  - 用於 UI 顯示、用戶輸入                  │
-│  - ❌ 禁止直接依賴 JNAP Data Models       │
+│  - Used for UI display and user input     │
+│  - ❌ Prohibition of direct dependency on JNAP Data Models │
 └────────────────┬────────────────────────┘
-                 │ 轉換
+                 │ Transformation
 ┌────────────────▼───────────────────────────┐
 │  Application Layer Models (DTO/State)      │
-│  - 業務層的轉換模型                           │
-│  - 橋接 Data Models 與 Presentation         │
-│  - Service 進行 Data Models ↔ UI Models 轉換│
+│  - Business layer transformation models       │
+│  - Bridge between Data Models and Presentation │
+│  - Service layer performs Data Models ↔ UI Models transformation │
 └────────────────┬───────────────────────────┘
-                 │ 轉換
+                 │ Transformation
 ┌────────────────▼────────────────────────┐
 │  Data Layer Models (Data Models)        │
 │  - DMZSettings, DMZSourceRestriction    │
-│  - JNAP、API 回應的直接映射                │
-│  - ❌ 禁止在 Provider、UI 層出現           │
+│  - Direct mapping of JNAP and API responses │
+│  - ❌ Prohibition in Provider and UI layers │
 └─────────────────────────────────────────┘
 ```
 
-**Section 5.3.2: 常見違規與修正**
+**Section 5.3.2: Common Violations and Fixes**
 
-**Provider 中直接使用 JNAP Models**
+**Direct use of JNAP Models in Provider**
 
-❌ **違規**:
+❌ **Violation**:
 ```dart
 // lib/page/advanced_settings/dmz/providers/dmz_settings_provider.dart
 import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
 
 class DMZSettingsNotifier extends Notifier<DMZSettingsState> {
   Future<void> performSave() async {
-    final domainSettings = DMZSettings(...);  // ❌ 不應該在這裡
+    final domainSettings = DMZSettings(...);  // ❌ Should not be here
     await repo.send(..., data: domainSettings.toMap());
   }
 }
 ```
 
-✅ **修正**:
+✅ **Fix**:
 ```dart
 // lib/page/advanced_settings/dmz/providers/dmz_settings_provider.dart
 class DMZSettingsNotifier extends Notifier<DMZSettingsState> {
@@ -532,118 +524,118 @@ class DMZSettingsService {
   DMZSettingsService(this._routerRepository);
 
   Future<void> saveDmzSettings(Ref ref, DMZSettingsUIModel settings) async {
-    // Service 層會負責 UI Model 和 Data Model (JNAP Data) 的轉換
+    // Service layer is responsible for transformation between UI Model and Data Model (JNAP Data)
     final dataModel = DMZSettings(...);
     await _routerRepository.send(..., data: dataModel.toMap());
   }
 }
 ```
 
-**Section 5.3.3: 架構合規性檢查**
+**Section 5.3.3: Architecture Compliance Check**
 
-完成工作後，執行以下檢查：
+After completing the work, execute the following checks:
 
 ```bash
 # ═══════════════════════════════════════════════════════════════
-# JNAP Models 層級隔離檢查
+# JNAP Models Tier Isolation Check
 # ═══════════════════════════════════════════════════════════════
 
-# 1️⃣ 檢查 Provider 層是否還有 JNAP models imports
+# 1️⃣ Check if JNAP models are still imported in the Provider layer
 grep -r "import.*jnap/models" lib/page/*/providers/
-# ✅ 應該返回 0 結果
+# ✅ Should return 0 results
 
-# 2️⃣ 檢查 UI 層是否還有 JNAP models imports
+# 2️⃣ Check if JNAP models are still imported in the UI layer
 grep -r "import.*jnap/models" lib/page/*/views/
-# ✅ 應該返回 0 結果
+# ✅ Should return 0 results
 
-# 3️⃣ 檢查 Service 層是否有正確的 JNAP imports
+# 3️⃣ Check if Service layer has correct JNAP imports
 grep -r "import.*jnap/models" lib/page/*/services/
-# ✅ 應該有結果（Service 層應該 import JNAP models）
+# ✅ Should have results (Service layer should import JNAP models)
 
 # ═══════════════════════════════════════════════════════════════
-# Error Handling 層級隔離檢查 (Article XIII)
+# Error Handling Tier Isolation Check (Article XIII)
 # ═══════════════════════════════════════════════════════════════
 
-# 4️⃣ 檢查 Provider 層是否有 JNAPError 或 jnap_result imports
+# 4️⃣ Check if Provider layer has JNAPError or jnap_result imports
 grep -r "import.*jnap/result" lib/page/*/providers/
 grep -r "on JNAPError" lib/page/*/providers/
-# ✅ 應該返回 0 結果
+# ✅ Should return 0 results
 
-# 5️⃣ 檢查 Service 層是否正確 import ServiceError
+# 5️⃣ Check if Service layer correctly imports ServiceError
 grep -r "import.*core/errors/service_error" lib/page/*/services/
-# ✅ 應該有結果（Service 層應該 import ServiceError）
+# ✅ Should have results (Service layer should import ServiceError)
 ```
 
-**Section 5.3.4: UI Model 創建決策標準**
+**Section 5.3.4: UI Model Creation Decision Criteria**
 
-**原則**: 不是所有的 State 都需要獨立的 UI Model。只在必要時創建 UI Model，避免過度設計。
+**Principle**: Not all states require a standalone UI Model. Create a UI Model only when necessary to avoid over-engineering.
 
-**需要獨立 UI Model 的情況**:
+**Situations requiring a standalone UI Model**:
 
-1. **集合/列表數據**
-   - 當 State 需要存儲 `List<Something>` 時，Something 應該是一個 UI Model
-   - 範例：`List<FirmwareUpdateUIModel>` (多個節點狀態)、`List<SpeedTestUIModel>` (歷史記錄)
+1. **Collection/List Data**
+   - When a state needs to store `List<Something>`, Something should be a UI Model.
+   - Example: `List<FirmwareUpdateUIModel>` (multiple node statuses), `List<SpeedTestUIModel>` (historical records).
 
-2. **數據重用性**
-   - 同一個數據結構在多個地方使用（列表項、詳情頁、彈窗、不同 State 字段）
-   - 範例：`HealthCheckState` 中的 `SpeedTestUIModel` 用於 `result`、`latestSpeedTest`、`historicalSpeedTests`
+2. **Data Reusability**
+   - The same data structure is used in multiple places (list items, detail pages, popups, different state fields).
+   - Example: `SpeedTestUIModel` in `HealthCheckState` is used for `result`, `latestSpeedTest`, and `historicalSpeedTests`.
 
-3. **複雜的嵌套結構**
-   - 數據本身包含多個層級的嵌套對象（>5 個字段或有嵌套）
-   - 避免 State 變得過於複雜和難以維護
+3. **Complex Nested Structures**
+   - The data itself contains multiple levels of nested objects (>5 fields or nesting).
+   - Avoid states becoming too complex and difficult to maintain.
 
-4. **包含計算邏輯或格式化方法**
-   - UI Model 可以封裝 getter、格式化方法、驗證邏輯
-   - 範例：`speedTest.formattedDownloadSpeed`、`node.updateProgressPercentage`
+4. **Contains Calculation Logic or Formatting Methods**
+   - UI Models can encapsulate getters, formatting methods, and validation logic.
+   - Example: `speedTest.formattedDownloadSpeed`, `node.updateProgressPercentage`.
 
-**不需要獨立 UI Model 的情況**:
+**Situations NOT requiring a standalone UI Model**:
 
-1. **扁平的基本類型**
-   - 只有 String, int, bool, enum 等簡單字段
-   - 範例：`RouterPasswordState` (isDefault, isSetByUser, adminPassword, hint 等基本類型)
+1. **Flat Primitive Types**
+   - Only basic fields like String, int, bool, enum, etc.
+   - Example: `RouterPasswordState` (isDefault, isSetByUser, adminPassword, hint, etc.).
 
-2. **簡單的一對一映射**
-   - 從 Service/JNAP 返回的數據到 State 是直接映射，沒有複雜轉換
+2. **Simple One-to-One Mapping**
+   - Direct mapping from Service/JNAP data to state without complex transformation.
 
-**決策流程圖**:
+**Decision Flowchart**:
 ```
-是否需要獨立的 UI Model？
-├─ 是集合/列表數據？ → YES → 使用 UI Model
-├─ 數據會在多處重用？ → YES → 使用 UI Model
-├─ 數據結構複雜（>5個字段或有嵌套）？ → YES → 考慮 UI Model
-├─ 需要封裝業務邏輯/計算屬性？ → YES → 使用 UI Model
-└─ 否則 → State 直接持有基本類型即可
+Is a standalone UI Model needed?
+├─ Is it collection/list data? → YES → Use UI Model
+├─ Will data be reused in multiple places? → YES → Use UI Model
+├─ Is the data structure complex (>5 fields or nesting)? → YES → Consider UI Model
+├─ Need to encapsulate business logic/computed properties? → YES → Use UI Model
+└─ Otherwise → Use primitive types directly in State
 ```
 
-**實際範例對比**:
+**Practical Examples Comparison**:
 
-✅ **不需要 UI Model** (`RouterPasswordState`):
+✅ **No UI Model Needed** (`RouterPasswordState`):
 ```dart
 class RouterPasswordState {
-  final bool isDefault;           // 基本類型
-  final bool isSetByUser;         // 基本類型
-  final String adminPassword;     // 基本類型
-  final String hint;              // 基本類型
+  final bool isDefault;           // Primitive type
+  final bool isSetByUser;         // Primitive type
+  final String adminPassword;     // Primitive type
+  final String hint;              // Primitive type
   final int? remainingErrorAttempts;
-  // 扁平結構，無重用需求
+  // Flat structure, no reuse requirement
 }
 ```
 
-✅ **需要 UI Model** (`HealthCheckState`):
+✅ **UI Model Needed** (`HealthCheckState`):
 ```dart
 class HealthCheckState {
-  final SpeedTestUIModel? result;              // 重用 1
-  final SpeedTestUIModel? latestSpeedTest;     // 重用 2
-  final List<SpeedTestUIModel> historicalSpeedTests;  // 重用 3 + 集合
-  // SpeedTestUIModel 在多處重用，且包含複雜測試數據
+  final SpeedTestUIModel? result;              // Reuse 1
+  final SpeedTestUIModel? latestSpeedTest;     // Reuse 2
+  final List<SpeedTestUIModel> historicalSpeedTests;  // Reuse 3 + Collection
+  // SpeedTestUIModel is reused in multiple places and contains complex test data
 }
 ```
 
-✅ **需要 UI Model** (`FirmwareUpdateState`):
+✅ **UI Model Needed** (`FirmwareUpdateState`):
 ```dart
 class FirmwareUpdateState {
-  final List<FirmwareUpdateUIModel>? nodesStatus;  // 集合類型
-  // 每個節點是獨立實體，有自己的狀態、進度、錯誤信息
+  final List<FirmwareUpdateUIModel>? nodesStatus;  // Collection type
+  // Each node is an independent entity with its own status, progress, and error message
 }
 ```
 
@@ -705,7 +697,7 @@ Services MUST have unit tests that:
 
 **Test organization:** `test/page/[feature]/services/`
 
-**詳細測試策略參見 Article VIII Section 8.2 (Unit Testing)**
+**Refer to Article VIII Section 8.2 (Unit Testing) for a detailed testing strategy.**
 
 **Section 6.6: Reference Implementations**
 See these existing services as examples:
@@ -741,29 +733,29 @@ The following abstractions ARE permitted and encouraged:
 
 **Section 7.3: Data Representation**
 
-**同層內統一，跨層間轉換：**
-- ✅ 同一層內：避免創建語義相同的重複 models
-- ✅ 跨層之間：必須使用不同的 models，由 Service 層轉換
-- ❌ 禁止：在同一層內定義多個功能重複的 DTOs
+**Consistent within layers, transformation between layers:**
+- ✅ Within the same layer: Avoid creating redundant models with the same semantic meaning.
+- ✅ Between layers: Must use different models, transformed by the Service layer.
+- ❌ Prohibited: Defining multiple redundant DTOs within the same layer.
 
-**範例：**
+**Example:**
 ```dart
-// ✅ 正確：跨層使用不同 models
+// ✅ Correct: Use different models across layers
 // Data Layer
 class DMZSettings { ... }  // JNAP model
 
-// Application Layer (Service 轉換)
+// Application Layer (Service transformation)
 DMZSettingsUIModel convertToUI(DMZSettings data) => ...
 
 // Presentation Layer
 class DMZSettingsUIModel { ... }  // UI model
 
-// ❌ 錯誤：同層內重複
+// ❌ Incorrect: Redundant within the same layer
 class DMZSettings1 { ... }
-class DMZSettings2 { ... }  // 與 DMZSettings1 語義相同
+class DMZSettings2 { ... }  // Semantically identical to DMZSettings1
 ```
 
-**詳細說明參見 Article V Section 5.3.1（跨層模型轉換規範）**
+**Refer to Article V Section 5.3.1 (Cross-tier Model Transformation Specification) for detailed explanation.**
 
 ---
 

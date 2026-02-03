@@ -395,11 +395,29 @@ class _HistoryChartPainter extends CustomPainter {
     // Extract values (parse string if kbps is missing, but simpler to rely on parsing logic or just 0)
     // SpeedTestUIModel has downloadSpeed string "xxx.x" and units.
     // Ideally we use uploadBandwidthKbps if available.
-    final downloads = data
-        .map((e) => (e.downloadBandwidthKbps ?? 0) / 1024.0)
-        .toList(); // Mbps
-    final uploads =
-        data.map((e) => (e.uploadBandwidthKbps ?? 0) / 1024.0).toList(); // Mbps
+    final downloads = data.map((e) {
+      if (e.downloadBandwidthKbps != null && e.downloadBandwidthKbps! > 0) {
+        return e.downloadBandwidthKbps! / 1024.0; // Mbps
+      }
+      // Fallback to parsing string value
+      final speed = double.tryParse(e.downloadSpeed) ?? 0;
+      if (e.downloadUnit.toUpperCase() == 'KBPS') {
+        return speed / 1024.0;
+      }
+      return speed; // Assume Mbps
+    }).toList();
+
+    final uploads = data.map((e) {
+      if (e.uploadBandwidthKbps != null && e.uploadBandwidthKbps! > 0) {
+        return e.uploadBandwidthKbps! / 1024.0; // Mbps
+      }
+      // Fallback to parsing string value
+      final speed = double.tryParse(e.uploadSpeed) ?? 0;
+      if (e.uploadUnit.toUpperCase() == 'KBPS') {
+        return speed / 1024.0;
+      }
+      return speed; // Assume Mbps
+    }).toList();
 
     // If kbps is null/0, try parsing string (fallback)
     for (int i = 0; i < data.length; i++) {

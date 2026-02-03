@@ -1,0 +1,144 @@
+{
+    "widgetId": "a2ui_guest_network",
+    "displayName": "Guest Network",
+    "description": "Toggle guest WiFi network on/off with settings access",
+    "constraints": {
+        "minColumns": 3,
+        "maxColumns": 5,
+        "preferredColumns": 4,
+        "minRows": 1,
+        "maxRows": 2,
+        "preferredRows": 2
+    },
+    "template": {
+        "type": "Card",
+        "properties": {
+            "padding": 16.0,
+            "style": {
+                "elevation": 2,
+                "borderRadius": 12
+            }
+        },
+        "children": [
+            {
+                "type": "Column",
+                "properties": {
+                    "mainAxisAlignment": "spaceBetween",
+                    "crossAxisAlignment": "stretch"
+                },
+                "children": [
+                    {
+                        "type": "Row",
+                        "properties": {
+                            "mainAxisAlignment": "spaceBetween",
+                            "crossAxisAlignment": "center"
+                        },
+                        "children": [
+                            {
+                                "type": "Row",
+                                "properties": {
+                                    "mainAxisSize": "min",
+                                    "crossAxisAlignment": "center"
+                                },
+                                "children": [
+                                    {
+                                        "type": "Icon",
+                                        "properties": {
+                                            "icon": "wifi_tethering",
+                                            "size": 24.0,
+                                            "color": "success"
+                                        }
+                                    },
+                                    {
+                                        "type": "SizedBox",
+                                        "properties": {
+                                            "width": 8.0
+                                        }
+                                    },
+                                    {
+                                        "type": "Column",
+                                        "properties": {
+                                            "crossAxisAlignment": "start",
+                                            "mainAxisSize": "min"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "Text",
+                                                "properties": {
+                                                    "text": "Guest Network",
+                                                    "variant": "titleMedium"
+                                                }
+                                            },
+                                            {
+                                                "type": "Text",
+                                                "properties": {
+                                                    "text": {
+                                                        "$bind": "wifi.guestNetworkEnabled ? 'Enabled - ' + wifi.guestNetworkName : 'Disabled'"
+                                                    },
+                                                    "variant": "bodySmall",
+                                                    "color": {
+                                                        "$bind": "wifi.guestNetworkEnabled ? 'success' : 'onSurfaceVariant'"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "Switch",
+                                "properties": {
+                                    "value": {
+                                        "$bind": "wifi.guestNetworkEnabled"
+                                    },
+                                    "onChanged": {
+                                        "$action": {
+                                            "$bind": "wifi.guestNetworkEnabled ? 'wifi.disableGuestNetwork' : 'wifi.enableGuestNetwork'"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "type": "SizedBox",
+                        "properties": {
+                            "height": 8.0
+                        }
+                    },
+                    {
+                        "type": "Row",
+                        "properties": {
+                            "mainAxisAlignment": "spaceBetween",
+                            "crossAxisAlignment": "center"
+                        },
+                        "children": [
+                            {
+                                "type": "Button",
+                                "properties": {
+                                    "label": {
+                                        "$bind": "wifi.guestNetworkEnabled ? 'Share' : ''"
+                                    },
+                                    "variant": "text",
+                                    "size": "small",
+                                    "icon": {
+                                        "$bind": "wifi.guestNetworkEnabled ? 'share' : null"
+                                    },
+                                    "visible": {
+                                        "$bind": "wifi.guestNetworkEnabled"
+                                    },
+                                    "onPressed": {
+                                        "$action": "ui.showSnackbar",
+                                        "params": {
+                                            "message": "Guest network password copied to clipboard"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

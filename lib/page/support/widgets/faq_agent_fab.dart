@@ -6,10 +6,10 @@ import 'package:http/http.dart' as http;
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// 浮動式 FAQ Agent 元件
+/// Floating FAQ Agent component
 ///
-/// 右下角浮動按鈕，點擊後展開搜尋對話框。
-/// 使用 Linksys Support API 搜尋 FAQ 文章，並透過 AWS Bedrock LLM 分析結果。
+/// Floating button in the bottom right corner, click to expand the search dialog.
+/// Search for FAQ articles using the Linksys Support API and analyze the results via AWS Bedrock LLM.
 class FAQAgentFab extends StatefulWidget {
   const FAQAgentFab({super.key});
 
@@ -65,7 +65,7 @@ class _FAQAgentFabState extends State<FAQAgentFab>
   ComponentRegistry _createRegistry() {
     final registry = ComponentRegistry();
 
-    // FAQ 搜尋結果項目
+    // FAQ search result item
     registry.register('FAQResult', (context, props, {onAction, children}) {
       return AppListTile(
         leading: Icon(
@@ -85,7 +85,7 @@ class _FAQAgentFabState extends State<FAQAgentFab>
       );
     });
 
-    // 無結果提示
+    // No results prompt
     registry.register('NoResults', (context, props, {onAction, children}) {
       return Padding(
         padding: const EdgeInsets.all(16),
@@ -141,7 +141,7 @@ class _FAQAgentFabState extends State<FAQAgentFab>
         clipBehavior: Clip.none,
         alignment: Alignment.bottomRight,
         children: [
-          // 展開的對話框
+          // Expanded dialog
           if (_isExpanded)
             Positioned(
               bottom: 64,
@@ -149,7 +149,7 @@ class _FAQAgentFabState extends State<FAQAgentFab>
               child: _buildChatPanel(colorScheme),
             ),
 
-          // 浮動按鈕
+          // Floating button
           Positioned(
             bottom: 0,
             right: 0,
@@ -189,10 +189,10 @@ class _FAQAgentFabState extends State<FAQAgentFab>
         ),
         child: Column(
           children: [
-            // 標題列
+            // Title bar
             _buildHeader(colorScheme),
 
-            // 內容區域
+            // Content area
             Expanded(
               child: GenUiContainer(
                 key: _containerKey,
@@ -201,7 +201,7 @@ class _FAQAgentFabState extends State<FAQAgentFab>
               ),
             ),
 
-            // 輸入區域
+            // Input area
             _buildInputBar(colorScheme),
           ],
         ),

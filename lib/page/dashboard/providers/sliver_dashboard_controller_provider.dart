@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
 
 import 'layout_item_factory.dart';
 import 'dashboard_home_provider.dart';
+import '../a2ui/renderer/a2ui_widget_renderer.dart';
 
 const _sliverDashboardLayoutKey = 'sliver_dashboard_layout';
 
@@ -186,7 +187,12 @@ class SliverDashboardControllerNotifier
     }).toList();
 
     if (changed) {
-      state.importLayout(newLayout);
+      // Create new controller to force state notification
+      final newController = _createDefaultController(
+        specResolver: _getCurrentSpecResolver(),
+      );
+      newController.importLayout(newLayout);
+      state = newController;
       await saveLayout();
     }
   }
@@ -212,7 +218,12 @@ class SliverDashboardControllerNotifier
     }).toList();
 
     if (changed) {
-      state.importLayout(newLayout);
+      // Create new controller to force state notification
+      final newController = _createDefaultController(
+        specResolver: _getCurrentSpecResolver(),
+      );
+      newController.importLayout(newLayout);
+      state = newController;
       await saveLayout();
     }
   }
@@ -227,8 +238,18 @@ class SliverDashboardControllerNotifier
       return; // Already exists
     }
 
-    // 2. Get spec
-    final spec = DashboardWidgetSpecs.getById(id);
+    // 2. Get spec (Native or A2UI)
+    WidgetSpec? spec = DashboardWidgetSpecs.getById(id);
+
+    // If not found in native specs, try A2UI registry
+    if (spec == null) {
+      final registry = _ref.read(a2uiWidgetRegistryProvider);
+      final a2uiDef = registry.get(id);
+      if (a2uiDef != null) {
+        spec = a2uiDef.toWidgetSpec();
+      }
+    }
+
     if (spec == null) return;
 
     // 3. Calculate position (bottom)
@@ -277,7 +298,12 @@ class SliverDashboardControllerNotifier
 
     final newLayout = [...currentLayout, newItemMap];
 
-    state.importLayout(newLayout);
+    // Create new controller to force state notification
+    final newController = _createDefaultController(
+      specResolver: _getCurrentSpecResolver(),
+    );
+    newController.importLayout(newLayout);
+    state = newController;
     await saveLayout();
   }
 
@@ -288,7 +314,12 @@ class SliverDashboardControllerNotifier
         currentLayout.where((item) => (item as Map)['id'] != id).toList();
 
     if (newLayout.length != currentLayout.length) {
-      state.importLayout(newLayout);
+      // Create new controller to force state notification
+      final newController = _createDefaultController(
+        specResolver: _getCurrentSpecResolver(),
+      );
+      newController.importLayout(newLayout);
+      state = newController;
       await saveLayout();
     }
   }

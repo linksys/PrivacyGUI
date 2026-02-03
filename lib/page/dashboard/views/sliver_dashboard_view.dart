@@ -15,6 +15,8 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 import '../providers/dashboard_home_provider.dart';
 import '../providers/sliver_dashboard_controller_provider.dart';
+import '../a2ui/renderer/a2ui_widget_renderer.dart';
+import '../a2ui/validator/a2ui_constraint_validator_provider.dart';
 
 /// Drag-and-drop dashboard view using sliver_dashboard.
 ///
@@ -73,6 +75,12 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
   Widget build(BuildContext context) {
     final controller = ref.watch(sliverDashboardControllerProvider);
     final preferences = ref.watch(dashboardPreferencesProvider);
+    // Watch loader state to handle loading/error
+    final a2uiLoaderState = ref.watch(a2uiLoaderProvider);
+    // Watch factory with injected dependencies (replaces registry)
+    final factory = ref.watch(dashboardWidgetFactoryProvider);
+    // Watch registry for content hash (efficient rebuilds)
+    final a2uiRegistry = ref.watch(a2uiWidgetRegistryProvider);
 
     // Use UI Kit's currentMaxColumns to stay synchronized with main padding
     // This gets the correct column count accounting for page margins
@@ -112,11 +120,14 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
           // Dashboard grid area - scrollable with grid background only here
           Expanded(
             child: DashboardOverlay(
+              // Key forces rebuild when A2UI registry content changes
+              key: ValueKey('overlay_${a2uiRegistry.contentHash}'),
               controller: controller,
               scrollController: scrollController,
               itemBuilder: (context, item) {
                 final mode = preferences.getMode(item.id);
-                return _buildItemWidget(context, item, mode, _isEditMode);
+                return _buildItemWidget(
+                    context, item, mode, _isEditMode, a2uiLoaderState, factory);
               },
               slotAspectRatio: 1.0,
               mainAxisSpacing: AppSpacing.lg,
@@ -135,10 +146,12 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
                     padding:
                         EdgeInsets.symmetric(horizontal: context.pageMargin),
                     sliver: SliverDashboard(
+                      // Key forces rebuild when A2UI registry content changes
+                      key: ValueKey('sliver_${a2uiRegistry.contentHash}'),
                       itemBuilder: (context, item) {
                         final mode = preferences.getMode(item.id);
-                        return _buildItemWidget(
-                            context, item, mode, _isEditMode);
+                        return _buildItemWidget(context, item, mode,
+                            _isEditMode, a2uiLoaderState, factory);
                       },
                       slotAspectRatio: 1.0,
                       mainAxisSpacing: AppSpacing.lg,
@@ -162,56 +175,117 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
   }
 
   void _handleResizeEnd(BuildContext context, LayoutItem item) {
-    // Reactive Constraint Enforcement
-    // This fixes the issue where items can be resized smaller than minWidth against grid edges.
+    // Enhanced Constraint Enforcement with A2UI Support
+    final factory = ref.read(dashboardWidgetFactoryProvider);
+    final a2uiRegistry = ref.read(a2uiWidgetRegistryProvider);
+    final validator = ref.read(a2uiConstraintValidatorProvider);
     final preferences = ref.read(dashboardPreferencesProvider);
     final mode = preferences.getMode(item.id);
 
-    WidgetSpec? spec;
-
-    // Special handling for 'ports' widget - use dynamic constraints
-    if (item.id == DashboardWidgetSpecs.ports.id) {
-      final dashboardState = ref.read(dashboardHomeProvider);
-      final hasLanPort = dashboardState.lanPortConnections.isNotEmpty;
-      final isHorizontal = hasLanPort && dashboardState.isHorizontalLayout;
-      spec = DashboardWidgetSpecs.getPortsSpec(
-        hasLanPort: hasLanPort,
-        isHorizontal: isHorizontal,
-      );
-    } else {
-      try {
-        spec = DashboardWidgetSpecs.all.firstWhere((s) => s.id == item.id);
-      } catch (_) {
-        return;
-      }
-    }
-
-    final constraints = spec.constraints[mode];
-    if (constraints == null) return;
+    // Check if this is an A2UI widget
+    final isA2UIWidget = a2uiRegistry.contains(item.id);
 
     bool violated = false;
     int newW = item.w;
     int newH = item.h;
+    List<String> violationMessages = [];
 
-    // Enforce Width Constraints
-    if (item.w < constraints.minColumns) {
-      newW = constraints.minColumns;
-      violated = true;
-    }
-    if (item.w > constraints.maxColumns) {
-      newW = constraints.maxColumns;
-      violated = true;
-    }
+    if (isA2UIWidget) {
+      // Use A2UI constraint validator
+      final validationResult = validator.validateResize(
+        widgetId: item.id,
+        newColumns: item.w,
+        newRows: item.h,
+      );
 
-    // Enforce Height Constraints using minHeightRows/maxHeightRows range
-    // This allows resizing within the defined range instead of locking to strict height
-    if (item.h < constraints.minHeightRows) {
-      newH = constraints.minHeightRows;
-      violated = true;
-    }
-    if (item.h > constraints.maxHeightRows) {
-      newH = constraints.maxHeightRows;
-      violated = true;
+      if (!validationResult.isValid) {
+        violated = true;
+        violationMessages.addAll(validationResult.messages);
+
+        // Get suggested valid dimensions
+        final suggestion = validator.suggestValidResize(
+          widgetId: item.id,
+          requestedColumns: item.w,
+          requestedRows: item.h,
+        );
+
+        newW = suggestion.columns;
+        newH = suggestion.rows;
+
+        // Show user feedback for A2UI constraint violations
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Widget "${item.id}" constraint violation: ${validationResult.primaryMessage}',
+              ),
+              duration: const Duration(seconds: 3),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    } else {
+      // Native widget constraint validation (merged logic)
+      WidgetSpec? spec;
+
+      // Special handling for 'ports' widget - use dynamic constraints (from dev-2.0.0)
+      if (item.id == DashboardWidgetSpecs.ports.id) {
+        final dashboardState = ref.read(dashboardHomeProvider);
+        final hasLanPort = dashboardState.lanPortConnections.isNotEmpty;
+        final isHorizontal = hasLanPort && dashboardState.isHorizontalLayout;
+        spec = DashboardWidgetSpecs.getPortsSpec(
+          hasLanPort: hasLanPort,
+          isHorizontal: isHorizontal,
+        );
+      } else {
+        spec = factory.getSpec(item.id);
+        if (spec == null) return;
+      }
+
+      final constraints = spec.constraints[mode];
+      if (constraints == null) return;
+
+      // Enforce Width Constraints
+      if (item.w < constraints.minColumns) {
+        newW = constraints.minColumns;
+        violated = true;
+        violationMessages.add(
+            'Minimum width violation: requires ${constraints.minColumns} columns');
+      }
+      if (item.w > constraints.maxColumns) {
+        newW = constraints.maxColumns;
+        violated = true;
+        violationMessages.add(
+            'Maximum width violation: maximum ${constraints.maxColumns} columns');
+      }
+
+      // Enforce Height Constraints using minHeightRows/maxHeightRows range
+      if (item.h < constraints.minHeightRows) {
+        newH = constraints.minHeightRows;
+        violated = true;
+        violationMessages.add(
+            'Minimum height violation: requires ${constraints.minHeightRows} rows');
+      }
+      if (item.h > constraints.maxHeightRows) {
+        newH = constraints.maxHeightRows;
+        violated = true;
+        violationMessages.add(
+            'Maximum height violation: maximum ${constraints.maxHeightRows} rows');
+      }
+
+      // Show user feedback for native widget constraint violations
+      if (violated && context.mounted && violationMessages.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Widget "${item.id}" constraint violation: ${violationMessages.first}',
+            ),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
 
     if (violated) {
@@ -219,8 +293,8 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
           .read(sliverDashboardControllerProvider.notifier)
           .updateItemSize(item.id, newW, newH);
     }
-    // Always save the layout after a resize operation, whether it was
-    // a valid user resize or an automatic correction.
+    // Always save the layout after a resize operation
+
     ref.read(sliverDashboardControllerProvider.notifier).saveLayout();
   }
 // ... (rest of class)
@@ -311,16 +385,39 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
     }
   }
 
-  Widget _buildItemWidget(BuildContext context, LayoutItem item,
-      DisplayMode displayMode, bool isEditMode) {
-    // Use factory to build widget
-    final widget = DashboardWidgetFactory.buildAtomicWidget(
+  Widget _buildItemWidget(
+      BuildContext context,
+      LayoutItem item,
+      DisplayMode displayMode,
+      bool isEditMode,
+      AsyncValue a2uiLoaderState,
+      DashboardWidgetFactory factory) {
+    // Use injected factory to build widget (no registry parameter needed)
+    final widget = factory.buildAtomicWidget(
       item.id,
       displayMode: displayMode,
     );
 
     // Handle unknown widget
     if (widget == null) {
+      // Check if we are still loading A2UI widgets
+      // Only show loading if we don't have a value yet (initial load)
+      if (a2uiLoaderState.isLoading && !a2uiLoaderState.hasValue) {
+        return const AppCard(
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      // Check if there was an error loading A2UI widgets
+      if (a2uiLoaderState.hasError) {
+        // Compliance Fix: Do not expose raw error details to UI
+        return AppCard(
+          child: Center(
+            child: AppText.bodyMedium('Unable to load widgets.'),
+          ),
+        );
+      }
+
       return AppCard(
         child: Center(
           child:
@@ -331,7 +428,7 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
 
     // Wrap in AppCard based on factory rules
     final Widget displayedWidget;
-    if (!DashboardWidgetFactory.shouldWrapInCard(item.id)) {
+    if (!factory.shouldWrapInCard(item.id)) {
       displayedWidget = widget;
     } else {
       displayedWidget = AppCard(

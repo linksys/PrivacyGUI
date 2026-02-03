@@ -20,8 +20,18 @@ class WidgetSpec {
   /// Brief description of the widget's function.
   final String? description;
 
-  /// Constraint definitions for each DisplayMode
+  /// Constraint definitions for each DisplayMode.
+  ///
+  /// For native widgets, this defines constraints per mode.
+  /// For A2UI widgets, this may be empty or contain a single entry.
   final Map<DisplayMode, WidgetGridConstraints> constraints;
+
+  /// Default constraints for widgets that don't use DisplayMode variants.
+  ///
+  /// Primarily used by A2UI widgets which have a single constraint set.
+  /// When set, [getConstraints] will fall back to this if no mode-specific
+  /// constraint is found.
+  final WidgetGridConstraints? defaultConstraints;
 
   /// Whether the widget can be hidden by the user.
   ///
@@ -36,13 +46,28 @@ class WidgetSpec {
     required this.displayName,
     required this.constraints,
     this.description,
+    this.defaultConstraints,
     this.canHide = true,
     this.requirements = const [],
   });
 
-  /// Get constraints for specified mode, fallback to normal mode if missing
-  WidgetGridConstraints getConstraints(DisplayMode mode) =>
-      constraints[mode] ?? constraints[DisplayMode.normal]!;
+  /// Whether this widget supports DisplayMode switching.
+  ///
+  /// Returns true if [constraints] has more than one entry.
+  /// A2UI widgets typically return false (single constraint set).
+  bool get supportsDisplayModes => constraints.length > 1;
+
+  /// Get constraints for specified mode, with fallback logic.
+  ///
+  /// Order of fallback:
+  /// 1. Mode-specific constraint from [constraints]
+  /// 2. [defaultConstraints] (if set)
+  /// 3. Normal mode constraint from [constraints]
+  WidgetGridConstraints getConstraints(DisplayMode mode) {
+    return constraints[mode] ??
+        defaultConstraints ??
+        constraints[DisplayMode.normal]!;
+  }
 
   @override
   bool operator ==(Object other) =>
