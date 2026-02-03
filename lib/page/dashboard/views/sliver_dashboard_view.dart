@@ -411,10 +411,10 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
 
       // Check if there was an error loading A2UI widgets
       if (a2uiLoaderState.hasError) {
-        final error = a2uiLoaderState.error;
+        // Compliance Fix: Do not expose raw error details to UI
         return AppCard(
           child: Center(
-            child: AppText.bodyMedium('Error loading widgets: $error'),
+            child: AppText.bodyMedium('Unable to load widgets.'),
           ),
         );
       }

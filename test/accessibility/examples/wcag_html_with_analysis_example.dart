@@ -30,7 +30,7 @@ String generateEnhancedHtmlReport({
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${report.successCriterion}: ${report.title} - AI Analysis Report</title>
+    <title>${_escapeHtml(report.successCriterion)}: ${_escapeHtml(report.title)} - AI Analysis Report</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         body {
@@ -272,7 +272,7 @@ String generateEnhancedHtmlReport({
 <body>
     <!-- Header: Basic Info and Scores -->
     <div class="header">
-        <h1>${report.successCriterion}: ${report.title}</h1>
+        <h1>${_escapeHtml(report.successCriterion)}: ${_escapeHtml(report.title)}</h1>
         <div style="opacity: 0.9; margin-bottom: 10px;">
             Version ${report.metadata.version} •
             ${report.metadata.environment} •
@@ -313,7 +313,7 @@ String generateEnhancedHtmlReport({
         <h3>🚨 Accessibility Regression Detected!</h3>
         <p>The following components passed in the previous version but failed in the current one:</p>
         <ul>
-            ${analysis.regressions.map((r) => '<li><strong>${r.affectedComponents.join(", ")}</strong> - ${r.title}</li>').join('\n')}
+            ${analysis.regressions.map((r) => '<li><strong>${r.affectedComponents.map((c) => _escapeHtml(c)).join(", ")}</strong> - ${_escapeHtml(r.title)}</li>').join('\n')}
         </ul>
     </div>
     ''' : ''}
@@ -404,8 +404,8 @@ String generateEnhancedHtmlReport({
             <tbody>
                 ${report.failures.map((failure) => '''
                 <tr>
-                    <td><strong>${failure.name}</strong></td>
-                    <td>${failure.message}</td>
+                    <td><strong>${_escapeHtml(failure.name)}</strong></td>
+                    <td>${_escapeHtml(failure.message)}</td>
                     <td class="severity-${failure.severity.name}">
                         ${failure.severity.emoji} ${failure.severity.name.toUpperCase()}
                     </td>
@@ -460,7 +460,7 @@ String _generateInsightHtml(Insight insight) {
 <div class="insight $severityClass">
     <div class="insight-header">
         <span class="insight-emoji">${insight.severity.emoji}</span>
-        <span class="insight-title">${insight.title}</span>
+        <span class="insight-title">${_escapeHtml(insight.title)}</span>
         <span class="insight-confidence">${(insight.confidence * 100).toStringAsFixed(0)}% Confidence</span>
     </div>
 
@@ -480,13 +480,13 @@ String _generateInsightHtml(Insight insight) {
     </div>
 
     <div class="insight-description">
-        ${insight.description}
+        ${_escapeHtml(insight.description)}
     </div>
 
     <div style="margin: 10px 0;">
         <strong>Affected Components:</strong>
         <div class="affected-components">
-            ${insight.affectedComponents.map((c) => '<span class="component-badge">$c</span>').join('\n')}
+            ${insight.affectedComponents.map((c) => '<span class="component-badge">${_escapeHtml(c)}</span>').join('\n')}
         </div>
     </div>
 
@@ -496,11 +496,11 @@ String _generateInsightHtml(Insight insight) {
         ${insight.actions.map((action) => '''
         <div class="action-step">
             <div class="action-step-header">
-                Step ${action.step}: ${action.description}
+                Step ${action.step}: ${_escapeHtml(action.description)}
             </div>
-            ${action.filePath != null ? '<div style="color: #666; font-size: 13px;">📁 File: ${action.filePath}</div>' : ''}
+            ${action.filePath != null ? '<div style="color: #666; font-size: 13px;">📁 File: ${_escapeHtml(action.filePath!)}</div>' : ''}
             ${action.codeExample != null ? '<div class="code-example">${_escapeHtml(action.codeExample!)}</div>' : ''}
-            ${action.impact != null ? '<div class="action-impact">✨ ${action.impact}</div>' : ''}
+            ${action.impact != null ? '<div class="action-impact">✨ ${_escapeHtml(action.impact!)}</div>' : ''}
         </div>
         ''').join('\n')}
     </div>
