@@ -1,35 +1,35 @@
-/// 增強版批量報告生成器 - 整合AI analysis到 full.html
+/// Enhanced Batch Report Generator - Integrating AI Analysis into full.html
 ///
-/// 此檔案提供一個完整的批量報告生成器，將AI analysis結果整合到
-/// full.html 中，包括：
-/// - 跨 SC 的整體AI analysis
-/// - 每個 SC 的詳細洞察
-/// - priority sorting的fix suggestions
-/// - Systemic和回歸檢測
+/// This file provides a complete batch report generator that integrates AI analysis results into
+/// full.html including:
+/// - Overall AI analysis across SCs
+/// - Detailed insights for each SC
+/// - Priority sorting for fix suggestions
+/// - Systemic issue and regression detection
 
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ui_kit_library/src/foundation/accessibility/accessibility.dart';
 
-/// 為 WcagBatchResult 生成包含AI analysis的完整 HTML 報告
+/// Generate complete HTML report with AI analysis for WcagBatchResult
 String generateFullHtmlWithAnalysis({
   required WcagBatchResult batch,
   WcagBatchResult? previousBatch,
   bool includeFixSuggestions = true,
 }) {
-  // 執行整體AI analysis（跨所有 SC）
+  // Perform overall AI analysis (across all SCs)
   final engine = WcagAnalysisEngine();
   final overallAnalysis = engine.analyzeMultiple(
     batch.reports,
     includeFixSuggestions: includeFixSuggestions,
   );
 
-  // 為每個 SC 執行個別分析
+  // Perform individual analysis for each SC
   final individualAnalyses = <String, AnalysisResult>{};
   for (final report in batch.reports) {
     WcagReport? previousReport;
     if (previousBatch != null) {
-      // 找出對應的前一版本報告
+      // Find corresponding previous version report
       final reportType = report.successCriterion;
       previousReport = previousBatch.reports.cast<WcagReport?>().firstWhere(
             (r) => r?.successCriterion == reportType,
@@ -52,7 +52,7 @@ String generateFullHtmlWithAnalysis({
   buffer.writeln(
       '  <meta name="viewport" content="width=device-width, initial-scale=1.0">');
   buffer.writeln(
-      '  <title>WCAG 完整Compliance報告（含AI analysis）- v${batch.metadata.version}</title>');
+      '  <title>WCAG Complete Compliance Report (with AI Analysis) - v${batch.metadata.version}</title>');
   buffer.writeln(
       '  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>');
   buffer.writeln('  <style>');
@@ -61,18 +61,18 @@ String generateFullHtmlWithAnalysis({
   buffer.writeln('</head>');
   buffer.writeln('<body>');
 
-  // === 頁首導航 ===
+  // === Header Navigation ===
   buffer.writeln('  <div class="header">');
   buffer.writeln('    <div class="container">');
   buffer.writeln(
-      '      <h1>${batch.statusEmoji} WCAG 完整Compliance報告（含AI analysis）</h1>');
+      '      <h1>${batch.statusEmoji} WCAG Complete Compliance Report (with AI Analysis)</h1>');
   buffer.writeln('      <div class="header-subtitle">');
   buffer.writeln(
       '        Version ${batch.metadata.version} • ${batch.metadata.environment} • ${batch.metadata.timestamp.toString().substring(0, 19)}');
   buffer.writeln('      </div>');
   buffer.writeln('      <div class="nav-links">');
-  buffer.writeln('        <a href="#overview">📊 總覽</a>');
-  buffer.writeln('        <a href="#analysis">🧠 AI analysis</a>');
+  buffer.writeln('        <a href="#overview">📊 Overview</a>');
+  buffer.writeln('        <a href="#analysis">🧠 AI Analysis</a>');
   for (final report in batch.reports) {
     final scId =
         report.successCriterion.replaceAll(' ', '_').replaceAll('.', '_');
@@ -84,18 +84,19 @@ String generateFullHtmlWithAnalysis({
 
   buffer.writeln('  <div class="container">');
 
-  // === 總覽區塊 ===
+  // === Overview Section ===
   buffer.writeln('    <section id="overview" class="section">');
-  buffer.writeln('      <h2>📊 整體總覽</h2>');
+  buffer.writeln('      <h2>📊 Overall Overview</h2>');
 
-  // 關鍵指標卡片
+  // Key Metrics Cards
   buffer.writeln('      <div class="metrics-grid">');
 
   buffer.writeln('        <div class="metric-card">');
   buffer.writeln('          <div class="metric-icon">📈</div>');
   buffer.writeln(
       '          <div class="metric-value">${batch.overallCompliance.toStringAsFixed(1)}%</div>');
-  buffer.writeln('          <div class="metric-label">整體Compliance性</div>');
+  buffer
+      .writeln('          <div class="metric-label">Overall Compliance</div>');
   buffer.writeln('        </div>');
 
   buffer.writeln(
@@ -140,9 +141,9 @@ String generateFullHtmlWithAnalysis({
 
   buffer.writeln('      </div>');
 
-  // 元數據資訊
+  // Metadata Info
   buffer.writeln('      <div class="metadata-card">');
-  buffer.writeln('        <h3>報告資訊</h3>');
+  buffer.writeln('        <h3>Report Information</h3>');
   buffer.writeln('        <div class="metadata-grid">');
   buffer.writeln(
       '          <div><strong>Git Commit:</strong> ${batch.metadata.gitCommitHash}</div>');
@@ -159,34 +160,34 @@ String generateFullHtmlWithAnalysis({
   buffer.writeln('        </div>');
   buffer.writeln('      </div>');
 
-  // 圖表區域
+  // Charts Area
   buffer.writeln('      <div class="charts-row">');
   buffer.writeln('        <div class="chart-card">');
-  buffer.writeln('          <h3>Compliance性分布</h3>');
+  buffer.writeln('          <h3>Compliance Distribution</h3>');
   buffer.writeln('          <div class="chart-container">');
   buffer.writeln('            <canvas id="overallChart"></canvas>');
   buffer.writeln('          </div>');
   buffer.writeln('        </div>');
   buffer.writeln('        <div class="chart-card">');
-  buffer.writeln('          <h3>各 SC Compliance Rate</h3>');
+  buffer.writeln('          <h3>SC Compliance Rate</h3>');
   buffer.writeln('          <div class="chart-container">');
   buffer.writeln('            <canvas id="complianceChart"></canvas>');
   buffer.writeln('          </div>');
   buffer.writeln('        </div>');
   buffer.writeln('      </div>');
 
-  // SC 總覽表格
-  buffer.writeln('      <h3>Success Criteria 詳情</h3>');
+  // SC Overview Table
+  buffer.writeln('      <h3>Success Criteria Details</h3>');
   buffer.writeln('      <table class="sc-table">');
   buffer.writeln('        <thead>');
   buffer.writeln('          <tr>');
   buffer.writeln('            <th>SC</th>');
-  buffer.writeln('            <th>標題</th>');
-  buffer.writeln('            <th>等級</th>');
-  buffer.writeln('            <th>Compliance性</th>');
+  buffer.writeln('            <th>Title</th>');
+  buffer.writeln('            <th>Level</th>');
+  buffer.writeln('            <th>Compliance</th>');
   buffer.writeln('            <th>Health Score</th>');
-  buffer.writeln('            <th>關鍵問題</th>');
-  buffer.writeln('            <th>操作</th>');
+  buffer.writeln('            <th>Critical Issues</th>');
+  buffer.writeln('            <th>Action</th>');
   buffer.writeln('          </tr>');
   buffer.writeln('        </thead>');
   buffer.writeln('        <tbody>');
@@ -207,7 +208,7 @@ String generateFullHtmlWithAnalysis({
     buffer.writeln(
         '            <td>${analysis.criticalInsights.length > 0 ? '🔴 ${analysis.criticalInsights.length}' : '✅'}</td>');
     buffer.writeln(
-        '            <td><a href="#$scId" class="btn-link">查看詳情 →</a></td>');
+        '            <td><a href="#$scId" class="btn-link">View Details →</a></td>');
     buffer.writeln('          </tr>');
   }
   buffer.writeln('        </tbody>');
@@ -215,10 +216,10 @@ String generateFullHtmlWithAnalysis({
 
   buffer.writeln('    </section>');
 
-  // === AI analysis區塊 ===
+  // === AI Analysis Section ===
   buffer
       .writeln('    <section id="analysis" class="section analysis-section">');
-  buffer.writeln('      <h2>🧠 AI analysis：整體洞察</h2>');
+  buffer.writeln('      <h2>🧠 AI Analysis: Overall Insights</h2>');
 
   // Regression Warning
   if (overallAnalysis.regressions.isNotEmpty) {
@@ -231,7 +232,7 @@ String generateFullHtmlWithAnalysis({
       buffer.writeln('          <li>');
       buffer.writeln('            <strong>${regression.title}</strong><br>');
       buffer.writeln(
-          '            <span class="text-muted">受影響：${regression.affectedComponents.join(", ")}</span>');
+          '            <span class="text-muted">Affected: ${regression.affectedComponents.join(", ")}</span>');
       buffer.writeln('          </li>');
     }
     buffer.writeln('        </ul>');
@@ -241,8 +242,9 @@ String generateFullHtmlWithAnalysis({
   // Systemic
   if (overallAnalysis.systemicIssues.isNotEmpty) {
     buffer.writeln('      <div class="alert alert-warning">');
-    buffer.writeln('        <h3>⚠️ Systemic</h3>');
-    buffer.writeln('        <p>以下元件在多個 Success Criteria 或情境中Failed：</p>');
+    buffer.writeln('        <h3>⚠️ Systemic Issues Detected!</h3>');
+    buffer.writeln(
+        '        <p>The following components failed across multiple Success Criteria or scenarios:</p>');
     buffer.writeln('        <ul>');
     for (final systemic in overallAnalysis.systemicIssues) {
       buffer.writeln('          <li>');
@@ -256,16 +258,16 @@ String generateFullHtmlWithAnalysis({
     buffer.writeln('      </div>');
   }
 
-  // priority sorting的洞察
-  buffer.writeln('      <h3>💡 優先修復順序（跨所有 SC）</h3>');
+  // Priority Sorting Insights
+  buffer.writeln('      <h3>💡 Priority Fix Order (Across All SCs)</h3>');
   buffer.writeln(
-      '      <p class="section-subtitle">根據Severity、影響範圍和 WCAG 等級自動排序</p>');
+      '      <p class="section-subtitle">Automatically sorted by Severity, Scope, and WCAG Level</p>');
 
   if (overallAnalysis.insights.isEmpty) {
     buffer.writeln('      <div class="success-message">');
     buffer.writeln('        <div style="font-size: 64px;">✅</div>');
-    buffer.writeln('        <h3>沒有發現問題模式！</h3>');
-    buffer.writeln('        <p>All tests comply with WCAG 標準。</p>');
+    buffer.writeln('        <h3>No problem patterns detected!</h3>');
+    buffer.writeln('        <p>All tests comply with WCAG standards.</p>');
     buffer.writeln('      </div>');
   } else {
     for (var i = 0; i < overallAnalysis.insights.length; i++) {
@@ -276,7 +278,7 @@ String generateFullHtmlWithAnalysis({
 
   buffer.writeln('    </section>');
 
-  // === 各 SC 詳細報告 ===
+  // === Individual SC Reports ===
   for (final report in batch.reports) {
     final scId =
         report.successCriterion.replaceAll(' ', '_').replaceAll('.', '_');
@@ -284,7 +286,7 @@ String generateFullHtmlWithAnalysis({
 
     buffer.writeln('    <section id="$scId" class="section sc-section">');
 
-    // SC 標題
+    // SC Title
     buffer.writeln('      <div class="sc-header">');
     buffer.writeln('        <div>');
     buffer.writeln(
@@ -293,20 +295,21 @@ String generateFullHtmlWithAnalysis({
     buffer.writeln(
         '            <span class="level-badge level-${report.level.name}">${report.level.label}</span>');
     buffer.writeln(
-        '            <span>Compliance性: ${report.score.statusEmoji} ${report.score.percentage.toStringAsFixed(1)}%</span>');
+        '            <span>Compliance: ${report.score.statusEmoji} ${report.score.percentage.toStringAsFixed(1)}%</span>');
     buffer.writeln(
         '            <span>Health Score: ${_getHealthEmoji(analysis.healthScore)} ${(analysis.healthScore * 100).toStringAsFixed(1)}%</span>');
     buffer.writeln('          </div>');
     buffer.writeln('        </div>');
-    buffer.writeln('        <a href="#overview" class="back-link">↑ 返回總覽</a>');
+    buffer.writeln(
+        '        <a href="#overview" class="back-link">↑ Back to Overview</a>');
     buffer.writeln('      </div>');
 
-    // SC 統計卡片
+    // SC Stats Card
     buffer.writeln('      <div class="sc-stats-grid">');
     buffer.writeln('        <div class="stat-card">');
     buffer.writeln(
         '          <div class="stat-value">${report.score.passed}/${report.score.total}</div>');
-    buffer.writeln('          <div class="stat-label">Passed測試</div>');
+    buffer.writeln('          <div class="stat-label">Passed Tests</div>');
     buffer.writeln('        </div>');
     buffer.writeln(
         '        <div class="stat-card ${report.criticalFailures.isNotEmpty ? 'critical' : ''}">');
@@ -317,19 +320,19 @@ String generateFullHtmlWithAnalysis({
     buffer.writeln('        <div class="stat-card">');
     buffer.writeln(
         '          <div class="stat-value">${analysis.insights.length}</div>');
-    buffer.writeln('          <div class="stat-label">發現洞察</div>');
+    buffer.writeln('          <div class="stat-label">Insights Found</div>');
     buffer.writeln('        </div>');
     buffer.writeln('        <div class="stat-card">');
     buffer.writeln(
         '          <div class="stat-value">${analysis.estimatedEffort?.toStringAsFixed(1) ?? 'N/A'}h</div>');
-    buffer.writeln('          <div class="stat-label">修復工作量</div>');
+    buffer.writeln('          <div class="stat-label">Fix Effort</div>');
     buffer.writeln('        </div>');
     buffer.writeln('      </div>');
 
-    // SC 特定的AI analysis
+    // SC Specific AI Analysis
     if (analysis.insights.isNotEmpty) {
       buffer.writeln('      <div class="sc-analysis">');
-      buffer.writeln('        <h3>🧠 此 SC 的AI analysis</h3>');
+      buffer.writeln('        <h3>🧠 AI Analysis for this SC</h3>');
       for (var i = 0; i < analysis.insights.length; i++) {
         buffer.write(
             _generateInsightCard(analysis.insights[i], i + 1, compact: true));
@@ -337,16 +340,16 @@ String generateFullHtmlWithAnalysis({
       buffer.writeln('      </div>');
     }
 
-    // 測試結果表格
+    // Test Results Table
     if (report.results.isNotEmpty) {
-      buffer.writeln('      <h3>📋 測試結果</h3>');
+      buffer.writeln('      <h3>📋 Test Results</h3>');
       buffer.writeln('      <table class="results-table">');
       buffer.writeln('        <thead>');
       buffer.writeln('          <tr>');
-      buffer.writeln('            <th>元件</th>');
-      buffer.writeln('            <th>狀態</th>');
-      buffer.writeln('            <th>嚴重性</th>');
-      buffer.writeln('            <th>說明</th>');
+      buffer.writeln('            <th>Component</th>');
+      buffer.writeln('            <th>Status</th>');
+      buffer.writeln('            <th>Severity</th>');
+      buffer.writeln('            <th>Description</th>');
       buffer.writeln('          </tr>');
       buffer.writeln('        </thead>');
       buffer.writeln('        <tbody>');
@@ -381,7 +384,7 @@ String generateFullHtmlWithAnalysis({
   return buffer.toString();
 }
 
-/// 生成洞察卡片 HTML
+/// Generate Insight Card HTML
 String _generateInsightCard(Insight insight, int priority,
     {bool compact = false}) {
   final severityClass = 'insight-${insight.severity.name}';
@@ -390,7 +393,7 @@ String _generateInsightCard(Insight insight, int priority,
       <div class="insight-card $severityClass">
         <div class="insight-header">
           <div class="insight-priority">
-            <span class="priority-badge">優先級 $priority</span>
+            <span class="priority-badge">Priority $priority</span>
           </div>
           <div class="insight-title-group">
             <span class="insight-emoji">${insight.severity.emoji}</span>
@@ -413,7 +416,7 @@ String _generateInsightCard(Insight insight, int priority,
             </div>
             <div class="detail-item">
               <span class="detail-icon">🔢</span>
-              <span class="detail-label">Failed次數:</span>
+              <span class="detail-label">Failure Count:</span>
               <span class="detail-value">${insight.failureCount}</span>
             </div>
           </div>
@@ -446,10 +449,10 @@ String _generateInsightCard(Insight insight, int priority,
 ''';
 }
 
-/// 生成圖表 JavaScript
+/// Generate Chart JavaScript
 String _generateChartScript(WcagBatchResult batch) {
   return '''
-    // 整體Compliance Doughnut Chart
+    // Overall Compliance Doughnut Chart
     new Chart(document.getElementById('overallChart'), {
       type: 'doughnut',
       data: {
@@ -475,7 +478,7 @@ String _generateChartScript(WcagBatchResult batch) {
       }
     });
 
-    // 各 SC Compliance Rate長條圖
+    // SC Compliance Rate Bar Chart
     new Chart(document.getElementById('complianceChart'), {
       type: 'bar',
       data: {
@@ -511,14 +514,14 @@ String _generateChartScript(WcagBatchResult batch) {
   ''';
 }
 
-/// 取得長條圖顏色
+/// Get Bar Color
 String _getBarColor(double percentage) {
   if (percentage >= 95) return "'#28a745'";
   if (percentage >= 80) return "'#ffc107'";
   return "'#dc3545'";
 }
 
-/// 取得Health Score的卡片 class
+/// Get Health Score Card Class
 String _getHealthCardClass(double score) {
   if (score >= 0.8) return 'success';
   if (score >= 0.5) return 'warning';
@@ -554,7 +557,7 @@ String _escapeHtml(String text) {
       .replaceAll("'", '&#39;');
 }
 
-/// 增強版樣式
+/// Enhanced Styles
 String _getEnhancedStyles() {
   return '''
     * {
@@ -646,7 +649,7 @@ String _getEnhancedStyles() {
       margin: -10px 0 20px 0;
     }
 
-    /* 指標卡片 */
+    /* Metrics Card */
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -695,7 +698,7 @@ String _getEnhancedStyles() {
       opacity: 0.8;
     }
 
-    /* 元數據卡片 */
+    /* Metadata Card */
     .metadata-card {
       background: #f8f9fa;
       padding: 20px;
@@ -715,7 +718,7 @@ String _getEnhancedStyles() {
       font-size: 14px;
     }
 
-    /* 圖表 */
+    /* Charts */
     .charts-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -739,7 +742,7 @@ String _getEnhancedStyles() {
       height: 300px;
     }
 
-    /* 表格 */
+    /* Tables */
     .sc-table, .results-table {
       width: 100%;
       border-collapse: collapse;
@@ -773,7 +776,7 @@ String _getEnhancedStyles() {
       background: #fff5f5;
     }
 
-    /* 徽章 */
+    /* Badges */
     .level-badge {
       display: inline-block;
       padding: 4px 12px;

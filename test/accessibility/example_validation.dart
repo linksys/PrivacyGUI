@@ -16,37 +16,38 @@ import 'package:flutter/material.dart';
 
 void main() {
   print('╔════════════════════════════════════════════════════════╗');
-  print('║     PrivacyGUI WCAG 可訪問性驗證範例                    ║');
+  print('║     PrivacyGUI WCAG Accessibility Validation Example    ║');
   print('╚════════════════════════════════════════════════════════╝\n');
 
   // Demo 1: Single Success Criterion Validation
-  print('【Demo 1】Target Size (SC 2.5.5) 驗證\n');
+  print('【Demo 1】Target Size (SC 2.5.5) Validation\n');
   demoTargetSizeValidation();
 
   print('\n' + '=' * 60 + '\n');
 
   // Demo 2: Batch Validation
-  print('【Demo 2】批量驗證（多個 Success Criteria）\n');
+  print('【Demo 2】Batch Validation (Multiple Success Criteria)\n');
   demoBatchValidation();
 
   print('\n' + '=' * 60 + '\n');
 
   // Demo 3: Report Comparison
-  print('【Demo 3】報告版本比較\n');
+  print('【Demo 3】Report Version Comparison\n');
   demoReportComparison();
 
   print('\n' + '=' * 60 + '\n');
 
   // Demo 4: Cache Usage
-  print('【Demo 4】使用快取提升效能\n');
+  print('【Demo 4】Using Cache for Performance\n');
   demoCaching();
 
   print('\n╔════════════════════════════════════════════════════════╗');
-  print('║  驗證Completed！請查看 reports/accessibility/ 目錄的報告     ║');
+  print(
+      '║  Validation Completed! Please check reports/accessibility/ directory  ║');
   print('╚════════════════════════════════════════════════════════╝');
 }
 
-/// Demo 1: Target Size 驗證
+/// Demo 1: Target Size Validation
 void demoTargetSizeValidation() {
   print('1️⃣  Creating TargetSizeReporter...');
   final reporter = TargetSizeReporter(targetLevel: WcagLevel.aaa);
@@ -170,7 +171,7 @@ void demoBatchValidation() {
     ('LoginForm_LoginButton', 3, 3),
     ('SettingsForm_Name', 0, 0),
     ('SettingsForm_Email', 1, 1),
-    ('SettingsForm_SaveButton', 2, 3), // 順序Error
+    ('SettingsForm_SaveButton', 2, 3), // Order Error
   ];
 
   for (final (name, expected, actual) in focusSequence) {
@@ -236,16 +237,16 @@ void demoBatchValidation() {
     environment: 'demo',
   );
 
-  print('\n📊 批量Validation Results:');
+  print('\n📊 Batch Validation Results:');
   print(
-      '   整體Compliance Rate: ${batch.overallCompliance.toStringAsFixed(1)}% ${batch.statusEmoji}');
-  print('   測試的 Success Criteria: ${batch.reportCount}');
+      '   Overall Compliance Rate: ${batch.overallCompliance.toStringAsFixed(1)}% ${batch.statusEmoji}');
+  print('   Success Criteria Tested: ${batch.reportCount}');
   print('   Total Validations: ${batch.totalValidations}');
   print('   ✅ Passed: ${batch.totalPassed}');
   print('   ❌ Failed: ${batch.totalFailures}');
   print('   🔴 Critical Failures: ${batch.totalCriticalFailures}');
 
-  print('\n   各 Success Criterion 詳情:');
+  print('\n   Details by Success Criterion:');
   for (final report in batch.reports) {
     final emoji = report.score.statusEmoji;
     final percentage = report.score.percentage.toStringAsFixed(1);
@@ -256,23 +257,23 @@ void demoBatchValidation() {
   final outputDir = Directory('reports/accessibility/example/batch');
   batch.exportAll(outputDirectory: outputDir);
 
-  print('\n✅ 批量Report exported:');
-  print('   - ${outputDir.path}/full.html (⭐ 完整整合報告)');
-  print('   - ${outputDir.path}/overview.html (批量總覽)');
-  print('   - ${outputDir.path}/sc_*.html (個別 SC 報告)');
+  print('\n✅ Batch Report exported:');
+  print('   - ${outputDir.path}/full.html (⭐ Full Integrated Report)');
+  print('   - ${outputDir.path}/overview.html (Batch Overview)');
+  print('   - ${outputDir.path}/sc_*.html (Individual SC Reports)');
 }
 
 /// Demo 3: Report Comparison
 void demoReportComparison() {
-  print('1️⃣  建立兩個版本的報告...\n');
+  print('1️⃣  Creating reports for two versions...\n');
 
-  // 版本 1.0.0 的報告
-  print('   📋 版本 1.0.0 的驗證...');
+  // Version 1.0.0 Report
+  print('   📋 Verifying Version 1.0.0...');
   final reporter1 = TargetSizeReporter(targetLevel: WcagLevel.aaa);
   final v1Components = [
     ('AppButton', Size(48, 48)),
-    ('IconButton', Size(42, 42)), // 太小
-    ('TabButton', Size(40, 40)), // 太小
+    ('IconButton', Size(42, 42)), // Too small
+    ('TabButton', Size(40, 40)), // Too small
     ('FAB', Size(56, 56)),
   ];
 
@@ -292,13 +293,13 @@ void demoReportComparison() {
   print(
       '      Compliance Rate: ${report1.score.percentage.toStringAsFixed(1)}%');
 
-  // 版本 2.0.0 的報告（改進後）
-  print('   📋 版本 2.0.0 的驗證（已改進）...');
+  // Version 2.0.0 Report (Improved)
+  print('   📋 Verifying Version 2.0.0 (Improved)...');
   final reporter2 = TargetSizeReporter(targetLevel: WcagLevel.aaa);
   final v2Components = [
     ('AppButton', Size(48, 48)),
-    ('IconButton', Size(50, 50)), // 已修復 ✅
-    ('TabButton', Size(44, 44)), // 已修復 ✅
+    ('IconButton', Size(50, 50)), // Fixed ✅
+    ('TabButton', Size(44, 44)), // Fixed ✅
     ('FAB', Size(56, 56)),
   ];
 
@@ -318,35 +319,36 @@ void demoReportComparison() {
   print(
       '      Compliance Rate: ${report2.score.percentage.toStringAsFixed(1)}%');
 
-  // 比較報告
-  print('\n2️⃣  比較兩個版本...');
+  // Compare Reports
+  print('\n2️⃣  Comparing two versions...');
   final comparison = ReportComparator.compare(
     currentReport: report2,
     previousReport: report1,
   );
 
-  print('\n📊 比較結果:');
-  print('   版本變化: ${report1.metadata.version} → ${report2.metadata.version}');
+  print('\n📊 Comparison Results:');
   print(
-      '   Compliance Rate變化: ${comparison.complianceChange > 0 ? '+' : ''}${comparison.complianceChange.toStringAsFixed(1)}%');
+      '   Version Change: ${report1.metadata.version} → ${report2.metadata.version}');
   print(
-      '   ${comparison.direction.emoji} ${comparison.direction == TrendDirection.improving ? '改善中' : comparison.direction == TrendDirection.declining ? '退步' : '穩定'}');
+      '   Compliance Rate Change: ${comparison.complianceChange > 0 ? '+' : ''}${comparison.complianceChange.toStringAsFixed(1)}%');
+  print(
+      '   ${comparison.direction.emoji} ${comparison.direction == TrendDirection.improving ? 'Improving' : comparison.direction == TrendDirection.declining ? 'Regressing' : 'Stable'}');
 
   if (comparison.fixedIssues.isNotEmpty) {
-    print('\n   ✅ 已修復的問題 (${comparison.fixedIssues.length}):');
+    print('\n   ✅ Fixed Issues (${comparison.fixedIssues.length}):');
     for (final issue in comparison.fixedIssues) {
       print('      • ${issue.componentName}');
     }
   }
 
   if (comparison.regressions.isNotEmpty) {
-    print('\n   ⚠️  新增的問題 (${comparison.regressions.length}):');
+    print('\n   ⚠️  New Issues (${comparison.regressions.length}):');
     for (final regression in comparison.regressions) {
       print('      • ${regression.componentName}');
     }
   }
 
-  // 匯出比較報告
+  // Export comparison report
   final outputDir = Directory('reports/accessibility/example');
   if (!outputDir.existsSync()) {
     outputDir.createSync(recursive: true);
@@ -355,23 +357,23 @@ void demoReportComparison() {
   File('${outputDir.path}/comparison.html')
       .writeAsStringSync(comparison.toHtml());
 
-  print('\n✅ 比較Report exported:');
+  print('\n✅ Comparison Report exported:');
   print('   - ${outputDir.path}/comparison.html');
 }
 
 /// Demo 4: Cache Usage
 void demoCaching() {
-  print('1️⃣  建立快取...');
+  print('1️⃣  Creating cache...');
   final cache = ReportMemoryCache(defaultTtl: const Duration(minutes: 15));
 
-  print('2️⃣  第一次驗證（Generate report）...');
+  print('2️⃣  First Validation (Generate report)...');
   final stopwatch1 = Stopwatch()..start();
 
   final report1 = cache.getOrGenerate('privacygui_v2.0.0', () {
-    print('   🔄 生成新報告...');
+    print('   🔄 Generating new report...');
     final reporter = TargetSizeReporter(targetLevel: WcagLevel.aaa);
 
-    // 模擬多個元件驗證
+    // Mock multiple component validations
     for (var i = 0; i < 10; i++) {
       reporter.validateComponent(
         componentName: 'Component_$i',
@@ -388,34 +390,36 @@ void demoCaching() {
   });
 
   stopwatch1.stop();
-  print('   ⏱️  耗時: ${stopwatch1.elapsedMilliseconds}ms');
+  print('   ⏱️  Time: ${stopwatch1.elapsedMilliseconds}ms');
 
-  print('\n3️⃣  第二次驗證（使用快取）...');
+  print('\n3️⃣  Second Validation (Using Cache)...');
   final stopwatch2 = Stopwatch()..start();
 
   final report2 = cache.getOrGenerate('privacygui_v2.0.0', () {
-    print('   🔄 生成新報告...');
-    // 這段不會執行，因為已有快取
+    print('   🔄 Generating new report...');
+    // This part will not run because cache exists
     return report1;
   });
 
   stopwatch2.stop();
-  print('   ⚡ 耗時: ${stopwatch2.elapsedMilliseconds}ms');
+  print('   ⚡ Time: ${stopwatch2.elapsedMilliseconds}ms');
   print(
-      '   ${stopwatch2.elapsedMilliseconds < stopwatch1.elapsedMilliseconds ? '✅ 快取加速！' : ''}');
-  print('   ${identical(report1, report2) ? '✅ 返回相同實例 (快取命中)' : ''}');
+      '   ${stopwatch2.elapsedMilliseconds < stopwatch1.elapsedMilliseconds ? '✅ Cache Speedup!' : ''}');
+  print(
+      '   ${identical(report1, report2) ? '✅ Returns Same Instance (Cache Hit)' : ''}');
 
-  print('\n📊 快取統計:');
+  print('\n📊 Cache Stats:');
   final stats = cache.stats;
-  print('   總條目: ${stats.totalEntries}');
-  print('   有效條目: ${stats.activeEntries}');
-  print('   過期條目: ${stats.expiredEntries}');
-  print('   命中率: ${(stats.hitRate * 100).toStringAsFixed(1)}%');
+  print('   Total Entries: ${stats.totalEntries}');
+  print('   Active Entries: ${stats.activeEntries}');
+  print('   Expired Entries: ${stats.expiredEntries}');
+  print('   Hit Rate: ${(stats.hitRate * 100).toStringAsFixed(1)}%');
 
-  print('\n💡 Tip: 在 CI/CD 環境中，快取可以顯著提升驗證速度');
+  print(
+      '\n💡 Tip: In CI/CD environment, cache can significantly speed up validation');
 }
 
-/// 取得 Git commit hash
+/// Get Git commit hash
 String _getGitHash() {
   try {
     final result = Process.runSync('git', ['rev-parse', '--short', 'HEAD']);
