@@ -97,7 +97,10 @@ class _FixedInternetConnectionWidgetState
               icon: AppIcon.font(AppFontIcons.refresh, size: 16),
               onTap: () {
                 controller.repeat();
-                ref.read(pollingProvider.notifier).forcePolling().then((_) {
+                ref
+                    .read(pollingProvider.notifier)
+                    .forcePolling()
+                    .whenComplete(() {
                   controller.stop();
                 });
               },
@@ -186,7 +189,8 @@ class _FixedInternetConnectionWidgetState
                           ref
                               .read(pollingProvider.notifier)
                               .forcePolling()
-                              .then((value) {
+                              .forcePolling()
+                              .whenComplete(() {
                             controller.stop();
                           });
                         },
@@ -370,7 +374,8 @@ class _FixedInternetConnectionWidgetState
                           ref
                               .read(pollingProvider.notifier)
                               .forcePolling()
-                              .then((_) {
+                              .forcePolling()
+                              .whenComplete(() {
                             controller.stop();
                           });
                         },

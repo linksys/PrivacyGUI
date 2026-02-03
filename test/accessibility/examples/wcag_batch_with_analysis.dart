@@ -7,6 +7,7 @@
 /// - Priority sorting for fix suggestions
 /// - Systemic issue and regression detection
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ui_kit_library/src/foundation/accessibility/accessibility.dart';
@@ -46,7 +47,7 @@ String generateFullHtmlWithAnalysis({
   final buffer = StringBuffer();
 
   buffer.writeln('<!DOCTYPE html>');
-  buffer.writeln('<html lang="zh-TW">');
+  buffer.writeln('<html lang="en">');
   buffer.writeln('<head>');
   buffer.writeln('  <meta charset="UTF-8">');
   buffer.writeln(
@@ -198,7 +199,7 @@ String generateFullHtmlWithAnalysis({
     buffer.writeln('          <tr>');
     buffer.writeln(
         '            <td><strong>${report.successCriterion}</strong></td>');
-    buffer.writeln('            <td>${report.title}</td>');
+    buffer.writeln('            <td>${_escapeHtml(report.title)}</td>');
     buffer.writeln(
         '            <td><span class="level-badge level-${report.level.name}">${report.level.label}</span></td>');
     buffer.writeln(
@@ -482,11 +483,11 @@ String _generateChartScript(WcagBatchResult batch) {
     new Chart(document.getElementById('complianceChart'), {
       type: 'bar',
       data: {
-        labels: [${batch.reports.map((r) => '"${r.successCriterion}"').join(', ')}],
+        labels: ${jsonEncode(batch.reports.map((r) => r.successCriterion).toList())},
         datasets: [{
           label: 'Compliance Rate (%)',
-          data: [${batch.reports.map((r) => r.score.percentage).join(', ')}],
-          backgroundColor: [${batch.reports.map((r) => _getBarColor(r.score.percentage)).join(', ')}],
+          data: ${jsonEncode(batch.reports.map((r) => r.score.percentage).toList())},
+          backgroundColor: ${jsonEncode(batch.reports.map((r) => _getBarColor(r.score.percentage)).toList())},
           borderWidth: 0
         }]
       },
@@ -549,12 +550,7 @@ String _getInsightTypeName(InsightType type) {
 
 /// HTML Escape
 String _escapeHtml(String text) {
-  return text
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
+  return htmlEscape.convert(text);
 }
 
 /// Enhanced Styles
