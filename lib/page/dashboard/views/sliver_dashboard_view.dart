@@ -146,9 +146,6 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
                     padding:
                         EdgeInsets.symmetric(horizontal: context.pageMargin),
                     sliver: SliverDashboard(
-                      // Key forces rebuild when A2UI registry content changes
-                      key: ValueKey('sliver_${a2uiRegistry.contentHash}'),
-                      itemBuilder: (context, item) {
                         final mode = preferences.getMode(item.id);
                         return _buildItemWidget(context, item, mode,
                             _isEditMode, a2uiLoaderState, factory);
@@ -226,10 +223,10 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
         }
       }
     } else {
-      // Native widget constraint validation (existing logic)
+      // Native widget constraint validation (merged logic)
       WidgetSpec? spec;
 
-      // Special handling for 'ports' widget - use dynamic constraints
+      // Special handling for 'ports' widget - use dynamic constraints (from dev-2.0.0)
       if (item.id == DashboardWidgetSpecs.ports.id) {
         final dashboardState = ref.read(dashboardHomeProvider);
         final hasLanPort = dashboardState.lanPortConnections.isNotEmpty;
@@ -288,14 +285,13 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
       }
     }
 
-    // Apply corrections if any violations were detected
     if (violated) {
       ref
           .read(sliverDashboardControllerProvider.notifier)
           .updateItemSize(item.id, newW, newH);
     }
-
     // Always save the layout after a resize operation
+
     ref.read(sliverDashboardControllerProvider.notifier).saveLayout();
   }
 // ... (rest of class)
@@ -418,6 +414,7 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
           ),
         );
       }
+
 
       return AppCard(
         child: Center(

@@ -68,6 +68,7 @@ class DashboardWidgetFactory {
       'port_and_speed' => DashboardHomePortAndSpeed(
           displayMode: displayMode,
           config: const PortAndSpeedConfig(
+            // Auto-detect based on width
             direction: null,
             showSpeedTest: true,
           ),

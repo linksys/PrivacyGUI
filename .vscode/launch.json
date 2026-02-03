@@ -5,20 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "linksys - Web (Remote)",
-            "request": "launch",
-            "type": "dart",
-            "args": [
-                "--web-browser-flag",
-                "--disable-web-security"
-            ],
-            "toolArgs": [
-                "--dart-define",
-                "force=remote"
-            ],
-            "program": "lib/main.dart"
-        },
-        {
             "name": "linksys - Web (Local)",
             "request": "launch",
             "type": "dart",
@@ -33,6 +19,40 @@
                 "force=local",
                 "--dart-define",
                 "custom_layout=true"
+            ],
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "linksys - Web (Remote)",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "--web-browser-flag",
+                "--disable-web-security"
+            ],
+            "toolArgs": [
+                "--dart-define",
+                "force=remote"
+            ],
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "linksys - iOS (Local)",
+            "request": "launch",
+            "type": "dart",
+            "toolArgs": [
+                "--flavor",
+                "Local"
+            ],
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "linksys - iOS (Remote)",
+            "request": "launch",
+            "type": "dart",
+            "toolArgs": [
+                "--flavor",
+                "Remote"
             ],
             "program": "lib/main.dart"
         }

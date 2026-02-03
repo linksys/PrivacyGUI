@@ -3,7 +3,7 @@
 **Feature Branch**: `002-dmz-refactor`
 **Created**: 2025-12-08
 **Status**: Draft
-**Input**: User description: "Refactor advanced_setting/dmz according to the constitution"
+**Input**: User description: "Refactor advanced_setting/dmz according to constitution"
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -57,7 +57,7 @@ As a project maintainer, I need to ensure the refactored DMZ provider adheres to
 
 1. **Given** the completed DMZ refactor, **When** checking against the constitution's "Three-Layer Testing Practice Guide" section, **Then** Service layer has ≥90% coverage, Provider layer has ≥85% coverage, and State layer has ≥90% coverage
 
-2. **Given** the constitution's "Test Data Construction Pattern" section, **When** reviewing DMZ Service tests, **Then** all mock data is centralized in DmzSettingsTestData and no inline mock responses appear in tests (3+ reuse rule applied)
+2. **Given** the constitution's "Test Data Builder Pattern" section, **When** reviewing DMZ Service tests, **Then** all mock data is centralized in DmzSettingsTestData and no inline mock responses appear in tests (3+ reuse rule applied)
 
 3. **Given** a completed refactor, **When** another developer tries to follow the same pattern for a different feature, **Then** the constitution guidance is clear and actionable (document any missing or ambiguous guidelines)
 
