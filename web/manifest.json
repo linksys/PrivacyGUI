@@ -3,17 +3,23 @@
     "short_name": "Linksys Now",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
+    "background_color": "#FDFBFF",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "description": "Setup your Linksys router easily from your mobile browser.",
+    "orientation": "portrait",
     "prefer_related_applications": false,
     "icons": [
         {
             "src": "logo_icons/logo-icon-192.png",
             "sizes": "192x192",
             "type": "image/png",
-            "purpose": "maskable"
+            "purpose": "any maskable"
+        },
+        {
+            "src": "logo_icons/logo-icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ]
 }
