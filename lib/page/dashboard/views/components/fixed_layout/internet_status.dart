@@ -189,7 +189,6 @@ class _FixedInternetConnectionWidgetState
                           ref
                               .read(pollingProvider.notifier)
                               .forcePolling()
-                              .forcePolling()
                               .whenComplete(() {
                             controller.stop();
                           });
@@ -373,7 +372,6 @@ class _FixedInternetConnectionWidgetState
                           controller.repeat();
                           ref
                               .read(pollingProvider.notifier)
-                              .forcePolling()
                               .forcePolling()
                               .whenComplete(() {
                             controller.stop();

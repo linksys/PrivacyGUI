@@ -11,7 +11,7 @@
 /// Actual validation should be performed in widget tests, using WidgetTester to measure actual component size.
 
 import 'dart:io';
-import 'package:ui_kit_library/ui_kit.dart';
+import 'package:ui_kit_library/src/foundation/accessibility/accessibility.dart';
 import 'package:flutter/material.dart';
 
 void main() {

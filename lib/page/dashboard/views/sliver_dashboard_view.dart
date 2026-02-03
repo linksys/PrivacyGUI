@@ -146,6 +146,9 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
                     padding:
                         EdgeInsets.symmetric(horizontal: context.pageMargin),
                     sliver: SliverDashboard(
+                      // Key forces rebuild when A2UI registry content changes
+                      key: ValueKey('sliver_${a2uiRegistry.contentHash}'),
+                      itemBuilder: (context, item) {
                         final mode = preferences.getMode(item.id);
                         return _buildItemWidget(context, item, mode,
                             _isEditMode, a2uiLoaderState, factory);
@@ -414,7 +417,6 @@ class _SliverDashboardViewState extends ConsumerState<SliverDashboardView> {
           ),
         );
       }
-
 
       return AppCard(
         child: Center(
