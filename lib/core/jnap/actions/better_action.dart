@@ -506,6 +506,8 @@ void initBetterActions() {
       _JNAPActionValue.setGuestRadioSettings.value;
   _betterActionMap[JNAPAction.clearHealthCheckHistory] =
       _JNAPActionValue.clearHealthCheckHistory.value;
+  _betterActionMap[JNAPAction.getCloseHealthCheckServers] =
+      _JNAPActionValue.getCloseHealthCheckServers.value;
   _betterActionMap[JNAPAction.getHealthCheckResults] =
       _JNAPActionValue.getHealthCheckResults.value;
   _betterActionMap[JNAPAction.getHealthCheckStatus] =

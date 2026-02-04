@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/models/health_check_result.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_event.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
@@ -60,12 +61,15 @@ class SpeedTestService {
   /// 1. Initiates the speed test on the router.
   /// 2. Polls for progress updates.
   /// 3. Fetches the final result upon completion.
-  Stream<SpeedTestStreamEvent> runHealthCheck(Module module) async* {
+  ///
+  /// [targetServerId] - Optional server ID to use for the speed test.
+  Stream<SpeedTestStreamEvent> runHealthCheck(Module module,
+      {String? targetServerId}) async* {
     if (module != Module.speedtest) return;
 
     try {
       // 1. Initiate the health check
-      await _initiateHealthCheck(module);
+      await _initiateHealthCheck(module, targetServerId: targetServerId);
 
       // 2. Poll for progress and yield events
       int? resultId;
@@ -98,10 +102,16 @@ class SpeedTestService {
 
   /// 1. Sends the initial request to start the health check on the router.
   /// Throws a [JNAPError] or other exception on failure.
-  Future<void> _initiateHealthCheck(Module module) async {
+  ///
+  /// [targetServerId] - Optional server ID to use for the speed test.
+  Future<void> _initiateHealthCheck(Module module,
+      {String? targetServerId}) async {
     final result = await _repo.send(
       JNAPAction.runHealthCheck,
-      data: {"runHealthCheckModule": module.value},
+      data: {
+        "runHealthCheckModule": module.value,
+        "targetServerID": targetServerId,
+      }..removeWhere((key, value) => value == null),
       auth: true,
       fetchRemote: true,
       cacheLevel: CacheLevel.noCache,
@@ -254,6 +264,27 @@ class SpeedTestService {
       fetchRemote: true,
       cacheLevel: CacheLevel.noCache,
     );
+  }
+
+  /// Fetches the list of available speed test servers from the router.
+  Future<List<HealthCheckServer>> getHealthCheckServers() async {
+    try {
+      final result = await _repo.send(
+        JNAPAction.getCloseHealthCheckServers,
+        auth: true,
+        fetchRemote: false,
+        cacheLevel: CacheLevel.localCached,
+      );
+
+      final List<dynamic> serverList =
+          result.output['healthCheckServers'] ?? [];
+      return serverList
+          .map((e) => HealthCheckServer.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      logger.d('Failed to fetch health check servers: $e');
+    }
+    return [];
   }
 
   /// Formats an ISO 8601 timestamp string into a more readable format (e.g., "Jan 1, 2023, 12:00 PM").

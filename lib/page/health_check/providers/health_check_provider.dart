@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_event.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
@@ -43,23 +44,39 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
     return HealthCheckState.init();
   }
 
-  /// Loads persistent data like historical tests and supported modules.
+  /// Loads persistent data like historical tests, supported modules, and servers.
   Future<void> loadData() async {
     final service = ref.read(speedTestServiceProvider);
     final historical = await service.getInitialSpeedTestState();
     final latest = historical.isNotEmpty ? historical.first : null;
 
     final supportedModules = await service.getSupportedHealthCheckModules();
+    final servers = await service.getHealthCheckServers();
 
     state = state.copyWith(
       historicalSpeedTests: historical,
       latestSpeedTest: () => latest,
       healthCheckModules: supportedModules,
+      servers: servers,
     );
   }
 
+  /// Loads the list of available speed test servers.
+  Future<void> loadServers() async {
+    final service = ref.read(speedTestServiceProvider);
+    final servers = await service.getHealthCheckServers();
+    state = state.copyWith(servers: servers);
+  }
+
+  /// Sets the selected server for speed tests.
+  void setSelectedServer(HealthCheckServer? server) {
+    state = state.copyWith(selectedServer: () => server);
+  }
+
   /// Starts the health check process for a given [module].
-  Future<void> runHealthCheck(Module module) async {
+  ///
+  /// [serverId] - Optional server ID to use. If not provided, uses the selected server.
+  Future<void> runHealthCheck(Module module, {int? serverId}) async {
     if (module != Module.speedtest) return;
 
     _streamSubscription?.cancel();
@@ -76,7 +93,15 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
 
     final service = ref.read(speedTestServiceProvider);
 
-    _streamSubscription = service.runHealthCheck(module).listen((event) {
+    // Use the provided serverId, or fall back to the selected server's ID
+    final targetServerId = serverId?.toString() ??
+        (state.selectedServer?.serverID != null
+            ? state.selectedServer!.serverID
+            : null);
+
+    _streamSubscription = service
+        .runHealthCheck(module, targetServerId: targetServerId)
+        .listen((event) {
       _handleStreamEvent(event);
     });
   }

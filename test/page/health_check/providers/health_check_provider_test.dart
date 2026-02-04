@@ -68,6 +68,8 @@ void main() {
           .thenAnswer((_) async => initialHistorical);
       when(mockSpeedTestService.getSupportedHealthCheckModules())
           .thenAnswer((_) async => supportedModules);
+      when(mockSpeedTestService.getHealthCheckServers())
+          .thenAnswer((_) async => []);
 
       // Act
       container.read(healthCheckProvider.notifier);
@@ -89,8 +91,15 @@ void main() {
 
       setUp(() {
         streamController = StreamController<SpeedTestStreamEvent>.broadcast();
-        when(mockSpeedTestService.runHealthCheck(any))
+        when(mockSpeedTestService.runHealthCheck(any, targetServerId: anyNamed('targetServerId')))
             .thenAnswer((_) => streamController.stream);
+        // Mock loadData dependencies
+        when(mockSpeedTestService.getInitialSpeedTestState())
+            .thenAnswer((_) async => []);
+        when(mockSpeedTestService.getSupportedHealthCheckModules())
+            .thenAnswer((_) async => ['SpeedTest']);
+        when(mockSpeedTestService.getHealthCheckServers())
+            .thenAnswer((_) async => []);
       });
 
       tearDown(() {
@@ -259,6 +268,8 @@ void main() {
       test('should update state on SpeedTestSuccess event', () async {
         // Arrange
         final provider = container.read(healthCheckProvider.notifier);
+        // Wait for loadData to complete
+        await Future.delayed(Duration.zero);
         await provider.runHealthCheck(Module.speedtest);
 
         final finalResult = SpeedTestUIModel(

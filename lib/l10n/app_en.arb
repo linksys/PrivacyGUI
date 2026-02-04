@@ -798,6 +798,7 @@
   "sendCode": "Send code",
   "serialNo": "Serial#",
   "serialNumber": "Serial number",
+  "selectServer": "Select Server",
   "serverId": "Server ID",
   "serverIpv4Address": "Server Ipv4 Address",
   "serviceNameOptional": "Service name (optional)",
