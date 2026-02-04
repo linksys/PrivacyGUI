@@ -249,6 +249,7 @@ class TestHelper {
     when(mockServiceHelper.isSupportLedBlinking()).thenReturn(true);
     when(mockServiceHelper.isSupportVPN()).thenReturn(false);
     when(mockServiceHelper.isSupportHealthCheck()).thenReturn(true);
+    when(mockServiceHelper.isSupportHealthCheckManager2()).thenReturn(false);
     when(mockServiceHelper.isSupportClientDeauth()).thenReturn(true);
   }
 

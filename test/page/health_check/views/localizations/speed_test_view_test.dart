@@ -41,7 +41,8 @@ void main() {
   setUp(() {
     testHelper.setup();
     // Default mock for runHealthCheck to avoid errors in interaction tests
-    when(testHelper.mockHealthCheckProvider.runHealthCheck(Module.speedtest))
+    when(testHelper.mockHealthCheckProvider
+            .runHealthCheck(Module.speedtest, serverId: anyNamed('serverId')))
         .thenAnswer((_) async {});
   });
 
@@ -303,9 +304,9 @@ void main() {
   testLocalizations(
     'Verify tapping "Go" button starts the test.',
     (tester, screen) async {
-      when(testHelper.mockHealthCheckProvider.build()).thenReturn(
-          HealthCheckState.fromJson(healthCheckInitState)
-              .copyWith(healthCheckModules: ['SpeedTest']));
+      final testState = HealthCheckState.fromJson(healthCheckInitState)
+          .copyWith(healthCheckModules: ['SpeedTest']);
+      when(testHelper.mockHealthCheckProvider.build()).thenReturn(testState);
       await testHelper.pumpView(
         tester,
         child: const SpeedTestView(),
@@ -319,7 +320,7 @@ void main() {
       await tester.pump();
 
       verify(testHelper.mockHealthCheckProvider
-              .runHealthCheck(Module.speedtest))
+              .runHealthCheck(Module.speedtest, serverId: anyNamed('serverId')))
           .called(1);
     },
     helper: testHelper,
