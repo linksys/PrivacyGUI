@@ -23,6 +23,9 @@ class ServiceHelper {
   bool isSupportHealthCheck([List<String>? services]) =>
       isServiceSupport(JNAPService.healthCheckManager, services);
 
+  bool isSupportHealthCheckManager2([List<String>? services]) =>
+      isServiceSupport(JNAPService.healthCheckManager2, services);
+
   bool isSupportProduct([List<String>? services]) =>
       isServiceSupport(JNAPService.product, services);
 

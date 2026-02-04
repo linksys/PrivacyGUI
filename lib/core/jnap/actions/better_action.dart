@@ -116,6 +116,8 @@ void _updateBetterActions(JNAPService service) {
       break;
     case JNAPService.healthCheckManager:
       break;
+    case JNAPService.healthCheckManager2:
+      break;
     case JNAPService.locale:
       break;
     case JNAPService.locale2:

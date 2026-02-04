@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
+import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_event.dart';
@@ -51,7 +52,11 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
     final latest = historical.isNotEmpty ? historical.first : null;
 
     final supportedModules = await service.getSupportedHealthCheckModules();
-    final servers = await service.getHealthCheckServers();
+
+    // Only load servers if HealthCheckManager2 is supported
+    final servers = serviceHelper.isSupportHealthCheckManager2()
+        ? await service.getHealthCheckServers()
+        : <HealthCheckServer>[];
 
     state = state.copyWith(
       historicalSpeedTests: historical,
@@ -62,7 +67,11 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
   }
 
   /// Loads the list of available speed test servers.
+  /// Only loads if HealthCheckManager2 is supported.
   Future<void> loadServers() async {
+    if (!serviceHelper.isSupportHealthCheckManager2()) {
+      return;
+    }
     final service = ref.read(speedTestServiceProvider);
     final servers = await service.getHealthCheckServers();
     state = state.copyWith(servers: servers);

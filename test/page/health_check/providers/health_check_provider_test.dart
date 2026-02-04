@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/health_check/providers/health_check_provider.da
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/health_check/services/health_check_service.dart';
 
+import '../../../common/di.dart';
 import '../../../mocks/health_check_service_mocks.dart';
 import '../../../mocks/polling_notifier_mocks.dart';
 import '../../../mocks/random_mocks.dart';
@@ -23,6 +24,9 @@ void main() {
   late ProviderContainer container;
 
   setUp(() {
+    // Register mock dependencies
+    mockDependencyRegister();
+
     mockSpeedTestService = MockSpeedTestService();
     mockPollingNotifier = MockPollingNotifier();
     mockRandom = MockRandom();
