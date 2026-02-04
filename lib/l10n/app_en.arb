@@ -1105,5 +1105,16 @@
   "endRemoteAssistanceDesc": "End remote assistance session?",
   "wifiModeNotAvailable": "Mode change resets channel width to auto.",
   "quickSetup": "Quick Setup",
-  "quickSetupDescription": "Apply the same WiFi settings to all bands at once"
+  "quickSetupDescription": "Apply the same WiFi settings to all bands at once",
+  "pwaGetTheApp": "Get the App",
+  "pwaInstallDescription": "Install for a better experience",
+  "pwaInstallButton": "INSTALL",
+  "pwaIosInstallTitle": "Install Linksys Now",
+  "pwaIosInstallDescription": "Install this app on your iPhone for a better experience.",
+  "pwaIosStep1": "Tap the Share button in the browser menu bar.",
+  "pwaIosStep2": "Scroll down and tap \"Add to Home Screen\".",
+  "pwaMacInstallTitle": "Install Linksys Now",
+  "pwaMacInstallDescription": "Add this app to your Dock for quick access.",
+  "pwaMacStep1": "Click the Share button in the Safari toolbar.",
+  "pwaMacStep2": "Choose \"Add to Dock\"."
 }

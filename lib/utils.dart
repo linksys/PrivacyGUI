@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:privacy_gui/constants/build_config.dart';
@@ -327,17 +328,23 @@ extension MediaQueryUtils on Utils {
 }
 
 extension NetworkUtils on Utils {
+  /// Formats a bit count into a human-readable string with SI units (base 1000).
+  ///
+  /// Example: 1000 bits -> "1 Kb"
   static String formatBits(int bits, {int decimals = 0}) {
     final result = formatBitsWithUnit(bits, decimals: decimals);
     return '${result.value} ${result.unit}';
   }
 
+  /// Formats a bit count into a value and SI unit (base 1000) pair.
+  ///
+  /// Returns a record with `value` (as String) and `unit` (e.g., "Mb", "Gb").
   static ({String value, String unit}) formatBitsWithUnit(int bits,
       {int decimals = 0}) {
     if (bits <= 0) return (value: '0', unit: "b");
     const suffixes = ["b", "Kb", "Mb", "Gb", "Tb", "Pb"];
-    var i = (log(bits) / log(1024)).floor();
-    var number = (bits / pow(1024, i));
+    var i = (log(bits) / log(1000)).floor();
+    var number = (bits / pow(1000, i));
     return (
       value: number
           .toStringAsFixed(number.truncateToDouble() == number ? 0 : decimals),
@@ -653,5 +660,74 @@ extension NodeSignalLevelExt on NodeSignalLevel {
       NodeSignalLevel.wired => Theme.of(context).colorScheme.onSurface,
       NodeSignalLevel.none => Colors.black,
     };
+  }
+}
+
+enum BrandAsset {
+  logo('brand_logo'),
+  imgSup('brand_img_sup');
+
+  final String filename;
+  const BrandAsset(this.filename);
+}
+
+class BrandUtils {
+  static Set<String>? _manifestAssets;
+
+  static const Map<String, String> _modelSuffixMap = {
+    'TB-': '_tb',
+  };
+
+  static Future<void> _loadManifest() async {
+    if (_manifestAssets != null) return;
+    try {
+      final manifestContent = await rootBundle.loadString('AssetManifest.json');
+      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+      logger.d('Loaded AssetManifest.json: ${manifestMap.keys}');
+      _manifestAssets = manifestMap.keys.toSet();
+    } catch (e) {
+      logger.e('Failed to load AssetManifest.json', error: e);
+      _manifestAssets = {};
+    }
+  }
+
+  static Future<String?> getAssetPath(
+      String modelNumber, BrandAsset asset) async {
+    for (final entry in _modelSuffixMap.entries) {
+      if (modelNumber.toUpperCase().contains(entry.key)) {
+        return resolveAsset('assets/brand/${asset.filename}${entry.value}');
+      }
+    }
+    return null;
+  }
+
+  static Future<String?> getBrandLogoAssetPath(String modelNumber) =>
+      getAssetPath(modelNumber, BrandAsset.logo);
+
+  static Future<String?> getBrandImgSupAssetPath(String modelNumber) =>
+      getAssetPath(modelNumber, BrandAsset.imgSup);
+
+  static Future<String?> resolveAsset(String basePath) async {
+    await _loadManifest();
+
+    final isDark = basePath.endsWith('_dark');
+    // Priority 1: .webp
+    final webp = '$basePath.webp';
+    if (_manifestAssets!.contains(webp)) {
+      return webp;
+    }
+
+    // Priority 2: .png
+    final png = '$basePath.png';
+    if (_manifestAssets!.contains(png)) {
+      return png;
+    }
+
+    // if dark, try light
+    if (isDark) {
+      return resolveAsset(basePath.replaceFirst('_dark', ''));
+    }
+    // null if nothing found
+    return null;
   }
 }

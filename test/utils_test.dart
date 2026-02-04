@@ -510,7 +510,7 @@ void main() {
     test('formatBits: formats bits in kilobytes range with specified decimals',
         () {
       const bits = 1234;
-      const expected = '1.205 Kb';
+      const expected = '1.234 Kb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 3);
       expect(formattedBits, expected);
@@ -519,7 +519,7 @@ void main() {
     test('formatBits: formats bits in megabytes range with specified decimals',
         () {
       const bits = 1234567;
-      const expected = '1.1774 Mb';
+      const expected = '1.2346 Mb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 4);
       expect(formattedBits, expected);
@@ -528,7 +528,7 @@ void main() {
     test('formatBits: formats bits in gigabytes range with specified decimals',
         () {
       const bits = 1234567890;
-      const expected = '1.15 Gb';
+      const expected = '1.23 Gb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 2);
       expect(formattedBits, expected);
@@ -543,7 +543,7 @@ void main() {
 
     test('formatBits: handles huge input (exceeding petabytes)', () {
       num bits = 1125899906842625; // 1 petabyte
-      const expected = '1.00 Pb';
+      const expected = '1.13 Pb';
 
       final formattedBits = NetworkUtils.formatBits(bits.toInt(), decimals: 2);
       expect(formattedBits, expected);
@@ -573,49 +573,49 @@ void main() {
     });
 
     test('formats kilobytes with 0 decimal places', () {
-      const bits = 2048; // 2 Kb
+      const bits = 2000; // 2 Kb
       final result = NetworkUtils.formatBitsWithUnit(bits);
       expect(result.value, '2');
       expect(result.unit, 'Kb');
     });
 
     test('formats megabytes with 2 decimal places', () {
-      const bits = 1.5 * 1024 * 1024; // 1.5 Mb
+      const bits = 1.5 * 1000 * 1000; // 1.5 Mb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 2);
       expect(result.value, '1.50');
       expect(result.unit, 'Mb');
     });
 
     test('formats gigabytes with 1 decimal place', () {
-      const bits = 2.5 * 1024 * 1024 * 1024; // 2.5 Gb
+      const bits = 2.5 * 1000 * 1000 * 1000; // 2.5 Gb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 1);
       expect(result.value, '2.5');
       expect(result.unit, 'Gb');
     });
 
     test('formats terabytes with 3 decimal places', () {
-      const bits = 3.14159 * 1024 * 1024 * 1024 * 1024; // ~3.14159 Tb
+      const bits = 3.14159 * 1000 * 1000 * 1000 * 1000; // ~3.14159 Tb
       final result = NetworkUtils.formatBitsWithUnit(bits.toInt(), decimals: 3);
       expect(result.value, '3.142');
       expect(result.unit, 'Tb');
     });
 
     test('formats petabytes with 0 decimal places', () {
-      const bits = 1024 * 1024 * 1024 * 1024 * 1024; // 1 Pb
+      const bits = 1000 * 1000 * 1000 * 1000 * 1000; // 1 Pb (SI)
       final result = NetworkUtils.formatBitsWithUnit(bits, decimals: 0);
       expect(result.value, '1');
       expect(result.unit, 'Pb');
     });
 
-    test('handles exact power of 1024 values without decimal places', () {
-      const bits = 1024 * 1024; // Exactly 1 Mb
+    test('handles exact power of 1000 values without decimal places', () {
+      const bits = 1000 * 1000; // Exactly 1 Mb (SI)
       final result = NetworkUtils.formatBitsWithUnit(bits);
       expect(result.value, '1');
       expect(result.unit, 'Mb');
     });
 
     test('handles exactly 1 petabyte', () {
-      final onePb = BigInt.from(1024).pow(5).toInt(); // Exactly 1 PiB
+      final onePb = BigInt.from(1000).pow(5).toInt(); // Exactly 1 Pb (SI)
       final result = NetworkUtils.formatBitsWithUnit(onePb);
       expect(result.value, '1');
       expect(result.unit, 'Pb');
