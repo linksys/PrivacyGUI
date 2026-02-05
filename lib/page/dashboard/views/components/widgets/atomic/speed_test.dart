@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
-import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
+import 'package:privacy_gui/page/health_check/shared_widgets/speed_test_widget.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Atomic widget displaying speed test results.

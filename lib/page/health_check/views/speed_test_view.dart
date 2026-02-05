@@ -6,7 +6,7 @@ import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/views/components/speed_test_server_selection_dialog.dart';
-import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
+import 'package:privacy_gui/page/health_check/shared_widgets/speed_test_widget.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// The main view for the Speed Test feature.

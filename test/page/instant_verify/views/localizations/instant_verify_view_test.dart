@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
-import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
+import 'package:privacy_gui/page/health_check/shared_widgets/speed_test_widget.dart';
 // import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_state.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';

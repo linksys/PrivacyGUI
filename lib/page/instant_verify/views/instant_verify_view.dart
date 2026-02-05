@@ -24,14 +24,16 @@ import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/ping_network_modal.dart';
-import 'package:privacy_gui/page/health_check/widgets/speed_test_external_widget.dart';
-import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
+import 'package:privacy_gui/page/health_check/shared_widgets/speed_test_external_widget.dart';
+import 'package:privacy_gui/page/health_check/shared_widgets/speed_test_widget.dart';
 import 'package:privacy_gui/page/instant_verify/views/components/traceroute_modal.dart';
 import 'package:privacy_gui/core/utils/topology_adapter.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/page/instant_topology/helpers/topology_menu_helper.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
-import 'package:privacy_gui/page/instant_topology/views/widgets/instant_topology_card.dart';
+import 'package:privacy_gui/page/instant_topology/shared_widgets/instant_topology_card.dart';
+import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
+import 'package:privacy_gui/page/nodes/widgets/wired_pairing_dialog_content.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:privacy_gui/utils.dart';
@@ -398,11 +400,22 @@ class _InstantVerifyViewState extends ConsumerState<InstantVerifyView>
   }
 
   _doInstantPairWired(WidgetRef ref) {
-    context.pushNamed(RouteNamed.addNodes).then((result) {
-      if (result is bool && result) {
-        _showMoveChildNodesModal();
-      }
-    });
+    showSimpleAppDialog(
+      context,
+      title: loc(context).instantPair,
+      dismissible: false,
+      content: const WiredPairingDialogContent(),
+      actions: [
+        AppButton(
+          label: loc(context).donePairing,
+          variant: SurfaceVariant.highlight,
+          onTap: () {
+            ref.read(addWiredNodesProvider.notifier).forceStopAutoOnboarding();
+            context.pop();
+          },
+        ),
+      ],
+    );
   }
 
   _showMoveChildNodesModal() {

@@ -11,14 +11,13 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_refresh_container.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/instant_topology/widgets/app_mesh_wired_connection.dart';
-
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/instant_topology/helpers/topology_menu_helper.dart';
 import 'package:privacy_gui/page/instant_topology/views/model/node_instant_actions.dart';
 import 'package:privacy_gui/page/nodes/providers/add_wired_nodes_provider.dart';
 import 'package:privacy_gui/page/nodes/providers/node_detail_id_provider.dart';
+import 'package:privacy_gui/page/nodes/widgets/wired_pairing_dialog_content.dart';
 import 'package:privacy_gui/page/instant_topology/_instant_topology.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
@@ -503,72 +502,7 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       context,
       title: loc(context).instantPair,
       dismissible: false,
-      content: Consumer(builder: (context, ref, child) {
-        final addWiredNodesNotifier = ref.read(addWiredNodesProvider.notifier);
-        // Start onboarding once dialog is built
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            addWiredNodesNotifier.startAutoOnboarding(context);
-          }
-        });
-
-        final addWiredNodesState = ref.watch(addWiredNodesProvider);
-        final isCompleted = addWiredNodesState.isLoading == false &&
-            addWiredNodesState.onboardingProceed == true;
-        final anyOnboarded = addWiredNodesState.anyOnboarded == true;
-
-        final message = isCompleted
-            ? anyOnboarded
-                ? loc(context).wiredPairComplete
-                : loc(context).wiredPairCompleteNotFound
-            : loc(context).pairingWiredChildNodeDesc;
-
-        final theme = Theme.of(context).extension<AppDesignTheme>();
-        final colors = theme?.colorScheme;
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppGap.md(),
-            SizedBox(
-              width: 300,
-              height: 200,
-              child: Stack(children: [
-                AppMeshWiredConnection(animate: !isCompleted),
-                if (isCompleted)
-                  Align(
-                      alignment: Alignment.bottomRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 2.0),
-                        child: AppIcon.font(
-                          anyOnboarded
-                              ? Icons.check_circle_outline
-                              : Icons.warning_rounded,
-                          size: 48,
-                          color: anyOnboarded
-                              ? colors?.semanticSuccess
-                              : colors?.semanticWarning,
-                        ),
-                      )),
-              ]),
-            ),
-            AppGap.md(),
-            SizedBox(
-              width: kDefaultDialogWidth,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.bodyMedium(message),
-                  AppGap.xs(),
-                  AppText.bodyMedium(isCompleted && anyOnboarded
-                      ? addWiredNodesState.loadingMessage ?? ''
-                      : ''),
-                ],
-              ),
-            ),
-          ],
-        );
-      }),
+      content: const WiredPairingDialogContent(),
       actions: [
         AppButton(
           label: loc(context).donePairing,
