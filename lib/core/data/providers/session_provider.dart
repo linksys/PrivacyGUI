@@ -110,7 +110,8 @@ class SessionNotifier extends Notifier<SessionState> {
     final maskedSN = serialNumber.length > 4
         ? '****${serialNumber.substring(serialNumber.length - 4)}'
         : '****';
-    logger.d('[Session]: saveSelectedNetwork - networkId: ${networkId.isNotEmpty}, SN: $maskedSN');
+    logger.d(
+        '[Session]: saveSelectedNetwork - networkId: ${networkId.isNotEmpty}, SN: $maskedSN');
     final pref = await SharedPreferences.getInstance();
     await pref.setString(pCurrentSN, serialNumber);
     await pref.setString(pSelectedNetworkId, networkId);
