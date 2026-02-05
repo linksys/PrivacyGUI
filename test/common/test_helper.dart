@@ -95,6 +95,26 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_home_state.dart';
 import 'package:privacy_gui/core/data/providers/firmware_update_state.dart';
 import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/core/pwa/pwa_install_service.dart';
+
+/// Fake PWA install service for testing - returns PwaMode.none to hide the banner
+class _FakePwaInstallService extends Notifier<PwaMode>
+    implements PwaInstallService {
+  @override
+  PwaMode build() => PwaMode.none;
+  @override
+  Future<void> dismiss() async {}
+  @override
+  Future<void> promptInstall() async {}
+  @override
+  bool get isIOS => false;
+  @override
+  bool get isMacSafari => false;
+  @override
+  bool get isStandalone => true;
+  @override
+  Future<bool> isDismissedRecently() async => false;
+}
 
 class TestHelper {
   late MockAdministrationSettingsNotifier mockAdministrationSettingsNotifier;
@@ -284,7 +304,8 @@ class TestHelper {
         .thenReturn(DMZSettingsState.fromMap(dmzSettingsTestState));
     when(mockDashboardHomeNotifier.build())
         .thenReturn(DashboardHomeState.fromMap(dashboardHomePinnacleTestState));
-    // SessionNotifier now uses void state - no build() mock needed
+    // SessionNotifier returns SessionState with deviceInfo/modelNumber
+    when(mockSessionNotifier.build()).thenReturn(const SessionState());
     when(mockFirmwareUpdateNotifier.build())
         .thenReturn(FirmwareUpdateState.fromMap(firmwareUpdateTestData));
     when(mockDeviceManagerNotifier.build())
@@ -446,6 +467,8 @@ class TestHelper {
         pnpIspSettingsProvider.overrideWith(() => mockPnpIspSettingsNotifier),
         pnpServiceProvider.overrideWithValue(mockPnpService),
         pnpIspServiceProvider.overrideWithValue(mockPnpIspService),
+        // PWA install service - return none to hide banner in tests
+        pwaInstallServiceProvider.overrideWith(() => _FakePwaInstallService()),
       ];
 
   Future<BuildContext> pumpRouter(

@@ -5,6 +5,15 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main", "dev-*" ]
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Select job to run'
+        required: true
+        default: 'main_snapshot_baseline'
+        type: choice
+        options:
+          - main_snapshot_baseline
   # schedule:
   #   - cron: '0 0 * * *' # Nightly run at midnight UTC
 
@@ -71,11 +80,13 @@ jobs:
   # STAGE B: Main Branch Baseline
   # ------------------------------------------------------------------------
   # Focus: Generate Goldens for record (No Diff Verification)
-  # Trigger: Push to Main
+  # Trigger: Push to Main, or Manual Dispatch
   # ========================================================================
   main_snapshot_baseline:
     name: 📸 Generate Baseline Snapshots (Main)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'main_snapshot_baseline')
     # Note: If pixel-perfect consistency with local Mac dev is required, 
     # change this to 'macos-latest'. Keeping ubuntu-latest for cost efficiency.
     runs-on: ubuntu-latest

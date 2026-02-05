@@ -5,56 +5,54 @@ import 'package:ui_kit_library/ui_kit.dart';
 class MacSafariInstallInstructionSheet extends StatelessWidget {
   const MacSafariInstallInstructionSheet({super.key});
 
+  /// Shows the Mac Safari install instruction sheet using UI Kit's bottom sheet.
+  static Future<void> show(BuildContext context) {
+    return showAppBottomSheet(
+      context: context,
+      child: const MacSafariInstallInstructionSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24.0),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: AppText.titleLarge(
+                loc(context).pwaMacInstallTitle,
+              ),
+            ),
+            AppIconButton(
+              icon: const Icon(Icons.close),
+              onTap: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: AppText.titleLarge(
-                  loc(context).pwaMacInstallTitle,
-                ),
-              ),
-              AppIconButton(
-                icon: const Icon(Icons.close),
-                onTap: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          AppGap.md(),
-          AppText.bodyMedium(
-            loc(context).pwaMacInstallDescription,
-          ),
-          AppGap.lg(),
-          _buildStep(
-            context,
-            '1',
-            loc(context).pwaMacStep1,
-            Icons.ios_share,
-          ),
-          AppGap.md(),
-          _buildStep(
-            context,
-            '2',
-            loc(context).pwaMacStep2,
-            Icons.dock,
-          ),
-          AppGap.xl(),
-        ],
-      ),
+        AppGap.md(),
+        AppText.bodyMedium(
+          loc(context).pwaMacInstallDescription,
+        ),
+        AppGap.lg(),
+        _buildStep(
+          context,
+          '1',
+          loc(context).pwaMacStep1,
+          Icons.ios_share,
+        ),
+        AppGap.md(),
+        _buildStep(
+          context,
+          '2',
+          loc(context).pwaMacStep2,
+          Icons.dock,
+        ),
+        AppGap.xl(),
+      ],
     );
   }
 

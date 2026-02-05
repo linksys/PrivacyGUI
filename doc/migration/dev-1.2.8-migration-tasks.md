@@ -1,89 +1,89 @@
-# dev-1.2.8 遷移任務清單
+# dev-1.2.8 Migration Task List
 
-> 此檔案用於追蹤遷移進度，請在完成任務後勾選對應項目。
+> This file is used to track migration progress. Please check off items as tasks are completed.
 
 ---
 
-## 前置準備
+## Prerequisites
 
-- [x] **P1**: 確保本地分支最新
+- [x] **P1**: Ensure local branches are up to date
   ```bash
   git fetch origin
   ```
 
-- [x] **P2**: 建立遷移工作分支
+- [x] **P2**: Create migration working branch
   ```bash
   git checkout dev-2.0.0
   git pull origin dev-2.0.0
   git checkout -b austin/migration-1.2.8
   ```
 
-- [x] **P3**: 確認 dev-1.2.8 提交清單
+- [x] **P3**: Confirm dev-1.2.8 commit list
   ```bash
   git log --oneline dev-2.0.0..origin/dev-1.2.8
   ```
 
 ---
 
-## 階段一：乾淨新增
+## Phase 1: Clean Additions
 
-> **狀態**: ✅ 已完成
-> **提交**: `33d5f959` - feat: migrate phase 1 features from dev-1.2.8
+> **Status**: Completed
+> **Commit**: `33d5f959` - feat: migrate phase 1 features from dev-1.2.8
 
-### 任務 1.1: PWA 功能移植
+### Task 1.1: PWA Feature Migration
 
-- [x] **1.1.1**: 複製 PWA 核心檔案
+- [x] **1.1.1**: Copy PWA core files
   ```bash
   git checkout origin/dev-1.2.8 -- lib/core/pwa/
   ```
 
-- [x] **1.1.2**: 複製 device_features.dart
+- [x] **1.1.2**: Copy device_features.dart
   ```bash
   git checkout origin/dev-1.2.8 -- lib/core/utils/device_features.dart
   ```
 
-- [x] **1.1.3**: 複製 PWA UI 元件
+- [x] **1.1.3**: Copy PWA UI components
   ```bash
   git checkout origin/dev-1.2.8 -- lib/page/components/pwa/
   ```
 
-- [x] **1.1.4**: 複製 Web 資源
+- [x] **1.1.4**: Copy Web resources
   ```bash
   git checkout origin/dev-1.2.8 -- web/logo_icons/
   git checkout origin/dev-1.2.8 -- web/service_worker.js
   ```
 
-- [x] **1.1.5**: 複製測試檔案
+- [x] **1.1.5**: Copy test files
   ```bash
   git checkout origin/dev-1.2.8 -- test/core/utils/device_features_test.dart
   git checkout origin/dev-1.2.8 -- test/page/components/pwa/
   ```
 
-- [x] **1.1.6**: 手動合併 `web/index.html`
-  - 比對差異：`git diff dev-2.0.0 origin/dev-1.2.8 -- web/index.html`
-  - 整合 PWA 相關 meta tags 和 scripts
+- [x] **1.1.6**: Manually merge `web/index.html`
+  - Compare differences: `git diff dev-2.0.0 origin/dev-1.2.8 -- web/index.html`
+  - Integrate PWA related meta tags and scripts
 
-- [x] **1.1.7**: 手動合併 `web/manifest.json`
-  - 比對差異：`git diff dev-2.0.0 origin/dev-1.2.8 -- web/manifest.json`
+- [x] **1.1.7**: Manually merge `web/manifest.json`
+  - Compare differences: `git diff dev-2.0.0 origin/dev-1.2.8 -- web/manifest.json`
 
-- [x] **1.1.8**: 手動合併 `web/flutter_bootstrap.js`
-  - 比對差異：`git diff dev-2.0.0 origin/dev-1.2.8 -- web/flutter_bootstrap.js`
+- [x] **1.1.8**: Manually merge `web/flutter_bootstrap.js`
+  - Compare differences: `git diff dev-2.0.0 origin/dev-1.2.8 -- web/flutter_bootstrap.js`
 
-- [x] **1.1.9**: 更新 import 路徑
-  - 檢查 `lib/page/components/pwa/` 所有檔案
-  - 確認 package import 正確
+- [x] **1.1.9**: Update import paths
+  - Check all files in `lib/page/components/pwa/`
+  - Confirm package imports are correct
 
-- [x] **1.1.10**: 整合 PWA banner 至 top_bar.dart
-  - 檢視 dev-1.2.8 的整合方式
-  - 在 `lib/page/components/styled/top_bar.dart` 加入 PWA banner
+- [x] **1.1.10**: Integrate PWA banner into top_bar.dart
+  - Review dev-1.2.8 integration approach
+  - Add PWA banner in `lib/page/components/styled/top_bar.dart`
 
-- [x] **1.1.11**: 執行 PWA 測試
+- [x] **1.1.11**: Run PWA tests
   ```bash
   flutter test test/core/utils/device_features_test.dart
   flutter test test/page/components/pwa/
   ```
 
-- [x] **1.1.12**: 執行 analyze
+- [x] **1.1.12**: Run analyze
   ```bash
   flutter analyze lib/core/pwa/
   flutter analyze lib/page/components/pwa/
@@ -91,83 +91,83 @@
 
 ---
 
-### 任務 1.2: 品牌資源 Provider 移植
+### Task 1.2: Brand Asset Provider Migration
 
-- [x] **1.2.1**: 複製 GlobalModelNumberProvider
+- [x] **1.2.1**: Copy GlobalModelNumberProvider
   ```bash
   git checkout origin/dev-1.2.8 -- lib/providers/global_model_number_provider.dart
   ```
 
-- [x] **1.2.2**: 比對 brand_asset_provider.dart 差異
+- [x] **1.2.2**: Compare brand_asset_provider.dart differences
   ```bash
   git diff dev-2.0.0 origin/dev-1.2.8 -- lib/providers/brand_asset_provider.dart
   ```
 
-- [x] **1.2.3**: 手動合併 BrandAssetType 列舉和相關方法
+- [x] **1.2.3**: Manually merge BrandAssetType enum and related methods
 
-- [x] **1.2.4**: 更新 Provider 匯出（若需要）
-  - 檢查 `lib/providers/_providers.dart` 或相關 barrel 檔案
+- [x] **1.2.4**: Update Provider exports (if needed)
+  - Check `lib/providers/_providers.dart` or related barrel files
 
-- [x] **1.2.5**: 執行 analyze
+- [x] **1.2.5**: Run analyze
   ```bash
   flutter analyze lib/providers/
   ```
 
 ---
 
-### 任務 1.3: 工具函式更新
+### Task 1.3: Utility Function Updates
 
-- [x] **1.3.1**: 比對 utils.dart 差異
+- [x] **1.3.1**: Compare utils.dart differences
   ```bash
   git diff dev-2.0.0 origin/dev-1.2.8 -- lib/utils.dart
   ```
 
-- [x] **1.3.2**: 手動合併 SI 單位格式化函式
-  - 找到 `formatSpeed` 或相關函式
-  - 將 base 從 1024 改為 1000
+- [x] **1.3.2**: Manually merge SI unit formatting function
+  - Find `formatSpeed` or related function
+  - Change base from 1024 to 1000
 
-- [x] **1.3.3**: 比對測試差異
+- [x] **1.3.3**: Compare test differences
   ```bash
   git diff dev-2.0.0 origin/dev-1.2.8 -- test/utils_test.dart
   ```
 
-- [x] **1.3.4**: 更新測試
+- [x] **1.3.4**: Update tests
 
-- [x] **1.3.5**: 執行測試
+- [x] **1.3.5**: Run tests
   ```bash
   flutter test test/utils_test.dart
   ```
 
 ---
 
-### 任務 1.4: 型號啟用設定
+### Task 1.4: Model Enable Configuration
 
-- [x] **1.4.1**: 檢視 SPNM62/M62 變更
+- [x] **1.4.1**: Review SPNM62/M62 changes
   ```bash
   git show 7dae63b6
   ```
 
-- [x] **1.4.2**: 在對應設定檔案中啟用 SPNM62/M62
+- [x] **1.4.2**: Enable SPNM62/M62 in corresponding configuration files
 
-- [x] **1.4.3**: 驗證設定正確
+- [x] **1.4.3**: Verify configuration is correct
 
 ---
 
-### 階段一檢查點
+### Phase 1 Checkpoint
 
-- [x] 執行完整 analyze
+- [x] Run full analyze
   ```bash
   flutter analyze
   ```
 
-- [x] 執行基本測試
+- [x] Run basic tests
   ```bash
   flutter test test/core/utils/
   flutter test test/page/components/pwa/
   flutter test test/utils_test.dart
   ```
 
-- [x] 提交階段一變更
+- [x] Commit Phase 1 changes
   ```bash
   git add .
   git commit -m "feat: migrate phase 1 features from dev-1.2.8"
@@ -175,183 +175,183 @@
 
 ---
 
-## 階段二：中度整合
+## Phase 2: Moderate Integration
 
-> **狀態**: ✅ 已完成
-> **提交**:
+> **Status**: Completed
+> **Commits**:
 > - `efd3f3ff` - feat: Add speed test server selection (Phase 2 migration from dev-1.2.8)
 > - `a2db638c` - fix: Add HealthCheckManager2 service support check for server selection
 
-### 任務 2.1: HealthCheckServer 模型建立
+### Task 2.1: HealthCheckServer Model Creation
 
-- [x] **2.1.1**: 複製模型檔案
+- [x] **2.1.1**: Copy model file
   ```bash
   git checkout origin/dev-1.2.8 -- lib/page/health_check/models/health_check_server.dart
   ```
 
-- [x] **2.1.2**: 檢查是否需要建立 models 目錄
+- [x] **2.1.2**: Check if models directory needs to be created
   ```bash
   ls lib/page/health_check/models/ 2>/dev/null || mkdir -p lib/page/health_check/models/
   ```
-  > 目錄已存在
+  > Directory already exists
 
-- [x] **2.1.3**: 更新 barrel export
-  - 若有 `_models.dart` 或 `_health_check.dart`，新增 export
+- [x] **2.1.3**: Update barrel export
+  - If there's a `_models.dart` or `_health_check.dart`, add export
 
-- [x] **2.1.4**: 執行 analyze
+- [x] **2.1.4**: Run analyze
   ```bash
   flutter analyze lib/page/health_check/models/
   ```
 
 ---
 
-### 任務 2.2: 伺服器選擇對話框移植
+### Task 2.2: Server Selection Dialog Migration
 
-- [x] **2.2.1**: 複製對話框元件
+- [x] **2.2.1**: Copy dialog component
   ```bash
   git checkout origin/dev-1.2.8 -- lib/page/health_check/views/components/speed_test_server_selection_dialog.dart
   ```
 
-- [x] **2.2.2**: 更新 import 路徑
-  - 確認 HealthCheckServer import 正確
-  - 確認 UI 元件 import 正確
+- [x] **2.2.2**: Update import paths
+  - Confirm HealthCheckServer import is correct
+  - Confirm UI component imports are correct
 
-- [x] **2.2.3**: 調整對話框以配合新架構
-  - 檢查狀態讀取方式
-  - 確認 callback 簽名正確
+- [x] **2.2.3**: Adjust dialog to fit new architecture
+  - Check state reading approach
+  - Confirm callback signatures are correct
 
-- [x] **2.2.4**: 執行 analyze
+- [x] **2.2.4**: Run analyze
   ```bash
   flutter analyze lib/page/health_check/views/components/
   ```
 
 ---
 
-### 任務 2.3: 更新 HealthCheckState
+### Task 2.3: Update HealthCheckState
 
-- [x] **2.3.1**: 開啟現有 HealthCheckState
+- [x] **2.3.1**: Open existing HealthCheckState
   ```
   lib/page/health_check/providers/health_check_state.dart
   ```
 
-- [x] **2.3.2**: 新增 servers 欄位
+- [x] **2.3.2**: Add servers field
   ```dart
   final List<HealthCheckServer> servers;
   ```
 
-- [x] **2.3.3**: 新增 selectedServer 欄位
+- [x] **2.3.3**: Add selectedServer field
   ```dart
   final HealthCheckServer? selectedServer;
   ```
 
-- [x] **2.3.4**: 更新建構子
-  - 在 constructor 加入新欄位
-  - 設定預設值
+- [x] **2.3.4**: Update constructor
+  - Add new fields to constructor
+  - Set default values
 
-- [x] **2.3.5**: 更新 props（Equatable）
-  - 加入 servers 和 selectedServer
+- [x] **2.3.5**: Update props (Equatable)
+  - Add servers and selectedServer
 
-- [x] **2.3.6**: 更新 copyWith 方法
+- [x] **2.3.6**: Update copyWith method
 
-- [x] **2.3.7**: 更新 toMap/fromMap 方法
+- [x] **2.3.7**: Update toMap/fromMap methods
 
-- [x] **2.3.8**: 執行 analyze
+- [x] **2.3.8**: Run analyze
   ```bash
   flutter analyze lib/page/health_check/providers/health_check_state.dart
   ```
 
 ---
 
-### 任務 2.4: 更新 HealthCheckProvider
+### Task 2.4: Update HealthCheckProvider
 
-- [x] **2.4.1**: 比對 Provider 差異
+- [x] **2.4.1**: Compare Provider differences
   ```bash
   git diff dev-2.0.0 origin/dev-1.2.8 -- lib/page/health_check/providers/health_check_provider.dart
   ```
 
-- [x] **2.4.2**: 實作 loadServers 方法
-  - 從 dev-1.2.8 參考 `updateServers()` 實作邏輯
-  - 適配至新架構（使用 SpeedTestService）
-  - 在 `loadData()` 中調用
+- [x] **2.4.2**: Implement loadServers method
+  - Reference `updateServers()` implementation logic from dev-1.2.8
+  - Adapt to new architecture (use SpeedTestService)
+  - Call in `loadData()`
 
-- [x] **2.4.3**: 實作 setSelectedServer 方法
+- [x] **2.4.3**: Implement setSelectedServer method
 
-- [x] **2.4.4**: 更新測試
+- [x] **2.4.4**: Update tests
   ```bash
   git diff dev-2.0.0 origin/dev-1.2.8 -- test/page/health_check/
   ```
-  > 修正 MockHealthCheckProvider 類別簽名：`extends HealthCheckProvider with Mock`
+  > Fixed MockHealthCheckProvider class signature: `extends HealthCheckProvider with Mock`
 
-- [x] **2.4.5**: 執行測試
+- [x] **2.4.5**: Run tests
   ```bash
   flutter test test/page/health_check/
   ```
-  > 3107 功能測試通過
+  > 3107 functional tests passed
 
 ---
 
-### 任務 2.5: 更新 SpeedTestView
+### Task 2.5: Update SpeedTestView
 
-- [x] **2.5.1**: 比對 View 差異
+- [x] **2.5.1**: Compare View differences
   ```bash
   git diff dev-2.0.0 origin/dev-1.2.8 -- lib/page/health_check/views/speed_test_view.dart
   ```
 
-- [x] **2.5.2**: 整合伺服器選擇 UI
-  - 加入 AppBar action icon button (`Icons.dns_outlined`)
-  - 連接 SpeedTestServerSelectionDialog
-  > 與 dev-1.2.8 差異：使用 dialog 而非 dropdown
+- [x] **2.5.2**: Integrate server selection UI
+  - Add AppBar action icon button (`Icons.dns_outlined`)
+  - Connect SpeedTestServerSelectionDialog
+  > Difference from dev-1.2.8: using dialog instead of dropdown
 
-- [x] **2.5.3**: 更新狀態讀取
-  - 從新的 HealthCheckState 讀取 servers 和 selectedServer
+- [x] **2.5.3**: Update state reading
+  - Read servers and selectedServer from new HealthCheckState
 
-- [x] **2.5.4**: 執行 analyze
+- [x] **2.5.4**: Run analyze
   ```bash
   flutter analyze lib/page/health_check/views/
   ```
 
 ---
 
-### 任務 2.6: JNAP 與支援檢查
+### Task 2.6: JNAP and Support Check
 
-- [x] **2.6.1**: 確認 getCloseHealthCheckServers JNAP Action
-  - 檔案: `lib/core/jnap/actions/jnap_action.dart:89`
+- [x] **2.6.1**: Confirm getCloseHealthCheckServers JNAP Action
+  - File: `lib/core/jnap/actions/jnap_action.dart:89`
 
-- [x] **2.6.2**: 新增 HealthCheckManager2 到 JNAPService enum
-  - 檔案: `lib/core/jnap/actions/jnap_service.dart:57`
+- [x] **2.6.2**: Add HealthCheckManager2 to JNAPService enum
+  - File: `lib/core/jnap/actions/jnap_service.dart:57`
 
-- [x] **2.6.3**: 新增 isSupportHealthCheckManager2 方法
-  - 檔案: `lib/core/jnap/actions/jnap_service_supported.dart:26-27`
+- [x] **2.6.3**: Add isSupportHealthCheckManager2 method
+  - File: `lib/core/jnap/actions/jnap_service_supported.dart:26-27`
 
-- [x] **2.6.4**: 在 loadData/loadServers 中加入支援檢查
+- [x] **2.6.4**: Add support check in loadData/loadServers
   ```dart
   if (serviceHelper.isSupportHealthCheckManager2()) {
     // load servers
   }
   ```
 
-- [x] **2.6.5**: 更新 test_helper.dart 加入 mock
+- [x] **2.6.5**: Update test_helper.dart with mock
   ```dart
   when(mockServiceHelper.isSupportHealthCheckManager2()).thenReturn(false);
   ```
 
 ---
 
-### 階段二檢查點
+### Phase 2 Checkpoint
 
-- [x] 執行 health_check 相關測試
+- [x] Run health_check related tests
   ```bash
   flutter test test/page/health_check/
   ```
-  > 55 個 localization 測試通過
+  > 55 localization tests passed
 
-- [ ] 手動測試伺服器選擇功能
-  - 啟動應用
-  - 進入 Speed Test 頁面
-  - 確認伺服器列表顯示
-  - 確認可選擇伺服器
+- [ ] Manual test server selection feature
+  - Launch application
+  - Navigate to Speed Test page
+  - Confirm server list displays
+  - Confirm can select server
 
-- [x] 提交階段二變更
+- [x] Commit Phase 2 changes
   ```bash
   git add .
   git commit -m "feat: Add speed test server selection (Phase 2 migration from dev-1.2.8)"
@@ -359,50 +359,50 @@
 
 ---
 
-## 階段三：架構適配
+## Phase 3: Architecture Adaptation
 
-> **狀態**: ✅ 已完成
-> **日期**: 2026-02-04
+> **Status**: Completed
+> **Date**: 2026-02-04
 
-### 任務 3.1: SpeedTest 錯誤處理整合
+### Task 3.1: SpeedTest Error Handling Integration
 
-- [x] **3.1.1**: 分析 dev-1.2.8 錯誤處理實作
+- [x] **3.1.1**: Analyze dev-1.2.8 error handling implementation
   ```bash
   git show dffec0dc -- lib/page/health_check/providers/health_check_provider.dart
   ```
 
-- [x] **3.1.2**: 檢視現有 SpeedTestError enum
+- [x] **3.1.2**: Review existing SpeedTestError enum
   ```
   lib/page/health_check/models/health_check_enum.dart
   ```
-  > **結論**: dev-2.0.0 已有完整的 SpeedTestError enum (configurationError, noInternet, downloadFailed, uploadFailed)
+  > **Conclusion**: dev-2.0.0 already has complete SpeedTestError enum (configurationError, noInternet, downloadFailed, uploadFailed)
 
-- [x] **3.1.3**: 新增 SpeedTestExecutionError 類型（若需要）
-  > **結論**: 不需要，dev-2.0.0 已有 `SpeedTestExecutionError` 類別於 `lib/page/health_check/models/speed_test_exception.dart`
+- [x] **3.1.3**: Add SpeedTestExecutionError type (if needed)
+  > **Conclusion**: Not needed, dev-2.0.0 already has `SpeedTestExecutionError` class in `lib/page/health_check/models/speed_test_exception.dart`
 
-- [x] **3.1.4**: 在 Provider 實作錯誤處理邏輯
-  > **結論**: 已在 `health_check_provider.dart:161-178` 實作完整錯誤處理
+- [x] **3.1.4**: Implement error handling logic in Provider
+  > **Conclusion**: Already implemented in `health_check_provider.dart:161-178` with complete error handling
 
-- [x] **3.1.5**: 在 UI 顯示錯誤訊息
-  > **結論**: 已在 `SpeedTestWidget` 透過 `SpeedTestError` 顯示錯誤訊息
+- [x] **3.1.5**: Display error messages in UI
+  > **Conclusion**: Already displaying error messages through `SpeedTestError` in `SpeedTestWidget`
 
-- [x] **3.1.6**: 修復空時間戳日期解析
-  > **結論**: 已於 `SpeedTestUIModel` 處理空值情況
+- [x] **3.1.6**: Fix empty timestamp date parsing
+  > **Conclusion**: Already handled in `SpeedTestUIModel` for null values
 
 ---
 
-### 任務 3.2: Polling Provider 快取整合
+### Task 3.2: Polling Provider Cache Integration
 
-- [x] **3.2.1**: 比對 polling_service.dart
+- [x] **3.2.1**: Compare polling_service.dart
   ```
   lib/core/data/services/polling_service.dart
   ```
 
-- [x] **3.2.2**: 評估 GetCloseHealthCheckServers 快取邏輯
-  > **結論**: dev-2.0.0 缺少此功能，需要整合
+- [x] **3.2.2**: Evaluate GetCloseHealthCheckServers cache logic
+  > **Conclusion**: dev-2.0.0 missing this feature, needs integration
 
-- [x] **3.2.3**: 實作 getCloseHealthCheckServers 到 polling service
-  > **變更**: 在 `polling_service.dart:80-83` 新增:
+- [x] **3.2.3**: Implement getCloseHealthCheckServers in polling service
+  > **Changes**: Added in `polling_service.dart:80-83`:
   ```dart
   if (serviceHelper.isSupportHealthCheckManager2()) {
     commands.add(const MapEntry(JNAPAction.getCloseHealthCheckServers, {}));
@@ -411,199 +411,199 @@
 
 ---
 
-### 任務 3.3: Dashboard SpeedTest Widget 評估
+### Task 3.3: Dashboard SpeedTest Widget Evaluation
 
-- [x] **3.3.1**: 檢視 dev-2.0.0 的 Dashboard SpeedTest 實作
+- [x] **3.3.1**: Review dev-2.0.0 Dashboard SpeedTest implementation
   ```
   lib/page/dashboard/views/components/widgets/atomic/speed_test.dart
   lib/page/dashboard/views/components/widgets/parts/internal_speed_test_result.dart
   lib/page/dashboard/views/components/widgets/parts/external_speed_test_links.dart
   ```
 
-- [x] **3.3.2**: 評估是否需要在 dev-2.0.0 重建
-  - [ ] 需要重建 → 進行 3.3.3
-  - [x] 不需要 → 記錄決策，跳過
-  > **結論**: dev-2.0.0 已有完整的 Dashboard SpeedTest Widget 整合:
-  > - `CustomSpeedTest` 提供 compact/normal/expanded 三種顯示模式
-  > - 整合 `healthCheckProvider` 讀取 SpeedTest 結果
-  > - 支援內部測試 (`SpeedTestWidget`) 和外部連結 (`ExternalSpeedTestLinks`)
+- [x] **3.3.2**: Evaluate if rebuild needed in dev-2.0.0
+  - [ ] Needs rebuild → proceed to 3.3.3
+  - [x] Not needed → document decision, skip
+  > **Conclusion**: dev-2.0.0 already has complete Dashboard SpeedTest Widget integration:
+  > - `CustomSpeedTest` provides compact/normal/expanded display modes
+  > - Integrates `healthCheckProvider` for reading SpeedTest results
+  > - Supports internal test (`SpeedTestWidget`) and external links (`ExternalSpeedTestLinks`)
 
 ---
 
-### 任務 3.4: InstantVerify SpeedTest Widget 評估
+### Task 3.4: InstantVerify SpeedTest Widget Evaluation
 
-- [x] **3.4.1**: 檢視 dev-2.0.0 的 InstantVerify SpeedTest 實作
+- [x] **3.4.1**: Review dev-2.0.0 InstantVerify SpeedTest implementation
   ```
   lib/page/instant_verify/views/instant_verify_view.dart:1019-1049
   ```
 
-- [x] **3.4.2**: 評估是否需要重建
-  - [ ] 需要重建 → 進行 3.4.4
-  - [x] 不需要 → 記錄決策，跳過
-  > **結論**: dev-2.0.0 已有完整整合:
-  > - `_speedTestContent()` 方法判斷是否支援內部 SpeedTest
-  > - 使用 `SpeedTestWidget` 或 `SpeedTestExternalWidget` fallback
+- [x] **3.4.2**: Evaluate if rebuild needed
+  - [ ] Needs rebuild → proceed to 3.4.4
+  - [x] Not needed → document decision, skip
+  > **Conclusion**: dev-2.0.0 already has complete integration:
+  > - `_speedTestContent()` method determines if internal SpeedTest is supported
+  > - Uses `SpeedTestWidget` or `SpeedTestExternalWidget` fallback
 
 ---
 
-### 階段三檢查點
+### Phase 3 Checkpoint
 
-- [x] 執行完整測試
+- [x] Run complete tests
   ```bash
   ./run_tests.sh
   ```
-  > 3107 功能測試通過
+  > 3107 functional tests passed
 
-- [x] 執行 SpeedTest View 本地化測試
+- [x] Run SpeedTest View localization tests
   ```bash
   flutter test test/page/health_check/views/localizations/speed_test_view_test.dart --update-goldens
   ```
-  > 55 測試通過，golden 檔案已更新
+  > 55 tests passed, golden files updated
 
-- [x] 錯誤處理驗證 (透過 golden 測試自動化)
-  - 新增 6 個錯誤狀態測試案例 (STV-ERROR-01 ~ STV-ERROR-06)
-  - 涵蓋: configuration, license, execution, aborted, dbError, timeout
-  - 產生 30 個 golden 截圖 (6 錯誤類型 × 5 螢幕尺寸)
+- [x] Error handling verification (via golden test automation)
+  - Added 6 error state test cases (STV-ERROR-01 ~ STV-ERROR-06)
+  - Covers: configuration, license, execution, aborted, dbError, timeout
+  - Generated 30 golden screenshots (6 error types × 5 screen sizes)
 
-- [ ] 提交階段三變更
+- [ ] Commit Phase 3 changes
 
 ---
 
-## 最終驗證
+## Final Verification
 
-### 驗證 4.1: 程式碼品質
+### Verification 4.1: Code Quality
 
-- [x] 執行 flutter analyze
+- [x] Run flutter analyze
   ```bash
   flutter analyze
   ```
 
-- [ ] 確認無未使用的 import
+- [ ] Confirm no unused imports
 
-- [ ] 確認無 TODO 遺漏
+- [ ] Confirm no TODO items left behind
 
 ---
 
-### 驗證 4.2: 測試通過
+### Verification 4.2: Tests Pass
 
-- [x] 執行完整測試套件
+- [x] Run complete test suite
   ```bash
   ./run_tests.sh
   ```
-  > 3107 功能測試通過
+  > 3107 functional tests passed
 
-- [ ] 確認測試覆蓋率
+- [ ] Confirm test coverage
 
 ---
 
-### 驗證 4.3: 建置驗證
+### Verification 4.3: Build Verification
 
-- [ ] Web 建置
+- [ ] Web build
   ```bash
   ./build_web.sh
   ```
 
-- [ ] 本機執行測試
+- [ ] Local run test
   ```bash
   flutter run -d chrome
   ```
 
 ---
 
-### 驗證 4.4: 功能測試
+### Verification 4.4: Feature Testing
 
-- [ ] PWA 安裝提示
-  - 使用 DU 型號測試
-  - 確認 banner 顯示
-  - 確認安裝說明正確
+- [ ] PWA install prompt
+  - Test with DU model
+  - Confirm banner displays
+  - Confirm install instructions are correct
 
-- [ ] Speed Test 伺服器選擇
-  - 確認伺服器列表載入
-  - 確認可選擇伺服器
-  - 確認測試使用選定伺服器
+- [ ] Speed Test server selection
+  - Confirm server list loads
+  - Confirm can select server
+  - Confirm test uses selected server
 
-- [ ] Speed Test 錯誤處理
-  - 模擬錯誤情境
-  - 確認錯誤訊息顯示
+- [ ] Speed Test error handling
+  - Simulate error scenarios
+  - Confirm error messages display
 
-- [ ] 速度格式化
-  - 確認使用 SI 單位（1000 base）
+- [ ] Speed formatting
+  - Confirm SI units (1000 base) are used
 
 ---
 
-## 完成收尾
+## Completion and Wrap-up
 
-- [ ] 建立 Pull Request
+- [ ] Create Pull Request
   ```bash
   git push -u origin austin/migration-1.2.8
   gh pr create --title "feat: merge dev-1.2.8 features to dev-2.0.0" --body "..."
   ```
 
-- [ ] 更新遷移計畫文件狀態
+- [ ] Update migration plan document status
 
-- [ ] 記錄任何未完成項目或技術債
-
----
-
-## 決策記錄
-
-### 決策 D1: Dashboard SpeedTest Widget
-
-**日期**: 2026-02-04
-**決策**: [x] 跳過 (已存在)
-**原因**: dev-2.0.0 已有完整的 Dashboard SpeedTest Widget 實作於 `lib/page/dashboard/views/components/widgets/atomic/speed_test.dart`，支援 compact/normal/expanded 三種顯示模式，並整合 `healthCheckProvider`
+- [ ] Document any incomplete items or technical debt
 
 ---
 
-### 決策 D2: InstantVerify SpeedTest Widget
+## Decision Log
 
-**日期**: 2026-02-04
-**決策**: [x] 跳過 (已存在)
-**原因**: dev-2.0.0 已於 `instant_verify_view.dart:1019-1049` 整合 SpeedTest 功能，使用 `SpeedTestWidget` 或 `SpeedTestExternalWidget` fallback
+### Decision D1: Dashboard SpeedTest Widget
 
----
-
-### 決策 D3: Polling Provider 快取
-
-**日期**: 2026-02-04
-**決策**: [x] 整合
-**原因**: 新增 `getCloseHealthCheckServers` 到 `polling_service.dart` 以支援伺服器列表快取，當 `isSupportHealthCheckManager2()` 為 true 時執行
+**Date**: 2026-02-04
+**Decision**: [x] Skip (already exists)
+**Reason**: dev-2.0.0 already has complete Dashboard SpeedTest Widget implementation in `lib/page/dashboard/views/components/widgets/atomic/speed_test.dart`, supporting compact/normal/expanded display modes and integrating `healthCheckProvider`
 
 ---
 
-### 決策 D4: Server Selection UI 差異
+### Decision D2: InstantVerify SpeedTest Widget
 
-**日期**: 2026-02-04
-**決策**: [x] 使用 Dialog (Icon Button in AppBar)
-**原因**: dev-2.0.0 架構使用 UiKitPageView 與 AppBar actions，採用 dialog 方式更符合新架構設計
-
----
-
-### 決策 D5: Mock 類別簽名修正
-
-**日期**: 2026-02-04
-**決策**: [x] 修改 MockHealthCheckProvider 類別簽名
-**原因**: 原本 Mockito 生成的 `extends Mock implements Provider` 會缺少 Riverpod 內部方法 (`_setElement`)，改為 `extends HealthCheckProvider with Mock` 可同時繼承 Notifier 內部方法並保留 Mock 功能
+**Date**: 2026-02-04
+**Decision**: [x] Skip (already exists)
+**Reason**: dev-2.0.0 already integrates SpeedTest functionality in `instant_verify_view.dart:1019-1049`, using `SpeedTestWidget` or `SpeedTestExternalWidget` fallback
 
 ---
 
-## 問題追蹤
+### Decision D3: Polling Provider Cache
 
-| # | 問題描述 | 狀態 | 解決方案 |
-|---|----------|------|----------|
-| 1 | MockHealthCheckProvider 缺少 `_setElement` 方法 | ✅ 已解決 | 修改 mock 類別為 `extends HealthCheckProvider with Mock` |
-| 2 | test_helper 缺少 `isSupportHealthCheckManager2` mock | ✅ 已解決 | 新增 `when(mockServiceHelper.isSupportHealthCheckManager2()).thenReturn(false)` |
-| 3 | speed_test_view_test.dart verify 簽名不符 | ✅ 已解決 | 更新為 `anyNamed('serverId')` |
+**Date**: 2026-02-04
+**Decision**: [x] Integrate
+**Reason**: Added `getCloseHealthCheckServers` to `polling_service.dart` to support server list caching when `isSupportHealthCheckManager2()` returns true
 
 ---
 
-## 架構差異對照表
+### Decision D4: Server Selection UI Difference
 
-| 功能 | dev-1.2.8 | dev-2.0.0 |
-|------|-----------|-----------|
-| State 型別 | `String status/step` | `HealthCheckStatus/HealthCheckStep` enum |
-| Result 型別 | `List<HealthCheckResult>` | `SpeedTestUIModel?` |
-| Server 載入 | `updateServers()` in View initState | `loadServers()` in Provider build() |
+**Date**: 2026-02-04
+**Decision**: [x] Use Dialog (Icon Button in AppBar)
+**Reason**: dev-2.0.0 architecture uses UiKitPageView with AppBar actions, dialog approach better fits the new architecture design
+
+---
+
+### Decision D5: Mock Class Signature Fix
+
+**Date**: 2026-02-04
+**Decision**: [x] Modify MockHealthCheckProvider class signature
+**Reason**: Original Mockito generated `extends Mock implements Provider` was missing Riverpod internal methods (`_setElement`), changed to `extends HealthCheckProvider with Mock` to inherit both Notifier internal methods and retain Mock functionality
+
+---
+
+## Issue Tracking
+
+| # | Issue Description | Status | Resolution |
+|---|-------------------|--------|------------|
+| 1 | MockHealthCheckProvider missing `_setElement` method | Resolved | Modified mock class to `extends HealthCheckProvider with Mock` |
+| 2 | test_helper missing `isSupportHealthCheckManager2` mock | Resolved | Added `when(mockServiceHelper.isSupportHealthCheckManager2()).thenReturn(false)` |
+| 3 | speed_test_view_test.dart verify signature mismatch | Resolved | Updated to `anyNamed('serverId')` |
+
+---
+
+## Architecture Difference Comparison Table
+
+| Feature | dev-1.2.8 | dev-2.0.0 |
+|---------|-----------|-----------|
+| State Type | `String status/step` | `HealthCheckStatus/HealthCheckStep` enum |
+| Result Type | `List<HealthCheckResult>` | `SpeedTestUIModel?` |
+| Server Loading | `updateServers()` in View initState | `loadServers()` in Provider build() |
 | Server UI | AppDropdownButton + Dialog | Icon Button + Dialog |
-| Service 層 | 直接使用 Repository | SpeedTestService |
-| SpeedTestWidget 位置 | instant_verify/views/components/ | health_check/widgets/ |
+| Service Layer | Direct Repository usage | SpeedTestService |
+| SpeedTestWidget Location | instant_verify/views/components/ | health_check/widgets/ |

@@ -20,14 +20,16 @@ class InstallPromptBanner extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      color: Theme.of(context).colorScheme.primary,
+    final onPrimaryColor = Theme.of(context).colorScheme.onPrimary;
+
+    return AppSurface(
+      variant: SurfaceVariant.highlight,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: SafeArea(
         top: false,
         child: Row(
           children: [
-            const Icon(Icons.install_mobile, color: Colors.white),
+            Icon(Icons.install_mobile, color: onPrimaryColor),
             AppGap.sm(),
             Expanded(
               child: Column(
@@ -36,33 +38,25 @@ class InstallPromptBanner extends ConsumerWidget {
                 children: [
                   AppText.titleMedium(
                     loc(context).pwaGetTheApp,
-                    color: Colors.white,
+                    color: onPrimaryColor,
                   ),
                   AppText.bodySmall(
                     loc(context).pwaInstallDescription,
-                    color: Colors.white70,
+                    color: onPrimaryColor.withValues(alpha: 0.7),
                   ),
                 ],
               ),
             ),
-            AppButton.primary(
+            AppButton.secondary(
               key: const Key('pwa_install_button'),
               label: loc(context).pwaInstallButton,
               onTap: () {
                 switch (mode) {
                   case PwaMode.ios:
-                    showModalBottomSheet(
-                      context: context,
-                      useRootNavigator: false,
-                      builder: (c) => const IosInstallInstructionSheet(),
-                    );
+                    IosInstallInstructionSheet.show(context);
                     break;
                   case PwaMode.mac:
-                    showModalBottomSheet(
-                      context: context,
-                      useRootNavigator: false,
-                      builder: (c) => const MacSafariInstallInstructionSheet(),
-                    );
+                    MacSafariInstallInstructionSheet.show(context);
                     break;
                   case PwaMode.native:
                     pwaNotifier.promptInstall();
@@ -72,9 +66,10 @@ class InstallPromptBanner extends ConsumerWidget {
                 }
               },
             ),
-            AppGap.xs(),
-            AppIconButton(
-              icon: const Icon(Icons.close, color: Colors.white70),
+            AppGap.sm(),
+            AppIconButton.icon(
+              key: const Key('pwa_dismiss_button'),
+              icon: Icon(Icons.close, color: onPrimaryColor),
               onTap: () {
                 pwaNotifier.dismiss();
               },

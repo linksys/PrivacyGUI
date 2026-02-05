@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:privacy_gui/core/utils/device_features.dart';
-import 'package:privacy_gui/providers/global_model_number_provider.dart';
+import 'package:privacy_gui/core/data/providers/session_provider.dart';
 
 import 'pwa_logic.dart';
 
@@ -21,11 +21,9 @@ class PwaInstallService extends Notifier<PwaMode> {
 
   @override
   PwaMode build() {
-    // Watch model number to trigger rebuilds (or just keep it alive so listen works)
-    // Actually, we don't need to rebuild 'state' on every model change directly here,
-    // because we handle logic in _checkPlatformAndPersistence via listen.
-    // However, keeping watch ensures we are subscribed.
-    final modelNumber = ref.watch(globalModelNumberProvider);
+    // Watch session state to trigger rebuilds when device info changes.
+    // This ensures we respond to model number changes (e.g., device switching).
+    final modelNumber = ref.watch(sessionProvider).modelNumber;
 
     // Only run on Web
     if (kIsWeb) {
@@ -109,10 +107,10 @@ class PwaInstallService extends Notifier<PwaMode> {
   void _initListeners() {
     if (!kIsWeb) return;
 
-    // Listen to model number changes to handle device switching or delayed load
-    ref.listen(globalModelNumberProvider, (prev, next) {
-      if (prev == next) return;
-      _checkPlatformAndPersistence(next);
+    // Listen to session state changes to handle device switching or delayed load
+    ref.listen(sessionProvider, (prev, next) {
+      if (prev?.modelNumber == next.modelNumber) return;
+      _checkPlatformAndPersistence(next.modelNumber);
     });
 
     try {
@@ -124,7 +122,7 @@ class PwaInstallService extends Notifier<PwaMode> {
           isDismissedRecently().then((recentlyDismissed) {
             // ...
             // Re-check using current model number
-            final modelNumber = ref.read(globalModelNumberProvider);
+            final modelNumber = ref.read(sessionProvider).modelNumber;
             if (!isFeatureSupported(DeviceFeature.pwa, modelNumber)) {
               // ...
               return;
