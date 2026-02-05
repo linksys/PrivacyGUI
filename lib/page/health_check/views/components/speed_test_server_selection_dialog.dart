@@ -19,19 +19,17 @@ class SpeedTestServerSelectionList extends StatelessWidget {
       child: ValueListenableBuilder<HealthCheckServer?>(
         valueListenable: notifier,
         builder: (context, selected, child) {
-          return ListView.builder(
-            shrinkWrap: true,
-            itemCount: servers.length,
-            itemBuilder: (context, index) {
-              final server = servers[index];
-              return RadioListTile<HealthCheckServer>(
-                title: AppText.bodyMedium(server.toString()),
-                value: server,
-                groupValue: selected,
-                onChanged: (HealthCheckServer? value) {
-                  notifier.value = value;
-                },
-              );
+          return AppRadioList<HealthCheckServer>(
+            initial: selected,
+            itemHeight: 56,
+            items: servers
+                .map((server) => AppRadioListItem(
+                      title: server.toString(),
+                      value: server,
+                    ))
+                .toList(),
+            onChanged: (index, value) {
+              notifier.value = value;
             },
           );
         },

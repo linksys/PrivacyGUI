@@ -201,7 +201,8 @@ class SpeedTestView extends ConsumerWidget {
     List<HealthCheckServer> servers,
     HealthCheckServer? currentSelection,
   ) {
-    final selectedNotifier = ValueNotifier<HealthCheckServer?>(currentSelection);
+    final selectedNotifier =
+        ValueNotifier<HealthCheckServer?>(currentSelection);
 
     showDialog(
       context: context,

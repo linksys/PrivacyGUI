@@ -79,8 +79,7 @@ class PollingService {
     }
 
     if (serviceHelper.isSupportHealthCheckManager2()) {
-      commands
-          .add(const MapEntry(JNAPAction.getCloseHealthCheckServers, {}));
+      commands.add(const MapEntry(JNAPAction.getCloseHealthCheckServers, {}));
     }
 
     if (serviceHelper.isSupportNodeFirmwareUpdate()) {

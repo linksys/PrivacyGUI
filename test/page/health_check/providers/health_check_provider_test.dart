@@ -95,7 +95,8 @@ void main() {
 
       setUp(() {
         streamController = StreamController<SpeedTestStreamEvent>.broadcast();
-        when(mockSpeedTestService.runHealthCheck(any, targetServerId: anyNamed('targetServerId')))
+        when(mockSpeedTestService.runHealthCheck(any,
+                targetServerId: anyNamed('targetServerId')))
             .thenAnswer((_) => streamController.stream);
         // Mock loadData dependencies
         when(mockSpeedTestService.getInitialSpeedTestState())

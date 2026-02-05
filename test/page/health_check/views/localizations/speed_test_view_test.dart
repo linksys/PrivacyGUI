@@ -364,8 +364,8 @@ void main() {
         );
         await tester.pump(const Duration(seconds: 2));
 
-        expect(
-            find.text(testHelper.loc(context).speedTestDbError), findsOneWidget);
+        expect(find.text(testHelper.loc(context).speedTestDbError),
+            findsOneWidget);
         expect(find.byIcon(Icons.replay), findsOneWidget);
       },
       goldenFilename: 'STV-ERROR-05-db_error',
@@ -392,8 +392,7 @@ void main() {
         await tester.pump(const Duration(seconds: 2));
 
         // Timeout and unknown errors display generalError message
-        expect(
-            find.text(testHelper.loc(context).generalError), findsOneWidget);
+        expect(find.text(testHelper.loc(context).generalError), findsOneWidget);
         expect(find.byIcon(Icons.replay), findsOneWidget);
       },
       goldenFilename: 'STV-ERROR-06-timeout_error',
