@@ -18,13 +18,14 @@ class HealthCheckServer extends Equatable {
   });
 
   factory HealthCheckServer.fromJson(Map<String, dynamic> json) {
+    // Use safe type conversions for external API data
     return HealthCheckServer(
-      serverID: json['serverID'] as String? ?? '',
-      serverName: json['serverName'] as String? ?? '',
-      serverLocation: json['serverLocation'] as String? ?? '',
-      serverCountry: json['serverCountry'] as String? ?? '',
-      serverHostname: json['serverHostname'] as String? ?? '',
-      serverPort: json['serverPort'] as int? ?? 0,
+      serverID: json['serverID']?.toString() ?? '',
+      serverName: json['serverName']?.toString() ?? '',
+      serverLocation: json['serverLocation']?.toString() ?? '',
+      serverCountry: json['serverCountry']?.toString() ?? '',
+      serverHostname: json['serverHostname']?.toString() ?? '',
+      serverPort: (json['serverPort'] as num?)?.toInt() ?? 0,
     );
   }
 

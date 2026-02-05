@@ -106,9 +106,12 @@ class SessionNotifier extends Notifier<SessionState> {
   /// [networkId] - The network ID (cloud-based) or empty string for local sessions
   Future<void> saveSelectedNetwork(
       String serialNumber, String networkId) async {
-    logger.i('[Session]: saveSelectedNetwork - $networkId, $serialNumber');
+    // Log with masked sensitive data for security
+    final maskedSN = serialNumber.length > 4
+        ? '****${serialNumber.substring(serialNumber.length - 4)}'
+        : '****';
+    logger.d('[Session]: saveSelectedNetwork - networkId: ${networkId.isNotEmpty}, SN: $maskedSN');
     final pref = await SharedPreferences.getInstance();
-    logger.d('[Session]: save selected network - $serialNumber, $networkId');
     await pref.setString(pCurrentSN, serialNumber);
     await pref.setString(pSelectedNetworkId, networkId);
     ref.read(selectedNetworkIdProvider.notifier).state = networkId;

@@ -340,6 +340,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // Reset provider states
       ref.read(deviceManagerProvider.notifier).init();
       ref.read(pollingProvider.notifier).init();
+      ref.read(sessionProvider.notifier).clear();
       return AuthState.empty();
     });
     ref.read(pollingProvider.notifier).stopPolling();

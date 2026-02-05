@@ -103,10 +103,12 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
     final service = ref.read(speedTestServiceProvider);
 
     // Use the provided serverId, or fall back to the selected server's ID
-    final targetServerId = serverId?.toString() ??
-        (state.selectedServer?.serverID != null
-            ? state.selectedServer!.serverID
-            : null);
+    // Only use non-empty server IDs to avoid sending empty strings to the router
+    final providedId = serverId?.toString();
+    final selectedId = state.selectedServer?.serverID;
+    final targetServerId = (providedId?.isNotEmpty == true)
+        ? providedId
+        : (selectedId?.isNotEmpty == true ? selectedId : null);
 
     _streamSubscription = service
         .runHealthCheck(module, targetServerId: targetServerId)
