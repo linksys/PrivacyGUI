@@ -131,6 +131,8 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/guestnetwork/SetGuestRadioSettings2'),
   clearHealthCheckHistory(
       value: 'http://linksys.com/jnap/healthcheck/ClearHealthCheckHistory'),
+  getCloseHealthCheckServers(
+      value: 'http://linksys.com/jnap/healthcheck/GetCloseHealthCheckServers'),
   getHealthCheckResults(
       value: 'http://linksys.com/jnap/healthcheck/GetHealthCheckResults'),
   getHealthCheckStatus(

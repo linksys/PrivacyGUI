@@ -86,6 +86,7 @@ enum JNAPAction {
   setGuestRadioSettings,
   // healthCheckManager
   clearHealthCheckHistory,
+  getCloseHealthCheckServers,
   getHealthCheckResults,
   getHealthCheckStatus,
   getSupportedHealthCheckModules,

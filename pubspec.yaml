@@ -18,7 +18,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 2.0.0+100000
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.3.0 <4.0.0"
   flutter: ">=3.3.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -68,11 +68,11 @@ dependencies:
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.12.2
+      ref: v2.12.3
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.12.2
+      ref: v2.12.3
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
@@ -107,7 +107,7 @@ dev_dependencies:
     sdk: flutter
   golden_toolkit: ^0.15.0
   flutter_svg_test: ^1.0.1
-  fake_async: ^1.3.2
+  fake_async: any
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

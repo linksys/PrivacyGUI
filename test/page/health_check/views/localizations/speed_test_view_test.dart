@@ -14,6 +14,11 @@
 // | STV-SUCCESS-03  | Verify the UI for a successful result (Good).    |
 // | STV-SUCCESS-04  | Verify the UI for a successful result (Okay).    |
 // | STV-ERROR-01    | Verify the UI when a configuration error occurs. |
+// | STV-ERROR-02    | Verify the UI when a license error occurs.       |
+// | STV-ERROR-03    | Verify the UI when an execution error occurs.    |
+// | STV-ERROR-04    | Verify the UI when the test is aborted by user.  |
+// | STV-ERROR-05    | Verify the UI when a database error occurs.      |
+// | STV-ERROR-06    | Verify the UI when a timeout/unknown error occurs.|
 // | STV-HISTORY-01  | Verify the history panel displays records.       |
 // | STV-ACTION-01   | Verify tapping 'Go' button starts the test.      |
 //
@@ -41,7 +46,8 @@ void main() {
   setUp(() {
     testHelper.setup();
     // Default mock for runHealthCheck to avoid errors in interaction tests
-    when(testHelper.mockHealthCheckProvider.runHealthCheck(Module.speedtest))
+    when(testHelper.mockHealthCheckProvider
+            .runHealthCheck(Module.speedtest, serverId: anyNamed('serverId')))
         .thenAnswer((_) async {});
   });
 
@@ -229,34 +235,171 @@ void main() {
     );
   });
 
-  // Test ID: STV-ERROR-01
-  testLocalizations(
-    'Verify the UI when a configuration error occurs.',
-    (tester, screen) async {
-      // Mock a state with a specific error code
-      const errorState = HealthCheckState(
-        status: HealthCheckStatus.complete,
-        step: HealthCheckStep.error,
-        errorCode: SpeedTestError.configuration,
-      );
-      when(testHelper.mockHealthCheckProvider.build()).thenReturn(errorState);
+  group('Speedtest - error states', () {
+    // Test ID: STV-ERROR-01
+    testLocalizations(
+      'Verify the UI when a configuration error occurs.',
+      (tester, screen) async {
+        // Mock a state with a specific error code
+        const errorState = HealthCheckState(
+          status: HealthCheckStatus.complete,
+          step: HealthCheckStep.error,
+          errorCode: SpeedTestError.configuration,
+        );
+        when(testHelper.mockHealthCheckProvider.build()).thenReturn(errorState);
 
-      final context = await testHelper.pumpView(
-        tester,
-        child: const SpeedTestView(),
-        locale: screen.locale,
-      );
-      await tester.pump(const Duration(seconds: 2));
+        final context = await testHelper.pumpView(
+          tester,
+          child: const SpeedTestView(),
+          locale: screen.locale,
+        );
+        await tester.pump(const Duration(seconds: 2));
 
-      expect(find.text(testHelper.loc(context).speedTestConfigurationError),
-          findsOneWidget);
-      // Implementation uses IconButton with replay icon instead of AppButton with text
-      expect(find.byIcon(Icons.replay), findsOneWidget);
-    },
-    goldenFilename: 'STV-ERROR-01-error_state',
-    helper: testHelper,
-    screens: screens,
-  );
+        expect(find.text(testHelper.loc(context).speedTestConfigurationError),
+            findsOneWidget);
+        // Implementation uses IconButton with replay icon instead of AppButton with text
+        expect(find.byIcon(Icons.replay), findsOneWidget);
+      },
+      goldenFilename: 'STV-ERROR-01-configuration_error',
+      helper: testHelper,
+      screens: screens,
+    );
+
+    // Test ID: STV-ERROR-02
+    testLocalizations(
+      'Verify the UI when a license error occurs.',
+      (tester, screen) async {
+        const errorState = HealthCheckState(
+          status: HealthCheckStatus.complete,
+          step: HealthCheckStep.error,
+          errorCode: SpeedTestError.license,
+        );
+        when(testHelper.mockHealthCheckProvider.build()).thenReturn(errorState);
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: const SpeedTestView(),
+          locale: screen.locale,
+        );
+        await tester.pump(const Duration(seconds: 2));
+
+        expect(find.text(testHelper.loc(context).speedTestLicenseError),
+            findsOneWidget);
+        expect(find.byIcon(Icons.replay), findsOneWidget);
+      },
+      goldenFilename: 'STV-ERROR-02-license_error',
+      helper: testHelper,
+      screens: screens,
+    );
+
+    // Test ID: STV-ERROR-03
+    testLocalizations(
+      'Verify the UI when an execution error occurs.',
+      (tester, screen) async {
+        const errorState = HealthCheckState(
+          status: HealthCheckStatus.complete,
+          step: HealthCheckStep.error,
+          errorCode: SpeedTestError.execution,
+        );
+        when(testHelper.mockHealthCheckProvider.build()).thenReturn(errorState);
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: const SpeedTestView(),
+          locale: screen.locale,
+        );
+        await tester.pump(const Duration(seconds: 2));
+
+        expect(find.text(testHelper.loc(context).speedTestExecutionError),
+            findsOneWidget);
+        expect(find.byIcon(Icons.replay), findsOneWidget);
+      },
+      goldenFilename: 'STV-ERROR-03-execution_error',
+      helper: testHelper,
+      screens: screens,
+    );
+
+    // Test ID: STV-ERROR-04
+    testLocalizations(
+      'Verify the UI when the test is aborted by user.',
+      (tester, screen) async {
+        const errorState = HealthCheckState(
+          status: HealthCheckStatus.complete,
+          step: HealthCheckStep.error,
+          errorCode: SpeedTestError.aborted,
+        );
+        when(testHelper.mockHealthCheckProvider.build()).thenReturn(errorState);
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: const SpeedTestView(),
+          locale: screen.locale,
+        );
+        await tester.pump(const Duration(seconds: 2));
+
+        expect(find.text(testHelper.loc(context).speedTestAbortedByUser),
+            findsOneWidget);
+        expect(find.byIcon(Icons.replay), findsOneWidget);
+      },
+      goldenFilename: 'STV-ERROR-04-aborted_error',
+      helper: testHelper,
+      screens: screens,
+    );
+
+    // Test ID: STV-ERROR-05
+    testLocalizations(
+      'Verify the UI when a database error occurs.',
+      (tester, screen) async {
+        const errorState = HealthCheckState(
+          status: HealthCheckStatus.complete,
+          step: HealthCheckStep.error,
+          errorCode: SpeedTestError.dbError,
+        );
+        when(testHelper.mockHealthCheckProvider.build()).thenReturn(errorState);
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: const SpeedTestView(),
+          locale: screen.locale,
+        );
+        await tester.pump(const Duration(seconds: 2));
+
+        expect(find.text(testHelper.loc(context).speedTestDbError),
+            findsOneWidget);
+        expect(find.byIcon(Icons.replay), findsOneWidget);
+      },
+      goldenFilename: 'STV-ERROR-05-db_error',
+      helper: testHelper,
+      screens: screens,
+    );
+
+    // Test ID: STV-ERROR-06
+    testLocalizations(
+      'Verify the UI when a timeout/unknown error occurs.',
+      (tester, screen) async {
+        const errorState = HealthCheckState(
+          status: HealthCheckStatus.complete,
+          step: HealthCheckStep.error,
+          errorCode: SpeedTestError.timeout,
+        );
+        when(testHelper.mockHealthCheckProvider.build()).thenReturn(errorState);
+
+        final context = await testHelper.pumpView(
+          tester,
+          child: const SpeedTestView(),
+          locale: screen.locale,
+        );
+        await tester.pump(const Duration(seconds: 2));
+
+        // Timeout and unknown errors display generalError message
+        expect(find.text(testHelper.loc(context).generalError), findsOneWidget);
+        expect(find.byIcon(Icons.replay), findsOneWidget);
+      },
+      goldenFilename: 'STV-ERROR-06-timeout_error',
+      helper: testHelper,
+      screens: screens,
+    );
+  });
 
   // Test ID: STV-HISTORY-01
   testLocalizations(
@@ -303,9 +446,9 @@ void main() {
   testLocalizations(
     'Verify tapping "Go" button starts the test.',
     (tester, screen) async {
-      when(testHelper.mockHealthCheckProvider.build()).thenReturn(
-          HealthCheckState.fromJson(healthCheckInitState)
-              .copyWith(healthCheckModules: ['SpeedTest']));
+      final testState = HealthCheckState.fromJson(healthCheckInitState)
+          .copyWith(healthCheckModules: ['SpeedTest']);
+      when(testHelper.mockHealthCheckProvider.build()).thenReturn(testState);
       await testHelper.pumpView(
         tester,
         child: const SpeedTestView(),
@@ -319,7 +462,7 @@ void main() {
       await tester.pump();
 
       verify(testHelper.mockHealthCheckProvider
-              .runHealthCheck(Module.speedtest))
+              .runHealthCheck(Module.speedtest, serverId: anyNamed('serverId')))
           .called(1);
     },
     helper: testHelper,

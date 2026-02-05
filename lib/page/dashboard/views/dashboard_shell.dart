@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/components/pwa/install_prompt_banner.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
@@ -41,7 +42,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   }
 
   Widget _buildLayout() {
-    return widget.child;
+    return Column(
+      children: [
+        Expanded(child: widget.child),
+        const InstallPromptBanner(),
+      ],
+    );
   }
 }
 

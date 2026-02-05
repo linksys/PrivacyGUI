@@ -8,6 +8,8 @@ import 'dart:async' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:privacy_gui/core/jnap/models/health_check_result.dart' as _i8;
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart' as _i3;
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart'
+    as _i9;
 import 'package:privacy_gui/page/health_check/models/speed_test_event.dart'
     as _i6;
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart'
@@ -30,6 +32,7 @@ import 'package:privacy_gui/page/health_check/services/health_check_service.dart
 // ignore_for_file: unnecessary_parenthesis
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
+// ignore_for_file: invalid_use_of_internal_member
 
 class _FakeSpeedTestUIModel_0 extends _i1.SmartFake
     implements _i2.SpeedTestUIModel {
@@ -72,11 +75,15 @@ class MockSpeedTestService extends _i1.Mock implements _i4.SpeedTestService {
       ) as _i5.Future<List<_i2.SpeedTestUIModel>>);
 
   @override
-  _i5.Stream<_i6.SpeedTestStreamEvent> runHealthCheck(_i7.Module? module) =>
+  _i5.Stream<_i6.SpeedTestStreamEvent> runHealthCheck(
+    _i7.Module? module, {
+    String? targetServerId,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
           #runHealthCheck,
           [module],
+          {#targetServerId: targetServerId},
         ),
         returnValue: _i5.Stream<_i6.SpeedTestStreamEvent>.empty(),
         returnValueForMissingStub: _i5.Stream<_i6.SpeedTestStreamEvent>.empty(),
@@ -185,4 +192,18 @@ class MockSpeedTestService extends _i1.Mock implements _i4.SpeedTestService {
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
       ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<List<_i9.HealthCheckServer>> getHealthCheckServers() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getHealthCheckServers,
+          [],
+        ),
+        returnValue: _i5.Future<List<_i9.HealthCheckServer>>.value(
+            <_i9.HealthCheckServer>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i9.HealthCheckServer>>.value(
+                <_i9.HealthCheckServer>[]),
+      ) as _i5.Future<List<_i9.HealthCheckServer>>);
 }

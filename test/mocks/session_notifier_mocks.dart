@@ -47,33 +47,59 @@ class _FakeNodeDeviceInfo_1 extends _i1.SmartFake
         );
 }
 
+class _FakeSessionState_2 extends _i1.SmartFake implements _i4.SessionState {
+  _FakeSessionState_2(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+
+  @override
+  List<Object?> get props => [];
+}
+
 /// A class which mocks [SessionNotifier].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSessionNotifier extends _i2.Notifier<void>
+class MockSessionNotifier extends _i2.Notifier<_i4.SessionState>
     with _i1.Mock
     implements _i4.SessionNotifier {
   @override
-  _i2.NotifierProviderRef<void> get ref => (super.noSuchMethod(
+  _i2.NotifierProviderRef<_i4.SessionState> get ref => (super.noSuchMethod(
         Invocation.getter(#ref),
-        returnValue: _FakeNotifierProviderRef_0<void>(
+        returnValue: _FakeNotifierProviderRef_0<_i4.SessionState>(
           this,
           Invocation.getter(#ref),
         ),
-        returnValueForMissingStub: _FakeNotifierProviderRef_0<void>(
+        returnValueForMissingStub: _FakeNotifierProviderRef_0<_i4.SessionState>(
           this,
           Invocation.getter(#ref),
         ),
-      ) as _i2.NotifierProviderRef<void>);
+      ) as _i2.NotifierProviderRef<_i4.SessionState>);
 
   @override
-  void build() => super.noSuchMethod(
+  _i4.SessionState build() => (super.noSuchMethod(
         Invocation.method(
           #build,
           [],
         ),
-        returnValueForMissingStub: null,
-      );
+        returnValue: _FakeSessionState_2(
+          this,
+          Invocation.method(
+            #build,
+            [],
+          ),
+        ),
+        returnValueForMissingStub: _FakeSessionState_2(
+          this,
+          Invocation.method(
+            #build,
+            [],
+          ),
+        ),
+      ) as _i4.SessionState);
 
   @override
   _i5.Future<void> saveSelectedNetwork(
@@ -164,10 +190,42 @@ class MockSessionNotifier extends _i2.Notifier<void>
       ) as _i5.Future<_i3.NodeDeviceInfo>);
 
   @override
+  _i5.Future<_i3.NodeDeviceInfo> forceFetchDeviceInfo() => (super.noSuchMethod(
+        Invocation.method(
+          #forceFetchDeviceInfo,
+          [],
+        ),
+        returnValue: _i5.Future<_i3.NodeDeviceInfo>.value(_FakeNodeDeviceInfo_1(
+          this,
+          Invocation.method(
+            #forceFetchDeviceInfo,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i3.NodeDeviceInfo>.value(_FakeNodeDeviceInfo_1(
+          this,
+          Invocation.method(
+            #forceFetchDeviceInfo,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i3.NodeDeviceInfo>);
+
+  @override
+  void clear() => super.noSuchMethod(
+        Invocation.method(
+          #clear,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void listenSelf(
     void Function(
-      void,
-      void,
+      _i4.SessionState,
+      _i4.SessionState,
     )? listener, {
     void Function(
       Object,
@@ -185,8 +243,8 @@ class MockSessionNotifier extends _i2.Notifier<void>
 
   @override
   bool updateShouldNotify(
-    void previous,
-    void next,
+    _i4.SessionState previous,
+    _i4.SessionState next,
   ) =>
       false;
 }

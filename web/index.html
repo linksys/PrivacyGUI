@@ -22,6 +22,16 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Linksys Now">
+
+  <script>
+    // Capture PWA install prompt event early prevents missing it due to Flutter loading time.
+    window.deferredBeforeInstallPromptEvent = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.deferredBeforeInstallPromptEvent = e;
+      console.log('PWA: Early capture of beforeinstallprompt');
+    });
+  </script>
   <link rel="apple-touch-icon" sizes="180x180" href="logo_icons/logo-icon-180.png">
 
   <!-- Favicon -->
@@ -127,7 +137,6 @@
       document.body.style.background = "transparent";
     }
   </script>
-</head>
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 </head>
 <body>

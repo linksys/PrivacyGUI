@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
@@ -7,13 +8,34 @@ import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Session state containing device info for the current session.
+///
+/// This state is updated when device info is fetched during session initialization
+/// and provides reactive access to device information including model number.
+class SessionState extends Equatable {
+  final NodeDeviceInfo? deviceInfo;
+
+  const SessionState({this.deviceInfo});
+
+  /// Returns the model number with suffix (e.g., 'M60DU-EU').
+  /// Format: {Model}{SP suffix}-{Region suffix}
+  String get modelNumber => deviceInfo?.modelNumber ?? '';
+
+  SessionState copyWith({NodeDeviceInfo? deviceInfo}) {
+    return SessionState(deviceInfo: deviceInfo ?? this.deviceInfo);
+  }
+
+  @override
+  List<Object?> get props => [deviceInfo];
+}
+
 /// Session Provider
 ///
-/// Provides session management operations without managing state.
-/// Uses Notifier<void> for convenient access to ref and other providers.
+/// Provides session management operations and maintains device info state.
+/// Uses Notifier<SessionState> for reactive access to session data.
 ///
-/// This is a stateless notifier that serves as a collection of session-related
-/// operations rather than managing reactive state. It handles:
+/// This provider handles:
+/// - Device info storage and reactive access (including model number)
 /// - Selected network (serialNumber, networkId) persistence to SharedPreferences
 /// - Router connectivity validation and serial number verification
 /// - Device info retrieval with caching support
@@ -21,19 +43,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// This provider serves as the central point for managing which router/network
 /// the user is currently connected to, and provides methods to verify connectivity
 /// and retrieve router information during session initialization.
-///
-/// Note: While this uses NotifierProvider, it doesn't manage any reactive state.
-/// The Notifier pattern is used purely for accessing ref and organizing related
-/// operations in a single class.
 
-final sessionProvider = NotifierProvider<SessionNotifier, void>(
+final sessionProvider = NotifierProvider<SessionNotifier, SessionState>(
   () => SessionNotifier(),
 );
 
-class SessionNotifier extends Notifier<void> {
+class SessionNotifier extends Notifier<SessionState> {
   @override
-  void build() {
-    // No state management needed - this is a utility notifier
+  SessionState build() {
+    return const SessionState();
   }
 
   /// Checks if the router is accessible and matches the expected serial number.
@@ -59,6 +77,7 @@ class SessionNotifier extends Notifier<void> {
   ///
   /// This method first checks [deviceInfoProvider] for cached data.
   /// If cache is unavailable, it fetches fresh data from the router.
+  /// Updates the session state with the fetched device info.
   ///
   /// [serialNumber] - Currently unused, kept for API compatibility
   ///
@@ -71,6 +90,9 @@ class SessionNotifier extends Notifier<void> {
     final service = ref.read(sessionServiceProvider);
     final cachedDeviceInfo = ref.read(deviceInfoProvider).deviceInfo;
     final nodeDeviceInfo = await service.checkDeviceInfo(cachedDeviceInfo);
+    state = state.copyWith(deviceInfo: nodeDeviceInfo);
+    logger.d(
+        '[Session]: checkDeviceInfo - modelNumber: ${nodeDeviceInfo.modelNumber}');
     benchMark.end();
     return nodeDeviceInfo;
   }
@@ -84,9 +106,13 @@ class SessionNotifier extends Notifier<void> {
   /// [networkId] - The network ID (cloud-based) or empty string for local sessions
   Future<void> saveSelectedNetwork(
       String serialNumber, String networkId) async {
-    logger.i('[Session]: saveSelectedNetwork - $networkId, $serialNumber');
+    // Log with masked sensitive data for security
+    final maskedSN = serialNumber.length > 4
+        ? '****${serialNumber.substring(serialNumber.length - 4)}'
+        : '****';
+    logger.d(
+        '[Session]: saveSelectedNetwork - networkId: ${networkId.isNotEmpty}, SN: $maskedSN');
     final pref = await SharedPreferences.getInstance();
-    logger.d('[Session]: save selected network - $serialNumber, $networkId');
     await pref.setString(pCurrentSN, serialNumber);
     await pref.setString(pSelectedNetworkId, networkId);
     ref.read(selectedNetworkIdProvider.notifier).state = networkId;
@@ -101,6 +127,8 @@ class SessionNotifier extends Notifier<void> {
   /// - After configuration changes
   /// - When validating router connectivity
   ///
+  /// Updates the session state with the fetched device info.
+  ///
   /// Returns: Fresh [NodeDeviceInfo] from router
   ///
   /// Throws: [ServiceError] on API failure
@@ -109,6 +137,9 @@ class SessionNotifier extends Notifier<void> {
     benchMark.start();
     final service = ref.read(sessionServiceProvider);
     final nodeDeviceInfo = await service.forceFetchDeviceInfo();
+    state = state.copyWith(deviceInfo: nodeDeviceInfo);
+    logger.d(
+        '[Session]: forceFetchDeviceInfo - modelNumber: ${nodeDeviceInfo.modelNumber}');
     benchMark.end();
     return nodeDeviceInfo;
   }
@@ -119,6 +150,8 @@ class SessionNotifier extends Notifier<void> {
   /// 1. Fetch fresh device info from router
   /// 2. Configure the JNAP action system for the connected router
   /// 3. Return device info for UI display
+  ///
+  /// Updates the session state with the fetched device info.
   ///
   /// Use this instead of [checkDeviceInfo] when you need to ensure
   /// buildBetterActions is called with the current router's services.
@@ -132,8 +165,19 @@ class SessionNotifier extends Notifier<void> {
     benchMark.start();
     final service = ref.read(sessionServiceProvider);
     final nodeDeviceInfo = await service.fetchDeviceInfoAndInitializeServices();
+    state = state.copyWith(deviceInfo: nodeDeviceInfo);
+    logger.d(
+        '[Session]: fetchDeviceInfoAndInitializeServices - modelNumber: ${nodeDeviceInfo.modelNumber}');
     benchMark.end();
     return nodeDeviceInfo;
+  }
+
+  /// Clears the session state.
+  ///
+  /// This should be called during logout to reset the session.
+  void clear() {
+    state = const SessionState();
+    logger.d('[Session]: Session state cleared');
   }
 }
 

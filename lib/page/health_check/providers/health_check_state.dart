@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 
 /// Represents the state of the health check feature.
@@ -35,6 +36,12 @@ class HealthCheckState extends Equatable {
   /// A list of health check modules supported by the router.
   final List<String> healthCheckModules;
 
+  /// A list of available speed test servers.
+  final List<HealthCheckServer> servers;
+
+  /// The currently selected speed test server.
+  final HealthCheckServer? selectedServer;
+
   const HealthCheckState({
     // Transient
     this.step = HealthCheckStep.latency,
@@ -46,6 +53,8 @@ class HealthCheckState extends Equatable {
     this.latestSpeedTest,
     this.historicalSpeedTests = const [],
     this.healthCheckModules = const [],
+    this.servers = const [],
+    this.selectedServer,
   });
 
   /// A getter to easily check if the 'SpeedTest' module is supported.
@@ -64,6 +73,8 @@ class HealthCheckState extends Equatable {
         latestSpeedTest,
         historicalSpeedTests,
         healthCheckModules,
+        servers,
+        selectedServer,
       ];
 
   /// Creates the initial state for the health check.
@@ -81,6 +92,8 @@ class HealthCheckState extends Equatable {
     ValueGetter<SpeedTestUIModel?>? latestSpeedTest,
     List<SpeedTestUIModel>? historicalSpeedTests,
     List<String>? healthCheckModules,
+    List<HealthCheckServer>? servers,
+    ValueGetter<HealthCheckServer?>? selectedServer,
   }) {
     return HealthCheckState(
       step: step ?? this.step,
@@ -92,6 +105,9 @@ class HealthCheckState extends Equatable {
           latestSpeedTest != null ? latestSpeedTest() : this.latestSpeedTest,
       historicalSpeedTests: historicalSpeedTests ?? this.historicalSpeedTests,
       healthCheckModules: healthCheckModules ?? this.healthCheckModules,
+      servers: servers ?? this.servers,
+      selectedServer:
+          selectedServer != null ? selectedServer() : this.selectedServer,
     );
   }
 
@@ -106,6 +122,8 @@ class HealthCheckState extends Equatable {
       'historicalSpeedTests':
           historicalSpeedTests.map((x) => x.toMap()).toList(),
       'healthCheckModules': healthCheckModules,
+      'servers': servers.map((x) => x.toJson()).toList(),
+      'selectedServer': selectedServer?.toJson(),
     };
   }
 
@@ -135,6 +153,17 @@ class HealthCheckState extends Equatable {
       healthCheckModules: map['healthCheckModules'] != null
           ? List<String>.from(map['healthCheckModules'] as List<dynamic>)
           : const [],
+      servers: map['servers'] != null
+          ? List<HealthCheckServer>.from(
+              (map['servers'] as List<dynamic>).map<HealthCheckServer>(
+                (x) => HealthCheckServer.fromJson(x as Map<String, dynamic>),
+              ),
+            )
+          : const [],
+      selectedServer: map['selectedServer'] != null
+          ? HealthCheckServer.fromJson(
+              map['selectedServer'] as Map<String, dynamic>)
+          : null,
     );
   }
 
