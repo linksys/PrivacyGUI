@@ -147,8 +147,8 @@ class _FAQAgentFabState extends State<FAQAgentFab> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(kPanelBorderRadius)),
+        borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(kPanelBorderRadius)),
       ),
       child: Row(
         children: [

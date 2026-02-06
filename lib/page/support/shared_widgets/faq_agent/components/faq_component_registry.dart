@@ -62,8 +62,7 @@ ComponentRegistry createFaqComponentRegistry({
           AppIcon.font(Icons.wifi_off, size: 48, color: Colors.red.shade400),
           AppGap.md(),
           AppText.bodyMedium(
-            props['message'] ??
-                'Unable to connect. Please check your network.',
+            props['message'] ?? 'Unable to connect. Please check your network.',
             textAlign: TextAlign.center,
           ),
           AppGap.md(),
