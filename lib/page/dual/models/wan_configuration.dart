@@ -295,7 +295,7 @@ class DualWANConfiguration extends Equatable {
             password: password ?? '',
             server: serverIp ?? '',
             useStaticSettings: useStaticSettings ?? false,
-            staticSettings: StaticSettings(
+            staticSettings: (useStaticSettings ?? false) ? StaticSettings(
               ipAddress: staticIpAddress ?? '',
               networkPrefixLength: networkPrefixLength ?? 24,
               gateway: staticGateway ?? '',
@@ -303,7 +303,7 @@ class DualWANConfiguration extends Equatable {
               dnsServer2: staticDns2,
               dnsServer3: staticDns3,
               domainName: domainName,
-            ),
+            ) : null,
           ),
         ),
       'L2TP' => DualWANSettingsData(
@@ -346,14 +346,19 @@ class DualWANConfiguration extends Equatable {
   bool get isCurrentWANConfigurationValid {
     return switch (wanType) {
       'DHCP' => true,
-      'PPPoE' =>
-        _checkEmpty(username) && _checkEmpty(password) && _checkEmpty(serverIp),
+      'PPPoE' => _checkEmpty(username) && _checkEmpty(password),
       'Static' => _checkEmpty(staticIpAddress) &&
           _checkEmpty(staticGateway) &&
           _checkEmpty(staticDns1) &&
           _checkEmpty(networkPrefixLength),
-      'PPTP' =>
-        _checkEmpty(username) && _checkEmpty(password) && _checkEmpty(serverIp),
+      'PPTP' => _checkEmpty(username) &&
+          _checkEmpty(password) &&
+          _checkEmpty(serverIp) &&
+          (useStaticSettings != true ||
+              (_checkEmpty(staticIpAddress) &&
+                  _checkEmpty(staticGateway) &&
+                  _checkEmpty(staticDns1) &&
+                  _checkEmpty(networkPrefixLength))),
       'L2TP' =>
         _checkEmpty(username) && _checkEmpty(password) && _checkEmpty(serverIp),
       _ => false,

@@ -22,6 +22,7 @@ class StaticWANSettingsForm extends StatefulWidget {
   final DualWANConfiguration wan;
   final Function(DualWANConfiguration) onChanged;
   final Map<TextEditingController, String?> errors;
+  final VoidCallback? onErrorChanged;
 
   const StaticWANSettingsForm({
     Key? key,
@@ -29,6 +30,7 @@ class StaticWANSettingsForm extends StatefulWidget {
     required this.wan,
     required this.onChanged,
     required this.errors,
+    this.onErrorChanged,
   }) : super(key: key);
 
   @override
@@ -59,6 +61,14 @@ class _StaticWANSettingsFormState extends State<StaticWANSettingsForm> {
 
   @override
   void dispose() {
+    // Clear errors before disposing controllers
+    widget.errors.remove(_staticIpAddressController);
+    widget.errors.remove(_staticSubnetController);
+    widget.errors.remove(_staticGatewayController);
+    widget.errors.remove(_staticDNSController);
+    widget.errors.remove(_staticDNS2Controller);
+    widget.errors.remove(_staticDNS3Controller);
+    // Dispose controllers
     _staticIpAddressController.dispose();
     _staticSubnetController.dispose();
     _staticGatewayController.dispose();
@@ -92,6 +102,7 @@ class _StaticWANSettingsFormState extends State<StaticWANSettingsForm> {
             } else {
               widget.errors[_staticIpAddressController] = loc(context).invalidIpAddress;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -120,6 +131,7 @@ class _StaticWANSettingsFormState extends State<StaticWANSettingsForm> {
             } else {
               widget.errors[_staticSubnetController] = loc(context).invalidSubnetMask;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -153,6 +165,7 @@ class _StaticWANSettingsFormState extends State<StaticWANSettingsForm> {
             } else {
               widget.errors[_staticGatewayController] = loc(context).invalidIpAddress;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -178,6 +191,7 @@ class _StaticWANSettingsFormState extends State<StaticWANSettingsForm> {
             } else {
               widget.errors[_staticDNSController] = loc(context).invalidIpAddress;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -199,12 +213,14 @@ class _StaticWANSettingsFormState extends State<StaticWANSettingsForm> {
           border: const OutlineInputBorder(),
           controller: _staticDNS2Controller,
           onChanged: (value) {
-            final isValid = IpAddressValidator().validate(value);
+            // Optional field: empty value is valid
+            final isValid = value.isEmpty || IpAddressValidator().validate(value);
             if (isValid) {
               widget.errors.remove(_staticDNS2Controller);
             } else {
               widget.errors[_staticDNS2Controller] = loc(context).invalidIpAddress;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -227,12 +243,14 @@ class _StaticWANSettingsFormState extends State<StaticWANSettingsForm> {
           border: const OutlineInputBorder(),
           controller: _staticDNS3Controller,
           onChanged: (value) {
-            final isValid = IpAddressValidator().validate(value);
+            // Optional field: empty value is valid
+            final isValid = value.isEmpty || IpAddressValidator().validate(value);
             if (isValid) {
               widget.errors.remove(_staticDNS3Controller);
             } else {
               widget.errors[_staticDNS3Controller] = loc(context).invalidIpAddress;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -255,6 +273,7 @@ class PPPoEWANSettingsForm extends StatefulWidget {
   final DualWANConfiguration wan;
   final Function(DualWANConfiguration) onChanged;
   final Map<TextEditingController, String?> errors;
+  final VoidCallback? onErrorChanged;
 
   const PPPoEWANSettingsForm({
     Key? key,
@@ -262,6 +281,7 @@ class PPPoEWANSettingsForm extends StatefulWidget {
     required this.wan,
     required this.onChanged,
     required this.errors,
+    this.onErrorChanged,
   }) : super(key: key);
 
   @override
@@ -283,6 +303,11 @@ class _PPPoEWANSettingsFormState extends State<PPPoEWANSettingsForm> {
 
   @override
   void dispose() {
+    // Clear errors before disposing controllers
+    widget.errors.remove(_usernameController);
+    widget.errors.remove(_passwordController);
+    widget.errors.remove(_serviceNameController);
+    // Dispose controllers
     _usernameController.dispose();
     _passwordController.dispose();
     _serviceNameController.dispose();
@@ -311,6 +336,7 @@ class _PPPoEWANSettingsFormState extends State<PPPoEWANSettingsForm> {
             } else {
               widget.errors[_usernameController] = loc(context).invalidUsername;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -338,6 +364,7 @@ class _PPPoEWANSettingsFormState extends State<PPPoEWANSettingsForm> {
             } else {
               widget.errors[_passwordController] = loc(context).invalidPassword;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -382,6 +409,7 @@ class PPTPWANSettingsForm extends StatefulWidget {
   final DualWANConfiguration wan;
   final Function(DualWANConfiguration) onChanged;
   final Map<TextEditingController, String?> errors;
+  final VoidCallback? onErrorChanged;
 
   const PPTPWANSettingsForm({
     Key? key,
@@ -389,6 +417,7 @@ class PPTPWANSettingsForm extends StatefulWidget {
     required this.wan,
     required this.onChanged,
     required this.errors,
+    this.onErrorChanged,
   }) : super(key: key);
 
   @override
@@ -405,11 +434,16 @@ class _PPTPWANSettingsFormState extends State<PPTPWANSettingsForm> {
     super.initState();
     _usernameController = TextEditingController(text: widget.wan.username ?? '');
     _passwordController = TextEditingController(text: widget.wan.password ?? '');
-    _serverController = TextEditingController(text: widget.wan.serviceName ?? '');
+    _serverController = TextEditingController(text: widget.wan.serverIp ?? '');
   }
 
   @override
   void dispose() {
+    // Clear errors before disposing controllers
+    widget.errors.remove(_usernameController);
+    widget.errors.remove(_passwordController);
+    widget.errors.remove(_serverController);
+    // Dispose controllers
     _usernameController.dispose();
     _passwordController.dispose();
     _serverController.dispose();
@@ -430,6 +464,7 @@ class _PPTPWANSettingsFormState extends State<PPTPWANSettingsForm> {
             wan: widget.wan,
             onChanged: widget.onChanged,
             errors: widget.errors,
+            onErrorChanged: widget.onErrorChanged,
           ),
           const Divider(),
         ],
@@ -448,6 +483,7 @@ class _PPTPWANSettingsFormState extends State<PPTPWANSettingsForm> {
             } else {
               widget.errors[_serverController] = loc(context).invalidIpAddress;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -482,6 +518,7 @@ class _PPTPWANSettingsFormState extends State<PPTPWANSettingsForm> {
             } else {
               widget.errors[_usernameController] = loc(context).invalidUsername;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -515,6 +552,7 @@ class _PPTPWANSettingsFormState extends State<PPTPWANSettingsForm> {
             } else {
               widget.errors[_passwordController] = loc(context).invalidPassword;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -580,6 +618,7 @@ class L2TPWANSettingsForm extends StatefulWidget {
   final DualWANConfiguration wan;
   final Function(DualWANConfiguration) onChanged;
   final Map<TextEditingController, String?> errors;
+  final VoidCallback? onErrorChanged;
 
   const L2TPWANSettingsForm({
     Key? key,
@@ -587,6 +626,7 @@ class L2TPWANSettingsForm extends StatefulWidget {
     required this.wan,
     required this.onChanged,
     required this.errors,
+    this.onErrorChanged,
   }) : super(key: key);
 
   @override
@@ -603,11 +643,16 @@ class _L2TPWANSettingsFormState extends State<L2TPWANSettingsForm> {
     super.initState();
     _usernameController = TextEditingController(text: widget.wan.username ?? '');
     _passwordController = TextEditingController(text: widget.wan.password ?? '');
-    _serverController = TextEditingController(text: widget.wan.serviceName ?? '');
+    _serverController = TextEditingController(text: widget.wan.serverIp ?? '');
   }
 
   @override
   void dispose() {
+    // Clear errors before disposing controllers
+    widget.errors.remove(_usernameController);
+    widget.errors.remove(_passwordController);
+    widget.errors.remove(_serverController);
+    // Dispose controllers
     _usernameController.dispose();
     _passwordController.dispose();
     _serverController.dispose();
@@ -628,9 +673,22 @@ class _L2TPWANSettingsFormState extends State<L2TPWANSettingsForm> {
               widget.isPrimary ? 'primaryL2TPServer' : 'secondaryL2TPServer',
           identifier: widget.isPrimary ? 'primaryL2TPServer' : 'secondaryL2TPServer',
           controller: _serverController,
-          onChanged: (value) {}, // No validation for optional field
+          onChanged: (value) {
+            final isValid = value.isNotEmpty;
+            if (isValid) {
+              widget.errors.remove(_serverController);
+            } else {
+              widget.errors[_serverController] = loc(context).invalidIpAddress;
+            }
+            widget.onErrorChanged?.call();
+          },
           onFocusChanged: (focus) {
             if (!focus) {
+              final hasError = widget.errors.containsKey(_serverController);
+              if (hasError) {
+                setState(() {});
+                return;
+              }
               final value = _serverController.text;
               widget.onChanged(widget.wan.copyWith(serverIp: () => value));
               setState(() {});
@@ -655,6 +713,7 @@ class _L2TPWANSettingsFormState extends State<L2TPWANSettingsForm> {
             } else {
               widget.errors[_usernameController] = loc(context).invalidUsername;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {
@@ -688,6 +747,7 @@ class _L2TPWANSettingsFormState extends State<L2TPWANSettingsForm> {
             } else {
               widget.errors[_passwordController] = loc(context).invalidPassword;
             }
+            widget.onErrorChanged?.call();
           },
           onFocusChanged: (focus) {
             if (!focus) {

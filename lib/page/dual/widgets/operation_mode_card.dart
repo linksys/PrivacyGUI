@@ -80,6 +80,8 @@ class OperationModeCard extends ConsumerWidget {
                 children: [
                   AppText.labelLarge(loc(context).dualWanLoadBalanceRatio),
                   AppDropdownButton<DualWANBalanceRatio>(
+                    initial:
+                        balanceRatio ?? DualWANBalanceRatio.equalDistribution,
                     selected: balanceRatio,
                     items: DualWANBalanceRatio.values,
                     label: (value) => value.toDisplayString(context),
