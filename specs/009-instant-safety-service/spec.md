@@ -115,6 +115,6 @@ The system determines whether the router hardware/firmware supports Fortinet saf
 ## Assumptions
 
 - The existing `PreservableNotifierMixin` pattern will continue to be used for dirty state management
-- DNS server IP addresses for Fortinet (208.91.114.155) and OpenDNS (208.67.222.123, 208.67.220.123) are fixed and do not require configuration
+- DNS server IP addresses for Fortinet (208.91.114.155) and OpenDNS Family Shield (208.67.222.222, 208.67.220.220) are fixed and do not require configuration
 - The compatibility map for Fortinet support (currently empty) will remain managed within the service layer
 - The InstantSafety feature currently has no unit tests, so new tests will be created from scratch
