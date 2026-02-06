@@ -34,7 +34,8 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
   var _hasExtraDNS = false;
   bool _isLoading = false;
 
-  final subnetMaskValidator = SubnetMaskValidator();
+  // QUALITY-439: Override default max (30) to allow /31 subnet masks for WAN Static IP
+  final subnetMaskValidator = SubnetMaskValidator(max: 31);
   final ipAddressValidator = IpAddressValidator();
   final requiredIpAddressValidator = IpAddressRequiredValidator();
   String? _ipError;

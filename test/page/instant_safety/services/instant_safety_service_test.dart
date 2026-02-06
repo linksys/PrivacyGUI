@@ -224,8 +224,9 @@ void main() {
 
       final data = captured.first as Map<String, dynamic>;
       final dhcpSettings = data['dhcpSettings'] as Map<String, dynamic>;
-      expect(dhcpSettings['dnsServer1'], '208.67.222.123');
-      expect(dhcpSettings['dnsServer2'], '208.67.220.123');
+      // NOW-713: Updated OpenDNS Family Shield IPs
+      expect(dhcpSettings['dnsServer1'], '208.67.222.222');
+      expect(dhcpSettings['dnsServer2'], '208.67.220.220');
     });
 
     test('with off clears DNS servers', () async {
