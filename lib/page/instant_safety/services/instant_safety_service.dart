@@ -49,8 +49,9 @@ class InstantSafetyService {
 
   // DNS Configuration Constants
   static const _fortinetDns1 = '208.91.114.155';
-  static const _openDnsDns1 = '208.67.222.123';
-  static const _openDnsDns2 = '208.67.220.123';
+  // NOW-713: Updated OpenDNS Family Shield IPs
+  static const _openDnsDns1 = '208.67.222.222';
+  static const _openDnsDns2 = '208.67.220.220';
 
   /// Fetches current safe browsing configuration from router.
   ///

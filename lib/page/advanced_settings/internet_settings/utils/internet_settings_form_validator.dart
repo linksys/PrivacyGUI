@@ -43,7 +43,8 @@ class InternetSettingsFormValidator {
     if (value == null || value.isEmpty) {
       return ValidationError.invalidSubnetMask;
     }
-    final subnetMaskValidator = SubnetMaskValidator();
+    // QUALITY-439: Override default max (30) to allow /31 subnet masks for WAN Static IP
+    final subnetMaskValidator = SubnetMaskValidator(max: 31);
     if (subnetMaskValidator.validate(value)) {
       return null;
     } else {

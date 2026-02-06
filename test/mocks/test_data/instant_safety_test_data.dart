@@ -7,8 +7,9 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 class InstantSafetyTestData {
   // DNS Configuration Constants (matching service)
   static const fortinetDns1 = '208.91.114.155';
-  static const openDnsDns1 = '208.67.222.123';
-  static const openDnsDns2 = '208.67.220.123';
+  // NOW-713: Updated OpenDNS Family Shield IPs
+  static const openDnsDns1 = '208.67.222.222';
+  static const openDnsDns2 = '208.67.220.220';
 
   /// Create default LAN settings response with no safe browsing configured
   static JNAPSuccess createLANSettingsSuccess({

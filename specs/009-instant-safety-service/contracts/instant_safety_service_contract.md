@@ -125,7 +125,7 @@ Future<void> saveSettings(InstantSafetyType safeBrowsingType) async
 1. Validates cached LAN settings exist (throws `InvalidInputError` if not)
 2. Constructs DHCP settings with appropriate DNS servers based on type:
    - `fortinet`: DNS1=208.91.114.155
-   - `openDNS`: DNS1=208.67.222.123, DNS2=208.67.220.123
+   - `openDNS`: DNS1=208.67.222.222, DNS2=208.67.220.220
    - `off`: Clear all DNS servers
 3. Calls `setLANSettings` JNAP action
 4. Allows `JNAPSideEffectError` to propagate (handled by UI layer)
@@ -191,7 +191,7 @@ InstantSafetyType _determineSafeBrowsingType(RouterLANSettings lanSettings)
 final dnsServer1 = lanSettings.dhcpSettings.dnsServer1;
 if (dnsServer1 == '208.91.114.155') {
   return InstantSafetyType.fortinet;
-} else if (dnsServer1 == '208.67.222.123') {
+} else if (dnsServer1 == '208.67.222.222') {
   return InstantSafetyType.openDNS;
 } else {
   return InstantSafetyType.off;
@@ -225,9 +225,9 @@ Private constants within service:
 // Fortinet Safe Browsing DNS
 static const _fortinetDns1 = '208.91.114.155';
 
-// OpenDNS Family Shield
-static const _openDnsDns1 = '208.67.222.123';
-static const _openDnsDns2 = '208.67.220.123';
+// OpenDNS Family Shield (NOW-713: Updated IPs)
+static const _openDnsDns1 = '208.67.222.222';
+static const _openDnsDns2 = '208.67.220.220';
 ```
 
 ---

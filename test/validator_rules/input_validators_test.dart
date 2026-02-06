@@ -378,6 +378,19 @@ void main() {
       expect(validator.validate(invalidMask2), false);
     });
 
+    // QUALITY-439: Test /31 subnet mask support for WAN Static IP
+    test('validate method - /31 subnet mask with max: 31', () {
+      final validator = SubnetMaskValidator(max: 31);
+      const mask31 = '255.255.255.254'; // /31 subnet mask
+      expect(validator.validate(mask31), true);
+    });
+
+    test('validate method - /31 subnet mask rejected with default max', () {
+      final validator = SubnetMaskValidator(); // default max is 30
+      const mask31 = '255.255.255.254'; // /31 subnet mask
+      expect(validator.validate(mask31), false);
+    });
+
     test('validate method - invalid subnet mask (leading whitespace)', () {
       final validator = SubnetMaskValidator();
       const invalidMask = ' 255.255.255.128';
