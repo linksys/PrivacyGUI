@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
-import 'package:privacy_gui/page/support/widgets/faq_agent_fab.dart';
+import 'package:privacy_gui/page/support/shared_widgets/faq_agent/faq_agent.dart';
 
 class FaqListView extends ArgumentsConsumerStatefulView {
   const FaqListView({super.key});

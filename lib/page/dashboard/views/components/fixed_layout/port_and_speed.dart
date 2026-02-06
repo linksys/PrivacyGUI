@@ -12,7 +12,7 @@ import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/externa
 import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/internal_speed_test_result.dart';
 import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/port_status_widget.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
-import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
+import 'package:privacy_gui/page/health_check/shared_widgets/speed_test_widget.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Dashboard widget showing port connections and speed test results.

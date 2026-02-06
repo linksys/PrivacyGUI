@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/extern
 import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/internal_speed_test_result.dart';
 import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/port_status_widget.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
-import 'package:privacy_gui/page/health_check/widgets/speed_test_widget.dart';
+import 'package:privacy_gui/page/health_check/shared_widgets/speed_test_widget.dart';
 import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
