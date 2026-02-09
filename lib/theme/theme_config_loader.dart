@@ -45,6 +45,18 @@ class ThemeConfigLoader {
         _ => ThemeSource.normal,
       };
 
+  /// Check if device-specific theme should be used.
+  ///
+  /// Returns `false` if any environment override is set (forcedSource != normal,
+  /// or THEME_JSON/THEME_NETWORK_URL is not empty).
+  ///
+  /// Returns `true` if no override exists and device-specific theme should be used.
+  static bool shouldUseDeviceTheme() {
+    return forcedSource == ThemeSource.normal &&
+        _themeJsonEnv.isEmpty &&
+        _themeNetworkUrl.isEmpty;
+  }
+
   /// Single entry point: Loads theme configuration.
   static Future<ThemeJsonConfig> load() async {
     return resolve(

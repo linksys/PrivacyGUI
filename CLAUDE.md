@@ -20,8 +20,13 @@ flutter run                       # Run on connected device/emulator
 
 ### Building
 ```bash
-# Web build with parameters: buildNumber, force, href, cloud, picker, ca
-./build_web.sh                   # Build for web platform
+# Web build with parameters: buildNumber, force, href, cloud, picker, ca, themeSource, themeJson
+./build_web.sh <buildNumber> <force> <href> <cloud> <picker> <ca> [themeSource] [themeJson]
+
+# Examples:
+./build_web.sh 100 false "/" prod false true                           # Default theme
+./build_web.sh 100 false "/" prod false true cicd '{"style":"neo"}'    # Override theme with JSON
+./build_web.sh 100 false "/" prod false true network "https://..."     # Load theme from network
 ```
 
 ### Testing

@@ -113,25 +113,9 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     // Watch device-specific theme configuration (reactive to modelNumber)
     final deviceThemeConfigAsync = ref.watch(deviceThemeConfigProvider);
 
+    // Always use MaterialApp.router to preserve navigation state
+    // Use default theme during loading to prevent router swap
     return deviceThemeConfigAsync.when(
-      loading: () => MaterialApp(
-        home: Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-      ),
-      error: (error, stack) {
-        logger.e('[App] Theme loading error: $error',
-            error: error, stackTrace: stack);
-        // Fallback to default theme on error
-        final fallbackConfig = ThemeJsonConfig.defaultConfig();
-        return _buildMaterialApp(
-          router: router,
-          appSettings: appSettings,
-          systemLocale: systemLocale,
-          themeConfig: fallbackConfig,
-          userThemeColor: userThemeColor,
-        );
-      },
       data: (themeConfig) => _buildMaterialApp(
         router: router,
         appSettings: appSettings,
@@ -139,6 +123,24 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         themeConfig: themeConfig,
         userThemeColor: userThemeColor,
       ),
+      loading: () => _buildMaterialApp(
+        router: router,
+        appSettings: appSettings,
+        systemLocale: systemLocale,
+        themeConfig: ThemeJsonConfig.defaultConfig(),
+        userThemeColor: userThemeColor,
+      ),
+      error: (error, stack) {
+        logger.e('[App]: Theme loading error: $error',
+            error: error, stackTrace: stack);
+        return _buildMaterialApp(
+          router: router,
+          appSettings: appSettings,
+          systemLocale: systemLocale,
+          themeConfig: ThemeJsonConfig.defaultConfig(),
+          userThemeColor: userThemeColor,
+        );
+      },
     );
   }
 

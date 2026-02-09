@@ -762,7 +762,7 @@ class BrandUtils {
 
     // No matching suffix -> default theme
     if (suffix == null) {
-      logger.d('[BrandUtils] No theme mapping for $modelNumber, using default');
+      logger.d('[BrandUtils]: No theme mapping for $modelNumber, using default');
       return ThemeJsonConfig.defaultConfig();
     }
 
@@ -772,15 +772,15 @@ class BrandUtils {
     // Try to load theme from assets
     // ThemeJsonConfig.fromAssets() will handle file not found and return default
     try {
-      logger.i('[BrandUtils] Loading theme for $modelNumber from $themePath');
+      logger.i('[BrandUtils]: Loading theme for $modelNumber from $themePath');
       final theme = await ThemeJsonConfig.fromAssets(themePath);
 
       // Check if we got default theme (fromAssets returns default on error)
       // If the loaded theme has 'flat' style, it might be the default fallback
-      logger.i('[BrandUtils] Theme loaded successfully for $modelNumber');
+      logger.i('[BrandUtils]: Theme loaded successfully for $modelNumber');
       return theme;
     } catch (e) {
-      logger.e('[BrandUtils] Failed to load theme from $themePath', error: e);
+      logger.e('[BrandUtils]: Failed to load theme from $themePath', error: e);
       return ThemeJsonConfig.defaultConfig();
     }
   }
