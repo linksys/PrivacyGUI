@@ -134,6 +134,8 @@ flutter:
     - assets/icons/
     - assets/resources/
     - assets/a2ui/widgets/
+    - assets/theme/
+    
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
 

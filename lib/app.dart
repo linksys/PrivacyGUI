@@ -6,13 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
+import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
+import 'package:privacy_gui/providers/device_theme_config_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
@@ -20,7 +22,6 @@ import 'package:privacy_gui/util/languages.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
-import 'package:privacy_gui/theme/theme_json_config.dart';
 
 /// The root widget of the Linksys application.
 ///
@@ -84,8 +85,8 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   ///
   /// This method constructs the `MaterialApp.router`, which is the root of the
   /// application's UI. It configures the following:
-  /// - **Theming:** Dynamically sets the light and dark themes based on the
-  ///   user's selected theme color and mode from [appSettingsProvider].
+  /// - **Theming:** Dynamically loads device-specific theme based on modelNumber
+  ///   from [deviceThemeConfigProvider], with user preferences from [appSettingsProvider].
   /// - **Localization:** Sets the application's locale based on user settings,
   ///   falling back to the system locale. It also provides the necessary
   ///   localization delegates and supported locales.
@@ -109,10 +110,51 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     // If null, let the JSON config's seedColor be used
     final userThemeColor = appSettings.themeColor;
 
-    // Use ThemeJsonConfig as single source of truth
-    final themeConfig = getIt<ThemeJsonConfig>();
+    // Watch device-specific theme configuration (reactive to modelNumber)
+    final deviceThemeConfigAsync = ref.watch(deviceThemeConfigProvider);
+
+    return deviceThemeConfigAsync.when(
+      loading: () => MaterialApp(
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (error, stack) {
+        logger.e('[App] Theme loading error: $error',
+            error: error, stackTrace: stack);
+        // Fallback to default theme on error
+        final fallbackConfig = ThemeJsonConfig.defaultConfig();
+        return _buildMaterialApp(
+          router: router,
+          appSettings: appSettings,
+          systemLocale: systemLocale,
+          themeConfig: fallbackConfig,
+          userThemeColor: userThemeColor,
+        );
+      },
+      data: (themeConfig) => _buildMaterialApp(
+        router: router,
+        appSettings: appSettings,
+        systemLocale: systemLocale,
+        themeConfig: themeConfig,
+        userThemeColor: userThemeColor,
+      ),
+    );
+  }
+
+  /// Helper method to build MaterialApp with theme configuration.
+  ///
+  /// Extracted to avoid code duplication in error and data states.
+  Widget _buildMaterialApp({
+    required GoRouter router,
+    required AppSettings appSettings,
+    required Locale systemLocale,
+    required ThemeJsonConfig themeConfig,
+    required Color? userThemeColor,
+  }) {
     final appLightTheme = themeConfig.createLightTheme(userThemeColor);
     final appDarkTheme = themeConfig.createDarkTheme(userThemeColor);
+
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
       theme: appLightTheme,

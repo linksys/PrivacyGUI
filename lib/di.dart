@@ -16,11 +16,25 @@ final getIt = GetIt.instance;
 /// register all singleton services and objects that need to be globally
 /// accessible. Currently, it registers:
 /// - A singleton of [ServiceHelper].
-/// - The application's light theme data as a named instance.
-/// - The application's dark theme data as a named instance.
+/// - The application's theme configuration (legacy, kept for backward compatibility).
+/// - The application's light and dark theme data as named instances.
+///
+/// ## Theme Management Note:
+/// Theme management has been migrated to Riverpod providers for reactive updates.
+/// The [ThemeJsonConfig] registered here serves as a **fallback only**.
+///
+/// **Active theme loading** is handled by:
+/// - `deviceThemeConfigProvider` in [lib/providers/device_theme_config_provider.dart]
+/// - Device-specific themes loaded via `BrandUtils.getDeviceTheme()`
+/// - Reactive updates when user logs into different router models
+///
+/// The theme registered in GetIt is only used as a default fallback if the
+/// reactive provider fails to load a theme for any reason.
 void dependencySetup({ThemeJsonConfig? themeConfig}) {
   getIt.registerSingleton<ServiceHelper>(ServiceHelper());
 
+  // Legacy theme config registration (fallback only)
+  // Active theme system uses deviceThemeConfigProvider (Riverpod)
   final config = themeConfig ?? ThemeJsonConfig.defaultConfig();
   getIt.registerSingleton<ThemeJsonConfig>(config);
 
