@@ -678,7 +678,7 @@ class BrandUtils {
   static const Map<String, String> _modelSuffixMap = {
     'TB-': '_tb',
     'CF': '_cf',
-    'M60': '_m60',
+    'DU': '_du',
   };
 
   static Future<void> _loadManifest() async {
