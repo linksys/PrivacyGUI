@@ -762,7 +762,8 @@ class BrandUtils {
 
     // No matching suffix -> default theme
     if (suffix == null) {
-      logger.d('[BrandUtils]: No theme mapping for $modelNumber, using default');
+      logger
+          .d('[BrandUtils]: No theme mapping for $modelNumber, using default');
       return ThemeJsonConfig.defaultConfig();
     }
 
