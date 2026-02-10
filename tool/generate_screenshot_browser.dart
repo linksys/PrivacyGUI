@@ -31,19 +31,26 @@ void main(List<String> args) async {
 
   // Apply locale/device filters
   if (config.locales.isNotEmpty) {
-    screenshots = screenshots.where((s) => config.locales.contains(s['locale'])).toList();
-    stdout.writeln('Filtered to ${screenshots.length} screenshots (locales: ${config.locales.join(', ')})');
+    screenshots =
+        screenshots.where((s) => config.locales.contains(s['locale'])).toList();
+    stdout.writeln(
+        'Filtered to ${screenshots.length} screenshots (locales: ${config.locales.join(', ')})');
   }
 
   if (config.devices.isNotEmpty) {
-    screenshots = screenshots.where((s) => config.devices.contains(s['device'])).toList();
-    stdout.writeln('Filtered to ${screenshots.length} screenshots (devices: ${config.devices.join(', ')})');
+    screenshots =
+        screenshots.where((s) => config.devices.contains(s['device'])).toList();
+    stdout.writeln(
+        'Filtered to ${screenshots.length} screenshots (devices: ${config.devices.join(', ')})');
   }
 
   // Extract unique values for filters
-  final locales = screenshots.map((s) => s['locale'] as String).toSet().toList()..sort();
-  final devices = screenshots.map((s) => s['device'] as String).toSet().toList()..sort();
-  final groups = screenshots.map((s) => s['group'] as String).toSet().toList()..sort();
+  final locales = screenshots.map((s) => s['locale'] as String).toSet().toList()
+    ..sort();
+  final devices = screenshots.map((s) => s['device'] as String).toSet().toList()
+    ..sort();
+  final groups = screenshots.map((s) => s['group'] as String).toSet().toList()
+    ..sort();
 
   stdout.writeln('Locales: ${locales.length}');
   stdout.writeln('Device types: ${devices.length}');
@@ -79,7 +86,8 @@ void main(List<String> args) async {
       totalImageSize += file.lengthSync();
     }
   }
-  stdout.writeln('Total image size: ${(totalImageSize / 1024 / 1024).toStringAsFixed(1)} MB');
+  stdout.writeln(
+      'Total image size: ${(totalImageSize / 1024 / 1024).toStringAsFixed(1)} MB');
 }
 
 class Config {
@@ -143,8 +151,7 @@ Future<List<Map<String, dynamic>>> scanScreenshots(Directory dir) async {
 
   // First try to load from JSON report if available
   final jsonFiles = dir.listSync().whereType<File>().where(
-    (f) => f.path.endsWith('.json') && f.path.contains('test-reports')
-  );
+      (f) => f.path.endsWith('.json') && f.path.contains('test-reports'));
 
   final jsonData = <Map<String, dynamic>>[];
   for (final jsonFile in jsonFiles) {
@@ -255,7 +262,8 @@ String _extractScreenId(String name) {
   }
 
   // Pattern 3: "xxx view - ..." or "xxx view ..." pattern
-  final viewMatch = RegExp(r'^(.+?)\s+view(?:\s+-|\s|$)', caseSensitive: false).firstMatch(name);
+  final viewMatch = RegExp(r'^(.+?)\s+view(?:\s+-|\s|$)', caseSensitive: false)
+      .firstMatch(name);
   if (viewMatch != null) {
     return '${viewMatch.group(1)} View';
   }
@@ -303,21 +311,32 @@ String _extractScreenId(String name) {
   }
 
   // Pattern 10: Test case patterns - group by test type
-  if (name.startsWith('Verify ') || name.startsWith('It should') ||
-      name.startsWith('should ') || name.startsWith('WHEN ')) {
+  if (name.startsWith('Verify ') ||
+      name.startsWith('It should') ||
+      name.startsWith('should ') ||
+      name.startsWith('WHEN ')) {
     // Try to extract feature from test name
-    if (name.contains('speed test') || name.contains('Speedtest')) return 'Speed Test';
-    if (name.contains('WiFi') || name.contains('wifi') || name.contains('SSID')) return 'WiFi';
+    if (name.contains('speed test') || name.contains('Speedtest'))
+      return 'Speed Test';
+    if (name.contains('WiFi') || name.contains('wifi') || name.contains('SSID'))
+      return 'WiFi';
     if (name.contains('MAC')) return 'MAC Filtering';
     if (name.contains('VPN')) return 'VPN';
-    if (name.contains('firmware') || name.contains('Firmware')) return 'Firmware';
-    if (name.contains('PPPoE') || name.contains('DHCP') || name.contains('ISP')) return 'Internet Settings';
+    if (name.contains('firmware') || name.contains('Firmware'))
+      return 'Firmware';
+    if (name.contains('PPPoE') || name.contains('DHCP') || name.contains('ISP'))
+      return 'Internet Settings';
     if (name.contains('static route')) return 'Static Routing';
-    if (name.contains('banner') || name.contains('install')) return 'Install Prompt';
-    if (name.contains('password') || name.contains('login') || name.contains('admin')) return 'Authentication';
-    if (name.contains('modem') || name.contains('router')) return 'Setup Wizard';
+    if (name.contains('banner') || name.contains('install'))
+      return 'Install Prompt';
+    if (name.contains('password') ||
+        name.contains('login') ||
+        name.contains('admin')) return 'Authentication';
+    if (name.contains('modem') || name.contains('router'))
+      return 'Setup Wizard';
     if (name.contains('node')) return 'Node';
-    if (name.contains('channel') || name.contains('security mode')) return 'WiFi Advanced';
+    if (name.contains('channel') || name.contains('security mode'))
+      return 'WiFi Advanced';
     return 'Verification Tests';
   }
 
@@ -354,7 +373,8 @@ String _capitalize(String s) {
   return s[0].toUpperCase() + s.substring(1).toLowerCase();
 }
 
-Future<void> generateThumbnails(Directory snapshotsDir, List<Map<String, dynamic>> screenshots) async {
+Future<void> generateThumbnails(
+    Directory snapshotsDir, List<Map<String, dynamic>> screenshots) async {
   final thumbDir = Directory('${snapshotsDir.path}/thumbnails');
   if (!thumbDir.existsSync()) {
     thumbDir.createSync(recursive: true);
@@ -365,7 +385,8 @@ Future<void> generateThumbnails(Directory snapshotsDir, List<Map<String, dynamic
   for (var i = 0; i < screenshots.length; i++) {
     final s = screenshots[i];
     final sourcePath = '${snapshotsDir.path}/${s['path']}';
-    final thumbPath = '${thumbDir.path}/${s['path']}'.replaceAll('.png', '_thumb.jpg');
+    final thumbPath =
+        '${thumbDir.path}/${s['path']}'.replaceAll('.png', '_thumb.jpg');
 
     final thumbFile = File(thumbPath);
     if (thumbFile.existsSync()) continue;
@@ -379,8 +400,10 @@ Future<void> generateThumbnails(Directory snapshotsDir, List<Map<String, dynamic
     // Use ImageMagick to create thumbnail
     final result = await Process.run('convert', [
       sourcePath,
-      '-resize', '300x',
-      '-quality', '80',
+      '-resize',
+      '300x',
+      '-quality',
+      '80',
       thumbPath,
     ]);
 
@@ -396,13 +419,9 @@ Future<void> generateThumbnails(Directory snapshotsDir, List<Map<String, dynamic
   stdout.writeln('Thumbnails complete');
 }
 
-String generateHtml(
-  List<Map<String, dynamic>> screenshots,
-  List<String> locales,
-  List<String> devices,
-  List<String> groups,
-  {int pageSize = 50, bool hasThumbnails = false}
-) {
+String generateHtml(List<Map<String, dynamic>> screenshots,
+    List<String> locales, List<String> devices, List<String> groups,
+    {int pageSize = 50, bool hasThumbnails = false}) {
   return '''
 <!DOCTYPE html>
 <html lang="en">
