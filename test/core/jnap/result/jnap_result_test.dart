@@ -87,5 +87,40 @@ void main() {
       expect((actual as JNAPError).error,
           'Validation of element "SetSimpleWiFiSettings" failed due to unexpected count (0) of child element "simpleWiFiSettings"');
     });
+
+    test('test error result without error or output keys', () async {
+      // This is the bug scenario from Issue #85:
+      // Router returns {"result": "ErrorInvalidHostName"} with no error/output keys.
+      // Previously this would produce error = "null" (from jsonEncode(null)).
+      const sample = '''
+        {
+          "result": "ErrorInvalidHostName"
+        }
+      ''';
+
+      final actual = JNAPResult.fromJson(jsonDecode(sample));
+
+      expect(actual.runtimeType, JNAPError);
+      expect(actual.result, 'ErrorInvalidHostName');
+      // Should fallback to result code, NOT "null"
+      expect((actual as JNAPError).error, 'ErrorInvalidHostName');
+    });
+
+    test('test error result with output but no error key', () async {
+      const sample = '''
+        {
+          "result": "ErrorSomething",
+          "output": {"detail": "some detail"}
+        }
+      ''';
+
+      final actual = JNAPResult.fromJson(jsonDecode(sample));
+
+      expect(actual.runtimeType, JNAPError);
+      expect(actual.result, 'ErrorSomething');
+      // Should encode the output as the error message
+      expect(
+          (actual as JNAPError).error, jsonEncode({"detail": "some detail"}));
+    });
   });
 }

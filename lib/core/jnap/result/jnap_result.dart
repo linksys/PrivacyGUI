@@ -157,8 +157,10 @@ class JNAPError extends JNAPResult {
         if (response[keyJnapResult] != jnapResultOk) {
           return JNAPError(
             result: response[keyJnapResult],
-            error:
-                response[keyJnapError] ?? jsonEncode(response[keyJnapOutput]),
+            error: response[keyJnapError] ??
+                (response.containsKey(keyJnapOutput)
+                    ? jsonEncode(response[keyJnapOutput])
+                    : response[keyJnapResult]),
           );
         }
       }
@@ -170,7 +172,10 @@ class JNAPError extends JNAPResult {
     // Otherwise, it's a general jnap
     return JNAPError(
       result: json[keyJnapResult],
-      error: json[keyJnapError] ?? jsonEncode(json[keyJnapOutput]),
+      error: json[keyJnapError] ??
+          (json.containsKey(keyJnapOutput)
+              ? jsonEncode(json[keyJnapOutput])
+              : json[keyJnapResult]),
     );
   }
 

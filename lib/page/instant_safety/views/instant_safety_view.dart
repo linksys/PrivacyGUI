@@ -173,7 +173,9 @@ class _InstantSafetyViewState extends ConsumerState<InstantSafetyView>
       };
       showFailedSnackBar(
         context,
-        errorMsg ?? '',
+        (errorMsg != null && errorMsg.isNotEmpty)
+            ? errorMsg
+            : loc(context).failedExclamation,
       );
     }).whenComplete(
       () {
