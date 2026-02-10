@@ -353,13 +353,17 @@ class AppMenuCard extends StatelessWidget {
           ),
           if (title != null)
             Padding(
-              padding: EdgeInsets.only(top: AppSpacing.sm),
-              child: Wrap(
-                crossAxisAlignment: WrapCrossAlignment.start,
-                spacing: AppSpacing.sm,
+              padding: EdgeInsets.only(top: AppSpacing.xs),
+              child: Row(
                 children: [
-                  AppText.titleSmall(title ?? ''),
+                  Flexible(
+                    child: AppText.titleSmall(
+                      title ?? '',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   if (isBeta) ...[
+                    AppGap.sm(),
                     AppBadge(
                       label: 'BETA',
                       color: Theme.of(context)

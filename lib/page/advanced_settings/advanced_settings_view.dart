@@ -37,8 +37,8 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
             crossAxisCount: 2,
             mainAxisSpacing: AppSpacing.lg,
             crossAxisSpacing: AppSpacing.lg,
-            childAspectRatio: (430 / 56),
-            mainAxisExtent: 56,
+            childAspectRatio: (430 / 60),
+            mainAxisExtent: 60,
           ),
           physics: const ScrollPhysics(),
           itemCount: advancedSettings.length,
@@ -108,6 +108,10 @@ class _AdvancedSettingsViewState extends ConsumerState<AdvancedSettingsView> {
         title: item.title,
         trailing: AppIcon.font(AppFontIcons.chevronRight),
         onTap: disabled ? null : item.onTap,
+        padding: EdgeInsets.symmetric(
+          vertical: AppSpacing.md,
+          horizontal: AppSpacing.xl,
+        ),
       ),
     );
   }

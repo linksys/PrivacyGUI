@@ -62,12 +62,14 @@ class ThemeJsonConfig {
     final colors = json['colors'] as Map<String, dynamic>?;
 
     final visualEffects = json['visualEffects'] as int?;
+    final globalOverlay = json['globalOverlay'] as String?;
 
     // Compose light theme JSON
     final lightJson = <String, dynamic>{
       'style': style,
       'brightness': 'light',
       if (visualEffects != null) 'visualEffects': visualEffects,
+      if (globalOverlay != null) 'globalOverlay': globalOverlay,
       if (seedColor != null) 'seedColor': seedColor,
       if (overrides != null) 'overrides': overrides,
       ...?(colors?['light'] as Map<String, dynamic>?),
@@ -78,6 +80,7 @@ class ThemeJsonConfig {
       'style': style,
       'brightness': 'dark',
       if (visualEffects != null) 'visualEffects': visualEffects,
+      if (globalOverlay != null) 'globalOverlay': globalOverlay,
       if (seedColor != null) 'seedColor': seedColor,
       if (overrides != null) 'overrides': overrides,
       ...?(colors?['dark'] as Map<String, dynamic>?),
