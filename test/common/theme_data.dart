@@ -12,14 +12,14 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 /// To avoid animation in snapshots, don't enable shimmer and topology visual effects
 /// style: flat, glass, pixel, aurora, brutal, neumorphic
 final mockLightThemeData = ThemeJsonConfig.fromJson({
-  'style': 'brutal',
+  'style': 'glass',
   'visualEffects': 15,
   'brightness': 'light',
   'globalOverlay': 'none',
 }).createLightTheme();
 
 final mockDarkThemeData = ThemeJsonConfig.fromJson({
-  'style': 'brutal',
+  'style': 'glass',
   'visualEffects': 15,
   'brightness': 'dark',
   'globalOverlay': 'none',
