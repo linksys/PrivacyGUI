@@ -465,7 +465,7 @@ void main() {
           .thenReturn(stateWithServers);
 
       // 4. Pump Widget
-      await testHelper.pumpView(
+      final context = await testHelper.pumpView(
         tester,
         child: const SpeedTestView(),
         locale: screen.locale,
@@ -473,7 +473,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 5. Verification - Dropdown is displayed with hint text
-      expect(find.text('-----'), findsOneWidget);
+      expect(find.text(testHelper.loc(context).selectServer), findsOneWidget);
 
       // 6. Dropdown exists
       final serverDropdown = find.byType(AppDropdown<HealthCheckServer>);

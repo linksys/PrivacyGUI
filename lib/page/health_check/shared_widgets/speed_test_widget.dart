@@ -86,8 +86,7 @@ class SpeedTestWidget extends ConsumerWidget {
     if (showServerSelectionDialog) {
       final servers = ref.read(healthCheckProvider).servers;
       if (servers.isNotEmpty) {
-        final selected =
-            await _showServerSelectionDialog(context, ref, servers);
+        final selected = await _showServerSelectionDialog(context, servers);
         if (selected == null) return; // User cancelled
 
         ref.read(healthCheckProvider.notifier).setSelectedServer(selected);
@@ -671,7 +670,6 @@ class SpeedTestWidget extends ConsumerWidget {
   /// Returns the selected server, or null if canceled.
   Future<HealthCheckServer?> _showServerSelectionDialog(
     BuildContext context,
-    WidgetRef ref,
     List<HealthCheckServer> servers,
   ) async {
     return showSimpleAppDialog<HealthCheckServer>(
@@ -679,19 +677,27 @@ class SpeedTestWidget extends ConsumerWidget {
       title: loc(context).selectServer,
       content: Builder(
         builder: (dialogContext) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: servers.map((server) {
-              return AppListTile(
-                key: Key('server_${server.serverID}'),
-                title: AppText.bodyMedium(server.serverName.isNotEmpty
-                    ? server.serverName
-                    : server.serverHostname),
-                onTap: () => Navigator.of(dialogContext, rootNavigator: true)
-                    .pop(server),
-              );
-            }).toList(),
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(dialogContext).size.height * 0.5,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: servers.map((server) {
+                  return AppListTile(
+                    key: Key('server_${server.serverID}'),
+                    title: AppText.bodyMedium(server.serverName.isNotEmpty
+                        ? server.serverName
+                        : server.serverHostname),
+                    onTap: () =>
+                        Navigator.of(dialogContext, rootNavigator: true)
+                            .pop(server),
+                  );
+                }).toList(),
+              ),
+            ),
           );
         },
       ),

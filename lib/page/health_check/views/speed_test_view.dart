@@ -55,7 +55,7 @@ class SpeedTestView extends ConsumerWidget {
                   items: servers,
                   value: selectedServer,
                   itemAsString: (s) => s.toString(),
-                  hint: '-----',
+                  hint: loc(context).selectServer,
                   onChanged: (server) {
                     if (server != null) {
                       ref
