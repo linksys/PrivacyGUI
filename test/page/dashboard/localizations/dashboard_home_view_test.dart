@@ -12,6 +12,8 @@ import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/network
 import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/port_and_speed.dart';
 import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/quick_panel.dart';
 import 'package:privacy_gui/page/dashboard/views/components/fixed_layout/wifi_grid.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
@@ -42,6 +44,7 @@ import '../../../test_data/_index.dart';
 // - DHOME-VERT_OFFLINE: Offline WAN indicator.
 // - DHOME-VERT_QR: Hover QR tooltip.
 // - DHOME-VERT_VPN: VPN connected/disconnected.
+// - DHOME-SERV_DLG: Server selection dialog appears on speed test.
 
 final List<ScreenSize> _noLanScreens = [
   ...responsiveMobileScreens.map(
@@ -59,6 +62,15 @@ final List<ScreenSize> _verticalScreens = [
   ...responsiveDesktopScreens.map(
     (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1280),
   ),
+];
+
+// Screens that render SpeedTestWidget with goBtn (excludes 744w tablet)
+final List<ScreenSize> _speedTestDialogScreens = [
+  ...responsiveMobileScreens.map(
+    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 2480),
+  ),
+  ...responsiveDesktopScreens.where((screen) => screen.width >= 1080).map(
+      (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1280)),
 ];
 
 void main() {
@@ -88,11 +100,16 @@ void main() {
       overrides: overrides,
     );
     await tester.runAsync(() async {
-      // TODO
-      await precacheImage(
-        Assets.images.devices.routerLn12.provider(),
-        context,
-      );
+      final element = tester.element(find.byType(DashboardHomeView));
+      final images = [
+        Assets.images.devices.routerMx6200.provider(),
+        Assets.images.devices.routerWhw03.provider(),
+        Assets.images.devices.routerMr7500.provider(),
+        Assets.images.speedtestPowered.provider(),
+      ];
+      for (final image in images) {
+        await precacheImage(image, element);
+      }
     });
     await tester.pumpAndSettle();
     return context;
@@ -442,6 +459,59 @@ void main() {
     },
     screens: _verticalScreens,
     goldenFilename: 'DHOME-VERT_VPN_DISCONNECTED_01_card',
+    helper: testHelper,
+  );
+
+  // Test ID: DHOME-SERV_DLG — server selection dialog appears on speed test
+  testLocalizations(
+    'dashboard home view - server selection dialog appears on Go',
+    (tester, screen) async {
+      // Prepare servers data
+      final servers = healthCheckServersData
+          .map((json) => HealthCheckServer.fromJson(json))
+          .toList();
+
+      // Setup dashboard home state with LAN ports (required for SpeedTestWidget)
+      when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
+        DashboardHomeState.fromMap(dashboardHomeStateData),
+      );
+
+      // Setup state with servers and SpeedTest module enabled
+      final stateWithServers =
+          HealthCheckState.fromJson(healthCheckInitStateWithModules).copyWith(
+        servers: servers,
+        selectedServer: () => null,
+      );
+
+      when(testHelper.mockHealthCheckProvider.build())
+          .thenReturn(stateWithServers);
+      when(testHelper.mockHealthCheckProvider
+              .runHealthCheck(Module.speedtest, serverId: anyNamed('serverId')))
+          .thenAnswer((_) async {});
+
+      final context = await pumpDashboard(tester, screen);
+      final loc = testHelper.loc(context);
+
+      // Scroll to make Go button visible
+      final portAndSpeed = find.byType(FixedDashboardHomePortAndSpeed);
+      if (portAndSpeed.evaluate().isNotEmpty) {
+        await tester.ensureVisible(portAndSpeed.first);
+        await tester.pumpAndSettle();
+      }
+
+      // Find and tap Go button
+      final goButton = find.byKey(const Key('goBtn'));
+      expect(goButton, findsOneWidget);
+      await tester.tap(goButton);
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 1500));
+      // Verify dialog appears
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text(loc.selectServer), findsOneWidget);
+      expect(find.text(servers[0].serverName), findsOneWidget);
+    },
+    screens: _speedTestDialogScreens,
+    goldenFilename: 'DHOME-SERV_DLG_01_dialog',
     helper: testHelper,
   );
 }

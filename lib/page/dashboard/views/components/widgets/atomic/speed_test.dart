@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_home_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/components/core/display_mode_widget.dart';
 import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/external_speed_test_links.dart';
 import 'package:privacy_gui/page/dashboard/views/components/widgets/parts/internal_speed_test_result.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
@@ -29,6 +31,54 @@ class CustomSpeedTest extends DisplayModeConsumerWidget {
         DisplayMode.normal => 200,
         DisplayMode.expanded => 300,
       };
+
+  /// Runs the speed test with server selection dialog.
+  Future<void> _runSpeedTestWithServerSelection(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final servers = ref.read(healthCheckProvider).servers;
+
+    // Show server selection if servers are available
+    if (servers.isNotEmpty) {
+      final selected = await _showServerSelectionDialog(context, servers);
+      if (selected == null) return; // User cancelled
+
+      ref.read(healthCheckProvider.notifier).setSelectedServer(selected);
+    }
+
+    // Run the speed test
+    ref.read(healthCheckProvider.notifier).runHealthCheck(Module.speedtest);
+  }
+
+  /// Shows a dialog for server selection.
+  Future<HealthCheckServer?> _showServerSelectionDialog(
+    BuildContext context,
+    List<HealthCheckServer> servers,
+  ) async {
+    return showSimpleAppDialog<HealthCheckServer>(
+      context,
+      title: loc(context).selectServer,
+      content: Builder(
+        builder: (dialogContext) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: servers.map((server) {
+              return AppListTile(
+                key: Key('server_${server.serverID}'),
+                title: AppText.bodyMedium(server.serverName.isNotEmpty
+                    ? server.serverName
+                    : server.serverHostname),
+                onTap: () => Navigator.of(dialogContext, rootNavigator: true)
+                    .pop(server),
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget buildCompactView(BuildContext context, WidgetRef ref) {
@@ -84,11 +134,8 @@ class CustomSpeedTest extends DisplayModeConsumerWidget {
                 child: isRunning
                     ? const CircularProgressIndicator(strokeWidth: 2)
                     : IconButton(
-                        onPressed: () {
-                          ref
-                              .read(healthCheckProvider.notifier)
-                              .runHealthCheck(Module.speedtest);
-                        },
+                        onPressed: () =>
+                            _runSpeedTestWithServerSelection(context, ref),
                         icon: const Icon(Icons.play_arrow, size: 20),
                         padding: EdgeInsets.zero,
                         color: Theme.of(context).colorScheme.primary,
