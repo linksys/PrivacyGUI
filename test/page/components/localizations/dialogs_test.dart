@@ -42,7 +42,7 @@ void main() {
   });
 
   // Test ID: DIALOGS-UNSAVED
-  testLocalizations('Dialog - You have unsaved changes',
+  testThemeLocalizations('Dialog - You have unsaved changes',
       (tester, screen) async {
     // Enable animations to ensure Dialog transition completes and becomes visible
     testHelper.disableAnimations = false;

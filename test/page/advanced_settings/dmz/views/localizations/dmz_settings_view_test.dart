@@ -51,7 +51,7 @@ void main() {
   });
 
   // Test ID: DMZS-DISABLED
-  testLocalizations('DMZ settings view - disabled', (tester, screen) async {
+  testThemeLocalizations('DMZ settings view - disabled', (tester, screen) async {
     const settings = DMZUISettings(
         isDMZEnabled: false,
         sourceType: DMZSourceType.auto,
@@ -92,7 +92,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-ENABLED
-  testLocalizations('DMZ settings view - enabled', (tester, screen) async {
+  testThemeLocalizations('DMZ settings view - enabled', (tester, screen) async {
     const settings = DMZUISettings(
         isDMZEnabled: true,
         sourceType: DMZSourceType.auto,
@@ -138,7 +138,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-SRC_RANGE
-  testLocalizations('DMZ settings view - enabled with specific range source',
+  testThemeLocalizations('DMZ settings view - enabled with specific range source',
       (tester, screen) async {
     const settings = DMZUISettings(
         isDMZEnabled: true,
@@ -187,7 +187,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-SRC_ERR
-  testLocalizations(
+  testThemeLocalizations(
       'DMZ settings view - enabled with specific range source - error state',
       (tester, screen) async {
     const settings = DMZUISettings(
@@ -236,7 +236,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-DEST_IP_ERR
-  testLocalizations(
+  testThemeLocalizations(
       'DMZ settings view - enabled with IP address destination - error state',
       (tester, screen) async {
     const settings = DMZUISettings(
@@ -284,7 +284,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-DEST_MAC
-  testLocalizations('DMZ settings view - enabled with mac address destination',
+  testThemeLocalizations('DMZ settings view - enabled with mac address destination',
       (tester, screen) async {
     const settings = DMZUISettings(
         isDMZEnabled: true,
@@ -325,7 +325,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-DEST_MAC_ERR
-  testLocalizations(
+  testThemeLocalizations(
       'DMZ settings view - enabled with mac address destination - error state',
       (tester, screen) async {
     const settings = DMZUISettings(
@@ -372,7 +372,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-DHCP_TABLE
-  testLocalizations('DMZ settings view - view DHCP client table',
+  testThemeLocalizations('DMZ settings view - view DHCP client table',
       (tester, screen) async {
     when(testHelper.mockDeviceListNotifier.build())
         .thenReturn(DeviceListState.fromMap(deviceListTestState));
@@ -395,7 +395,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-SAVE
-  testLocalizations('DMZ settings view - Saved', (tester, screen) async {
+  testThemeLocalizations('DMZ settings view - Saved', (tester, screen) async {
     final settings = DMZUISettings(
         isDMZEnabled: true,
         sourceType: DMZSourceType.auto,
@@ -456,7 +456,7 @@ void main() {
       screens: screens);
 
   // Test ID: DMZS-SAVE_FAIL
-  testLocalizations('DMZ settings view - Save failed', (tester, screen) async {
+  testThemeLocalizations('DMZ settings view - Save failed', (tester, screen) async {
     final settings = DMZUISettings(
         isDMZEnabled: true,
         sourceType: DMZSourceType.auto,

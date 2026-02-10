@@ -62,7 +62,7 @@ void main() {
 
   group('InstallPromptBanner Golden Tests', () {
     // Test ID: PWAB-NATIVE
-    testLocalizations(
+    testThemeLocalizations(
       'Verify banner display in native install mode with dismiss button',
       (tester, locale) async {
         final context = await testHelper.pumpView(
@@ -100,7 +100,7 @@ void main() {
     );
 
     // Test ID: PWAB-IOS_BNR
-    testLocalizations(
+    testThemeLocalizations(
       'Verify iOS banner display and instruction sheet interaction',
       (tester, locale) async {
         final context = await testHelper.pumpView(
@@ -144,7 +144,7 @@ void main() {
     );
 
     // Test ID: PWAB-MAC_BNR
-    testLocalizations(
+    testThemeLocalizations(
       'Verify Mac banner display and instruction sheet interaction',
       (tester, locale) async {
         final context = await testHelper.pumpView(
@@ -190,7 +190,7 @@ void main() {
 
   group('iOS Install Instruction Sheet Golden Tests', () {
     // Test ID: PWAB-IOS_SHT
-    testLocalizations(
+    testThemeLocalizations(
       'Verify iOS install instruction sheet standalone display',
       (tester, locale) async {
         final context = await testHelper.pumpView(
@@ -235,7 +235,7 @@ void main() {
 
   group('Mac Safari Install Instruction Sheet Golden Tests', () {
     // Test ID: PWAB-MAC_SHT
-    testLocalizations(
+    testThemeLocalizations(
       'Verify Mac Safari install instruction sheet standalone display',
       (tester, locale) async {
         final context = await testHelper.pumpView(

@@ -29,7 +29,7 @@ void main() {
   });
 
   // Test ID: ADMIN-INIT
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the initial state of the administration settings view',
     (tester, screen) async {
       when(testHelper.mockAdministrationSettingsNotifier.build()).thenReturn(
@@ -99,7 +99,7 @@ void main() {
   );
 
   // Test ID: ADMIN-NO_WIFI
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the view when wireless management is not allowed',
     (tester, screen) async {
       final state =
@@ -130,7 +130,7 @@ void main() {
   );
 
   // Test ID: ADMIN-UPNP_OFF
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the view when UPnP is disabled',
     (tester, screen) async {
       final stateMap =

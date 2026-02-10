@@ -41,7 +41,7 @@ void main() {
     testHelper.setup();
   });
 
-  testLocalizations('Firmware update detail view - 1 node with 1 update',
+  testThemeLocalizations('Firmware update detail view - 1 node with 1 update',
       (tester, localizedScreen) async {
     // Test ID: FUDV-1_NODE_1_UPDATE
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -84,7 +84,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-1_NODE_1_UPDATE-01-initial_state');
 
-  testLocalizations('Firmware update detail view - 2 node with 1 update',
+  testThemeLocalizations('Firmware update detail view - 2 node with 1 update',
       (tester, localizedScreen) async {
     // Test ID: FUDV-2_NODE_1_UPDATE
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -132,7 +132,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-2_NODE_1_UPDATE-01-initial_state');
 
-  testLocalizations(
+  testThemeLocalizations(
       'Firmware update detail view - updating in 1 node with Checking',
       (tester, localizedScreen) async {
     // Test ID: FUDV-1_NODE_CHECKING
@@ -164,7 +164,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-1_NODE_CHECKING-01-initial_state');
 
-  testLocalizations(
+  testThemeLocalizations(
       'Firmware update detail view - updating in 1 node with Installing',
       (tester, localizedScreen) async {
     // Test ID: FUDV-1_NODE_INSTALLING
@@ -196,7 +196,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-1_NODE_INSTALLING-01-initial_state');
 
-  testLocalizations(
+  testThemeLocalizations(
       'Firmware update detail view - updating in 1 node with Rebooting',
       (tester, localizedScreen) async {
     // Test ID: FUDV-1_NODE_REBOOTING
@@ -228,7 +228,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-1_NODE_REBOOTING-01-initial_state');
 
-  testLocalizations('Firmware update detail view - 2 node with 2 updates',
+  testThemeLocalizations('Firmware update detail view - 2 node with 2 updates',
       (tester, localizedScreen) async {
     // Test ID: FUDV-2_NODE_2_UPDATES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -274,7 +274,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-2_NODE_2_UPDATES-01-initial_state');
 
-  testLocalizations('Firmware update detail view - updating in 2 nodes',
+  testThemeLocalizations('Firmware update detail view - updating in 2 nodes',
       (tester, localizedScreen) async {
     // Test ID: FUDV-UPDATING_2_NODES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -310,7 +310,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-UPDATING_2_NODES-01-initial_state');
 
-  testLocalizations('Firmware update detail view - updating in 3 nodes',
+  testThemeLocalizations('Firmware update detail view - updating in 3 nodes',
       (tester, localizedScreen) async {
     // Test ID: FUDV-UPDATING_3_NODES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -346,7 +346,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-UPDATING_3_NODES-01-initial_state');
 
-  testLocalizations('Firmware update detail view - updating in 4 nodes',
+  testThemeLocalizations('Firmware update detail view - updating in 4 nodes',
       (tester, localizedScreen) async {
     // Test ID: FUDV-UPDATING_4_NODES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -381,7 +381,7 @@ void main() {
       screens: screens,
       goldenFilename: 'FUDV-UPDATING_4_NODES-01-initial_state');
 
-  testLocalizations('Firmware update detail view - 2 node with no updates',
+  testThemeLocalizations('Firmware update detail view - 2 node with no updates',
       (tester, localizedScreen) async {
     // Test ID: FUDV-2_NODE_NO_UPDATES
     when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(

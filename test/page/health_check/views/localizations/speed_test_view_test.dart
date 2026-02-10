@@ -54,7 +54,7 @@ void main() {
   });
 
   // Test ID: STV-INIT-01
-  testLocalizations(
+  testThemeLocalizations(
     'Verify the initial idle state of the speed test.',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build())
@@ -85,7 +85,7 @@ void main() {
   );
 
   // Test ID: STV-PING-01
-  testLocalizations(
+  testThemeLocalizations(
     'Verify the UI during the ping phase.',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build())
@@ -105,7 +105,7 @@ void main() {
   );
 
   // Test ID: STV-DOWNLOAD-01
-  testLocalizations(
+  testThemeLocalizations(
     'Verify the UI during the download phase.',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build())
@@ -126,7 +126,7 @@ void main() {
   );
 
   // Test ID: STV-UPLOAD-01
-  testLocalizations(
+  testThemeLocalizations(
     'Verify the UI during the upload phase.',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build())
@@ -148,7 +148,7 @@ void main() {
 
   group('Speedtest - success results', () {
     // Test ID: STV-SUCCESS-01
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI for a successful result (Ultra).',
       (tester, screen) async {
         when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -171,7 +171,7 @@ void main() {
     );
 
     // Test ID: STV-SUCCESS-02
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI for a successful result (Optimal).',
       (tester, screen) async {
         when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -193,7 +193,7 @@ void main() {
     );
 
     // Test ID: STV-SUCCESS-03
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI for a successful result (Good).',
       (tester, screen) async {
         when(testHelper.mockHealthCheckProvider.build())
@@ -215,7 +215,7 @@ void main() {
     );
 
     // Test ID: STV-SUCCESS-04
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI for a successful result (Okay).',
       (tester, screen) async {
         when(testHelper.mockHealthCheckProvider.build())
@@ -239,7 +239,7 @@ void main() {
 
   group('Speedtest - error states', () {
     // Test ID: STV-ERROR-01
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI when a configuration error occurs.',
       (tester, screen) async {
         // Mock a state with a specific error code
@@ -268,7 +268,7 @@ void main() {
     );
 
     // Test ID: STV-ERROR-02
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI when a license error occurs.',
       (tester, screen) async {
         const errorState = HealthCheckState(
@@ -295,7 +295,7 @@ void main() {
     );
 
     // Test ID: STV-ERROR-03
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI when an execution error occurs.',
       (tester, screen) async {
         const errorState = HealthCheckState(
@@ -322,7 +322,7 @@ void main() {
     );
 
     // Test ID: STV-ERROR-04
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI when the test is aborted by user.',
       (tester, screen) async {
         const errorState = HealthCheckState(
@@ -349,7 +349,7 @@ void main() {
     );
 
     // Test ID: STV-ERROR-05
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI when a database error occurs.',
       (tester, screen) async {
         const errorState = HealthCheckState(
@@ -376,7 +376,7 @@ void main() {
     );
 
     // Test ID: STV-ERROR-06
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the UI when a timeout/unknown error occurs.',
       (tester, screen) async {
         const errorState = HealthCheckState(
@@ -404,7 +404,7 @@ void main() {
   });
 
   // Test ID: STV-HISTORY-01
-  testLocalizations(
+  testThemeLocalizations(
     'Verify the history panel displays records.',
     (tester, screen) async {
       final historyState =
@@ -444,7 +444,7 @@ void main() {
   );
 
   // Test ID: STV-SERVER-01
-  testLocalizations(
+  testThemeLocalizations(
     'Verify server dropdown selection flow',
     (tester, screen) async {
       // 1. Enable Service Support
@@ -510,7 +510,7 @@ void main() {
   );
 
   // Test ID: STV-SERVER-02
-  testLocalizations(
+  testThemeLocalizations(
     'Verify Go button runs test with selected server',
     (tester, screen) async {
       // 1. Enable Service Support

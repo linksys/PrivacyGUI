@@ -73,7 +73,7 @@ void main() {
   }
 
   // Test ID: IDVC-ONLINE — desktop layout renders base instant device UI
-  testLocalizations(
+  testThemeLocalizations(
     'instant device view - desktop layout',
     (tester, screen) async {
       final context = await pumpInstantDeviceView(tester, screen);
@@ -91,7 +91,7 @@ void main() {
   );
 
   // Test ID: IDVC-FILTER — mobile filters button opens DevicesFilter sheet
-  testLocalizations(
+  testThemeLocalizations(
     'instant device view - mobile filter bottom sheet',
     (tester, screen) async {
       await pumpInstantDeviceView(tester, screen);
@@ -111,7 +111,7 @@ void main() {
   );
 
   // Test ID: IDVC-OFF_EDIT — offline mode enables edit state and selection
-  testLocalizations(
+  testThemeLocalizations(
     'instant device view - offline edit state',
     (tester, screen) async {
       final context = await pumpInstantDeviceView(
@@ -152,7 +152,7 @@ void main() {
   );
 
   // Test ID: IDVC-OFF_DEL — delete action shows confirmation dialog
-  testLocalizations(
+  testThemeLocalizations(
     'instant device view - offline delete dialog',
     (tester, screen) async {
       final context = await pumpInstantDeviceView(
@@ -194,7 +194,7 @@ void main() {
   );
 
   // Test ID: IDVC-DEAUTH — deauth button opens confirmation dialog
-  testLocalizations(
+  testThemeLocalizations(
     'instant device view - deauth dialog',
     (tester, screen) async {
       final context = await pumpInstantDeviceView(

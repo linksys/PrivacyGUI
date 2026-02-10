@@ -57,7 +57,7 @@ void main() {
 
   group('Incredible-WiFi - Wifi list view - Quick Setup', () {
     // Test ID: IWWL-QUICK_SETUP
-    testLocalizations(
+    testThemeLocalizations(
       'Verify wifi list view in quick setup mode',
       (tester, screen) async {
         final context = await testHelper.pumpShellView(
@@ -79,7 +79,7 @@ void main() {
     );
 
     // Test ID: IWWL-QUICK_SETUP_GUEST
-    testLocalizations(
+    testThemeLocalizations(
       'Verify wifi list view in quick setup mode with guest wifi on',
       (tester, screen) async {
         final wifiBundleTestStateInitialState = getWifiBundleTestState(
@@ -117,7 +117,7 @@ void main() {
     });
 
     // Test ID: IWWL-ADV_INIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verify wifi list view in advanced mode',
       (tester, screen) async {
         await testHelper.pumpShellView(
@@ -140,7 +140,7 @@ void main() {
     );
 
     // Test ID: IWWL-ADV_INIT_GUEST
-    testLocalizations(
+    testThemeLocalizations(
       'Verify wifi list view in advanced mode with guest wifi on',
       (tester, screen) async {
         final wifiBundleTestStateInitialState = getWifiBundleTestState(
@@ -167,7 +167,7 @@ void main() {
     );
 
     // Test ID: IWWL-SSID
-    testLocalizations(
+    testThemeLocalizations(
       'Verify SSID name input and validation',
       (tester, screen) async {
         final context = await testHelper.pumpShellView(
@@ -220,7 +220,7 @@ void main() {
     );
 
     // Test ID: IWWL-PASSWORD
-    testLocalizations(
+    testThemeLocalizations(
       'Verify password input and validation',
       (tester, screen) async {
         await testHelper.pumpShellView(
@@ -278,7 +278,7 @@ void main() {
     );
 
     // Test ID: IWWL-PASSWD_5G
-    testLocalizations(
+    testThemeLocalizations(
       'Verify 5GHz band password dialog displays correctly',
       (tester, screen) async {
         await testHelper.pumpShellView(
@@ -327,7 +327,7 @@ void main() {
     );
 
     // Test ID: IWWL-SECURITY
-    testLocalizations(
+    testThemeLocalizations(
       'Verify security mode selection',
       (tester, screen) async {
         final context = await testHelper.pumpShellView(
@@ -360,7 +360,7 @@ void main() {
     );
 
     // Test ID: IWWL-WIFI_MODE
-    testLocalizations(
+    testThemeLocalizations(
       'Verify wifi mode selection',
       (tester, screen) async {
         final context = await testHelper.pumpShellView(
@@ -390,7 +390,7 @@ void main() {
     );
 
     // Test ID: IWWL-CHANNEL_WID
-    testLocalizations(
+    testThemeLocalizations(
       'Verify channel width selection',
       (tester, screen) async {
         final context = await testHelper.pumpShellView(
@@ -422,7 +422,7 @@ void main() {
     );
 
     // Test ID: IWWL-CHANNEL
-    testLocalizations(
+    testThemeLocalizations(
       'Verify channel selection',
       (tester, screen) async {
         final context = await testHelper.pumpShellView(
@@ -454,7 +454,7 @@ void main() {
     );
 
     // Test ID: IWWL-DISCARD
-    testLocalizations(
+    testThemeLocalizations(
       'Verify discard changes modal',
       (tester, screen) async {
         when(testHelper.mockWiFiBundleNotifier.isDirty()).thenReturn(true);
@@ -481,7 +481,7 @@ void main() {
     );
 
     // Test ID: IWWL-SAVE_CONFIRM
-    testLocalizations(
+    testThemeLocalizations(
       'Verify save confirmation modal',
       (tester, screen) async {
         final context = await testHelper.pumpShellView(
@@ -504,7 +504,7 @@ void main() {
     );
 
     // Test ID: IWWL-WIFI_MODE_INVALID
-    testLocalizations(
+    testThemeLocalizations(
       'Verify wifi mode with invalid value',
       (tester, screen) async {
         final wifiBundleTestStateInitialState = getWifiBundleTestState(
@@ -543,7 +543,7 @@ void main() {
     );
 
     // Test ID: IWWL-CHANNEL_WID_UNAVAIL
-    testLocalizations(
+    testThemeLocalizations(
       'Verify channel width with unavailable value',
       (tester, screen) async {
         final wifiBundleTestStateInitialState = getWifiBundleTestState(
@@ -581,7 +581,7 @@ void main() {
     );
 
     // Test ID: IWWL-SAVE_CONFIRM_DISABLE_BAND
-    testLocalizations(
+    testThemeLocalizations(
       'Verify save confirmation modal with disable band warning',
       (tester, screen) async {
         final wifiBundleTestStateInitialState = getWifiBundleTestState(
@@ -634,7 +634,7 @@ void main() {
     );
 
     // Test ID: IWWL-SAVE_CONFIRM_MLO
-    testLocalizations(
+    testThemeLocalizations(
       'Verify save confirmation modal with MLO warning',
       (tester, screen) async {
         when(testHelper.mockWiFiBundleNotifier.checkingMLOSettingsConflicts(any,
@@ -661,7 +661,7 @@ void main() {
     );
 
     // Test ID: IWWL-NO_GUEST
-    testLocalizations(
+    testThemeLocalizations(
       'Verify wifi list view when guest wifi is not supported',
       (tester, screen) async {
         when(testHelper.mockServiceHelper.isSupportGuestNetwork())

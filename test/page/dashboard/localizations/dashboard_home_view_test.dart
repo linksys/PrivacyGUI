@@ -139,7 +139,7 @@ void main() {
   }
 
   // Test ID: DHOME-NOLAN_BASE
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - no lan ports base layout',
     (tester, screen) async {
       final context = await pumpDashboard(tester, screen);
@@ -156,7 +156,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_SIGNAL
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - mesh signal indicators',
     (tester, screen) async {
       when(testHelper.mockInstantTopologyNotifier.build())
@@ -171,7 +171,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_CHILD_OFFLINE
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - child node offline warning',
     (tester, screen) async {
       when(testHelper.mockInstantTopologyNotifier.build())
@@ -185,7 +185,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_SPEED
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - display speed test results',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -201,7 +201,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_FW
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - firmware update available banner',
     (tester, screen) async {
       when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -221,7 +221,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_NIGHT
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - node night mode enabled',
     (tester, screen) async {
       when(testHelper.mockNodeLightSettingsNotifier.build()).thenReturn(
@@ -240,7 +240,7 @@ void main() {
   );
 
   // Test ID: DHOME-NOLAN_PRIVACY
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - instant privacy enabled',
     (tester, screen) async {
       when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
@@ -258,7 +258,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_BASE
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - vertical ports layout',
     (tester, screen) async {
       await pumpDashboard(tester, screen);
@@ -271,7 +271,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_SPEED
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - vertical speed test success',
     (tester, screen) async {
       when(testHelper.mockServiceHelper.isSupportHealthCheck())
@@ -291,7 +291,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_SPEED_INIT
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - vertical speed test init state',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -308,7 +308,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_FW
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - vertical firmware update',
     (tester, screen) async {
       when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -328,7 +328,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_PRIVACY_ON
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - instant privacy enable modal',
     (tester, screen) async {
       await pumpDashboard(tester, screen);
@@ -341,7 +341,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_PRIVACY_OFF
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - instant privacy disable modal',
     (tester, screen) async {
       when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
@@ -357,7 +357,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_SHARE_WIFI
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - share wifi modal',
     (tester, screen) async {
       await pumpDashboard(tester, screen);
@@ -377,7 +377,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_OFFLINE
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - offline wan message',
     (tester, screen) async {
       when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
@@ -401,7 +401,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_QR
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - qr hover tooltip',
     (tester, screen) async {
       when(testHelper.mockFirmwareUpdateNotifier.build()).thenReturn(
@@ -429,7 +429,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_VPN_CONNECTED
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - vpn connected state',
     (tester, screen) async {
       when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
@@ -446,7 +446,7 @@ void main() {
   );
 
   // Test ID: DHOME-VERT_VPN_DISCONNECTED
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - vpn disconnected state',
     (tester, screen) async {
       when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);
@@ -463,7 +463,7 @@ void main() {
   );
 
   // Test ID: DHOME-SERV_DLG — server selection dialog appears on speed test
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard home view - server selection dialog appears on Go',
     (tester, screen) async {
       // Prepare servers data

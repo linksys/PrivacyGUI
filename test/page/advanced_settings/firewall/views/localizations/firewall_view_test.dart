@@ -50,7 +50,7 @@ void main() {
   });
 
   // Test ID: FWS-FW_INIT
-  testLocalizations(
+  testThemeLocalizations(
     'Firewall settings view - firewall',
     (tester, screen) async {
       final context = await testHelper.pumpView(
@@ -74,7 +74,7 @@ void main() {
   );
 
   // Test ID: FWS-VPN_INIT
-  testLocalizations(
+  testThemeLocalizations(
     'Firewall settings view - VPN passthrough',
     (tester, screen) async {
       // Enable animations for tab switching
@@ -99,7 +99,7 @@ void main() {
   );
 
   // Test ID: FWS-FIL_INIT
-  testLocalizations(
+  testThemeLocalizations(
     'Firewall settings view - Internet filters',
     (tester, screen) async {
       // Enable animations for tab switching
@@ -125,7 +125,7 @@ void main() {
   );
 
   // Test ID: FWS-IPV6_INIT
-  testLocalizations(
+  testThemeLocalizations(
     'Firewall settings view - IPv6 port service',
     (tester, screen) async {
       // Enable animations for tab switching
@@ -149,7 +149,7 @@ void main() {
   );
 
   // Test ID: FWS-IPV6_EMPTY
-  testLocalizations(
+  testThemeLocalizations(
     'Firewall settings view - IPv6 port service - empty state',
     (tester, screen) async {
       // Enable animations for tab switching
@@ -181,7 +181,7 @@ void main() {
   );
 
   // Test ID: FWS-IPV6_ADD
-  testLocalizations('Firewall settings view - IPv6 port service - add rule',
+  testThemeLocalizations('Firewall settings view - IPv6 port service - add rule',
       (tester, screen) async {
     // Enable animations for tab switching
     testHelper.disableAnimations = false;
@@ -208,7 +208,7 @@ void main() {
   // Test ID: FWS-IPV6_DROP
   // TODO: Skip until Ipv6PortServiceListView adds stable keys for form fields
   // Current implementation uses dynamic ValueKey('protocol_$hashCode') which changes per test
-  testLocalizations(
+  testThemeLocalizations(
       'Firewall settings view - IPv6 port service - add rule - protocol dropdown',
       (tester, screen) async {
     // Enable animations for tab switching
@@ -238,7 +238,7 @@ void main() {
       goldenFilename: 'FWS-IPV6_DROP-01-dropdown_desktop',
       helper: testHelper);
 
-  testLocalizations(
+  testThemeLocalizations(
       'Firewall settings view - IPv6 port service - add rule - protocol dropdown (Tablet)',
       (tester, screen) async {
     // Enable animations for tab switching and dialog
@@ -270,7 +270,7 @@ void main() {
 
   // Test ID: FWS-IPV6_INVALID
   // TODO: Skip until Ipv6PortServiceListView adds stable keys for form fields
-  testLocalizations(
+  testThemeLocalizations(
       'Firewall settings view - IPv6 port service - add rule - invalid ports',
       (tester, screen) async {
     // Enable animations for tab switching
@@ -302,7 +302,7 @@ void main() {
       helper: testHelper);
 
   // Test ID: FWS-IPV6_OVERLAP
-  testLocalizations(
+  testThemeLocalizations(
       'Firewall settings view - IPv6 port service - add rule - overlap ports',
       (tester, screen) async {
     // Enable animations for tab switching

@@ -27,7 +27,7 @@ void main() {
   });
 
   // Test ID: STSEL-INIT-01
-  testLocalizations(
+  testThemeLocalizations(
     'Verify initial state with both options enabled.',
     (tester, screen) async {
       // Mock connectivity as behind router (enables Internet to Device option)
@@ -64,7 +64,7 @@ void main() {
   );
 
   // Test ID: STSEL-DISABLED-01
-  testLocalizations(
+  testThemeLocalizations(
     'Verify state when router speed test is not supported.',
     (tester, screen) async {
       // Mock connectivity as behind router

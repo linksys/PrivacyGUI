@@ -43,7 +43,7 @@ void main() async {
   });
 
   // Test ID: LGLV-INIT
-  testLocalizations(
+  testThemeLocalizations(
     'login local view - default layout',
     (tester, screen) async {
       final context = await testHelper.pumpView(
@@ -71,7 +71,7 @@ void main() async {
   );
 
   // Test ID: LGLV-PASS
-  testLocalizations(
+  testThemeLocalizations(
     'login local view - password entry and hint expansion',
     (tester, screen) async {
       final context = await testHelper.pumpView(
@@ -118,7 +118,7 @@ void main() async {
   );
 
   // Test ID: LGLV-ERR_COUNTDOWN
-  testLocalizations(
+  testThemeLocalizations(
     'login local view - error countdown',
     (tester, screen) async {
       when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus())
@@ -159,7 +159,7 @@ void main() async {
   );
 
   // Test ID: LGLV-ERR_LOCKED
-  testLocalizations(
+  testThemeLocalizations(
     'login local view - lockout message when attempts exhausted',
     (tester, screen) async {
       when(testHelper.mockAuthNotifier.getAdminPasswordAuthStatus())
@@ -195,7 +195,7 @@ void main() async {
   );
 
   // Test ID: LGLV-ERR_GENERIC
-  testLocalizations(
+  testThemeLocalizations(
     'login local view - generic incorrect password error',
     (tester, screen) async {
       // As long as one of the two parameters is missing, it will display generic incorrect password error

@@ -94,7 +94,7 @@ void main() {
   }
 
   // Test ID: NDVL-INFO — desktop info tab layout with devices list
-  testLocalizations(
+  testThemeLocalizations(
     'node detail view - desktop info layout',
     (tester, screen) async {
       final context = await pumpNodeDetailView(
@@ -135,7 +135,7 @@ void main() {
   );
 
   // Test ID: NDVL-MOBILE — verify mobile tab navigation
-  testLocalizations(
+  testThemeLocalizations(
     'node detail view - mobile tabs',
     (tester, screen) async {
       final context = await pumpNodeDetailView(
@@ -168,7 +168,7 @@ void main() {
   );
 
   // Test ID: NDVL-MLO — show connected with MLO modal
-  testLocalizations(
+  testThemeLocalizations(
     'node detail view - mlo modal',
     (tester, screen) async {
       final context = await pumpNodeDetailView(
@@ -199,7 +199,7 @@ void main() {
   );
 
   // Test ID: NDVL-LIGHTS — node light settings dialog
-  testLocalizations(
+  testThemeLocalizations(
     'node detail view - node light settings dialog',
     (tester, screen) async {
       when(testHelper.mockNodeLightSettingsNotifier.build()).thenReturn(
@@ -257,7 +257,7 @@ void main() {
   );
 
   // Test ID: NDVL-EDIT — edit name dialog validations
-  testLocalizations(
+  testThemeLocalizations(
     'node detail view - edit name validations',
     (tester, screen) async {
       when(testHelper.mockServiceHelper.isSupportLedBlinking())
@@ -298,7 +298,7 @@ void main() {
   );
 
   // Test ID: NDVL-EDIT_LONG — edit name dialog with overly long input
-  testLocalizations(
+  testThemeLocalizations(
     'node detail view - edit name too long error',
     (tester, screen) async {
       final context = await pumpNodeDetailView(tester, screen);

@@ -98,7 +98,7 @@ void main() {
   // Tree View Tests (Mobile < 600px)
   // ===========================================================================
 
-  testLocalizations(
+  testThemeLocalizations(
     'instant topology view - tree view layout',
     (tester, screen) async {
       final topologyState = TopologyTestData().testTopology5SlavesStarState;
@@ -126,7 +126,7 @@ void main() {
     helper: testHelper,
   );
 
-  testLocalizations(
+  testThemeLocalizations(
     'instant topology view - tree view menu',
     (tester, screen) async {
       await pumpInstantTopology(
@@ -148,7 +148,7 @@ void main() {
     helper: testHelper,
   );
 
-  testLocalizations(
+  testThemeLocalizations(
     'instant topology view - tree view offline',
     (tester, screen) async {
       await pumpInstantTopology(
@@ -175,7 +175,7 @@ void main() {
   // Graph View Tests (Desktop/Tablet >= 600px)
   // ===========================================================================
 
-  testLocalizations(
+  testThemeLocalizations(
     'instant topology view - graph view layout',
     (tester, screen) async {
       final topologyState = TopologyTestData().testTopology5SlavesStarState;
@@ -199,7 +199,7 @@ void main() {
     helper: testHelper,
   );
 
-  testLocalizations(
+  testThemeLocalizations(
     'instant topology view - graph view menu',
     (tester, screen) async {
       await pumpInstantTopology(
@@ -219,7 +219,7 @@ void main() {
     helper: testHelper,
   );
 
-  testLocalizations(
+  testThemeLocalizations(
     'instant topology view - graph view offline',
     (tester, screen) async {
       await pumpInstantTopology(
@@ -245,7 +245,7 @@ void main() {
   // Common / Firmware Update Tests (Run on both or specific subset)
   // ===========================================================================
 
-  testLocalizations(
+  testThemeLocalizations(
     'instant topology view - firmware update indicator',
     (tester, screen) async {
       await pumpInstantTopology(

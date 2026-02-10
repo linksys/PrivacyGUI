@@ -27,7 +27,7 @@ void main() async {
   });
 
   // Test ID: PNPUM-INIT_TIP
-  testLocalizations(
+  testThemeLocalizations(
     'Verify unplug modem view and tip dialog',
     (tester, localizedScreen) async {
       final context = await testHelper.pumpView(

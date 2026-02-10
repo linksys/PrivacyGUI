@@ -51,7 +51,7 @@ void main() {
 
   // Test ID: DSUP-DESKTOP
   // Desktop screens (>905px) should show sidebar with menu content directly visible.
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard support view - default desktop layout',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
@@ -68,7 +68,7 @@ void main() {
   );
 
   // Test ID: DSUP-MOBILE
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard support view - default mobile layout',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
@@ -95,7 +95,7 @@ void main() {
   // Test ID: DSUP-TABLET
   // Tablet (744w) falls in tablet breakpoint (600-905px), sidebar should NOT display.
   // Behavior should match mobile: menu must be triggered via AppIconButton.
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard support view - tablet layout (no sidebar)',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);
@@ -118,7 +118,7 @@ void main() {
   );
 
   // Test ID: DSUP-EXPAND
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard support view - expanded all categories',
     (tester, screen) async {
       final context = await pumpFaq(tester, screen);

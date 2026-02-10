@@ -28,7 +28,7 @@ void main() {
       RouterPasswordState.fromMap(routerPasswordTestState1);
 
   // Test ID: LRRV-INIT
-  testLocalizations(
+  testThemeLocalizations(
     'local router recovery view - initial layout',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build())
@@ -58,7 +58,7 @@ void main() {
   );
 
   // Test ID: LRRV-PIN
-  testLocalizations(
+  testThemeLocalizations(
     'local router recovery view - enter recovery code',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build())
@@ -87,7 +87,7 @@ void main() {
   );
 
   // Test ID: LRRV-ERR_WARN
-  testLocalizations(
+  testThemeLocalizations(
     'local router recovery view - warning with attempts remaining',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
@@ -114,7 +114,7 @@ void main() {
   );
 
   // Test ID: LRRV-ERR_LAST
-  testLocalizations(
+  testThemeLocalizations(
     'local router recovery view - last chance warning',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(
@@ -141,7 +141,7 @@ void main() {
   );
 
   // Test ID: LRRV-ERR_LOCK
-  testLocalizations(
+  testThemeLocalizations(
     'local router recovery view - locked out state',
     (tester, screen) async {
       when(testHelper.mockRouterPasswordNotifier.build()).thenReturn(

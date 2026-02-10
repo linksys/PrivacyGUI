@@ -31,7 +31,7 @@ void main() {
   });
 
   // Test ID: ADVSET-INIT
-  testLocalizations(
+  testThemeLocalizations(
     'Verify initial state with all settings enabled',
     (tester, screen) async {
       when(testHelper.mockDashboardHomeNotifier.build())
@@ -71,7 +71,7 @@ void main() {
   );
 
   // Test ID: ADVSET-BRIDGE
-  testLocalizations(
+  testThemeLocalizations(
     'Verify bridge mode with most settings disabled',
     (tester, screen) async {
       when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(

@@ -71,7 +71,7 @@ void main() {
   }
 
   // Test ID: DMENU-BASE
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - default layout',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -92,7 +92,7 @@ void main() {
   );
 
   // Test ID: DMENU-MOBILE_MENU
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - mobile open sheet',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -107,7 +107,7 @@ void main() {
   );
 
   // Test ID: DMENU-MOBILE_RESTART
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - restart dialog via mobile',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -125,7 +125,7 @@ void main() {
   );
 
   // Test ID: DMENU-DESKTOP_RESTART
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - restart dialog via desktop',
     (tester, screen) async {
       final context = await pumpMenu(tester, screen);
@@ -142,7 +142,7 @@ void main() {
 
   // Test ID: DMENU-TABLET_RESTART
   // Tablet (744w) has no sidebar - must use mobile flow (menu button + sheet)
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - restart dialog via tablet (no sidebar)',
     (tester, screen) async {
       testHelper.disableAnimations = false;
@@ -160,7 +160,7 @@ void main() {
   );
 
   // Test ID: DMENU-SAFETY
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - instant safety status indicator',
     (tester, screen) async {
       when(testHelper.mockInstantSafetyNotifier.build()).thenReturn(
@@ -183,7 +183,7 @@ void main() {
   );
 
   // Test ID: DMENU-PRIVACY
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - instant privacy beta label',
     (tester, screen) async {
       when(testHelper.mockInstantPrivacyNotifier.build()).thenReturn(
@@ -200,7 +200,7 @@ void main() {
   );
 
   // Test ID: DMENU-BRIDGE
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - bridge mode disables safety',
     (tester, screen) async {
       when(testHelper.mockDashboardHomeNotifier.build()).thenReturn(
@@ -224,7 +224,7 @@ void main() {
   );
 
   // Test ID: DMENU-SPEED_INTERNAL
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - internal speed test card',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -240,7 +240,7 @@ void main() {
   );
 
   // Test ID: DMENU-SPEED_EXTERNAL
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - external speed test card',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -265,7 +265,7 @@ void main() {
   );
 
   // Test ID: DMENU-VPN
-  testLocalizations(
+  testThemeLocalizations(
     'dashboard menu view - vpn card shown when supported',
     (tester, screen) async {
       when(testHelper.mockServiceHelper.isSupportVPN()).thenReturn(true);

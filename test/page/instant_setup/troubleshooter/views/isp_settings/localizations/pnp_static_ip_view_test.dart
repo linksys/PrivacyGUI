@@ -107,7 +107,7 @@ void main() async {
 
   group('PNP-STATIC-IP_UI-FLOW', () {
     // Test ID: PNP-STATIC-IP-UI
-    testLocalizations(
+    testThemeLocalizations(
       'Verify pnp static ip view, includes input fields and next button status',
       (tester, localizedScreen) async {
         final context = await testHelper.pumpView(
@@ -215,7 +215,7 @@ void main() async {
 
   group('PNP-STATIC-IP_ERROR-HANDLING', () {
     // Test ID: PNP-STATIC-IP-ERR_01_JNAP-SIDE-EFFECT
-    testLocalizations(
+    testThemeLocalizations(
       'WHEN saveAndVerifySettings throws ServiceSideEffectError with JNAPSuccess, THEN shows error message',
       (tester, localizedScreen) async {
         when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -264,7 +264,7 @@ void main() async {
     );
 
     // Test ID: PNP-STATIC-IP-ERR_02_ROUTER-NOT-FOUND
-    testLocalizations(
+    testThemeLocalizations(
       'WHEN saveAndVerifySettings throws ServiceSideEffectError without JNAPSuccess, THEN shows router not found alert',
       (tester, localizedScreen) async {
         when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -311,7 +311,7 @@ void main() async {
     );
 
     // Test ID: PNP-STATIC-IP-ERR_03_JNAP-ERROR
-    testLocalizations(
+    testThemeLocalizations(
       'WHEN saveAndVerifySettings throws JNAPError, THEN shows error message',
       (tester, localizedScreen) async {
         when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -361,7 +361,7 @@ void main() async {
     );
 
     // Test ID: PNP-STATIC-IP-ERR_04_NO-INTERNET
-    testLocalizations(
+    testThemeLocalizations(
       'WHEN saveAndVerifySettings throws ExceptionNoInternetConnection, THEN shows error message',
       (tester, localizedScreen) async {
         when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -408,7 +408,7 @@ void main() async {
     );
 
     // Test ID: PNP-STATIC-IP-ERR_05_GENERIC-EXCEPTION
-    testLocalizations(
+    testThemeLocalizations(
       'WHEN saveAndVerifySettings throws generic Exception, THEN shows error message',
       (tester, localizedScreen) async {
         when(testHelper.mockPnpIspSettingsNotifier.saveAndVerifySettings(any))
@@ -456,7 +456,7 @@ void main() async {
   });
 
   // Test ID: PNP-STATIC-IP_SAVE-PROGRESS
-  testLocalizations(
+  testThemeLocalizations(
     'Verify UI updates during save and verify progress',
     (tester, localizedScreen) async {
       // 1. Setup completers to control the flow

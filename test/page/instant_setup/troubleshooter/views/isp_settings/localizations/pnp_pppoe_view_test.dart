@@ -55,7 +55,7 @@ void main() async {
   });
 
   // Test ID: PNP-PPPOE_UI-FLOW
-  testLocalizations(
+  testThemeLocalizations(
     'Verify PPPoE view UI flow (initial and VLAN toggle)',
     (tester, localizedScreen) async {
       final context = await testHelper.pumpView(
@@ -89,7 +89,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-GENERIC
-  testLocalizations(
+  testThemeLocalizations(
     'Verify generic JNAPError during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
@@ -128,7 +128,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-SPECIFIC-JNAP
-  testLocalizations(
+  testThemeLocalizations(
     'Verify specific JNAPError during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
@@ -168,7 +168,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-NO-INTERNET
-  testLocalizations(
+  testThemeLocalizations(
     'Verify no internet connection error during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
@@ -207,7 +207,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-SUCCESS
-  testLocalizations(
+  testThemeLocalizations(
     'Verify ServiceSideEffectError with JNAPSuccess during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
@@ -248,7 +248,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-ERROR-SIDE-EFFECT-OTHER
-  testLocalizations(
+  testThemeLocalizations(
     'Verify ServiceSideEffectError without JNAPSuccess during PPPoE save',
     (tester, localizedScreen) async {
       final completer = Completer<void>();
@@ -286,7 +286,7 @@ void main() async {
   );
 
   // Test ID: PNP-PPPOE_SAVE-PROGRESS
-  testLocalizations(
+  testThemeLocalizations(
     'Verify UI updates during save and verify progress',
     (tester, localizedScreen) async {
       // 1. Setup completers to control the flow

@@ -48,7 +48,7 @@ void main() {
   });
 
   // Test ID: LNS-HOSTNAME
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the initial state of the Host Name tab',
     (tester, screen) async {
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
@@ -76,7 +76,7 @@ void main() {
   );
 
   // Test ID: LNS-HOSTNAME_ERR
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the Host Name tab with a validation error',
     (tester, screen) async {
       final errorState =
@@ -109,7 +109,7 @@ void main() {
   );
 
   // Test ID: LNS-IP
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the LAN IP Address tab',
     (tester, screen) async {
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
@@ -146,7 +146,7 @@ void main() {
   );
 
   // Test ID: LNS-IP_ERR
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the LAN IP Address tab with a validation error',
     (tester, screen) async {
       final errorState =
@@ -187,7 +187,7 @@ void main() {
   );
 
   // Test ID: LNS-DHCP
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the DHCP Server tab',
     (tester, screen) async {
       when(testHelper.mockLocalNetworkSettingsNotifier.build()).thenReturn(
@@ -219,7 +219,7 @@ void main() {
   );
 
   // Test ID: LNS-DHCP_ERR
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the DHCP Server tab with a validation error',
     (tester, screen) async {
       final errorState =
@@ -254,7 +254,7 @@ void main() {
   );
 
   // Test ID: LNS-DHCP_IP_ERR
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the DHCP Server tab with an IP range error',
     (tester, screen) async {
       final errorState =
@@ -291,7 +291,7 @@ void main() {
   );
 
   // Test ID: LNS-DHCP_OFF
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies the DHCP Server tab when DHCP is disabled',
     (tester, screen) async {
       final original = LocalNetworkSettings.fromMap(mockLocalNetworkSettings);
@@ -331,7 +331,7 @@ void main() {
   );
 
   // Test ID: LNS-DIRTY_NAV
-  testLocalizations(
+  testThemeLocalizations(
     'Verifies save dialog on navigation when dirty',
     (tester, screen) async {
       final original = LocalNetworkSettings.fromMap(mockLocalNetworkSettings);

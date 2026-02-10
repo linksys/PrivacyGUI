@@ -31,7 +31,7 @@ void main() {
     testHelper.setup();
   });
 
-  testLocalizations('Manual firmware update - default',
+  testThemeLocalizations('Manual firmware update - default',
       (tester, localizedScreen) async {
     // Test ID: MFUV-DEFAULT
     await testHelper.pumpShellView(
@@ -81,7 +81,7 @@ void main() {
             .start));
     expect(startButton.onTap, isNull);
   }, screens: screens, goldenFilename: 'MFUV-DEFAULT-01-initial_state');
-  testLocalizations('Manual firmware update - file selected',
+  testThemeLocalizations('Manual firmware update - file selected',
       (tester, localizedScreen) async {
     // Test ID: MFUV-FILE_SELECTED
     when(testHelper.mockManualFirmwareUpdateNotifier.build()).thenReturn(
@@ -116,7 +116,7 @@ void main() {
     expect(startButton.onTap, isNotNull);
   }, screens: screens, goldenFilename: 'MFUV-FILE_SELECTED-01-initial_state');
 
-  testLocalizations('Manual firmware update - installing status',
+  testThemeLocalizations('Manual firmware update - installing status',
       (tester, localizedScreen) async {
     // Test ID: MFUV-INSTALLING
     when(testHelper.mockManualFirmwareUpdateNotifier.build()).thenReturn(
@@ -149,7 +149,7 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   }, screens: screens, goldenFilename: 'MFUV-INSTALLING-01-initial_state');
 
-  testLocalizations('Manual firmware update - rebooting status',
+  testThemeLocalizations('Manual firmware update - rebooting status',
       (tester, localizedScreen) async {
     // Test ID: MFUV-REBOOTING
     when(testHelper.mockManualFirmwareUpdateNotifier.build()).thenReturn(

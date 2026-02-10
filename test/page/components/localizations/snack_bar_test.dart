@@ -24,7 +24,7 @@ void main() {
   });
 
   // Test ID: SNACKBAR-SUCCESS
-  testLocalizations('Snack bar - Success scenarios', (tester, screen) async {
+  testThemeLocalizations('Snack bar - Success scenarios', (tester, screen) async {
     testHelper.disableAnimations = false;
 
     await testHelper.pumpShellView(
@@ -70,7 +70,7 @@ void main() {
   }, screens: screens, helper: testHelper);
 
   // Test ID: SNACKBAR-FAIL
-  testLocalizations('Snack bar - Failed scenarios', (tester, screen) async {
+  testThemeLocalizations('Snack bar - Failed scenarios', (tester, screen) async {
     testHelper.disableAnimations = false;
 
     await testHelper.pumpShellView(

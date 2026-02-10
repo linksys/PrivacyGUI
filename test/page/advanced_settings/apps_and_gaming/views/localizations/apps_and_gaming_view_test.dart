@@ -90,7 +90,7 @@ void main() {
 
   group('Apps & Gaming - DDNS', () {
     // Test ID: APPGAM-DDNS_DIS
-    testLocalizations(
+    testThemeLocalizations(
       'DDNS - disable',
       (tester, screen) async {
         final context = await testHelper.pumpView(
@@ -118,7 +118,7 @@ void main() {
     );
 
     // Test ID: APPGAM-DDNS_DYN
-    testLocalizations(
+    testThemeLocalizations(
       'DDNS - dyn.com',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
@@ -149,7 +149,7 @@ void main() {
     );
 
     // Test ID: APPGAM-DDNS_DYN_FILL
-    testLocalizations(
+    testThemeLocalizations(
       'DDNS - dyn.com filled up',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
@@ -196,7 +196,7 @@ void main() {
     );
 
     // Test ID: APPGAM-DDNS_DYN_SYS
-    testLocalizations(
+    testThemeLocalizations(
       'DDNS - dyn.com system type',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
@@ -247,7 +247,7 @@ void main() {
     );
 
     // Test ID: APPGAM-DDNS_NOIP
-    testLocalizations(
+    testThemeLocalizations(
       'DDNS - No-IP.com',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
@@ -277,7 +277,7 @@ void main() {
     );
 
     // Test ID: APPGAM-DDNS_NOIP_FILL
-    testLocalizations(
+    testThemeLocalizations(
       'DDNS - No-IP.com filled up',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
@@ -312,7 +312,7 @@ void main() {
     );
 
     // Test ID: APPGAM-DDNS_TZO
-    testLocalizations(
+    testThemeLocalizations(
       'DDNS - TZO',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
@@ -342,7 +342,7 @@ void main() {
     );
 
     // Test ID: APPGAM-DDNS_TZO_FILL
-    testLocalizations(
+    testThemeLocalizations(
       'DDNS - TZO filled up',
       (tester, screen) async {
         final state = DDNSState.fromMap(ddnsTestState);
@@ -378,7 +378,7 @@ void main() {
 
   group('Apps & Gaming - Single port forwarding', () {
     // Test ID: APPGAM-SPF_DATA
-    testLocalizations('Single port forwarding - with data',
+    testThemeLocalizations('Single port forwarding - with data',
         (tester, screen) async {
       when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
           SinglePortForwardingListState.fromMap(
@@ -403,7 +403,7 @@ void main() {
     }, screens: screens, goldenFilename: 'APPGAM-SPF_DATA-01-with_data');
 
     // Test ID: APPGAM-SPF_EMPTY
-    testLocalizations('Single port forwarding - empty', (tester, screen) async {
+    testThemeLocalizations('Single port forwarding - empty', (tester, screen) async {
       when(testHelper.mockSinglePortForwardingListNotifier.build()).thenReturn(
           SinglePortForwardingListState.fromMap(
               singlePortForwardingEmptyListTestState));
@@ -423,7 +423,7 @@ void main() {
     }, screens: screens, goldenFilename: 'APPGAM-SPF_EMPTY-01-empty_state');
 
     // Test ID: APPGAM-SPF_EDIT_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Single port forwarding - edit',
       (tester, screen) async {
         when(testHelper.mockSinglePortForwardingListNotifier.build())
@@ -461,7 +461,7 @@ void main() {
     );
 
     // Test ID: APPGAM-SPF_EDIT_ERR_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Single port forwarding - edit error',
       (tester, screen) async {
         when(testHelper.mockSinglePortForwardingListNotifier.build())
@@ -499,7 +499,7 @@ void main() {
     );
 
     // Test ID: APPGAM-SPF_OVER_ERR_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Single port forwarding - edit overlap error',
       (tester, screen) async {
         when(testHelper.mockSinglePortForwardingListNotifier.build())
@@ -553,7 +553,7 @@ void main() {
     );
 
     // Test ID: APPGAM-SPF_FILL_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Single port forwarding - edit filled up',
       (tester, screen) async {
         when(testHelper.mockSinglePortForwardingListNotifier.build())
@@ -616,7 +616,7 @@ void main() {
               singlePortForwardingEmptyListTestState));
     });
     // Test ID: APPGAM-PRF_DATA
-    testLocalizations('Port range forwarding - with data',
+    testThemeLocalizations('Port range forwarding - with data',
         (tester, screen) async {
       when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
           PortRangeForwardingListState.fromMap(
@@ -639,7 +639,7 @@ void main() {
     }, screens: screens, goldenFilename: 'APPGAM-PRF_DATA-01-with_data');
 
     // Test ID: APPGAM-PRF_EMPTY
-    testLocalizations('Port range forwarding - empty', (tester, screen) async {
+    testThemeLocalizations('Port range forwarding - empty', (tester, screen) async {
       when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
           PortRangeForwardingListState.fromMap(
               portRangeForwardingEmptyListTestState));
@@ -659,7 +659,7 @@ void main() {
     }, screens: screens, goldenFilename: 'APPGAM-PRF_EMPTY-01-empty_state');
 
     // Test ID: APPGAM-PRF_EDIT_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range forwarding - edit',
       (tester, screen) async {
         final portRangeForwardingEmptyListState =
@@ -698,7 +698,7 @@ void main() {
     );
 
     // Test ID: APPGAM-PRF_EDIT_ERR_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range forwarding - edit error',
       (tester, screen) async {
         when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
@@ -746,7 +746,7 @@ void main() {
     );
 
     // Test ID: APPGAM-PRF_OVER_ERR_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range forwarding - edit overlap error',
       (tester, screen) async {
         when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
@@ -809,7 +809,7 @@ void main() {
     );
 
     // Test ID: APPGAM-PRF_PORT_ERR_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range forwarding - edit port error',
       (tester, screen) async {
         when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
@@ -871,7 +871,7 @@ void main() {
     );
 
     // Test ID: APPGAM-PRF_FILL_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range forwarding - edit filled up',
       (tester, screen) async {
         when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
@@ -927,7 +927,7 @@ void main() {
     );
 
     // Test ID: APPGAM-PRF_PROTO_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range forwarding - protocol',
       (tester, screen) async {
         when(testHelper.mockPortRangeForwardingListNotifier.build()).thenReturn(
@@ -969,7 +969,7 @@ void main() {
 
   group('Apps & Gaming - Port range triggerring', () {
     // Test ID: APPGAM-PRT_DATA
-    testLocalizations('Port range triggerring - with data',
+    testThemeLocalizations('Port range triggerring - with data',
         (tester, screen) async {
       when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
           PortRangeTriggeringListState.fromMap(portRangeTriggerListTestState));
@@ -991,7 +991,7 @@ void main() {
     }, screens: screens, goldenFilename: 'APPGAM-PRT_DATA-01-with_data');
 
     // Test ID: APPGAM-PRT_EMPTY
-    testLocalizations('Port range triggerring - empty', (tester, screen) async {
+    testThemeLocalizations('Port range triggerring - empty', (tester, screen) async {
       when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
           PortRangeTriggeringListState.fromMap(
               portRangeTriggerEmptyListTestState));
@@ -1012,7 +1012,7 @@ void main() {
     }, screens: screens, goldenFilename: 'APPGAM-PRT_EMPTY-01-empty_state');
 
     // Test ID: APPGAM-PRT_EDIT_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range triggerring - edit',
       (tester, screen) async {
         when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
@@ -1048,7 +1048,7 @@ void main() {
     );
 
     // Test ID: APPGAM-PRT_EDIT_ERR_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range triggerring - edit error',
       (tester, screen) async {
         when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
@@ -1097,7 +1097,7 @@ void main() {
     );
 
     // Test ID: APPGAM-PRT_OVER_ERR_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range triggerring - edit overlap error',
       (tester, screen) async {
         when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(
@@ -1168,7 +1168,7 @@ void main() {
     );
 
     // Test ID: APPGAM-PRT_FILL_DESK
-    testLocalizations(
+    testThemeLocalizations(
       'Port range triggerring - edit filled up',
       (tester, screen) async {
         when(testHelper.mockPortRangeTriggeringListNotifier.build()).thenReturn(

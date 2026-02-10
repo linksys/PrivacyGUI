@@ -62,7 +62,7 @@ void main() {
 
   group('VPN Settings Page Screenshots', () {
     // Test ID: VPN-DEFAULT
-    testLocalizations(
+    testThemeLocalizations(
       'Default VPN State',
       (tester, screen) async {
         await testHelper.pumpView(
@@ -81,7 +81,7 @@ void main() {
     );
 
     // Test ID: VPN-DISCONNECTED
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Disconnected State',
       (tester, screen) async {
         when(testHelper.mockVPNNotifier.build())
@@ -107,7 +107,7 @@ void main() {
     );
 
     // Test ID: VPN-FAILED
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Failed Connection State',
       (tester, screen) async {
         when(testHelper.mockVPNNotifier.build())
@@ -133,7 +133,7 @@ void main() {
     );
 
     // Test ID: VPN-CONNECTING
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Connecting State',
       (tester, screen) async {
         when(testHelper.mockVPNNotifier.build())
@@ -159,7 +159,7 @@ void main() {
     );
 
     // Test ID: VPN-SUCCESS
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Test Result Success State',
       (tester, screen) async {
         when(testHelper.mockVPNNotifier.build())
@@ -185,7 +185,7 @@ void main() {
     );
 
     // Test ID: VPN-TEST_FAILED
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Test Result Failed State',
       (tester, screen) async {
         when(testHelper.mockVPNNotifier.build())
@@ -211,7 +211,7 @@ void main() {
     );
 
     // Test ID: VPN-CERT_AUTH
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Certificate Auth State',
       (tester, screen) async {
         when(testHelper.mockVPNNotifier.build())
@@ -237,7 +237,7 @@ void main() {
     );
 
     // Test ID: VPN-DISABLED
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Service Disabled State',
       (tester, screen) async {
         when(testHelper.mockVPNNotifier.build())
@@ -263,7 +263,7 @@ void main() {
     );
 
     // Test ID: VPN-EDITING
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Editing Credentials State',
       (tester, screen) async {
         final editingState = VPNTestState.defaultState.copyWith(
@@ -293,7 +293,7 @@ void main() {
     );
 
     // Test ID: VPN-INV_GATEWAY
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Invalid Gateway Address State',
       (tester, screen) async {
         final invalidGatewayState = VPNTestState.disconnectedState.copyWith(
@@ -337,7 +337,7 @@ void main() {
     );
 
     // Test ID: VPN-INV_CRED
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Invalid Credentials State',
       (tester, screen) async {
         final invalidCredentialsState = VPNTestState.disconnectedState.copyWith(
@@ -383,7 +383,7 @@ void main() {
     );
 
     // Test ID: VPN-TUNNEL_IP
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Tunneled User IP Address State',
       (tester, screen) async {
         final invalidDNSState = VPNTestState.disconnectedState.copyWith(
@@ -419,7 +419,7 @@ void main() {
     );
 
     // Test ID: VPN-RETEST
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Test Connection when settings changes',
       (tester, screen) async {
         final invalidDNSState = VPNTestState.disconnectedState.copyWith(
@@ -460,7 +460,7 @@ void main() {
     );
 
     // Test ID: VPN-RETEST_INV
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Test Connection when settings are invalid',
       (tester, screen) async {
         final invalidDNSState = VPNTestState.disconnectedState.copyWith(
@@ -505,7 +505,7 @@ void main() {
     );
 
     // Test ID: VPN-TOAST_SUCCESS
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Test Connection Success toast',
       (tester, screen) async {
         when(testHelper.mockVPNNotifier.build())
@@ -540,7 +540,7 @@ void main() {
     );
 
     // Test ID: VPN-TOAST_FAILED
-    testLocalizations(
+    testThemeLocalizations(
       'VPN Test Connection Failed toast',
       (tester, screen) async {
         when(testHelper.mockVPNNotifier.build())

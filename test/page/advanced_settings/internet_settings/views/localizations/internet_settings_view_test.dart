@@ -57,7 +57,7 @@ Future<void> main() async {
 
   group('InternetSettings - Ipv4', () {
     // Test ID: ISET-DHCP_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the DHCP connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -120,7 +120,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-STATIC_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the Static IP connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -155,7 +155,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPPOE_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the PPPoE connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -190,7 +190,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPTP_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the PPTP connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -224,7 +224,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPTP_STATIC_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the PPTP connection with a static IP',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -255,7 +255,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-L2TP_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the L2TP connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -289,7 +289,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-BRIDGE_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the Bridge mode view',
       (tester, screen) async {
         final state =
@@ -324,7 +324,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-DHCP_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state of the DHCP connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -361,7 +361,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-STATIC_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state of the Static IP connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -400,7 +400,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPPOE_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state of the PPPoE connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -437,7 +437,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-PPTP_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state of the PPTP connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -473,7 +473,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-L2TP_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state of the L2TP connection type view',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -509,7 +509,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-BRIDGE_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state of the Bridge mode view',
       (tester, screen) async {
         final state =
@@ -548,7 +548,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-OPTIONAL_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state for optional settings (Domain Name, MTU, MAC Clone)',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(
@@ -587,7 +587,7 @@ Future<void> main() async {
 
   group('InternetSettings - Ipv6', () {
     // Test ID: ISET-IPV6_AUTO_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the IPv6 Automatic connection view',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -626,7 +626,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_AUTO_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state of the IPv6 Automatic connection view',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -668,7 +668,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_6RD_DIS_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state for IPv6 Automatic with 6rd Tunnel disabled',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -720,7 +720,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_6RD_AUTO_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state for IPv6 Automatic with 6rd Tunnel set to automatic',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -772,7 +772,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_6RD_MAN_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state for IPv6 Automatic with 6rd Tunnel set to manual',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -826,7 +826,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_PASS_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the IPv6 Pass-Through connection view',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -864,7 +864,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_PASS_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state of the IPv6 Pass-Through connection view',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -907,7 +907,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_PPPOE_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the initial state of the IPv6 PPPoE connection view',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -943,7 +943,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-IPV6_PPPOE_EDIT
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the editing state of the IPv6 PPPoE connection view',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -985,7 +985,7 @@ Future<void> main() async {
 
   group('InternetSettings - Release & Renew', () {
     // Test ID: ISET-RR_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the Release & Renew tab',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -1021,7 +1021,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-RR_BRIDGE_VIEW
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the Release & Renew tab in Bridge mode',
       (tester, screen) async {
         testHelper.disableAnimations = false;
@@ -1050,7 +1050,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-RR_DIALOG
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the confirmation dialog for Release & Renew',
       // skip: true, // testLocalizations might not support skip directly, let's try.
       (tester, screen) async {
@@ -1087,7 +1087,7 @@ Future<void> main() async {
 
   group('InternetSettings - Save', () {
     // Test ID: ISET-SAVE_RESTART_DIALOG
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the restart confirmation dialog when saving changes',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.isDirty())
@@ -1129,7 +1129,7 @@ Future<void> main() async {
     );
 
     // Test ID: ISET-SAVE_COMBO_DIALOG
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the invalid WAN combination error dialog',
       (tester, screen) async {
         when(testHelper.mockInternetSettingsNotifier.build()).thenReturn(

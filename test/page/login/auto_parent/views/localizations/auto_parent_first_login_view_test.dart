@@ -27,7 +27,7 @@ void main() {
     mockAutoParentFirstLoginNotifier = MockAutoParentFirstLoginNotifier();
   });
 
-  testLocalizations(
+  testThemeLocalizations(
     'Verify initial view for auto parent first login',
     (tester, screen) async {
       // Test ID: APFLV-INIT

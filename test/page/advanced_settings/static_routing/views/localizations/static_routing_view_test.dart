@@ -42,7 +42,7 @@ void main() {
   });
 
   group('StaticRoutingView', () {
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the view in its empty state with no static routes.',
       (tester, screen) async {
         // Test ID: SROUTE-EMPTY
@@ -76,7 +76,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verify the view in its empty state with no static routes.',
       (tester, screen) async {
         // Test ID: SROUTE-EMPTY
@@ -102,7 +102,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the view with NAT enabled and a list of static routes.',
       (tester, screen) async {
         // Test ID: SROUTE-NAT
@@ -129,7 +129,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the view with Dynamic Routing (RIP) enabled.',
       (tester, screen) async {
         // Test ID: SROUTE-RIP
@@ -168,7 +168,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the view with Dynamic Routing (RIP) enabled.',
       (tester, screen) async {
         // Test ID: SROUTE-RIP
@@ -207,7 +207,7 @@ void main() {
     );
 
     // SKIPPED: SROUTE-ADD-RULE - requires inline editing interaction that differs between desktop and mobile
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the add static route rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-ADD-RULE
@@ -256,7 +256,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the add static route rule view (Tablet).',
       (tester, screen) async {
         // Test ID: SROUTE-ADD-RULE-TABLET
@@ -306,7 +306,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the edit static route rule view with pre-filled data.',
       (tester, screen) async {
         // Test ID: SROUTE-EDIT-RULE
@@ -356,7 +356,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the validation for an empty route name in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-NAME
@@ -387,7 +387,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the validation for an invalid destination IP in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-DEST
@@ -426,7 +426,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the validation for an invalid subnet mask in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-SUBNET
@@ -464,7 +464,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       'Verifies the validation for an invalid gateway IP in the rule view.',
       (tester, screen) async {
         // Test ID: SROUTE-VAL-GATEWAY
@@ -502,7 +502,7 @@ void main() {
       helper: testHelper,
     );
 
-    testLocalizations(
+    testThemeLocalizations(
       "Verifies the 'Interface' dropdown menu in the rule view.",
       (tester, screen) async {
         // Test ID: SROUTE-DROPDOWN
