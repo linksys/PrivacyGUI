@@ -22,7 +22,6 @@ import 'core/utils/storage.dart';
 import 'core/utils/fernet_manager.dart';
 import 'package:privacy_gui/util/export_selector/export_selector.dart';
 import 'package:privacy_gui/util/get_log_selector/get_log_selector.dart';
-import 'package:privacy_gui/theme/theme_json_config.dart';
 
 class Utils {
   static Future exportLogFile(BuildContext context) async {
@@ -677,8 +676,8 @@ class BrandUtils {
 
   static const Map<String, String> _modelSuffixMap = {
     'TB-': '_tb',
-    'CF': '_cf',
-    'DU': '_du',
+    'CF-': '_cf',
+    'DU-': '_du',
   };
 
   static Future<void> _loadManifest() async {
@@ -732,57 +731,5 @@ class BrandUtils {
     }
     // null if nothing found
     return null;
-  }
-
-  /// Get theme configuration for specific device model.
-  ///
-  /// Returns device-specific theme if available, falls back to default.
-  /// Uses the same model-to-suffix mapping as brand assets.
-  ///
-  /// Example usage:
-  /// ```dart
-  /// final theme = await BrandUtils.getDeviceTheme('TB-6W-EU');
-  /// // Returns theme from assets/theme_tb.json if exists, otherwise default
-  /// ```
-  static Future<ThemeJsonConfig> getDeviceTheme(String modelNumber) async {
-    // Empty model number -> default theme
-    if (modelNumber.isEmpty) {
-      logger.d('[BrandUtils] No model number, using default theme');
-      return ThemeJsonConfig.defaultConfig();
-    }
-
-    // Find matching suffix using existing _modelSuffixMap
-    String? suffix;
-    for (final entry in _modelSuffixMap.entries) {
-      if (modelNumber.toUpperCase().contains(entry.key)) {
-        suffix = entry.value;
-        break;
-      }
-    }
-
-    // No matching suffix -> default theme
-    if (suffix == null) {
-      logger
-          .d('[BrandUtils]: No theme mapping for $modelNumber, using default');
-      return ThemeJsonConfig.defaultConfig();
-    }
-
-    // Construct theme path: assets/theme/theme{suffix}.json
-    final themePath = 'assets/theme/theme$suffix.json';
-
-    // Try to load theme from assets
-    // ThemeJsonConfig.fromAssets() will handle file not found and return default
-    try {
-      logger.i('[BrandUtils]: Loading theme for $modelNumber from $themePath');
-      final theme = await ThemeJsonConfig.fromAssets(themePath);
-
-      // Check if we got default theme (fromAssets returns default on error)
-      // If the loaded theme has 'flat' style, it might be the default fallback
-      logger.i('[BrandUtils]: Theme loaded successfully for $modelNumber');
-      return theme;
-    } catch (e) {
-      logger.e('[BrandUtils]: Failed to load theme from $themePath', error: e);
-      return ThemeJsonConfig.defaultConfig();
-    }
   }
 }

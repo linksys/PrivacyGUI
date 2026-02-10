@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/providers/device_theme_config_provider.dart';
+import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('deviceThemeConfigProvider - Normal Mode', () {
+  group('themeConfigProvider - Normal Mode', () {
     late ProviderContainer container;
 
     tearDown(() {
@@ -18,8 +18,7 @@ void main() {
       container = ProviderContainer();
 
       // Act
-      final themeConfig =
-          await container.read(deviceThemeConfigProvider.future);
+      final themeConfig = await container.read(themeConfigProvider.future);
 
       // Assert
       expect(themeConfig, isA<ThemeJsonConfig>());
@@ -35,8 +34,8 @@ void main() {
       container = ProviderContainer();
 
       // Act - Read provider twice
-      final theme1 = await container.read(deviceThemeConfigProvider.future);
-      final theme2 = await container.read(deviceThemeConfigProvider.future);
+      final theme1 = await container.read(themeConfigProvider.future);
+      final theme2 = await container.read(themeConfigProvider.future);
 
       // Assert - Should return same cached instance
       expect(theme1, same(theme2));
@@ -48,13 +47,13 @@ void main() {
 
       // Act & Assert - Should not throw
       expect(
-        () async => await container.read(deviceThemeConfigProvider.future),
+        () async => await container.read(themeConfigProvider.future),
         returnsNormally,
       );
     });
   });
 
-  group('deviceThemeConfigProvider - Theme Data Validation', () {
+  group('themeConfigProvider - Theme Data Validation', () {
     late ProviderContainer container;
 
     tearDown(() {
@@ -66,8 +65,7 @@ void main() {
       container = ProviderContainer();
 
       // Act
-      final themeConfig =
-          await container.read(deviceThemeConfigProvider.future);
+      final themeConfig = await container.read(themeConfigProvider.future);
 
       // Assert
       expect(themeConfig.lightJson, isA<Map<String, dynamic>>());
@@ -80,8 +78,7 @@ void main() {
       container = ProviderContainer();
 
       // Act
-      final themeConfig =
-          await container.read(deviceThemeConfigProvider.future);
+      final themeConfig = await container.read(themeConfigProvider.future);
 
       // Assert
       expect(themeConfig.darkJson, isA<Map<String, dynamic>>());
@@ -94,32 +91,11 @@ void main() {
       container = ProviderContainer();
 
       // Act
-      final themeConfig =
-          await container.read(deviceThemeConfigProvider.future);
+      final themeConfig = await container.read(themeConfigProvider.future);
 
       // Assert - Verify theme config can create ThemeData
       expect(() => themeConfig.createLightTheme(), returnsNormally);
       expect(() => themeConfig.createDarkTheme(), returnsNormally);
-    });
-  });
-
-  group('deviceThemeConfigProvider - forcedSource Priority', () {
-    test('Normal mode is default (no environment variables)', () {
-      // This test documents that default behavior is normal mode
-      // In actual app: ThemeConfigLoader.forcedSource == ThemeSource.normal
-      expect(true, true); // Placeholder for documentation
-    });
-
-    test('forcedSource cicd overrides device theme (integration)', () {
-      // When THEME_SOURCE=cicd is set, deviceThemeConfigProvider should
-      // call ThemeConfigLoader.load() instead of BrandUtils.getDeviceTheme()
-      // This requires integration test with --dart-define
-
-      // Documented expected behavior:
-      // flutter run --dart-define=THEME_SOURCE=cicd
-      // -> forcedSource != normal
-      // -> ThemeConfigLoader.load() is called
-      expect(true, true); // Placeholder for integration test
     });
   });
 }

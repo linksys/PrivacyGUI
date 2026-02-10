@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 /// A global instance of [GetIt] used as a service locator for dependency injection.
@@ -16,34 +15,31 @@ final getIt = GetIt.instance;
 /// register all singleton services and objects that need to be globally
 /// accessible. Currently, it registers:
 /// - A singleton of [ServiceHelper].
-/// - The application's theme configuration (legacy, kept for backward compatibility).
-/// - The application's light and dark theme data as named instances.
+/// - Default light/dark [ThemeData] (used by some UI widgets).
 ///
-/// ## Theme Management Note:
-/// Theme management has been migrated to Riverpod providers for reactive updates.
-/// The [ThemeJsonConfig] registered here serves as a **fallback only**.
-///
-/// **Active theme loading** is handled by:
-/// - `deviceThemeConfigProvider` in [lib/providers/device_theme_config_provider.dart]
-/// - Device-specific themes loaded via `BrandUtils.getDeviceTheme()`
-/// - Reactive updates when user logs into different router models
-///
-/// The theme registered in GetIt is only used as a default fallback if the
-/// reactive provider fails to load a theme for any reason.
-void dependencySetup({ThemeJsonConfig? themeConfig}) {
+/// Theme configuration loading is handled by `themeConfigProvider` (Riverpod).
+void dependencySetup() {
   getIt.registerSingleton<ServiceHelper>(ServiceHelper());
 
-  // Legacy theme config registration (fallback only)
-  // Active theme system uses deviceThemeConfigProvider (Riverpod)
-  final config = themeConfig ?? ThemeJsonConfig.defaultConfig();
-  getIt.registerSingleton<ThemeJsonConfig>(config);
+  // Register default ThemeData for UI widgets that read from GetIt
+  // (e.g., top_bar.dart, general_settings_widget.dart)
+  final config = ThemeJsonConfig.defaultConfig();
 
-  getIt.registerSingleton<ThemeData>(
-    config.createLightTheme(),
-    instanceName: 'lightThemeData',
-  );
-  getIt.registerSingleton<ThemeData>(
-    config.createDarkTheme(),
-    instanceName: 'darkThemeData',
-  );
+  if (!getIt.isRegistered<ThemeJsonConfig>()) {
+    getIt.registerSingleton<ThemeJsonConfig>(config);
+  }
+
+  if (!getIt.isRegistered<ThemeData>(instanceName: 'lightThemeData')) {
+    getIt.registerSingleton<ThemeData>(
+      config.createLightTheme(),
+      instanceName: 'lightThemeData',
+    );
+  }
+
+  if (!getIt.isRegistered<ThemeData>(instanceName: 'darkThemeData')) {
+    getIt.registerSingleton<ThemeData>(
+      config.createDarkTheme(),
+      instanceName: 'darkThemeData',
+    );
+  }
 }

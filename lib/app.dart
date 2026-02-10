@@ -14,7 +14,7 @@ import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
-import 'package:privacy_gui/providers/device_theme_config_provider.dart';
+import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
@@ -86,7 +86,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   /// This method constructs the `MaterialApp.router`, which is the root of the
   /// application's UI. It configures the following:
   /// - **Theming:** Dynamically loads device-specific theme based on modelNumber
-  ///   from [deviceThemeConfigProvider], with user preferences from [appSettingsProvider].
+  ///   from [themeConfigProvider], with user preferences from [appSettingsProvider].
   /// - **Localization:** Sets the application's locale based on user settings,
   ///   falling back to the system locale. It also provides the necessary
   ///   localization delegates and supported locales.
@@ -111,11 +111,11 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     final userThemeColor = appSettings.themeColor;
 
     // Watch device-specific theme configuration (reactive to modelNumber)
-    final deviceThemeConfigAsync = ref.watch(deviceThemeConfigProvider);
+    final themeConfigAsync = ref.watch(themeConfigProvider);
 
     // Always use MaterialApp.router to preserve navigation state
     // Use default theme during loading to prevent router swap
-    return deviceThemeConfigAsync.when(
+    return themeConfigAsync.when(
       data: (themeConfig) => _buildMaterialApp(
         router: router,
         appSettings: appSettings,
