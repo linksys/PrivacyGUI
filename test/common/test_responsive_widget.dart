@@ -7,8 +7,10 @@ import 'package:meta/meta.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 
 import 'config.dart';
+import 'di.dart';
 import 'screen.dart';
 import 'test_helper.dart';
+import 'theme_config.dart';
 import 'theme_data.dart';
 
 extension ScreenSizeManager on WidgetTester {
@@ -122,5 +124,93 @@ void testLocalizations(
     timeout: timeout,
     semanticsEnabled: semanticsEnabled,
     tags: ['loc'],
+  );
+}
+
+/// Test function for multi-theme localization screenshot testing.
+///
+/// Creates a 3D variant matrix: locale x screen x theme.
+/// Generates screenshots for each combination in nested directories.
+@isTest
+void testThemeLocalizations(
+  String name,
+  FutureOr<void> Function(WidgetTester, ThemedScreen) testMain, {
+  String? goldenFilename,
+  List<Locale>? locales,
+  List<ScreenSize>? screens,
+  List<ThemeVariant>? themes,
+  bool? skip,
+  Timeout? timeout,
+  bool semanticsEnabled = true,
+  Future<void> Function(WidgetTester tester)? onCompleted,
+  TestHelper? helper,
+}) async {
+  final envLocales = targetLocales;
+  final envScreens = targetScreens;
+  final envThemes = targetThemes;
+
+  final supportedLocales = (locales ?? AppLocalizations.supportedLocales)
+      .toSet()
+      .where((element) => envLocales.toSet().contains(element))
+      .toList();
+  final supportedDevices = (screens ?? responsiveAllScreens)
+      .toSet()
+      .where(
+          (element) => envScreens.toSet().any((e) => e.width == element.width))
+      .toList();
+  final supportedThemes = (themes ?? allThemeVariants)
+      .toSet()
+      .where((element) => envThemes.toSet().any((t) => t.name == element.name))
+      .toList();
+
+  final isScreenIncluded = supportedDevices.isNotEmpty;
+  final isThemeIncluded = supportedThemes.isNotEmpty;
+
+  // Create 3D variant matrix: locale x screen x theme
+  final set = <ThemedScreen>{};
+  for (final locale in supportedLocales) {
+    for (final device in supportedDevices) {
+      for (final theme in supportedThemes) {
+        set.add(ThemedScreen.fromLocalizedScreen(
+          screen: LocalizedScreen.fromScreenSize(locale: locale, screen: device),
+          theme: theme,
+        ));
+      }
+    }
+  }
+
+  final variants = ValueVariant(set);
+  testResponsiveWidgets(
+    name,
+    (tester) async {
+      await loadTestFonts();
+      final current = variants.currentValue!;
+      // Update ThemeJsonConfig in DI for DesignSystem.init to use
+      // ignore: avoid_print
+      print('[testThemeLocalizations] Theme: ${current.theme.name}, Style: ${current.theme.style.name}, Brightness: ${current.theme.brightness.name}');
+      updateThemeConfig(current.theme);
+      helper?.currentThemed = current;
+      // Also set current for backward compatibility
+      helper?.current = current;
+      await tester.setScreenSize(current);
+      await testMain(tester, current);
+    },
+    goldenFilename: goldenFilename,
+    goldenCallback: (name, tester) async {
+      final current = variants.currentValue!;
+      final actualFinder = find.byWidgetPredicate((w) => true).first;
+      // Include theme in golden path: goldens/locale/device/theme/filename.png
+      final themePath = current.theme.name;
+      await expectLater(
+        actualFinder,
+        matchesGoldenFile('goldens/$themePath/$name.png'),
+      );
+    },
+    onCompleted: onCompleted,
+    variants: (!isScreenIncluded || !isThemeIncluded) ? null : variants,
+    skip: (skip ?? false) || !isScreenIncluded || !isThemeIncluded,
+    timeout: timeout,
+    semanticsEnabled: semanticsEnabled,
+    tags: ['loc', 'theme'],
   );
 }

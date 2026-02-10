@@ -1,11 +1,13 @@
 import 'dart:ui';
 
 import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:privacy_gui/util/extensions.dart';
 
 import 'screen.dart';
+import 'theme_config.dart';
 
 final responsiveAllScreens = [
   ...responsiveMobileScreens,
@@ -96,6 +98,52 @@ List<Locale> get targetLocales {
     } catch (e) {
       _localeConfigured = false;
       return allLocales;
+    }
+  }
+}
+
+bool _themeConfigured = false;
+bool get hasThemeConfig => _themeConfigured;
+
+/// Parse themes from dart-define parameter.
+///
+/// Supported formats:
+/// - Single theme: "glass-light"
+/// - Multiple themes: "glass-light,brutal-dark"
+/// - Style only (defaults to light): "glass,brutal"
+/// - All themes: "all"
+List<ThemeVariant> get targetThemes {
+  const value = String.fromEnvironment('themes', defaultValue: 'glass-light');
+  if (value == 'all') {
+    _themeConfigured = false;
+    return allThemeVariants;
+  } else {
+    try {
+      _themeConfigured = true;
+      return value
+          .split(',')
+          .map((e) {
+            final trimmed = e.trim();
+            final parts = trimmed.split('-');
+            final styleName = parts[0];
+            final brightnessName = parts.length > 1 ? parts[1] : 'light';
+
+            final style = ThemeStyle.values.firstWhereOrNull(
+              (s) => s.name == styleName,
+            );
+            if (style == null) return null;
+
+            final brightness =
+                brightnessName == 'dark' ? Brightness.dark : Brightness.light;
+
+            return ThemeVariant(style: style, brightness: brightness);
+          })
+          .nonNulls
+          .toList()
+          .unique();
+    } catch (e) {
+      _themeConfigured = false;
+      return [defaultThemeVariant];
     }
   }
 }

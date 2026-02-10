@@ -46,7 +46,7 @@ void main() {
 
   Future<BuildContext> pumpInstantVerify(
     WidgetTester tester,
-    LocalizedScreen screen, {
+    ThemedScreen screen, {
     InstantVerifyState? state,
   }) async {
     when(testHelper.mockInstantVerifyNotifier.build()).thenReturn(
@@ -56,10 +56,12 @@ void main() {
       tester,
       child: const InstantVerifyView(),
       locale: screen.locale,
+      themeVariant: screen.theme,
       overrides: [
         internetStatusProvider.overrideWith((ref) => InternetStatus.online),
       ],
     );
+
     await tester.runAsync(() async {
       final element = tester.element(find.byType(InstantVerifyView));
       final images = [
@@ -77,7 +79,7 @@ void main() {
   }
 
   // Test ID: IVER-INFO — validate base Instant Info tab layout
-  testLocalizations(
+  testThemeLocalizations(
     'instant verify view - instant info layout',
     (tester, screen) async {
       final context = await pumpInstantVerify(tester, screen);
@@ -94,7 +96,7 @@ void main() {
   );
 
   // Test ID: IVER-TOPOLOGY — switch tab renders InstantTopologyView
-  testLocalizations(
+  testThemeLocalizations(
     'instant verify view - instant topology tab',
     (tester, screen) async {
       // Enable animations to allow tab switching to work properly
@@ -118,7 +120,7 @@ void main() {
   );
 
   // Test ID: IVER-MULTI_DNS — connectivity card with multiple DNS servers
-  testLocalizations(
+  testThemeLocalizations(
     'instant verify view - connectivity multi dns',
     (tester, screen) async {
       final context = await pumpInstantVerify(
@@ -139,7 +141,7 @@ void main() {
   );
 
   // Test ID: IVER-SPEEDTEST — internal health-check speed test widget
-  testLocalizations(
+  testThemeLocalizations(
     'instant verify view - internal speed test widget',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -155,7 +157,7 @@ void main() {
   );
 
   // Test ID: IVER-SPEEDTEST_INIT — idle modules still show speed test card
-  testLocalizations(
+  testThemeLocalizations(
     'instant verify view - speed test modules idle state',
     (tester, screen) async {
       when(testHelper.mockHealthCheckProvider.build()).thenReturn(
@@ -170,7 +172,7 @@ void main() {
   );
 
   // Test ID: IVER-SERV_DLG — server selection dialog appears when clicking Go
-  testLocalizations(
+  testThemeLocalizations(
     'instant verify view - server selection dialog appears on Go',
     (tester, screen) async {
       // Prepare servers data
@@ -210,7 +212,7 @@ void main() {
   );
 
   // Test ID: IVER-PING — tapping ping card opens modal
-  testLocalizations(
+  testThemeLocalizations(
     'instant verify view - ping dialog',
     (tester, screen) async {
       await pumpInstantVerify(tester, screen);
@@ -225,7 +227,7 @@ void main() {
   );
 
   // Test ID: IVER-TRACEROUTE — tapping traceroute card opens modal
-  testLocalizations(
+  testThemeLocalizations(
     'instant verify view - traceroute dialog',
     (tester, screen) async {
       await pumpInstantVerify(tester, screen);

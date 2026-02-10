@@ -7,6 +7,7 @@ import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import 'theme_config.dart';
 import 'theme_data.dart';
 
 Widget testableRouter({
@@ -16,6 +17,7 @@ Widget testableRouter({
   ThemeMode themeMode = ThemeMode.system,
   ThemeData? theme,
   ThemeData? darkTheme,
+  ThemeVariant? themeVariant,
   Locale? locale,
   bool disableAnimations = true,
 }) {
@@ -23,13 +25,26 @@ Widget testableRouter({
   final appLightTheme = mockLightThemeData;
   final appDarkTheme = mockDarkThemeData;
 
+  // When themeVariant is provided, use it to create the appropriate theme
+  final effectiveTheme = themeVariant != null
+      ? createMockThemeData(themeVariant)
+      : (theme ?? appLightTheme);
+  final effectiveDarkTheme = themeVariant != null
+      ? createMockThemeData(themeVariant)
+      : (darkTheme ?? appDarkTheme);
+  final effectiveThemeMode = themeVariant != null
+      ? (themeVariant.brightness == Brightness.light
+          ? ThemeMode.light
+          : ThemeMode.dark)
+      : themeMode;
+
   Widget result = ProviderScope(
     overrides: overrides,
     child: MaterialApp.router(
-      theme: theme ?? appLightTheme,
-      darkTheme: darkTheme ?? appDarkTheme,
+      theme: effectiveTheme,
+      darkTheme: effectiveDarkTheme,
       locale: locale,
-      themeMode: themeMode,
+      themeMode: effectiveThemeMode,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
@@ -67,6 +82,7 @@ Widget testableSingleRoute({
   ThemeMode themeMode = ThemeMode.system,
   ThemeData? theme,
   ThemeData? darkTheme,
+  ThemeVariant? themeVariant,
   LinksysRouteConfig? config,
   Locale? locale,
   ProviderContainer? provider,
@@ -91,6 +107,7 @@ Widget testableSingleRoute({
     themeMode: themeMode,
     theme: theme,
     darkTheme: darkTheme,
+    themeVariant: themeVariant,
     locale: locale,
     provider: provider,
     disableAnimations: disableAnimations,
@@ -104,6 +121,7 @@ Widget testableRouteShellWidget({
   LinksysRouteConfig? config,
   ThemeData? theme,
   ThemeData? darkTheme,
+  ThemeVariant? themeVariant,
   Locale? locale,
   bool disableAnimations = true,
 }) {
@@ -131,6 +149,7 @@ Widget testableRouteShellWidget({
     themeMode: themeMode,
     theme: theme,
     darkTheme: darkTheme,
+    themeVariant: themeVariant,
     locale: locale,
     disableAnimations: disableAnimations,
   );

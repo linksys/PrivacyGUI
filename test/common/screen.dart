@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'theme_config.dart';
+
 class ScreenSize {
   const ScreenSize(this.name, this.width, this.height, this.pixelDensity);
   final String name;
@@ -55,4 +57,40 @@ class LocalizedScreen extends ScreenSize {
       '$name-${locale.languageCode}_${locale.countryCode ?? ''}($width, $height, $pixelDensity)';
   @override
   String toShort() => '$name-${locale.toLanguageTag()}';
+}
+
+/// A screen variant that includes locale and theme information.
+///
+/// Used for generating screenshot test variants across locale x screen x theme combinations.
+class ThemedScreen extends LocalizedScreen {
+  final ThemeVariant theme;
+
+  ThemedScreen(
+    super.name, {
+    required super.locale,
+    required this.theme,
+    required super.width,
+    required super.height,
+    super.pixelDensity = 1.0,
+  });
+
+  factory ThemedScreen.fromLocalizedScreen({
+    required LocalizedScreen screen,
+    required ThemeVariant theme,
+  }) =>
+      ThemedScreen(
+        screen.name,
+        locale: screen.locale,
+        theme: theme,
+        width: screen.width,
+        height: screen.height,
+        pixelDensity: screen.pixelDensity,
+      );
+
+  @override
+  String toString() =>
+      '$name-${locale.languageCode}_${locale.countryCode ?? ''}-${theme.name}($width, $height, $pixelDensity)';
+
+  @override
+  String toShort() => '$name-${locale.toLanguageTag()}-${theme.name}';
 }

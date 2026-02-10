@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
+
+import 'theme_config.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
@@ -173,6 +175,9 @@ class TestHelper {
 
   // Screen Size
   LocalizedScreen? current;
+
+  // Themed Screen (for multi-theme screenshot testing)
+  ThemedScreen? currentThemed;
 
   // Animation control - disable by default for stable golden tests
   bool disableAnimations = true;
@@ -548,6 +553,7 @@ class TestHelper {
     Locale locale = const Locale('en'),
     LinksysRouteConfig? config,
     ThemeMode themeMode = ThemeMode.system,
+    ThemeVariant? themeVariant,
     List<ImageProvider> preCacheImages = const [],
     List<String> preCacheCustomImages = const [],
   }) async {
@@ -556,6 +562,7 @@ class TestHelper {
         config: config ?? LinksysRouteConfig(column: ColumnGrid(column: 9)),
         locale: locale,
         themeMode: themeMode,
+        themeVariant: themeVariant,
         disableAnimations: disableAnimations,
         overrides:
             forceOverride ? overrides : [...defaultOverrides, ...overrides],
@@ -577,6 +584,23 @@ class TestHelper {
   Future takeScreenshot(WidgetTester tester, String filename) async {
     final actualFinder = find.byWidgetPredicate((w) => true).first;
     final name = current != null ? '$filename-${current!.toShort()}' : filename;
+    await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
+  }
+
+  /// Take a screenshot with theme information in the path.
+  ///
+  /// Output path format: goldens/{theme}/{filename}-{device}-{locale}-{theme}.png
+  Future takeThemedScreenshot(WidgetTester tester, String filename) async {
+    final actualFinder = find.byWidgetPredicate((w) => true).first;
+    String name;
+    if (currentThemed != null) {
+      final themePath = currentThemed!.theme.name;
+      name = '$themePath/$filename-${currentThemed!.toShort()}';
+    } else if (current != null) {
+      name = '$filename-${current!.toShort()}';
+    } else {
+      name = filename;
+    }
     await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
   }
 }

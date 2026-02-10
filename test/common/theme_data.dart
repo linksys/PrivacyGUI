@@ -7,23 +7,32 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
+import 'theme_config.dart';
+
 ///
 /// Use this theme to generate snapshots with localizations
 /// To avoid animation in snapshots, don't enable shimmer and topology visual effects
 /// style: flat, glass, pixel, aurora, brutal, neumorphic
 final mockLightThemeData = ThemeJsonConfig.fromJson({
   'style': 'glass',
-  'visualEffects': 15,
   'brightness': 'light',
+  'visualEffects': 15,
   'globalOverlay': 'none',
 }).createLightTheme();
 
 final mockDarkThemeData = ThemeJsonConfig.fromJson({
   'style': 'glass',
-  'visualEffects': 15,
   'brightness': 'dark',
+  'visualEffects': 15,
   'globalOverlay': 'none',
 }).createDarkTheme();
+
+/// Create mock theme data for a specific theme variant.
+///
+/// This is used for multi-theme screenshot testing.
+ThemeData createMockThemeData(ThemeVariant variant) {
+  return variant.createTheme();
+}
 
 ///
 /// This is used to help to generate snapshots with localizations

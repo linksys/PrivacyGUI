@@ -98,18 +98,21 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         defaultClassify();
       }
       function initFilters(resultJson) {
-        // Extract unique locales and device types from resultJson
+        // Extract unique locales, device types, themes from resultJson
         const locales = new Set();
         const deviceTypes = new Set();
+        const themes = new Set();
         const results = new Set();
 
         resultJson.tests.forEach(test => {
           locales.add(test.locale);
           deviceTypes.add(test.deviceType);
+          if (test.theme) themes.add(test.theme);
           results.add(test.result);
         });
         locales.delete(undefined);
         deviceTypes.delete(undefined);
+        themes.delete(undefined);
 
         // Create filter elements for locales
         const localeFilters = document.createElement('div');
@@ -154,6 +157,29 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         });
         document.querySelector('.filters').appendChild(deviceTypeFilters);
 
+        // Create filter elements for themes (if any)
+        if (themes.size > 0) {
+          const themeFilters = document.createElement('div');
+          themeFilters.innerHTML = '<h3>Theme:</h3>';
+          themes.forEach(theme => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `theme-\${theme}`;
+            checkbox.name = 'theme';
+            checkbox.value = theme;
+            checkbox.checked = true; // Initially all themes are selected
+            checkbox.addEventListener('change', defaultClassify);
+
+            const label = document.createElement('label');
+            label.htmlFor = `theme-\${theme}`;
+            label.textContent = theme;
+
+            themeFilters.appendChild(checkbox);
+            themeFilters.appendChild(label);
+          });
+          document.querySelector('.filters').appendChild(themeFilters);
+        }
+
         // Create filter elements for results
         const resultFilters = document.createElement('div');
         resultFilters.innerHTML = '<h3>Result:</h3>';
@@ -181,12 +207,21 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
       
       function defaultClassify() {
         const selectedLocales = Array.from(document.querySelectorAll('input[name="locale"]:checked')).map(checkbox => checkbox.value);
-        
+
         const selectedDeviceTypes = Array.from(document.querySelectorAll('input[name="deviceType"]:checked')).map(checkbox => checkbox.value);
-      
+
+        const selectedThemes = Array.from(document.querySelectorAll('input[name="theme"]:checked')).map(checkbox => checkbox.value);
+
         const selectedResults = Array.from(document.querySelectorAll('input[name="result"]:checked')).map(checkbox => checkbox.value);
 
-        const filteredTests = resultJson.tests.filter(test => selectedLocales.includes(test.locale) && selectedDeviceTypes.includes(test.deviceType) && selectedResults.includes(test.result));
+        const filteredTests = resultJson.tests.filter(test => {
+          const localeMatch = selectedLocales.includes(test.locale);
+          const deviceMatch = selectedDeviceTypes.includes(test.deviceType);
+          const resultMatch = selectedResults.includes(test.result);
+          // If no theme filters exist (legacy tests), always match theme
+          const themeMatch = selectedThemes.length === 0 || !test.theme || selectedThemes.includes(test.theme);
+          return localeMatch && deviceMatch && resultMatch && themeMatch;
+        });
         
         // counting success and fail test cases and put data into classified obj
         const successCount = filteredTests.filter(test => test.result === 'success').length;

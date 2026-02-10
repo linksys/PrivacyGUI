@@ -8,10 +8,12 @@ import 'package:collection/collection.dart';
 /// 0 -> input test result json file path
 /// 1 -> locs
 /// 2 -> screen sizes
+/// 3 -> theme (optional)
 void main(List<String> args) {
   print(args);
   var testResultJsonPath = './reports/tests.json';
   var fileSuffix = '';
+  String? theme;
   // use default path if no args input
   if (args.isNotEmpty) {
     testResultJsonPath = args[0];
@@ -19,6 +21,10 @@ void main(List<String> args) {
   if (args.length > 1) {
     final locs = args[1];
     fileSuffix = '-$locs';
+  }
+  if (args.length > 3) {
+    theme = args[3];
+    fileSuffix = '$fileSuffix-$theme';
   }
   File file = File(testResultJsonPath);
 
@@ -197,18 +203,45 @@ handleTestRecord(String record, Map<String, dynamic> testResult) {
 
 extractInfo(Map<String, dynamic> test) {
   final name = test['name'];
-  final regex = RegExp(r'(.*) \(variant: (.*)-(.*)_(.*)\(.*');
-  final match = regex.firstMatch(name);
-  final tsName = match?.group(1)?.trim();
-  final deviceType = match?.group(2);
-  final region = match?.group(4) ?? '';
-  final locale = (match?.group(3) ?? '').isNotEmpty
-      ? '${match?.group(3)}${region.isNotEmpty ? '_$region' : ''}'
-      : null;
+
+  // Try themed pattern first: name (variant: Device-locale-theme(...)
+  // Example: "test name (variant: Device480w-en-glass-light(...)"
+  // or with region: "test name (variant: Device480w-zh-TW-glass-light(...)"
+  final themedRegex = RegExp(r'(.*) \(variant: ([^-]+)-([a-z]{2}(?:-[A-Z]{2})?)-([a-z]+-(?:light|dark))\(.*');
+  var match = themedRegex.firstMatch(name);
+
+  String? tsName;
+  String? deviceType;
+  String? locale;
+  String? theme;
+
+  if (match != null) {
+    // Themed pattern matched
+    tsName = match.group(1)?.trim();
+    deviceType = match.group(2);
+    locale = match.group(3);
+    theme = match.group(4);
+  } else {
+    // Fall back to legacy pattern: name (variant: Device-locale_region(...)
+    final legacyRegex = RegExp(r'(.*) \(variant: (.*)-(.*)_(.*)\(.*');
+    match = legacyRegex.firstMatch(name);
+    tsName = match?.group(1)?.trim();
+    deviceType = match?.group(2);
+    final region = match?.group(4) ?? '';
+    locale = (match?.group(3) ?? '').isNotEmpty
+        ? '${match?.group(3)}${region.isNotEmpty ? '_$region' : ''}'
+        : null;
+  }
+
   String? link;
   if (tsName != null && locale != null && deviceType != null) {
-    // Use relative path
-    link = '$locale/$deviceType/$tsName-$deviceType-$locale.png';
+    // Use relative path with optional theme subdirectory
+    if (theme != null) {
+      link = '$locale/$deviceType/$theme/$tsName-$deviceType-$locale-$theme.png';
+      test['theme'] = theme;
+    } else {
+      link = '$locale/$deviceType/$tsName-$deviceType-$locale.png';
+    }
     test['filePath'] = link;
     test['locale'] = locale;
     test['deviceType'] = deviceType;

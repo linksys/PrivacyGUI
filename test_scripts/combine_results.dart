@@ -44,6 +44,16 @@ void main(List<String> args) {
   }
   final devices = deviceSet.toList();
 
+  // collect all the themes
+  final Set<String> themeSet = {};
+  for (final jsonObject in jsonObjects) {
+    final theme = jsonObject['theme'];
+    if (theme != null) {
+      themeSet.add(theme);
+    }
+  }
+  final themes = themeSet.toList();
+
   final resultObj = <String, dynamic>{};
   resultObj['counting'] = {
     'success': jsonObjects.where((e) => e['result'] == 'success').length,
@@ -53,6 +63,7 @@ void main(List<String> args) {
   resultObj['tests'] = jsonObjects;
   resultObj['locales'] = locales;
   resultObj['devices'] = devices;
+  resultObj['themes'] = themes;
   // write combined json object to file
   // File('$folderStr/combined.json')
   //     .writeAsStringSync(JsonEncoder.withIndent('  ').convert(resultObj));

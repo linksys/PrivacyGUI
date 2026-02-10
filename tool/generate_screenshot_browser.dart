@@ -9,12 +9,14 @@ import 'dart:io';
 ///   --output, -o     Output HTML path (default: snapshots/screenshot_browser.html)
 ///   --locales, -l    Comma-separated list of locales to include (default: all)
 ///   --devices, -d    Comma-separated list of devices to include (default: all)
+///   --themes, -t     Comma-separated list of themes to include (default: all)
 ///   --page-size, -p  Number of items per page (default: 50)
 ///   --thumbnails     Generate thumbnails (requires ImageMagick)
 ///
 /// Examples:
 ///   dart run tool/generate_screenshot_browser.dart
 ///   dart run tool/generate_screenshot_browser.dart -l en,ja,zh-TW -d Device480w,Device1280w
+///   dart run tool/generate_screenshot_browser.dart -t glass-light,brutal-dark
 ///   dart run tool/generate_screenshot_browser.dart --page-size 30
 void main(List<String> args) async {
   final config = parseArgs(args);
@@ -44,16 +46,31 @@ void main(List<String> args) async {
         'Filtered to ${screenshots.length} screenshots (devices: ${config.devices.join(', ')})');
   }
 
+  if (config.themes.isNotEmpty) {
+    screenshots =
+        screenshots.where((s) => config.themes.contains(s['theme'])).toList();
+    stdout.writeln(
+        'Filtered to ${screenshots.length} screenshots (themes: ${config.themes.join(', ')})');
+  }
+
   // Extract unique values for filters
   final locales = screenshots.map((s) => s['locale'] as String).toSet().toList()
     ..sort();
   final devices = screenshots.map((s) => s['device'] as String).toSet().toList()
+    ..sort();
+  final themes = screenshots
+      .map((s) => s['theme'] as String?)
+      .where((t) => t != null)
+      .cast<String>()
+      .toSet()
+      .toList()
     ..sort();
   final groups = screenshots.map((s) => s['group'] as String).toSet().toList()
     ..sort();
 
   stdout.writeln('Locales: ${locales.length}');
   stdout.writeln('Device types: ${devices.length}');
+  stdout.writeln('Themes: ${themes.length}');
   stdout.writeln('Feature groups: ${groups.length}');
 
   // Generate thumbnails if requested
@@ -65,6 +82,7 @@ void main(List<String> args) async {
     screenshots,
     locales,
     devices,
+    themes,
     groups,
     pageSize: config.pageSize,
     hasThumbnails: config.generateThumbnails,
@@ -94,6 +112,7 @@ class Config {
   final String outputPath;
   final List<String> locales;
   final List<String> devices;
+  final List<String> themes;
   final int pageSize;
   final bool generateThumbnails;
 
@@ -101,6 +120,7 @@ class Config {
     required this.outputPath,
     required this.locales,
     required this.devices,
+    required this.themes,
     required this.pageSize,
     required this.generateThumbnails,
   });
@@ -110,6 +130,7 @@ Config parseArgs(List<String> args) {
   String outputPath = 'snapshots/screenshot_browser.html';
   List<String> locales = [];
   List<String> devices = [];
+  List<String> themes = [];
   int pageSize = 50;
   bool generateThumbnails = false;
 
@@ -127,6 +148,10 @@ Config parseArgs(List<String> args) {
       case '-d':
         devices = args[++i].split(',').map((s) => s.trim()).toList();
         break;
+      case '--themes':
+      case '-t':
+        themes = args[++i].split(',').map((s) => s.trim()).toList();
+        break;
       case '--page-size':
       case '-p':
         pageSize = int.parse(args[++i]);
@@ -141,6 +166,7 @@ Config parseArgs(List<String> args) {
     outputPath: outputPath,
     locales: locales,
     devices: devices,
+    themes: themes,
     pageSize: pageSize,
     generateThumbnails: generateThumbnails,
   );
@@ -177,6 +203,7 @@ Future<List<Map<String, dynamic>>> scanScreenshots(Directory dir) async {
         'path': filePath,
         'locale': item['locale'] ?? _extractLocale(filePath),
         'device': item['deviceType'] ?? _extractDevice(filePath),
+        'theme': item['theme'] ?? _extractTheme(filePath),
         'group': _extractScreenId(tsName),
         'name': tsName,
         'result': item['result'] ?? 'unknown',
@@ -196,26 +223,38 @@ Future<List<Map<String, dynamic>>> scanScreenshots(Directory dir) async {
     // Skip if already in JSON data
     if (screenshots.any((s) => s['path'] == relativePath)) continue;
 
-    // Parse path structure: locale/device/filename.png or just filename.png
+    // Parse path structure: locale/device/theme/filename.png or locale/device/filename.png or just filename.png
     final parts = relativePath.split('/');
 
     String locale = 'root';
     String device = 'default';
+    String? theme;
     String name = parts.last.replaceAll('.png', '');
 
-    if (parts.length >= 3) {
+    if (parts.length >= 4) {
+      // locale/device/theme/filename.png
+      locale = parts[0];
+      device = parts[1];
+      theme = _extractTheme(parts[2]) ?? parts[2];
+      name = _extractName(parts.last);
+    } else if (parts.length >= 3) {
       locale = parts[0];
       device = parts[1];
       name = _extractName(parts.last);
+      theme = _extractTheme(relativePath);
     } else if (parts.length == 2) {
       locale = parts[0];
       name = _extractName(parts.last);
+      theme = _extractTheme(relativePath);
+    } else {
+      theme = _extractTheme(relativePath);
     }
 
     screenshots.add({
       'path': relativePath,
       'locale': locale,
       'device': device,
+      'theme': theme,
       'group': _extractScreenId(name),
       'name': name,
       'result': 'unknown',
@@ -234,6 +273,15 @@ String _extractLocale(String path) {
 String _extractDevice(String path) {
   final match = RegExp(r'Device\d+w').firstMatch(path);
   return match?.group(0) ?? 'default';
+}
+
+/// Extracts theme from path or filename.
+///
+/// Matches patterns like: glass-light, brutal-dark, neumorphic-light, etc.
+String? _extractTheme(String path) {
+  final match = RegExp(r'(flat|glass|pixel|aurora|brutal|neumorphic)-(light|dark)')
+      .firstMatch(path);
+  return match?.group(0);
 }
 
 String _extractName(String filename) {
@@ -420,7 +468,8 @@ Future<void> generateThumbnails(
 }
 
 String generateHtml(List<Map<String, dynamic>> screenshots,
-    List<String> locales, List<String> devices, List<String> groups,
+    List<String> locales, List<String> devices, List<String> themes,
+    List<String> groups,
     {int pageSize = 50, bool hasThumbnails = false}) {
   return '''
 <!DOCTYPE html>
@@ -606,6 +655,7 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
 
     .tag.locale { background: #dbeafe; color: #1e40af; }
     .tag.device { background: #dcfce7; color: #166534; }
+    .tag.theme { background: #fef3c7; color: #92400e; }
     .tag.success { background: #dcfce7; color: var(--success); }
     .tag.failed { background: #fee2e2; color: var(--error); }
 
@@ -759,6 +809,12 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
         </select>
       </div>
       <div class="filter-group">
+        <label>Theme</label>
+        <select id="filter-theme">
+          <option value="">All Themes</option>
+        </select>
+      </div>
+      <div class="filter-group">
         <label>Group</label>
         <select id="filter-group">
           <option value="">All Groups</option>
@@ -803,6 +859,7 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     const screenshots = ${jsonEncode(screenshots)};
     const locales = ${jsonEncode(locales)};
     const devices = ${jsonEncode(devices)};
+    const themes = ${jsonEncode(themes)};
     const groups = ${jsonEncode(groups)};
     const PAGE_SIZE = $pageSize;
     const HAS_THUMBNAILS = $hasThumbnails;
@@ -815,13 +872,19 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     function populateFilters() {
       const localeSelect = document.getElementById('filter-locale');
       const deviceSelect = document.getElementById('filter-device');
+      const themeSelect = document.getElementById('filter-theme');
       const groupSelect = document.getElementById('filter-group');
+
       locales.forEach(l => {
         localeSelect.innerHTML += `<option value="\${l}">\${l}</option>`;
       });
 
       devices.forEach(d => {
         deviceSelect.innerHTML += `<option value="\${d}">\${d}</option>`;
+      });
+
+      themes.forEach(t => {
+        themeSelect.innerHTML += `<option value="\${t}">\${t}</option>`;
       });
 
       groups.forEach(g => {
@@ -833,12 +896,14 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     function applyFilters() {
       const locale = document.getElementById('filter-locale').value;
       const device = document.getElementById('filter-device').value;
+      const theme = document.getElementById('filter-theme').value;
       const group = document.getElementById('filter-group').value;
       const search = document.getElementById('search').value.toLowerCase();
 
       filteredScreenshots = screenshots.filter(s => {
         if (locale && s.locale !== locale) return false;
         if (device && s.device !== device) return false;
+        if (theme && s.theme !== theme) return false;
         if (group && s.group !== group) return false;
         if (search && !s.name.toLowerCase().includes(search)) return false;
         return true;
@@ -919,6 +984,7 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
         const thumbPath = HAS_THUMBNAILS
           ? 'thumbnails/' + s.path.replace('.png', '_thumb.jpg')
           : s.path;
+        const themeTag = s.theme ? `<span class="tag theme">\${s.theme}</span>` : '';
         return `
           <div class="card" data-index="\${globalOffset + i}" onclick="openLightbox(\${globalOffset + i})">
             <div class="card-image">
@@ -929,6 +995,7 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
               <div class="card-meta">
                 <span class="tag locale">\${s.locale}</span>
                 <span class="tag device">\${s.device}</span>
+                \${themeTag}
               </div>
             </div>
           </div>
@@ -950,9 +1017,10 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     function updateLightbox() {
       const s = filteredScreenshots[currentIndex];
       document.getElementById('lightbox-img').src = s.path;  // Always use full image
+      const themeInfo = s.theme ? ` | \${s.theme}` : '';
       document.getElementById('lightbox-info').innerHTML = `
         <strong>\${s.name}</strong><br>
-        \${s.locale} | \${s.device} | \${s.group}
+        \${s.locale} | \${s.device}\${themeInfo} | \${s.group}
       `;
     }
 
@@ -964,6 +1032,7 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     // Event listeners
     document.getElementById('filter-locale').addEventListener('change', applyFilters);
     document.getElementById('filter-device').addEventListener('change', applyFilters);
+    document.getElementById('filter-theme').addEventListener('change', applyFilters);
     document.getElementById('filter-group').addEventListener('change', applyFilters);
     document.getElementById('search').addEventListener('input', applyFilters);
 
