@@ -106,6 +106,23 @@ void main() {
       expect((actual as JNAPError).error, 'ErrorInvalidHostName');
     });
 
+    test('test error result with output key but null value', () async {
+      // Edge case from Qodo review: output key exists but value is null
+      const sample = '''
+        {
+          "result": "ErrorInvalidHostName",
+          "output": null
+        }
+      ''';
+
+      final actual = JNAPResult.fromJson(jsonDecode(sample));
+
+      expect(actual.runtimeType, JNAPError);
+      expect(actual.result, 'ErrorInvalidHostName');
+      // Should fallback to result code, NOT "null"
+      expect((actual as JNAPError).error, 'ErrorInvalidHostName');
+    });
+
     test('test error result with output but no error key', () async {
       const sample = '''
         {
