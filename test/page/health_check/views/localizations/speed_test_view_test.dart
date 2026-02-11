@@ -20,7 +20,8 @@
 // | STV-ERROR-05    | Verify the UI when a database error occurs.      |
 // | STV-ERROR-06    | Verify the UI when a timeout/unknown error occurs.|
 // | STV-HISTORY-01  | Verify the history panel displays records.       |
-// | STV-ACTION-01   | Verify tapping 'Go' button starts the test.      |
+// | STV-SERVER-01   | Verify server dropdown and selection flow.       |
+// | STV-SERVER-02   | Verify Go button runs test with selected server. |
 //
 
 import 'package:flutter/material.dart';
@@ -28,6 +29,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/page/health_check/_health_check.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -405,7 +407,6 @@ void main() {
   testLocalizations(
     'Verify the history panel displays records.',
     (tester, screen) async {
-      // Mock a state with historical data
       final historyState =
           HealthCheckState.fromJson(healthCheckInitState).copyWith(
         historicalSpeedTests: [
@@ -442,13 +443,97 @@ void main() {
     screens: screens,
   );
 
-  // Test ID: STV-ACTION-01
+  // Test ID: STV-SERVER-01
   testLocalizations(
-    'Verify tapping "Go" button starts the test.',
+    'Verify server dropdown selection flow',
     (tester, screen) async {
-      final testState = HealthCheckState.fromJson(healthCheckInitState)
-          .copyWith(healthCheckModules: ['SpeedTest']);
-      when(testHelper.mockHealthCheckProvider.build()).thenReturn(testState);
+      // 1. Enable Service Support
+      when(testHelper.mockServiceHelper.isSupportHealthCheckManager2())
+          .thenReturn(true);
+
+      // 2. Prepare Data
+      final servers = healthCheckServersData
+          .map((json) => HealthCheckServer.fromJson(json))
+          .toList();
+
+      // Initialize with NO server selected (default state)
+      final stateWithServers = HealthCheckState.fromJson(healthCheckInitState)
+          .copyWith(servers: servers, selectedServer: () => null);
+
+      // 3. Setup Mock
+      when(testHelper.mockHealthCheckProvider.build())
+          .thenReturn(stateWithServers);
+
+      // 4. Pump Widget
+      final context = await testHelper.pumpView(
+        tester,
+        child: const SpeedTestView(),
+        locale: screen.locale,
+      );
+      await tester.pumpAndSettle();
+
+      // 5. Verification - Dropdown is displayed with hint text
+      expect(find.text(testHelper.loc(context).selectServer), findsOneWidget);
+
+      // 6. Dropdown exists
+      final serverDropdown = find.byType(AppDropdown<HealthCheckServer>);
+      expect(serverDropdown, findsOneWidget);
+
+      await testHelper.takeScreenshot(
+        tester,
+        'STV-SERVER-01-01-initial_with_dropdown',
+      );
+
+      // 7. Open dropdown
+      await tester.tap(serverDropdown);
+      await tester.pumpAndSettle();
+
+      await testHelper.takeScreenshot(
+        tester,
+        'STV-SERVER-01-02-dropdown_open',
+      );
+
+      // 8. Select server
+      final serverItem = find.text(servers[0].toString()).last;
+      expect(serverItem, findsOneWidget);
+
+      await tester.tap(serverItem);
+      await tester.pumpAndSettle();
+
+      // 9. Verify that the selection action was called
+      verify(testHelper.mockHealthCheckProvider.setSelectedServer(any))
+          .called(1);
+    },
+    goldenFilename: 'STV-SERVER-01-03-final',
+    helper: testHelper,
+    screens: screens,
+  );
+
+  // Test ID: STV-SERVER-02
+  testLocalizations(
+    'Verify Go button runs test with selected server',
+    (tester, screen) async {
+      // 1. Enable Service Support
+      when(testHelper.mockServiceHelper.isSupportHealthCheckManager2())
+          .thenReturn(true);
+
+      // 2. Prepare Data
+      final servers = healthCheckServersData
+          .map((json) => HealthCheckServer.fromJson(json))
+          .toList();
+
+      // Initialize with server selected (Enabled state)
+      final stateWithSelection =
+          HealthCheckState.fromJson(healthCheckInitState).copyWith(
+        servers: servers,
+        selectedServer: () => servers[0],
+        healthCheckModules: ['SpeedTest'],
+      );
+      // 3. Setup Mock
+      when(testHelper.mockHealthCheckProvider.build())
+          .thenReturn(stateWithSelection);
+
+      // 4. Pump Widget
       await testHelper.pumpView(
         tester,
         child: const SpeedTestView(),
@@ -456,15 +541,25 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final runButton = find.byKey(const Key('goBtn'));
-      expect(runButton, findsOneWidget);
-      await tester.tap(runButton);
+      // 5. Verification - Go button is visible
+      final goButton = find.byKey(const Key('goBtn'));
+      expect(goButton, findsOneWidget);
+
+      await testHelper.takeScreenshot(
+        tester,
+        'STV-SERVER-02-01-server_selected',
+      );
+
+      // 6. Action: Tap Go
+      await tester.tap(goButton);
       await tester.pump();
 
+      // 7. Verify runHealthCheck was called
       verify(testHelper.mockHealthCheckProvider
               .runHealthCheck(Module.speedtest, serverId: anyNamed('serverId')))
           .called(1);
     },
+    goldenFilename: 'STV-SERVER-02-02-final',
     helper: testHelper,
     screens: screens,
   );

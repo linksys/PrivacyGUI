@@ -124,8 +124,6 @@ void main() {
       expect(find.text(loc.modelNumber), findsOneWidget);
       expect(find.text(loc.serialNumber), findsOneWidget);
       expect(find.text(loc.macAddress), findsOneWidget);
-      // testHelper.takeScreenshot(tester, 'XXXXX-NDVL-INFO-01-desktop');
-      // Verify device tab elements
       expect(find.text(loc.nDevices(_deviceList.length)), findsOneWidget);
       expect(find.text(loc.filters), findsWidgets);
 

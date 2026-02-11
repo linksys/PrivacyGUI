@@ -129,3 +129,31 @@ const healthCheckStateError = '''{"status": "complete",
      "result":null,
      "error":{"result":"Empty resultID","error":null}
 }''';
+
+/// Mock server list for server selection dialog tests
+const healthCheckServersData = [
+  {
+    'serverID': '3967',
+    'serverName': 'Speedtest Server 1',
+    'serverLocation': 'Los Angeles, CA',
+    'serverCountry': 'USA',
+    'serverHostname': 'speedtest1.example.com',
+    'serverPort': 8080,
+  },
+  {
+    'serverID': '4521',
+    'serverName': 'Speedtest Server 2',
+    'serverLocation': 'New York, NY',
+    'serverCountry': 'USA',
+    'serverHostname': 'speedtest2.example.com',
+    'serverPort': 8080,
+  },
+  {
+    'serverID': '5892',
+    'serverName': 'Speedtest Server 3',
+    'serverLocation': 'Tokyo',
+    'serverCountry': 'Japan',
+    'serverHostname': 'speedtest3.example.com',
+    'serverPort': 8080,
+  },
+];

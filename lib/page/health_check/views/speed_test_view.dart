@@ -5,7 +5,6 @@ import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
-import 'package:privacy_gui/page/health_check/views/components/speed_test_server_selection_dialog.dart';
 import 'package:privacy_gui/page/health_check/shared_widgets/speed_test_widget.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -24,12 +23,12 @@ class SpeedTestView extends ConsumerWidget {
     final healthCheckState = ref.watch(healthCheckProvider);
     final servers = healthCheckState.servers;
     final selectedServer = healthCheckState.selectedServer;
-
     final mainWidget = SpeedTestWidget(
       showDetails: true,
       showInfoPanel: true,
       showStepDescriptions: true,
       showLatestOnIdle: false, // History is shown separately in this view
+      showServerSelectionDialog: false, // SpeedTestView uses its own dropdown
       meterSize: context.isMobileLayout
           ? context.colWidth(3)
           : context.colWidth(5), // Make it larger on desktop
@@ -45,21 +44,38 @@ class SpeedTestView extends ConsumerWidget {
 
     final historyWidget = _buildHistoryPanel(context, historicalTests);
 
+    final serverSelection = servers.isNotEmpty
+        ? Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: SizedBox(
+                width: 250,
+                child: AppDropdown<HealthCheckServer>(
+                  items: servers,
+                  value: selectedServer,
+                  itemAsString: (s) => s.toString(),
+                  hint: loc(context).selectServer,
+                  onChanged: (server) {
+                    if (server != null) {
+                      ref
+                          .read(healthCheckProvider.notifier)
+                          .setSelectedServer(server);
+                    }
+                  },
+                ),
+              ),
+            ),
+          )
+        : const SizedBox.shrink();
+
     return UiKitPageView.withSliver(
       scrollable: true,
       title: loc(context).speedTest,
-      actions: servers.isNotEmpty
-          ? [
-              AppIconButton(
-                icon: const Icon(Icons.dns_outlined),
-                onTap: () => _showServerSelectionDialog(
-                    context, ref, servers, selectedServer),
-              ),
-            ]
-          : null,
       child: (context, constraints) => AppResponsiveLayout(
         mobile: (ctx) => Column(
           children: [
+            serverSelection,
             mainWidget,
             AppGap.xxl(),
             performanceDescriptionCard,
@@ -70,7 +86,15 @@ class SpeedTestView extends ConsumerWidget {
         desktop: (ctx) => Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(flex: 6, child: mainWidget),
+            Expanded(
+              flex: 6,
+              child: Column(
+                children: [
+                  serverSelection,
+                  mainWidget,
+                ],
+              ),
+            ),
             AppGap.gutter(),
             Expanded(
                 flex: 6,
@@ -192,42 +216,5 @@ class SpeedTestView extends ConsumerWidget {
       _ => loc(context).speedUltraDescription,
     };
     return (resultTitle, resultDesc);
-  }
-
-  /// Shows the server selection dialog.
-  void _showServerSelectionDialog(
-    BuildContext context,
-    WidgetRef ref,
-    List<HealthCheckServer> servers,
-    HealthCheckServer? currentSelection,
-  ) {
-    final selectedNotifier =
-        ValueNotifier<HealthCheckServer?>(currentSelection);
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: AppText.titleMedium(loc(context).selectServer),
-        content: SpeedTestServerSelectionList(
-          servers: servers,
-          notifier: selectedNotifier,
-        ),
-        actions: [
-          AppButton.text(
-            label: loc(context).cancel,
-            onTap: () => Navigator.of(dialogContext).pop(),
-          ),
-          AppButton.primary(
-            label: loc(context).ok,
-            onTap: () {
-              ref
-                  .read(healthCheckProvider.notifier)
-                  .setSelectedServer(selectedNotifier.value);
-              Navigator.of(dialogContext).pop();
-            },
-          ),
-        ],
-      ),
-    );
   }
 }

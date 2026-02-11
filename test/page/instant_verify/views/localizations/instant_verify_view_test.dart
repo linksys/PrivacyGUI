@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:privacy_gui/core/data/providers/node_internet_status_provider.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
+import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
 import 'package:privacy_gui/page/health_check/shared_widgets/speed_test_widget.dart';
 // import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
@@ -26,6 +28,7 @@ import '../../../../test_data/instant_verify_test_state.dart';
 // - IVER-MULTI_DNS: Connectivity card display when multiple DNS entries exist.
 // - IVER-SPEEDTEST: Internal health-check speed test widget rendered.
 // - IVER-SPEEDTEST_INIT: Modules configured but idle still show speed test panel.
+// - IVER-SERV_DLG: Server selection dialog appears when clicking Go.
 // - IVER-PING: Ping tile launches ping modal via PageBottomBar.
 // - IVER-TRACEROUTE: Traceroute tile launches traceroute modal.
 
@@ -166,6 +169,46 @@ void main() {
     helper: testHelper,
   );
 
+  // Test ID: IVER-SERV_DLG — server selection dialog appears when clicking Go
+  testLocalizations(
+    'instant verify view - server selection dialog appears on Go',
+    (tester, screen) async {
+      // Prepare servers data
+      final servers = healthCheckServersData
+          .map((json) => HealthCheckServer.fromJson(json))
+          .toList();
+
+      // Setup state with servers and SpeedTest module enabled
+      final stateWithServers =
+          HealthCheckState.fromJson(healthCheckInitStateWithModules).copyWith(
+        servers: servers,
+        selectedServer: () => null,
+      );
+
+      when(testHelper.mockHealthCheckProvider.build())
+          .thenReturn(stateWithServers);
+      when(testHelper.mockHealthCheckProvider
+              .runHealthCheck(Module.speedtest, serverId: anyNamed('serverId')))
+          .thenAnswer((_) async {});
+
+      final context = await pumpInstantVerify(tester, screen);
+      final loc = testHelper.loc(context);
+
+      // Find and tap Go button
+      final goButton = find.byKey(const Key('goBtn'));
+      expect(goButton, findsOneWidget);
+      await tester.tap(goButton);
+      await tester.pumpAndSettle();
+
+      // Verify dialog appears with server list
+      expect(find.text(loc.selectServer), findsOneWidget);
+      expect(find.text(servers[0].serverName), findsOneWidget);
+    },
+    screens: _infoScreens,
+    goldenFilename: 'IVER-SERV_DLG_01_dialog',
+    helper: testHelper,
+  );
+
   // Test ID: IVER-PING — tapping ping card opens modal
   testLocalizations(
     'instant verify view - ping dialog',
@@ -173,9 +216,7 @@ void main() {
       await pumpInstantVerify(tester, screen);
 
       await tester.tap(find.byKey(const ValueKey('ping')));
-      // Use pump with fixed duration to avoid pumpAndSettle timeout
-      // from modal or network-related animations
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
       expect(find.byType(PingNetworkModal), findsOneWidget);
     },
     screens: _infoScreens,
@@ -190,9 +231,7 @@ void main() {
       await pumpInstantVerify(tester, screen);
 
       await tester.tap(find.byKey(const ValueKey('traceroute')));
-      // Use pump with fixed duration to avoid pumpAndSettle timeout
-      // from modal or network-related animations
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
       expect(find.byType(TracerouteModal), findsOneWidget);
     },
     screens: _infoScreens,

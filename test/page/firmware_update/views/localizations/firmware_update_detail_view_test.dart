@@ -186,7 +186,7 @@ void main() {
     expect(find.text(testHelper.loc(context).firmwareUpdate), findsNothing);
 
     // Verify progress indicator and texts
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(AppLoader), findsOneWidget);
     expect(find.text('Linksys03056'), findsOneWidget);
     expect(find.text(testHelper.loc(context).firmwareInstallingTitle),
         findsOneWidget);
@@ -368,7 +368,6 @@ void main() {
 
     // Verify GridView.builder is present for multiple updating nodes
     expect(find.byType(GridView), findsOneWidget);
-    await testHelper.takeScreenshot(tester, 'XXXXX-FUDV-UPDATING_4_NODES');
     // Verify progress indicators and texts for all four nodes
     expect(find.byType(AppLoader), findsNWidgets(4));
     expect(find.text('Linksys03056'), findsOneWidget);

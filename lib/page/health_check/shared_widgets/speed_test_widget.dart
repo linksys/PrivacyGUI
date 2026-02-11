@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/customs/animated_digital_text.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/health_check/models/health_check_enum.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
@@ -46,6 +48,11 @@ class SpeedTestWidget extends ConsumerWidget {
   /// If true, shows the result summary (download/upload) below the meter when complete.
   final bool showResultSummary;
 
+  /// If true, shows a server selection dialog when the user taps the Go button
+  /// without a server selected. If false, the button is disabled when no server
+  /// is selected.
+  final bool showServerSelectionDialog;
+
   const SpeedTestWidget({
     super.key,
     this.showDetails = true,
@@ -55,7 +62,40 @@ class SpeedTestWidget extends ConsumerWidget {
     this.showLatestOnIdle = true,
     this.meterSize,
     this.showResultSummary = true,
+    this.showServerSelectionDialog = true,
   });
+
+  /// Runs the speed test with optional server selection.
+  ///
+  /// If [showServerSelectionDialog] is true and servers are available,
+  /// shows a dialog to select a server before running the test.
+  Future<void> _runSpeedTestWithServerSelection(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final isSpeedCheckSupported = ref
+        .read(healthCheckProvider.select((s) => s.isSpeedTestModuleSupported));
+
+    if (!isSpeedCheckSupported) {
+      // If not supported, navigate to the external test page.
+      context.pushNamed(RouteNamed.speedTestExternal);
+      return;
+    }
+
+    // Show server selection if enabled and servers are available
+    if (showServerSelectionDialog) {
+      final servers = ref.read(healthCheckProvider).servers;
+      if (servers.isNotEmpty) {
+        final selected = await _showServerSelectionDialog(context, servers);
+        if (selected == null) return; // User cancelled
+
+        ref.read(healthCheckProvider.notifier).setSelectedServer(selected);
+      }
+    }
+
+    // Run the speed test
+    ref.read(healthCheckProvider.notifier).runHealthCheck(Module.speedtest);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -265,9 +305,7 @@ class SpeedTestWidget extends ConsumerWidget {
           if (state.status == HealthCheckStatus.complete) {
             if (!showResultSummary) {
               return IconButton(
-                onPressed: () => ref
-                    .read(healthCheckProvider.notifier)
-                    .runHealthCheck(Module.speedtest),
+                onPressed: () => _runSpeedTestWithServerSelection(context, ref),
                 icon: Icon(Icons.replay,
                     color: Theme.of(context).colorScheme.primary),
                 tooltip: loc(context).testAgain,
@@ -275,9 +313,7 @@ class SpeedTestWidget extends ConsumerWidget {
             }
             // Show single-line result with tap-to-retry
             return InkWell(
-              onTap: () => ref
-                  .read(healthCheckProvider.notifier)
-                  .runHealthCheck(Module.speedtest),
+              onTap: () => _runSpeedTestWithServerSelection(context, ref),
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -288,12 +324,24 @@ class SpeedTestWidget extends ConsumerWidget {
                     Icon(Icons.arrow_downward,
                         size: 14, color: Theme.of(context).colorScheme.primary),
                     AppGap.xs(),
-                    AppText.titleSmall(result.downloadSpeed),
+                    Flexible(
+                      child: AppText.titleSmall(
+                        result.downloadSpeed,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
                     AppGap.md(),
                     Icon(Icons.arrow_upward,
                         size: 14, color: Theme.of(context).colorScheme.primary),
                     AppGap.xs(),
-                    AppText.titleSmall(result.uploadSpeed),
+                    Flexible(
+                      child: AppText.titleSmall(
+                        result.uploadSpeed,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
                     AppGap.md(),
                     Container(
                       width: 1,
@@ -501,27 +549,19 @@ class SpeedTestWidget extends ConsumerWidget {
         // indicatorPathStrokeWidth: 8,
         // markerRadius: 2,
         centerBuilder: (context, value) {
+          // Button is always enabled - the method handles server selection logic
+          final buttonColor = Theme.of(context).colorScheme.primary;
+
           return SizedBox(
             width: meterSize == null ? 102 : meterSize! / 2.0,
             height: meterSize == null ? 102 : meterSize! / 2.0,
             child: Material(
               shape: const CircleBorder(),
-              color: Theme.of(context).colorScheme.primary,
+              color: buttonColor,
               child: InkWell(
                 key: const Key('goBtn'),
                 customBorder: const CircleBorder(),
-                onTap: () {
-                  final isSpeedCheckSupported = ref.watch(healthCheckProvider
-                      .select((s) => s.isSpeedTestModuleSupported));
-                  if (isSpeedCheckSupported) {
-                    ref
-                        .read(healthCheckProvider.notifier)
-                        .runHealthCheck(Module.speedtest);
-                  } else {
-                    // If not supported, navigate to the external test page.
-                    context.pushNamed(RouteNamed.speedTestExternal);
-                  }
-                },
+                onTap: () => _runSpeedTestWithServerSelection(context, ref),
                 child: Center(
                   child: AppText.bodyLarge(loc(context).go,
                       color: Theme.of(context).colorScheme.onPrimary),
@@ -623,6 +663,44 @@ class SpeedTestWidget extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// Shows a dialog for server selection.
+  /// Returns the selected server, or null if canceled.
+  Future<HealthCheckServer?> _showServerSelectionDialog(
+    BuildContext context,
+    List<HealthCheckServer> servers,
+  ) async {
+    return showSimpleAppDialog<HealthCheckServer>(
+      context,
+      title: loc(context).selectServer,
+      content: Builder(
+        builder: (dialogContext) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(dialogContext).size.height * 0.5,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: servers.map((server) {
+                  return AppListTile(
+                    key: Key('server_${server.serverID}'),
+                    title: AppText.bodyMedium(server.serverName.isNotEmpty
+                        ? server.serverName
+                        : server.serverHostname),
+                    onTap: () =>
+                        Navigator.of(dialogContext, rootNavigator: true)
+                            .pop(server),
+                  );
+                }).toList(),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

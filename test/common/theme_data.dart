@@ -9,19 +9,20 @@ import 'package:privacy_gui/theme/theme_json_config.dart';
 
 ///
 /// Use this theme to generate snapshots with localizations
-/// To avoid animation in snapshots, set visualEffects to 0
-/// Flat has no animation and global effects
-///
+/// To avoid animation in snapshots, don't enable shimmer and topology visual effects
+/// style: flat, glass, pixel, aurora, brutal, neumorphic
 final mockLightThemeData = ThemeJsonConfig.fromJson({
-  'style': 'flat',
-  'visualEffects': 0,
+  'style': 'glass',
+  'visualEffects': 15,
   'brightness': 'light',
+  'globalOverlay': 'none',
 }).createLightTheme();
 
 final mockDarkThemeData = ThemeJsonConfig.fromJson({
-  'style': 'flat',
-  'visualEffects': 0,
+  'style': 'glass',
+  'visualEffects': 15,
   'brightness': 'dark',
+  'globalOverlay': 'none',
 }).createDarkTheme();
 
 ///

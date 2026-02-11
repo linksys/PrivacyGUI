@@ -1,58 +1,71 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 void main() {
   group('ThemeJsonConfig', () {
-    test('defaultConfig should return glass style and light/dark brightness',
-        () {
-      final config = ThemeJsonConfig.defaultConfig();
-      // Since we can't verify private fields, we verify behavior via createTheme
-      final lightTheme = config.createLightTheme();
-      final darkTheme = config.createDarkTheme();
+    test('parses visualEffects correctly', () {
+      final json = {
+        'style': 'glass',
+        'visualEffects': 123,
+      };
 
-      expect(lightTheme.brightness, Brightness.light);
-      expect(darkTheme.brightness, Brightness.dark);
+      final config = ThemeJsonConfig.fromJson(json);
+
+      expect(config.lightJson['visualEffects'], 123);
+      expect(config.darkJson['visualEffects'], 123);
     });
 
-    test('fromJsonString should parse valid JSON correctly', () {
-      const jsonStr = '''
-      {
-        "style": "flat",
-        "seedColor": "#FF0000",
-        "colors": {
-          "light": { "primary": "#00FF00" }
+    test('parses globalOverlay correctly when present', () {
+      final json = {
+        'style': 'glass',
+        'globalOverlay': 'none',
+      };
+
+      final config = ThemeJsonConfig.fromJson(json);
+
+      expect(config.lightJson['globalOverlay'], 'none');
+      expect(config.darkJson['globalOverlay'], 'none');
+    });
+
+    test('omits globalOverlay when absent', () {
+      final json = {
+        'style': 'glass',
+      };
+
+      final config = ThemeJsonConfig.fromJson(json);
+
+      expect(config.lightJson.containsKey('globalOverlay'), isFalse);
+      expect(config.darkJson.containsKey('globalOverlay'), isFalse);
+    });
+
+    test('parses all fields correctly in full json', () {
+      final json = {
+        'style': 'glass',
+        'visualEffects': 42,
+        'globalOverlay': 'liquid',
+        'seedColor': '#FF0000',
+        'colors': {
+          'light': {'primary': '#00FF00'},
+          'dark': {'primary': '#0000FF'}
         }
-      }
-      ''';
-      final config = ThemeJsonConfig.fromJsonString(jsonStr);
-      final lightTheme = config.createLightTheme();
+      };
 
-      // Verify seed color usage (indirectly or if feasible to check theme properties)
-      // Note: Checking exact generated colors relies on ui_kit implementation details.
-      // Here we check basic valid construction.
-      expect(lightTheme, isNotNull);
-      expect(lightTheme.brightness, Brightness.light);
-    });
+      final config = ThemeJsonConfig.fromJson(json);
 
-    test('fromJsonString should return default config for empty string', () {
-      final config = ThemeJsonConfig.fromJsonString('');
-      final lightTheme = config.createLightTheme();
-      expect(lightTheme.brightness, Brightness.light);
-    });
+      // Verify light theme json
+      expect(config.lightJson['style'], 'glass');
+      expect(config.lightJson['visualEffects'], 42);
+      expect(config.lightJson['globalOverlay'], 'liquid');
+      expect(config.lightJson['seedColor'], '#FF0000');
+      expect(config.lightJson['primary'], '#00FF00');
 
-    test('fromJsonString should return default config for invalid JSON', () {
-      final config = ThemeJsonConfig.fromJsonString('{invalid-json}');
-      final lightTheme = config.createLightTheme();
-      expect(lightTheme, isNotNull);
-    });
-
-    test('createLightTheme with overrideSeedColor should override config', () {
-      final config = ThemeJsonConfig.defaultConfig();
-      final lightTheme = config.createLightTheme(Colors.blue);
-      expect(lightTheme, isNotNull);
-      // Ideally we would check if the theme is seeded with blue, but generated colors are complex.
-      // At least ensuring no crash.
+      // Verify dark theme json
+      expect(config.darkJson['style'], 'glass');
+      expect(config.darkJson['visualEffects'], 42);
+      expect(config.darkJson['globalOverlay'], 'liquid');
+      // seedColor should be propagated if present in root
+      expect(config.darkJson['seedColor'], '#FF0000');
+      expect(config.darkJson['primary'], '#0000FF');
     });
   });
 }
