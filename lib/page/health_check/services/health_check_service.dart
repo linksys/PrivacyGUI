@@ -186,11 +186,11 @@ class SpeedTestService {
       return SpeedTestUIModel.empty();
     }
     final download = NetworkUtils.formatBitsWithUnit(
-      (speedTestResult.downloadBandwidth ?? 0) * 1024,
+      (speedTestResult.downloadBandwidth ?? 0) * 1000,
       decimals: 1,
     );
     final upload = NetworkUtils.formatBitsWithUnit(
-      (speedTestResult.uploadBandwidth ?? 0) * 1024,
+      (speedTestResult.uploadBandwidth ?? 0) * 1000,
       decimals: 1,
     );
     final (formattedTimestamp, _) = _formatTimestamp(timestamp ?? '');
