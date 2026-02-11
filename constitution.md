@@ -86,7 +86,7 @@ For Provider and Service mocking:
 **Usage Scenarios**:
 When testing a Service, the **return value of RouterRepository** (JNAP responses) is mocked, rather than the Service itself.
 
-**Test Data Builder 範例**：
+**Test Data Builder Example**:
 ```dart
 /// Test data builder for [FeatureName]Service tests
 ///
@@ -153,7 +153,7 @@ class [FeatureName]TestData {
 }
 ```
 
-**測試範例**：
+**Test Example**:
 ```dart
 // test/page/advanced_settings/dmz/services/dmz_service_test.dart
 import 'package:test/mocks/test_data/dmz_test_data.dart';
@@ -214,16 +214,16 @@ All names must comply with:
 
 ---
 
-**Section 3.2: 檔案命名**
+**Section 3.2: File Naming**
 
-所有檔案必須使用 `snake_case`：
+All files MUST use `snake_case`:
 
-| 類型 | 命名模式 | 範例 |
+| Type | Naming Pattern | Example |
 |------|---------|------|
 | Service | `[feature]_service.dart` | `auth_service.dart`, `dmz_service.dart` |
 | Provider | `[feature]_provider.dart` | `auth_provider.dart`, `dmz_settings_provider.dart` |
 | State | `[feature]_state.dart` | `auth_state.dart`, `dmz_settings_state.dart` |
-| Model | 依照 class 名稱 | `dmz_settings.dart`, `dmz_ui_settings.dart` |
+| Model | Based on class name | `dmz_settings.dart`, `dmz_ui_settings.dart` |
 | Test | `[file_name]_test.dart` | `auth_service_test.dart` |
 | Test Data Builder | `[feature]_test_data.dart` | `dmz_test_data.dart`, `auth_test_data.dart` |
 
@@ -237,7 +237,7 @@ All classes must use `UpperCamelCase`:
 
 **3.3.1: Service Classes**
 ```dart
-// 命名模式：[Feature]Service
+// Naming pattern: [Feature]Service
 class AuthService { ... }
 class DMZService { ... }
 class WirelessService { ... }
@@ -245,14 +245,14 @@ class WirelessService { ... }
 
 **3.3.2: Notifier Classes**
 ```dart
-// 命名模式：[Feature]Notifier
+// Naming pattern: [Feature]Notifier
 class AuthNotifier extends AsyncNotifier<AuthState> { ... }
 class DMZSettingsNotifier extends Notifier<DMZSettingsState> { ... }
 ```
 
 **3.3.3: State Classes**
 ```dart
-// 命名模式：[Feature]State
+// Naming pattern: [Feature]State
 class AuthState extends Equatable { ... }
 class DMZSettingsState extends FeatureState<DMZSettingsUIModel, DMZStatus> { ... }
 ```
@@ -278,7 +278,7 @@ class DeviceInfo extends Equatable { ... }
 
 **3.3.5: Error Classes**
 ```dart
-// 命名模式：[Type]Error (final class extending sealed base)
+// Naming pattern: [Type]Error (final class extending sealed base)
 sealed class AuthError { ... }
 
 final class InvalidCredentialsError extends AuthError { ... }
@@ -288,7 +288,7 @@ final class StorageError extends AuthError { ... }
 
 **3.3.6: Result/Response Classes**
 ```dart
-// 命名模式：[Feature]Result<T> (sealed class with Success/Failure)
+// Naming pattern: [Feature]Result<T> (sealed class with Success/Failure)
 sealed class AuthResult<T> { ... }
 
 final class AuthSuccess<T> extends AuthResult<T> { ... }
@@ -297,7 +297,7 @@ final class AuthFailure<T> extends AuthResult<T> { ... }
 
 **3.3.7: Test Data Builder Classes**
 ```dart
-// 命名模式：[Feature]TestData
+// Naming pattern: [Feature]TestData
 class AuthTestData {
   static SessionToken createValidToken() => ...;
   static JNAPSuccess createSuccessResponse() => ...;
@@ -310,7 +310,7 @@ class DMZTestData {
 
 **3.3.8: Mock Classes**
 ```dart
-// 命名模式：Mock[ClassName]
+// Naming pattern: Mock[ClassName]
 class MockAuthService extends Mock implements AuthService {}
 class MockRouterRepository extends Mock implements RouterRepository {}
 class MockAuthNotifier extends Mock implements AuthNotifier {}
@@ -324,7 +324,7 @@ All providers must use `lowerCamelCase`:
 
 **3.4.1: Service Providers**
 ```dart
-// 命名模式：[feature]ServiceProvider
+// Naming pattern: [feature]ServiceProvider
 final authServiceProvider = Provider<AuthService>((ref) => ...);
 final dmzServiceProvider = Provider<DMZService>((ref) => ...);
 ```
@@ -338,7 +338,7 @@ final dmzSettingsProvider = NotifierProvider<DMZSettingsNotifier, DMZSettingsSta
 
 **3.4.3: Simple Providers**
 ```dart
-// 命名模式：descriptive name + Provider
+// Naming pattern: descriptive name + Provider
 final routerRepositoryProvider = Provider<RouterRepository>((ref) => ...);
 final cloudRepositoryProvider = Provider<LinksysCloudRepository>((ref) => ...);
 ```
@@ -390,7 +390,7 @@ test('Test case 1', () { ... });
 
 **3.6.2: Test Group Naming**
 ```dart
-// 命名模式：[ClassName] - [Feature/Category]
+// Naming pattern: [ClassName] - [Feature/Category]
 group('AuthService - Session Token Management', () { ... });
 group('AuthNotifier - Cloud Login', () { ... });
 group('DMZService - Settings Transformation', () { ... });
@@ -833,54 +833,54 @@ Contract files serve as specification documents, not executable code:
 
 ## Article X: Code Review Standards
 
-**Section 10.1: 評審檢查清單**
+**Section 10.1: Review Checklist**
 
-**Lint 與格式檢查**:
-- ✅ `flutter analyze` 整個專案無錯誤（不引入新問題）
-- ✅ 只針對修改的檔案執行 `dart format`，需符合格式規範
+**Lint and Format Checks**:
+- ✅ `flutter analyze` entire project with no errors (no new issues introduced)
+- ✅ Run `dart format` only on modified files, must comply with formatting standards
 
-**測試與覆蓋**:
-- ✅ 新增/修改的代碼有對應單元測試
-- ✅ 測試覆蓋率達標 (Service ≥90%, Provider ≥85%, 整體 ≥80%)
+**Testing and Coverage**:
+- ✅ Added/modified code has corresponding unit tests
+- ✅ Test coverage meets standards (Service ≥90%, Provider ≥85%, Overall ≥80%)
 
-**代碼品質**:
-- ✅ 遵守三層架構，無跨層依賴
-- ✅ Public APIs 有 DartDoc 註解
-- ✅ 邊界情況處理完善（null 檢查、錯誤處理）
+**Code Quality**:
+- ✅ Follows three-tier architecture with no cross-layer dependencies
+- ✅ Public APIs have DartDoc comments
+- ✅ Edge cases handled properly (null checks, error handling)
 
-**兼容性**:
-- ✅ 所有現有測試通過
+**Compatibility**:
+- ✅ All existing tests pass
 
 ---
 
 ## Article XI: Data Models
 
-**Section 11.1: Model 強制要求**
+**Section 11.1: Model Requirements**
 
-所有 Models（Data Models、UI Models、State 等）**必須**:
-1. ✅ 實作 `Equatable` 接口
-2. ✅ 提供 `toJson()` 和 `fromJson()` 方法
-3. ✅ 提供 `toMap()` 和 `fromMap()` 方法
-4. ✅ 可選：使用 `freezed` 或 `json_serializable` 進行代碼生成
+All Models (Data Models, UI Models, State, etc.) **MUST**:
+1. ✅ Implement `Equatable` interface
+2. ✅ Provide `toJson()` and `fromJson()` methods
+3. ✅ Provide `toMap()` and `fromMap()` methods
+4. ✅ Optional: Use `freezed` or `json_serializable` for code generation
 
 ---
 
 ## Article XII: State Management with Riverpod
 
-**Section 12.1: Riverpod 使用原則**
+**Section 12.1: Riverpod Usage Principles**
 
-**原則**:
-- ✅ 使用 Riverpod 管理所有可變狀態
-- ✅ 使用 `Notifier` 進行狀態操作
+**Principles**:
+- ✅ Use Riverpod to manage all mutable state
+- ✅ Use `Notifier` for state operations
 
-**Section 12.2: Notifier 職責定義**
+**Section 12.2: Notifier Responsibility Definition**
 
-**Notifier 職責**:
-- 只做**業務邏輯協調** (不涉及 API 細節)
-- **依賴** Service/Repository (不直接依賴底層 API)
-- **不涉及** UI 層決策（如導航、Toast）
+**Notifier Responsibilities**:
+- Only perform **business logic coordination** (no API details)
+- **Depend on** Service/Repository (no direct dependency on low-level APIs)
+- **No involvement** in UI layer decisions (e.g., navigation, Toast)
 
-**正確範例**:
+**Correct Example**:
 ```dart
 class MyFeatureNotifier extends Notifier<MyFeatureState> {
   @override
@@ -898,28 +898,28 @@ class MyFeatureNotifier extends Notifier<MyFeatureState> {
 }
 ```
 
-**Section 12.3: Dirty Guard 功能**
+**Section 12.3: Dirty Guard Feature**
 
-**使用場景**: 當開發者要求實作 Dirty Guard 功能時，參考以下說明
+**Usage Scenario**: When developers require implementing Dirty Guard functionality, refer to the following
 
-**實作方式**:
-- 使用 `PreservableNotifierMixin` 混入 Notifier class
-- State 需繼承 `FeatureState<Settings, Status>`
-- 實作 `performFetch()` 和 `performSave()` 方法
+**Implementation Approach**:
+- Use `PreservableNotifierMixin` mixin with Notifier class
+- State must extend `FeatureState<Settings, Status>`
+- Implement `performFetch()` and `performSave()` methods
 
-**參考範例**:
+**Reference Examples**:
 - `lib/page/instant_privacy/providers/instant_privacy_provider.dart`
 - `lib/providers/notifier_mixin.dart` (PreservableNotifierMixin definition)
 
-**詳細指南**: `doc/dirty_guard/dirty_guard_framework_guide.md`
+**Detailed Guide**: `doc/dirty_guard/dirty_guard_framework_guide.md`
 
-**路由配置**:
+**Route Configuration**:
 ```dart
 LinksysRoute(
   path: 'feature',
   builder: (context, state) => const FeatureView(),
-  preservableProvider: featureProvider,  // 指定要檢查的 provider
-  enableDirtyCheck: true,  // 啟用 dirty guard
+  preservableProvider: featureProvider,  // Specify provider to check
+  enableDirtyCheck: true,  // Enable dirty guard
 )
 ```
 
@@ -927,34 +927,34 @@ LinksysRoute(
 
 ## Article XIII: Error Handling Strategy
 
-**Section 13.1: 統一錯誤處理原則**
+**Section 13.1: Unified Error Handling Principle**
 
-**原則**: 所有來自資料層的錯誤（JNAP、Cloud API、未來資料系統）必須在 Service 層轉換為統一的 `ServiceError` 類型，Provider 層不得直接處理資料層特定的錯誤類型。
+**Principle**: All errors from the data layer (JNAP, Cloud API, future data systems) MUST be converted to a unified `ServiceError` type in the Service layer. The Provider layer MUST NOT directly handle data-layer-specific error types.
 
-**目的**:
-- **隔離資料層實作**: 當更換資料來源時（如 JNAP → 新系統），只需修改 Service 層
-- **Type-safe 錯誤處理**: 使用 sealed class 提供編譯時檢查和窮盡性驗證
-- **一致的錯誤契約**: Provider 和 UI 層使用統一的錯誤介面
+**Purpose**:
+- **Isolate data layer implementation**: When switching data sources (e.g., JNAP → new system), only the Service layer needs modification
+- **Type-safe error handling**: Use sealed classes to provide compile-time checks and exhaustiveness verification
+- **Consistent error contract**: Provider and UI layers use a unified error interface
 
 ---
 
-**Section 13.2: ServiceError 定義**
+**Section 13.2: ServiceError Definition**
 
-**檔案位置**: `lib/core/errors/service_error.dart`
+**File Location**: `lib/core/errors/service_error.dart`
 
-**結構**:
+**Structure**:
 ```dart
 sealed class ServiceError implements Exception {
   const ServiceError();
 }
 
-// 各類錯誤繼承 ServiceError
+// All error types extend ServiceError
 final class InvalidAdminPasswordError extends ServiceError {
   const InvalidAdminPasswordError();
 }
 
 final class InvalidResetCodeError extends ServiceError {
-  final int? attemptsRemaining;  // 可攜帶額外資訊
+  final int? attemptsRemaining;  // Can carry additional information
   const InvalidResetCodeError({this.attemptsRemaining});
 }
 
@@ -965,15 +965,15 @@ final class UnexpectedError extends ServiceError {
 }
 ```
 
-**新增錯誤類型**: 如需新增錯誤類型，必須在 `service_error.dart` 中定義，遵循 `[ErrorType]Error` 命名規範。
+**Adding Error Types**: To add new error types, define them in `service_error.dart` following the `[ErrorType]Error` naming convention.
 
 ---
 
-**Section 13.3: Service 層錯誤處理**
+**Section 13.3: Service Layer Error Handling**
 
-**職責**: Service 層負責捕獲所有資料層錯誤並轉換為 `ServiceError`。
+**Responsibility**: The Service layer is responsible for catching all data layer errors and converting them to `ServiceError`.
 
-**正確範例**:
+**Correct Example**:
 ```dart
 // lib/page/instant_admin/services/router_password_service.dart
 Future<Map<String, dynamic>> verifyRecoveryCode(String code) async {
@@ -981,7 +981,7 @@ Future<Map<String, dynamic>> verifyRecoveryCode(String code) async {
     await _routerRepository.send(JNAPAction.verifyRouterResetCode, ...);
     return {'isValid': true};
   } on JNAPError catch (e) {
-    // ✅ 在 Service 層轉換為 ServiceError
+    // ✅ Convert to ServiceError in Service layer
     throw _mapJnapError(e);
   }
 }
@@ -998,25 +998,25 @@ ServiceError _mapJnapError(JNAPError error) {
 }
 ```
 
-**錯誤範例**:
+**Wrong Example**:
 ```dart
-// ❌ 錯誤：直接 rethrow JNAPError
+// ❌ Wrong: Directly rethrow JNAPError
 Future<void> someMethod() async {
   try {
     await _routerRepository.send(...);
   } on JNAPError {
-    rethrow;  // ❌ 不應該讓 JNAPError 洩漏到 Provider 層
+    rethrow;  // ❌ Should not let JNAPError leak to Provider layer
   }
 }
 ```
 
 ---
 
-**Section 13.4: Provider 層錯誤處理**
+**Section 13.4: Provider Layer Error Handling**
 
-**職責**: Provider 層只處理 `ServiceError` 類型，不得 import 或處理 JNAP 相關錯誤。
+**Responsibility**: The Provider layer only handles `ServiceError` types and MUST NOT import or handle JNAP-related errors.
 
-**正確範例**:
+**Correct Example**:
 ```dart
 // lib/page/instant_admin/providers/router_password_provider.dart
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -1026,30 +1026,30 @@ Future<bool> checkRecoveryCode(String code) async {
     final result = await service.verifyRecoveryCode(code);
     return result['isValid'];
   } on InvalidResetCodeError catch (e) {
-    // ✅ 處理 ServiceError 子類
+    // ✅ Handle ServiceError subclass
     state = state.copyWith(remainingAttempts: e.attemptsRemaining);
     return false;
   } on AdminAccountLockedError {
-    // ✅ 處理 ServiceError 子類
+    // ✅ Handle ServiceError subclass
     state = state.copyWith(isLocked: true);
     return false;
   } on ServiceError catch (e) {
-    // ✅ 處理其他 ServiceError
+    // ✅ Handle other ServiceErrors
     logger.e('Unexpected error: $e');
     return false;
   }
 }
 ```
 
-**錯誤範例**:
+**Wrong Example**:
 ```dart
-// ❌ 錯誤：Provider 直接處理 JNAPError
+// ❌ Wrong: Provider directly handles JNAPError
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 
 Future<bool> checkRecoveryCode(String code) async {
   try {
     ...
-  } on JNAPError catch (e) {  // ❌ 不應該在 Provider 層出現
+  } on JNAPError catch (e) {  // ❌ Should not appear in Provider layer
     if (e.result == 'ErrorInvalidResetCode') { ... }
   }
 }
@@ -1057,20 +1057,20 @@ Future<bool> checkRecoveryCode(String code) async {
 
 ---
 
-**Section 13.5: 未來資料來源遷移**
+**Section 13.5: Future Data Source Migration**
 
-當更換資料來源（如 JNAP → 新系統）時：
+When switching data sources (e.g., JNAP → new system):
 
-| 層級 | 影響 |
-|-----|------|
-| **ServiceError** | ✅ 不變（契約/介面） |
-| **Service 實作** | ⚠️ 修改 error mapping 邏輯 |
-| **Provider** | ✅ 不變 |
-| **UI** | ✅ 不變 |
+| Layer | Impact |
+|-------|--------|
+| **ServiceError** | ✅ No change (contract/interface) |
+| **Service Implementation** | ⚠️ Modify error mapping logic |
+| **Provider** | ✅ No change |
+| **UI** | ✅ No change |
 
-**範例**:
+**Example**:
 ```dart
-// 未來：新資料系統的 error mapping
+// Future: New data system error mapping
 ServiceError _mapNewSystemError(NewSystemError error) {
   return switch (error.code) {
     ErrorCode.invalidCode => InvalidResetCodeError(...),
@@ -1082,4 +1082,79 @@ ServiceError _mapNewSystemError(NewSystemError error) {
 
 ---
 
-**Version**: 1.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2025-12-17
+## Article XIV: UI Kit Library Principle
+
+**Section 14.1: Mandatory UI Component Usage**
+
+When developing screens or features, all UI component usage MUST follow these two rules:
+
+**Rule 1: UI Kit First**
+
+All UI components MUST be searched for and used from `ui_kit_library` first.
+
+```dart
+// ✅ Correct: Use ui_kit_library components
+import 'package:ui_kit_library/ui_kit.dart';
+
+AppButton.primary(
+  label: 'Save',
+  onTap: () => save(),
+)
+
+// ❌ Wrong: Implementing existing UI components yourself
+class CustomButton extends StatelessWidget {
+  // Don't write your own button, ui_kit already has one
+}
+```
+
+**Common ui_kit components**:
+- Buttons: `AppButton.primary()`, `AppButton.text()`, `AppButton.primaryOutline()`
+- Text: `AppText.titleLarge()`, `AppText.bodyMedium()`, `AppText.labelLarge()`
+- Cards: `AppCard()`
+- Input: `AppTextFormField()`
+- Selection: `AppCheckbox()`, `AppSwitch()`
+- Dialogs: `showSimpleAppDialog()`, `showAppSpinnerDialog()`
+- Spacing: `AppGap.md()`, `AppGap.lg()`, `AppSpacing.xl`
+- Colors: `Theme.of(context).extension<AppColorScheme>()`
+
+**Rule 2: Stop and Ask When Missing**
+
+If ui_kit_library does not have the UI component you need:
+
+1. **Stop development** - Do not implement it yourself or continue
+2. **Report to user** - Use AskUserQuestion tool to ask the user how to proceed
+3. **Wait for decision** - Let the user decide next steps (propose to ui_kit, use alternatives, or other)
+
+```dart
+// ❌ Wrong: Found ui_kit doesn't have a component, so write it yourself
+class NewCustomWidget extends StatelessWidget {
+  // Don't do this! Stop and ask the user first
+}
+
+// ✅ Correct: Stop and use AskUserQuestion to ask the user
+// "I need a component that [describe functionality], but couldn't find it in ui_kit_library.
+//  How should I proceed?"
+```
+
+**Section 14.2: Import Specification**
+
+Use the unified import approach:
+
+```dart
+// ✅ Correct
+import 'package:ui_kit_library/ui_kit.dart';
+
+// ❌ Wrong: Don't use subpath imports
+import 'package:ui_kit_library/src/components/button.dart';
+```
+
+**Section 14.3: Code Review Checklist**
+
+Code Review MUST check:
+- ✅ All UI components prioritize using ui_kit_library
+- ✅ No duplicate implementation of ui_kit provided components
+- ✅ If there are custom components, confirm they have user approval
+
+---
+
+**Version**: 1.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2026-02-11
