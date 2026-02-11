@@ -155,7 +155,7 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
       });
     } else {
       // Add a random value to simulate a fluctuating meter during tests.
-      final randomValue = (_random.nextDouble() * (15 - (-3)) + (-3)) * 1024;
+      final randomValue = (_random.nextDouble() * (15 - (-3)) + (-3)) * 1000;
       meterValue += randomValue;
     }
 

@@ -444,24 +444,32 @@ class _HistoryChartPainter extends CustomPainter {
     // Ideally we use uploadBandwidthKbps if available.
     final downloads = data.map((e) {
       if (e.downloadBandwidthKbps != null && e.downloadBandwidthKbps! > 0) {
-        return e.downloadBandwidthKbps! / 1024.0; // Mbps
+        return e.downloadBandwidthKbps! / 1000.0; // Mbps (SI: 1 Mbps = 1000 kbps)
       }
       // Fallback to parsing string value
       final speed = double.tryParse(e.downloadSpeed) ?? 0;
-      if (e.downloadUnit.toUpperCase() == 'KBPS') {
-        return speed / 1024.0;
+      final unit = e.downloadUnit.toLowerCase();
+      if (unit == 'kb' || unit == 'kbps') {
+        return speed / 1000.0;
+      }
+      if (unit == 'gb' || unit == 'gbps') {
+        return speed * 1000.0;
       }
       return speed; // Assume Mbps
     }).toList();
 
     final uploads = data.map((e) {
       if (e.uploadBandwidthKbps != null && e.uploadBandwidthKbps! > 0) {
-        return e.uploadBandwidthKbps! / 1024.0; // Mbps
+        return e.uploadBandwidthKbps! / 1000.0; // Mbps (SI: 1 Mbps = 1000 kbps)
       }
       // Fallback to parsing string value
       final speed = double.tryParse(e.uploadSpeed) ?? 0;
-      if (e.uploadUnit.toUpperCase() == 'KBPS') {
-        return speed / 1024.0;
+      final unit = e.uploadUnit.toLowerCase();
+      if (unit == 'kb' || unit == 'kbps') {
+        return speed / 1000.0;
+      }
+      if (unit == 'gb' || unit == 'gbps') {
+        return speed * 1000.0;
       }
       return speed; // Assume Mbps
     }).toList();

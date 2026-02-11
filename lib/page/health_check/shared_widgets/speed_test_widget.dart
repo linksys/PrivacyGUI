@@ -225,13 +225,13 @@ class SpeedTestWidget extends ConsumerWidget {
     final result = state.result ?? SpeedTestUIModel.empty();
     // Format the live meter value for display.
     final formattedLiveValue = NetworkUtils.formatBitsWithUnit(
-        (state.meterValue * 1024).toInt(),
+        (state.meterValue * 1000).toInt(),
         decimals: 1);
 
     final bandwidthValue = formattedLiveValue.value;
     final bandwidthUnit = formattedLiveValue.unit;
 
-    final meterValueMbps = (state.meterValue / 1024);
+    final meterValueMbps = (state.meterValue / 1000);
 
     return Center(
       child: AppGauge(
