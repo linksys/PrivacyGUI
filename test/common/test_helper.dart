@@ -583,7 +583,16 @@ class TestHelper {
 
   Future takeScreenshot(WidgetTester tester, String filename) async {
     final actualFinder = find.byWidgetPredicate((w) => true).first;
-    final name = current != null ? '$filename-${current!.toShort()}' : filename;
+    String name;
+    // Prefer themed screen if available (from testThemeLocalizations)
+    if (currentThemed != null) {
+      final themePath = currentThemed!.theme.name;
+      name = '$themePath/$filename-${currentThemed!.toShort()}';
+    } else if (current != null) {
+      name = '$filename-${current!.toShort()}';
+    } else {
+      name = filename;
+    }
     await expectLater(actualFinder, matchesGoldenFile('goldens/$name.png'));
   }
 
