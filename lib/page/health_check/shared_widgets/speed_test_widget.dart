@@ -143,7 +143,8 @@ class SpeedTestWidget extends ConsumerWidget {
   /// - For 1000+ Mbps: [0, 200, 400, 600, 800, 1000, 1200, ...]
   ///
   /// Small gauges (< 130px) use simplified markers: [0, upperBound]
-  List<double> _generateMarkers(double upperBound, {bool isSmallGauge = false}) {
+  List<double> _generateMarkers(double upperBound,
+      {bool isSmallGauge = false}) {
     if (isSmallGauge) {
       return [0, upperBound];
     }
@@ -168,12 +169,15 @@ class SpeedTestWidget extends ConsumerWidget {
       return markers;
     } else if (upperBound <= 1000) {
       // 500-1000 Mbps range
-      // Generate markers at 100 Mbps intervals, with an extra marker at 750
+      // Generate markers at 100 Mbps intervals, with an extra marker at 750 if applicable
       final markers = <double>[0];
       for (double i = 100; i <= 500; i += 100) {
         markers.add(i);
       }
-      markers.add(750);
+      // Only add 750 if upperBound is >= 750 to maintain sorted order
+      if (upperBound >= 750) {
+        markers.add(750);
+      }
       if (upperBound != 1000) {
         markers.add(upperBound);
       } else {
