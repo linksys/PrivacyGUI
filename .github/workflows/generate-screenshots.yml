@@ -1,0 +1,216 @@
+name: 📸 Generate Multi-Theme Screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      locales:
+        description: 'Locales (comma-separated, e.g., en,ja,zh-TW)'
+        required: false
+        default: 'en'
+        type: string
+      screens:
+        description: 'Screen widths (comma-separated, e.g., 480,1280)'
+        required: false
+        default: '480,1280'
+        type: string
+      themes:
+        description: 'Themes to generate'
+        required: false
+        default: 'glass-light,glass-dark'
+        type: choice
+        options:
+          - glass-light
+          - glass-light,glass-dark
+          - glass-light,brutal-light,brutal-dark
+          - all-light
+          - all-dark
+          - all
+      version:
+        description: 'Report version label'
+        required: false
+        default: '1.0.0'
+        type: string
+      test_file:
+        description: 'Specific test file (optional)'
+        required: false
+        default: ''
+        type: string
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 'stable'
+
+jobs:
+  # ============================================================
+  # Job 1: Prepare Matrix
+  # ============================================================
+  prepare:
+    name: 🔧 Prepare Theme Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      theme_count: ${{ steps.set-matrix.outputs.theme_count }}
+
+    steps:
+      - name: Parse Theme Input
+        id: set-matrix
+        run: |
+          INPUT="${{ inputs.themes }}"
+
+          # Expand preset keywords
+          case "$INPUT" in
+            "all-light")
+              THEMES="flat-light,glass-light,pixel-light,aurora-light,brutal-light,neumorphic-light"
+              ;;
+            "all-dark")
+              THEMES="flat-dark,glass-dark,pixel-dark,aurora-dark,brutal-dark,neumorphic-dark"
+              ;;
+            "all")
+              THEMES="flat-light,flat-dark,glass-light,glass-dark,pixel-light,pixel-dark,aurora-light,aurora-dark,brutal-light,brutal-dark,neumorphic-light,neumorphic-dark"
+              ;;
+            *)
+              THEMES="$INPUT"
+              ;;
+          esac
+
+          # Build JSON matrix
+          MATRIX="{\"include\":["
+          FIRST=true
+          COUNT=0
+          IFS=',' read -ra THEME_ARRAY <<< "$THEMES"
+          for theme in "${THEME_ARRAY[@]}"; do
+            theme=$(echo "$theme" | xargs)  # trim whitespace
+            if [ "$FIRST" = true ]; then
+              FIRST=false
+            else
+              MATRIX+=","
+            fi
+            MATRIX+="{\"theme\":\"$theme\"}"
+            COUNT=$((COUNT + 1))
+          done
+          MATRIX+="]}"
+
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          echo "theme_count=$COUNT" >> $GITHUB_OUTPUT
+          echo "Generated matrix for $COUNT themes: $MATRIX"
+
+  # ============================================================
+  # Job 2: Generate Screenshots (Parallel)
+  # ============================================================
+  generate:
+    name: 📸 ${{ matrix.theme }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+      fail-fast: false
+      max-parallel: 6
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 🔑 Setup SSH for Private Deps
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.UI_KIT_DEPLOY_KEY }}
+
+      - name: 🔄 Configure Git SSH
+        run: git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+      - name: 📋 Setup Environment
+        run: cp assets/agents/env.template assets/agents/.env
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: 📸 Generate Screenshots (${{ matrix.theme }})
+        run: |
+          if [ -n "${{ inputs.test_file }}" ]; then
+            sh run_generate_loc_snapshots.sh \
+              -l "${{ inputs.locales }}" \
+              -s "${{ inputs.screens }}" \
+              -t "${{ matrix.theme }}" \
+              -v "${{ inputs.version }}" \
+              -f "${{ inputs.test_file }}"
+          else
+            sh run_generate_loc_snapshots.sh \
+              -l "${{ inputs.locales }}" \
+              -s "${{ inputs.screens }}" \
+              -t "${{ matrix.theme }}" \
+              -v "${{ inputs.version }}"
+          fi
+
+      - name: 💾 Upload Screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ matrix.theme }}
+          path: snapshots/
+          retention-days: 7
+
+  # ============================================================
+  # Job 3: Combine Reports
+  # ============================================================
+  combine:
+    name: 📊 Generate Report
+    needs: [prepare, generate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+
+      - name: 📥 Download All Screenshots
+        uses: actions/download-artifact@v4
+        with:
+          pattern: screenshots-*
+          merge-multiple: true
+          path: snapshots/
+
+      - name: 📊 Generate Combined Report
+        run: |
+          echo "Generating HTML report..."
+          dart run tool/generate_screenshot_browser.dart -o snapshots/screenshot_browser.html
+
+          echo "Generating test result report..."
+          dart run test_scripts/combine_results.dart snapshots "${{ inputs.version }}"
+
+      - name: 📋 Report Summary
+        run: |
+          echo "## 📸 Screenshot Report Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Themes | ${{ needs.prepare.outputs.theme_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Locales | ${{ inputs.locales }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Screens | ${{ inputs.screens }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ inputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 Files Generated" >> $GITHUB_STEP_SUMMARY
+          find snapshots -name "*.png" | wc -l | xargs -I {} echo "- Screenshots: {} images" >> $GITHUB_STEP_SUMMARY
+          find snapshots -name "*.html" | wc -l | xargs -I {} echo "- Reports: {} HTML files" >> $GITHUB_STEP_SUMMARY
+
+      - name: 💾 Upload Final Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-report-${{ inputs.version }}
+          path: snapshots/
+          retention-days: 30
+
+      - name: 🗑️ Cleanup Partial Artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: screenshots-*

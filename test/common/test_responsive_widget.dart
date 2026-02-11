@@ -109,7 +109,8 @@ void testLocalizations(
     (tester) async {
       await loadTestFonts();
       final current = variants.currentValue!;
-      helper?.current = current;
+      // Set static variable so all TestHelper instances can access it
+      TestHelper.current = current;
       await tester.setScreenSize(current);
       await testMain(tester, current);
     },
@@ -189,9 +190,9 @@ void testThemeLocalizations(
       // ignore: avoid_print
       print('[testThemeLocalizations] Theme: ${current.theme.name}, Style: ${current.theme.style.name}, Brightness: ${current.theme.brightness.name}');
       updateThemeConfig(current.theme);
-      helper?.currentThemed = current;
-      // Also set current for backward compatibility
-      helper?.current = current;
+      // Set static variables so all TestHelper instances can access the theme
+      TestHelper.currentThemed = current;
+      TestHelper.current = current;
       await tester.setScreenSize(current);
       await testMain(tester, current);
     },

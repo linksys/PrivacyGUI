@@ -19,10 +19,10 @@ import '../../../common/test_responsive_widget.dart';
 
 final _expandedScreens = [
   ...responsiveMobileScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1900),
+    (screen) => screen.copyWith(height: 1900),
   ),
   ...responsiveDesktopScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1740),
+    (screen) => screen.copyWith(height: 1740),
   ),
 ];
 

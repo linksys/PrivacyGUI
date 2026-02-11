@@ -98,21 +98,28 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         defaultClassify();
       }
       function initFilters(resultJson) {
-        // Extract unique locales, device types, themes from resultJson
+        // Extract unique locales, device types, theme styles, brightness from resultJson
         const locales = new Set();
         const deviceTypes = new Set();
-        const themes = new Set();
+        const themeStyles = new Set();
+        const themeBrightness = new Set();
         const results = new Set();
 
         resultJson.tests.forEach(test => {
           locales.add(test.locale);
           deviceTypes.add(test.deviceType);
-          if (test.theme) themes.add(test.theme);
+          // Split theme into style and brightness (e.g., "aurora-dark" -> "aurora", "dark")
+          if (test.theme) {
+            const parts = test.theme.split('-');
+            if (parts.length >= 2) {
+              themeStyles.add(parts[0]); // style: aurora, glass, brutal, etc.
+              themeBrightness.add(parts[1]); // brightness: light, dark
+            }
+          }
           results.add(test.result);
         });
         locales.delete(undefined);
         deviceTypes.delete(undefined);
-        themes.delete(undefined);
 
         // Create filter elements for locales
         const localeFilters = document.createElement('div');
@@ -157,27 +164,50 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
         });
         document.querySelector('.filters').appendChild(deviceTypeFilters);
 
-        // Create filter elements for themes (if any)
-        if (themes.size > 0) {
-          const themeFilters = document.createElement('div');
-          themeFilters.innerHTML = '<h3>Theme:</h3>';
-          themes.forEach(theme => {
+        // Create filter elements for theme styles (if any)
+        if (themeStyles.size > 0) {
+          const styleFilters = document.createElement('div');
+          styleFilters.innerHTML = '<h3>Theme Style:</h3>';
+          themeStyles.forEach(style => {
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.id = `theme-\${theme}`;
-            checkbox.name = 'theme';
-            checkbox.value = theme;
-            checkbox.checked = true; // Initially all themes are selected
+            checkbox.id = `themeStyle-\${style}`;
+            checkbox.name = 'themeStyle';
+            checkbox.value = style;
+            checkbox.checked = true; // Initially all styles are selected
             checkbox.addEventListener('change', defaultClassify);
 
             const label = document.createElement('label');
-            label.htmlFor = `theme-\${theme}`;
-            label.textContent = theme;
+            label.htmlFor = `themeStyle-\${style}`;
+            label.textContent = style;
 
-            themeFilters.appendChild(checkbox);
-            themeFilters.appendChild(label);
+            styleFilters.appendChild(checkbox);
+            styleFilters.appendChild(label);
           });
-          document.querySelector('.filters').appendChild(themeFilters);
+          document.querySelector('.filters').appendChild(styleFilters);
+        }
+
+        // Create filter elements for theme brightness (if any)
+        if (themeBrightness.size > 0) {
+          const brightnessFilters = document.createElement('div');
+          brightnessFilters.innerHTML = '<h3>Brightness:</h3>';
+          themeBrightness.forEach(brightness => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `themeBrightness-\${brightness}`;
+            checkbox.name = 'themeBrightness';
+            checkbox.value = brightness;
+            checkbox.checked = true; // Initially all brightness are selected
+            checkbox.addEventListener('change', defaultClassify);
+
+            const label = document.createElement('label');
+            label.htmlFor = `themeBrightness-\${brightness}`;
+            label.textContent = brightness;
+
+            brightnessFilters.appendChild(checkbox);
+            brightnessFilters.appendChild(label);
+          });
+          document.querySelector('.filters').appendChild(brightnessFilters);
         }
 
         // Create filter elements for results
@@ -210,7 +240,9 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
 
         const selectedDeviceTypes = Array.from(document.querySelectorAll('input[name="deviceType"]:checked')).map(checkbox => checkbox.value);
 
-        const selectedThemes = Array.from(document.querySelectorAll('input[name="theme"]:checked')).map(checkbox => checkbox.value);
+        const selectedStyles = Array.from(document.querySelectorAll('input[name="themeStyle"]:checked')).map(checkbox => checkbox.value);
+
+        const selectedBrightness = Array.from(document.querySelectorAll('input[name="themeBrightness"]:checked')).map(checkbox => checkbox.value);
 
         const selectedResults = Array.from(document.querySelectorAll('input[name="result"]:checked')).map(checkbox => checkbox.value);
 
@@ -219,7 +251,15 @@ String generateHTMLReport(Map<String, dynamic> result, String version) {
           const deviceMatch = selectedDeviceTypes.includes(test.deviceType);
           const resultMatch = selectedResults.includes(test.result);
           // If no theme filters exist (legacy tests), always match theme
-          const themeMatch = selectedThemes.length === 0 || !test.theme || selectedThemes.includes(test.theme);
+          let themeMatch = true;
+          if (test.theme) {
+            const parts = test.theme.split('-');
+            if (parts.length >= 2) {
+              const styleMatch = selectedStyles.length === 0 || selectedStyles.includes(parts[0]);
+              const brightnessMatch = selectedBrightness.length === 0 || selectedBrightness.includes(parts[1]);
+              themeMatch = styleMatch && brightnessMatch;
+            }
+          }
           return localeMatch && deviceMatch && resultMatch && themeMatch;
         });
         

@@ -206,8 +206,8 @@ extractInfo(Map<String, dynamic> test) {
 
   // Try themed pattern first: name (variant: Device-locale-theme(...)
   // Example: "test name (variant: Device480w-en-glass-light(...)"
-  // or with region: "test name (variant: Device480w-zh-TW-glass-light(...)"
-  final themedRegex = RegExp(r'(.*) \(variant: ([^-]+)-([a-z]{2}(?:-[A-Z]{2})?)-([a-z]+-(?:light|dark))\(.*');
+  // Example with region: "test name (variant: Device480w-zh-TW-glass-light(...)"
+  final themedRegex = RegExp(r'(.*) \(variant: (Device\d+w)-([a-z]{2}(?:-[A-Z]{2})?)-([a-z]+-(?:light|dark))\(.*');
   var match = themedRegex.firstMatch(name);
 
   String? tsName;
@@ -223,7 +223,8 @@ extractInfo(Map<String, dynamic> test) {
     theme = match.group(4);
   } else {
     // Fall back to legacy pattern: name (variant: Device-locale_region(...)
-    final legacyRegex = RegExp(r'(.*) \(variant: (.*)-(.*)_(.*)\(.*');
+    // Example: "test name (variant: Device480w-en_US(...)"
+    final legacyRegex = RegExp(r'(.*) \(variant: (Device\d+w)-(.*)_(.*)\(.*');
     match = legacyRegex.firstMatch(name);
     tsName = match?.group(1)?.trim();
     deviceType = match?.group(2);

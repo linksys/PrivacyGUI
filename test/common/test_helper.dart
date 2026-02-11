@@ -173,11 +173,12 @@ class TestHelper {
   late MockFirmwareUpdateService mockFirmwareUpdateService;
   late MockManualFirmwareUpdateService mockManualFirmwareUpdateService;
 
-  // Screen Size
-  LocalizedScreen? current;
+  // Screen Size (static so all TestHelper instances share the same value)
+  static LocalizedScreen? current;
 
   // Themed Screen (for multi-theme screenshot testing)
-  ThemedScreen? currentThemed;
+  // Static so testThemeLocalizations can set it once and all pump methods can access it
+  static ThemedScreen? currentThemed;
 
   // Animation control - disable by default for stable golden tests
   bool disableAnimations = true;
@@ -484,15 +485,19 @@ class TestHelper {
     bool forceOverride = false,
     Locale locale = const Locale('en'),
     ThemeMode themeMode = ThemeMode.system,
+    ThemeVariant? themeVariant,
     GlobalKey<NavigatorState>? navigatorKey,
     List<ImageProvider> preCacheImages = const [],
     List<String> preCacheCustomImages = const [],
   }) async {
+    // Auto-use currentThemed's theme if themeVariant not provided
+    final effectiveThemeVariant = themeVariant ?? currentThemed?.theme;
     await tester.pumpWidget(testableRouter(
       router: router,
       overrides:
           forceOverride ? overrides : [...defaultOverrides, ...overrides],
       themeMode: themeMode,
+      themeVariant: effectiveThemeVariant,
       locale: locale,
       disableAnimations: disableAnimations,
     ));
@@ -516,10 +521,13 @@ class TestHelper {
     Locale locale = const Locale('en'),
     LinksysRouteConfig? config,
     ThemeMode themeMode = ThemeMode.system,
+    ThemeVariant? themeVariant,
     GlobalKey<NavigatorState>? navigatorKey,
     List<ImageProvider> preCacheImages = const [],
     List<String> preCacheCustomImages = const [],
   }) async {
+    // Auto-use currentThemed's theme if themeVariant not provided
+    final effectiveThemeVariant = themeVariant ?? currentThemed?.theme;
     await tester.pumpWidget(
       testableSingleRoute(
         config: config ?? LinksysRouteConfig(column: ColumnGrid(column: 9)),
@@ -527,6 +535,7 @@ class TestHelper {
         overrides:
             forceOverride ? overrides : [...defaultOverrides, ...overrides],
         themeMode: themeMode,
+        themeVariant: effectiveThemeVariant,
         navigatorKey: navigatorKey,
         disableAnimations: disableAnimations,
         child: child,
@@ -545,6 +554,9 @@ class TestHelper {
   }
 
   /// Pump a widget with a shell widget
+  ///
+  /// If [themeVariant] is not provided, it will automatically use the theme
+  /// from [currentThemed] (set by testThemeLocalizations).
   Future<BuildContext> pumpShellView(
     WidgetTester tester, {
     required Widget child,
@@ -557,12 +569,14 @@ class TestHelper {
     List<ImageProvider> preCacheImages = const [],
     List<String> preCacheCustomImages = const [],
   }) async {
+    // Auto-use currentThemed's theme if themeVariant not provided
+    final effectiveThemeVariant = themeVariant ?? currentThemed?.theme;
     await tester.pumpWidget(
       testableRouteShellWidget(
         config: config ?? LinksysRouteConfig(column: ColumnGrid(column: 9)),
         locale: locale,
         themeMode: themeMode,
-        themeVariant: themeVariant,
+        themeVariant: effectiveThemeVariant,
         disableAnimations: disableAnimations,
         overrides:
             forceOverride ? overrides : [...defaultOverrides, ...overrides],

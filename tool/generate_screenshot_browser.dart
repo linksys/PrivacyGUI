@@ -65,12 +65,27 @@ void main(List<String> args) async {
       .toSet()
       .toList()
     ..sort();
+
+  // Extract theme styles and brightness separately
+  final themeStyles = <String>{};
+  final themeBrightness = <String>{};
+  for (final theme in themes) {
+    final parts = theme.split('-');
+    if (parts.length >= 2) {
+      themeStyles.add(parts[0]); // style: aurora, glass, brutal, etc.
+      themeBrightness.add(parts[1]); // brightness: light, dark
+    }
+  }
+  final themeStyleList = themeStyles.toList()..sort();
+  final themeBrightnessList = themeBrightness.toList()..sort();
+
   final groups = screenshots.map((s) => s['group'] as String).toSet().toList()
     ..sort();
 
   stdout.writeln('Locales: ${locales.length}');
   stdout.writeln('Device types: ${devices.length}');
-  stdout.writeln('Themes: ${themes.length}');
+  stdout.writeln('Theme styles: ${themeStyleList.length}');
+  stdout.writeln('Brightness modes: ${themeBrightnessList.length}');
   stdout.writeln('Feature groups: ${groups.length}');
 
   // Generate thumbnails if requested
@@ -82,7 +97,8 @@ void main(List<String> args) async {
     screenshots,
     locales,
     devices,
-    themes,
+    themeStyleList,
+    themeBrightnessList,
     groups,
     pageSize: config.pageSize,
     hasThumbnails: config.generateThumbnails,
@@ -468,8 +484,8 @@ Future<void> generateThumbnails(
 }
 
 String generateHtml(List<Map<String, dynamic>> screenshots,
-    List<String> locales, List<String> devices, List<String> themes,
-    List<String> groups,
+    List<String> locales, List<String> devices, List<String> themeStyles,
+    List<String> themeBrightness, List<String> groups,
     {int pageSize = 50, bool hasThumbnails = false}) {
   return '''
 <!DOCTYPE html>
@@ -656,6 +672,8 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     .tag.locale { background: #dbeafe; color: #1e40af; }
     .tag.device { background: #dcfce7; color: #166534; }
     .tag.theme { background: #fef3c7; color: #92400e; }
+    .tag.theme-style { background: #fef3c7; color: #92400e; }
+    .tag.brightness { background: #f3e8ff; color: #6b21a8; }
     .tag.success { background: #dcfce7; color: var(--success); }
     .tag.failed { background: #fee2e2; color: var(--error); }
 
@@ -809,9 +827,15 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
         </select>
       </div>
       <div class="filter-group">
-        <label>Theme</label>
-        <select id="filter-theme">
-          <option value="">All Themes</option>
+        <label>Theme Style</label>
+        <select id="filter-theme-style">
+          <option value="">All Styles</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Brightness</label>
+        <select id="filter-brightness">
+          <option value="">All</option>
         </select>
       </div>
       <div class="filter-group">
@@ -859,7 +883,8 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     const screenshots = ${jsonEncode(screenshots)};
     const locales = ${jsonEncode(locales)};
     const devices = ${jsonEncode(devices)};
-    const themes = ${jsonEncode(themes)};
+    const themeStyles = ${jsonEncode(themeStyles)};
+    const themeBrightness = ${jsonEncode(themeBrightness)};
     const groups = ${jsonEncode(groups)};
     const PAGE_SIZE = $pageSize;
     const HAS_THUMBNAILS = $hasThumbnails;
@@ -872,7 +897,8 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     function populateFilters() {
       const localeSelect = document.getElementById('filter-locale');
       const deviceSelect = document.getElementById('filter-device');
-      const themeSelect = document.getElementById('filter-theme');
+      const themeStyleSelect = document.getElementById('filter-theme-style');
+      const brightnessSelect = document.getElementById('filter-brightness');
       const groupSelect = document.getElementById('filter-group');
 
       locales.forEach(l => {
@@ -883,8 +909,12 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
         deviceSelect.innerHTML += `<option value="\${d}">\${d}</option>`;
       });
 
-      themes.forEach(t => {
-        themeSelect.innerHTML += `<option value="\${t}">\${t}</option>`;
+      themeStyles.forEach(s => {
+        themeStyleSelect.innerHTML += `<option value="\${s}">\${s}</option>`;
+      });
+
+      themeBrightness.forEach(b => {
+        brightnessSelect.innerHTML += `<option value="\${b}">\${b}</option>`;
       });
 
       groups.forEach(g => {
@@ -896,14 +926,25 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     function applyFilters() {
       const locale = document.getElementById('filter-locale').value;
       const device = document.getElementById('filter-device').value;
-      const theme = document.getElementById('filter-theme').value;
+      const themeStyle = document.getElementById('filter-theme-style').value;
+      const brightness = document.getElementById('filter-brightness').value;
       const group = document.getElementById('filter-group').value;
       const search = document.getElementById('search').value.toLowerCase();
 
       filteredScreenshots = screenshots.filter(s => {
         if (locale && s.locale !== locale) return false;
         if (device && s.device !== device) return false;
-        if (theme && s.theme !== theme) return false;
+        // Filter by theme style and brightness separately
+        if (themeStyle || brightness) {
+          if (!s.theme) return false;
+          const parts = s.theme.split('-');
+          if (parts.length >= 2) {
+            if (themeStyle && parts[0] !== themeStyle) return false;
+            if (brightness && parts[1] !== brightness) return false;
+          } else {
+            return false;
+          }
+        }
         if (group && s.group !== group) return false;
         if (search && !s.name.toLowerCase().includes(search)) return false;
         return true;
@@ -984,7 +1025,16 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
         const thumbPath = HAS_THUMBNAILS
           ? 'thumbnails/' + s.path.replace('.png', '_thumb.jpg')
           : s.path;
-        const themeTag = s.theme ? `<span class="tag theme">\${s.theme}</span>` : '';
+        // Split theme into style and brightness tags
+        let themeTags = '';
+        if (s.theme) {
+          const parts = s.theme.split('-');
+          if (parts.length >= 2) {
+            themeTags = `<span class="tag theme-style">\${parts[0]}</span><span class="tag brightness">\${parts[1]}</span>`;
+          } else {
+            themeTags = `<span class="tag theme">\${s.theme}</span>`;
+          }
+        }
         return `
           <div class="card" data-index="\${globalOffset + i}" onclick="openLightbox(\${globalOffset + i})">
             <div class="card-image">
@@ -995,7 +1045,7 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
               <div class="card-meta">
                 <span class="tag locale">\${s.locale}</span>
                 <span class="tag device">\${s.device}</span>
-                \${themeTag}
+                \${themeTags}
               </div>
             </div>
           </div>
@@ -1032,7 +1082,8 @@ String generateHtml(List<Map<String, dynamic>> screenshots,
     // Event listeners
     document.getElementById('filter-locale').addEventListener('change', applyFilters);
     document.getElementById('filter-device').addEventListener('change', applyFilters);
-    document.getElementById('filter-theme').addEventListener('change', applyFilters);
+    document.getElementById('filter-theme-style').addEventListener('change', applyFilters);
+    document.getElementById('filter-brightness').addEventListener('change', applyFilters);
     document.getElementById('filter-group').addEventListener('change', applyFilters);
     document.getElementById('search').addEventListener('input', applyFilters);
 

@@ -34,11 +34,11 @@ import '../../../test_data/safe_browsing_test_state.dart';
 // | `DMENU-VPN`            | VPN card appears when service helper allows it.                             |
 
 final _menuMobileScreens = responsiveMobileScreens
-    .map((screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1440))
+    .map((screen) => screen.copyWith(height: 1440))
     .toList();
 // Desktop screens exclude 744w (tablet size: 600-905px) where sidebar is not shown
 final _menuDesktopScreens = [device1080w, device1280w, device1440w]
-    .map((screen) => screen.copyWith(name: '${screen.name}-Tall', height: 900))
+    .map((screen) => screen.copyWith(height: 900))
     .toList();
 
 void main() {
@@ -154,7 +154,7 @@ void main() {
       expect(find.text(loc.alertExclamation), findsOneWidget);
       expect(find.text(loc.menuRestartNetworkMessage), findsOneWidget);
     },
-    screens: [device744w.copyWith(name: 'Device744w-Tall', height: 900)],
+    screens: [device744w.copyWith(height: 900)],
     goldenFilename: 'DMENU-TABLET_RESTART_01_dialog',
     helper: testHelper,
   );

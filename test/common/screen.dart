@@ -54,7 +54,7 @@ class LocalizedScreen extends ScreenSize {
 
   @override
   String toString() =>
-      '$name-${locale.languageCode}_${locale.countryCode ?? ''}($width, $height, $pixelDensity)';
+      '$name-${locale.toLanguageTag()}($width, $height, $pixelDensity)';
   @override
   String toShort() => '$name-${locale.toLanguageTag()}';
 }
@@ -89,7 +89,7 @@ class ThemedScreen extends LocalizedScreen {
 
   @override
   String toString() =>
-      '$name-${locale.languageCode}_${locale.countryCode ?? ''}-${theme.name}($width, $height, $pixelDensity)';
+      '$name-${locale.toLanguageTag()}-${theme.name}($width, $height, $pixelDensity)';
 
   @override
   String toShort() => '$name-${locale.toLanguageTag()}-${theme.name}';

@@ -22,18 +22,18 @@ import '../../../../test_data/timezone_test_state.dart';
 
 final _timezoneScreens = [
   ...responsiveMobileScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 3780),
+    (screen) => screen.copyWith(height: 3780),
   ),
   ...responsiveDesktopScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 3780),
+    (screen) => screen.copyWith(height: 3780),
   ),
 ];
 final _transmitScreens = [
   ...responsiveMobileScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 2040),
+    (screen) => screen.copyWith(height: 2040),
   ),
   ...responsiveDesktopScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 2040),
+    (screen) => screen.copyWith(height: 2040),
   ),
 ];
 

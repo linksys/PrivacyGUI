@@ -96,6 +96,7 @@ void main() {
         );
       },
       screens: responsiveMobileScreens,
+      helper: testHelper,
       goldenFilename: 'PWAB-NATIVE-01-banner',
     );
 
@@ -140,6 +141,7 @@ void main() {
         );
       },
       screens: responsiveMobileScreens,
+      helper: testHelper,
       goldenFilename: 'PWAB-IOS_BNR-02-with_sheet',
     );
 
@@ -184,6 +186,7 @@ void main() {
         );
       },
       screens: responsiveDesktopScreens,
+      helper: testHelper,
       goldenFilename: 'PWAB-MAC_BNR-02-with_sheet',
     );
   });
@@ -229,6 +232,7 @@ void main() {
         expect(find.byIcon(Icons.close), findsOneWidget);
       },
       screens: responsiveMobileScreens,
+      helper: testHelper,
       goldenFilename: 'PWAB-IOS_SHT-01-standalone',
     );
   });
@@ -274,6 +278,7 @@ void main() {
         expect(find.byIcon(Icons.close), findsOneWidget);
       },
       screens: responsiveDesktopScreens,
+      helper: testHelper,
       goldenFilename: 'PWAB-MAC_SHT-01-standalone',
     );
   });

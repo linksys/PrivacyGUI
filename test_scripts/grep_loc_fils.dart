@@ -15,12 +15,12 @@ void main() {
   // New format: matches files with theme (e.g., NAME-Device480w-en-glass-light.png)
   // Groups: 1=device, 2=locale, 3=theme (style-brightness)
   const themeFilenameRegex =
-      r'.*-(Device\d+w(?:-Tall)?)-([a-z]{2}(?:_[A-Z]{2})?)-([a-z]+-(?:light|dark)).png';
+      r'.*-(Device\d+w)-([a-z]{2}(?:_[A-Z]{2})?)-([a-z]+-(?:light|dark)).png';
   final themeRegex = RegExp(themeFilenameRegex);
 
   // Old format: matches files without theme (e.g., NAME-Device480w-en.png)
   // Groups: 1=device, 2=locale
-  const oldFilenameRegex = r'.*-(Device\d+w(?:-Tall)?)-([a-z]{2}(?:_[A-Z]{2})?).png';
+  const oldFilenameRegex = r'.*-(Device\d+w)-([a-z]{2}(?:_[A-Z]{2})?).png';
   final oldRegex = RegExp(oldFilenameRegex);
 
   for (var file in dir.listSync()) {

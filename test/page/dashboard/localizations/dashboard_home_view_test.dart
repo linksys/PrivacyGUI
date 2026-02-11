@@ -48,29 +48,29 @@ import '../../../test_data/_index.dart';
 
 final List<ScreenSize> _noLanScreens = [
   ...responsiveMobileScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 2480),
+    (screen) => screen.copyWith(height: 2480),
   ),
   ...responsiveDesktopScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1280),
+    (screen) => screen.copyWith(height: 1280),
   ),
 ];
 
 final List<ScreenSize> _verticalScreens = [
   ...responsiveMobileScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 2480),
+    (screen) => screen.copyWith(height: 2480),
   ),
   ...responsiveDesktopScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1280),
+    (screen) => screen.copyWith(height: 1280),
   ),
 ];
 
 // Screens that render SpeedTestWidget with goBtn (excludes 744w tablet)
 final List<ScreenSize> _speedTestDialogScreens = [
   ...responsiveMobileScreens.map(
-    (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 2480),
+    (screen) => screen.copyWith(height: 2480),
   ),
   ...responsiveDesktopScreens.where((screen) => screen.width >= 1080).map(
-      (screen) => screen.copyWith(name: '${screen.name}-Tall', height: 1280)),
+      (screen) => screen.copyWith(height: 1280)),
 ];
 
 void main() {
