@@ -184,11 +184,10 @@ jobs:
 
       - name: 📊 Generate Combined Report
         run: |
-          echo "Generating HTML report..."
+          echo "Generating Screenshot Browser..."
           dart run tool/generate_screenshot_browser.dart -o snapshots/screenshot_browser.html
 
-          echo "Generating test result report..."
-          dart run test_scripts/combine_results.dart snapshots "${{ inputs.version }}"
+          echo "Report generated at snapshots/screenshot_browser.html"
 
       - name: 📋 Report Summary
         run: |
