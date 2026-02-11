@@ -25,11 +25,6 @@ on:
           - all-light
           - all-dark
           - all
-      version:
-        description: 'Report version label'
-        required: false
-        default: '1.0.0'
-        type: string
       test_file:
         description: 'Specific test file (optional)'
         required: false
@@ -53,8 +48,26 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       theme_count: ${{ steps.set-matrix.outputs.theme_count }}
+      version: ${{ steps.version.outputs.version }}
+      artifact_name: ${{ steps.version.outputs.artifact_name }}
 
     steps:
+      - uses: actions/checkout@v4
+
+      - name: 📋 Extract Version
+        id: version
+        shell: bash
+        run: |
+          # Extract version from pubspec.yaml
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
+          # Generate timestamp (YYYYMMDD-HHMMSS in UTC)
+          TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+          ARTIFACT_NAME="screenshots-${VERSION}-${TIMESTAMP}"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION, Artifact: $ARTIFACT_NAME"
+
       - name: Parse Theme Input
         id: set-matrix
         shell: bash
@@ -143,14 +156,14 @@ jobs:
               -l "${{ inputs.locales }}" \
               -s "${{ inputs.screens }}" \
               -t "${{ matrix.theme }}" \
-              -v "${{ inputs.version }}" \
+              -v "${{ needs.prepare.outputs.version }}" \
               -f "${{ inputs.test_file }}"
           else
             bash run_generate_loc_snapshots.sh \
               -l "${{ inputs.locales }}" \
               -s "${{ inputs.screens }}" \
               -t "${{ matrix.theme }}" \
-              -v "${{ inputs.version }}"
+              -v "${{ needs.prepare.outputs.version }}"
           fi
 
       - name: 💾 Upload Screenshots
@@ -198,7 +211,7 @@ jobs:
           echo "| Themes | ${{ needs.prepare.outputs.theme_count }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Locales | ${{ inputs.locales }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Screens | ${{ inputs.screens }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Version | ${{ inputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ needs.prepare.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📁 Files Generated" >> $GITHUB_STEP_SUMMARY
           find snapshots -name "*.png" | wc -l | xargs -I {} echo "- Screenshots: {} images" >> $GITHUB_STEP_SUMMARY
@@ -207,7 +220,7 @@ jobs:
       - name: 💾 Upload Final Report
         uses: actions/upload-artifact@v4
         with:
-          name: screenshot-report-${{ inputs.version }}
+          name: ${{ needs.prepare.outputs.artifact_name }}
           path: snapshots/
           retention-days: 30
 
