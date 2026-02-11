@@ -325,6 +325,7 @@
   "invalidDestinationMacAddress": "Ongeldig bestemmings-MAC-adres",
   "invalidDns": "Ongeldige DNS",
   "invalidGatewayIpAddress": "Ongeldig gateway-IP-adres",
+  "invalidHostname": "Ongeldige hostnaam",
   "invalidIPAddressSubnet": "IP-adres niet in geldig subnet",
   "invalidInput": "Ongeldige invoer",
   "invalidIpAddress": "Ongeldig IP-adres",

@@ -304,6 +304,7 @@
   "invalidDestinationMacAddress": "잘못된 대상 MAC 주소",
   "invalidDns": "잘못된 DNS",
   "invalidGatewayIpAddress": "잘못된 게이트웨이 IP 주소",
+  "invalidHostname": "잘못된 호스트 이름",
   "invalidIPAddressSubnet": "유효한 서브넷의 IP 주소가 아님",
   "invalidInput": "잘못된 입력",
   "invalidIpAddress": "잘못된 IP 주소",

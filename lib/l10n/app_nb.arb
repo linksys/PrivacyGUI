@@ -325,6 +325,7 @@
   "invalidDestinationMacAddress": "Ugyldig destinasjons-MAC-adresse",
   "invalidDns": "Ugyldig DNS",
   "invalidGatewayIpAddress": "Ugyldig gateway-IP-adresse",
+  "invalidHostname": "Ugyldig vertsnavn",
   "invalidIPAddressSubnet": "IP-adressen er ikke i et gyldig delnett",
   "invalidInput": "Ugyldige inndata",
   "invalidIpAddress": "Ugyldig IP-adresse",

@@ -304,6 +304,7 @@
   "invalidDestinationMacAddress": "Virheellinen kohteen MAC-osoite",
   "invalidDns": "Virheellinen DNS",
   "invalidGatewayIpAddress": "Virheellinen yhdyskäytävän IP-osoite",
+  "invalidHostname": "Virheellinen isäntänimi",
   "invalidIPAddressSubnet": "IP-osoite ei ole kelvollisessa aliverkossa",
   "invalidInput": "Virheellinen syöte",
   "invalidIpAddress": "Virheellinen IP-osoite",

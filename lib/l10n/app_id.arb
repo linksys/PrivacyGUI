@@ -304,6 +304,7 @@
   "invalidDestinationMacAddress": "Alamat MAC tujuan tidak valid",
   "invalidDns": "DNS Tidak Valid",
   "invalidGatewayIpAddress": "Alamat IP gateway tidak valid",
+  "invalidHostname": "Nama Host Invalid",
   "invalidIPAddressSubnet": "Alamat IP tidak dalam subnet yang valid",
   "invalidInput": "Input tidak valid",
   "invalidIpAddress": "Alamat IP tidak valid",

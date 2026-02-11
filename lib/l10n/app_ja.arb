@@ -325,6 +325,7 @@
   "invalidDestinationMacAddress": "無効な宛先MACアドレス",
   "invalidDns": "無効なDNSです。",
   "invalidGatewayIpAddress": "無効なゲートウェイIPアドレス",
+  "invalidHostname": "無効なホスト名",
   "invalidIPAddressSubnet": "IPアドレスが有効なサブネットにありません。",
   "invalidInput": "無効な入力です。",
   "invalidIpAddress": "無効なIPアドレスです。",

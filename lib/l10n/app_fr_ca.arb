@@ -325,6 +325,7 @@
   "invalidDestinationMacAddress": "Adresse MAC de destination non valide",
   "invalidDns": "DNS non valide",
   "invalidGatewayIpAddress": "Adresse IP de la passerelle invalide",
+  "invalidHostname": "Nom d'hôte non valide",
   "invalidIPAddressSubnet": "L'adresse IP n'est pas dans un sous-réseau valide",
   "invalidInput": "Saisie incorrecte",
   "invalidIpAddress": "Adresse IP non valide",

@@ -514,6 +514,7 @@
   "invalidDestinationMacAddress": "Invalid destination MAC address",
   "invalidDns": "Invalid DNS",
   "invalidGatewayIpAddress": "Invalid gateway IP address",
+  "invalidHostname": "Invalid host name",
   "invalidIPAddressSubnet": "IP address not in valid subnet",
   "invalidInput": "Invalid input",
   "invalidIpAddress": "Invalid IP address",

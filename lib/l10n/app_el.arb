@@ -304,6 +304,7 @@
   "invalidDestinationMacAddress": "Μη έγκυρη διεύθυνση MAC προορισμού",
   "invalidDns": "Μη έγκυρο DNS",
   "invalidGatewayIpAddress": "Μη έγκυρη διεύθυνση IP πύλης",
+  "invalidHostname": "Μη έγκυρο όνομα κεντρικού υπολογιστή",
   "invalidIPAddressSubnet": "Η διεύθυνση IP δεν βρίσκεται σε έγκυρο υποδίκτυο",
   "invalidInput": "Μη έγκυρη καταχώριση",
   "invalidIpAddress": "Μη έγκυρη διεύθυνση IP",

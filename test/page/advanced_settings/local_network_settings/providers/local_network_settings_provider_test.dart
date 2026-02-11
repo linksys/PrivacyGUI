@@ -87,9 +87,8 @@ void main() {
     expect(state.hostName, 'Invalid@#%');
     expect(state.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
         LocalNetworkErrorPrompt.hostNameInvalidCharacters.name);
-    // Order might vary depending on implementation details of Set/Match order, but RegExp usually finds in order.
-    // The expected string is joined by ', '.
-    expect(state.hostNameInvalidChars, '@, #, %');
+    // Order is now sorted deterministically
+    expect(state.hostNameInvalidChars, '#, %, @');
   });
 
   test('updateHostName with invalid characters clears previous errors', () {

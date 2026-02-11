@@ -304,6 +304,7 @@
   "invalidDestinationMacAddress": "แอดเดรส MAC ปลายทางไม่ถูกต้อง",
   "invalidDns": "DNS ไม่ถูกต้อง",
   "invalidGatewayIpAddress": "IP แอดเดรสเกตเวย์ไม่ถูกต้อง",
+  "invalidHostname": "ชื่อโฮสต์ไม่ถูกต้อง",
   "invalidIPAddressSubnet": "IP แอดเดรสไม่อยู่ในซับเน็ตที่ถูกต้อง",
   "invalidInput": "ป้อนข้อมูลไม่ถูกต้อง",
   "invalidIpAddress": "IP แอดเดรสไม่ถูกต้อง",

@@ -325,6 +325,7 @@
   "invalidDestinationMacAddress": "Ogiltig MAC-adress för destination",
   "invalidDns": "Ogiltig DNS",
   "invalidGatewayIpAddress": "Ogiltig IP-adress för gatewayen",
+  "invalidHostname": "Ogiltigt värdnamn",
   "invalidIPAddressSubnet": "IP-adressen finns inte i giltigt subnät",
   "invalidInput": "Ogiltiga indata",
   "invalidIpAddress": "Ogiltig IP-adress",

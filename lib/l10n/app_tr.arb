@@ -304,6 +304,7 @@
   "invalidDestinationMacAddress": "Geçersiz hedef MAC adresi",
   "invalidDns": "Geçersiz DNS",
   "invalidGatewayIpAddress": "Geçersiz ağ geçidi IP adresi",
+  "invalidHostname": "Geçersiz Ana Bilgisayar Adı",
   "invalidIPAddressSubnet": "IP adresi geçerli alt ağda değil",
   "invalidInput": "Geçersiz giriş",
   "invalidIpAddress": "Geçersiz IP adresi",

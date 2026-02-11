@@ -304,6 +304,7 @@
   "invalidDestinationMacAddress": "Địa chỉ MAC đích không hợp lệ",
   "invalidDns": "DNS không hợp lệ",
   "invalidGatewayIpAddress": "Địa chỉ IP cổng không hợp lệ",
+  "invalidHostname": "Tên máy chủ không hợp lệ",
   "invalidIPAddressSubnet": "Địa chỉ IP không nằm trong mạng con hợp lệ",
   "invalidInput": "Dữ liệu nhập không hợp lệ",
   "invalidIpAddress": "Địa chỉ IP không hợp lệ",

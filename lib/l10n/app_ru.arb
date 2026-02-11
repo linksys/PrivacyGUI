@@ -304,6 +304,7 @@
   "invalidDestinationMacAddress": "Недействительный MAC-адрес назначения",
   "invalidDns": "Недопустимый DNS-сервер",
   "invalidGatewayIpAddress": "Недействительный IP-адрес шлюза",
+  "invalidHostname": "Недопустимое имя хоста",
   "invalidIPAddressSubnet": "IP-адрес не входит в действительную подсеть",
   "invalidInput": "Неверный ввод",
   "invalidIpAddress": "Недопустимый IP-адрес",

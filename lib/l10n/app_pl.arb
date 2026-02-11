@@ -304,6 +304,7 @@
   "invalidDestinationMacAddress": "Nieprawidłowy docelowy adres MAC",
   "invalidDns": "Nieprawidłowy DNS",
   "invalidGatewayIpAddress": "Nieprawidłowy adres IP bramy",
+  "invalidHostname": "Nieprawidłowa nazwa hosta",
   "invalidIPAddressSubnet": "Adres IP nie należy do prawidłowej podsieci",
   "invalidInput": "Nieprawidłowe dane wejściowe",
   "invalidIpAddress": "Nieprawidłowy adres IP",

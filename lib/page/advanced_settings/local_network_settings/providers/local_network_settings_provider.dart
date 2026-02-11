@@ -125,7 +125,14 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
     String? invalidChars;
     String? error;
 
-    if (hostName.isEmpty) {
+    final invalidMatches = RegExp(r'[^a-zA-Z0-9-]').allMatches(hostName);
+    if (invalidMatches.isNotEmpty) {
+      error = LocalNetworkErrorPrompt.hostNameInvalidCharacters.name;
+      final uniqueChars =
+          invalidMatches.map((m) => m.group(0)).toSet().toList();
+      uniqueChars.sort();
+      invalidChars = uniqueChars.join(', ');
+    } else if (hostName.isEmpty) {
       error = LocalNetworkErrorPrompt.hostName.name;
     } else if (hostName.length > 15) {
       error = LocalNetworkErrorPrompt.hostNameLengthError.name;
@@ -133,12 +140,6 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState> {
       error = LocalNetworkErrorPrompt.hostNameStartWithHyphen.name;
     } else if (hostName.endsWith('-')) {
       error = LocalNetworkErrorPrompt.hostNameEndWithHyphen.name;
-    } else {
-      final invalidMatches = RegExp(r'[^a-zA-Z0-9-]').allMatches(hostName);
-      if (invalidMatches.isNotEmpty) {
-        error = LocalNetworkErrorPrompt.hostNameInvalidCharacters.name;
-        invalidChars = invalidMatches.map((m) => m.group(0)).toSet().join(', ');
-      }
     }
 
     state = state.copyWith(

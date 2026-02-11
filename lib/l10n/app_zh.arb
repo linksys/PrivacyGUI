@@ -325,6 +325,7 @@
   "invalidDestinationMacAddress": "目标MAC地址无效",
   "invalidDns": "无效的DNS",
   "invalidGatewayIpAddress": "网关IP地址无效",
+  "invalidHostname": "无效的主机名称",
   "invalidIPAddressSubnet": "IP地址不在有效子网内",
   "invalidInput": "输入无效",
   "invalidIpAddress": "无效的IP地址",

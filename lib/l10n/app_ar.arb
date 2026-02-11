@@ -325,6 +325,7 @@
   "invalidDestinationMacAddress": "عنوان MAC الوجهة غير صالح",
   "invalidDns": "DNS غير صالح",
   "invalidGatewayIpAddress": "عنوان IP للبوابة غير صالح",
+  "invalidHostname": "اسم المضيف غير صالح",
   "invalidIPAddressSubnet": "عنوان IP غير صالح في الشبكة الفرعية",
   "invalidInput": "إدخال غير صالح",
   "invalidIpAddress": "عنوان IP غير صالح",
