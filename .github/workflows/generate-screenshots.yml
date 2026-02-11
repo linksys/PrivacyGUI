@@ -57,6 +57,7 @@ jobs:
     steps:
       - name: Parse Theme Input
         id: set-matrix
+        shell: bash
         run: |
           INPUT="${{ inputs.themes }}"
 
@@ -135,16 +136,17 @@ jobs:
         run: flutter pub get
 
       - name: 📸 Generate Screenshots (${{ matrix.theme }})
+        shell: bash
         run: |
           if [ -n "${{ inputs.test_file }}" ]; then
-            sh run_generate_loc_snapshots.sh \
+            bash run_generate_loc_snapshots.sh \
               -l "${{ inputs.locales }}" \
               -s "${{ inputs.screens }}" \
               -t "${{ matrix.theme }}" \
               -v "${{ inputs.version }}" \
               -f "${{ inputs.test_file }}"
           else
-            sh run_generate_loc_snapshots.sh \
+            bash run_generate_loc_snapshots.sh \
               -l "${{ inputs.locales }}" \
               -s "${{ inputs.screens }}" \
               -t "${{ matrix.theme }}" \
