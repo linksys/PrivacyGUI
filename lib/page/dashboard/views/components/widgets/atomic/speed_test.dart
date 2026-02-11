@@ -444,7 +444,8 @@ class _HistoryChartPainter extends CustomPainter {
     // Ideally we use uploadBandwidthKbps if available.
     final downloads = data.map((e) {
       if (e.downloadBandwidthKbps != null && e.downloadBandwidthKbps! > 0) {
-        return e.downloadBandwidthKbps! / 1000.0; // Mbps (SI: 1 Mbps = 1000 kbps)
+        return e.downloadBandwidthKbps! /
+            1000.0; // Mbps (SI: 1 Mbps = 1000 kbps)
       }
       // Fallback to parsing string value
       final speed = double.tryParse(e.downloadSpeed) ?? 0;
