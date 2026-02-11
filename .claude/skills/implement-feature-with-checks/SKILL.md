@@ -233,7 +233,7 @@ Only if UI components were added/modified:
 
 **Step 5.1: Format Code**
 ```bash
-dart format lib/page/[feature]/ test/page/[feature]/
+dart format .
 ```
 
 **Step 5.2: Run Static Analysis**

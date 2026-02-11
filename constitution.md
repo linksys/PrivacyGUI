@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2025-12-22
+**Last Amended:** 2026-02-11
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -837,7 +837,7 @@ Contract files serve as specification documents, not executable code:
 
 **Lint and Format Checks**:
 - ✅ `flutter analyze` entire project with no errors (no new issues introduced)
-- ✅ Run `dart format` only on modified files, must comply with formatting standards
+- ✅ Run `dart format .` to ensure all code complies with formatting standards
 
 **Testing and Coverage**:
 - ✅ Added/modified code has corresponding unit tests
@@ -1138,14 +1138,15 @@ class NewCustomWidget extends StatelessWidget {
 
 **Section 14.2: Import Specification**
 
-Use the unified import approach:
+Use the unified import approach when possible:
 
 ```dart
-// ✅ Correct
+// ✅ Preferred: Use unified import when available
 import 'package:ui_kit_library/ui_kit.dart';
 
-// ❌ Wrong: Don't use subpath imports
-import 'package:ui_kit_library/src/components/button.dart';
+// ⚠️ Acceptable: Subpath imports allowed when APIs are not exported from ui_kit.dart
+// (e.g., accessibility utilities, foundation modules)
+import 'package:ui_kit_library/src/foundation/accessibility/accessibility.dart';
 ```
 
 **Section 14.3: Code Review Checklist**
