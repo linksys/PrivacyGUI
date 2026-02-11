@@ -4,7 +4,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
-import 'package:privacy_gui/theme/theme_config_loader.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 
 import 'demo/data/demo_cache_data.dart';
@@ -46,11 +45,10 @@ void main() async {
   // Load demo cache data
   await DemoCacheDataLoader.instance.load();
 
-  // Load theme configuration (no network needed)
-  final themeConfig = await ThemeConfigLoader.load();
+  // Load theme configuration handled by themeConfigProvider
 
   // Setup dependencies with demo-specific configuration
-  _demoDependencySetup(themeConfig: themeConfig);
+  _demoDependencySetup();
 
   runApp(
     ProviderScope(
@@ -64,13 +62,13 @@ void main() async {
 ///
 /// This is a simplified version of the production `dependencySetup` that
 /// skips network-related services and uses mock implementations.
-void _demoDependencySetup({ThemeJsonConfig? themeConfig}) {
+void _demoDependencySetup() {
   // Register mock service helper
   if (!getIt.isRegistered<ServiceHelper>()) {
     getIt.registerSingleton<ServiceHelper>(_DemoServiceHelper());
   }
 
-  final config = themeConfig ?? ThemeJsonConfig.defaultConfig();
+  final config = ThemeJsonConfig.defaultConfig();
 
   if (!getIt.isRegistered<ThemeJsonConfig>()) {
     getIt.registerSingleton<ThemeJsonConfig>(config);

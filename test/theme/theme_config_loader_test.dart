@@ -3,71 +3,95 @@ import 'package:privacy_gui/theme/theme_config_loader.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 
 void main() {
-  group('ThemeConfigLoader', () {
-    Future<ThemeJsonConfig?> mockAssetLoader() async => null;
-    Future<ThemeJsonConfig?> mockAssetLoaderFound() async =>
-        ThemeJsonConfig.fromJson({'style': 'found_in_asset'});
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    test('resolve should return defaultConfig when nothing is provided',
-        () async {
-      final config = await ThemeConfigLoader.resolve(
-        forcedSource: ThemeSource.normal,
-        themeJsonEnv: '',
-        themeNetworkUrl: '',
-        assetLoader: mockAssetLoader,
-      );
-      // Default config produces valid theme
-      expect(config, isNotNull);
-    });
-
-    test('resolve should prioritize CI/CD (themeJsonEnv) over Assets',
-        () async {
-      await ThemeConfigLoader.resolve(
-        forcedSource: ThemeSource.normal,
-        themeJsonEnv: '{"style": "cicd_style"}', // CICD present
-        themeNetworkUrl: '',
-        assetLoader: mockAssetLoaderFound, // Assets also present
-      );
-
-      // We can check if it parsed the string by checking if it didn't use the asset.
-      // Since we can't peek inside config, we rely on behavior or assumption that CICD logic was hit.
-      // Ideally ThemeJsonConfig would expose some property for test verification, but we can assume correct logic path.
-    });
-
-    test('resolve should prioritize Assets if CI/CD is empty', () async {
-      // Since logic is: 1. CICD 2. Network 3. Assets
-      // If CICD empty, should hit Assets
-      // We can't easily verify WHICH one was picked without inspecting resolved config content,
-      // which is hidden.
-      // However, we can trust the coverage of the logic branches.
-
-      final config = await ThemeConfigLoader.resolve(
-        forcedSource: ThemeSource.normal,
-        themeJsonEnv: '',
-        themeNetworkUrl: '',
-        assetLoader: mockAssetLoaderFound,
-      );
-      expect(config, isNotNull);
-    });
-
-    test('resolve should use forcedSource: cicd', () async {
-      final config = await ThemeConfigLoader.resolve(
+  group('ThemeConfigLoader - Override Resolution', () {
+    test('cicd source returns parsed theme from JSON env', () async {
+      final loader = ThemeConfigLoader.forTesting(
         forcedSource: ThemeSource.cicd,
-        themeJsonEnv: '{"style": "cicd"}',
-        themeNetworkUrl: 'http://network',
-        assetLoader: mockAssetLoader,
+        themeJsonEnv: '{"light":{"style":"cicd"},"dark":{"style":"cicd"}}',
       );
-      expect(config, isNotNull);
+      final config = await loader.load(modelNumber: 'TB-6W');
+      expect(config, isA<ThemeJsonConfig>());
+      // Override should take priority over modelNumber
+      expect(config.lightJson, isNotEmpty);
     });
 
-    test('resolve should use forcedSource: defaultTheme', () async {
-      final config = await ThemeConfigLoader.resolve(
+    test('defaultTheme source returns default config', () async {
+      final loader = ThemeConfigLoader.forTesting(
         forcedSource: ThemeSource.defaultTheme,
-        themeJsonEnv: '{"style": "cicd"}', // Should ignore
-        themeNetworkUrl: '',
-        assetLoader: mockAssetLoaderFound, // Should ignore
       );
-      expect(config, isNotNull);
+      final config = await loader.load(modelNumber: 'TB-6W');
+      expect(config.lightJson['style'], 'flat');
+    });
+
+    test('assets source falls back to default when asset not found', () async {
+      final loader = ThemeConfigLoader.forTesting(
+        forcedSource: ThemeSource.assets,
+        themeAssetPath: 'assets/nonexistent_theme.json',
+      );
+      final config = await loader.load();
+      expect(config.lightJson['style'], 'flat');
+    });
+
+    test('network source falls back to default (not implemented)', () async {
+      final loader = ThemeConfigLoader.forTesting(
+        forcedSource: ThemeSource.network,
+        themeNetworkUrl: 'https://example.com/theme.json',
+      );
+      final config = await loader.load();
+      expect(config.lightJson['style'], 'flat');
+    });
+  });
+
+  group('ThemeConfigLoader - Device Theme Resolution', () {
+    test('empty model number returns default theme', () async {
+      final loader = ThemeConfigLoader.forTesting(
+        forcedSource: ThemeSource.normal,
+      );
+      final config = await loader.load(modelNumber: '');
+      expect(config, isA<ThemeJsonConfig>());
+      expect(config.lightJson['style'], 'flat');
+    });
+
+    test('unknown model number returns default theme', () async {
+      final loader = ThemeConfigLoader.forTesting(
+        forcedSource: ThemeSource.normal,
+      );
+      final config = await loader.load(modelNumber: 'UNKNOWN-MODEL');
+      expect(config.lightJson['style'], 'flat');
+    });
+
+    test('no model number defaults to empty string', () async {
+      final loader = ThemeConfigLoader.forTesting(
+        forcedSource: ThemeSource.normal,
+      );
+      final config = await loader.load();
+      expect(config, isA<ThemeJsonConfig>());
+      expect(config.lightJson['style'], 'flat');
+    });
+  });
+
+  group('ThemeConfigLoader - Priority Logic (normal mode)', () {
+    test('CI/CD env takes priority over everything', () async {
+      final loader = ThemeConfigLoader.forTesting(
+        forcedSource: ThemeSource.normal,
+        themeJsonEnv: '{"light":{"style":"cicd"},"dark":{"style":"cicd"}}',
+        themeNetworkUrl: 'https://example.com/theme.json',
+      );
+      // Should not use device theme when env is set
+      final config = await loader.load(modelNumber: 'TB-6W');
+      expect(config, isA<ThemeJsonConfig>());
+    });
+
+    test('network URL triggers override path', () async {
+      final loader = ThemeConfigLoader.forTesting(
+        forcedSource: ThemeSource.normal,
+        themeNetworkUrl: 'https://example.com/theme.json',
+      );
+      // Should use override path, not device theme
+      final config = await loader.load(modelNumber: 'TB-6W');
+      expect(config, isA<ThemeJsonConfig>());
     });
   });
 }

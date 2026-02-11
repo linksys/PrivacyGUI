@@ -16,7 +16,6 @@ import 'package:privacy_gui/providers/logger_observer.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
-import 'package:privacy_gui/theme/theme_config_loader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The main entry point for the Flutter application.
@@ -74,9 +73,8 @@ void main() async {
     HttpOverrides.global = MyHTTPOverrides();
   }
 
-  // GetIt
-  final themeConfig = await ThemeConfigLoader.load();
-  dependencySetup(themeConfig: themeConfig);
+  // GetIt - Register services and default theme data
+  dependencySetup();
 
   runApp(app());
 }
