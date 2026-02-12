@@ -338,17 +338,17 @@
   "hostNameCannotEmpty": "Host name can not be empty.",
   "hostNameStartWithHyphen": "Host name cannot start with a hyphen.",
   "hostNameEndWithHyphen": "Host name cannot end with a hyphen.",
-  "hostNameInvalidCharacters": "Host name contains invalid characters: {chars}",
+  "hostNameInvalidCharacters": "Host name contains invalid characters: {invalidChars}. Allowed characters are letters, numbers, and hyphens.",
   "@hostNameInvalidCharacters": {
-    "description": "Invalid characters in host name",
+    "description": "Error message for invalid characters in hostname",
     "placeholders": {
-      "chars": {
+      "invalidChars": {
         "type": "String",
-        "example": "@, #"
+        "example": "!, @"
       }
     }
   },
-  "hostNameLengthError": "Host name must be 15 characters or less.",
+  "hostNameLengthError": "Host name must be between 1 and 15 characters.",
   "incorrectPassword": "Incorrect password",
   "incredibleWiFi": "Incredible-WiFi",
   "incredibleWiFiDesc": "Change WiFi name and password",
