@@ -106,9 +106,14 @@ class RouterPasswordNotifier extends Notifier<RouterPasswordState> {
     }).onError((error, stackTrace) {
       if (error is JNAPError) {
         if (error.result == errorInvalidResetCode) {
-          final errorOutput = jsonDecode(error.error!) as Map<String, dynamic>;
-          final remaining = errorOutput['attemptsRemaining'] as int;
-          state = state.copyWith(remainingErrorAttempts: remaining);
+          try {
+            final errorOutput =
+                jsonDecode(error.error!) as Map<String, dynamic>;
+            final remaining = errorOutput['attemptsRemaining'] as int;
+            state = state.copyWith(remainingErrorAttempts: remaining);
+          } catch (_) {
+            // error.error may not be valid JSON
+          }
         } else if (error.result == errorConsecutiveInvalidResetCodeEntered) {
           //Error results after the remaining is 0 will become "ErrorConsecutiveInvalidResetCodeEntered"
           state = state.copyWith(remainingErrorAttempts: 0);

@@ -121,3 +121,7 @@ lib/l10n/gen/app_localizations.dart
 
 # FVM Version Cache
 .fvm/
+
+# Coverage
+coverage/
+lcov.info

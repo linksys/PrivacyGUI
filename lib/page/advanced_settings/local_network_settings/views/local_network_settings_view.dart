@@ -162,7 +162,8 @@ class _LocalNetworkSettingsViewState
           errorText: LocalNetworkErrorPrompt.getErrorText(
               context: context,
               error: LocalNetworkErrorPrompt.resolve(
-                  state.errorTextMap[LocalNetworkErrorPrompt.hostName.name])),
+                  state.errorTextMap[LocalNetworkErrorPrompt.hostName.name]),
+              invalidChars: state.hostNameInvalidChars),
           border: const OutlineInputBorder(),
           focusNode: FocusNode()..requestFocus(),
           onChanged: (value) {

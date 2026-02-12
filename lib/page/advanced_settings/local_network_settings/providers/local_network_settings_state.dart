@@ -11,7 +11,6 @@ import 'package:privacy_gui/utils.dart';
 
 enum LocalNetworkErrorPrompt {
   hostName,
-  hostNameInvalid,
   startIpAddress,
   startIpAddressRange,
   ipAddress,
@@ -21,14 +20,23 @@ enum LocalNetworkErrorPrompt {
   dns1,
   dns2,
   dns3,
-  wins;
+  wins,
+  hostNameStartWithHyphen,
+  hostNameEndWithHyphen,
+  hostNameInvalidCharacters,
+  hostNameLengthError;
 
   static LocalNetworkErrorPrompt? resolve(String? error) {
-    return LocalNetworkErrorPrompt.values.firstWhereOrNull((element) => element.name == error);
+    return LocalNetworkErrorPrompt.values
+        .firstWhereOrNull((element) => element.name == error);
   }
 
-  static String? getErrorText({required BuildContext context,
-      LocalNetworkErrorPrompt? error, String? ipAddress, String? subnetMask}) {
+  static String? getErrorText(
+      {required BuildContext context,
+      LocalNetworkErrorPrompt? error,
+      String? ipAddress,
+      String? subnetMask,
+      String? invalidChars}) {
     if (error == null) {
       return null;
     }
@@ -47,7 +55,14 @@ enum LocalNetworkErrorPrompt {
       LocalNetworkErrorPrompt.dns3 => loc(context).invalidIpAddress,
       LocalNetworkErrorPrompt.wins => loc(context).invalidIpAddress,
       LocalNetworkErrorPrompt.hostName => loc(context).hostNameCannotEmpty,
-      LocalNetworkErrorPrompt.hostNameInvalid => loc(context).invalidHostname,
+      LocalNetworkErrorPrompt.hostNameStartWithHyphen =>
+        loc(context).hostNameStartWithHyphen,
+      LocalNetworkErrorPrompt.hostNameEndWithHyphen =>
+        loc(context).hostNameEndWithHyphen,
+      LocalNetworkErrorPrompt.hostNameInvalidCharacters =>
+        loc(context).hostNameInvalidCharacters(invalidChars ?? ''),
+      LocalNetworkErrorPrompt.hostNameLengthError =>
+        loc(context).hostNameLengthError,
       _ => null,
     };
   }
@@ -88,6 +103,7 @@ class LocalNetworkSettingsState extends Equatable {
   final bool hasErrorOnHostNameTab;
   final bool hasErrorOnIPAddressTab;
   final bool hasErrorOnDhcpServerTab;
+  final String? hostNameInvalidChars;
 
   @override
   List<Object?> get props {
@@ -114,6 +130,7 @@ class LocalNetworkSettingsState extends Equatable {
       hasErrorOnHostNameTab,
       hasErrorOnIPAddressTab,
       hasErrorOnDhcpServerTab,
+      hostNameInvalidChars,
     ];
   }
 
@@ -140,6 +157,7 @@ class LocalNetworkSettingsState extends Equatable {
     this.hasErrorOnHostNameTab = false,
     this.hasErrorOnIPAddressTab = false,
     this.hasErrorOnDhcpServerTab = false,
+    this.hostNameInvalidChars,
   });
 
   factory LocalNetworkSettingsState.init() => const LocalNetworkSettingsState(
@@ -182,6 +200,7 @@ class LocalNetworkSettingsState extends Equatable {
       'hasErrorOnHostNameTab': hasErrorOnHostNameTab,
       'hasErrorOnIPAddressTab': hasErrorOnIPAddressTab,
       'hasErrorOnDhcpServerTab': hasErrorOnDhcpServerTab,
+      'hostNameInvalidChars': hostNameInvalidChars,
     };
   }
 
@@ -206,11 +225,11 @@ class LocalNetworkSettingsState extends Equatable {
       wins: map['wins'],
       dhcpReservationList: List<DHCPReservation>.from(
           map['dhcpReservationList']?.map((x) => DHCPReservation.fromMap(x))),
-      errorTextMap: Map<String, String>.from(
-          map['errorTextMap'] ?? {}),
+      errorTextMap: Map<String, String>.from(map['errorTextMap'] ?? {}),
       hasErrorOnHostNameTab: map['hasErrorOnHostNameTab'] ?? false,
       hasErrorOnIPAddressTab: map['hasErrorOnIPAddressTab'] ?? false,
       hasErrorOnDhcpServerTab: map['hasErrorOnDhcpServerTab'] ?? false,
+      hostNameInvalidChars: map['hostNameInvalidChars'],
     );
   }
 
@@ -253,6 +272,7 @@ class LocalNetworkSettingsState extends Equatable {
     bool? hasErrorOnHostNameTab,
     bool? hasErrorOnIPAddressTab,
     bool? hasErrorOnDhcpServerTab,
+    ValueGetter<String?>? hostNameInvalidChars,
   }) {
     return LocalNetworkSettingsState(
       hostName: hostName ?? this.hostName,
@@ -284,6 +304,9 @@ class LocalNetworkSettingsState extends Equatable {
           hasErrorOnIPAddressTab ?? this.hasErrorOnIPAddressTab,
       hasErrorOnDhcpServerTab:
           hasErrorOnDhcpServerTab ?? this.hasErrorOnDhcpServerTab,
+      hostNameInvalidChars: hostNameInvalidChars != null
+          ? hostNameInvalidChars()
+          : this.hostNameInvalidChars,
     );
   }
 
