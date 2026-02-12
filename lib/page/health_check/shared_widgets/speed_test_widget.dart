@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/page/health_check/utils/speed_test_gauge_utils.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -223,6 +224,13 @@ class SpeedTestWidget extends ConsumerWidget {
   Widget meterView(
       BuildContext context, HealthCheckState state, WidgetRef ref) {
     final result = state.result ?? SpeedTestUIModel.empty();
+
+    // Calculate dynamic upper bound and markers based on historical data
+    final upperBound = SpeedTestGaugeUtils.calculateGaugeUpperBound(state);
+    final isSmallGauge = (meterSize ?? 220) < 130;
+    final markers = SpeedTestGaugeUtils.generateMarkers(upperBound,
+        isSmallGauge: isSmallGauge);
+
     // Format the live meter value for display.
     final formattedLiveValue = NetworkUtils.formatBitsWithUnit(
         (state.meterValue * 1000).toInt(),
@@ -237,20 +245,7 @@ class SpeedTestWidget extends ConsumerWidget {
       child: AppGauge(
         size: meterSize ?? context.colWidth(3),
         value: meterValueMbps, // Value must be in Mbps for the meter scale
-        // Reduce clutter: show minimal or no labels if meter is small
-        markers: (meterSize ?? 220) < 130
-            ? const <double>[0, 100]
-            : const <double>[
-                0,
-                1,
-                5,
-                10,
-                20,
-                30,
-                50,
-                75,
-                100
-              ], // Markers are in Mbps
+        markers: markers, // Dynamic markers based on historical data
         centerBuilder: (context, value) {
           // The content inside the meter (e.g., live speed).
           final isSmall = (meterSize ?? 220) < 130;
@@ -540,11 +535,18 @@ class SpeedTestWidget extends ConsumerWidget {
   /// Builds the initial "Go" button to start the test.
   Widget _startButton(BuildContext context, WidgetRef ref,
       {SpeedTestUIModel? lastResult}) {
+    // Calculate dynamic upper bound and markers for idle state
+    final healthCheckState = ref.watch(healthCheckProvider);
+    final upperBound =
+        SpeedTestGaugeUtils.calculateGaugeUpperBound(healthCheckState);
+    final markers =
+        SpeedTestGaugeUtils.generateMarkers(upperBound, isSmallGauge: true);
+
     return Container(
       alignment: Alignment.center,
       child: AppGauge(
         size: meterSize ?? 220,
-        markers: const <double>[0, 100], // Default markers for start button
+        markers: markers, // Dynamic markers based on historical data
         // displayIndicatorValues: false, // assuming unsupported or default
         // indicatorPathStrokeWidth: 8,
         // markerRadius: 2,
