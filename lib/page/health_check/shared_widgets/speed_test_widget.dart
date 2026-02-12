@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 import 'package:privacy_gui/page/health_check/models/speed_test_ui_model.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/page/health_check/utils/speed_test_gauge_utils.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -64,137 +65,6 @@ class SpeedTestWidget extends ConsumerWidget {
     this.showResultSummary = true,
     this.showServerSelectionDialog = true,
   });
-
-  /// Calculates the maximum speed (in Mbps) from historical speed test results.
-  /// Returns the default value (100.0) if no valid history exists.
-  double _calculateMaxHistoricalSpeed(HealthCheckState state) {
-    final allTests = <SpeedTestUIModel>[];
-
-    // Include historical tests
-    if (state.historicalSpeedTests.isNotEmpty) {
-      allTests.addAll(state.historicalSpeedTests);
-    }
-
-    // Include latest test if it's not already in historical
-    if (state.latestSpeedTest != null &&
-        !state.historicalSpeedTests.contains(state.latestSpeedTest)) {
-      allTests.add(state.latestSpeedTest!);
-    }
-
-    if (allTests.isEmpty) {
-      return 100.0; // Default to 100 Mbps if no history
-    }
-
-    double maxSpeed = 0.0;
-
-    for (final test in allTests) {
-      // Download speed (convert Kbps to Mbps)
-      if (test.downloadBandwidthKbps != null &&
-          test.downloadBandwidthKbps! > 0) {
-        final downloadMbps = test.downloadBandwidthKbps! / 1024.0;
-        if (downloadMbps > maxSpeed) {
-          maxSpeed = downloadMbps;
-        }
-      }
-
-      // Upload speed (convert Kbps to Mbps)
-      if (test.uploadBandwidthKbps != null && test.uploadBandwidthKbps! > 0) {
-        final uploadMbps = test.uploadBandwidthKbps! / 1024.0;
-        if (uploadMbps > maxSpeed) {
-          maxSpeed = uploadMbps;
-        }
-      }
-    }
-
-    // If all values were null or zero, return default
-    return maxSpeed > 0 ? maxSpeed : 100.0;
-  }
-
-  /// Rounds up a speed value to the nearest hundred (ceiling).
-  /// Examples:
-  /// - 89 -> 100
-  /// - 345 -> 400
-  /// - 1234 -> 1300
-  /// - 56 -> 100 (minimum is 100)
-  double _roundUpToHundred(double speed) {
-    // Ensure minimum is 100
-    if (speed < 100) {
-      return 100.0;
-    }
-
-    // Round up to nearest hundred
-    return (speed / 100).ceil() * 100.0;
-  }
-
-  /// Calculates the dynamic upper bound for the speed test gauge based on historical data.
-  /// Returns at least 100 Mbps, rounded up to the nearest hundred.
-  double _calculateGaugeUpperBound(HealthCheckState state) {
-    final maxHistorical = _calculateMaxHistoricalSpeed(state);
-    return _roundUpToHundred(maxHistorical);
-  }
-
-  /// Generates appropriate marker values for the speed gauge based on the upper bound.
-  ///
-  /// The markers are distributed to provide meaningful reference points:
-  /// - For 100 Mbps: [0, 1, 5, 10, 20, 30, 50, 75, 100]
-  /// - For 100-200 Mbps: [0, 10, 20, 30, 50, 75, 100, 150, upperBound]
-  /// - For 200-500 Mbps: [0, 50, 100, 150, 200, 250, 300, 400, upperBound]
-  /// - For 500-1000 Mbps: [0, 100, 200, 300, 400, 500, 750, upperBound]
-  /// - For 1000+ Mbps: [0, 200, 400, 600, 800, 1000, 1200, ...]
-  ///
-  /// Small gauges (< 130px) use simplified markers: [0, upperBound]
-  List<double> _generateMarkers(double upperBound,
-      {bool isSmallGauge = false}) {
-    if (isSmallGauge) {
-      return [0, upperBound];
-    }
-
-    if (upperBound <= 100) {
-      // Default case: 0-100 Mbps
-      return const [0, 1, 5, 10, 20, 30, 50, 75, 100];
-    } else if (upperBound <= 200) {
-      // 100-200 Mbps range
-      return [0, 10, 20, 30, 50, 75, 100, 150, upperBound];
-    } else if (upperBound <= 500) {
-      // 200-500 Mbps range
-      // Generate markers at 50 Mbps intervals up to 300, then 100 Mbps intervals
-      final markers = <double>[0];
-      for (double i = 50; i <= 300; i += 50) {
-        markers.add(i);
-      }
-      for (double i = 400; i < upperBound; i += 100) {
-        markers.add(i);
-      }
-      markers.add(upperBound);
-      return markers;
-    } else if (upperBound <= 1000) {
-      // 500-1000 Mbps range
-      // Generate markers at 100 Mbps intervals, with an extra marker at 750 if applicable
-      final markers = <double>[0];
-      for (double i = 100; i <= 500; i += 100) {
-        markers.add(i);
-      }
-      // Only add 750 if upperBound is >= 750 to maintain sorted order
-      if (upperBound >= 750) {
-        markers.add(750);
-      }
-      if (upperBound != 1000) {
-        markers.add(upperBound);
-      } else {
-        markers.add(1000);
-      }
-      return markers;
-    } else {
-      // 1000+ Mbps range
-      // Generate markers at 200 Mbps intervals
-      final markers = <double>[0];
-      for (double i = 200; i < upperBound; i += 200) {
-        markers.add(i);
-      }
-      markers.add(upperBound);
-      return markers;
-    }
-  }
 
   /// Runs the speed test with optional server selection.
   ///
@@ -356,9 +226,10 @@ class SpeedTestWidget extends ConsumerWidget {
     final result = state.result ?? SpeedTestUIModel.empty();
 
     // Calculate dynamic upper bound and markers based on historical data
-    final upperBound = _calculateGaugeUpperBound(state);
+    final upperBound = SpeedTestGaugeUtils.calculateGaugeUpperBound(state);
     final isSmallGauge = (meterSize ?? 220) < 130;
-    final markers = _generateMarkers(upperBound, isSmallGauge: isSmallGauge);
+    final markers = SpeedTestGaugeUtils.generateMarkers(upperBound,
+        isSmallGauge: isSmallGauge);
 
     // Format the live meter value for display.
     final formattedLiveValue = NetworkUtils.formatBitsWithUnit(
@@ -666,8 +537,10 @@ class SpeedTestWidget extends ConsumerWidget {
       {SpeedTestUIModel? lastResult}) {
     // Calculate dynamic upper bound and markers for idle state
     final healthCheckState = ref.watch(healthCheckProvider);
-    final upperBound = _calculateGaugeUpperBound(healthCheckState);
-    final markers = _generateMarkers(upperBound, isSmallGauge: true);
+    final upperBound =
+        SpeedTestGaugeUtils.calculateGaugeUpperBound(healthCheckState);
+    final markers =
+        SpeedTestGaugeUtils.generateMarkers(upperBound, isSmallGauge: true);
 
     return Container(
       alignment: Alignment.center,
