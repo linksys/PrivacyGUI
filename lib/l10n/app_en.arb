@@ -336,6 +336,19 @@
   "hongkong": "Hong Kong",
   "hostName": "Host name",
   "hostNameCannotEmpty": "Host name can not be empty.",
+  "hostNameStartWithHyphen": "Host name cannot start with a hyphen.",
+  "hostNameEndWithHyphen": "Host name cannot end with a hyphen.",
+  "hostNameInvalidCharacters": "Host name contains invalid characters: {invalidChars}. Allowed characters are letters, numbers, and hyphens.",
+  "@hostNameInvalidCharacters": {
+    "description": "Error message for invalid characters in hostname",
+    "placeholders": {
+      "invalidChars": {
+        "type": "String",
+        "example": "!, @"
+      }
+    }
+  },
+  "hostNameLengthError": "Host name must be between 1 and 15 characters.",
   "incorrectPassword": "Incorrect password",
   "incredibleWiFi": "Incredible-WiFi",
   "incredibleWiFiDesc": "Change WiFi name and password",

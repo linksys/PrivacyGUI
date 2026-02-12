@@ -9,7 +9,6 @@ import 'package:privacy_gui/providers/preservable_contract.dart';
 import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/utils.dart';
 import 'package:privacy_gui/validator_rules/input_validators.dart';
-import 'package:privacy_gui/validator_rules/rules.dart';
 
 final localNetworkSettingProvider =
     NotifierProvider<LocalNetworkSettingsNotifier, LocalNetworkSettingsState>(
@@ -124,15 +123,33 @@ class LocalNetworkSettingsNotifier extends Notifier<LocalNetworkSettingsState>
   }
 
   void updateHostName(String hostName) {
-    updateSettings(state.settings.current.copyWith(hostName: hostName));
+    String? invalidChars;
     String? error;
-    if (hostName.isEmpty) {
+
+    final invalidMatches = RegExp(r'[^a-zA-Z0-9-]').allMatches(hostName);
+    if (invalidMatches.isNotEmpty) {
+      error = LocalNetworkErrorPrompt.hostNameInvalidCharacters.name;
+      final uniqueChars =
+          invalidMatches.map((m) => m.group(0)).toSet().toList();
+      uniqueChars.sort();
+      invalidChars = uniqueChars.join(', ');
+    } else if (hostName.isEmpty) {
       error = LocalNetworkErrorPrompt.hostName.name;
-    } else if (!LengthRule(min: 1, max: 15).validate(hostName)) {
-      error = LocalNetworkErrorPrompt.hostNameInvalid.name;
-    } else if (HostNameRule().validate(hostName)) {
-      error = LocalNetworkErrorPrompt.hostNameInvalid.name;
+    } else if (hostName.length > 15) {
+      error = LocalNetworkErrorPrompt.hostNameLengthError.name;
+    } else if (hostName.startsWith('-')) {
+      error = LocalNetworkErrorPrompt.hostNameStartWithHyphen.name;
+    } else if (hostName.endsWith('-')) {
+      error = LocalNetworkErrorPrompt.hostNameEndWithHyphen.name;
     }
+
+    updateSettings(state.settings.current.copyWith(hostName: hostName));
+    state = state.copyWith(
+      status: state.status.copyWith(
+        hostNameInvalidChars: () => invalidChars,
+      ),
+    );
+
     updateErrorPrompts(
       LocalNetworkErrorPrompt.hostName.name,
       error,
