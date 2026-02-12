@@ -138,6 +138,7 @@ Requirements unclear?
   - Buttons: `AppButton.primary()`, `AppButton.text()`, `AppButton.primaryOutline()`
   - Text: `AppText.titleLarge()`, `AppText.bodyMedium()`, `AppText.labelLarge()`
   - Cards: `AppCard()`
+  - Containers: `AppSurface()` (use instead of Container for consistent styling)
   - Input: `AppTextFormField()`
   - Selection: `AppCheckbox()`, `AppSwitch()`
   - Dialogs: `showSimpleAppDialog()`, `showAppSpinnerDialog()`
@@ -233,7 +234,7 @@ Only if UI components were added/modified:
 
 **Step 5.1: Format Code**
 ```bash
-dart format lib/page/[feature]/ test/page/[feature]/
+dart format .
 ```
 
 **Step 5.2: Run Static Analysis**

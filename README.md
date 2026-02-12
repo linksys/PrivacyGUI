@@ -72,8 +72,24 @@ This repository includes shell scripts to simplify the build process for differe
 
 -   **Web:**
     ```bash
-    ./build_web.sh
+    # Usage: ./build_web.sh <buildNumber> <force> <href> <cloud> <picker> <ca> [themeSource] [themeJson]
+
+    # Example with default theme
+    ./build_web.sh 100 false "/" prod false true normal ""
+
+    # Example with theme override
+    ./build_web.sh 100 false "/" prod false true cicd '{"style":"flat","colorScheme":{"primary":"#FF5722"}}'
     ```
+
+    **Parameters:**
+    - `buildNumber`: Build version number
+    - `force`: Force rebuild (true/false)
+    - `href`: Base href for web deployment
+    - `cloud`: Cloud environment (prod/qa/dev)
+    - `picker`: Enable environment picker (true/false)
+    - `ca`: Certificate authority setting
+    - `themeSource` (optional): Theme source override (normal/cicd/network/assets/default)
+    - `themeJson` (optional): JSON string for theme configuration
 
 ## 🧪 Running Tests
 

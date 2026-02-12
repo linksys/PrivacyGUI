@@ -510,7 +510,7 @@ void main() {
     test('formatBits: formats bits in kilobytes range with specified decimals',
         () {
       const bits = 1234;
-      const expected = '1.234 Kb';
+      const expected = '1.234 kb';
 
       final formattedBits = NetworkUtils.formatBits(bits, decimals: 3);
       expect(formattedBits, expected);
@@ -565,7 +565,7 @@ void main() {
       expect(result.unit, 'b');
     });
 
-    test('formats bits (less than 1Kb)', () {
+    test('formats bits (less than 1kb)', () {
       const bits = 500;
       final result = NetworkUtils.formatBitsWithUnit(bits);
       expect(result.value, '500');
@@ -573,10 +573,10 @@ void main() {
     });
 
     test('formats kilobytes with 0 decimal places', () {
-      const bits = 2000; // 2 Kb
+      const bits = 2000; // 2 kb
       final result = NetworkUtils.formatBitsWithUnit(bits);
       expect(result.value, '2');
-      expect(result.unit, 'Kb');
+      expect(result.unit, 'kb');
     });
 
     test('formats megabytes with 2 decimal places', () {

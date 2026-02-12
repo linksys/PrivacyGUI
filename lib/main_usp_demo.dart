@@ -32,7 +32,6 @@ import 'package:privacy_gui/core/usp/capabilities/repositories/local_capability_
 import 'package:privacy_gui/core/usp/capabilities/models/device_feature.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
-import 'package:privacy_gui/theme/theme_config_loader.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 
 import 'demo/demo_app.dart';
@@ -88,10 +87,8 @@ void main() async {
   // This provides complete mock data for JNAP actions not mapped to TR-181
   await DemoCacheDataLoader.instance.load();
 
-  // Load theme configuration (same as main_demo.dart)
-  final themeConfig = await ThemeConfigLoader.load();
-  _uspDemoDependencySetup(
-      capabilityRepo: capabilityRepo, themeConfig: themeConfig);
+  // Theme configuration handled by themeConfigProvider
+  _uspDemoDependencySetup(capabilityRepo: capabilityRepo);
 
   runApp(
     ProviderScope(
@@ -127,7 +124,6 @@ List<Override> _buildUspOverrides(CapabilityRepository capabilityRepo) {
 /// Same as _demoDependencySetup in main_demo.dart but with USP-specific ServiceHelper.
 void _uspDemoDependencySetup({
   required CapabilityRepository capabilityRepo,
-  ThemeJsonConfig? themeConfig,
 }) {
   // Register USP-specific service helper
   if (!getIt.isRegistered<ServiceHelper>()) {
@@ -135,7 +131,7 @@ void _uspDemoDependencySetup({
         _UspDemoServiceHelper(capabilityRepo));
   }
 
-  final config = themeConfig ?? ThemeJsonConfig.defaultConfig();
+  final config = ThemeJsonConfig.defaultConfig();
 
   if (!getIt.isRegistered<ThemeJsonConfig>()) {
     getIt.registerSingleton<ThemeJsonConfig>(config);

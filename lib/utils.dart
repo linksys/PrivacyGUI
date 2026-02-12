@@ -330,7 +330,7 @@ extension MediaQueryUtils on Utils {
 extension NetworkUtils on Utils {
   /// Formats a bit count into a human-readable string with SI units (base 1000).
   ///
-  /// Example: 1000 bits -> "1 Kb"
+  /// Example: 1000 bits -> "1 kb"
   static String formatBits(int bits, {int decimals = 0}) {
     final result = formatBitsWithUnit(bits, decimals: decimals);
     return '${result.value} ${result.unit}';
@@ -342,7 +342,7 @@ extension NetworkUtils on Utils {
   static ({String value, String unit}) formatBitsWithUnit(int bits,
       {int decimals = 0}) {
     if (bits <= 0) return (value: '0', unit: "b");
-    const suffixes = ["b", "Kb", "Mb", "Gb", "Tb", "Pb"];
+    const suffixes = ["b", "kb", "Mb", "Gb", "Tb", "Pb"];
     var i = (log(bits) / log(1000)).floor();
     var number = (bits / pow(1000, i));
     return (
@@ -676,6 +676,8 @@ class BrandUtils {
 
   static const Map<String, String> _modelSuffixMap = {
     'TB-': '_tb',
+    'CF-': '_cf',
+    'DU-': '_du',
   };
 
   static Future<void> _loadManifest() async {
