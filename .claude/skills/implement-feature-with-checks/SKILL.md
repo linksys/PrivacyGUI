@@ -138,6 +138,7 @@ Requirements unclear?
   - Buttons: `AppButton.primary()`, `AppButton.text()`, `AppButton.primaryOutline()`
   - Text: `AppText.titleLarge()`, `AppText.bodyMedium()`, `AppText.labelLarge()`
   - Cards: `AppCard()`
+  - Containers: `AppSurface()` (use instead of Container for consistent styling)
   - Input: `AppTextFormField()`
   - Selection: `AppCheckbox()`, `AppSwitch()`
   - Dialogs: `showSimpleAppDialog()`, `showAppSpinnerDialog()`
