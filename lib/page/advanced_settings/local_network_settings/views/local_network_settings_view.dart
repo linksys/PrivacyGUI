@@ -157,7 +157,8 @@ class _LocalNetworkSettingsViewState
           errorText: LocalNetworkErrorPrompt.getErrorText(
               context: context,
               error: LocalNetworkErrorPrompt.resolve(state
-                  .status.errorTextMap[LocalNetworkErrorPrompt.hostName.name])),
+                  .status.errorTextMap[LocalNetworkErrorPrompt.hostName.name]),
+              invalidChars: state.status.hostNameInvalidChars),
           onChanged: (value) {
             _notifier.updateHostName(value);
           },

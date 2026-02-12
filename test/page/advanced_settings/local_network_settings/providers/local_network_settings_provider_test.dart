@@ -77,35 +77,69 @@ void main() {
         expect(state.settings.current.hostName, 'MyRouter');
       });
 
-      test('sets error when hostName is empty', () {
+      test('sets hostName error when empty', () {
         final notifier = container.read(localNetworkSettingProvider.notifier);
 
         notifier.updateHostName('');
         final state = container.read(localNetworkSettingProvider);
 
         expect(state.status.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
-            isNotNull);
+            LocalNetworkErrorPrompt.hostName.name);
       });
 
-      test('sets error when hostName exceeds 15 characters', () {
+      test('sets hostNameLengthError when exceeds 15 characters', () {
         final notifier = container.read(localNetworkSettingProvider.notifier);
 
         notifier.updateHostName('ThisIsAVeryLongHostName');
         final state = container.read(localNetworkSettingProvider);
 
         expect(state.status.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
-            isNotNull);
+            LocalNetworkErrorPrompt.hostNameLengthError.name);
       });
 
-      test('clears error for valid hostName', () {
+      test('sets hostNameStartWithHyphen when starts with hyphen', () {
         final notifier = container.read(localNetworkSettingProvider.notifier);
 
-        notifier.updateHostName('');
+        notifier.updateHostName('-MyRouter');
+        final state = container.read(localNetworkSettingProvider);
+
+        expect(state.status.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
+            LocalNetworkErrorPrompt.hostNameStartWithHyphen.name);
+      });
+
+      test('sets hostNameEndWithHyphen when ends with hyphen', () {
+        final notifier = container.read(localNetworkSettingProvider.notifier);
+
+        notifier.updateHostName('MyRouter-');
+        final state = container.read(localNetworkSettingProvider);
+
+        expect(state.status.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
+            LocalNetworkErrorPrompt.hostNameEndWithHyphen.name);
+      });
+
+      test('sets hostNameInvalidCharacters and tracks invalid chars', () {
+        final notifier = container.read(localNetworkSettingProvider.notifier);
+
+        notifier.updateHostName('My@Router#1');
+        final state = container.read(localNetworkSettingProvider);
+
+        expect(state.status.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
+            LocalNetworkErrorPrompt.hostNameInvalidCharacters.name);
+        expect(state.status.hostNameInvalidChars, isNotNull);
+        expect(state.status.hostNameInvalidChars, contains('#'));
+        expect(state.status.hostNameInvalidChars, contains('@'));
+      });
+
+      test('clears error and invalidChars for valid hostName', () {
+        final notifier = container.read(localNetworkSettingProvider.notifier);
+
+        notifier.updateHostName('My@Invalid');
         notifier.updateHostName('ValidHost');
         final state = container.read(localNetworkSettingProvider);
 
         expect(state.status.errorTextMap[LocalNetworkErrorPrompt.hostName.name],
             isNull);
+        expect(state.status.hostNameInvalidChars, isNull);
       });
     });
 
