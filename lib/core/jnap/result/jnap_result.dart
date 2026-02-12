@@ -160,7 +160,7 @@ class JNAPError extends JNAPResult {
             error: response[keyJnapError] ??
                 (response[keyJnapOutput] != null
                     ? jsonEncode(response[keyJnapOutput])
-                    : null),
+                    : response[keyJnapResult]),
           );
         }
       }
@@ -175,7 +175,7 @@ class JNAPError extends JNAPResult {
       error: json[keyJnapError] ??
           (json[keyJnapOutput] != null
               ? jsonEncode(json[keyJnapOutput])
-              : null),
+              : json[keyJnapResult]),
     );
   }
 
