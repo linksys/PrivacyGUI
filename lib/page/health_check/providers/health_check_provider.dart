@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_state.dart';
+import 'package:privacy_gui/page/health_check/models/health_check_server.dart';
 
 import '../../../core/jnap/actions/better_action.dart';
 import '../../../core/jnap/models/health_check_result.dart';
@@ -32,14 +33,32 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
   @override
   HealthCheckState build() => HealthCheckState.init();
 
-  Future<void> runHealthCheck(Module module) async {
+  void resetState() {
+    state = HealthCheckState.init().copyWith(
+      servers: state.servers,
+      // selectedServer: null, // Clear selection to force user to choose
+    );
+  }
+
+  Future<void> runHealthCheck(Module module, {int? serverId}) async {
     if (module == Module.speedtest) {
-      // Reset state
-      state = HealthCheckState.init();
+      state = HealthCheckState.init().copyWith(
+        servers: state.servers, // Preserve servers
+        selectedServer: state.selectedServer,
+      );
       final repo = ref.read(routerRepositoryProvider);
+
+      final targetServerId = serverId ??
+          (state.selectedServer?.serverID != null
+              ? int.tryParse(state.selectedServer!.serverID)
+              : null);
+
       final result = await repo.send(
         JNAPAction.runHealthCheck,
-        data: {"runHealthCheckModule": module.value},
+        data: {
+          "runHealthCheckModule": module.value,
+          "targetServerID": targetServerId != null ? '$targetServerId' : null,
+        }..removeWhere((key, value) => value == null),
         auth: true,
         fetchRemote: true,
         cacheLevel: CacheLevel.noCache,
@@ -74,6 +93,19 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
                   final speedtestTempResult = state.result
                       .firstWhereOrNull((e) => e.timestamp == state.timestamp)
                       ?.speedTestResult;
+
+                  if (speedtestTempResult?.exitCode != 'Success' &&
+                      speedtestTempResult?.exitCode != 'Unavailable') {
+                    state = state.copyWith(
+                      step: 'error',
+                      status: 'COMPLETE',
+                      error: JNAPError(
+                          result:
+                              speedtestTempResult?.exitCode ?? 'Unknown Error'),
+                    );
+                    return;
+                  }
+
                   state = state.copyWith(
                       step: 'success',
                       status: 'COMPLETE',
@@ -91,9 +123,21 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
           state = state.copyWith(error: result);
           return;
         }
+        if (_getErrorCode(result)) {
+          state = state.copyWith(
+            step: 'error',
+            status: 'COMPLETE',
+            error: JNAPError(
+                result: (result as JNAPSuccess)
+                        .output['speedTestResult']?['exitCode']
+                        ?.toString() ??
+                    'Unknown Error'),
+          );
+          return;
+        }
         final step = _getCurrentStep(result);
         if (step.isNotEmpty) {
-          final randomValue = _randomDouble(-3, 15) * 1024;
+          final randomValue = _randomDouble(-3, 15) * 1000;
           final speedtestTempResult = SpeedTestResult.fromJson(
               (result as JNAPSuccess).output['speedTestResult']);
           var meterValue = 0.0;
@@ -198,6 +242,40 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
     return result;
   }
 
+  Future<List<HealthCheckServer>> updateServers() async {
+    final repo = ref.read(routerRepositoryProvider);
+    try {
+      // Fetch from repository (which uses polling cache)
+      final result = await repo.send(
+        JNAPAction.getCloseHealthCheckServers,
+        auth: true,
+        fetchRemote: false, // Rely on polling/cache
+        cacheLevel: CacheLevel.localCached,
+      );
+
+      // ignore: unnecessary_type_check
+      if (result is JNAPSuccess) {
+        final List<dynamic> serverList = result.output['healthCheckServers'];
+        final servers = serverList
+            .map((e) => HealthCheckServer.fromJson(e as Map<String, dynamic>))
+            .toList();
+
+        // Update state with cached servers
+        state = state.copyWith(servers: servers);
+        return servers;
+      }
+    } catch (e) {
+      logger.d('Failed to update health check servers from cache: $e');
+    }
+    // If fail or empty, ensure state reflects that (or keep old? keeping empty for now)
+    state = state.copyWith(servers: []);
+    return [];
+  }
+
+  void setSelectedServer(HealthCheckServer? server) {
+    state = state.copyWith(selectedServer: server);
+  }
+
   _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {
     final timestamp = healthCheckResults.firstOrNull?.timestamp;
     state = state.copyWith(result: healthCheckResults, timestamp: timestamp);
@@ -238,6 +316,9 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
 
   String _getCurrentStep(JNAPResult result) {
     if (result is JNAPSuccess) {
+      if (_getErrorCode(result)) {
+        return 'error';
+      }
       final speedTestResult =
           SpeedTestResult.fromJson(result.output['speedTestResult']);
       if (result.output['healthCheckModuleCurrentlyRunning'] == 'SpeedTest') {

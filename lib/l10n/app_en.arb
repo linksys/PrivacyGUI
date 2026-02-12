@@ -1,5 +1,214 @@
 {
   "@@locale": "en",
+  "@copyRight": {
+    "description": "year",
+    "placeholders": {
+      "year": {
+        "type": "int",
+        "example": "2024"
+      }
+    }
+  },
+  "@disableBandWarning": {
+    "description": "radio",
+    "placeholders": {
+      "radio": {
+        "type": "String",
+        "example": "radio"
+      }
+    }
+  },
+  "@firmwareUpdateCountdownMessage": {
+    "description": "Message shown in a dialog after firmware update, with a countdown before page refresh.",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "@formalDateTime": {
+    "description": "date and time",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "jm"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "@hostNameInvalidCharacters": {
+    "description": "Error message for invalid characters in hostname",
+    "placeholders": {
+      "invalidChars": {
+        "type": "String",
+        "example": "!, @"
+      }
+    }
+  },
+  "@ipv4": {
+    "description": "Do not translate"
+  },
+  "@ipv6": {
+    "description": "Do not translate"
+  },
+  "@loginWithAccessTokenMessage": {
+    "description": "Message shown when logging in with access token",
+    "placeholders": {
+      "serialNumber": {
+        "type": "String",
+        "example": "SN12345"
+      }
+    }
+  },
+  "@modalRemoveNodeDesc": {
+    "description": "Node name",
+    "placeholders": {
+      "node": {
+        "type": "String",
+        "example": "Awesome Node Name"
+      }
+    }
+  },
+  "@nAdd": {
+    "description": "Number of item added",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "@nDNS": {
+    "description": "DNS label with numbers",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "@nDevices": {
+    "description": "Number of devices",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "@nDevicesDeleteDevicesDescription": {
+    "description": "alert dialog delete device description plural"
+  },
+  "@nDevicesDeleteDevicesTitle": {
+    "description": "alert dialog delete device title plural"
+  },
+  "@nReservedAddresses": {
+    "description": "number of reserved addresses",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "@nodeDetailBlinkingCounting": {
+    "description": "Blinking count down",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "20"
+      }
+    }
+  },
+  "@pnpWiFiReady": {
+    "description": "Show set ssid",
+    "placeholders": {
+      "ssid": {
+        "type": "String",
+        "example": "MyHomeSSID"
+      }
+    }
+  },
+  "@redirectDescription": {
+    "description": "ip",
+    "placeholders": {
+      "ip": {
+        "type": "String",
+        "example": "192.168.1.1"
+      }
+    }
+  },
+  "@remoteAssistancePinCodeExpiresIn": {
+    "description": "time",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
+  },
+  "@remoteAssistanceSessionExpiresIn": {
+    "description": "time",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "10:00"
+      }
+    }
+  },
+  "@speedCheckLatestTime": {
+    "description": "Speed check with time and date parameter",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "jm"
+      },
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "@systemTestDateFormat": {
+    "description": "System test date format",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMd"
+      }
+    }
+  },
+  "@systemTestDateTime": {
+    "description": "System test time format",
+    "placeholders": {
+      "time": {
+        "type": "DateTime",
+        "format": "jms"
+      }
+    }
+  },
+  "@wifiBand": {
+    "description": "band",
+    "placeholders": {
+      "band": {
+        "type": "String",
+        "example": "2.4GHz"
+      }
+    }
+  },
+  "@wifiListDescription": {
+    "description": "bands",
+    "placeholders": {
+      "bands": {
+        "type": "String",
+        "example": "2.4GHz, 5GHz"
+      }
+    }
+  },
   "accountName": "Account name",
   "action": "Action",
   "add": "Add",
@@ -97,15 +306,6 @@
   "connectionTypeStatic": "Static IP",
   "connectivity": "Connectivity",
   "copyRight": "© {year} Linksys Holdings, Inc. and/or its affiliates. All rights reserved.",
-  "@copyRight": {
-    "description": "year",
-    "placeholders": {
-      "year": {
-        "type": "int",
-        "example": "2024"
-      }
-    }
-  },
   "cpuUtilization": "CPU Utilization",
   "currentIPv6ConnectionTypeIsNotAutomatic": "The current WAN IPv6 connection type is not automatic.",
   "currentVersion": "Current: {version}",
@@ -144,15 +344,6 @@
   "dhcpReservations": "DHCP Reservations",
   "dhcpServer": "DHCP Server",
   "disableBandWarning": "Disabling the {radio} band will also disable the {radio} guest access",
-  "@disableBandWarning": {
-    "description": "radio",
-    "placeholders": {
-      "radio": {
-        "type": "String",
-        "example": "radio"
-      }
-    }
-  },
   "disabled": "Disabled",
   "discardChanges": "Discard changes",
   "disconnect": "Disconnect",
@@ -182,6 +373,8 @@
   "email": "Email",
   "enabled": "Enabled",
   "endPort": "End port",
+  "endRemoteAssistance": "End Remote Assistance",
+  "endRemoteAssistanceDesc": "End remote assistance session?",
   "endUserLicenseAgreement": "End User License Agreement",
   "error": "Error",
   "errorEmailAddressNotFound": "Email address not found",
@@ -228,13 +421,13 @@
   "faqLookingFor": "Can't find what you're looking for?",
   "faqVisitLinksysSupport": "Visit Linksys Support",
   "faqs": "FAQs",
+  "featureUnavailableInRemoteMode": "This feature is unavailable in remote mode",
   "filterAnonymous": "Filter anonymous Internet requests",
   "filterIdent": "Filter ident (Port 113)",
   "filterInternetNATRedirection": "Filter Internet NAT redirection",
   "filterMulticast": "Filter multicast",
   "filteredDevices": "Filtered devices",
   "filters": "Filters",
-  "featureUnavailableInRemoteMode": "This feature is unavailable in remote mode",
   "firewall": "Firewall",
   "firmwareDownloadingMessage1": "You can use your WiFi during this update.",
   "firmwareDownloadingMessage2": "But things might be slower than usual while we improve your system.",
@@ -247,34 +440,12 @@
   "firmwareRestartingMessage3": "This takes 2-3 minutes.",
   "firmwareUpdate": "Firmware Update",
   "firmwareUpdateCountdownMessage": "Firmware just updated, the page will be refreshed in {seconds} seconds",
-  "@firmwareUpdateCountdownMessage": {
-    "description": "Message shown in a dialog after firmware update, with a countdown before page refresh.",
-    "placeholders": {
-      "seconds": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
   "firmwareUpdateDesc1": "Get the latest feature and fixed.",
   "firmwareUpdateDesc2": "Your router will restart once the update is complete. Devices will briefly go offline before reconnecting.",
   "firmwareUpdated": "Firmware updated!",
   "firmwareVersion": "Firmware version",
   "forgotPassword": "Forgot password",
   "formalDateTime": "{time} {date}",
-  "@formalDateTime": {
-    "description": "date and time",
-    "placeholders": {
-      "time": {
-        "type": "DateTime",
-        "format": "jm"
-      },
-      "date": {
-        "type": "DateTime",
-        "format": "yMMMd"
-      }
-    }
-  },
   "fortinetSecureDns": "Fortinet Secure DNS",
   "forwardedRange": "Forwarded range",
   "foundNNodesOnline": "{count, plural, other{{count} child nodes have just come online.} one{1 child node has just come online.}}",
@@ -299,6 +470,10 @@
   "hongkong": "Hong Kong",
   "hostName": "Host name",
   "hostNameCannotEmpty": "Host name can not be empty.",
+  "hostNameEndWithHyphen": "Host name cannot end with a hyphen.",
+  "hostNameInvalidCharacters": "Host name contains invalid characters: {invalidChars}. Allowed characters are letters, numbers, and hyphens.",
+  "hostNameLengthError": "Host name must be between 1 and 15 characters.",
+  "hostNameStartWithHyphen": "Host name cannot start with a hyphen.",
   "incorrectPassword": "Incorrect password",
   "incredibleWiFi": "Incredible-WiFi",
   "incredibleWiFiDesc": "Change WiFi name and password",
@@ -354,14 +529,8 @@
   "ipOrMacAddressOverlap": "IP address or MAC address overlap",
   "ipsecPassthrough": "IPSec Passthrough",
   "ipv4": "IPv4",
-  "@ipv4": {
-    "description": "Do not translate"
-  },
   "ipv4SPIFirewallProtection": "IPv4 SPI firewall protection",
   "ipv6": "IPv6",
-  "@ipv6": {
-    "description": "Do not translate"
-  },
   "ipv6Address": "IPv6 Address",
   "ipv6Automatic": "IPv6 - Automatic",
   "ipv6PortServices": "IPv6 port services",
@@ -392,6 +561,7 @@
   "localRouterRecoveryKeyLocked": "Access locked. Too many failed attempts.",
   "logIntoRouter": "Log into router",
   "login": "Log in",
+  "loginWithAccessTokenMessage": "You are log in with access token to manage {serialNumber}, do you want to proceed?",
   "logout": "Log out",
   "mac": "MAC",
   "macAddress": "MAC Address",
@@ -455,15 +625,6 @@
   "modalPnpWiFiDefaultsInfoDesc4": "To reinstate these default settings, factory reset your router.",
   "modalPnpWiFiDefaultsInfoTitle": "Personalize your WiFi name and password",
   "modalRemoveNodeDesc": "Are you sure you want to remove {node} from your mesh network?",
-  "@modalRemoveNodeDesc": {
-    "description": "Node name",
-    "placeholders": {
-      "node": {
-        "type": "String",
-        "example": "Awesome Node Name"
-      }
-    }
-  },
   "modalRouterPasswordLocation": "Your router password is the same as your default WiFi password, printed on the Quick Start Guide and on the bottom of your router.",
   "modalTroubleshootNoNodesFound": "Let's check a few things",
   "modalTroubleshootNoNodesFoundDesc1": "Make sure the Nodes you're adding are fully powered on, indicated by a solid blue light",
@@ -473,56 +634,14 @@
   "mtu": "MTU",
   "myNetwork": "My Network",
   "nAdd": "Add ({count})",
-  "@nAdd": {
-    "description": "Number of item added",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "1"
-      }
-    }
-  },
   "nDNS": "{count, plural, other{DNS 1|2|3} one{DNS 1} two{DNS 1|2}}",
-  "@nDNS": {
-    "description": "DNS label with numbers",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "1"
-      }
-    }
-  },
   "nDays": "{count, plural, one{{count} day} other{{count} days}}",
   "nDevices": "{count, plural, other{{count} devices} zero{No devices} one{1 device}}",
-  "@nDevices": {
-    "description": "Number of devices",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "1"
-      }
-    }
-  },
   "nDevicesDeleteDevicesDescription": "{count, plural, other{Devices can reappear in the list if reconnected to your WiFi network.} one{Device can reappear in the list if reconnected to your WiFi network.}}",
-  "@nDevicesDeleteDevicesDescription": {
-    "description": "alert dialog delete device description plural"
-  },
   "nDevicesDeleteDevicesTitle": "{count, plural, other{Delete devices} one{Delete device}}",
-  "@nDevicesDeleteDevicesTitle": {
-    "description": "alert dialog delete device title plural"
-  },
   "nHours": "{count, plural, one{{count} hr} other{{count} hrs}}",
   "nMinutes": "{count, plural, one{{count} min} other{{count} mins}}",
   "nReservedAddresses": "{count, plural, zero{You don't have any Reserved Address. Select devices below to start reserving.} one{{count} Reserved Address} other{{count} Reserved Addresses}}",
-  "@nReservedAddresses": {
-    "description": "number of reserved addresses",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "1"
-      }
-    }
-  },
   "nSeconds": "{count, plural, one{{count} sec} other{{count} secs}}",
   "name": "Name",
   "nat": "NAT",
@@ -555,15 +674,6 @@
   "nodeBlinkYellowDesc": "The Pair button on the router was pressed and no child nodes were detected.",
   "nodeDetailBlinkNodeLightBtn": "Blink node light",
   "nodeDetailBlinkingCounting": "({count}s) Blinking... <u>Stop</u>",
-  "@nodeDetailBlinkingCounting": {
-    "description": "Blinking count down",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "20"
-      }
-    }
-  },
   "nodeDetailsLedNightMode": "Night mode (8PM - 8AM)",
   "nodeLight": "Node light",
   "nodeName": "Node name",
@@ -578,6 +688,7 @@
   "norway": "Norway",
   "notBeEmptyAndLessThanThirtyThree": "The name must not be empty and must be less than 33 characters.",
   "notConnectedToRouter": "You are not connected to your router",
+  "notEnoughInfoToLogin": "Not enough information to login",
   "obtainIPv4AddressAutomatically": "Obtain an IPv4 address automatically (DHCP)",
   "off": "Off",
   "offline": "Offline",
@@ -655,15 +766,6 @@
   "pnpWaitingModemTitle": "Giving your modem time to contact your ISP",
   "pnpWaitingModemWaitStartUp": "Waiting for your modem to start up",
   "pnpWiFiReady": "{ssid} is ready",
-  "@pnpWiFiReady": {
-    "description": "Show set ssid",
-    "placeholders": {
-      "ssid": {
-        "type": "String",
-        "example": "MyHomeSSID"
-      }
-    }
-  },
   "pnpWiFiReadyConnectToNewWiFi": "Connect your devices to your new WiFi",
   "pnpYourNetworkDesc": "Confirm all Nodes are here",
   "pnpYourNetworkTitle": "Your network",
@@ -679,10 +781,24 @@
   "prefixLength": "Prefix length",
   "print": "Print",
   "privacyAndSecurity": "Privacy & Security",
+  "proceed": "Proceed",
   "processing": "Processing...",
   "protocol": "Protocol",
   "provider": "Provider",
   "psk": "PSK",
+  "pwaGetTheApp": "Get the App",
+  "pwaInstallButton": "INSTALL",
+  "pwaInstallDescription": "Install for a better experience",
+  "pwaIosInstallDescription": "Install this app on your iPhone for a better experience.",
+  "pwaIosInstallTitle": "Install Linksys Now",
+  "pwaIosStep1": "Tap the Share button in the browser menu bar.",
+  "pwaIosStep2": "Scroll down and tap \"Add to Home Screen\".",
+  "pwaMacInstallDescription": "Add this app to your Dock for quick access.",
+  "pwaMacInstallTitle": "Install Linksys Now",
+  "pwaMacStep1": "Click the Share button in the Safari toolbar.",
+  "pwaMacStep2": "Choose \"Add to Dock\".",
+  "quickSetup": "Quick Setup",
+  "quickSetupDescription": "Apply the same WiFi settings to all bands at once",
   "readyForSetup": "Ready for setup",
   "rebootChildTitle": "Reboot the node and all its child/s",
   "rebootOk": "Yes, Reboot All",
@@ -692,21 +808,21 @@
   "redialPeriod": "Redial period",
   "redirect": "Redirect",
   "redirectDescription": "Please connect your device to the router before proceeding to {ip}.",
-  "@redirectDescription": {
-    "description": "ip",
-    "placeholders": {
-      "ip": {
-        "type": "String",
-        "example": "192.168.1.1"
-      }
-    }
-  },
   "refresh": "Refresh",
   "releaseAndRenew": "Release & Renew",
   "releaseAndRenewIpAddress": "Release and Renew IP address",
   "releaseAndRenewIpAddressDescription": "When you release and renew your IP address, all connected devices will lose their connection to the internet. All devices will be reconnected when the process is complete.\n\nDo you want to continue?",
   "releaseReservedIp": "Release Reserved IP",
   "releaseReservedIpDescription": "Once IP reservation is released your device will obtain a different IP address upon reconnecting.",
+  "remoteAssistance": "Remote Assistance",
+  "remoteAssistanceInitiateMessage": "To take advantage of Remote Assistance, you must first contact a phone support agent. Go to <a href=\"http://www.linksys.com/support\" target=\"_blank\">linksys.com/support</a> and click on Phone Call to get started.",
+  "remoteAssistanceInvalidSession": "Invalid session. Please contact a support agent.",
+  "remoteAssistancePinCode": "Your pin code is:",
+  "remoteAssistancePinCodeExpired": "Pin code expired",
+  "remoteAssistancePinCodeExpiresIn": "Pin code expires in {time}",
+  "remoteAssistanceSessionActive": "A Linksys support agent has remote access to your Linksys Smart Wi-Fi account and your home network.",
+  "remoteAssistanceSessionExpired": "Session expired",
+  "remoteAssistanceSessionExpiresIn": "Session expires in {time}",
   "remove": "Remove",
   "removeNode": "Remove node",
   "resendCode": "Resend code",
@@ -754,6 +870,7 @@
   "selectAProvider": "Select a provider",
   "selectAll": "Select All",
   "selectDevices": "Select devices",
+  "selectEnv": "Select Environment",
   "selectFromMyDeviceList": "Select from my device list",
   "selectIcon": "Select icon",
   "selectedCombinationNotValid": "Selected IPv4/IPv6 combination is not valid. Please select",
@@ -784,19 +901,6 @@
   "specifyIPv4Address": "Specify an IPv4 address",
   "speed": "Speed",
   "speedCheckLatestTime": "As of {time} {date}",
-  "@speedCheckLatestTime": {
-    "description": "Speed check with time and date parameter",
-    "placeholders": {
-      "time": {
-        "type": "DateTime",
-        "format": "jm"
-      },
-      "date": {
-        "type": "DateTime",
-        "format": "yMMMd"
-      }
-    }
-  },
   "speedGood": "Speed: Good",
   "speedGoodDescription": "At this speed, your WiFi can stream a few HD videos simultaneously and provide fast web browsing.",
   "speedOkay": "Speed: Okay",
@@ -843,25 +947,7 @@
   "systemDynamic": "Dynamic",
   "systemStatic": "Static",
   "systemTestDateFormat": "{date}",
-  "@systemTestDateFormat": {
-    "description": "System test date format",
-    "placeholders": {
-      "date": {
-        "type": "DateTime",
-        "format": "yMd"
-      }
-    }
-  },
   "systemTestDateTime": "{time}",
-  "@systemTestDateTime": {
-    "description": "System test time format",
-    "placeholders": {
-      "time": {
-        "type": "DateTime",
-        "format": "jms"
-      }
-    }
-  },
   "taiwan": "Taiwan",
   "tcp": "TCP",
   "termsOfService": "Term of Service",
@@ -989,29 +1075,12 @@
   "welcome": "Welcome",
   "wifi": "WiFi",
   "wifiBand": "{band} Band",
-  "@wifiBand": {
-    "description": "band",
-    "placeholders": {
-      "band": {
-        "type": "String",
-        "example": "2.4GHz"
-      }
-    }
-  },
   "wifiListDescription": "Easily customize your WiFi settings, including SSID, security mode, and channel options for {bands}, and guest networks. Save changes to apply them.",
-  "@wifiListDescription": {
-    "description": "bands",
-    "placeholders": {
-      "bands": {
-        "type": "String",
-        "example": "2.4GHz, 5GHz"
-      }
-    }
-  },
   "wifiListSaveModalDesc": "Changing Wi-Fi settings will disconnect all devices, including this one, from the router. Simply reconnect the devices using the new wireless settings shown below. You may want to write them down before continuing.",
   "wifiListSaveModalTitle": "You're updating WiFi settings",
   "wifiMacFiltering": "WiFi MAC Filtering",
   "wifiMode": "WiFi Mode",
+  "wifiModeNotAvailable": "Mode change resets channel width to auto.",
   "wifiName": "WiFi name",
   "wifiPassword": "WiFi password",
   "wifiPasswordLimit": "8 - 64 characters",
@@ -1021,52 +1090,7 @@
   "wildcard": "Wildcard",
   "wins": "WINS",
   "wired": "Wired",
-  "wireless": "Wireless",
   "wiredPairComplete": "Pairing is complete. The child node has been successfully paired with the parent node using a wired connection.",
   "wiredPairCompleteNotFound": "No connected child node was found. Please make sure your child node is powered on and properly connected to the parent node via an Ethernet cable and try again.",
-  "remoteAssistance": "Remote Assistance",
-  "remoteAssistancePinCode": "Your pin code is:",
-  "remoteAssistanceInvalidSession": "Invalid session. Please contact a support agent.",
-  "remoteAssistanceSessionActive": "A Linksys support agent has remote access to your Linksys Smart Wi-Fi account and your home network.",
-  "remoteAssistancePinCodeExpiresIn": "Pin code expires in {time}",
-  "@remoteAssistancePinCodeExpiresIn": {
-    "description": "time",
-    "placeholders": {
-      "time": {
-        "type": "String",
-        "example": "10:00"
-      }
-    }
-  },
-  "remoteAssistancePinCodeExpired": "Pin code expired",
-  "remoteAssistanceSessionExpiresIn": "Session expires in {time}",
-  "@remoteAssistanceSessionExpiresIn": {
-    "description": "time",
-    "placeholders": {
-      "time": {
-        "type": "String",
-        "example": "10:00"
-      }
-    }
-  },
-  "remoteAssistanceSessionExpired": "Session expired",
-  "remoteAssistanceInitiateMessage": "To take advantage of Remote Assistance, you must first contact a phone support agent. Go to <a href=\"http://www.linksys.com/support\" target=\"_blank\">linksys.com/support</a> and click on Phone Call to get started.",
-  "selectEnv": "Select Environment",
-  "proceed": "Proceed",
-  "loginWithAccessTokenMessage": "You are log in with access token to manage {serialNumber}, do you want to proceed?",
-  "@loginWithAccessTokenMessage": {
-    "description": "Message shown when logging in with access token",
-    "placeholders": {
-      "serialNumber": {
-        "type": "String",
-        "example": "SN12345"
-      }
-    }
-  },
-  "notEnoughInfoToLogin": "Not enough information to login",
-  "endRemoteAssistance": "End Remote Assistance",
-  "endRemoteAssistanceDesc": "End remote assistance session?",
-  "wifiModeNotAvailable": "Mode change resets channel width to auto.",
-  "quickSetup": "Quick Setup",
-  "quickSetupDescription": "Apply the same WiFi settings to all bands at once"
+  "wireless": "Wireless"
 }

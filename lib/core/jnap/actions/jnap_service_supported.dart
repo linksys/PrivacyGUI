@@ -5,7 +5,6 @@ import 'package:privacy_gui/di.dart';
 final serviceHelper = getIt<ServiceHelper>();
 
 class ServiceHelper {
-
   bool isSupportVPN([List<String>? services]) =>
       isServiceSupport(JNAPService.vpn, services);
 
@@ -23,6 +22,9 @@ class ServiceHelper {
 
   bool isSupportHealthCheck([List<String>? services]) =>
       isServiceSupport(JNAPService.healthCheckManager, services);
+
+  bool isSupportHealthCheckManager2([List<String>? services]) =>
+      isServiceSupport(JNAPService.healthCheckManager2, services);
 
   bool isSupportProduct([List<String>? services]) =>
       isServiceSupport(JNAPService.product, services);

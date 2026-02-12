@@ -9,6 +9,8 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/providers/brand_asset_provider.dart';
+import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
@@ -49,9 +51,10 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
         isRemote ? ref.watch(remoteClientProvider).sessionInfo : null;
     final expiredCountdown =
         isRemote ? ref.watch(remoteClientProvider).expiredCountdown : null;
-    final brandLogoPath = Theme.of(context).brightness == Brightness.dark
-        ? 'assets/brand/brand_logo_dark'
-        : 'assets/brand/brand_logo';
+
+    // Get model number from global state
+    final modelNumber = ref.watch(globalModelNumberProvider);
+    
     return SafeArea(
       bottom: false,
       child: GestureDetector(
@@ -74,24 +77,28 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
             children: [
               Row(
                 children: [
-                  FutureBuilder<String?>(
-                    future: BrandUtils.resolveAsset(brandLogoPath),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data != null) {
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              snapshot.data!,
-                              height: 48,
-                            ),
-                            AppGap.small2(),
-                          ],
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
+                  ref
+                      .watch(brandAssetProvider(
+                          (modelNumber: modelNumber, asset: BrandAsset.logo)))
+                      .when(
+                        data: (path) {
+                          if (path != null) {
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  path,
+                                  height: 48,
+                                ),
+                                AppGap.small2(),
+                              ],
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
                   AppText.titleLarge(loc(context).appTitle,
                       color: Color(neutralTonal.get(100))),
                 ],

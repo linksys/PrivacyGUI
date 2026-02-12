@@ -87,6 +87,7 @@ enum JNAPAction {
   // healthCheckManager
   clearHealthCheckHistory,
   getHealthCheckResults,
+  getCloseHealthCheckServers,
   getHealthCheckStatus,
   getSupportedHealthCheckModules,
   runHealthCheck,
@@ -151,7 +152,7 @@ enum JNAPAction {
   renewDHCPIPv6WANLease,
   getEthernetPortConnections,
   getExpressForwardingSettings,
-  setExpressForwardingSettings, 
+  setExpressForwardingSettings,
   getWANExternal,
   // routerManagement
   getManagementSettings,
@@ -229,7 +230,7 @@ enum JNAPAction {
   getSelectedChannels,
   startAutoChannelSelection,
   ;
-  
+
   String get actionValue {
     return _betterActionMap[this]!;
   }
