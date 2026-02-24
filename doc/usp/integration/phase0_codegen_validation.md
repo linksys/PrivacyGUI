@@ -3,6 +3,7 @@
 **日期:** 2026-02-24
 **分支:** `doc/usp-integration-assessment`
 **狀態:** 完成 — codegen 管線已端對端驗證
+**Codegen 版本:** v2（更新後重新測試）
 
 ---
 
@@ -14,7 +15,7 @@
 
 ## 2. 正確的 YAML 格式
 
-經過多次迭代與範例測試，確認**可運作的格式**如下：
+經過多版工具迭代與範例測試，確認**完整可運作的格式**如下：
 
 ```yaml
 name: feature_name           # snake_case → 生成 PascalCase class name
@@ -23,43 +24,44 @@ schema_version: 1.0.0
 description: "人類可讀描述"
 
 parameters:
-  - field_name: field_name   # snake_case → 生成 camelCase getter/setter
+  - field_name: field_name   # snake_case → 生成 camelCase getter/setter（建議提供）
     path: Device.Full.Path   # 完整絕對 TR-181 路徑
     type: string             # string | int | boolean | double
     writable: false          # true → 生成 setXxx() 方法
     description: "生成為 /// doc comment"
 
-# 可選：transforms (object 格式，不是 array)
+# 可選：presets（array 格式）→ 生成 enum + applyPreset()
+presets:
+  - name: PresetName
+    description: "..."
+    values:
+      ParamPath: "value"
+
+# 可選：transforms（object 格式）→ 目前接受但不生成程式碼
 transforms:
   transform_name:
-    description: "..."
     type: formula|mapping
     ...
-
-# 可選：presets (object 格式，不是 array)
-presets:
-  preset_name:
-    description: "..."
-    values: {...}
 ```
 
 ### YAML Schema 欄位行為對照表
 
 | 欄位 | 行為 | 重要度 |
 |------|------|--------|
-| `name` | snake_case → PascalCase class name (`system_info` → `SystemInfo`) | 必要 |
-| `field_name` | **必須提供**。snake_case → camelCase getter (`model_name` → `getModelName()`) + setter (`setModelName()`)。缺少此欄位會導致所有 getter 命名為 `get()`，無法編譯 | **關鍵** |
+| `name` | snake_case → PascalCase class name（`system_info` → `SystemInfo`） | 必要 |
+| `field_name` | snake_case → camelCase getter（`model_name` → `getModelName()`）。**建議提供**以獲得更好的命名控制。若省略，工具從 `path` 最後一段推導方法名 | 建議 |
+| `path`（無 `field_name` 時） | 從路徑最後一段生成方法名（`Manufacturer` → `getManufacturer()`）。v2 已修正，不再全部命名為 `get()` | 可用 |
 | `path` | 必須為**完整絕對 TR-181 路徑**（如 `Device.DeviceInfo.Manufacturer`） | 必要 |
 | `base_path` | **不要使用** — 工具不會將其加到相對路徑前面，導致發送不完整路徑 | 避免 |
-| `type` (parameter) | `string` → `String`；`int` → `int`（含 `int.parse()`）；`boolean` → `bool`（含 `== true`） | 必要 |
-| `writable: true` | **有效！** 搭配 `field_name` 時會生成 `setXxx()` 方法 | 重要 |
+| `type`（parameter） | `string` → `String`；`int` → `int`（含 `int.parse()`）；`boolean` → `bool`（含 `== true`） | 必要 |
+| `writable: true` | **有效！** 生成 `setXxx()` 方法 | 重要 |
 | `writable: false` | 僅生成 `getXxx()` 方法 | 預設行為 |
 | `access` | 被識別但**不產生** setter，即使設為 `read-write`。應使用 `writable` 替代 | 已棄用 |
-| `description` (parameter) | 正確轉為 `///` doc comment | 建議 |
-| `transforms` (object) | 接受且不報錯，但**目前不生成計算屬性程式碼** | 預留 |
-| `transforms` (array) | 驗證錯誤：`must be an object` | 不支援 |
-| `presets` (object) | 接受且不報錯，但**目前不生成 preset 程式碼** | 預留 |
-| `presets` (array) | 驗證錯誤：`must be an object` | 不支援 |
+| `description`（parameter） | 正確轉為 `///` doc comment | 建議 |
+| `presets`（array） | ✅ **完整生成** `enum Preset` + `applyPreset()` 方法 | 可用 |
+| `presets`（object） | ❌ 驗證錯誤：`must be an array` | 不支援 |
+| `transforms`（object） | 接受且不報錯，但**目前不生成計算屬性程式碼** | 預留 |
+| `transforms`（array） | ❌ 驗證錯誤：`must be an object` | 不支援 |
 | `category` | 不識別（warning: `Unknown field`） | 忽略 |
 | `validation` | 靜默接受，不生成驗證程式碼 | 忽略 |
 | `version` / `schema_version` | 接受，無可見效果 | 建議 |
@@ -121,19 +123,49 @@ class DnsSettings {
 }
 ```
 
+**Presets 定義（array 格式）：**
+
+```dart
+/// Available presets
+enum Preset {
+  google,
+  cloudflare,
+}
+
+class DnsSettings {
+  // ... getters + setters ...
+
+  /// Apply a preset configuration via USP Set message
+  Future<void> applyPreset(Preset preset) async {
+    final params = <String, dynamic>{};
+    switch (preset) {
+      case Preset.google:
+        params['PreferredServer'] = '8.8.8.8';
+        params['AlternateServer'] = '8.8.4.4';
+        break;
+      case Preset.cloudflare:
+        params['PreferredServer'] = '1.1.1.1';
+        params['AlternateServer'] = '1.0.0.1';
+        break;
+    }
+    await _client.set(params);
+  }
+}
+```
+
 ### 4.2 生成程式碼 vs. CODEGEN_GUIDE 規格
 
 | 功能 | CODEGEN_GUIDE 描述 | 實際生成結果 | 差距 |
 |------|-------------------|-------------|------|
-| Fetch 模式 | `SystemInfo.fetch(client)` 靜態方法 → 回傳 typed data class | `SystemInfo(client).fetchAll()` 實例方法 → `Map<String, dynamic>` | 顯著 |
+| Fetch 模式 | `SystemInfo.fetch(client)` 靜態方法 → typed data class | `SystemInfo(client).fetchAll()` 實例方法 → `Map<String, dynamic>` | 顯著 |
 | 型別資料類別 | `info.manufacturer` 屬性存取 | 無資料類別；獨立 `getManufacturer()` 方法 | 顯著 |
-| **寫入操作** | `wifi.save(client)` 批次寫入 | **`setXxx(value)` 個別寫入** ✓ | 形式不同但可用 |
+| **寫入操作** | `wifi.save(client)` 批次寫入 | **`setXxx(value)` 個別寫入** ✅ | 形式不同但可用 |
+| **Presets** | `applyPreset()` 方法 | **`enum Preset` + `applyPreset()` 完整生成** ✅ | 匹配 |
 | `subscribe()` | 回傳 typed stream | 未生成 | 重大 |
 | `add()` / `delete()` | 多實例操作 | 未生成 | 重大 |
-| Transforms | `_ext.yaml` 計算屬性 | Object 格式接受但不生成程式碼；`_ext.yaml` 分離檔案不支援 | 重大 |
-| Presets | `applyPreset()` 方法 | Object 格式接受但不生成程式碼 | 重大 |
-| Boolean 型別 | typed bool | ✓ `params['path'] == true` | 正確 |
-| Int 型別 | typed int | ✓ `int.parse(params['path'] as String)` | 正確 |
+| Transforms | 計算屬性 getter | 接受 schema 但不生成程式碼 | 重大 |
+| Boolean 型別 | typed bool | ✅ `params['path'] == true` | 正確 |
+| Int 型別 | typed int | ✅ `int.parse(params['path'] as String)` | 正確 |
 
 ### 4.3 Client 介面相容性
 
@@ -147,6 +179,19 @@ class DnsSettings {
 | `params['path'] == true` | `_coerceValue()` 回傳 bool | ✓ |
 | `int.parse(...)` | 值為字串形式的數字 | ✓ |
 
+### 4.4 已知的潛在問題
+
+**Preset 路徑問題：** `applyPreset()` 中使用的 key 來自 YAML `values` 區段的原始值（如 `PreferredServer`），而非完整 TR-181 路徑（如 `Device.DNS.Client.PreferredServer`）。若 `UspService.set()` 需要完整路徑，則 YAML 的 `values` 區段需寫完整路徑：
+
+```yaml
+# 建議寫法（使用完整路徑）：
+presets:
+  - name: Google
+    values:
+      Device.DNS.Client.PreferredServer: "8.8.8.8"
+      Device.DNS.Client.AlternateServer: "8.8.4.4"
+```
+
 ---
 
 ## 5. 編譯結果
@@ -159,36 +204,45 @@ class DnsSettings {
 
 ---
 
-## 6. 範例檔案格式問題
+## 6. 範例檔案測試結果（Codegen v2）
 
-`doc/usp/codegen_example/` 中的範例使用了較舊的 schema 格式，與工具實際行為不一致：
+### 6.1 範例檔案（`doc/usp/codegen_example/`）
 
-| 範例使用的格式 | 問題 | 正確格式 |
-|---------------|------|---------|
-| `path: Manufacturer` + `access: read-only` | 所有 getter 命名為 `get()`，無法編譯。`access` 不生成 setter | `field_name: manufacturer` + `writable: false` |
-| `base_path: Device.DeviceInfo` + 相對 `path` | `base_path` 不會前綴，路徑不完整 | 使用完整絕對路徑 |
-| `transforms:` (array 格式) | 驗證錯誤 `must be an object` | 使用 object 格式 |
-| `presets:` (array 格式) | 驗證錯誤 `must be an object` | 使用 object 格式 |
-| `_ext.yaml` 分離檔案 | 被當作普通定義檔，缺少必要欄位 | 嵌入主定義檔中（object 格式） |
-| `category: core` | 不識別（warning） | 省略 |
+| 範例檔案 | codegen 結果 | 生成程式碼品質 |
+|---------|------------|--------------|
+| `example_readonly.yaml` | ✅ 生成 | ✅ getter 從 `path` 推導命名（v2 修正） |
+| `example_writable.yaml` | ✅ 生成 | ⚠️ getter 正確，但 `access: read-write` 不生成 setter |
+| `example_transform.yaml` | ✅ 生成 | ⚠️ getter 正確，transform 不在此檔中 |
+| `example_transform_ext.yaml` | ❌ 失敗 | N/A（`_ext.yaml` 不支援） |
+| `example_presets.yaml` | ✅ **生成** | ✅ **完整 enum + applyPreset()** |
 
-### 範例 vs 實際測試對照
+### 6.2 v1 → v2 改進對照
 
-| 範例檔案 | codegen 結果 | 生成程式碼可編譯？ |
-|---------|------------|-----------------|
-| `example_readonly.yaml` | 生成 ✓ | ✗ 所有 getter 同名 `get()` |
-| `example_writable.yaml` | 生成 ✓ | ✗ 同上 + 無 setter |
-| `example_transform.yaml` | 生成 ✓ | ✗ 同上 |
-| `example_transform_ext.yaml` | **失敗** | N/A |
-| `example_presets.yaml` | **失敗** | N/A |
+| 功能 | v1 (舊版) | v2 (更新版) |
+|------|----------|-----------|
+| `path` 推導方法名 | ❌ 全部叫 `get()` | ✅ 從路徑推導（`getManufacturer()`） |
+| `presets`（array） | ❌ 驗證錯誤 | ✅ **完整生成** enum + applyPreset() |
+| `presets`（object） | ✅ 接受（不生成） | ❌ 驗證錯誤（格式反轉） |
+| `transforms`（object） | 接受（不生成） | 接受（不生成）— 無變化 |
+| `_ext.yaml` 分離 | ❌ 不支援 | ❌ 仍不支援 |
+| `writable: true` setter | ✅ 有效 | ✅ 有效 — 無變化 |
+| `access: read-write` setter | ❌ 無效 | ❌ 仍無效 |
+
+### 6.3 範例格式建議
+
+範例檔案大部分已可用。建議修正：
+
+| 修正項目 | 目前範例格式 | 建議修正 |
+|---------|-----------|---------|
+| 存取控制 | `access: read-write` | 加上 `writable: true` 以確保 setter 生成 |
+| 路徑格式 | `base_path` + 相對 `path` | 使用完整絕對路徑（或等 `base_path` 修復） |
+| `_ext.yaml` | 獨立分離檔案 | 嵌入主定義檔（object 格式） |
 
 ---
 
-## 7. Transform 與 Preset 支援狀態
+## 7. Transform 支援狀態
 
-### Transform
-
-`transforms` 以 **object 格式** 嵌入主定義檔時，工具接受不報錯，但**不生成對應程式碼**。這表示 transform 功能的 schema 驗證已實作，但程式碼生成尚未完成。
+`transforms` 以 **object 格式** 嵌入主定義檔時，工具接受不報錯，但**不生成對應的計算屬性程式碼**。
 
 ```yaml
 # 接受的格式（不生成程式碼）：
@@ -199,16 +253,7 @@ transforms:
     formula: "(testBytesReceived * 8) / (testDuration * 1000)"
     inputs: [test_bytes_received, test_duration]
     output_type: double
-
-# 不接受的格式（驗證失敗）：
-transforms:
-  - name: throughputMbps    # ← array 格式會報錯
-    ...
 ```
-
-### Preset
-
-同理，`presets` 以 object 格式嵌入時接受但不生成程式碼。
 
 ### `_ext.yaml` 分離檔案
 
@@ -229,6 +274,8 @@ transforms:
 | 5 | 遞迴目錄掃描 | ✅ 支援子目錄結構 |
 | 6 | **讀取操作** (`getXxx()`) | ✅ 每個 parameter 一個 getter |
 | 7 | **寫入操作** (`setXxx()`) | ✅ `writable: true` 生成 setter |
+| 8 | **Presets** | ✅ array 格式生成 `enum` + `applyPreset()` |
+| 9 | **`path` 推導命名** | ✅ 省略 `field_name` 時從路徑推導 getter 名 |
 
 ### 尚需增強的功能（Codegen 工具端）
 
@@ -236,12 +283,11 @@ transforms:
 |---|------|---------|------|
 | 1 | `base_path` 路徑前綴 | 不組合 | 須用完整路徑（已有 workaround） |
 | 2 | Transform 程式碼生成 | Schema 接受但不生成 | 計算屬性需手動實作 |
-| 3 | Preset 程式碼生成 | Schema 接受但不生成 | 預設組合需手動實作 |
-| 4 | `_ext.yaml` 配對機制 | 不支援 | Transform 須嵌入主檔 |
-| 5 | `subscribe()` 訂閱 | 未實作 | 即時更新需手動實作 |
-| 6 | `add()` / `delete()` 多實例 | 未實作 | 動態物件管理需手動實作 |
-| 7 | 強型別資料類別 | 僅生成 getter/setter | 無 data class pattern |
-| 8 | 靜態 `fetch()` 方法 | 未實作 | 使用實例模式替代 |
+| 3 | `_ext.yaml` 配對機制 | 不支援 | Transform 須嵌入主檔 |
+| 4 | `subscribe()` 訂閱 | 未實作 | 即時更新需手動實作 |
+| 5 | `add()` / `delete()` 多實例 | 未實作 | 動態物件管理需手動實作 |
+| 6 | 強型別資料類別 | 僅生成 getter/setter | 無 data class pattern |
+| 7 | 靜態 `fetch()` 方法 | 未實作 | 使用實例模式替代 |
 
 ### 建議的 YAML 慣例
 
@@ -252,13 +298,20 @@ schema_version: 1.0.0
 description: "..."
 
 parameters:
-  - field_name: field_name   # snake_case → camelCase getter/setter
+  - field_name: field_name   # 建議提供，以獲得更好的命名控制
     path: Device.Full.Path   # 完整絕對 TR-181 路徑
     type: string|int|boolean
     writable: true|false     # true 會生成 setXxx()
     description: "..."
 
-# 預留（未來 codegen 增強後可生效）
+# Presets（array 格式 — 完整生成 enum + applyPreset）
+presets:
+  - name: PresetName
+    description: "..."
+    values:
+      Device.Full.Path: "value"   # 建議使用完整路徑
+
+# Transforms（object 格式 — 目前預留，未來 codegen 增強後生效）
 transforms:
   name:
     type: formula|mapping
@@ -273,23 +326,9 @@ transforms:
 | Client 介面相容性 | ✅ 就緒 |
 | 讀取操作 (`getXxx()`) | ✅ 就緒 |
 | 寫入操作 (`setXxx()`) | ✅ 就緒 |
+| Presets (`applyPreset()`) | ✅ 就緒 |
 | 訂閱 (`subscribe()`) | ❌ 未就緒 |
 | Transform 計算屬性 | ❌ 未就緒（schema 預留） |
 | 多實例定義 | ⚠️ 未測試 |
 
-**結論：** 專案可以用完整的讀寫定義檔推進 Phase 2（MIL-1 至 MIL-2 範圍）。訂閱與 Transform 需要 codegen 工具升級或手動 wrapper。
-
----
-
-## 附錄：範例檔案格式修正建議
-
-`doc/usp/codegen_example/` 中的範例需更新為可運作的格式：
-
-| 修正項目 | 舊格式 | 新格式 |
-|---------|--------|--------|
-| 欄位識別 | `path: Manufacturer` | `field_name: manufacturer` + `path: Device.DeviceInfo.Manufacturer` |
-| 存取控制 | `access: read-write` | `writable: true` |
-| 路徑格式 | `base_path` + 相對路徑 | 完整絕對路徑 |
-| Transforms | array 格式 | object 格式 |
-| Presets | array 格式 | object 格式 |
-| 分離 `_ext.yaml` | 獨立檔案 | 嵌入主定義檔 |
+**結論：** 專案可以用完整的讀寫定義檔（含 presets）推進 Phase 2。訂閱與 Transform 需要 codegen 工具升級或手動 wrapper。
