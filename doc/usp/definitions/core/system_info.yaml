@@ -1,0 +1,59 @@
+name: system_info
+version: 1.0.0
+schema_version: 1.0.0
+description: System and device identification
+
+parameters:
+  - field_name: manufacturer
+    path: Device.DeviceInfo.Manufacturer
+    type: string
+    writable: false
+    description: Device manufacturer name
+
+  - field_name: model_name
+    path: Device.DeviceInfo.ModelName
+    type: string
+    writable: false
+    description: Device model name
+
+  - field_name: serial_number
+    path: Device.DeviceInfo.SerialNumber
+    type: string
+    writable: false
+    description: Device serial number
+
+  - field_name: hardware_version
+    path: Device.DeviceInfo.HardwareVersion
+    type: string
+    writable: false
+    description: Hardware version string
+
+  - field_name: software_version
+    path: Device.DeviceInfo.SoftwareVersion
+    type: string
+    writable: false
+    description: Current firmware/software version
+
+  - field_name: uptime
+    path: Device.DeviceInfo.UpTime
+    type: int
+    writable: false
+    description: Device uptime in seconds
+
+  - field_name: total_memory
+    path: Device.DeviceInfo.MemoryStatus.Total
+    type: int
+    writable: false
+    description: Total memory in KB
+
+  - field_name: free_memory
+    path: Device.DeviceInfo.MemoryStatus.Free
+    type: int
+    writable: false
+    description: Free memory in KB
+
+  - field_name: cpu_usage
+    path: Device.DeviceInfo.ProcessStatus.CPUUsage
+    type: int
+    writable: false
+    description: CPU usage percentage (0-100)
