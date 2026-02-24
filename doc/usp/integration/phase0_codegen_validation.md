@@ -160,8 +160,9 @@ class DnsSettings {
 | **寫入操作** | `wifi.save(client)` 批次寫入 | **`setXxx(value)` 個別寫入** ✅ | 形式不同但可用 |
 | **Presets** | `applyPreset()` 方法 | **`enum Preset` + `applyPreset()` 完整生成** ✅ | 匹配 |
 | **Transforms** | 計算屬性 getter | **`_transforms.yaml` 分離檔完整生成** formula + mapping ✅ | 匹配 |
-| `subscribe()` | 回傳 typed stream | 未生成 | 重大 |
-| `add()` / `delete()` | 多實例操作 | 未生成 | 重大 |
+| `subscribe()` | 回傳 typed stream | 未生成（⏳ 延後） | Dart/JS 端均未實作 |
+| `add()` / `delete()` | 多實例操作 | Codegen 未生成，但 **Dart API 已就緒** | UI 可直接呼叫 `UspService` |
+| `operate()` | 執行 USP 命令 | Codegen 未生成，但 **Dart API 已就緒** | 同上 |
 | Boolean 型別 | typed bool | ✅ `params['path'] == true` | 正確 |
 | Int 型別 | typed int | ✅ `int.parse(params['path'] as String)` | 正確 |
 
@@ -177,7 +178,27 @@ class DnsSettings {
 | `params['path'] == true` | `_coerceValue()` 回傳 bool | ✓ |
 | `int.parse(...)` | 值為字串形式的數字 | ✓ |
 
-### 4.4 已知的潛在問題
+### 4.4 UspService 完整 API 清單
+
+`UspService`（`lib/usp/services/usp_service.dart`）已實作所有 USP CRUD + Operate 操作，底層經由 `UspClientWeb`（JS interop）→ WASM → 路由器通訊。
+
+| 操作類型 | 方法簽名 | 用途 | Codegen 支援 |
+|---------|---------|------|-------------|
+| **Get** | `get(List<String>) → Future<Map<String, dynamic>>` | 批次讀取參數 | ✅ 生成 `getXxx()` |
+| **Get** | `getSingle(String) → Future<String?>` | 單一參數讀取 | — Legacy |
+| **Set** | `set(Map<String, dynamic>)` | 批次設定參數 | ✅ 生成 `setXxx()` |
+| **Set** | `setSingle(String, String)` | 單一參數設定 | — Legacy |
+| **Add** | `add(String objectPath, Map<String, String> parameters) → Future<String>` | 新增物件實例（回傳建立的實例路徑） | ❌ 需手動或未來 codegen |
+| **Add** | `addMultiple(List<Map<String, dynamic>>, {allowPartial}) → Future<List<String>>` | 批次新增物件實例 | ❌ 同上 |
+| **Delete** | `delete(String path)` | 刪除物件實例 | ❌ 需手動或未來 codegen |
+| **Delete** | `deleteMultiple(List<String>, {allowPartial})` | 批次刪除物件實例 | ❌ 同上 |
+| **Operate** | `operate(String command, {Map<String, String> args}) → Future<Map<String, String>>` | 執行 USP Operate 命令（如 Ping、Reboot） | ❌ 需手動或未來 codegen |
+| **Auth** | `login(String password)` / `logout()` / `refreshToken()` | 認證管理 | — 不需 codegen |
+| **Subscribe** | — | 即時參數變更通知 | ⏳ 延後（Dart 與 JS 端均未實作） |
+
+> **附註：** `add`/`delete`/`operate` 的 Dart 介面與 JS interop 層已完整實作並通過 `dart analyze`。Codegen 目前不會自動生成呼叫這些 API 的程式碼，但 UI 層可直接透過 `UspService` 手動呼叫。
+
+### 4.5 已知的潛在問題
 
 **Preset 路徑問題：** `applyPreset()` 中使用的 key 來自 YAML `values` 區段的原始值（如 `PreferredServer`），而非完整 TR-181 路徑（如 `Device.DNS.Client.PreferredServer`）。若 `UspService.set()` 需要完整路徑，則 YAML 的 `values` 區段需寫完整路徑：
 
@@ -323,23 +344,26 @@ Future<String> getDiagnosticsStateDisplay() async {
 | 1 | YAML → Dart codegen 管線 | ✅ 完整可用 |
 | 2 | `UspService` 介面相容性（get + set） | ✅ 完全相容 |
 | 3 | `string` / `int` / `boolean` 型別轉換 | ✅ 正確生成 |
-| 4 | `--dart-import` 自訂 import 路徑 | ✅ 正確運作 |
+| 4 | `--dart-import` 自訂 import 路徑 | ✅ 正確運作（`package:privacy_gui/usp/services/usp_service.dart`） |
 | 5 | 遞迴目錄掃描 | ✅ 支援子目錄結構 |
 | 6 | **讀取操作** (`getXxx()`) | ✅ 每個 parameter 一個 getter |
 | 7 | **寫入操作** (`setXxx()`) | ✅ `writable: true` 生成 setter |
 | 8 | **Presets** | ✅ array 格式生成 `enum` + `applyPreset()` |
 | 9 | **Transforms**（`_transforms.yaml`） | ✅ formula → 計算 getter；mapping → switch/case |
 | 10 | **`path` 推導命名** | ✅ 省略 `field_name` 時從路徑推導 getter 名 |
+| 11 | **Add/Delete API**（`UspService`） | ✅ Dart + JS interop 完整實作（`add`, `addMultiple`, `delete`, `deleteMultiple`） |
+| 12 | **Operate API**（`UspService`） | ✅ Dart + JS interop 完整實作（`operate`） |
 
 ### 尚需增強的功能（Codegen 工具端）
 
 | # | 功能 | 目前狀態 | 影響 |
 |---|------|---------|------|
 | 1 | `base_path` 路徑前綴 | 不組合 | 須用完整路徑（已有 workaround） |
-| 2 | `subscribe()` 訂閱 | 未實作 | 即時更新需手動實作 |
-| 3 | `add()` / `delete()` 多實例 | 未實作 | 動態物件管理需手動實作 |
-| 4 | 強型別資料類別 | 僅生成 getter/setter | 無 data class pattern |
-| 5 | 靜態 `fetch()` 方法 | 未實作 | 使用實例模式替代 |
+| 2 | `subscribe()` 訂閱 | ⏳ 延後 | Dart/JS 端均未實作；待需求明確後再加入 |
+| 3 | `add()` / `delete()` 多實例 codegen | Codegen 未生成 | **Dart API 已就緒**（`UspService.add/delete`）；UI 可直接呼叫，codegen 自動生成待未來版本 |
+| 4 | `operate()` 命令 codegen | Codegen 未生成 | **Dart API 已就緒**（`UspService.operate`）；同上 |
+| 5 | 強型別資料類別 | 僅生成 getter/setter | 無 data class pattern |
+| 6 | 靜態 `fetch()` 方法 | 未實作 | 使用實例模式替代 |
 
 ### 建議的 YAML 慣例
 
@@ -370,15 +394,17 @@ presets:
 
 ### Phase 1 就緒度評估
 
-| 需求 | 狀態 |
-|------|------|
-| YAML → Dart codegen 管線 | ✅ 就緒 |
-| Client 介面相容性 | ✅ 就緒 |
-| 讀取操作 (`getXxx()`) | ✅ 就緒 |
-| 寫入操作 (`setXxx()`) | ✅ 就緒 |
-| Presets (`applyPreset()`) | ✅ 就緒 |
-| Transforms（`_transforms.yaml`） | ✅ 就緒（formula + mapping） |
-| 訂閱 (`subscribe()`) | ❌ 未就緒 |
-| 多實例定義 | ⚠️ 未測試 |
+| 需求 | 狀態 | 備註 |
+|------|------|------|
+| YAML → Dart codegen 管線 | ✅ 就緒 | |
+| Client 介面相容性 | ✅ 就緒 | |
+| 讀取操作 (`getXxx()`) | ✅ 就緒 | Codegen 自動生成 |
+| 寫入操作 (`setXxx()`) | ✅ 就緒 | Codegen 自動生成（`writable: true`） |
+| Presets (`applyPreset()`) | ✅ 就緒 | Codegen 自動生成（array 格式） |
+| Transforms（`_transforms.yaml`） | ✅ 就緒 | formula + mapping 完整生成 |
+| 新增/刪除物件實例 (`add`/`delete`) | ✅ Dart API 就緒 | `UspService` 已實作；Codegen 不自動生成，UI 層可直接呼叫 |
+| USP Operate 命令 (`operate`) | ✅ Dart API 就緒 | 同上 |
+| 訂閱 (`subscribe()`) | ⏳ 延後 | Dart 與 JS 端均未實作；依需求排入未來迭代 |
+| `--dart-import` 路徑 | ✅ 確認 | `package:privacy_gui/usp/services/usp_service.dart` |
 
-**結論：** 專案可以用完整的讀寫定義檔（含 presets + transforms）推進 Phase 2。僅 `subscribe()` 和多實例操作需要 codegen 工具升級或手動 wrapper。
+**結論：** 專案可以用完整的讀寫定義檔（含 presets + transforms）推進 Phase 2。`add`/`delete`/`operate` 的 Dart API 已完整就緒，UI 層可直接使用。`subscribe()` 延後處理，待需求明確後納入。
