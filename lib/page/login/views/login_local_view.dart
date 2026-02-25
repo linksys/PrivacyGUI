@@ -125,10 +125,15 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
           error.result == errorPasswordCheckDelayed) {
         // Do not re-assign the error data while the timer is still running
         if (!_isTimerRunning()) {
-          final errorContent =
-              jsonDecode(error.error!) as Map<String, dynamic>?;
-          _delayTime = errorContent?['delayTimeRemaining'] as int?;
-          _remainingAttempts = errorContent?['attemptsRemaining'] as int?;
+          try {
+            final errorContent =
+                jsonDecode(error.error ?? '{}') as Map<String, dynamic>?;
+            _delayTime = errorContent?['delayTimeRemaining'] as int?;
+            _remainingAttempts = errorContent?['attemptsRemaining'] as int?;
+          } catch (_) {
+            _delayTime = null;
+            _remainingAttempts = null;
+          }
           if (_delayTime != null) {
             // Trigger the timer as long as there is delay time
             _errorMessage = getCountdownPrompt(errorResult: error.result);

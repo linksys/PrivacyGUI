@@ -12,7 +12,6 @@ import 'package:privacy_gui/utils.dart';
 
 enum LocalNetworkErrorPrompt {
   hostName,
-  hostNameInvalid,
   startIpAddress,
   startIpAddressRange,
   ipAddress,
@@ -22,7 +21,11 @@ enum LocalNetworkErrorPrompt {
   dns1,
   dns2,
   dns3,
-  wins;
+  wins,
+  hostNameStartWithHyphen,
+  hostNameEndWithHyphen,
+  hostNameInvalidCharacters,
+  hostNameLengthError;
 
   static LocalNetworkErrorPrompt? resolve(String? error) {
     return LocalNetworkErrorPrompt.values
@@ -33,7 +36,8 @@ enum LocalNetworkErrorPrompt {
       {required BuildContext context,
       LocalNetworkErrorPrompt? error,
       String? ipAddress,
-      String? subnetMask}) {
+      String? subnetMask,
+      String? invalidChars}) {
     if (error == null) {
       return null;
     }
@@ -52,7 +56,14 @@ enum LocalNetworkErrorPrompt {
       LocalNetworkErrorPrompt.dns3 => loc(context).invalidIpAddress,
       LocalNetworkErrorPrompt.wins => loc(context).invalidIpAddress,
       LocalNetworkErrorPrompt.hostName => loc(context).hostNameCannotEmpty,
-      LocalNetworkErrorPrompt.hostNameInvalid => loc(context).invalidHostname,
+      LocalNetworkErrorPrompt.hostNameStartWithHyphen =>
+        loc(context).hostNameStartWithHyphen,
+      LocalNetworkErrorPrompt.hostNameEndWithHyphen =>
+        loc(context).hostNameEndWithHyphen,
+      LocalNetworkErrorPrompt.hostNameInvalidCharacters =>
+        loc(context).hostNameInvalidCharacters(invalidChars ?? ''),
+      LocalNetworkErrorPrompt.hostNameLengthError =>
+        loc(context).hostNameLengthError,
     };
   }
 
@@ -206,6 +217,7 @@ class LocalNetworkStatus extends Equatable {
   final bool hasErrorOnHostNameTab;
   final bool hasErrorOnIPAddressTab;
   final bool hasErrorOnDhcpServerTab;
+  final String? hostNameInvalidChars;
 
   const LocalNetworkStatus({
     required this.maxUserLimit,
@@ -218,6 +230,7 @@ class LocalNetworkStatus extends Equatable {
     this.hasErrorOnHostNameTab = false,
     this.hasErrorOnIPAddressTab = false,
     this.hasErrorOnDhcpServerTab = false,
+    this.hostNameInvalidChars,
   });
 
   factory LocalNetworkStatus.init() => const LocalNetworkStatus(
@@ -240,6 +253,7 @@ class LocalNetworkStatus extends Equatable {
         hasErrorOnHostNameTab,
         hasErrorOnIPAddressTab,
         hasErrorOnDhcpServerTab,
+        hostNameInvalidChars,
       ];
 
   LocalNetworkStatus copyWith({
@@ -253,6 +267,7 @@ class LocalNetworkStatus extends Equatable {
     bool? hasErrorOnHostNameTab,
     bool? hasErrorOnIPAddressTab,
     bool? hasErrorOnDhcpServerTab,
+    ValueGetter<String?>? hostNameInvalidChars,
   }) {
     return LocalNetworkStatus(
       maxUserLimit: maxUserLimit ?? this.maxUserLimit,
@@ -272,6 +287,9 @@ class LocalNetworkStatus extends Equatable {
           hasErrorOnIPAddressTab ?? this.hasErrorOnIPAddressTab,
       hasErrorOnDhcpServerTab:
           hasErrorOnDhcpServerTab ?? this.hasErrorOnDhcpServerTab,
+      hostNameInvalidChars: hostNameInvalidChars != null
+          ? hostNameInvalidChars()
+          : this.hostNameInvalidChars,
     );
   }
 
@@ -287,6 +305,7 @@ class LocalNetworkStatus extends Equatable {
       'hasErrorOnHostNameTab': hasErrorOnHostNameTab,
       'hasErrorOnIPAddressTab': hasErrorOnIPAddressTab,
       'hasErrorOnDhcpServerTab': hasErrorOnDhcpServerTab,
+      'hostNameInvalidChars': hostNameInvalidChars,
     };
   }
 
@@ -304,6 +323,7 @@ class LocalNetworkStatus extends Equatable {
       hasErrorOnHostNameTab: map['hasErrorOnHostNameTab'] ?? false,
       hasErrorOnIPAddressTab: map['hasErrorOnIPAddressTab'] ?? false,
       hasErrorOnDhcpServerTab: map['hasErrorOnDhcpServerTab'] ?? false,
+      hostNameInvalidChars: map['hostNameInvalidChars'],
     );
   }
 

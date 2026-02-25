@@ -32,6 +32,23 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
   final _winsController = TextEditingController();
   final EdgeInsets inputPadding = EdgeInsets.symmetric(vertical: AppSpacing.sm);
 
+  /// Returns the number of full octets (value 255) in a subnet mask.
+  /// e.g., "255.255.255.0" → 3, "255.255.0.0" → 2, "255.0.0.0" → 1
+  int _fullOctetCount(String subnetMask) {
+    if (subnetMask.isEmpty) return 0;
+    final octets = subnetMask.split('.');
+    if (octets.length != 4) return 0;
+    int count = 0;
+    for (final octet in octets) {
+      if (int.tryParse(octet) == 255) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -146,9 +163,8 @@ class _DHCPServerViewState extends ConsumerState<DHCPServerView> {
             key: Key('startIpAddressTextField'),
             label: loc(context).startIpAddress,
             controller: _startIpAddressController,
-            readOnly: SegmentReadOnly(
-              segment1: true,
-              segment2: true,
+            readOnly: SegmentReadOnly.lockPrefix(
+              _fullOctetCount(state.settings.current.subnetMask),
             ),
             errorText: LocalNetworkErrorPrompt.getErrorText(
                 context: context,

@@ -153,12 +153,20 @@ class RouterPasswordService {
       };
     } on JNAPError catch (error) {
       if (error.result == 'ErrorInvalidResetCode') {
-        final errorOutput = jsonDecode(error.error!) as Map<String, dynamic>;
-        final remaining = errorOutput['attemptsRemaining'] as int;
-        return {
-          'isValid': false,
-          'attemptsRemaining': remaining,
-        };
+        try {
+          final errorOutput =
+              jsonDecode(error.error ?? '{}') as Map<String, dynamic>;
+          final remaining = errorOutput['attemptsRemaining'] as int;
+          return {
+            'isValid': false,
+            'attemptsRemaining': remaining,
+          };
+        } catch (_) {
+          return {
+            'isValid': false,
+            'attemptsRemaining': null,
+          };
+        }
       } else if (error.result == 'ErrorConsecutiveInvalidResetCodeEntered') {
         return {
           'isValid': false,

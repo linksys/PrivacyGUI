@@ -157,7 +157,8 @@ class _LocalNetworkSettingsViewState
           errorText: LocalNetworkErrorPrompt.getErrorText(
               context: context,
               error: LocalNetworkErrorPrompt.resolve(state
-                  .status.errorTextMap[LocalNetworkErrorPrompt.hostName.name])),
+                  .status.errorTextMap[LocalNetworkErrorPrompt.hostName.name]),
+              invalidChars: state.status.hostNameInvalidChars),
           onChanged: (value) {
             _notifier.updateHostName(value);
           },
@@ -191,9 +192,8 @@ class _LocalNetworkSettingsViewState
             AppIpv4TextField(
               key: Key('lanSubnetMaskTextField'),
               label: loc(context).subnetMask,
-              readOnly: SegmentReadOnly(
-                segment1: true,
-                segment2: true,
+              readOnly: SegmentReadOnly.lockPrefix(
+                state.status.minNetworkPrefixLength ~/ 8,
               ),
               controller: subnetMaskController,
               errorText: LocalNetworkErrorPrompt.getErrorText(
