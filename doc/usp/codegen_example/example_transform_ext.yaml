@@ -1,0 +1,38 @@
+# Transform file for example_transform.yaml
+# Defines computed properties based on raw test data
+# Generated code will create extension classes with these computed getters
+
+name: SpeedTest
+transforms:
+  - name: throughputMbps
+    description: Download throughput in megabits per second
+    type: formula
+    formula: "(TestBytesReceived * 8) / (TestDuration * 1000)"
+    inputs:
+      - TestBytesReceived
+      - TestDuration
+    output_type: double
+    unit: Mbps
+
+  - name: throughputKbps
+    description: Download throughput in kilobits per second
+    type: formula
+    formula: "(TestBytesReceived * 8) / TestDuration"
+    inputs:
+      - TestBytesReceived
+      - TestDuration
+    output_type: double
+    unit: Kbps
+
+  - name: diagnosticsStateDisplay
+    description: Human-readable diagnostic state
+    type: mapping
+    input: DiagnosticsState
+    mappings:
+      None: "Not started"
+      Requested: "Test in progress..."
+      Complete: "Test completed successfully"
+      Error_InitConnectionFailed: "Connection failed"
+      Error_NoResponse: "No response from server"
+      Error_TransferFailed: "Transfer interrupted"
+      Error_Timeout: "Test timed out"

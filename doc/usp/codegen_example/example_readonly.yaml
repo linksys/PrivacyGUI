@@ -1,0 +1,34 @@
+# Example 1: Read-only parameters
+# This definition demonstrates read-only parameters for device information
+# Generated code will include fetch() method but no save() method
+
+name: DeviceInfo
+version: 1.0.0
+instance: Device.DeviceInfo
+category: core
+description: Device information parameters (read-only)
+
+parameters:
+  - path: Manufacturer
+    type: string
+    description: Device manufacturer name
+
+  - path: ModelName
+    type: string
+    description: Device model identifier
+
+  - path: SerialNumber
+    type: string
+    description: Device serial number
+
+  - path: HardwareVersion
+    type: string
+    description: Hardware version string
+
+  - path: SoftwareVersion
+    type: string
+    description: Currently running firmware version
+
+  - path: UpTime
+    type: int
+    description: Time in seconds since last reboot
