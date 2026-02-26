@@ -1,0 +1,82 @@
+# Example 3: Definition with presets
+# This definition demonstrates preset configurations for DNS providers
+# Generated code will include preset enums and applyPreset() methods
+
+name: DNSSettings
+version: 1.0.0
+instance: Device.DNS.Client
+category: core
+description: DNS client configuration with common provider presets
+
+parameters:
+  - path: Enable
+    type: boolean
+    writable: true
+    description: Enable DNS client
+
+  - path: PreferredServer
+    type: string
+    writable: true
+    description: Primary DNS server IP address
+
+  - path: AlternateServer
+    type: string
+    writable: true
+    description: Secondary DNS server IP address
+
+presets:
+  - field: dnsProvider
+    description: DNS provider selection
+    options:
+      - id: google
+        label: dns_provider_google
+        description: Google Public DNS
+        values:
+          - path: .Server.1.DNSServer
+            value: "8.8.8.8"
+          - path: .Server.2.DNSServer
+            value: "8.8.4.4"
+
+      - id: cloudflare
+        label: dns_provider_cloudflare
+        description: Cloudflare DNS
+        values:
+          - path: .Server.1.DNSServer
+            value: "1.1.1.1"
+          - path: .Server.2.DNSServer
+            value: "1.0.0.1"
+
+      - id: openDns
+        label: dns_provider_opendns
+        description: OpenDNS
+        values:
+          - path: .Server.1.DNSServer
+            value: "208.67.222.222"
+          - path: .Server.2.DNSServer
+            value: "208.67.220.220"
+
+      - id: quad9
+        label: dns_provider_quad9
+        description: Quad9 DNS (security-focused)
+        values:
+          - path: .Server.1.DNSServer
+            value: "9.9.9.9"
+          - path: .Server.2.DNSServer
+            value: "149.112.112.112"
+
+      - id: custom
+        label: dns_provider_custom
+        description: Custom DNS servers
+        userInputs:
+          - field: customPrimaryDns
+            path: .Server.1.DNSServer
+            type: string
+            label: custom_primary_dns
+            placeholder: enter_primary_dns
+            validation: ipv4
+          - field: customSecondaryDns
+            path: .Server.2.DNSServer
+            type: string
+            label: custom_secondary_dns
+            placeholder: enter_secondary_dns
+            validation: ipv4

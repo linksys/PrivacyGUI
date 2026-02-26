@@ -1,0 +1,33 @@
+name: connectedDevices
+description: Connected devices on the network
+multiInstance: true
+basePath: Device.Hosts.Host.
+singularName: connectedDevice
+
+parameters:
+  - field_name: hostName
+    path: .HostName
+    type: string
+    description: Device hostname
+    writable: true
+
+  - field_name: ipAddress
+    path: .IPAddress
+    type: string
+    description: IP address
+
+  - field_name: active
+    path: .Active
+    type: boolean
+    description: Whether the device is currently active
+    writable: true
+
+  - field_name: layer1Interface
+    path: .Layer1Interface
+    type: string
+    description: Layer 1 interface reference
+
+  - field_name: addressSource
+    path: .AddressSource
+    type: string
+    description: How the IP address was assigned

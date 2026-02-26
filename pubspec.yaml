@@ -60,11 +60,6 @@ dependencies:
   collection: ^1.18.0
   flutter_secure_storage: ^9.2.2
 
-  usp_client_core:
-    path: packages/usp_client_core
-  usp_protocol_common:
-    path: packages/usp_protocol_common
-
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git

@@ -1,8 +1,11 @@
 # USP 整合計劃適用性評估報告
 
-**版本:** v1.0.0
-**評估日期:** 2026-02-24
+**版本:** v1.1.0
+**評估日期:** 2026-02-25（更新）
+**初版日期:** 2026-02-24
 **摘要:** 評估 `doc/usp/integration/` 中三份整合計劃文件是否適用於目前專案狀況。分析範圍涵蓋全部 14 份 USP 規格文件、專案中所有 USP 相關程式碼、舊 PoC 依賴關係、新 WASM client 狀態、以及 codegen 工具可用性。
+
+> **v1.1.0 更新摘要：** Phase 0 codegen v3 驗證已完成（詳見 `phase0_codegen_validation.md`）。UspService 已擴充 add/delete/operate API。codegen CLI flag 已從 `--dart-import` 更新為 `--client-import`。多個阻擋因素已解除。
 
 ---
 
@@ -37,17 +40,22 @@
 | JS Wrapper | `web/usp_client.js` | 878 行，匯出 `UspClient` 類別含 `get/set/login/logout/refreshToken/getMultiple/setMultiple` |
 | Dart JS Interop | `lib/usp/web/usp_client_wasm.dart` | 79 行，`UspClientJS` + `UspClientWeb` wrapper |
 | UspService 抽象層 | `lib/usp/services/usp_service.dart` | 119 行，含類型強制轉換 (bool coercion)、多路徑操作 |
-| CodeGen 工具 | `tools/usp-codegen` | Mach-O ARM64 binary (110KB)，支援 `--definitions-dir`/`--output-dir`/`--language dart|typescript|swift`/`--validate-paths` |
+| CodeGen 工具 | `tools/usp-codegen` | Mach-O ARM64 binary，**v3** — 支援 `base_path`、多組 Preset、`_ext.yaml` transforms、`--client-import` |
 | TR-181 官方 XML | `doc/usp/tr-181-2-20-0-usp-full.xml` | 146,770 行 (5.3MB) BBF 參考模型 |
 | 完整規格文件 | `doc/usp/Specifications/` (12 份) | 涵蓋 client、bridge、codegen、auth、definitions、UI、LLM proxy 等 |
+| YAML 格式規格 | `doc/usp/yaml-spec.md` | **v1.1 新增** — codegen v3 YAML 定義檔完整規格 |
+| YAML 定義檔 | `doc/usp/definitions/core/system_info.yaml` | **v1.1 新增** — MIL-1 首個 spec-compliant 定義檔 |
+| 生成程式碼 | `lib/generated/SystemInfo.g.dart` | **v1.1 新增** — codegen v3 端對端驗證產出，`dart analyze` 通過 |
+| Phase 0 驗證報告 | `doc/usp/integration/phase0_codegen_validation.md` | **v1.1 新增** — codegen v3 完整驗證報告 |
 
 ### 2.2 尚未就緒的元件
 
 | 元件 | 預期位置 | 狀態 | 影響 |
 |------|----------|------|------|
-| YAML Definition 檔 | `doc/usp/definitions/` 或 `definitions/` | 目錄完全不存在 | Phase 2 無法啟動 |
-| Transform 檔 | `doc/usp/transforms/` | 目錄完全不存在 | 衍生計算功能無法使用 |
-| Generated Dart Code | `lib/generated/` | 目錄不存在 | Phase 3 無素材 |
+| YAML Definition 檔 | `doc/usp/definitions/` | ✅ **已建立** — `core/system_info.yaml` (MIL-1) | Phase 2 可啟動 |
+| Transform 檔 | `doc/usp/definitions/` (sidecar `_ext.yaml`) | ⏳ 尚未建立（codegen 已驗證支援） | 待 Phase 2 按需建立 |
+| Generated Dart Code | `lib/generated/` | ✅ **已建立** — `SystemInfo.g.dart` 已生成並通過 `dart analyze` | Phase 3 有素材 |
+| YAML Spec 文件 | `doc/usp/yaml-spec.md` | ✅ **已建立** — codegen v3 YAML 格式規格 | 定義檔撰寫參考 |
 | codegen.sh 腳本 | `scripts/codegen.sh` | 不存在 | 需手動執行 codegen |
 
 ### 2.3 舊 PoC 架構詳細盤點
@@ -204,23 +212,32 @@ JNAP JSON 格式 → 回傳 UI
 
 **分析**：`usp-codegen` 是獨立 C CLI 工具（已有二進位檔），不是 Dart build_runner 插件。Shell script 或直接 CLI 呼叫為正確方式。ui-side-spec 的 build_runner 描述已過時。
 
-### 4.3 codegen 工具實際 CLI 介面 (已驗證)
+### 4.3 codegen 工具實際 CLI 介面 (v3 已驗證)
 
 ```
 Usage: usp-codegen [OPTIONS]
 
 Required:
-  --definitions-dir DIR    YAML 定義檔目錄
+  --definitions-dir DIR    YAML 定義檔目錄（遞迴掃描所有子目錄）
   --output-dir DIR         生成程式碼輸出目錄
   --language LANG          dart | typescript | swift
 
 Optional:
+  --client-import PATH     自訂 client library import 路徑（v3，取代舊版 --dart-import）
+  --client-class CLASS     自訂 client 類別名稱（預設 UspService）
   --validate-paths         啟用 TR-181 路徑驗證
   --json                   JSON 格式錯誤輸出 (CI 用)
-  --dart-import PATH       自訂 Dart client import 路徑
-  --client-class CLASS     自訂 client 類別名稱
   --help
 ```
+
+> **v1.1 更新：** `--dart-import` 已在 codegen v3 中更名為 `--client-import`。已驗證的完整指令：
+> ```bash
+> ./tools/usp-codegen \
+>   --definitions-dir doc/usp/definitions \
+>   --output-dir lib/generated \
+>   --language dart \
+>   --client-import 'package:privacy_gui/usp/services/usp_service.dart'
+> ```
 
 ---
 
@@ -228,31 +245,62 @@ Optional:
 
 ### 5.1 目前已實作的 API
 
-`UspService` (`lib/usp/services/usp_service.dart`) 目前支援：
+`UspService` (`lib/usp/services/usp_service.dart`) 完整 API 清單：
 
-| 方法 | 簽名 | 對應 codegen 需求 |
-|------|------|------------------|
-| `login` | `Future<void> login(String password)` | 驗證 |
-| `logout` | `Future<void> logout()` | 驗證 |
-| `refreshToken` | `Future<void> refreshToken()` | 驗證 |
-| `get` | `Future<Map<String, dynamic>> get(List<String> paths)` | `fetch()` 底層 |
-| `set` | `Future<void> set(Map<String, dynamic>, {bool allowPartial})` | `save()` 底層 |
-| `isAuthenticated` | `bool get isAuthenticated` | 狀態查詢 |
+| 操作類型 | 方法簽名 | 用途 | Codegen 支援 |
+|---------|---------|------|-------------|
+| **Auth** | `login(String password)` | 認證 | — 不需 codegen |
+| **Auth** | `logout()` | 登出 | — 不需 codegen |
+| **Auth** | `refreshToken()` | 刷新 token | — 不需 codegen |
+| **Get** | `get(List<String>) → Future<Map<String, dynamic>>` | 批次讀取參數 | ✅ 生成 `getXxx()` + `fetchAll()` |
+| **Get** | `getSingle(String) → Future<String?>` | 單一參數讀取 | — 手動呼叫（codegen 不生成） |
+| **Set** | `set(Map<String, dynamic>, {bool allowPartial})` | 批次設定參數 | ✅ 生成 `setXxx()` + `applyXxxPreset()` |
+| **Set** | `setSingle(String, String)` | 單一參數設定 | — 手動呼叫（codegen 不生成） |
+| **Add** | `add(String objectPath, Map<String, String>) → Future<String>` | 新增物件實例 | ❌ 需手動或未來 codegen |
+| **Add** | `addMultiple(List<Map<String, dynamic>>, {allowPartial}) → Future<List<String>>` | 批次新增 | ❌ 同上 |
+| **Delete** | `delete(String path)` | 刪除物件實例 | ❌ 需手動或未來 codegen |
+| **Delete** | `deleteMultiple(List<String>, {allowPartial})` | 批次刪除 | ❌ 同上 |
+| **Operate** | `operate(String command, {Map<String, String> args}) → Future<Map<String, String>>` | 執行 USP 命令 | ❌ 需手動或未來 codegen |
+| **Query** | `isAuthenticated` (getter) | 認證狀態查詢 | — 不需 codegen |
+
+> **v1.1 更新：** Add/Delete/Operate API 已於 Phase 0 期間完整實作（Dart + JS interop 層），v1.0 中標記為「未實作」已不正確。
 
 ### 5.2 與 codegen 生成程式碼的銜接
 
-codegen 生成的 `SystemInfo.fetch(client)` 會呼叫 `client.get([...paths])`。目前 `UspService.get()` 回傳 `Map<String, dynamic>`，與 codegen 預期的介面可能存在落差。需確認 `usp-codegen --dart-import` 的實際需求。
+> **v1.1 更新：** 已透過 Phase 0 驗證完畢。以下為實際銜接方式。
+
+codegen v3 生成**實例方法**（非靜態方法）。使用模式為：
+
+```dart
+final systemInfo = SystemInfo(uspService);  // 注入 UspService 實例
+final manufacturer = await systemInfo.getManufacturer();  // 呼叫 _client.get([...])
+final allParams = await systemInfo.fetchAll();             // 批次取得所有參數
+```
+
+**完全相容。** 生成程式碼呼叫的介面與 `UspService` 匹配：
+
+| 生成程式碼呼叫 | UspService 方法 | 相容性 |
+|--------------|----------------|--------|
+| `_client.get(List<String>)` | `get(List<String>) → Future<Map<String, dynamic>>` | ✓ |
+| `_client.set(Map<String, dynamic>)` | `set(Map<String, dynamic>)` | ✓ |
+| `params['path'] as String` | `_coerceValue()` 回傳原始字串 | ✓ |
+| `params['path'] == true` | `_coerceValue()` 回傳 bool | ✓ |
+| `int.parse(...)` / `double.parse(...)` | 值為字串形式的數字 | ✓ |
+
+`--client-import` 已驗證可正確指向 `package:privacy_gui/usp/services/usp_service.dart`。
 
 ### 5.3 尚未實作的功能
 
 | 功能 | 規格要求 | 目前狀態 |
 |------|---------|---------|
-| Subscribe (SSE) | `subscribe()` 返回 typed stream | 未實作 |
-| Add instance | `client.add(path, params)` | 未實作 |
-| Delete instance | `client.delete(paths)` | 未實作 |
-| Operate command | `client.operate(command, inputs)` | 未實作 |
+| Subscribe (SSE) | `subscribe()` 返回 typed stream | ⏳ Codegen v3 可生成方法，但 `UspService` 尚無 `subscribe()` |
+| ~~Add instance~~ | ~~`client.add(path, params)`~~ | ~~✅ 已實作~~ |
+| ~~Delete instance~~ | ~~`client.delete(paths)`~~ | ~~✅ 已實作~~ |
+| ~~Operate command~~ | ~~`client.operate(command, inputs)`~~ | ~~✅ 已實作~~ |
 | execute_json | `client.execute_json(json)` | 未實作 |
 | Turbo channel | WebSocket direct to OBUSPA | 未實作 |
+
+> **v1.1 更新：** Add/Delete/Operate 已全部實作完成（Dart API + JS interop）。Subscribe 仍待後續 Phase 實作。
 
 ---
 
@@ -281,44 +329,48 @@ codegen 生成的 `SystemInfo.fetch(client)` 會呼叫 `client.get([...paths])`�
 
 ### 7.2 就緒度
 
-| Phase | 就緒度 | 阻擋因素 |
-|-------|--------|----------|
-| Phase 1 | 70% | 需確認移除舊 packages 的影響範圍 (6 個檔案 import) |
-| Phase 2 | 10% | 無任何 YAML 定義檔；TR-181 映射僅 8/182 actions |
-| Phase 3 | 0% | 依賴 Phase 2 產出 |
-| Phase 4 | 20% | WASM 已編譯但 Subscribe/Turbo/execute_json 未實作 |
+| Phase | 就緒度 | 阻擋因素 | v1.1 變化 |
+|-------|--------|----------|-----------|
+| Phase 0 | ✅ **100%** | — | **新增：已完成** — codegen v3 端對端驗證通過 |
+| Phase 1 | 80% | 需確認移除舊 packages 的影響範圍 (6 個檔案 import) | ⬆ UspService API 已擴充完成 |
+| Phase 2 | 30% | TR-181 映射僅 8/182 actions；YAML 定義檔僅 1 個 (MIL-1) | ⬆ codegen 管線已驗證、YAML spec 已確定、首個定義檔已建立 |
+| Phase 3 | 0% | 依賴 Phase 2 產出 | 不變 |
+| Phase 4 | 30% | WASM 已編譯，Add/Delete/Operate 已實作，但 Subscribe/Turbo/execute_json 未實作 | ⬆ 三項 API 已就緒 |
 
 ### 7.3 整合計劃需要修正的項目
 
-| # | 問題 | 修正建議 |
-|---|------|---------|
-| 1 | 計劃未量化 JNAP 遷移規模 | 補充：全專案 182 actions / 51 files 的遷移工作量 |
-| 2 | 計劃假設 YAML 定義檔已存在 | 補充：yaml_generation_strategy 是 Phase 2 的前置工作，非平行工作 |
-| 3 | 計劃未提及 `UspService` 缺少 Subscribe/Add/Delete/Operate API | 補充：Phase 1 需擴充 `lib/usp/` 的 API 或確認 codegen 生成的程式碼如何銜接 |
-| 4 | codegen `--dart-import` 的客製路徑未確定 | 需驗證 codegen 生成的 import 語句是否與 `lib/usp/services/usp_service.dart` 相容 |
-| 5 | 定義檔位置規格不一致 | 統一決定：建議採用獨立 `definitions/` 目錄於 project root (codegen 透過 flag 指定) |
-| 6 | 新 WASM client 尚未被任何程式碼引用 | Phase 1 需增加：建立至少一個 provider 驗證 `UspService` 可正常運作 |
+| # | 問題 | 修正建議 | v1.1 狀態 |
+|---|------|---------|-----------|
+| 1 | 計劃未量化 JNAP 遷移規模 | 補充：全專案 182 actions / 51 files 的遷移工作量 | 待處理 |
+| 2 | 計劃假設 YAML 定義檔已存在 | 補充：yaml_generation_strategy 是 Phase 2 的前置工作，非平行工作 | 待處理（首個定義檔已建立） |
+| 3 | ~~`UspService` 缺少 Add/Delete/Operate API~~ | ~~Phase 1 需擴充 API~~ | ✅ **已解決** — Add/Delete/Operate 已實作 |
+| 4 | ~~codegen `--dart-import` 路徑未確定~~ | ~~驗證 import 相容性~~ | ✅ **已解決** — v3 使用 `--client-import`，已驗證 `package:privacy_gui/usp/services/usp_service.dart` 正確 |
+| 5 | 定義檔位置規格不一致 | 統一決定：已採用 `doc/usp/definitions/` | ✅ **已解決** |
+| 6 | 新 WASM client 尚未被任何程式碼引用 | Phase 1 需增加：建立至少一個 provider 驗證 `UspService` 可正常運作 | 待處理 |
+| 7 | `UspService` 缺少 `subscribe()` | Phase 2 或 Phase 4 需實作 Dart/JS 端 `subscribe` 方法 | **新增** — codegen v3 可生成訂閱方法，但 Dart 端尚無對應 API |
 
 ### 7.4 建議執行順序
 
 ```
-Phase 0 (補足前置條件 — 計劃未涵蓋)
-├── 驗證 usp-codegen 工具：建立 1 個最小 YAML → 生成 → 編譯
-├── 確認 codegen 生成程式碼與 UspService API 的銜接方式
-├── 擴充 UspService：至少支援 Add/Delete/Operate (參照 usp-client-spec)
-└── 完成 MIL-1 (System & Device Info) 的完整 TR-181 映射盤點
+Phase 0 (補足前置條件) — ✅ 已完成
+├── ✅ 驗證 usp-codegen v3 工具：YAML → 生成 → 編譯 (dart analyze 通過)
+├── ✅ 確認 codegen 生成程式碼與 UspService API 的銜接方式（完全相容）
+├── ✅ 擴充 UspService：Add/Delete/Operate 已實作
+├── ✅ 建立首個 YAML 定義檔 (SystemInfo — MIL-1)
+├── ✅ 建立 YAML 格式規格 (doc/usp/yaml-spec.md)
+└── ✅ 撰寫 Phase 0 驗證報告 (phase0_codegen_validation.md)
 
-Phase 1 (清除 + 驗證)
+Phase 1 (清除 + 驗證) — 進行中
 ├── 建立 lib/usp/ 的 Riverpod provider (替代 usp_connection_provider)
 ├── 移除 packages/usp_client_core、usp_protocol_common
 ├── 更新 pubspec.yaml
 └── 驗證 main_usp_demo.dart 可改用新架構啟動
 
 Phase 2 (定義檔 + Codegen)
-├── 建立 definitions/ 目錄結構
-├── 依 yaml_generation_strategy 的 MIL-1~4 順序撰寫 YAML
+├── 依 yaml_generation_strategy 的 MIL-1~4 順序撰寫 YAML 定義檔
 ├── 建立 codegen.sh 自動化腳本
-└── 驗證 lib/generated/ 可正常編譯
+├── 驗證 lib/generated/ 可正常編譯
+└── 按需建立 _ext.yaml transform 檔
 
 Phase 3-4 (如整合計劃所述)
 ```
@@ -327,10 +379,11 @@ Phase 3-4 (如整合計劃所述)
 
 ## 8. 驗證方式
 
-| 階段 | 驗證指令 |
-|------|---------|
-| codegen 工具 | `./tools/usp-codegen --definitions-dir definitions --output-dir lib/generated --language dart` |
-| 依賴清理 | `flutter pub get` 無錯誤 |
-| 編譯驗證 | `flutter build web` 成功 |
-| 單元測試 | `./run_tests.sh` 無新增失敗 |
-| Generated code | 確認 `lib/generated/*.g.dart` 可被 import 且類型正確 |
+| 階段 | 驗證指令 | v1.1 狀態 |
+|------|---------|-----------|
+| codegen 工具 | `./tools/usp-codegen --definitions-dir doc/usp/definitions --output-dir lib/generated --language dart --client-import 'package:privacy_gui/usp/services/usp_service.dart'` | ✅ 已驗證 |
+| 靜態分析 | `dart analyze lib/generated/SystemInfo.g.dart` → No issues found | ✅ 已驗證 |
+| 依賴清理 | `flutter pub get` 無錯誤 | 待 Phase 1 |
+| 編譯驗證 | `flutter build web` 成功 | 待 Phase 1 |
+| 單元測試 | `./run_tests.sh` 無新增失敗 | 待 Phase 1 |
+| Generated code | 確認 `lib/generated/*.g.dart` 可被 import 且類型正確 | ✅ `SystemInfo.g.dart` 已確認 |

@@ -1,0 +1,45 @@
+# Example 2: Writable parameters
+# This definition demonstrates read-write parameters for WiFi configuration
+# Generated code will include both fetch() and save() methods
+
+name: WiFiBasicSettings
+version: 1.0.0
+instance: Device.WiFi.SSID.1
+category: core
+description: Basic WiFi network settings
+
+parameters:
+  - path: Enable
+    type: boolean
+    writable: true
+    description: Enable or disable this WiFi network
+
+  - path: SSID
+    type: string
+    writable: true
+    description: Network name (SSID)
+    validation:
+      min_length: 1
+      max_length: 32
+
+  - path: Status
+    type: string
+    description: Current operational status (Up, Down, Error, etc.)
+
+  - path: SSIDAdvertisementEnabled
+    type: boolean
+    writable: true
+    description: Whether to broadcast the SSID
+
+  - path: MaxBitRate
+    type: int
+    writable: true
+    description: Maximum bit rate in Mbps (0 = auto)
+    validation:
+      min: 0
+      max: 1000
+
+subscribe:
+  enabled: true
+  notifType: ValueChange
+  id: wifi-settings-01

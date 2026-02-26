@@ -1,0 +1,38 @@
+# Example 4: Definition with transform for computed properties
+# This definition demonstrates transform usage for throughput calculations
+# Generated code will include computed properties in extensions
+
+name: SpeedTest
+version: 1.0.0
+instance: Device.IP.Diagnostics.DownloadDiagnostics
+category: extensions
+description: Download speed test results with computed throughput
+
+parameters:
+  - path: DiagnosticsState
+    type: string
+    writable: true
+    description: Test state (None, Requested, Complete, Error_*)
+
+  - path: TestBytesReceived
+    type: int
+    description: Total bytes received during test
+
+  - path: TotalBytesReceived
+    type: int
+    description: Cumulative bytes received
+
+  - path: TotalBytesSent
+    type: int
+    description: Cumulative bytes sent
+
+  - path: TestDuration
+    type: int
+    description: Test duration in milliseconds
+
+  - path: ROMTime
+    type: int
+    description: Request-to-response time in milliseconds
+
+# Transform file for computed properties
+# Separate file: example_transform_ext.yaml
