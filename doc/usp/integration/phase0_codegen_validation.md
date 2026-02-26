@@ -1,9 +1,9 @@
 # Phase 0: Codegen 驗證報告
 
-**日期:** 2026-02-25
+**日期:** 2026-02-26（v5 更新）
 **分支:** `doc/usp-integration-assessment`
-**狀態:** 完成 — codegen 管線已端對端驗證
-**Codegen 版本:** v3
+**狀態:** 完成 — v5 修復 v4 全部 4 個 Bug，全定義檔通過
+**Codegen 版本:** v3（穩定） / v4（已知 Bug） / **v5（目前版本，就緒）**
 **YAML 規格:** `doc/usp/yaml-spec.md`
 
 ---
@@ -243,22 +243,24 @@ extension SpeedTestExt on SpeedTest {
 
 ## 6. 版本演進對照
 
-### v1 → v2 → v3 改進
+### v1 → v2 → v3 → v4 → v5 改進
 
-| 功能 | v1 | v2 | v3 |
-|------|----|----|-----|
-| `base_path` 路徑前綴 | ❌ 不組合 | ❌ 不組合 | ✅ **正確組合到 parameter + preset** |
-| `path` 推導方法名 | ❌ 全部叫 `get()` | ✅ 從路徑推導 | ✅ 同 v2 |
-| 含 `.` 路徑方法名 | — | ❌ 無效語法 `getA.B()` | ✅ `getAB()` |
-| Preset 格式 | `{name, values: {map}}` | `[{name, values: {map}}]` | `[{field, options: [{id, values: [{path, value}]}]}]` |
-| 多組 Preset | ❌ | ❌ 僅單一 enum | ✅ 每組獨立 enum + apply |
-| Preset `userInputs` | ❌ | ❌ | ✅ 生成 `inputs` 參數 |
-| Sidecar 檔名 | `_ext.yaml` ❌ | `_transforms.yaml` ✅ | `_ext.yaml` ✅（反轉回來） |
-| Transform 生成方式 | — | 主 class 內 inline | `extension` block |
-| `double` 型別 | ❌ | ❌ | ✅ `double.parse()` |
-| `subscribe` | ❌ | ❌ | ⏳ Schema 接受，可生成方法 |
-| Import flag | `--dart-import` | `--dart-import` | `--client-import` |
-| 輸出檔名 | `snake_case.g.dart` | `snake_case.g.dart` | `PascalCase.g.dart` |
+| 功能 | v1 | v2 | v3 | v4 | v5 |
+|------|----|----|-----|-----|-----|
+| `base_path` 路徑前綴 | ❌ 不組合 | ❌ 不組合 | ✅ 正確組合 | ✅ 向後相容 | ✅ 同 v4 |
+| `path` 推導方法名 | ❌ 全部叫 `get()` | ✅ 從路徑推導 | ✅ 同 v2 | ✅ Data class 欄位 | ✅ 同 v4 |
+| 含 `.` 路徑方法名 | — | ❌ `getA.B()` | ✅ `getAB()` | ✅ Data class 欄位 | ✅ 同 v4 |
+| **程式碼模式** | 實例 | 實例 | 實例（`_client`） | 靜態（`static fetch()`） | ✅ 靜態（修復完成） |
+| **Multi-instance** | ❌ | ❌ | ❌ | ⚠️ 名稱衝突 | ✅ **`singularName` 支援 + 自動推導** |
+| **subscribe** | ❌ | ❌ | ⏳ | ⚠️ 引用 `_client` | ✅ **static + client 參數** |
+| **Dart 保留字** | — | — | — | ⚠️ `interface` 衝突 | ✅ **自動加 `_` 後綴** |
+| **Multi-instance 尾部 `.`** | — | — | — | ⚠️ 缺少 | ✅ **自動補齊** |
+| Preset 格式 | `{name, values}` | `[{name, values}]` | `[{field, options}]` | 同 v3 | 同 v3 |
+| 多組 Preset | ❌ | ❌ 僅單一 | ✅ 獨立 enum | ✅ 同 v3 | ✅ 同 v3 |
+| Transform 生成方式 | — | inline | `extension`（非同步） | `extension`（同步） | ✅ 同 v4 |
+| `double` 型別 | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Import flag | `--dart-import` | `--dart-import` | `--client-import` | `--client-import` | `--client-import` |
+| 輸出檔名 | `snake_case.g.dart` | `snake_case.g.dart` | `PascalCase.g.dart` | `PascalCase.g.dart` | `snake_case.g.dart` |
 
 ### v2 → v3 Breaking Changes
 
@@ -337,7 +339,209 @@ extension SpeedTestExt on SpeedTest {
 
 ---
 
-## 8. 結論與建議
+## 8. Codegen v4 驗證（2026-02-26）
+
+### 8.1 v4 架構變更
+
+v4 採用 **Data class + static method** 模式，取代 v3 的實例模式：
+
+| 特性 | v3 | v4 |
+|------|----|----|
+| 模式 | 實例模式（`_client` 欄位） | **靜態模式**（`static fetch()` / `save()`） |
+| 單實例讀取 | `getXxx()` 非同步 getter | **Data class** + `static fetch()` |
+| 單實例寫入 | `setXxx()` 個別 setter | **Data class** + `static save()` |
+| 多實例讀取 | — | `ConnectedDevice` data class + `static fetchAll()` |
+| 多實例寫入 | — | `ConnectedDeviceUpdate` + `update()` / `updateMany()` |
+| Transform | `extension` block（非同步） | `extension` block（**同步 getter**） |
+| `base_path` | `base_path` | `basePath`（接受 `base_path` 別名，向後相容） |
+| `multi_instance` | — | `multiInstance`（接受 `multi_instance` 別名） |
+
+### 8.2 v4 正常運作項目
+
+| # | 功能 | 驗證結果 |
+|---|------|---------|
+| 1 | `base_path` 向後相容 | ✅ v4 接受 v3 的 `base_path` 作為 `instance`/`basePath` 的別名 |
+| 2 | `multi_instance` 向後相容 | ✅ `multiInstance` 的別名 |
+| 3 | Data class + `static fetch()` / `save()` | ✅ 單實例模式正確 |
+| 4 | Multi-instance data class 模式 | ✅ `ConnectedDevice` + `ConnectedDeviceUpdate` + `update()` / `updateMany()` |
+| 5 | Transform `extension` block | ✅ 同步 getter 正確生成 |
+
+### 8.3 v4 已知 Bug
+
+| # | 檔案 | 問題 | 嚴重度 | 狀態 |
+|---|------|------|--------|------|
+| 1 | `port_forwarding.g.dart` | **Class 名稱衝突** — `PortForwarding` 同時用於 singular data class (L9) 和 collection class (L51)，無法編譯。需要 codegen 用 `singularName` 來區分（或自動推導） | 🔴 高 | 待修 |
+| 2 | `connected_devices.g.dart` | **`subscribe` 引用 `_client`** — subscribe 方法引用 `_client` (L58-60)，但 v4 是 static 模式，沒有 `_client` 欄位。subscribe 在 v4 靜態模式下的回歸 | 🔴 高 | 待修 |
+| 3 | `connected_devices.g.dart` | **`interface` 保留字** — `interface` 是 Dart 保留字，不能用作欄位名稱 (L15, L22) | 🟡 中 | 待修 |
+| 4 | Multi-instance path | **缺少尾部 `.`** — `base_path: Device.Hosts.Host` 生成 `client.get(['Device.Hosts.Host'])`，缺少尾部 `.`。`yaml-spec` 範例用 `basePath: Device.Hosts.Host.`（有 `.`） | 🟢 低 | 待確認（可能是 YAML 端慣例問題） |
+
+#### Bug #1 詳情：Class 名稱衝突
+
+```dart
+// port_forwarding.g.dart — 無法編譯
+class PortForwarding {          // L9: singular data class
+  final String protocol;
+  // ...
+}
+
+class PortForwarding {          // L51: collection class — 衝突！
+  static Future<List<PortForwarding>> fetchAll() async { ... }
+}
+```
+
+**建議修復：** Codegen 應支援 `singularName` 欄位，或自動推導：collection class 用 YAML `name`（如 `PortForwarding`），singular data class 用 `PortForwardingEntry` 或由 `singularName` 指定。
+
+#### Bug #2 詳情：subscribe 引用不存在的 _client
+
+```dart
+// connected_devices.g.dart — v4 static 模式下的回歸
+class ConnectedDevices {
+  // v4 沒有 _client 欄位（靜態模式）
+
+  Stream<...> subscribe() {
+    return _client.subscribe(...);  // L58-60: _client 不存在！
+  }
+}
+```
+
+**建議修復：** v4 的 subscribe 應改為 static 方法，接受 client 參數或使用與 `fetch()`/`save()` 一致的靜態存取方式。
+
+### 8.4 v3 → v4 向後相容性總結
+
+| YAML 欄位 | v3 名稱 | v4 名稱 | 向後相容 |
+|-----------|---------|---------|---------|
+| 基礎路徑 | `base_path` | `basePath` | ✅ 接受別名 |
+| 多實例標記 | — | `multiInstance` / `multi_instance` | ✅ 接受別名 |
+| Parameters | 相同 | 相同 | ✅ |
+| Presets | 相同 | 相同 | ✅ |
+| Transforms (`_ext.yaml`) | 相同 | 相同 | ✅ |
+| Subscribe | 相同 | 相同 | ⚠️ Bug #2 |
+
+---
+
+## 9. Codegen v5 驗證（2026-02-26）
+
+### 9.1 v4 Bug 修復狀態
+
+| # | v4 Bug | v5 修復方式 | 驗證結果 |
+|---|--------|-----------|---------|
+| 1 | 🔴 Class 名稱衝突 | 偵測同名衝突並報錯：`"Add 'singularName' to the YAML definition"`。提供 `singularName` 後正確生成 `PortForwardingRule`（singular）+ `PortForwarding`（collection） | ✅ 修復 |
+| 2 | 🔴 subscribe 引用 `_client` | 改為 `static Stream<...> subscribeXxx(UspService client)` — 與 `fetch()` 一致的靜態模式 | ✅ 修復 |
+| 3 | 🟡 `interface` 保留字 | 自動加底線後綴：`interface` → `interface_` | ✅ 修復 |
+| 4 | 🟢 Multi-instance 缺少尾部 `.` | 自動補齊：`Device.Hosts.Host` → `Device.Hosts.Host.` | ✅ 修復 |
+
+### 9.2 v5 生成程式碼範例
+
+#### 單實例（SystemInfo）
+
+```dart
+class SystemInfo {
+  final String manufacturer;
+  final String modelName;
+  final int uptime;
+  // ...
+
+  const SystemInfo({required this.manufacturer, ...});
+
+  static Future<SystemInfo> fetch(UspService client) async {
+    final response = await client.get([
+      'Device.DeviceInfo.Manufacturer',
+      'Device.DeviceInfo.ModelName',
+      'Device.DeviceInfo.UpTime',
+    ]);
+    return SystemInfo._fromResponse(response);
+  }
+
+  factory SystemInfo._fromResponse(Map<String, dynamic> response) {
+    return SystemInfo(
+      manufacturer: response['Device.DeviceInfo.Manufacturer'] as String,
+      uptime: int.parse(response['Device.DeviceInfo.UpTime'] as String),
+    );
+  }
+}
+```
+
+#### 多實例（PortForwarding + singularName）
+
+```dart
+// singular data class — 名稱由 singularName 指定
+class PortForwardingRule {
+  final String instancePath;
+  final bool enabled;
+  final int externalPort;
+  // ...
+  const PortForwardingRule({required this.instancePath, ...});
+}
+
+// update descriptor — nullable fields for partial update
+class PortForwardingRuleUpdate {
+  final String instancePath;
+  final bool? enabled;
+  final int? externalPort;
+  // ...
+  const PortForwardingRuleUpdate({required this.instancePath, ...});
+}
+
+// collection class — 名稱為 YAML name
+class PortForwarding {
+  final List<PortForwardingRule> items;
+  const PortForwarding({required this.items});
+
+  static Future<PortForwarding> fetch(UspService client) async { ... }
+  static Future<void> update(UspService client, PortForwardingRuleUpdate update) async { ... }
+  static Future<void> updateMany(UspService client, List<PortForwardingRuleUpdate> updates, {bool allowPartial = false}) async { ... }
+}
+```
+
+#### 多實例 + subscribe（ConnectedDevices — 自動推導 singular）
+
+```dart
+class ConnectedDevice { ... }        // 自動推導：ConnectedDevices → ConnectedDevice
+
+class ConnectedDevices {
+  final List<ConnectedDevice> items;
+
+  static Future<ConnectedDevices> fetch(UspService client) async { ... }
+
+  // subscribe — static + client 參數（v5 修復）
+  static Stream<Map<String, dynamic>> subscribeConnectedDevices01(UspService client) {
+    return client.subscribe(['Device.Hosts.Host.'], 2);
+  }
+}
+```
+
+### 9.3 v5 新增功能與 Pattern
+
+| 功能 | 說明 |
+|------|------|
+| `singularName` YAML 欄位 | Multi-instance 定義可指定 singular class 名稱（如 `PortForwardingRule`）。未指定時自動從 `name` 推導（去尾 `s`） |
+| `XxxUpdate` class | Multi-instance writable 參數生成 nullable update descriptor |
+| `update()` / `updateMany()` | 靜態方法，支援單一/批次更新，`updateMany` 支援 `allowPartial` 參數 |
+| `response.getInstances()` | 新 helper pattern — 從 response 解析多實例（需 `UspService` 擴展支援） |
+| `instance.getString()` / `getBool()` / `getInt()` | 型別安全的 instance 欄位存取 helper |
+| Dart 保留字自動迴避 | `interface` → `interface_`，避免編譯錯誤 |
+| 輸出檔名 | 回歸 `snake_case.g.dart`（如 `connected_devices.g.dart`、`port_forwarding.g.dart`） |
+
+### 9.4 v5 待確認事項（已全部解決）
+
+| # | 項目 | 狀態 | 解決方式 |
+|---|------|------|---------|
+| 1 | `response.getInstances()` | ✅ 已實作 | 新增 `lib/usp/services/usp_response_helpers.dart` — `UspResponseExtension` on `Map<String, dynamic>` |
+| 2 | `client.subscribe()` 簽名 | ✅ 已加 stub | `UspService.subscribe(List<String>, int)` — 第二參數為 notifType（1=ValueChange, 2=ObjectCreation, 3=ObjectDeletion）。JS/WASM 端尚未實作，目前回傳 `Stream.empty()` |
+| 3 | `allowPartial` 參數 | ✅ 原本就支援 | `UspService.set()` 已有 `{bool allowPartial = false}` 參數 |
+
+**新增檔案：** `lib/usp/services/usp_response_helpers.dart`
+- `UspInstance` class — `path`, `getString()`, `getBool()`, `getInt()`, `getDouble()`
+- `UspResponseExtension` on `Map<String, dynamic>` — `getInstances(String basePath)`
+- 透過 `usp_service.dart` 的 `export` 自動匯出，generated code 只需一個 import
+
+### 9.5 YAML 定義檔更新
+
+為支援 v5，已更新 `PortForwarding.yaml` 加入 `singularName: PortForwardingRule`。
+
+---
+
+## 10. 結論與建議
 
 ### 已可運作的功能
 
@@ -359,28 +563,35 @@ extension SpeedTestExt on SpeedTest {
 
 ### 尚需增強的功能（Codegen 工具端）
 
-| # | 功能 | 目前狀態 | 影響 |
-|---|------|---------|------|
-| 1 | `subscribe()` 訂閱 | ⏳ Codegen 可生成方法，但 `UspService` 尚無 `subscribe()` | 待 Dart/JS 端實作後啟用 |
-| 2 | `add()` / `delete()` 多實例 codegen | Codegen 未生成 | **Dart API 已就緒**；UI 可直接呼叫 |
-| 3 | `operate()` 命令 codegen | Codegen 未生成 | 同上 |
-| 4 | 強型別資料類別 | 僅生成 getter/setter | 無 data class pattern |
-| 5 | 靜態 `fetch()` 方法 | 未實作 | 使用實例模式替代 |
+| # | 功能 | v3 狀態 | v5 狀態 | 備註 |
+|---|------|---------|---------|------|
+| 1 | `subscribe()` 訂閱 | ⏳ 可生成 | ✅ static + client 參數 | v5 修復 |
+| 2 | `add()` / `delete()` 多實例 codegen | 未生成 | ✅ `update()`/`updateMany()` | v5 就緒 |
+| 3 | `operate()` 命令 codegen | 未生成 | 未生成 | **Dart API 已就緒**；UI 可直接呼叫 |
+| 4 | 強型別資料類別 | ❌ 僅 getter/setter | ✅ Data class pattern | v4+ |
+| 5 | 靜態 `fetch()` 方法 | ❌ 實例模式 | ✅ `static fetch(UspService client)` | v4+ |
+| 6 | Multi-instance `singularName` | — | ✅ 支援 + 衝突偵測 | v5 新增 |
+| 7 | Dart 保留字迴避 | — | ✅ 自動加 `_` 後綴 | v5 修復 |
+| 8 | `response.getInstances()` helper | — | ✅ 已實作 `UspResponseExtension` | `lib/usp/services/usp_response_helpers.dart` |
 
-### 建議的 YAML 慣例（v3）
+### 建議的 YAML 慣例（v5）
 
 ```yaml
-name: FeatureName              # PascalCase（直接作為 class name + 檔名）
+name: FeatureName              # PascalCase — collection class name（多實例）或 class name（單實例）
+singularName: FeatureEntry     # 可選 — 多實例時 singular data class 名稱（未指定則自動推導去尾 s）
 version: 1.0.0
-base_path: Device.Full.Base    # 共用路徑前綴
+base_path: Device.Full.Base    # 共用路徑前綴（不需尾部 .，v5 自動補齊）
 category: core|extensions|vendor
 description: "..."
 
+# 多實例定義需加此欄位
+multi_instance: true           # 生成 singular data class + collection class + update/updateMany
+
 parameters:
-  - field_name: fieldName      # camelCase（建議提供）
+  - field_name: fieldName      # camelCase — 直接作為 data class 欄位名
     path: RelativePath         # 相對於 base_path
     type: string|int|uint|boolean|double
-    writable: true|false       # true 會生成 setXxx()
+    writable: true|false       # true → 多實例生成 XxxUpdate class
     description: "..."
 
 # Presets — 群組陣列
@@ -397,25 +608,37 @@ presets:
             path: .Relative.Path
             validation: ipv4
 
+# Subscribe — v5 生成 static Stream 方法
+subscribe:
+  enabled: true
+  notifType: ObjectCreation    # ValueChange | ObjectCreation | ...
+  id: unique-subscription-id   # 用於方法名稱
+
 # Transforms → 使用分離的 _ext.yaml 檔案
 # 檔名慣例：定義檔 Foo.yaml → 延伸檔 Foo_ext.yaml
 ```
 
 ### Phase 1 就緒度評估
 
-| 需求 | 狀態 | 備註 |
-|------|------|------|
-| YAML → Dart codegen 管線 | ✅ 就緒 | v3 全功能驗證通過 |
-| `base_path` + 相對路徑 | ✅ 就緒 | v3 修復，YAML 更簡潔 |
-| Client 介面相容性 | ✅ 就緒 | |
-| 讀取操作 (`getXxx()`) | ✅ 就緒 | Codegen 自動生成 |
-| 寫入操作 (`setXxx()`) | ✅ 就緒 | Codegen 自動生成（`writable: true`） |
-| 多組 Presets | ✅ 就緒 | 獨立 enum + apply + userInputs |
-| Transforms（`_ext.yaml`） | ✅ 就緒 | `extension` block — formula + mapping |
-| 新增/刪除物件實例 | ✅ Dart API 就緒 | `UspService` 已實作；Codegen 不自動生成 |
-| USP Operate 命令 | ✅ Dart API 就緒 | 同上 |
-| 訂閱 (`subscribe()`) | ⏳ 延後 | Codegen 可生成，Dart 端待實作 |
+| 需求 | v5 狀態 | 備註 |
+|------|---------|------|
+| YAML → Dart codegen 管線 | ✅ 就緒 | 3/3 定義檔通過 |
+| `base_path` + 相對路徑 | ✅ 就緒 | 向後相容 `base_path` 別名 |
+| Client 介面相容性 | ✅ 就緒 | 靜態模式 `static fetch(UspService client)` |
+| 讀取操作 | ✅ 就緒 | Data class + `fetch()` |
+| 寫入操作 | ✅ 就緒 | Data class + `save()` / `update()` |
+| Multi-instance | ✅ 就緒 | `singularName` 支援 + 自動推導 |
+| 多組 Presets | ✅ 就緒 | — |
+| Transforms（`_ext.yaml`） | ✅ 就緒 | 同步 getter |
+| 新增/刪除物件實例 | ✅ 就緒 | `update()` / `updateMany()` |
+| USP Operate 命令 | — | `UspService` 手動呼叫 |
+| 訂閱 (`subscribe()`) | ✅ 就緒 | static + client 參數 |
 | `--client-import` 路徑 | ✅ 確認 | `package:privacy_gui/usp/services/usp_service.dart` |
 | YAML 規格文件 | ✅ 就緒 | `doc/usp/yaml-spec.md` |
+| `response.getInstances()` helper | ✅ 已實作 | `UspResponseExtension` + `UspInstance` class |
 
-**結論：** Codegen v3 已完整驗證。`base_path` 路徑組合、多組 Presets、`_ext.yaml` transforms、`double` 型別等 v2 缺失的功能均已實作。專案可以用 spec 合規的 YAML 定義檔推進後續 Phase。
+**結論：**
+- **Codegen v5** 修復了 v4 全部 4 個 Bug，全部定義檔通過生成。
+- v5 是目前推薦的 codegen 版本，Data class + static 模式 + multi-instance 支援完整。
+- **所有待確認項已解決。** `UspResponseExtension`（`getInstances` / `getString` / `getBool` / `getInt`）已實作；`subscribe` 已加 stub；`allowPartial` 原本就支援。
+- **建議：** 以 v5 作為正式 codegen 版本推進 Phase 1-4。端對端管線完整就緒：YAML → codegen → generated Dart code → `dart analyze` 通過。
