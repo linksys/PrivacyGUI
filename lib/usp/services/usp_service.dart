@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-// Since this POC is currently strictly Web, we're directly importing and using
-// the web implementation. In a full multi-platform app, this would use conditional
-// imports (e.g., `import '../web/usp_client_wasm.dart' if (dart.library.io) 'native/usp_client_ffi.dart';`).
-import '../web/usp_client_wasm.dart';
+// Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
+import '../stub/usp_client_stub.dart'
+    if (dart.library.js_interop) '../web/usp_client_wasm.dart';
 
 // Export response helpers so generated code only needs one import.
 export 'usp_response_helpers.dart';
@@ -125,8 +124,9 @@ class UspService {
   /// [objectPath] must end with "." (e.g., "Device.NAT.PortMapping.").
   /// [parameters] are the initial parameter values for the new instance.
   /// Returns the full path of the created instance (e.g., "Device.NAT.PortMapping.3.").
-  Future<String> add(String objectPath, Map<String, String> parameters) async {
-    return await _client.add(objectPath, parameters);
+  Future<String> add(String objectPath, Map<String, dynamic> parameters) async {
+    final stringParams = parameters.map((k, v) => MapEntry(k, v.toString()));
+    return await _client.add(objectPath, stringParams);
   }
 
   /// Creates multiple object instances in a single operation.

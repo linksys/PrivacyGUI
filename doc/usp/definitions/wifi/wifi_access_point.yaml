@@ -1,0 +1,33 @@
+name: WiFiAccessPoints
+singularName: WiFiAccessPoint
+version: 1.0.0
+base_path: Device.WiFi.AccessPoint
+category: wifi
+description: WiFi access point status and security
+multi_instance: true
+
+parameters:
+  - field_name: enable
+    path: Enable
+    type: boolean
+    description: Whether this access point is enabled
+
+  - field_name: status
+    path: Status
+    type: string
+    description: Operational status (Up, Disabled, Error)
+
+  - field_name: securityModeEnabled
+    path: Security.ModeEnabled
+    type: string
+    description: Active security mode (None, WPA2-Personal, WPA3-Personal, etc.)
+
+  - field_name: encryptionMode
+    path: Security.EncryptionMode
+    type: string
+    description: Encryption mode (AES, TKIP+AES, etc.)
+
+  - field_name: ssidReference
+    path: SSIDReference
+    type: string
+    description: Reference to SSID object (e.g. Device.WiFi.SSID.1.)

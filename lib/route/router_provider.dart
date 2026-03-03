@@ -64,6 +64,8 @@ import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
+import 'package:privacy_gui/page/usp_dashboard/views/usp_dashboard_view.dart';
+import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 
 part 'route_home.dart';
 part 'route_cloud_login.dart';
@@ -107,6 +109,12 @@ final appRoutes = [
     builder: (context, state) => const SelectNetworkView(),
   ),
   dashboardRoute,
+  LinksysRoute(
+    name: RouteNamed.uspDashboard,
+    path: RoutePath.uspDashboard,
+    config: const LinksysRouteConfig(noNaviRail: true),
+    builder: (context, state) => const UspDashboardView(),
+  ),
   pnpRoute,
   pnpTroubleshootingRoute,
   addNodesRoute,
@@ -131,6 +139,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return router.goPnpPath(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
+        return state.uri.toString();
+      } else if (state.matchedLocation == RoutePath.uspDashboard) {
+        // USP Dashboard bypasses JNAP-dependent redirect logic
         return state.uri.toString();
       }
       return router.redirectLogic(state);
@@ -320,8 +331,10 @@ class RouterNotifier extends ChangeNotifier {
       return switch (authState?.loginType ?? LoginType.none) {
         LoginType.remote => await _prepare(state, RoutePath.dashboardHome)
             .then((path) => path ?? RoutePath.dashboardHome),
-        LoginType.local => await _prepare(state, RoutePath.dashboardHome)
-            .then((path) => path ?? RoutePath.dashboardHome),
+        LoginType.local => _ref.read(protocolResolverProvider).isUspOnlyMode
+            ? RoutePath.uspDashboard
+            : await _prepare(state, RoutePath.dashboardHome)
+                .then((path) => path ?? RoutePath.dashboardHome),
         _ => _home(state.uri.query),
       };
     });
@@ -438,18 +451,22 @@ class RouterNotifier extends ChangeNotifier {
 
     // Use sessionProvider.forceFetchDeviceInfo() instead of direct RouterRepository access
     // This adheres to Clean Architecture: Route -> Provider -> Service -> Repository
-    final deviceInfo =
-        await _ref.read(sessionProvider.notifier).forceFetchDeviceInfo();
-    final newSerialNumber = deviceInfo.serialNumber;
+    try {
+      final deviceInfo =
+          await _ref.read(sessionProvider.notifier).forceFetchDeviceInfo();
+      final newSerialNumber = deviceInfo.serialNumber;
 
-    if (serialNumber == newSerialNumber) {
-      return null;
+      if (serialNumber == newSerialNumber) {
+        return null;
+      }
+
+      // Save serial number if serial number changed
+      await _ref
+          .read(sessionProvider.notifier)
+          .saveSelectedNetwork(newSerialNumber, '');
+    } catch (e) {
+      logger.w('[Prepare]: forceFetchDeviceInfo failed in _prepareLocal: $e');
     }
-
-    // Save serial number if serial number changed
-    await _ref
-        .read(sessionProvider.notifier)
-        .saveSelectedNetwork(newSerialNumber, '');
 
     return null;
   }

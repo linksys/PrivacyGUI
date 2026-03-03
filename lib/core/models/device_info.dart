@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/generated/system_info.g.dart';
 
 /// UI layer DeviceInfo Model
 ///
@@ -16,6 +17,24 @@ class NodeDeviceInfo extends Equatable {
     required this.serialNumber,
     required this.hardwareVersion,
   });
+
+  /// Creates a [NodeDeviceInfo] from USP [SystemInfo] codegen DTO.
+  ///
+  /// Field mapping:
+  /// - modelName → modelNumber (different name, same semantics)
+  /// - softwareVersion → firmwareVersion (different name, same semantics)
+  /// - firmwareDate/description → empty string (not available in TR-181)
+  factory NodeDeviceInfo.fromUsp(SystemInfo info) {
+    return NodeDeviceInfo(
+      manufacturer: info.manufacturer,
+      modelNumber: info.modelName,
+      serialNumber: info.serialNumber,
+      hardwareVersion: info.hardwareVersion,
+      firmwareVersion: info.softwareVersion,
+      firmwareDate: '',
+      description: '',
+    );
+  }
 
   final String modelNumber;
   final String firmwareVersion;

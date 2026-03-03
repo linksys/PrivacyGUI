@@ -8,6 +8,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/page/nodes/providers/node_light_settings_provider.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/data/services/polling_service.dart';
+import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/health_check/providers/health_check_provider.dart';
@@ -115,9 +116,21 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             ))
         .onError((error, stackTrace) {
       logger.e('Polling error: $error, $stackTrace');
+      // When JNAP is unavailable (e.g. disabled on USP-only routers),
+      // don't force logout — return empty data so the dashboard stays up.
+      if (error is JNAPError && error.result == '_ErrorJNAPUnavailable') {
+        logger.w('[Polling]: JNAP unavailable — keeping session alive');
+        return previousSnapshot?.copyWith(
+              lastUpdate: DateTime.now().millisecondsSinceEpoch,
+            ) ??
+            CoreTransactionData(
+              lastUpdate: DateTime.now().millisecondsSinceEpoch,
+              isReady: false,
+              data: const {},
+            );
+      }
       logger.f('[Auth]: Force to log out because of failed polling');
       ref.read(authProvider.notifier).logout();
-
       throw error ?? '';
     });
 
@@ -128,7 +141,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
           _service.updateFernetKeyFromResult(result.data);
 
           await _additionalPolling();
-          return result.copyWith(isReady: true);
+          // Only mark as ready when actual JNAP data is present.
+          // When JNAP is unavailable (USP-only router), data is empty —
+          // keeping isReady=false lets DashboardLoadingWrapper show
+          // loading tiles instead of crashing on null topology/device data.
+          return result.copyWith(
+              isReady: result.data.isNotEmpty || result.isReady);
         },
       ).onError((e, stackTrace) {
         logger.e('Polling error: $e, $stackTrace');
@@ -140,20 +158,37 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   }
 
   Future _additionalPolling() async {
-    if (serviceHelper.isSupportLedMode()) {
-      await ref.read(nodeLightSettingsProvider.notifier).fetch();
+    // Each additional poll is independent — one failure should not
+    // prevent others from completing (important when JNAP is partially
+    // or fully unavailable on USP-only routers).
+    try {
+      if (serviceHelper.isSupportLedMode()) {
+        await ref.read(nodeLightSettingsProvider.notifier).fetch();
+      }
+    } catch (e) {
+      logger.w('[Polling]: LED mode fetch failed: $e');
     }
-    if (serviceHelper.isSupportVPN()) {
-      await ref.read(vpnProvider.notifier).fetch(false, true);
+    try {
+      if (serviceHelper.isSupportVPN()) {
+        await ref.read(vpnProvider.notifier).fetch(false, true);
+      }
+    } catch (e) {
+      logger.w('[Polling]: VPN fetch failed: $e');
     }
-
-    if (serviceHelper.isSupportHealthCheck()) {
-      await ref.read(healthCheckProvider.notifier).loadData();
+    try {
+      if (serviceHelper.isSupportHealthCheck()) {
+        await ref.read(healthCheckProvider.notifier).loadData();
+      }
+    } catch (e) {
+      logger.w('[Polling]: Health check fetch failed: $e');
     }
-
-    await ref
-        .read(instantPrivacyProvider.notifier)
-        .fetch(updateStatusOnly: true);
+    try {
+      await ref
+          .read(instantPrivacyProvider.notifier)
+          .fetch(updateStatusOnly: true);
+    } catch (e) {
+      logger.w('[Polling]: Instant privacy fetch failed: $e');
+    }
   }
 
   Future forcePolling() {
@@ -180,7 +215,10 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     }
     logger.d('prepare start polling data');
     _service.checkDeviceMode().then((mode) {
-      _coreTransactions = _service.buildCoreTransactions(mode: mode);
+      _coreTransactions = _service.buildCoreTransactions(
+        mode: mode,
+        resolver: ref.read(protocolResolverProvider),
+      );
       fetchFirstLaunchedCacheData();
     }).then(
       (value) =>

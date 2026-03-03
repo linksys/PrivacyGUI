@@ -102,4 +102,28 @@ class PortForwarding {
     if (params.isNotEmpty) await client.set(params, allowPartial: allowPartial);
   }
 
+  /// Add a new PortForwardingRule instance via USP Add message
+  static Future<String> add(UspService client, {
+    bool? enabled,
+    int? externalPort,
+    int? internalPort,
+    String? internalClient,
+    String? protocol,
+    String? description,
+  }) async {
+    final params = <String, dynamic>{};
+    if (enabled != null) params['Enable'] = enabled;
+    if (externalPort != null) params['ExternalPort'] = externalPort;
+    if (internalPort != null) params['InternalPort'] = internalPort;
+    if (internalClient != null) params['InternalClient'] = internalClient;
+    if (protocol != null) params['Protocol'] = protocol;
+    if (description != null) params['Description'] = description;
+    return await client.add('Device.NAT.PortMapping.', params);
+  }
+
+  /// Delete a PortForwardingRule instance via USP Delete message
+  static Future<void> delete(UspService client, String instancePath) async {
+    await client.delete(instancePath);
+  }
+
 }

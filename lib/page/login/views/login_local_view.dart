@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/util/error_code_helper.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -98,6 +99,28 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   @override
   Widget build(BuildContext context) {
+    // Navigate to dashboard after successful login.
+    // Go directly to dashboardHome (not '/') to avoid autoConfigurationLogic
+    // calling init() which toggles auth state and triggers routerProvider
+    // rebuild loops via _ref.watch(authProvider) in redirectLogic.
+    ref.listen(authProvider, (previous, next) {
+      if (previous != null &&
+          previous.isLoading &&
+          next.hasValue &&
+          !next.hasError) {
+        final loginType = next.value?.loginType;
+        if (loginType != null && loginType != LoginType.none) {
+          // Route to USP Dashboard when JNAP is unavailable
+          final resolver = ref.read(protocolResolverProvider);
+          if (resolver.isUspOnlyMode) {
+            context.goNamed(RouteNamed.uspDashboard);
+          } else {
+            context.goNamed(RouteNamed.dashboardHome);
+          }
+        }
+      }
+    });
+
     final state = ref.watch(authProvider);
     return state.when(error: (error, stack) {
       _p = null;

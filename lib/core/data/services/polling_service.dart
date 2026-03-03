@@ -4,6 +4,7 @@ import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_transaction.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 import 'package:privacy_gui/core/utils/fernet_manager.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
@@ -25,12 +26,19 @@ class PollingService {
   /// Checks the current device mode (Master, Slave, Unconfigured).
   ///
   /// Returns: Device mode string, defaults to 'Unconfigured' if unavailable.
+  /// When JNAP is disabled (USP-only router), gracefully returns the default
+  /// instead of propagating the error.
   Future<String> checkDeviceMode() async {
-    final result = await _routerRepository.send(
-      JNAPAction.getDeviceMode,
-      fetchRemote: true,
-    );
-    return result.output['mode'] ?? 'Unconfigured';
+    try {
+      final result = await _routerRepository.send(
+        JNAPAction.getDeviceMode,
+        fetchRemote: true,
+      );
+      return result.output['mode'] ?? 'Unconfigured';
+    } catch (e) {
+      logger.w('[PollingService] checkDeviceMode failed: $e');
+      return 'Unconfigured';
+    }
   }
 
   // === Core Transactions ===
@@ -42,6 +50,7 @@ class PollingService {
   /// Returns: List of JNAP action entries with their parameters.
   List<MapEntry<JNAPAction, Map<String, dynamic>>> buildCoreTransactions({
     String? mode,
+    ProtocolResolver? resolver,
   }) {
     final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
 
@@ -60,7 +69,9 @@ class PollingService {
       const MapEntry(JNAPAction.getSystemStats, {}),
       const MapEntry(JNAPAction.getPowerTableSettings, {}),
       const MapEntry(JNAPAction.getLocalTime, {}),
-      const MapEntry(JNAPAction.getDeviceInfo, {}),
+      // Skip getDeviceInfo when USP handles it
+      if (!(resolver?.useUsp(ProtocolFeature.deviceInfo) ?? false))
+        const MapEntry(JNAPAction.getDeviceInfo, {}),
     ];
 
     if (serviceHelper.isSupportSetup()) {

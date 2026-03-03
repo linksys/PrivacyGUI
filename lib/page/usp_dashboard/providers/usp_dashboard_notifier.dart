@@ -1,0 +1,227 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
+import 'package:privacy_gui/generated/port_forwarding.g.dart';
+import 'package:privacy_gui/generated/system_info.g.dart';
+import 'package:privacy_gui/generated/time_settings.g.dart';
+import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
+import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
+import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/page/usp_dashboard/providers/usp_dashboard_provider.dart';
+import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
+
+/// USP Dashboard provider — AsyncNotifier for read + write operations.
+final uspDashboardProvider =
+    AsyncNotifierProvider.autoDispose<UspDashboardNotifier, UspDashboardState>(
+  UspDashboardNotifier.new,
+);
+
+/// Tracks which card is currently being mutated (for loading overlay).
+/// Values: null (idle), 'wifi', 'time', 'dhcp', 'portForwarding'
+final uspMutationLoadingProvider = StateProvider<String?>((ref) => null);
+
+class UspDashboardNotifier
+    extends AutoDisposeAsyncNotifier<UspDashboardState> {
+  /// Sequential lock — prevents parallel USP calls (WASM bug)
+  bool _mutating = false;
+
+  UspService get _usp {
+    final usp = ref.read(uspServiceProvider);
+    if (usp == null) throw StateError('USP service not available');
+    return usp;
+  }
+
+  @override
+  Future<UspDashboardState> build() async {
+    final usp = ref.watch(uspServiceProvider);
+    if (usp == null) {
+      throw StateError('USP service not available');
+    }
+    // On page reload WASM state is lost — attempt session restore before giving up
+    if (!usp.isAuthenticated) {
+      await ref.read(uspAuthCoordinatorProvider).restoreSession();
+      if (!usp.isAuthenticated) {
+        throw StateError('USP not authenticated after restore attempt');
+      }
+    }
+    // All fetches MUST be sequential — WASM client swaps responses
+    // when requests are sent in parallel via Future.wait.
+    final systemInfo = await SystemInfo.fetch(usp);
+    final connectedDevices = await ConnectedDevices.fetch(usp);
+    final wifiRadios = await WiFiRadios.fetch(usp);
+    final wifiSsids = await WiFiSsids.fetch(usp);
+    final wifiAccessPoints = await WiFiAccessPoints.fetch(usp);
+    final timeSettings = await TimeSettings.fetch(usp);
+    final dhcpReservations = await DhcpReservations.fetch(usp);
+    final portForwarding = await PortForwarding.fetch(usp);
+
+    return UspDashboardState(
+      systemInfo: systemInfo,
+      connectedDevices: connectedDevices,
+      wifiRadios: wifiRadios,
+      wifiSsids: wifiSsids,
+      wifiAccessPoints: wifiAccessPoints,
+      timeSettings: timeSettings,
+      dhcpReservations: dhcpReservations,
+      portForwarding: portForwarding,
+      isAuthenticated: usp.isAuthenticated,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sequential lock guard
+  // ---------------------------------------------------------------------------
+
+  Future<T> _withLock<T>(Future<T> Function() action) async {
+    if (_mutating) throw StateError('Another mutation is in progress');
+    _mutating = true;
+    try {
+      return await action();
+    } finally {
+      _mutating = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // WiFi Radio mutations (2B-2)
+  // ---------------------------------------------------------------------------
+
+  Future<void> toggleWifiRadio(String instancePath, bool enable) async {
+    await _withLock(() async {
+      await WiFiRadios.update(
+          _usp, WiFiRadioUpdate(instancePath: instancePath, enable: enable));
+      final radios = await WiFiRadios.fetch(_usp);
+      state = AsyncData(state.requireValue.copyWith(wifiRadios: radios));
+    });
+  }
+
+  Future<void> updateWifiRadioChannel(
+      String instancePath, int channel, bool autoChannel) async {
+    await _withLock(() async {
+      await WiFiRadios.update(
+        _usp,
+        WiFiRadioUpdate(
+          instancePath: instancePath,
+          channel: channel,
+          autoChannelEnable: autoChannel,
+        ),
+      );
+      final radios = await WiFiRadios.fetch(_usp);
+      state = AsyncData(state.requireValue.copyWith(wifiRadios: radios));
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Time Settings mutations (2B-5)
+  // ---------------------------------------------------------------------------
+
+  Future<void> updateTimeSettings(
+      {bool? enable, String? ntpServer1, String? ntpServer2}) async {
+    await _withLock(() async {
+      // Manual SET — codegen may not generate save() for single-instance
+      final params = <String, dynamic>{};
+      if (enable != null) params['Device.Time.Enable'] = enable;
+      if (ntpServer1 != null) params['Device.Time.NTPServer1'] = ntpServer1;
+      if (ntpServer2 != null) params['Device.Time.NTPServer2'] = ntpServer2;
+      if (params.isNotEmpty) await _usp.set(params);
+      final timeSettings = await TimeSettings.fetch(_usp);
+      state =
+          AsyncData(state.requireValue.copyWith(timeSettings: timeSettings));
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // DHCP Reservation mutations (2B-3)
+  // ---------------------------------------------------------------------------
+
+  Future<void> toggleDhcpReservation(
+      String instancePath, bool enable) async {
+    await _withLock(() async {
+      await DhcpReservations.update(
+        _usp,
+        DhcpReservationUpdate(instancePath: instancePath, enable: enable),
+      );
+      final reservations = await DhcpReservations.fetch(_usp);
+      state = AsyncData(
+          state.requireValue.copyWith(dhcpReservations: reservations));
+    });
+  }
+
+  Future<void> addDhcpReservation(
+      {required String mac, required String ip, bool enable = true}) async {
+    await _withLock(() async {
+      await DhcpReservations.add(_usp,
+          enable: enable, chaddr: mac, yiaddr: ip);
+      final reservations = await DhcpReservations.fetch(_usp);
+      state = AsyncData(
+          state.requireValue.copyWith(dhcpReservations: reservations));
+    });
+  }
+
+  Future<void> deleteDhcpReservation(String instancePath) async {
+    await _withLock(() async {
+      await DhcpReservations.delete(_usp, instancePath);
+      final reservations = await DhcpReservations.fetch(_usp);
+      state = AsyncData(
+          state.requireValue.copyWith(dhcpReservations: reservations));
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Port Forwarding mutations (2B-4)
+  // ---------------------------------------------------------------------------
+
+  Future<void> togglePortForwardingRule(
+      String instancePath, bool enabled) async {
+    await _withLock(() async {
+      await PortForwarding.update(
+        _usp,
+        PortForwardingRuleUpdate(instancePath: instancePath, enabled: enabled),
+      );
+      final pf = await PortForwarding.fetch(_usp);
+      state = AsyncData(state.requireValue.copyWith(portForwarding: pf));
+    });
+  }
+
+  Future<void> addPortForwardingRule({
+    required int externalPort,
+    required int internalPort,
+    required String internalClient,
+    required String protocol,
+    String description = '',
+    bool enabled = true,
+  }) async {
+    await _withLock(() async {
+      await PortForwarding.add(
+        _usp,
+        enabled: enabled,
+        externalPort: externalPort,
+        internalPort: internalPort,
+        internalClient: internalClient,
+        protocol: protocol,
+        description: description,
+      );
+      final pf = await PortForwarding.fetch(_usp);
+      state = AsyncData(state.requireValue.copyWith(portForwarding: pf));
+    });
+  }
+
+  Future<void> updatePortForwardingRule(
+      PortForwardingRuleUpdate update) async {
+    await _withLock(() async {
+      await PortForwarding.update(_usp, update);
+      final pf = await PortForwarding.fetch(_usp);
+      state = AsyncData(state.requireValue.copyWith(portForwarding: pf));
+    });
+  }
+
+  Future<void> deletePortForwardingRule(String instancePath) async {
+    await _withLock(() async {
+      await PortForwarding.delete(_usp, instancePath);
+      final pf = await PortForwarding.fetch(_usp);
+      state = AsyncData(state.requireValue.copyWith(portForwarding: pf));
+    });
+  }
+}

@@ -1,0 +1,36 @@
+name: wifiSettings
+instance: Device.WiFi.SSID.1
+description: WiFi settings with security parameters from a related instance
+
+parameters:
+  - path: .SSID
+    field_name: ssid
+    type: string
+    writable: true
+    description: WiFi network name
+
+  - path: .Enable
+    field_name: enabled
+    type: boolean
+    writable: true
+    description: Enable or disable this SSID
+
+  - path: .MACAddress
+    field_name: macAddress
+    type: string
+    description: MAC address of the radio (read-only)
+
+related:
+  - instance: Device.WiFi.AccessPoint.1.Security
+    parameters:
+      - path: .ModeEnabled
+        field_name: securityMode
+        type: string
+        writable: true
+        description: Security mode (e.g., WPA2-Personal, WPA3-Personal)
+
+      - path: .KeyPassphrase
+        field_name: passphrase
+        type: string
+        writable: true
+        description: WiFi passphrase

@@ -10,6 +10,7 @@ description: NAT port forwarding rules (multi-instance)
 
 # Multi-instance flag
 multi_instance: true
+type: add
 
 parameters:
   - field_name: enabled

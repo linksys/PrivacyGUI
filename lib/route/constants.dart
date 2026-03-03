@@ -22,6 +22,9 @@ class RoutePath {
   static const dashboardSupport = '/dashboardSupport';
   static const dashboardAiAssistant = '/dashboardAiAssistant';
 
+  /// USP dashboard (standalone, no JNAP polling dependency)
+  static const uspDashboard = '/uspDashboard';
+
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';
@@ -155,6 +158,9 @@ class RouteNamed {
   static const dashboardHome = 'dashboardHome';
   static const dashboardSupport = 'dashboardSupport';
   static const dashboardAiAssistant = 'dashboardAiAssistant';
+
+  /// USP dashboard
+  static const uspDashboard = 'uspDashboard';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';

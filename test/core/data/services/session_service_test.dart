@@ -22,7 +22,7 @@ void main() {
 
   setUp(() {
     mockRouterRepository = MockRouterRepository();
-    service = SessionService(mockRouterRepository);
+    service = SessionService(mockRouterRepository, null);
   });
 
   group('SessionService - checkRouterIsBack', () {

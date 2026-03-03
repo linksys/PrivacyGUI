@@ -1,0 +1,39 @@
+# Example: API Service pattern (no instance, no multiInstance)
+# Parameters use absolute TR-181 paths, aggregating from different objects.
+# Generated code is identical to single-instance: data class + fetch() + save()
+
+name: NetworkOverview
+version: 1.0.0
+description: Aggregated network status from multiple TR-181 objects
+
+parameters:
+  - path: Device.DeviceInfo.ModelName
+    field_name: modelName
+    type: string
+    description: Device model name
+
+  - path: Device.DeviceInfo.SoftwareVersion
+    field_name: firmwareVersion
+    type: string
+    description: Current firmware version
+
+  - path: Device.IP.Interface.1.IPv4Address.1.IPAddress
+    field_name: lanIpAddress
+    type: string
+    description: LAN IP address
+
+  - path: Device.Ethernet.Interface.1.Status
+    field_name: wanStatus
+    type: string
+    description: WAN interface status
+
+  - path: Device.Hosts.HostNumberOfEntries
+    field_name: connectedDeviceCount
+    type: int
+    description: Number of connected devices
+
+  - path: Device.WiFi.SSID.1.SSID
+    field_name: wifiName
+    type: string
+    writable: true
+    description: Primary WiFi network name

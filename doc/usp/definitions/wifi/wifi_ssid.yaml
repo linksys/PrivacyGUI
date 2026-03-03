@@ -1,0 +1,28 @@
+name: WiFiSsids
+singularName: WiFiSsid
+version: 1.0.0
+base_path: Device.WiFi.SSID
+category: wifi
+description: WiFi SSID instances (network names)
+multi_instance: true
+
+parameters:
+  - field_name: ssid
+    path: SSID
+    type: string
+    description: The network name/identifier
+
+  - field_name: enable
+    path: Enable
+    type: boolean
+    description: Whether this SSID interface is enabled
+
+  - field_name: status
+    path: Status
+    type: string
+    description: Operational status (Up, Down, etc.)
+
+  - field_name: bssid
+    path: BSSID
+    type: string
+    description: Basic Service Set ID (AP MAC address)
