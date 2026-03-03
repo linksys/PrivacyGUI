@@ -7,10 +7,10 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 ### USP Protocol Integration
 
 #### Phase 0: Codegen Toolchain & Validation
-- Add USP (TR-369) WebSocket/WASM client (`lib/usp/`) with JS interop
+- Add USP (TR-369) HTTP/WASM client (`lib/usp/`) with JS interop
 - Implement `usp-codegen` CLI (v0.6.1) — YAML definition → Dart data class + CRUD methods
 - Add 8 YAML definitions: SystemInfo, ConnectedDevices, WiFiRadios, WiFiSsids, WiFiAccessPoints, TimeSettings, DhcpReservations, PortForwarding
-- Add `UspService` with sequential GET/SET/ADD/DELETE/OPERATE APIs
+- Add `UspService` with GET/SET/ADD/DELETE/OPERATE APIs
 - Add `UspResponseExtension` helpers (`getInstances`, `getString`, `getBool`, `getInt`)
 - Validate codegen through 5 iterations (v1→v5), fixing class name collision, reserved word escaping, trailing dot normalization
 
@@ -18,7 +18,7 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Add standalone USP Dashboard page with 7 read-only cards: Device Info, System Status, Connected Devices, WiFi Status, Time Settings, DHCP Reservations, Protocol Info
 - Implement session restore on page reload (WASM state recovery)
 - Cross-reference WiFi AP → SSID via `ssidReference` path
-- All fetches sequential to work around WASM parallel response bug
+- Parallel `Future.wait` fetch for all 8 data categories (WASM client v0.6.1+)
 
 #### Phase 2B: USP Dashboard — Write Operations
 - Refactor provider architecture: `FutureProvider` → `AsyncNotifierProvider` with `_withLock()` sequential mutation guard
@@ -31,6 +31,8 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Add `uspMutationLoadingProvider` for per-card loading state during mutations
 - Update codegen YAML definitions with `writable: true` and `type: add` flags
 - Fix `UspService.add()` to accept `Map<String, dynamic>` (consistent with `set()`)
+- Rename YAML definition files to snake_case (Dart naming convention)
+- Clean up verbose debug logging in `UspService.get()`
 
 ### Features
 - Add dynamic upper bound for speed test gauge based on historical data (#628)

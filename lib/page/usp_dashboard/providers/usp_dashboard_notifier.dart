@@ -46,16 +46,26 @@ class UspDashboardNotifier
         throw StateError('USP not authenticated after restore attempt');
       }
     }
-    // All fetches MUST be sequential — WASM client swaps responses
-    // when requests are sent in parallel via Future.wait.
-    final systemInfo = await SystemInfo.fetch(usp);
-    final connectedDevices = await ConnectedDevices.fetch(usp);
-    final wifiRadios = await WiFiRadios.fetch(usp);
-    final wifiSsids = await WiFiSsids.fetch(usp);
-    final wifiAccessPoints = await WiFiAccessPoints.fetch(usp);
-    final timeSettings = await TimeSettings.fetch(usp);
-    final dhcpReservations = await DhcpReservations.fetch(usp);
-    final portForwarding = await PortForwarding.fetch(usp);
+    // Parallel fetch — WASM client v0.6.1+ supports concurrent HTTP requests.
+    final results = await Future.wait([
+      SystemInfo.fetch(usp),
+      ConnectedDevices.fetch(usp),
+      WiFiRadios.fetch(usp),
+      WiFiSsids.fetch(usp),
+      WiFiAccessPoints.fetch(usp),
+      TimeSettings.fetch(usp),
+      DhcpReservations.fetch(usp),
+      PortForwarding.fetch(usp),
+    ]);
+
+    final systemInfo = results[0] as SystemInfo;
+    final connectedDevices = results[1] as ConnectedDevices;
+    final wifiRadios = results[2] as WiFiRadios;
+    final wifiSsids = results[3] as WiFiSsids;
+    final wifiAccessPoints = results[4] as WiFiAccessPoints;
+    final timeSettings = results[5] as TimeSettings;
+    final dhcpReservations = results[6] as DhcpReservations;
+    final portForwarding = results[7] as PortForwarding;
 
     return UspDashboardState(
       systemInfo: systemInfo,

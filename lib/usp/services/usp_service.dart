@@ -41,17 +41,12 @@ class UspService {
     await _client.set(path, value);
   }
 
-  // Codegen expected signatures
+  /// Fetches multiple USP paths in a single getMultiple call.
+  ///
+  /// Returns a coerced `Map<String, dynamic>` where booleans and nulls are
+  /// properly typed (not left as raw strings).
   Future<Map<String, dynamic>> get(List<String> paths) async {
     final rawMap = await _client.getMultiple(paths);
-
-    // Debug: log raw response from JS client
-    debugPrint('[UspService.get] Requested paths: $paths');
-    debugPrint('[UspService.get] Raw response keys: ${rawMap.keys.toList()}');
-    for (final entry in rawMap.entries) {
-      debugPrint(
-          '[UspService.get]   rawMap["${entry.key}"] = "${entry.value}" (${entry.value.runtimeType})');
-    }
 
     final Map<String, dynamic> result = {};
 
@@ -60,19 +55,12 @@ class UspService {
       result[entry.key] = _coerceValue(entry.key, entry.value);
     }
 
-    // Ensure all requested paths exist in the result to prevent Null Cast errors in Codegen
+    // Ensure all requested paths exist in the result to prevent Null Cast errors in codegen
     for (final path in paths) {
       if (!result.containsKey(path)) {
-        debugPrint('[UspService.get] ⚠️ MISSING path in response: "$path"');
+        debugPrint('[UspService.get] WARNING: missing path in response: "$path"');
       }
       result.putIfAbsent(path, () => null);
-    }
-
-    // Debug: log final coerced result
-    debugPrint('[UspService.get] Final result:');
-    for (final entry in result.entries) {
-      debugPrint(
-          '[UspService.get]   result["${entry.key}"] = ${entry.value} (${entry.value.runtimeType})');
     }
 
     return result;
