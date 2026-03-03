@@ -359,21 +359,26 @@ class UspDashboardView extends ConsumerWidget {
 }
 ```
 
-#### Provider 設計
+#### Provider 設計（Phase 2B 更新為 AsyncNotifier）
 
 ```dart
-/// USP Dashboard 專用 — 不依賴 JNAP polling
-final uspDashboardProvider = FutureProvider<UspDashboardState>((ref) async {
-  final usp = ref.watch(uspServiceProvider);
-  if (usp == null || !usp.isAuthenticated) {
-    throw StateError('USP not available');
+/// USP Dashboard 專用 — AsyncNotifier 支援讀取 + 寫入操作
+final uspDashboardProvider =
+    AsyncNotifierProvider.autoDispose<UspDashboardNotifier, UspDashboardState>(
+  UspDashboardNotifier.new,
+);
+
+class UspDashboardNotifier extends AutoDisposeAsyncNotifier<UspDashboardState> {
+  @override
+  Future<UspDashboardState> build() async {
+    // Session restore + parallel Future.wait fetch 8 categories
   }
-  final systemInfo = await SystemInfo.fetch(usp);
-  return UspDashboardState(
-    systemInfo: systemInfo,
-    isAuthenticated: usp.isAuthenticated,
-  );
-});
+
+  // Mutation 方法：toggleWifiRadio, updateWifiRadioChannel,
+  // updateTimeSettings, toggleDhcpReservation, addDhcpReservation,
+  // deleteDhcpReservation, togglePortForwardingRule, addPortForwardingRule,
+  // updatePortForwardingRule, deletePortForwardingRule
+}
 ```
 
 ### 新增/修改的檔案
@@ -680,7 +685,7 @@ final deviceInfoProvider = Provider<DeviceInfoState>((ref) {
 
 ---
 
-### 2.2 Connected Devices（連線裝置）
+### 2.2 Connected Devices（連線裝置）✅ 完成
 
 **優先級**：P1 — Codegen 已存在，純唯讀
 
@@ -688,6 +693,7 @@ final deviceInfoProvider = Provider<DeviceInfoState>((ref) {
 - JNAP：`JNAPAction.getDevices` + `getNetworkConnections`（polling 取得）
 - Codegen：`connected_devices.g.dart` — `ConnectedDevices.fetch()`（v5 已驗證）
 - TR-181：`Device.Hosts.Host.{i}.` — Phase 1 驗證完整
+- **已實作**：USP Dashboard 卡片，含 online/offline 篩選
 
 **欄位對映**：
 
@@ -718,14 +724,15 @@ final deviceInfoProvider = Provider<DeviceInfoState>((ref) {
 
 ---
 
-### 2.3 WiFi Radio / AP（唯讀）
+### 2.3 WiFi Radio / AP / SSID ✅ 完成
 
-**優先級**：P1 — Phase 1 驗證完整（SSID 除外）
+**優先級**：P1 — Phase 1 驗證完整
 
 **現狀**：
 - JNAP：`getRadioInfo` + `getGuestRadioSettings`（polling）
-- Codegen：**需撰寫 YAML** → 尚無 codegen 產出
-- TR-181：`Device.WiFi.Radio.{i}.` + `Device.WiFi.AccessPoint.{i}.`
+- Codegen：`wi_fi_radios.g.dart` + `wi_fi_access_points.g.dart` + `wi_fi_ssids.g.dart`
+- TR-181：`Device.WiFi.Radio.{i}.` + `Device.WiFi.AccessPoint.{i}.` + `Device.WiFi.SSID.{i}.`
+- **已實作**：3 個 YAML 定義 + codegen + USP Dashboard WiFi Status 卡片（含 Radio toggle、channel edit、AP → SSID 交叉參照）
 
 **已知限制**：
 - **BUG-001（CRITICAL）**：`Device.WiFi.SSIDNumberOfEntries = 0` — SSID 實例枚舉為空
@@ -800,14 +807,15 @@ parameters:
 
 ---
 
-### 2.4 Time Settings（時間設定）
+### 2.4 Time Settings（時間設定）✅ 完成
 
 **優先級**：P1 — Phase 1 驗證 100%（3/3 actions）
 
 **現狀**：
 - JNAP：`getTimeSettings`（polling）
-- Codegen：**需撰寫 YAML**
+- Codegen：`time_settings.g.dart` — `TimeSettings.fetch()` + writable（enable、NTP 1/2）
 - TR-181：`Device.Time.` — 完整驗證
+- **已實作**：YAML 定義 + codegen + USP Dashboard Time Settings 卡片（含 inline enable toggle + NTP edit dialog）
 
 **需撰寫的 YAML**：
 
@@ -839,9 +847,10 @@ parameters:
 
 ---
 
-### 2.5 Port Forwarding（完整 CRUD）
+### 2.5 Port Forwarding（完整 CRUD）✅ 完成
 
 **優先級**：P2 — Codegen 已存在，含寫入操作
+- **已實作**：USP Dashboard Port Forwarding 卡片（toggle + add/edit dialog + delete with confirmation）
 
 **現狀**：
 - JNAP：`getSinglePortForwarding` / `setSinglePortForwarding`（4 actions）
@@ -881,14 +890,15 @@ usp.operate('Device.IP.Diagnostics.IPPing()', args: {
 
 ---
 
-### 2.7 DHCP Reservation（靜態租約）
+### 2.7 DHCP Reservation（靜態租約）✅ 完成
 
 **優先級**：P1 — Phase 1 驗證完整（含 ADD/DELETE）
 
 **現狀**：
 - JNAP：`getDHCPClientTable` / `setDHCPReservation`
-- Codegen：**需撰寫 YAML**
+- Codegen：`dhcp_reservations.g.dart` — `fetch()` + `update()` + `add()` + `delete()`
 - TR-181：`Device.DHCPv4.Server.Pool.1.StaticAddress.{i}.`
+- **已實作**：YAML 定義（`type: add` + `writable: true`）+ codegen + USP Dashboard 卡片（toggle + add dialog + delete with confirmation）
 
 **需撰寫的 YAML**：
 
@@ -941,19 +951,21 @@ Phase 2C: 進階操作
 └── 即時裝置通知（subscribe，待 WASM 支援）
 ```
 
-### Phase 2 實作優先順序
+### Phase 2 實作進度
 
 ```
-Phase 2A-1: Connected Devices（讀取）   — codegen 已存在，最快完成
-Phase 2A-2: WiFi Radio/AP（讀取）       — 需 YAML + codegen
-Phase 2A-3: Time Settings（讀取）       — 需 YAML + codegen
-Phase 2A-4: DHCP Reservations（讀取）   — 需 YAML + codegen
-Phase 2B-1: Port Forwarding（讀取）     — codegen 已存在
-Phase 2B-2: WiFi SET                   — 在 radio codegen 基礎上加 writable
-Phase 2B-3: DHCP ADD/DEL              — 在 reservation codegen 基礎上加 writable
-Phase 2B-4: Port Forwarding CRUD      — codegen 已含 update/updateMany
-Phase 2B-5: Time SET                   — 在 time codegen 基礎上加 writable
-Phase 2C-1: Ping OPERATE              — 需新 YAML + OPERATE codegen 支援
+Phase 2A-1: Connected Devices（讀取）   ✅ 完成
+Phase 2A-2: WiFi Radio/AP/SSID（讀取）  ✅ 完成 — 3 個 YAML + codegen + Dashboard 卡片
+Phase 2A-3: Time Settings（讀取）       ✅ 完成
+Phase 2A-4: DHCP Reservations（讀取）   ✅ 完成
+Phase 2B-1: Port Forwarding（讀取）     ✅ 完成 — 第 8 張卡片
+Phase 2B-2: WiFi SET                   ✅ 完成 — enable toggle + channel edit dialog
+Phase 2B-3: DHCP CRUD                 ✅ 完成 — toggle + add dialog + delete
+Phase 2B-4: Port Forwarding CRUD      ✅ 完成 — toggle + add/edit dialog + delete
+Phase 2B-5: Time SET                   ✅ 完成 — inline toggle + NTP edit dialog
+Phase 2C-1: Ping OPERATE              ❌ 未開始 — 需 OPERATE codegen 支援
+Phase 2C-2: Traceroute OPERATE         ❌ 未開始
+Phase 2C-3: Subscribe（即時通知）       ❌ 未開始 — WASM client 尚未支援
 ```
 
 ---
@@ -1036,19 +1048,36 @@ class ProtocolException implements Exception {
 
 ## 總結
 
-### 已完成（Step 1-10）— MVP 全部完成
+### 已完成（Step 1-10 + Phase 2A + Phase 2B）
 
-- Phase 1 基礎建設 **5 個新檔案**（ProtocolResolver、UspServiceProvider、UspAuthCoordinator、ProtocolPreference、ProtocolError）✅
-- DeviceInfo 雙路徑（`uspSystemInfoProvider` + `deviceInfoProvider`）✅
-- PollingService 條件式跳過 `getDeviceInfo` ✅
-- **JNAP 停用環境穩定性修復**：FormatException 處理、輪詢容錯、登入導航修正 ✅
-- **認證協調** — `UspAuthCoordinator` 自動同步 JNAP↔USP 登入/登出，含 USP 獨立登入 fallback ✅
-- **獨立 USP Dashboard** — 不依賴 JNAP polling，直接透過 USP codegen 取得資料 ✅
-- **Router redirect 修復** — stored credentials 場景下正確分流至 USP Dashboard ✅
+**Phase 1 基礎建設** ✅
+- 5 個新檔案（ProtocolResolver、UspServiceProvider、UspAuthCoordinator、ProtocolPreference、ProtocolError）
+- DeviceInfo 雙路徑（`uspSystemInfoProvider` + `deviceInfoProvider`）
+- PollingService 條件式跳過 `getDeviceInfo`
+- JNAP 停用環境穩定性修復：FormatException 處理、輪詢容錯、登入導航修正
+- 認證協調 — `UspAuthCoordinator` 自動同步 JNAP↔USP 登入/登出
+- 獨立 USP Dashboard — 不依賴 JNAP polling
+- Router redirect 修復 — stored credentials 正確分流至 USP Dashboard
 
-### 下一階段：Phase 2 唯讀核心功能
+**Phase 2A 唯讀擴充** ✅
+- 8 個 YAML 定義 + codegen v0.6.1 產出（SystemInfo、ConnectedDevices、WiFiRadios、WiFiSsids、WiFiAccessPoints、TimeSettings、DhcpReservations、PortForwarding）
+- USP Dashboard 8 張資料卡片 + Protocol Info
+- 並行 `Future.wait` fetch（WASM client 修正後支援）
+- WiFi AP → SSID 交叉參照
 
-見下方 Phase 2 詳細展開。
+**Phase 2B 寫入操作** ✅
+- Provider 架構重構：`FutureProvider` → `AsyncNotifierProvider` + `_withLock()` 順序鎖
+- WiFi Radio：enable/disable toggle + channel edit dialog
+- DHCP Reservations：toggle + add dialog + delete with confirmation
+- Port Forwarding：toggle + add/edit dialog + delete with confirmation
+- Time Settings：inline toggle + NTP edit dialog
+- `uspMutationLoadingProvider` 追蹤每張卡片的 mutation 載入狀態
+- Codegen YAML 更新 `writable: true` 和 `type: add` 旗標
+
+### 下一階段：Phase 2C 進階操作
+
+- Ping/Traceroute 診斷（OPERATE）— 待 codegen OPERATE 支援
+- 即時裝置通知（Subscribe）— 待 WASM client 支援
 
 ### 架構原則
 
