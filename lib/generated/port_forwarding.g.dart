@@ -53,24 +53,37 @@ class PortForwarding {
 
   const PortForwarding({required this.items});
 
+  static const _paths = ['Device.NAT.PortMapping.'];
+
   /// Fetch all instances via USP Get message
   static Future<PortForwarding> fetch(UspService client) async {
-    final response = await client.get(['Device.NAT.PortMapping.']);
+    final response = await client.get(_paths);
     return PortForwarding._fromResponse(response);
   }
 
   factory PortForwarding._fromResponse(Map<String, dynamic> response) {
     final items = <PortForwardingRule>[];
-    final instances = response.getInstances('Device.NAT.PortMapping.');
-    for (final instance in instances) {
+    const basePath = 'Device.NAT.PortMapping.';
+    final ids = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(basePath)) {
+        final rest = key.substring(basePath.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) ids.add(rest.substring(0, dot));
+      }
+    }
+    final sorted = ids.toList()..sort((a, b) =>
+        (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    for (final id in sorted) {
+      final p = '$basePath$id.';
       items.add(PortForwardingRule(
-        instancePath: instance.path,
-        enabled: instance.getBool('Enable'),
-        externalPort: instance.getInt('ExternalPort'),
-        internalPort: instance.getInt('InternalPort'),
-        internalClient: instance.getString('InternalClient'),
-        protocol: instance.getString('Protocol'),
-        description: instance.getString('Description'),
+        instancePath: p,
+        enabled: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        externalPort: int.tryParse(response['${p}ExternalPort']?.toString() ?? '') ?? 0,
+        internalPort: int.tryParse(response['${p}InternalPort']?.toString() ?? '') ?? 0,
+        internalClient: (response['${p}InternalClient'] ?? '') as String,
+        protocol: (response['${p}Protocol'] ?? '') as String,
+        description: (response['${p}Description'] ?? '') as String,
       ));
     }
     return PortForwarding(items: items);

@@ -31,6 +31,24 @@ echo
 echo "Cleaning previous generated code..."
 rm -rf "$OUTPUT_BASE"
 
+# Per-language client configuration
+# Examples use a local stub so they are self-contained (no Flutter dependency).
+# Production builds should override --client-import to point at the real client.
+get_client_import() {
+    case "$1" in
+        dart)       echo "../../stubs/dart/usp_service.dart" ;;
+        typescript) echo "usp-client" ;;
+        swift)      echo "UspClient" ;;
+    esac
+}
+get_client_class() {
+    case "$1" in
+        dart)       echo "UspService" ;;
+        typescript) echo "UspClient" ;;
+        swift)      echo "UspClient" ;;
+    esac
+}
+
 # Generate for each language
 LANGUAGES=("dart" "typescript" "swift")
 
@@ -39,10 +57,19 @@ for LANG in "${LANGUAGES[@]}"; do
     echo -e "${YELLOW}Generating $LANG code...${NC}"
     OUTPUT_DIR="${OUTPUT_BASE}/${LANG}"
 
+    # Build language-specific extra flags
+    EXTRA_FLAGS=""
+    if [ "$LANG" = "dart" ]; then
+        EXTRA_FLAGS="--dart-tr ../../stubs/dart/tr.dart"
+    fi
+
     "$CODEGEN_BIN" \
         --definitions-dir "$EXAMPLES_DIR" \
         --output-dir "$OUTPUT_DIR" \
-        --language "$LANG"
+        --language "$LANG" \
+        --client-import "$(get_client_import "$LANG")" \
+        --client-class "$(get_client_class "$LANG")" \
+        $EXTRA_FLAGS
 
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ $LANG generation completed successfully${NC}"
@@ -66,7 +93,4 @@ echo "Generated code locations:"
 echo "  - Dart:       $OUTPUT_BASE/dart"
 echo "  - TypeScript: $OUTPUT_BASE/typescript"
 echo "  - Swift:      $OUTPUT_BASE/swift"
-echo
-echo "To verify compilation, run:"
-echo "  cd examples && ./verify_examples.sh"
 echo

@@ -23,16 +23,18 @@ class TimeSettings {
     required this.currentLocalTime,
   });
 
+  static const _paths = [
+    'Device.Time.Enable',
+    'Device.Time.Status',
+    'Device.Time.NTPServer1',
+    'Device.Time.NTPServer2',
+    'Device.Time.LocalTimeZone',
+    'Device.Time.CurrentLocalTime',
+  ];
+
   /// Fetch all parameters via USP Get message
   static Future<TimeSettings> fetch(UspService client) async {
-    final response = await client.get([
-      'Device.Time.Enable',
-      'Device.Time.Status',
-      'Device.Time.NTPServer1',
-      'Device.Time.NTPServer2',
-      'Device.Time.LocalTimeZone',
-      'Device.Time.CurrentLocalTime',
-    ]);
+    final response = await client.get(_paths);
     return TimeSettings._fromResponse(response);
   }
 
@@ -60,4 +62,15 @@ class TimeSettings {
     if (params.isNotEmpty) await client.set(params);
   }
 
+  @override
+  String toString() {
+    return 'TimeSettings('
+      'enable: $enable, '
+      'status: $status, '
+      'ntpServer1: $ntpServer1, '
+      'ntpServer2: $ntpServer2, '
+      'localTimeZone: $localTimeZone, '
+      'currentLocalTime: $currentLocalTime'
+    ')';
+  }
 }

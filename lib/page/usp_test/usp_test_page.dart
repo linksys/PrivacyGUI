@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp/web/usp_wasm_init.dart';
 
@@ -23,11 +25,21 @@ class _UspTestPageState extends State<UspTestPage> {
   final _deletePathController = TextEditingController();
   final _operateCommandController = TextEditingController();
   final _operateArgsController = TextEditingController(text: '{}');
+  final _subIdController = TextEditingController(text: 'test-sub-1');
+  final _subPathController = TextEditingController(text: 'Device.Hosts.Host.');
   final _logScrollController = ScrollController();
 
   UspService? _service;
+  UspBridgeClient? _bridgeClient;
   bool _isConnected = false;
   final List<String> _logs = [];
+
+  // SSE state
+  StreamSubscription<SseEvent>? _sseSub;
+  bool _sseConnected = false;
+
+  // Subscription notif type
+  int _notifType = 1; // 1=ValueChange, 2=ObjectCreation, 3=ObjectDeletion
 
   void _log(String message) {
     final timestamp =
@@ -55,6 +67,7 @@ class _UspTestPageState extends State<UspTestPage> {
       }
       _log('WASM client ready');
       _service = UspService(url);
+      _bridgeClient = UspBridgeClient(_service!);
       _log('Client created for $url');
       setState(() => _isConnected = false);
     } catch (e) {
@@ -70,6 +83,12 @@ class _UspTestPageState extends State<UspTestPage> {
       await _service!.login(password);
       setState(() => _isConnected = _service!.isAuthenticated);
       _log('Login result: isAuthenticated=${_service!.isAuthenticated}');
+      final token = _service!.sessionToken;
+      if (token != null) {
+        _log('Token available (${token.length} chars)');
+      } else {
+        _log('WARNING: sessionToken is null — WASM client may not export getToken() yet');
+      }
     } catch (e) {
       _log('ERROR login: $e');
     }
@@ -79,6 +98,9 @@ class _UspTestPageState extends State<UspTestPage> {
     if (_service == null) return;
     _log('Logout...');
     try {
+      await _sseSub?.cancel();
+      _sseSub = null;
+      setState(() => _sseConnected = false);
       await _service!.logout();
       setState(() => _isConnected = false);
       _log('Logged out');
@@ -97,6 +119,10 @@ class _UspTestPageState extends State<UspTestPage> {
       _log('ERROR refreshToken: $e');
     }
   }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // USP CRUD operations
+  // ════════════════════════════════════════════════════════════════════════
 
   Future<void> _doGet() async {
     if (_service == null) return;
@@ -179,8 +205,136 @@ class _UspTestPageState extends State<UspTestPage> {
     }
   }
 
+  // ════════════════════════════════════════════════════════════════════════
+  // Bridge: Health
+  // ════════════════════════════════════════════════════════════════════════
+
+  Future<void> _doHealth() async {
+    if (_bridgeClient == null) return;
+    _log('HEALTH check...');
+    try {
+      final result = await _bridgeClient!.health();
+      _log('HEALTH: ${jsonEncode(result)}');
+    } catch (e) {
+      _log('ERROR health: $e');
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Bridge: SSE Notifications
+  // ════════════════════════════════════════════════════════════════════════
+
+  void _sseConnect() {
+    if (_bridgeClient == null) return;
+    if (_sseConnected) {
+      _log('SSE already connected');
+      return;
+    }
+    _log('SSE connecting...');
+    try {
+      final stream = _bridgeClient!.notifications();
+      _sseSub = stream.listen(
+        (event) {
+          if (event.event == '_debug') {
+            _log('SSE [debug] ${event.data}');
+          } else {
+            _log('SSE [${event.event}] ${event.data}');
+          }
+        },
+        onError: (e) {
+          _log('SSE ERROR: $e');
+          setState(() => _sseConnected = false);
+        },
+        onDone: () {
+          _log('SSE stream closed');
+          setState(() => _sseConnected = false);
+        },
+      );
+      setState(() => _sseConnected = true);
+      _log('SSE listener attached (waiting for fetch response...)');
+    } catch (e) {
+      _log('ERROR SSE connect: $e');
+    }
+  }
+
+  Future<void> _sseDisconnect() async {
+    if (!_sseConnected) return;
+    _log('SSE disconnecting...');
+    await _sseSub?.cancel();
+    _sseSub = null;
+    setState(() => _sseConnected = false);
+    _log('SSE disconnected');
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Bridge: Subscription
+  // ════════════════════════════════════════════════════════════════════════
+
+  Future<void> _doSubscribe() async {
+    if (_bridgeClient == null) return;
+    final subId = _subIdController.text.trim();
+    final path = _subPathController.text.trim();
+    if (subId.isEmpty || path.isEmpty) return;
+    final typeNames = {1: 'ValueChange', 2: 'ObjectCreation', 3: 'ObjectDeletion'};
+    _log('SUBSCRIBE id=$subId path=$path type=${typeNames[_notifType]}');
+    try {
+      final result = await _bridgeClient!.subscribe(
+        subscriptionId: subId,
+        path: path,
+        notifType: _notifType,
+      );
+      _log('SUBSCRIBE result: ${jsonEncode(result)}');
+    } catch (e) {
+      _log('ERROR subscribe: $e');
+    }
+  }
+
+  Future<void> _doUnsubscribe() async {
+    if (_bridgeClient == null) return;
+    final subId = _subIdController.text.trim();
+    if (subId.isEmpty) return;
+    _log('UNSUBSCRIBE id=$subId');
+    try {
+      final result = await _bridgeClient!.unsubscribe(subscriptionId: subId);
+      _log('UNSUBSCRIBE result: ${jsonEncode(result)}');
+    } catch (e) {
+      _log('ERROR unsubscribe: $e');
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Bridge: Turbo Channel
+  // ════════════════════════════════════════════════════════════════════════
+
+  Future<void> _doTurbo(String action) async {
+    if (_bridgeClient == null) return;
+    _log('TURBO $action...');
+    try {
+      final Map<String, dynamic> result;
+      switch (action) {
+        case 'start':
+          result = await _bridgeClient!.turboStart();
+        case 'heartbeat':
+          result = await _bridgeClient!.turboHeartbeat();
+        case 'status':
+          result = await _bridgeClient!.turboStatus();
+        case 'release':
+          result = await _bridgeClient!.turboRelease();
+        default:
+          _log('ERROR: unknown turbo action: $action');
+          return;
+      }
+      _log('TURBO $action: ${jsonEncode(result)}');
+    } catch (e) {
+      _log('ERROR turbo $action: $e');
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+
   @override
   void dispose() {
+    _sseSub?.cancel();
     _service?.dispose();
     _urlController.dispose();
     _passwordController.dispose();
@@ -192,6 +346,8 @@ class _UspTestPageState extends State<UspTestPage> {
     _deletePathController.dispose();
     _operateCommandController.dispose();
     _operateArgsController.dispose();
+    _subIdController.dispose();
+    _subPathController.dispose();
     _logScrollController.dispose();
     super.dispose();
   }
@@ -202,6 +358,24 @@ class _UspTestPageState extends State<UspTestPage> {
       appBar: AppBar(
         title: const Text('USP Client Test'),
         actions: [
+          if (_sseConnected)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Center(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'SSE Connected',
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Center(
@@ -242,6 +416,14 @@ class _UspTestPageState extends State<UspTestPage> {
                   _buildDeleteSection(),
                   const Divider(height: 32),
                   _buildOperateSection(),
+                  const Divider(height: 32),
+                  _buildHealthSection(),
+                  const Divider(height: 32),
+                  _buildSseSection(),
+                  const Divider(height: 32),
+                  _buildSubscriptionSection(),
+                  const Divider(height: 32),
+                  _buildTurboSection(),
                 ],
               ),
             ),
@@ -279,12 +461,17 @@ class _UspTestPageState extends State<UspTestPage> {
                       itemBuilder: (context, index) {
                         final log = _logs[index];
                         final isError = log.contains('ERROR');
+                        final isSse = log.contains('SSE');
                         return Text(
                           log,
                           style: TextStyle(
                             fontFamily: 'monospace',
                             fontSize: 12,
-                            color: isError ? Colors.red : null,
+                            color: isError
+                                ? Colors.red
+                                : isSse
+                                    ? Colors.blue
+                                    : null,
                           ),
                         );
                       },
@@ -465,6 +652,139 @@ class _UspTestPageState extends State<UspTestPage> {
         ),
         const SizedBox(height: 8),
         ElevatedButton(onPressed: _doOperate, child: const Text('Execute')),
+      ],
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Bridge sections
+  // ════════════════════════════════════════════════════════════════════════
+
+  Widget _buildHealthSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionTitle('Bridge Health'),
+        ElevatedButton(onPressed: _doHealth, child: const Text('Health Check')),
+      ],
+    );
+  }
+
+  Future<void> _sseProbe() async {
+    if (_bridgeClient == null) return;
+    _log('SSE PROBE: testing /api/v1/notifications via http.get...');
+    try {
+      final result = await _bridgeClient!.notificationsProbe();
+      _log('SSE PROBE: status=${result['status']} '
+          'contentType=${result['contentType']} '
+          'bodyLength=${result['bodyLength']}');
+      _log('SSE PROBE body (first 500): ${result['bodyPreview']}');
+    } catch (e) {
+      _log('SSE PROBE ERROR: $e');
+    }
+  }
+
+  Widget _buildSseSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionTitle('SSE Notifications'),
+        Wrap(
+          spacing: 8,
+          children: [
+            ElevatedButton(
+              onPressed: _sseConnected ? null : _sseConnect,
+              child: const Text('Connect'),
+            ),
+            OutlinedButton(
+              onPressed: _sseConnected ? _sseDisconnect : null,
+              child: const Text('Disconnect'),
+            ),
+            OutlinedButton(
+              onPressed: _sseProbe,
+              child: const Text('Probe'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubscriptionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionTitle('Subscription'),
+        TextField(
+          controller: _subIdController,
+          decoration: const InputDecoration(
+            labelText: 'Subscription ID',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _subPathController,
+          decoration: const InputDecoration(
+            labelText: 'Path (e.g., Device.Hosts.Host.)',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<int>(
+          initialValue: _notifType,
+          decoration: const InputDecoration(
+            labelText: 'Notification Type',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          items: const [
+            DropdownMenuItem(value: 1, child: Text('1 - ValueChange')),
+            DropdownMenuItem(value: 2, child: Text('2 - ObjectCreation')),
+            DropdownMenuItem(value: 3, child: Text('3 - ObjectDeletion')),
+          ],
+          onChanged: (v) => setState(() => _notifType = v ?? 1),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: [
+            ElevatedButton(
+                onPressed: _doSubscribe, child: const Text('Subscribe')),
+            OutlinedButton(
+                onPressed: _doUnsubscribe, child: const Text('Unsubscribe')),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTurboSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionTitle('Turbo Channel'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ElevatedButton(
+                onPressed: () => _doTurbo('start'),
+                child: const Text('Start')),
+            OutlinedButton(
+                onPressed: () => _doTurbo('heartbeat'),
+                child: const Text('Heartbeat')),
+            OutlinedButton(
+                onPressed: () => _doTurbo('status'),
+                child: const Text('Status')),
+            OutlinedButton(
+                onPressed: () => _doTurbo('release'),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Release')),
+          ],
+        ),
       ],
     );
   }

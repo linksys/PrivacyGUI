@@ -16,24 +16,28 @@ parameters:
     path: .Protocol
     type: string
     writable: true
+    required: true
     description: Protocol (TCP, UDP, or Both)
 
   - field_name: externalPort
     path: .ExternalPort
     type: int
     writable: true
+    required: true
     description: External port number
 
   - field_name: internalPort
     path: .InternalPort
     type: int
     writable: true
+    required: true
     description: Internal port number
 
   - field_name: internalClient
     path: .InternalClient
     type: string
     writable: true
+    required: true
     description: Internal client IP address
 
   - field_name: description

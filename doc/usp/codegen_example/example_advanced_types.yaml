@@ -1,0 +1,48 @@
+# Example: Advanced type mappings (v0.9.0)
+# Demonstrates dateTime, base64, hexBinary, long, unsignedLong types
+# and vendor category for --categorize output
+
+name: CertificateStore
+version: 1.0.0
+instance: Device.Security.Certificate.1
+category: vendor
+description: Certificate store with advanced type mappings
+
+parameters:
+  - path: LastUpdated
+    field_name: lastUpdated
+    type: datetime
+    description: Timestamp of last certificate update
+
+  - path: CertificateData
+    field_name: certificateData
+    type: base64
+    writable: true
+    description: X.509 certificate in base64 encoding
+
+  - path: Fingerprint
+    field_name: fingerprint
+    type: hexbinary
+    description: SHA-256 fingerprint in hexadecimal
+
+  - path: SerialNumber
+    field_name: serialNumber
+    type: long
+    description: Certificate serial number (64-bit signed)
+
+  - path: ByteCount
+    field_name: byteCount
+    type: ulong
+    description: Total bytes transferred using this certificate
+
+  - path: Alias
+    field_name: alias
+    type: string
+    writable: true
+    description: User-assigned alias for this certificate
+
+  - path: Enabled
+    field_name: enabled
+    type: boolean
+    writable: true
+    description: Whether this certificate is active

@@ -41,21 +41,34 @@ class DhcpReservations {
 
   const DhcpReservations({required this.items});
 
+  static const _paths = ['Device.DHCPv4.Server.Pool.1.StaticAddress.'];
+
   /// Fetch all instances via USP Get message
   static Future<DhcpReservations> fetch(UspService client) async {
-    final response = await client.get(['Device.DHCPv4.Server.Pool.1.StaticAddress.']);
+    final response = await client.get(_paths);
     return DhcpReservations._fromResponse(response);
   }
 
   factory DhcpReservations._fromResponse(Map<String, dynamic> response) {
     final items = <DhcpReservation>[];
-    final instances = response.getInstances('Device.DHCPv4.Server.Pool.1.StaticAddress.');
-    for (final instance in instances) {
+    const basePath = 'Device.DHCPv4.Server.Pool.1.StaticAddress.';
+    final ids = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(basePath)) {
+        final rest = key.substring(basePath.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) ids.add(rest.substring(0, dot));
+      }
+    }
+    final sorted = ids.toList()..sort((a, b) =>
+        (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    for (final id in sorted) {
+      final p = '$basePath$id.';
       items.add(DhcpReservation(
-        instancePath: instance.path,
-        enable: instance.getBool('Enable'),
-        chaddr: instance.getString('Chaddr'),
-        yiaddr: instance.getString('Yiaddr'),
+        instancePath: p,
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        chaddr: (response['${p}Chaddr'] ?? '') as String,
+        yiaddr: (response['${p}Yiaddr'] ?? '') as String,
       ));
     }
     return DhcpReservations(items: items);

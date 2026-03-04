@@ -109,6 +109,44 @@ export class UspClient {
         }
     }
     /**
+     * Creates an EventSource connection to the bridge's SSE notifications endpoint.
+     *
+     * Returns the browser `EventSource` object directly — the caller is responsible
+     * for attaching event listeners and managing the connection lifecycle.
+     *
+     * Uses `withCredentials: true` so the browser sends the session cookie
+     * automatically. For Bearer-token auth, use `getToken()` and construct
+     * the EventSource manually with a query parameter.
+     *
+     * # Returns
+     * * `EventSource` object on success
+     * * Throws JavaScript exception on error
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * const es = client.connectNotifications();
+     * es.onmessage = (event) => console.log("SSE:", event.data);
+     * es.onerror = (err) => console.error("SSE error:", err);
+     * // To close: es.close();
+     * ```
+     * @returns {EventSource}
+     */
+    connectNotifications() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.uspclient_connectNotifications(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+            if (r2) {
+                throw takeObject(r1);
+            }
+            return takeObject(r0);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * Performs a Delete operation to remove an object instance
      *
      * # Arguments
@@ -192,6 +230,40 @@ export class UspClient {
         return takeObject(ret);
     }
     /**
+     * Returns the current session token string, if authenticated.
+     *
+     * Use this to make direct API calls to the bridge (e.g., SSE notifications)
+     * that require JWT authentication.
+     *
+     * # Returns
+     * * Token string if authenticated, `undefined` if not
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * const token = client.getToken();
+     * if (token) {
+     *     const source = new EventSource(`/api/v1/notifications?token=${token}`);
+     * }
+     * ```
+     * @returns {string | undefined}
+     */
+    getToken() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.uspclient_getToken(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            let v1;
+            if (r0 !== 0) {
+                v1 = getStringFromWasm0(r0, r1).slice();
+                wasm.__wbindgen_export4(r0, r1 * 1, 1);
+            }
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * Checks if the client is authenticated
      *
      * # Returns
@@ -263,6 +335,38 @@ export class UspClient {
             return this;
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * Returns the full notifications SSE endpoint URL.
+     *
+     * Useful for constructing a custom EventSource with Bearer token auth.
+     *
+     * # Returns
+     * * Full URL string (e.g., "https://192.168.1.1/api/v1/notifications")
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * const url = client.notificationsUrl();
+     * const token = client.getToken();
+     * const es = new EventSource(`${url}?token=${token}`);
+     * ```
+     * @returns {string}
+     */
+    notificationsUrl() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.uspclient_notificationsUrl(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_export4(deferred1_0, deferred1_1, 1);
         }
     }
     /**
@@ -345,6 +449,56 @@ export class UspClient {
      */
     setMultiple(parameters, allow_partial) {
         const ret = wasm.uspclient_setMultiple(this.__wbg_ptr, addHeapObject(parameters), allow_partial);
+        return takeObject(ret);
+    }
+    /**
+     * Registers a notification subscription with the bridge.
+     *
+     * # Arguments
+     * * `subscription_id` - Unique subscription identifier
+     * * `path` - USP object path to monitor (e.g., "Device.Hosts.Host.")
+     * * `notification_type` - USP notification type: 1=ValueChange, 2=ObjectCreation, 3=ObjectDeletion
+     *
+     * # Returns
+     * * Promise that resolves on success, rejects on error
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * await client.subscribe("host-changes", "Device.Hosts.Host.", 1);
+     * ```
+     * @param {string} subscription_id
+     * @param {string} path
+     * @param {number} notification_type
+     * @returns {Promise<any>}
+     */
+    subscribe(subscription_id, path, notification_type) {
+        const ptr0 = passStringToWasm0(subscription_id, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(path, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.uspclient_subscribe(this.__wbg_ptr, ptr0, len0, ptr1, len1, notification_type);
+        return takeObject(ret);
+    }
+    /**
+     * Removes a notification subscription from the bridge.
+     *
+     * # Arguments
+     * * `subscription_id` - Subscription identifier to remove
+     *
+     * # Returns
+     * * Promise that resolves on success, rejects on error
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * await client.unsubscribe("wifi-status");
+     * ```
+     * @param {string} subscription_id
+     * @returns {Promise<any>}
+     */
+    unsubscribe(subscription_id) {
+        const ptr0 = passStringToWasm0(subscription_id, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.uspclient_unsubscribe(this.__wbg_ptr, ptr0, len0);
         return takeObject(ret);
     }
 }
@@ -513,7 +667,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2057(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2111(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -540,6 +694,10 @@ function __wbg_get_imports() {
             const ret = new Function(getStringFromWasm0(arg0, arg1));
             return addHeapObject(ret);
         },
+        __wbg_new_with_event_source_init_dict_534a8e0be92bef3c: function() { return handleError(function (arg0, arg1, arg2) {
+            const ret = new EventSource(getStringFromWasm0(arg0, arg1), getObject(arg2));
+            return addHeapObject(ret);
+        }, arguments); },
         __wbg_new_with_str_and_init_a61cbc6bdef21614: function() { return handleError(function (arg0, arg1, arg2) {
             const ret = new Request(getStringFromWasm0(arg0, arg1), getObject(arg2));
             return addHeapObject(ret);
@@ -595,6 +753,9 @@ function __wbg_get_imports() {
         },
         __wbg_set_signal_f2d3f8599248896d: function(arg0, arg1) {
             getObject(arg0).signal = getObject(arg1);
+        },
+        __wbg_set_with_credentials_077b2ededd8e5d55: function(arg0, arg1) {
+            getObject(arg0).withCredentials = arg1 !== 0;
         },
         __wbg_signal_d1285ecab4ebc5ad: function(arg0) {
             const ret = getObject(arg0).signal;
@@ -655,8 +816,8 @@ function __wbg_get_imports() {
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 142, function: Function { arguments: [Externref], shim_idx: 143, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1209, __wasm_bindgen_func_elem_1224);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 151, function: Function { arguments: [Externref], shim_idx: 152, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1249, __wasm_bindgen_func_elem_1264);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
@@ -678,12 +839,12 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1224(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1224(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1264(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1264(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_2057(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2057(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_2111(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2111(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 // Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
@@ -7,18 +9,58 @@ import '../stub/usp_client_stub.dart'
 // Export response helpers so generated code only needs one import.
 export 'usp_response_helpers.dart';
 
+// ===========================================================================
+// USP Subscription types (used by codegen-generated subscribe methods)
+// ===========================================================================
+
+/// USP Notification types as defined in TR-369 §7.2
+enum NotifType {
+  valueChange,
+  objectCreation,
+  objectDeletion,
+  operationComplete,
+  onBoardRequest,
+  event,
+}
+
+/// Represents an active USP subscription that delivers typed updates.
+///
+/// Wraps a [Stream] of parsed model objects, with the ability to cancel
+/// the subscription when it is no longer needed.
+class Subscription<T> {
+  final String id;
+  final NotifType notifType;
+  final Stream<T> stream;
+  final Future<void> Function() _cancel;
+
+  Subscription({
+    required this.id,
+    required this.notifType,
+    required this.stream,
+    required Future<void> Function() cancel,
+  }) : _cancel = cancel;
+
+  /// Cancel this subscription (sends USP Unsubscribe).
+  Future<void> cancel() => _cancel();
+}
+
 /// Platform-agnostic Service for interacting with the router via USP.
 class UspService {
   late final UspClientWeb _client;
+  final String _baseUrl;
 
-  UspService(String baseUrl) {
+  UspService(String baseUrl) : _baseUrl = baseUrl {
     if (!kIsWeb) {
       throw UnsupportedError('This POC only supports Web platforms currently.');
     }
     _client = UspClientWeb(baseUrl);
   }
 
+  String get baseUrl => _baseUrl;
+
   bool get isAuthenticated => _client.isAuthenticated;
+
+  String? get sessionToken => _client.sessionToken;
 
   Future<void> login(String password) async {
     await _client.login(password);
@@ -162,28 +204,54 @@ class UspService {
   }
 
   // ===========================================================================
-  // Subscribe — real-time parameter change notifications
+  // Subscribe — USP Notify-based subscriptions
   // ===========================================================================
 
-  /// Subscribes to parameter changes on the given paths.
+  /// Creates a typed subscription that polls the given paths and delivers
+  /// parsed model updates via a [Stream].
   ///
-  /// [paths] are the TR-181 paths to monitor (e.g., ["Device.Hosts.Host."]).
-  /// [notifType] is the USP notification type:
-  ///   - 1 = ValueChange
-  ///   - 2 = ObjectCreation
-  ///   - 3 = ObjectDeletion
-  ///
-  /// Returns a Stream that emits updated parameter maps when changes occur.
-  ///
-  /// TODO: Implement when JS/WASM client adds subscribe support.
-  Stream<Map<String, dynamic>> subscribe(
-      List<String> paths, int notifType) {
-    // Stub: the JS/WASM client does not yet support USP Subscribe.
-    // Return an empty stream to allow generated code to compile.
-    debugPrint(
-        '[UspService.subscribe] ⚠️ STUB — subscribe not yet implemented in JS client. '
-        'paths=$paths, notifType=$notifType');
-    return const Stream.empty();
+  /// In a full USP implementation this would use USP Subscribe / Notify
+  /// messages (TR-369 §7.2). For this POC, we simulate it with periodic
+  /// polling since the WASM client does not yet support WebSocket-based
+  /// notifications.
+  Future<Subscription<T>> subscribe<T>({
+    required String id,
+    required NotifType notifType,
+    required List<String> paths,
+    required T Function(Map<String, dynamic>) parser,
+    Duration interval = const Duration(seconds: 5),
+  }) async {
+    late StreamController<T> controller;
+    Timer? timer;
+
+    controller = StreamController<T>(
+      onListen: () {
+        timer = Timer.periodic(interval, (_) async {
+          try {
+            final response = await get(paths);
+            final parsed = parser(response);
+            if (!controller.isClosed) {
+              controller.add(parsed);
+            }
+          } catch (e) {
+            debugPrint('[UspService.subscribe] Poll error for "$id": $e');
+          }
+        });
+      },
+      onCancel: () {
+        timer?.cancel();
+      },
+    );
+
+    return Subscription<T>(
+      id: id,
+      notifType: notifType,
+      stream: controller.stream,
+      cancel: () async {
+        timer?.cancel();
+        await controller.close();
+      },
+    );
   }
 
   void dispose() {

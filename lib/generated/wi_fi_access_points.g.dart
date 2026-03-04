@@ -30,23 +30,36 @@ class WiFiAccessPoints {
 
   const WiFiAccessPoints({required this.items});
 
+  static const _paths = ['Device.WiFi.AccessPoint.'];
+
   /// Fetch all instances via USP Get message
   static Future<WiFiAccessPoints> fetch(UspService client) async {
-    final response = await client.get(['Device.WiFi.AccessPoint.']);
+    final response = await client.get(_paths);
     return WiFiAccessPoints._fromResponse(response);
   }
 
   factory WiFiAccessPoints._fromResponse(Map<String, dynamic> response) {
     final items = <WiFiAccessPoint>[];
-    final instances = response.getInstances('Device.WiFi.AccessPoint.');
-    for (final instance in instances) {
+    const basePath = 'Device.WiFi.AccessPoint.';
+    final ids = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(basePath)) {
+        final rest = key.substring(basePath.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) ids.add(rest.substring(0, dot));
+      }
+    }
+    final sorted = ids.toList()..sort((a, b) =>
+        (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    for (final id in sorted) {
+      final p = '$basePath$id.';
       items.add(WiFiAccessPoint(
-        instancePath: instance.path,
-        enable: instance.getBool('Enable'),
-        status: instance.getString('Status'),
-        securityModeEnabled: instance.getString('Security.ModeEnabled'),
-        encryptionMode: instance.getString('Security.EncryptionMode'),
-        ssidReference: instance.getString('SSIDReference'),
+        instancePath: p,
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        status: (response['${p}Status'] ?? '') as String,
+        securityModeEnabled: (response['${p}Security.ModeEnabled'] ?? '') as String,
+        encryptionMode: (response['${p}Security.EncryptionMode'] ?? '') as String,
+        ssidReference: (response['${p}SSIDReference'] ?? '') as String,
       ));
     }
     return WiFiAccessPoints(items: items);

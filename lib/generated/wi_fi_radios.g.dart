@@ -53,27 +53,40 @@ class WiFiRadios {
 
   const WiFiRadios({required this.items});
 
+  static const _paths = ['Device.WiFi.Radio.'];
+
   /// Fetch all instances via USP Get message
   static Future<WiFiRadios> fetch(UspService client) async {
-    final response = await client.get(['Device.WiFi.Radio.']);
+    final response = await client.get(_paths);
     return WiFiRadios._fromResponse(response);
   }
 
   factory WiFiRadios._fromResponse(Map<String, dynamic> response) {
     final items = <WiFiRadio>[];
-    final instances = response.getInstances('Device.WiFi.Radio.');
-    for (final instance in instances) {
+    const basePath = 'Device.WiFi.Radio.';
+    final ids = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(basePath)) {
+        final rest = key.substring(basePath.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) ids.add(rest.substring(0, dot));
+      }
+    }
+    final sorted = ids.toList()..sort((a, b) =>
+        (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    for (final id in sorted) {
+      final p = '$basePath$id.';
       items.add(WiFiRadio(
-        instancePath: instance.path,
-        enable: instance.getBool('Enable'),
-        status: instance.getString('Status'),
-        channel: instance.getInt('Channel'),
-        operatingFrequencyBand: instance.getString('OperatingFrequencyBand'),
-        operatingChannelBandwidth: instance.getString('OperatingChannelBandwidth'),
-        supportedStandards: instance.getString('SupportedStandards'),
-        transmitPower: instance.getInt('TransmitPower'),
-        maxBitRate: instance.getInt('MaxBitRate'),
-        autoChannelEnable: instance.getBool('AutoChannelEnable'),
+        instancePath: p,
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        status: (response['${p}Status'] ?? '') as String,
+        channel: int.tryParse(response['${p}Channel']?.toString() ?? '') ?? 0,
+        operatingFrequencyBand: (response['${p}OperatingFrequencyBand'] ?? '') as String,
+        operatingChannelBandwidth: (response['${p}OperatingChannelBandwidth'] ?? '') as String,
+        supportedStandards: (response['${p}SupportedStandards'] ?? '') as String,
+        transmitPower: int.tryParse(response['${p}TransmitPower']?.toString() ?? '') ?? 0,
+        maxBitRate: int.tryParse(response['${p}MaxBitRate']?.toString() ?? '') ?? 0,
+        autoChannelEnable: response['${p}AutoChannelEnable'] == true || response['${p}AutoChannelEnable'] == 'true',
       ));
     }
     return WiFiRadios(items: items);

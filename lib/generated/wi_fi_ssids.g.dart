@@ -28,22 +28,35 @@ class WiFiSsids {
 
   const WiFiSsids({required this.items});
 
+  static const _paths = ['Device.WiFi.SSID.'];
+
   /// Fetch all instances via USP Get message
   static Future<WiFiSsids> fetch(UspService client) async {
-    final response = await client.get(['Device.WiFi.SSID.']);
+    final response = await client.get(_paths);
     return WiFiSsids._fromResponse(response);
   }
 
   factory WiFiSsids._fromResponse(Map<String, dynamic> response) {
     final items = <WiFiSsid>[];
-    final instances = response.getInstances('Device.WiFi.SSID.');
-    for (final instance in instances) {
+    const basePath = 'Device.WiFi.SSID.';
+    final ids = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(basePath)) {
+        final rest = key.substring(basePath.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) ids.add(rest.substring(0, dot));
+      }
+    }
+    final sorted = ids.toList()..sort((a, b) =>
+        (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    for (final id in sorted) {
+      final p = '$basePath$id.';
       items.add(WiFiSsid(
-        instancePath: instance.path,
-        ssid: instance.getString('SSID'),
-        enable: instance.getBool('Enable'),
-        status: instance.getString('Status'),
-        bssid: instance.getString('BSSID'),
+        instancePath: p,
+        ssid: (response['${p}SSID'] ?? '') as String,
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        status: (response['${p}Status'] ?? '') as String,
+        bssid: (response['${p}BSSID'] ?? '') as String,
       ));
     }
     return WiFiSsids(items: items);

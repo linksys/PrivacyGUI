@@ -32,31 +32,49 @@ class ConnectedDevices {
 
   const ConnectedDevices({required this.items});
 
+  static const _paths = ['Device.Hosts.Host.'];
+
   /// Fetch all instances via USP Get message
   static Future<ConnectedDevices> fetch(UspService client) async {
-    final response = await client.get(['Device.Hosts.Host.']);
+    final response = await client.get(_paths);
     return ConnectedDevices._fromResponse(response);
   }
 
   factory ConnectedDevices._fromResponse(Map<String, dynamic> response) {
     final items = <ConnectedDevice>[];
-    final instances = response.getInstances('Device.Hosts.Host.');
-    for (final instance in instances) {
+    const basePath = 'Device.Hosts.Host.';
+    final ids = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(basePath)) {
+        final rest = key.substring(basePath.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) ids.add(rest.substring(0, dot));
+      }
+    }
+    final sorted = ids.toList()..sort((a, b) =>
+        (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+    for (final id in sorted) {
+      final p = '$basePath$id.';
       items.add(ConnectedDevice(
-        instancePath: instance.path,
-        macAddress: instance.getString('PhysAddress'),
-        ipAddress: instance.getString('IPAddress'),
-        hostName: instance.getString('HostName'),
-        isActive: instance.getBool('Active'),
-        interface_: instance.getString('Layer1Interface'),
-        addressSource: instance.getString('AddressSource'),
+        instancePath: p,
+        macAddress: (response['${p}PhysAddress'] ?? '') as String,
+        ipAddress: (response['${p}IPAddress'] ?? '') as String,
+        hostName: (response['${p}HostName'] ?? '') as String,
+        isActive: response['${p}Active'] == true || response['${p}Active'] == 'true',
+        interface_: (response['${p}Layer1Interface'] ?? '') as String,
+        addressSource: (response['${p}AddressSource'] ?? '') as String,
       ));
     }
     return ConnectedDevices(items: items);
   }
 
-  static Stream<Map<String, dynamic>> subscribeConnectedDevices01(UspService client) {
-    return client.subscribe(['Device.Hosts.Host.'], 2);
+  static Future<Subscription<ConnectedDevices>> subscribe(UspService client) async {
+    return client.subscribe<ConnectedDevices>(
+      id: 'connected-devices-01',
+      notifType: NotifType.objectCreation,
+      paths: _paths,
+      parser: ConnectedDevices._fromResponse,
+    );
   }
 
 }

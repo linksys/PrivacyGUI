@@ -29,19 +29,21 @@ class SystemInfo {
     required this.cpuUsage,
   });
 
+  static const _paths = [
+    'Device.DeviceInfo.Manufacturer',
+    'Device.DeviceInfo.ModelName',
+    'Device.DeviceInfo.SerialNumber',
+    'Device.DeviceInfo.HardwareVersion',
+    'Device.DeviceInfo.SoftwareVersion',
+    'Device.DeviceInfo.UpTime',
+    'Device.DeviceInfo.MemoryStatus.Total',
+    'Device.DeviceInfo.MemoryStatus.Free',
+    'Device.DeviceInfo.ProcessStatus.CPUUsage',
+  ];
+
   /// Fetch all parameters via USP Get message
   static Future<SystemInfo> fetch(UspService client) async {
-    final response = await client.get([
-      'Device.DeviceInfo.Manufacturer',
-      'Device.DeviceInfo.ModelName',
-      'Device.DeviceInfo.SerialNumber',
-      'Device.DeviceInfo.HardwareVersion',
-      'Device.DeviceInfo.SoftwareVersion',
-      'Device.DeviceInfo.UpTime',
-      'Device.DeviceInfo.MemoryStatus.Total',
-      'Device.DeviceInfo.MemoryStatus.Free',
-      'Device.DeviceInfo.ProcessStatus.CPUUsage',
-    ]);
+    final response = await client.get(_paths);
     return SystemInfo._fromResponse(response);
   }
 
@@ -59,4 +61,18 @@ class SystemInfo {
     );
   }
 
+  @override
+  String toString() {
+    return 'SystemInfo('
+      'manufacturer: $manufacturer, '
+      'modelName: $modelName, '
+      'serialNumber: $serialNumber, '
+      'hardwareVersion: $hardwareVersion, '
+      'softwareVersion: $softwareVersion, '
+      'uptime: $uptime, '
+      'totalMemory: $totalMemory, '
+      'freeMemory: $freeMemory, '
+      'cpuUsage: $cpuUsage'
+    ')';
+  }
 }
