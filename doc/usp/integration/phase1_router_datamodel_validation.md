@@ -432,7 +432,7 @@ All five bbfdm operations verified end-to-end:
 
 | # | JNAP Action | TR-181 Path | Status | Notes |
 |---|-------------|-------------|--------|-------|
-| 1 | `getGuestRadioSettings` | `Device.WiFi.AccessPoint.3.` + `AP.4.` | ⚠️ | AP data available but SSID name blocked (BUG-001) |
+| 1 | `getGuestRadioSettings` | `Device.WiFi.AccessPoint.3.` + `AP.4.` | ✅ | AP + SSID data available (BUG-001 fixed) |
 | 2 | `setGuestRadioSettings` | `Device.WiFi.AccessPoint.3.` + `AP.4.` | ⚠️ | Same |
 | 3 | `getGuestNetworkSettings` | `Device.WiFi.AccessPoint.{i}.` (guest APs) | 🟡 | AP config available; SSID name missing |
 | 4 | `setGuestNetworkSettings` | `Device.WiFi.AccessPoint.{i}.` | 🟡 | SET available on AP params |
@@ -448,7 +448,7 @@ All five bbfdm operations verified end-to-end:
 | `radios[].radioID` | string | `Device.WiFi.Radio.{i}.Name` | Identifies radio |
 | `radios[].isEnabled` | bool | `Device.WiFi.AccessPoint.{guest_i}.Enable` | — |
 | `radios[].broadcastGuestSSID` | bool | `Device.WiFi.AccessPoint.{guest_i}.SSIDAdvertisementEnabled` | — |
-| `radios[].guestSSID` | string | `Device.WiFi.SSID.{guest_i}.SSID` | ⚠️ BUG-001: SSID instances empty |
+| `radios[].guestSSID` | string | `Device.WiFi.SSID.{guest_i}.SSID` | ✅ BUG-001 fixed |
 | `radios[].guestPassword` | string | `Device.WiFi.AccessPoint.{guest_i}.Security.KeyPassphrase` | — |
 | `maxSimultaneousGuests` | int | — | JNAP-proprietary |
 | `guestPasswordRestrictions` | GuestPasswordRestrictions | — | Capability info |
@@ -463,7 +463,7 @@ All five bbfdm operations verified end-to-end:
 |------------|------|-------------|-------|
 | `isGuestNetworkEnabled` | bool | `Device.WiFi.AccessPoint.{guest_i}.Enable` | — |
 | `broadcastGuestSSID` | bool | `Device.WiFi.AccessPoint.{guest_i}.SSIDAdvertisementEnabled` | — |
-| `guestSSID` | string | `Device.WiFi.SSID.{guest_i}.SSID` | ⚠️ BUG-001 blocks this |
+| `guestSSID` | string | `Device.WiFi.SSID.{guest_i}.SSID` | ✅ BUG-001 fixed |
 | `guestPassword` | string | `Device.WiFi.AccessPoint.{guest_i}.Security.KeyPassphrase` | — |
 | `maxSimultaneousGuests` | int | — | JNAP-proprietary |
 | `canEnableGuestNetwork` | bool | — | Capability info |
@@ -869,7 +869,7 @@ All five bbfdm operations verified end-to-end:
 
 | # | JNAP Action | TR-181 Path | Status | Notes |
 |---|-------------|-------------|--------|-------|
-| 1 | `getSimpleWiFiSettings` | `Device.WiFi.SSID.{i}.` + `AP.{i}.Security.` | ⚠️ | SSID blocked (BUG-001); Security available |
+| 1 | `getSimpleWiFiSettings` | `Device.WiFi.SSID.{i}.` + `AP.{i}.Security.` | ✅ | SSID + Security available (BUG-001 fixed) |
 | 2 | `setSimpleWiFiSettings` | Same | ⚠️ | Same |
 | 3 | `isAdminPasswordSetByUser` | — | ❌ | No `X_LINKSYS_COM_Setup.PasswordConfigured` |
 | 4 | `getAutoConfigurationSettings` | — | ❌ | Linksys-proprietary |
@@ -893,7 +893,7 @@ All five bbfdm operations verified end-to-end:
 | `radios[].radioID` | string | `Device.WiFi.Radio.{i}.Name` | — |
 | `radios[].isEnabled` | bool | `Device.WiFi.Radio.{i}.Enable` | — |
 | `radios[].mode` | WirelessMode | `Device.WiFi.Radio.{i}.OperatingStandards` | Transform needed |
-| `radios[].ssid` | string | `Device.WiFi.SSID.{i}.SSID` | ⚠️ BUG-001: SSID instances empty |
+| `radios[].ssid` | string | `Device.WiFi.SSID.{i}.SSID` | ✅ BUG-001 fixed |
 | `radios[].broadcastSSID` | bool | `Device.WiFi.AccessPoint.{i}.SSIDAdvertisementEnabled` | — |
 | `radios[].channelWidth` | WirelessChannelWidth | `Device.WiFi.Radio.{i}.OperatingChannelBandwidth` | — |
 | `radios[].channel` | int | `Device.WiFi.Radio.{i}.Channel` | — |
@@ -1000,7 +1000,7 @@ All five bbfdm operations verified end-to-end:
 |------------|------|-------------|-------|
 | `settings.isEnabled` | bool | `Device.WiFi.Radio.{i}.Enable` | — |
 | `settings.mode` | WirelessMode | `Device.WiFi.Radio.{i}.OperatingStandards` | Transform: "802.11ax" → "bgnax" |
-| `settings.ssid` | string | `Device.WiFi.SSID.{i}.SSID` | ⚠️ BUG-001: SSID instances empty |
+| `settings.ssid` | string | `Device.WiFi.SSID.{i}.SSID` | ✅ BUG-001 fixed |
 | `settings.broadcastSSID` | bool | `Device.WiFi.AccessPoint.{i}.SSIDAdvertisementEnabled` | — |
 | `settings.channelWidth` | WirelessChannelWidth | `Device.WiFi.Radio.{i}.OperatingChannelBandwidth` | Enum: Auto, 20MHz, 40MHz, 80MHz, 160MHz |
 | `settings.channel` | int | `Device.WiFi.Radio.{i}.Channel` | 0 = auto |
@@ -1259,17 +1259,16 @@ Roles: `full_access`, `extender`, `Untrusted`
 
 ## Firmware Bugs
 
-### BUG-001: WiFi SSID Instance Enumeration Failure — CRITICAL
+### BUG-001: WiFi SSID Instance Enumeration Failure — ~~CRITICAL~~ FIXED (2026-03-04)
 
 - **Symptom:** `Device.WiFi.SSIDNumberOfEntries = 0`; `instances Device.WiFi.SSID.` returns empty
 - **Expected:** At least 4 SSID instances (matching 4 AccessPoints)
-- **Evidence:**
+- **Resolution:** Firmware update resolved the issue. SSID instances now enumerate correctly.
+- **Previous Evidence (archived):**
   - Schema registered (5 params: Alias, Enable, Status, LastChange, ...)
   - Underlying wifi daemon has SSID: `wifi.ap.ath0` → `SSID = "toob-215502"`
   - `AccessPoint.{i}.SSIDReference` = empty for all 4 APs
-- **Impact:** Cannot read SSID names; blocks `getSimpleWiFiSettings` and guest WiFi settings
-- **Component:** `bbfdm.wifidmd` SSID instance enumeration callback
-- **Affects:** 4 JNAP actions (getSimpleWiFiSettings, setSimpleWiFiSettings, getGuestRadioSettings, setGuestRadioSettings)
+- **Previously affected:** 4 JNAP actions (getSimpleWiFiSettings, setSimpleWiFiSettings, getGuestRadioSettings, setGuestRadioSettings)
 
 ### BUG-002: Firewall Top-Level GET Returns Empty — LOW
 

@@ -1174,7 +1174,7 @@ curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/release -H "Authorization: Be
 
 | ID | 嚴重度 | 說明 | 影響 |
 |----|--------|------|------|
-| BUG-001 | 🔴 Critical | `Device.WiFi.SSID.` 實例列舉回傳空 | 無法讀取 SSID 名稱 |
+| BUG-001 | ~~🔴 Critical~~ ✅ Fixed | `Device.WiFi.SSID.` 實例列舉回傳空 | **已修復**（2026-03-04 確認） |
 | BUG-002 | 🟡 Low | `Device.Firewall.` 頂層 GET 回傳空 | 需個別查詢子路徑 |
 | BUG-003 | 🔴 Critical | usp-bridge v0.1.1 SSE 端點從未送出任何資料 | SSE heartbeat 和 subscription 通知均無法送達 |
 | BUG-004 | 🟠 Medium | Rust WASM client `decode_operate_response` 不處理 async command OperateResp | 非同步 Operate 指令（如 NSLookup）回傳 "No operation result in response" |

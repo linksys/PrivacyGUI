@@ -64,7 +64,7 @@ import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
-import 'package:privacy_gui/page/usp_dashboard/views/usp_dashboard_view.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/usp_dashboard_view.dart';
 import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 
 part 'route_home.dart';

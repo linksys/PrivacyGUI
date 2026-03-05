@@ -1,8 +1,9 @@
 # Phase 2：JNAP → USP 遷移架構計畫
 
-> 文件版本：v2.1 | 日期：2026-03-03
+> 文件版本：v2.2 | 日期：2026-03-04
 > 前置文件：`phase1_router_datamodel_validation.md`
 > 變更歷史：
+> - v2.2 — Phase 2C 進度更新：Subscribe 基礎設施完成（被 BUG-003 阻擋）、BUG-001 已修復、codegen v0.9.0
 > - v2.1 — Step 10 完成（USP Dashboard + router redirect 修復）、Phase 2 詳細展開
 > - v2.0 — 新增 E2E 測試發現、JNAP 停用環境修復、MVP 重新定義為獨立 USP Dashboard
 
@@ -735,8 +736,8 @@ final deviceInfoProvider = Provider<DeviceInfoState>((ref) {
 - **已實作**：3 個 YAML 定義 + codegen + USP Dashboard WiFi Status 卡片（含 Radio toggle、channel edit、AP → SSID 交叉參照）
 
 **已知限制**：
-- **BUG-001（CRITICAL）**：`Device.WiFi.SSIDNumberOfEntries = 0` — SSID 實例枚舉為空
-- Radio 和 AP 不受影響，SSID 被阻擋
+- ~~**BUG-001（CRITICAL）**：`Device.WiFi.SSIDNumberOfEntries = 0` — SSID 實例枚舉為空~~ **已修復**（2026-03-04 確認）
+- Radio、AP、SSID 均正常
 
 **需撰寫的 YAML**：
 
@@ -945,10 +946,10 @@ Phase 2B: 寫入操作
 ├── Port Forwarding CRUD
 └── 時間設定修改（NTP SET）
 
-Phase 2C: 進階操作
-├── Ping 診斷（OPERATE）
-├── Traceroute 診斷（OPERATE）
-└── 即時裝置通知（subscribe，待 WASM 支援）
+Phase 2C: 進階操作（全部被 BUG-003 SSE 阻擋）
+├── Ping 診斷（OPERATE）— 另有 BUG-004 async OperateResp 問題
+├── Traceroute 診斷（OPERATE）— 同上
+└── 即時裝置通知（Subscribe）— Dart 側基礎設施已完成
 ```
 
 ### Phase 2 實作進度
@@ -963,10 +964,22 @@ Phase 2B-2: WiFi SET                   ✅ 完成 — enable toggle + channel ed
 Phase 2B-3: DHCP CRUD                 ✅ 完成 — toggle + add dialog + delete
 Phase 2B-4: Port Forwarding CRUD      ✅ 完成 — toggle + add/edit dialog + delete
 Phase 2B-5: Time SET                   ✅ 完成 — inline toggle + NTP edit dialog
-Phase 2C-1: Ping OPERATE              ❌ 未開始 — 需 OPERATE codegen 支援
-Phase 2C-2: Traceroute OPERATE         ❌ 未開始
-Phase 2C-3: Subscribe（即時通知）       ❌ 未開始 — WASM client 尚未支援
+Phase 2C-1: Ping OPERATE              ⏸️ 被阻擋 — BUG-003 (SSE) + BUG-004 (async OperateResp)
+Phase 2C-2: Traceroute OPERATE         ⏸️ 被阻擋 — 同上
+Phase 2C-3: Subscribe（即時通知）       🟡 基礎設施完成，被 BUG-003 阻擋
 ```
+
+#### Phase 2C-3 Subscribe 已完成的基礎設施
+
+| 項目 | 狀態 |
+|------|------|
+| Rust WASM client exports `getToken()`, `subscribe()`, `unsubscribe()` | ✅ |
+| `UspService` — `NotifType` enum + `Subscription<T>` + typed `subscribe<T>()` | ✅ |
+| Codegen v0.9.0 — 產出 `Future<Subscription<T>>` + `NotifType` + `parser` | ✅ |
+| `UspBridgeClient` — SSE `/api/v1/notifications` + subscription register/unregister | ✅ |
+| 測試頁面 `main_usp_test.dart` — SSE/Subscribe/Turbo 完整 UI | ✅ |
+| **BUG-003**：usp-bridge SSE 端點不送資料 → 無法收到即時通知 | ❌ 阻擋 |
+| **BUG-004**：Rust client async OperateResp 解析失敗 → Ping/Traceroute 結果無法取得 | ❌ 阻擋 |
 
 ---
 
@@ -1022,7 +1035,7 @@ class ProtocolException implements Exception {
 | 優先級 | 功能 | JNAP Actions | USP 狀態 | Codegen |
 |--------|------|-------------|----------|---------|
 | P0 | DeviceInfo | 2 | ✅ 完整 | SystemInfo 已存在 |
-| P0 | WiFi Radio/AP | 4 | ✅ 完整（SSID bug 除外） | 需撰寫 YAML |
+| P0 | WiFi Radio/AP/SSID | 4 | ✅ 完整（BUG-001 已修復） | ✅ 已存在 |
 | P1 | 連線裝置 | 3 | ✅ 完整 | ConnectedDevices 已存在 |
 | P1 | DHCP 保留位址 | 2 | ✅ 完整 | 需撰寫 YAML |
 | P1 | 時間/NTP | 2 | ✅ 完整 | 需撰寫 YAML |
@@ -1048,7 +1061,7 @@ class ProtocolException implements Exception {
 
 ## 總結
 
-### 已完成（Step 1-10 + Phase 2A + Phase 2B）
+### 已完成（Step 1-10 + Phase 2A + Phase 2B + Phase 2C 基礎設施）
 
 **Phase 1 基礎建設** ✅
 - 5 個新檔案（ProtocolResolver、UspServiceProvider、UspAuthCoordinator、ProtocolPreference、ProtocolError）
@@ -1060,7 +1073,7 @@ class ProtocolException implements Exception {
 - Router redirect 修復 — stored credentials 正確分流至 USP Dashboard
 
 **Phase 2A 唯讀擴充** ✅
-- 8 個 YAML 定義 + codegen v0.6.1 產出（SystemInfo、ConnectedDevices、WiFiRadios、WiFiSsids、WiFiAccessPoints、TimeSettings、DhcpReservations、PortForwarding）
+- 8 個 YAML 定義 + codegen v0.9.0 產出（SystemInfo、ConnectedDevices、WiFiRadios、WiFiSsids、WiFiAccessPoints、TimeSettings、DhcpReservations、PortForwarding）
 - USP Dashboard 8 張資料卡片 + Protocol Info
 - 並行 `Future.wait` fetch（WASM client 修正後支援）
 - WiFi AP → SSID 交叉參照
@@ -1074,10 +1087,23 @@ class ProtocolException implements Exception {
 - `uspMutationLoadingProvider` 追蹤每張卡片的 mutation 載入狀態
 - Codegen YAML 更新 `writable: true` 和 `type: add` 旗標
 
-### 下一階段：Phase 2C 進階操作
+**Phase 2C 基礎設施** ✅（被 usp-bridge BUG-003/BUG-004 阻擋）
+- Subscribe 完整基礎設施：`NotifType` enum、`Subscription<T>` class、typed `subscribe<T>()`（polling 模擬）
+- Codegen v0.9.0 產出 `Future<Subscription<T>>` + `NotifType` + `parser`（`connected_devices.g.dart`）
+- `UspBridgeClient`：SSE notifications、subscription register/unregister、turbo channel
+- WASM client 已導出 `getToken()`、`subscribe()`、`unsubscribe()`
+- 測試頁面 `main_usp_test.dart`：CRUD + Operate + SSE + Subscribe + Turbo 完整 UI
+- BUG-001（WiFi SSID）已修復確認
 
-- Ping/Traceroute 診斷（OPERATE）— 待 codegen OPERATE 支援
-- 即時裝置通知（Subscribe）— 待 WASM client 支援
+### 被阻擋：Phase 2C 進階操作
+
+以下功能 Dart 側基礎設施已就緒，但被 usp-bridge server 端問題阻擋：
+
+| 功能 | 阻擋原因 | 需解決 |
+|------|---------|--------|
+| Ping/Traceroute OPERATE | BUG-003（SSE 不送結果）+ BUG-004（async OperateResp 解析） | usp-bridge SSE 修復 + Rust client decode 修復 |
+| Subscribe 即時通知 | BUG-003（SSE 不送事件） | usp-bridge SSE 修復 |
+| Turbo Channel 加速 | BUG-003（SSE 通道不通） | usp-bridge SSE 修復 |
 
 ### 架構原則
 

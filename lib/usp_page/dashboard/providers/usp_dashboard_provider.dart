@@ -7,6 +7,7 @@ import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
 
 /// State for the standalone USP Dashboard.
 ///
@@ -22,6 +23,10 @@ class UspDashboardState extends Equatable {
   final PortForwarding portForwarding;
   final bool isAuthenticated;
 
+  /// WiFi client signal info keyed by uppercase MAC address.
+  /// Enriched from Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}.
+  final Map<String, WifiClientInfo> wifiClientMap;
+
   const UspDashboardState({
     required this.systemInfo,
     required this.connectedDevices,
@@ -32,6 +37,7 @@ class UspDashboardState extends Equatable {
     required this.dhcpReservations,
     required this.portForwarding,
     required this.isAuthenticated,
+    this.wifiClientMap = const {},
   });
 
   int get onlineDeviceCount =>
@@ -47,6 +53,7 @@ class UspDashboardState extends Equatable {
     DhcpReservations? dhcpReservations,
     PortForwarding? portForwarding,
     bool? isAuthenticated,
+    Map<String, WifiClientInfo>? wifiClientMap,
   }) {
     return UspDashboardState(
       systemInfo: systemInfo ?? this.systemInfo,
@@ -58,6 +65,7 @@ class UspDashboardState extends Equatable {
       dhcpReservations: dhcpReservations ?? this.dhcpReservations,
       portForwarding: portForwarding ?? this.portForwarding,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+      wifiClientMap: wifiClientMap ?? this.wifiClientMap,
     );
   }
 
@@ -72,6 +80,7 @@ class UspDashboardState extends Equatable {
         dhcpReservations.items.length,
         portForwarding.items.length,
         isAuthenticated,
+        wifiClientMap.length,
       ];
 }
 

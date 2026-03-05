@@ -1,0 +1,64 @@
+# WiFi Client (Associated Device) definition
+#
+# Data source: Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}
+#
+# IMPORTANT: This is a NESTED multi-instance structure.
+# - Level 1: AccessPoint {i}  (which AP / radio)
+# - Level 2: AssociatedDevice {j}  (which client on that AP)
+#
+# Current codegen only supports single-level multi-instance.
+# The generated fetch() will GET "Device.WiFi.AccessPoint." (full subtree),
+# but _fromResponse needs CUSTOM parsing to iterate the nested
+# {i}.AssociatedDevice.{j} instances.
+#
+# The provider layer should:
+# 1. Call WifiClients.fetch() to get all AP + client data
+# 2. Join with ConnectedDevices by MAC address
+# 3. Enrich ConnectedDevice with signalStrength, apIndex, etc.
+#
+# Ethernet devices are NOT in this tree — they use Device.Ethernet.Interface
+# and have no signal strength concept.
+
+name: WifiClients
+version: 1.0.0
+base_path: Device.WiFi.AccessPoint
+category: devices
+description: WiFi access points and their associated client devices
+multi_instance: true
+singular_name: WifiAccessPoint
+
+parameters:
+  # --- AP-level parameters (per AccessPoint instance) ---
+  - field_name: ssidReference
+    path: SSIDReference
+    type: string
+    description: Reference to the SSID object (e.g. Device.WiFi.SSID.1.)
+
+  - field_name: enable
+    path: Enable
+    type: boolean
+    description: Whether this access point is enabled
+
+  - field_name: associatedDeviceCount
+    path: AssociatedDeviceNumberOfEntries
+    type: int
+    description: Number of associated devices (clients) on this AP
+
+  # --- AssociatedDevice parameters (nested multi-instance) ---
+  # NOTE: These paths are RELATIVE to the AP instance, but point into
+  # a nested multi-instance. The codegen will resolve them as:
+  #   Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}.MACAddress
+  #
+  # Since codegen iterates only the AP-level instances, these parameters
+  # will NOT be automatically iterated per-client. The service layer must
+  # manually parse the nested AssociatedDevice instances from the raw
+  # USP response.
+  #
+  # These are listed here for documentation and data model reference:
+  #
+  # AssociatedDevice.{j}.MACAddress      - Client MAC address (join key)
+  # AssociatedDevice.{j}.SignalStrength   - RSSI in dBm (e.g. -45)
+  # AssociatedDevice.{j}.Noise           - Noise level in dBm
+  # AssociatedDevice.{j}.LastDataDownlinkRate - Last Tx rate (kbps)
+  # AssociatedDevice.{j}.LastDataUplinkRate   - Last Rx rate (kbps)
+  # AssociatedDevice.{j}.Active          - Whether client is active

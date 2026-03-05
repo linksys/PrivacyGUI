@@ -109,7 +109,8 @@ class UspService {
   }
 
   /// Coerce a raw string value from USP into the appropriate Dart type.
-  /// - "true" / "false" / "1" / "0" (for Enable paths) → bool
+  /// - "true" / "false" → bool (any path)
+  /// - "1" / "0" → bool (for known boolean suffixes: Enable, Active)
   /// - Empty or null → null
   /// - Everything else stays as String (generated code handles int parsing)
   dynamic _coerceValue(String path, String? raw) {
@@ -117,11 +118,14 @@ class UspService {
 
     // Boolean coercion
     final lower = raw.toLowerCase();
-    if (lower == 'true' || (raw == '1' && path.endsWith('Enable'))) {
-      return true;
-    }
-    if (lower == 'false' || (raw == '0' && path.endsWith('Enable'))) {
-      return false;
+    if (lower == 'true') return true;
+    if (lower == 'false') return false;
+
+    // "1"/"0" coercion for known boolean path suffixes
+    final isBoolPath = path.endsWith('Enable') || path.endsWith('Active');
+    if (isBoolPath) {
+      if (raw == '1') return true;
+      if (raw == '0') return false;
     }
 
     return raw;
