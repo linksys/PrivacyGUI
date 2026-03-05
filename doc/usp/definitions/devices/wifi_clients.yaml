@@ -2,63 +2,53 @@
 #
 # Data source: Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}
 #
-# IMPORTANT: This is a NESTED multi-instance structure.
-# - Level 1: AccessPoint {i}  (which AP / radio)
-# - Level 2: AssociatedDevice {j}  (which client on that AP)
+# Uses the flatten nested multi-instance feature (codegen v0.9.0+).
+# - Level 1: AccessPoint {i} (which AP / radio)
+# - Level 2: AssociatedDevice {j} (which client on that AP)
 #
-# Current codegen only supports single-level multi-instance.
-# The generated fetch() will GET "Device.WiFi.AccessPoint." (full subtree),
-# but _fromResponse needs CUSTOM parsing to iterate the nested
-# {i}.AssociatedDevice.{j} instances.
+# The generated WifiClients.fetch() returns a flat List<WifiClient>
+# with each item containing a `parentPath` pointing back to the AP instance.
 #
-# The provider layer should:
-# 1. Call WifiClients.fetch() to get all AP + client data
-# 2. Join with ConnectedDevices by MAC address
-# 3. Enrich ConnectedDevice with signalStrength, apIndex, etc.
-#
-# Ethernet devices are NOT in this tree — they use Device.Ethernet.Interface
-# and have no signal strength concept.
+# The provider layer should convert to Map<String, WifiClient> keyed by
+# uppercase MAC for efficient lookup by ConnectedDevices.
 
-name: WifiClients
+name: wifi_clients
 version: 1.0.0
 base_path: Device.WiFi.AccessPoint
 category: devices
-description: WiFi access points and their associated client devices
+description: WiFi clients across all access points (flattened view)
 multi_instance: true
-singular_name: WifiAccessPoint
+singular_name: wifi_client
+nested_path: .AssociatedDevice.
+flatten: true
 
 parameters:
-  # --- AP-level parameters (per AccessPoint instance) ---
-  - field_name: ssidReference
-    path: SSIDReference
+  - field_name: mac_address
+    path: .MACAddress
     type: string
-    description: Reference to the SSID object (e.g. Device.WiFi.SSID.1.)
+    description: Client MAC address (join key with ConnectedDevices)
 
-  - field_name: enable
-    path: Enable
-    type: boolean
-    description: Whether this access point is enabled
-
-  - field_name: associatedDeviceCount
-    path: AssociatedDeviceNumberOfEntries
+  - field_name: signal_strength
+    path: .SignalStrength
     type: int
-    description: Number of associated devices (clients) on this AP
+    description: RSSI in dBm (e.g. -45)
 
-  # --- AssociatedDevice parameters (nested multi-instance) ---
-  # NOTE: These paths are RELATIVE to the AP instance, but point into
-  # a nested multi-instance. The codegen will resolve them as:
-  #   Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}.MACAddress
-  #
-  # Since codegen iterates only the AP-level instances, these parameters
-  # will NOT be automatically iterated per-client. The service layer must
-  # manually parse the nested AssociatedDevice instances from the raw
-  # USP response.
-  #
-  # These are listed here for documentation and data model reference:
-  #
-  # AssociatedDevice.{j}.MACAddress      - Client MAC address (join key)
-  # AssociatedDevice.{j}.SignalStrength   - RSSI in dBm (e.g. -45)
-  # AssociatedDevice.{j}.Noise           - Noise level in dBm
-  # AssociatedDevice.{j}.LastDataDownlinkRate - Last Tx rate (kbps)
-  # AssociatedDevice.{j}.LastDataUplinkRate   - Last Rx rate (kbps)
-  # AssociatedDevice.{j}.Active          - Whether client is active
+  - field_name: noise
+    path: .Noise
+    type: int
+    description: Noise level in dBm
+
+  - field_name: last_data_downlink_rate
+    path: .LastDataDownlinkRate
+    type: int
+    description: Last downlink data rate in kbps
+
+  - field_name: last_data_uplink_rate
+    path: .LastDataUplinkRate
+    type: int
+    description: Last uplink data rate in kbps
+
+  - field_name: active
+    path: .Active
+    type: boolean
+    description: Whether this client is currently active

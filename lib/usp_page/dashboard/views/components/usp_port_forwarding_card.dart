@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/port_forwarding_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';

@@ -4,7 +4,7 @@ import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
@@ -23,6 +23,9 @@ class UspWifiStatusCard extends ConsumerWidget {
     final aps = state.wifiAccessPoints.items;
     final enabledRadios = radios.where((r) => r.enable).length;
 
+    // Group APs by their parent Radio via AP → SSID → LowerLayers → Radio
+    final apsByRadioPath = _groupApsByRadio(aps, ssids);
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,22 +38,50 @@ class UspWifiStatusCard extends ConsumerWidget {
             ],
           ),
           AppGap.xl(),
-          ...radios.map((radio) => _buildRadioSection(context, ref, radio)),
-          if (aps.isNotEmpty) ...[
-            AppText.labelLarge('Access Points'),
-            AppGap.sm(),
-            ...aps.asMap().entries.map(
-                  (entry) =>
-                      _buildApRow(context, entry.key + 1, entry.value, ssids),
-                ),
-          ],
+          ...radios.map((radio) => _buildRadioSection(
+                context,
+                ref,
+                radio,
+                apsByRadioPath[radio.instancePath] ?? [],
+                ssids,
+              )),
         ],
       ),
     );
   }
 
+  /// Groups AccessPoints by their parent Radio instancePath.
+  ///
+  /// Chain: AP.ssidReference → SSID.lowerLayers → Radio.instancePath
+  Map<String, List<WiFiAccessPoint>> _groupApsByRadio(
+      List<WiFiAccessPoint> aps, List<WiFiSsid> ssids) {
+    final ssidByPath = {
+      for (final s in ssids)
+        _ensureTrailingDot(s.instancePath): s,
+    };
+
+    final result = <String, List<WiFiAccessPoint>>{};
+    for (final ap in aps) {
+      final ssid = ssidByPath[_ensureTrailingDot(ap.ssidReference)];
+      if (ssid == null) continue;
+      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
+      result.putIfAbsent(radioPath, () => []).add(ap);
+    }
+    return result;
+  }
+
+  static String _ensureTrailingDot(String path) {
+    if (path.isEmpty) return path;
+    return path.endsWith('.') ? path : '$path.';
+  }
+
   Widget _buildRadioSection(
-      BuildContext context, WidgetRef ref, WiFiRadio radio) {
+    BuildContext context,
+    WidgetRef ref,
+    WiFiRadio radio,
+    List<WiFiAccessPoint> radioAps,
+    List<WiFiSsid> ssids,
+  ) {
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'wifi';
     final txPower = radio.transmitPower == -1 ? 100 : radio.transmitPower.clamp(0, 100);
 
@@ -116,6 +147,13 @@ class UspWifiStatusCard extends ConsumerWidget {
           ),
           UspInfoRow(label: 'Bandwidth', value: radio.operatingChannelBandwidth),
           UspInfoRow(label: 'Standards', value: radio.supportedStandards),
+          // Access Points on this radio
+          if (radioAps.isNotEmpty) ...[
+            AppGap.md(),
+            AppText.labelLarge('Access Points'),
+            AppGap.sm(),
+            ...radioAps.map((ap) => _buildApRow(context, ap, ssids)),
+          ],
         ],
       ),
     );
@@ -176,10 +214,10 @@ class UspWifiStatusCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildApRow(BuildContext context, int index, WiFiAccessPoint ap,
-      List<WiFiSsid> ssids) {
+  Widget _buildApRow(
+      BuildContext context, WiFiAccessPoint ap, List<WiFiSsid> ssids) {
     final ssidName = _resolveSsidName(ap.ssidReference, ssids);
-    final label = ssidName ?? 'AP $index';
+    final label = ssidName ?? ap.ssidReference;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),

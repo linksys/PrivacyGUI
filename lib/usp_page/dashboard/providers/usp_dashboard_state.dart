@@ -7,6 +7,7 @@ import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
 
 /// State for the standalone USP Dashboard.
@@ -25,7 +26,15 @@ class UspDashboardState extends Equatable {
 
   /// WiFi client signal info keyed by uppercase MAC address.
   /// Enriched from Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}.
-  final Map<String, WifiClientInfo> wifiClientMap;
+  final Map<String, WifiClient> wifiClientMap;
+
+  /// Mesh node topology from Device.WiFi.DataElements.Network.Device.
+  /// Empty if the router doesn't support DataElements (non-mesh).
+  final MeshTopologyInfo meshTopology;
+
+  /// WiFi client connection details: band + SSID name, keyed by uppercase MAC.
+  /// Built by cross-referencing AccessPoint → SSID → Radio.
+  final Map<String, ClientConnectionDetail> connectionDetailMap;
 
   const UspDashboardState({
     required this.systemInfo,
@@ -38,6 +47,8 @@ class UspDashboardState extends Equatable {
     required this.portForwarding,
     required this.isAuthenticated,
     this.wifiClientMap = const {},
+    this.meshTopology = MeshTopologyInfo.empty,
+    this.connectionDetailMap = const {},
   });
 
   int get onlineDeviceCount =>
@@ -53,7 +64,9 @@ class UspDashboardState extends Equatable {
     DhcpReservations? dhcpReservations,
     PortForwarding? portForwarding,
     bool? isAuthenticated,
-    Map<String, WifiClientInfo>? wifiClientMap,
+    Map<String, WifiClient>? wifiClientMap,
+    MeshTopologyInfo? meshTopology,
+    Map<String, ClientConnectionDetail>? connectionDetailMap,
   }) {
     return UspDashboardState(
       systemInfo: systemInfo ?? this.systemInfo,
@@ -66,6 +79,8 @@ class UspDashboardState extends Equatable {
       portForwarding: portForwarding ?? this.portForwarding,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       wifiClientMap: wifiClientMap ?? this.wifiClientMap,
+      meshTopology: meshTopology ?? this.meshTopology,
+      connectionDetailMap: connectionDetailMap ?? this.connectionDetailMap,
     );
   }
 
@@ -81,6 +96,8 @@ class UspDashboardState extends Equatable {
         portForwarding.items.length,
         isAuthenticated,
         wifiClientMap.length,
+        meshTopology.nodes.length,
+        connectionDetailMap.length,
       ];
 }
 

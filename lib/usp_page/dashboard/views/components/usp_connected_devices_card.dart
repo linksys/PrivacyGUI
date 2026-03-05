@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
 
 class UspConnectedDevicesCard extends StatelessWidget {
   final List<ConnectedDevice> devices;
-  final Map<String, WifiClientInfo> wifiClientMap;
+  final Map<String, WifiClient> wifiClientMap;
+  final MeshTopologyInfo meshTopology;
+  final Map<String, ClientConnectionDetail> connectionDetailMap;
+
+  /// Display name for the gateway (router model). Used to show "via [model]"
+  /// for devices connected to the master node.
+  final String gatewayName;
 
   const UspConnectedDevicesCard({
     super.key,
     required this.devices,
     this.wifiClientMap = const {},
+    this.meshTopology = MeshTopologyInfo.empty,
+    this.connectionDetailMap = const {},
+    this.gatewayName = 'Router',
   });
 
   @override
@@ -54,8 +64,12 @@ class UspConnectedDevicesCard extends StatelessWidget {
   }
 
   Widget _buildDeviceRow(ConnectedDevice device) {
-    final wifiInfo = wifiClientMap[device.macAddress.toUpperCase()];
+    final mac = device.macAddress.toUpperCase();
+    final wifiInfo = wifiClientMap[mac];
     final isWifi = wifiInfo != null;
+    final connDetail = connectionDetailMap[mac];
+    final parentNodeName =
+        device.isActive ? _resolveParentNodeName(mac) : null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -66,7 +80,7 @@ class UspConnectedDevicesCard extends StatelessWidget {
           // Connection type icon
           _buildConnectionIcon(isWifi, wifiInfo, device.isActive),
           AppGap.sm(),
-          // Name + MAC subtitle
+          // Name + subtitle (MAC, band/SSID, parent node)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,13 +90,19 @@ class UspConnectedDevicesCard extends StatelessWidget {
                       ? device.hostName
                       : device.macAddress,
                 ),
-                if (device.hostName.isNotEmpty)
-                  Builder(builder: (context) {
-                    return AppText.bodySmall(
-                      device.macAddress,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    );
-                  }),
+                Builder(builder: (context) {
+                  final subtitle = _buildSubtitle(
+                    device: device,
+                    isWifi: isWifi,
+                    connDetail: connDetail,
+                    parentNodeName: parentNodeName,
+                  );
+                  if (subtitle.isEmpty) return const SizedBox.shrink();
+                  return AppText.bodySmall(
+                    subtitle,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  );
+                }),
               ],
             ),
           ),
@@ -92,7 +112,7 @@ class UspConnectedDevicesCard extends StatelessWidget {
           else if (device.isActive && !isWifi)
             Builder(builder: (context) {
               return AppText.bodySmall(
-                'Wired',
+                'Ethernet',
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               );
             }),
@@ -112,8 +132,37 @@ class UspConnectedDevicesCard extends StatelessWidget {
     );
   }
 
+  /// Builds the subtitle line: "MAC · 5GHz MyNetwork · via MR7500"
+  String _buildSubtitle({
+    required ConnectedDevice device,
+    required bool isWifi,
+    ClientConnectionDetail? connDetail,
+    String? parentNodeName,
+  }) {
+    final parts = <String>[];
+
+    // MAC (only if hostname is shown as primary)
+    if (device.hostName.isNotEmpty) parts.add(device.macAddress);
+
+    // Band + SSID or Ethernet
+    if (isWifi && connDetail != null) {
+      final bandSsid = [
+        if (connDetail.band.isNotEmpty) connDetail.band,
+        if (connDetail.ssidName.isNotEmpty) connDetail.ssidName,
+      ].join(' ');
+      if (bandSsid.isNotEmpty) parts.add(bandSsid);
+    } else if (!isWifi && device.isActive) {
+      parts.add('Ethernet');
+    }
+
+    // Parent node
+    if (parentNodeName != null) parts.add('via $parentNodeName');
+
+    return parts.join(' · ');
+  }
+
   Widget _buildConnectionIcon(
-      bool isWifi, WifiClientInfo? wifiInfo, bool isActive) {
+      bool isWifi, WifiClient? wifiInfo, bool isActive) {
     return Builder(builder: (context) {
       if (!isWifi) {
         return Icon(
@@ -156,5 +205,32 @@ class UspConnectedDevicesCard extends StatelessWidget {
     if (rssi >= -60) return Colors.lightGreen;
     if (rssi >= -70) return Colors.orange;
     return scheme.error;
+  }
+
+  /// Resolves the parent node name for a client device.
+  ///
+  /// - Single router (no mesh): returns [gatewayName] so active devices show
+  ///   "via MR7500" (or whatever the router model is).
+  /// - Mesh, client on gateway: returns [gatewayName].
+  /// - Mesh, client on extender: returns the extender model / device ID.
+  String? _resolveParentNodeName(String clientMac) {
+    // No mesh data — single router, all clients are on the gateway
+    if (meshTopology.isEmpty) return gatewayName;
+
+    final nodeId = meshTopology.clientToNodeMap[clientMac.toUpperCase()];
+    if (nodeId == null) return gatewayName; // not in map — assume gateway
+
+    // Gateway-connected client
+    if (meshTopology.nodes.isNotEmpty &&
+        meshTopology.nodes.first.deviceId == nodeId) {
+      return gatewayName;
+    }
+
+    // Extender-connected client
+    final node = meshTopology.nodes
+        .where((n) => n.deviceId == nodeId)
+        .firstOrNull;
+    if (node == null) return null;
+    return node.model.isNotEmpty ? node.model : nodeId;
   }
 }

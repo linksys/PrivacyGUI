@@ -8,7 +8,7 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -156,13 +156,13 @@ class UspDashboardView extends ConsumerWidget {
         UspConnectionStatusCard(
             activeCount: activeCount, totalCount: devices.length),
         AppGap.xl(),
-        UspNetworkTopologyCard(info: info, devices: devices, wifiClientMap: state.wifiClientMap),
+        UspNetworkTopologyCard(info: info, devices: devices, wifiClientMap: state.wifiClientMap, meshTopology: state.meshTopology),
         AppGap.xl(),
         UspDeviceInfoCard(info: info),
         AppGap.xl(),
         UspSystemStatusCard(info: info),
         AppGap.xl(),
-        UspConnectedDevicesCard(devices: devices, wifiClientMap: state.wifiClientMap),
+        UspConnectedDevicesCard(devices: devices, wifiClientMap: state.wifiClientMap, meshTopology: state.meshTopology, connectionDetailMap: state.connectionDetailMap, gatewayName: info.modelName.isNotEmpty ? info.modelName : 'Router'),
         AppGap.xl(),
         UspWifiStatusCard(state: state),
         AppGap.xl(),
@@ -195,7 +195,7 @@ class UspDashboardView extends ConsumerWidget {
         UspConnectionStatusCard(
             activeCount: activeCount, totalCount: devices.length),
         AppGap.xl(),
-        UspNetworkTopologyCard(info: info, devices: devices, wifiClientMap: state.wifiClientMap),
+        UspNetworkTopologyCard(info: info, devices: devices, wifiClientMap: state.wifiClientMap, meshTopology: state.meshTopology),
         AppGap.xl(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,7 +208,7 @@ class UspDashboardView extends ConsumerWidget {
                   AppGap.xl(),
                   UspSystemStatusCard(info: info),
                   AppGap.xl(),
-                  UspConnectedDevicesCard(devices: devices, wifiClientMap: state.wifiClientMap),
+                  UspConnectedDevicesCard(devices: devices, wifiClientMap: state.wifiClientMap, meshTopology: state.meshTopology, connectionDetailMap: state.connectionDetailMap, gatewayName: info.modelName.isNotEmpty ? info.modelName : 'Router'),
                   AppGap.xl(),
                   UspProtocolInfoCard(),
                 ],

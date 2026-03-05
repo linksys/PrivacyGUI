@@ -8,7 +8,8 @@ import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
 import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
@@ -59,6 +60,7 @@ class UspDashboardNotifier
       DhcpReservations.fetch(usp),
       PortForwarding.fetch(usp),
       fetchWifiClients(usp),
+      fetchMeshNodes(usp), // graceful fallback if DataElements unsupported
     ]);
 
     final systemInfo = results[0] as SystemInfo;
@@ -76,8 +78,20 @@ class UspDashboardNotifier
     final timeSettings = results[5] as TimeSettings;
     final dhcpReservations = results[6] as DhcpReservations;
     final portForwarding = results[7] as PortForwarding;
-    final wifiClientMap = results[8] as Map<String, WifiClientInfo>;
+    final wifiClientMap = results[8] as Map<String, WifiClient>;
+    final meshTopology = results[9] as MeshTopologyInfo;
     logger.d('[USP] WiFi clients enriched: ${wifiClientMap.length} entries');
+    logger.d('[USP] Mesh nodes: ${meshTopology.nodes.length}, '
+        'client mappings: ${meshTopology.clientToNodeMap.length}');
+
+    // Cross-reference AP → SSID → Radio to get band + SSID name per client
+    final connectionDetailMap = buildConnectionDetailMap(
+      wifiClientMap: wifiClientMap,
+      accessPoints: wifiAccessPoints,
+      ssids: wifiSsids,
+      radios: wifiRadios,
+    );
+    logger.d('[USP] Connection details: ${connectionDetailMap.length} entries');
 
     return UspDashboardState(
       systemInfo: systemInfo,
@@ -90,6 +104,8 @@ class UspDashboardNotifier
       portForwarding: portForwarding,
       isAuthenticated: usp.isAuthenticated,
       wifiClientMap: wifiClientMap,
+      meshTopology: meshTopology,
+      connectionDetailMap: connectionDetailMap,
     );
   }
 

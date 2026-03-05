@@ -20,6 +20,21 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Cross-reference WiFi AP → SSID via `ssidReference` path
 - Parallel `Future.wait` fetch for all 8 data categories (WASM client v0.6.1+)
 
+#### Phase 2C: USP Dashboard — Data Enrichment & Topology
+- Upgrade `usp-codegen` to v0.10.0 — recursive multi-level `children` nesting support
+- Add `DataElementsNetwork` YAML definition (4-level: Device → Radio → BSS → STA) for EasyMesh topology
+- Add `WiFiClients` YAML definition with `flatten: true` + `nestedPath` for nested multi-instance
+- Rewrite `mesh_node_enricher` — replace 153-line manual parsing with codegen `DataElementsNetwork.fetch()`
+- Rewrite `wifi_client_enricher` — replace manual AP.AssociatedDevice parsing with codegen `WifiClients.fetch()`
+- Add WiFi client connection detail enrichment: cross-reference AP → SSID → Radio for band + SSID name per client
+- Add mesh node topology: `MeshTopologyInfo` with client→node mapping, graceful fallback for non-mesh routers
+- Add `UspNetworkTopologyCard` with `AppTopology` visualization (gateway, extenders, clients with signal quality)
+- **Connected Devices**: Show band/SSID/Ethernet, signal strength (dBm + color), parent node name ("via MR7500")
+- **WiFi Status Card**: Group Access Points under their parent Radio section
+- Add `UspStatsPanel` summary row with online devices, WiFi radios, DHCP, port forwarding counts
+- Add codegen example YAMLs: `example_nested_multi_instance.yaml`, `example_flatten_multi_instance.yaml`
+- Rename `usp_dashboard_provider.dart` → `usp_dashboard_state.dart` (clarify state vs provider)
+
 #### Phase 2B: USP Dashboard — Write Operations
 - Refactor provider architecture: `FutureProvider` → `AsyncNotifierProvider` with `_withLock()` sequential mutation guard
 - Add `copyWith()` immutable state updates to `UspDashboardState`

@@ -12,6 +12,7 @@ class WiFiSsid {
   final bool enable;
   final String status;
   final String bssid;
+  final String lowerLayers;
 
   const WiFiSsid({
     required this.instancePath,
@@ -19,6 +20,7 @@ class WiFiSsid {
     required this.enable,
     required this.status,
     required this.bssid,
+    required this.lowerLayers,
   });
 }
 
@@ -57,6 +59,7 @@ class WiFiSsids {
         enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
         status: (response['${p}Status'] ?? '') as String,
         bssid: (response['${p}BSSID'] ?? '') as String,
+        lowerLayers: (response['${p}LowerLayers'] ?? '') as String,
       ));
     }
     return WiFiSsids(items: items);

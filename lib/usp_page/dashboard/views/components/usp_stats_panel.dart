@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A row of summary stat cards displayed at the top of the dashboard.

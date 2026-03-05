@@ -6,9 +6,11 @@
 export 'wi_fi_radios.g.dart';
 export 'wi_fi_access_points.g.dart';
 export 'wi_fi_ssids.g.dart';
+export 'data_elements_network.g.dart';
 export 'system_info.g.dart';
 export 'time_settings.g.dart';
 export 'dhcp_reservations.g.dart';
 export 'port_forwarding.g.dart';
+export 'wifi_clients.g.dart';
 export 'connected_devices.g.dart';
 export 'transforms.g.dart';

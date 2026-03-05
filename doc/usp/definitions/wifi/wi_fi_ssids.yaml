@@ -26,3 +26,8 @@ parameters:
     path: BSSID
     type: string
     description: Basic Service Set ID (AP MAC address)
+
+  - field_name: lowerLayers
+    path: LowerLayers
+    type: string
+    description: Reference to the Radio instance (e.g. Device.WiFi.Radio.1.)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -8,16 +9,20 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Uses [AppTopology] to render a gateway node (the router) with client nodes
 /// (connected devices) linked via WiFi or Ethernet connections.
+/// When mesh topology data is available, extender nodes are shown between
+/// gateway and their connected clients.
 class UspNetworkTopologyCard extends StatelessWidget {
   final SystemInfo info;
   final List<ConnectedDevice> devices;
-  final Map<String, WifiClientInfo> wifiClientMap;
+  final Map<String, WifiClient> wifiClientMap;
+  final MeshTopologyInfo meshTopology;
 
   const UspNetworkTopologyCard({
     super.key,
     required this.info,
     required this.devices,
     this.wifiClientMap = const {},
+    this.meshTopology = MeshTopologyInfo.empty,
   });
 
   @override
@@ -121,12 +126,53 @@ class UspNetworkTopologyCard extends StatelessWidget {
       level: 1.0,
     ));
 
+    // Mesh extender nodes (if DataElements available and > 1 node)
+    // The first node is typically the gateway itself; additional nodes are extenders.
+    final hasMesh = meshTopology.isNotEmpty && meshTopology.nodes.length > 1;
+    final extenderNodeIds = <String>{}; // node deviceId → topology node id
+    if (hasMesh) {
+      // Skip the first node (gateway) — add remaining as extenders
+      for (var i = 1; i < meshTopology.nodes.length; i++) {
+        final meshNode = meshTopology.nodes[i];
+        final extenderId = 'extender-${meshNode.deviceId}';
+        extenderNodeIds.add(meshNode.deviceId);
+
+        nodes.add(MeshNode(
+          id: extenderId,
+          name: meshNode.model.isNotEmpty
+              ? meshNode.model
+              : 'Extender ${meshNode.deviceId}',
+          type: MeshNodeType.extender,
+          status: MeshNodeStatus.online,
+          parentId: gatewayId,
+          iconData: Icons.router,
+          level: 0.8,
+        ));
+
+        links.add(MeshLink(
+          sourceId: gatewayId,
+          targetId: extenderId,
+          connectionType: ConnectionType.wifi,
+        ));
+      }
+    }
+
     // Client nodes from connected devices
     for (final device in devices) {
       final clientId = device.instancePath;
       final iface = device.interface_.toLowerCase();
       final isEthernet = iface.contains('ethernet');
       final wifiInfo = wifiClientMap[device.macAddress.toUpperCase()];
+
+      // Determine parent: if mesh data available, look up which node this client is on
+      String parentId = gatewayId;
+      if (hasMesh) {
+        final parentNodeId =
+            meshTopology.clientToNodeMap[device.macAddress.toUpperCase()];
+        if (parentNodeId != null && extenderNodeIds.contains(parentNodeId)) {
+          parentId = 'extender-$parentNodeId';
+        }
+      }
 
       nodes.add(MeshNode(
         id: clientId,
@@ -137,7 +183,7 @@ class UspNetworkTopologyCard extends StatelessWidget {
         status: device.isActive
             ? MeshNodeStatus.online
             : MeshNodeStatus.offline,
-        parentId: gatewayId,
+        parentId: parentId,
         iconData: isEthernet ? Icons.settings_ethernet : Icons.wifi,
         extra: device.ipAddress,
         signalQuality: _resolveSignalQuality(isEthernet, wifiInfo),
@@ -145,7 +191,7 @@ class UspNetworkTopologyCard extends StatelessWidget {
       ));
 
       links.add(MeshLink(
-        sourceId: gatewayId,
+        sourceId: parentId,
         targetId: clientId,
         connectionType:
             isEthernet ? ConnectionType.ethernet : ConnectionType.wifi,
@@ -165,7 +211,7 @@ class UspNetworkTopologyCard extends StatelessWidget {
   }
 
   /// Maps RSSI to a 0.0–1.0 level for ripple animation color.
-  static double _rssiToLevel(bool isEthernet, WifiClientInfo? wifiInfo) {
+  static double _rssiToLevel(bool isEthernet, WifiClient? wifiInfo) {
     if (isEthernet) return 1.0; // wired → green (3 rings)
     if (wifiInfo == null) return 0.0;
     final rssi = wifiInfo.signalStrength;
@@ -176,7 +222,7 @@ class UspNetworkTopologyCard extends StatelessWidget {
   }
 
   static SignalQuality _resolveSignalQuality(
-      bool isEthernet, WifiClientInfo? wifiInfo) {
+      bool isEthernet, WifiClient? wifiInfo) {
     if (isEthernet) return SignalQuality.wired;
     if (wifiInfo == null) return SignalQuality.unknown;
     final rssi = wifiInfo.signalStrength;

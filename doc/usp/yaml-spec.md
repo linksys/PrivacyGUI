@@ -15,6 +15,8 @@ This document describes the YAML format supported by `usp-codegen`, based on the
   - [1.6 Add/Delete Operations](#16-adddelete-operations)
   - [1.7 Related Parameters](#17-related-parameters)
   - [1.8 Operate Definitions](#18-operate-definitions)
+  - [1.9 Nested Multi-Instance (Children)](#19-nested-multi-instance-children)
+  - [1.10 Flatten Mode](#110-flatten-mode)
 - [2. Extension File](#2-extension-file)
   - [2.1 Top-Level Fields](#21-top-level-fields)
   - [2.2 Formula Transform](#22-formula-transform)
@@ -49,6 +51,9 @@ A definition file describes a set of USP parameters and their properties. File n
 | `presets` | array | No | Preset configuration groups |
 | `subscribe` | object | No | Subscription configuration |
 | `related` | array | No | Cross-instance related parameters. See [1.7 Related Parameters](#17-related-parameters) |
+| `children` | array | No | Nested child multi-instance definitions. See [1.9 Nested Multi-Instance (Children)](#19-nested-multi-instance-children) |
+| `nestedPath` | string | No | Relative path to nested sub-table for flatten mode (e.g., `.AssociatedDevice.`). Alias: `nested_path`. See [1.10 Flatten Mode](#110-flatten-mode) |
+| `flatten` | boolean | No | When `true` with `nestedPath`, generates a flat list with `parentPath` field instead of nested hierarchy |
 
 ```yaml
 name: DNSSettings
@@ -64,63 +69,63 @@ subscribe: {...}
 
 #### Path Modes
 
-定義檔有三種路徑模式，決定 parameter 的 `path` 如何解析成完整 TR-181 路徑：
+Definition files support three path modes that determine how a parameter's `path` is resolved into a full TR-181 path:
 
-**模式 A：`instance` — 單實例，相對路徑**
+**Mode A: `instance` — Single-instance, relative paths**
 
-使用 `instance` 提供路徑前綴，parameter 用相對路徑（以 `.` 開頭）。適用於對應單一 TR-181 物件的定義。
+Use `instance` to provide a path prefix. Parameters use relative paths (starting with `.`). Suitable for definitions that correspond to a single TR-181 object.
 
 ```yaml
 name: DNSSettings
-instance: Device.DNS.Client        # 路徑前綴
+instance: Device.DNS.Client        # path prefix
 parameters:
-  - path: .Server.1.DNSServer      # 相對路徑 → Device.DNS.Client.Server.1.DNSServer
-  - path: .Server.2.DNSServer      # 相對路徑 → Device.DNS.Client.Server.2.DNSServer
+  - path: .Server.1.DNSServer      # relative → Device.DNS.Client.Server.1.DNSServer
+  - path: .Server.2.DNSServer      # relative → Device.DNS.Client.Server.2.DNSServer
 ```
 
-**模式 B：`basePath` + `multiInstance` — 多實例，相對路徑**
+**Mode B: `basePath` + `multiInstance` — Multi-instance, relative paths**
 
-使用 `basePath` 提供路徑前綴（尾部自動補 `.`），搭配 `multiInstance: true` 生成 collection 類別 + `getInstances()`。
+Use `basePath` to provide a path prefix (trailing `.` is appended automatically). Combined with `multiInstance: true`, this generates a collection class with `getInstances()`.
 
 ```yaml
 name: connectedDevices
 multiInstance: true
-basePath: Device.Hosts.Host.       # 路徑前綴（多實例表）
+basePath: Device.Hosts.Host.       # path prefix (multi-instance table)
 parameters:
-  - path: .HostName                # 相對路徑 → Device.Hosts.Host.{i}.HostName
-  - path: .IPAddress               # 相對路徑 → Device.Hosts.Host.{i}.IPAddress
+  - path: .HostName                # relative → Device.Hosts.Host.{i}.HostName
+  - path: .IPAddress               # relative → Device.Hosts.Host.{i}.IPAddress
 ```
 
-**模式 C：無 `instance` / 無 `basePath` — 絕對路徑聚合**
+**Mode C: No `instance` / No `basePath` — Absolute path aggregation**
 
-不指定路徑前綴，parameter 的 `path` 必須是完整的 TR-181 絕對路徑。適用於從多個不同 TR-181 物件聚合參數的「API 服務」場景。
+No path prefix is specified; each parameter's `path` must be a full TR-181 absolute path. Suitable for "API service" scenarios that aggregate parameters from multiple different TR-181 objects.
 
 ```yaml
 name: NetworkOverview
 description: Aggregated network status from multiple TR-181 objects
 parameters:
-  - path: Device.DeviceInfo.ModelName            # 絕對路徑
+  - path: Device.DeviceInfo.ModelName            # absolute path
   - path: Device.IP.Interface.1.IPv4Address.1.IPAddress
   - path: Device.Hosts.HostNumberOfEntries
   - path: Device.WiFi.SSID.1.SSID
     writable: true
 ```
 
-> 三種模式的生成結果（data class + `fetch()` + `save()`）結構相同，差異僅在路徑組裝方式。
+> All three modes produce the same generated structure (data class + `fetch()` + `save()`); they only differ in how paths are assembled.
 
-#### `instance` vs `basePath` vs `related` 比較
+#### `instance` vs `basePath` vs `related` Comparison
 
-| | `instance` | `basePath` + `multiInstance` | 無前綴（絕對路徑） | `related` |
+| | `instance` | `basePath` + `multiInstance` | No prefix (absolute) | `related` |
 |---|---|---|---|---|
-| **用途** | 單一 TR-181 物件 | 多實例表（可有 N 筆） | 跨物件聚合 | 單實例中引用其他物件的參數 |
-| **parameter `path`** | 相對（`.XXX`） | 相對（`.XXX`） | 絕對 | 相對（以 related 的 `instance` 為前綴） |
-| **生成差異** | data class | data class + collection + `getInstances()` | data class | 參數合併入主 data class |
-| **範例** | `Device.WiFi.SSID.1` | `Device.Hosts.Host.` | `Device.DeviceInfo.ModelName` | WiFi SSID + AccessPoint Security |
+| **Purpose** | Single TR-181 object | Multi-instance table (N entries) | Cross-object aggregation | Reference parameters from other objects within a single-instance definition |
+| **parameter `path`** | Relative (`.XXX`) | Relative (`.XXX`) | Absolute | Relative (prefixed by the related group's `instance`) |
+| **Generated output** | data class | data class + collection + `getInstances()` | data class | Parameters merged into main data class |
+| **Example** | `Device.WiFi.SSID.1` | `Device.Hosts.Host.` | `Device.DeviceInfo.ModelName` | WiFi SSID + AccessPoint Security |
 
-`related` 是模式 A 的延伸——當單實例定義需要從**另一個** TR-181 物件拉參數時，用 `related` 指定該物件的 `instance` 路徑，其下的 parameter 同樣使用相對路徑。功能上等價於模式 C 的絕對路徑寫法，但語意更清晰且避免重複書寫長路徑前綴。
+`related` is an extension of Mode A — when a single-instance definition needs parameters from **another** TR-181 object, use `related` to specify that object's `instance` path; its parameters also use relative paths. Functionally equivalent to the absolute path approach (Mode C), but semantically clearer and avoids repeating long path prefixes.
 
 ```yaml
-# 使用 related（推薦：語意清晰、路徑不重複）
+# Using related (recommended: clear semantics, no path duplication)
 name: wifiSettings
 instance: Device.WiFi.SSID.1
 parameters:
@@ -132,7 +137,7 @@ related:
       - path: .ModeEnabled
       - path: .KeyPassphrase
 
-# 等價的絕對路徑寫法（功能相同）
+# Equivalent absolute path approach (same result)
 name: wifiSettings
 parameters:
   - path: Device.WiFi.SSID.1.SSID
@@ -665,7 +670,7 @@ public static func delete(client: UspClient, instancePath: String) async throws 
 
 ### 1.7 Related Parameters
 
-For single-instance definitions that need parameters from **multiple TR-181 instance paths**, use the `related` array. This is common in WiFi settings where SSID and Security parameters live under different paths. `related` 是 [Path Mode A](#path-modes) 的延伸，功能上等價於使用絕對路徑（Path Mode C），但語意更明確。詳見 [比較表](#instance-vs-basepath-vs-related-比較)。
+For single-instance definitions that need parameters from **multiple TR-181 instance paths**, use the `related` array. This is common in WiFi settings where SSID and Security parameters live under different paths. `related` is an extension of [Path Mode A](#path-modes), functionally equivalent to using absolute paths (Path Mode C) but semantically clearer. See the [comparison table](#instance-vs-basepath-vs-related-comparison).
 
 **Constraints:**
 - Only supported for single-instance definitions (those using `instance:`)
@@ -867,6 +872,258 @@ public class SpeedTest {
     }
 }
 ```
+
+### 1.9 Nested Multi-Instance (Children)
+
+TR-181 data models often contain nested multi-instance tables, e.g., `Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}`. The `children` field lets you model this hierarchy directly — the parent singular class will contain a `List<Child>` / `[Child]` / `Child[]` field.
+
+**Key advantage**: TR-181 wildcard GET already returns all descendant data in a single response, so **no second query** is needed — the generator extracts child instances from the same response.
+
+#### Children Array Item Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **Yes** | Child collection name (camelCase, e.g., `associatedDevices`) |
+| `singularName` | string | No | Override auto-derived singular name |
+| `basePath` | string | **Yes** | Relative path to child table (e.g., `.AssociatedDevice.`). Trailing `.` auto-appended |
+| `type` | string | No | `"add"` or `"delete"` — generates child add/delete methods with `parentInstancePath` parameter |
+| `parameters` | array | No | Child parameter definitions (same format as top-level `parameters`) |
+| `children` | array | No | Recursive — grandchild definitions for deeper nesting |
+
+#### Example
+
+```yaml
+name: accessPoints
+description: WiFi access points with associated devices
+multiInstance: true
+basePath: Device.WiFi.AccessPoint.
+singularName: accessPoint
+
+parameters:
+  - field_name: ssid
+    path: .SSID
+    type: string
+
+children:
+  - name: associatedDevices
+    singularName: associatedDevice
+    basePath: .AssociatedDevice.
+    parameters:
+      - field_name: macAddress
+        path: .MACAddress
+        type: string
+      - field_name: signalStrength
+        path: .SignalStrength
+        type: int
+      - field_name: active
+        path: .Active
+        type: boolean
+```
+
+#### Generated Output (Dart)
+
+```dart
+class AssociatedDevice {
+  final String instancePath;
+  final String macAddress;
+  final int signalStrength;
+  final bool active;
+
+  const AssociatedDevice({
+    required this.instancePath,
+    required this.macAddress,
+    required this.signalStrength,
+    required this.active,
+  });
+}
+
+class AccessPoint {
+  final String instancePath;
+  final String ssid;
+  final List<AssociatedDevice> associatedDevices;  // ← child list
+
+  const AccessPoint({
+    required this.instancePath,
+    required this.ssid,
+    required this.associatedDevices,
+  });
+}
+
+class AccessPoints {
+  final List<AccessPoint> items;
+  // fetch(), _fromResponse() — child extraction happens inside the parent loop
+}
+```
+
+#### Generated Output (TypeScript)
+
+```typescript
+export interface AssociatedDevice {
+  readonly instancePath: string;
+  readonly macAddress: string;
+  readonly signalStrength: number;
+  readonly active: boolean;
+}
+
+export interface AccessPoint {
+  readonly instancePath: string;
+  readonly ssid: string;
+  readonly associatedDevices: AssociatedDevice[];  // ← child array
+}
+```
+
+#### Generated Output (Swift)
+
+```swift
+public struct AssociatedDevice {
+    public let instancePath: String
+    public let macAddress: String
+    public let signalStrength: Int
+    public let active: Bool
+}
+
+public struct AccessPoint {
+    public let instancePath: String
+    public let ssid: String
+    public let associatedDevices: [AssociatedDevice]  // ← child array
+}
+```
+
+#### Child Add/Delete
+
+When a child definition has `type: "add"`, add/delete methods are generated with a `parentInstancePath` parameter:
+
+```yaml
+children:
+  - name: rules
+    singularName: rule
+    basePath: .Rule.
+    type: add
+    parameters:
+      - field_name: name
+        path: .Name
+        type: string
+        writable: true
+```
+
+Generated (Dart):
+```dart
+static Future<String> addRule(UspService client, String parentInstancePath, {String? name}) async { ... }
+static Future<void> deleteRule(UspService client, String instancePath) async { ... }
+```
+
+#### Multi-Level Nesting
+
+`children` supports recursive nesting. Each child can have its own `children` array for three or more levels of depth:
+
+```yaml
+children:
+  - name: accessPoints
+    basePath: .AccessPoint.
+    children:
+      - name: associatedDevices
+        basePath: .AssociatedDevice.
+        parameters: [...]
+```
+
+### 1.10 Flatten Mode
+
+Flatten mode provides an alternative to nested hierarchy — instead of `List<Child>` inside the parent, it generates a **flat list** where each item carries a `parentPath` field identifying which parent instance it belongs to.
+
+Use flatten mode when:
+- You need to iterate all child instances across all parents (e.g., display all WiFi clients in a single table)
+- You don't need the parent-child tree structure
+
+#### Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nestedPath` | string | **Yes** | Relative path from parent to child table (e.g., `.AssociatedDevice.`). Trailing `.` auto-appended. Alias: `nested_path` |
+| `flatten` | boolean | **Yes** | Must be `true` |
+
+Both `nestedPath` and `flatten` are required together. `basePath` specifies the parent table; `nestedPath` specifies the child table within each parent.
+
+#### Example
+
+```yaml
+name: wifiClients
+description: WiFi clients across all access points (flattened view)
+multiInstance: true
+basePath: Device.WiFi.AccessPoint.
+singularName: wifiClient
+nestedPath: .AssociatedDevice.
+flatten: true
+
+parameters:
+  - field_name: macAddress
+    path: .MACAddress
+    type: string
+  - field_name: signalStrength
+    path: .SignalStrength
+    type: int
+  - field_name: active
+    path: .Active
+    type: boolean
+```
+
+#### Generated Output (Dart)
+
+```dart
+class WifiClient {
+  final String instancePath;
+  final String parentPath;         // ← identifies the parent AP instance
+  final String macAddress;
+  final int signalStrength;
+  final bool active;
+
+  const WifiClient({
+    required this.instancePath,
+    required this.parentPath,
+    required this.macAddress,
+    required this.signalStrength,
+    required this.active,
+  });
+}
+
+class WifiClients {
+  final List<WifiClient> items;   // ← flat list across ALL parents
+  // ...
+}
+```
+
+#### Generated Output (TypeScript)
+
+```typescript
+export interface WifiClient {
+  readonly instancePath: string;
+  readonly parentPath: string;
+  readonly macAddress: string;
+  readonly signalStrength: number;
+  readonly active: boolean;
+}
+```
+
+#### Generated Output (Swift)
+
+```swift
+public struct WifiClient {
+    public let instancePath: String
+    public let parentPath: String
+    public let macAddress: String
+    public let signalStrength: Int
+    public let active: Bool
+}
+```
+
+#### Nested vs Flatten Comparison
+
+| | Nested (`children`) | Flatten (`nestedPath` + `flatten`) |
+|---|---|---|
+| **Structure** | Tree: parent contains `List<Child>` | Flat: all children in one list with `parentPath` |
+| **Use case** | Display per-parent (e.g., AP detail page) | Display all children (e.g., all WiFi clients table) |
+| **Parent data** | Available in parent fields | Only `parentPath` string |
+| **Query** | Same single wildcard GET | Same single wildcard GET |
+| **Depth** | Supports multi-level nesting | Single parent→child level only |
 
 ---
 
@@ -1125,19 +1382,19 @@ The Transforms library is generated once per codegen run, regardless of how many
 
 ## 4. Path Conventions
 
-路徑解析規則（詳見 [Path Modes](#path-modes)）：
+Path resolution rules (see [Path Modes](#path-modes) for details):
 
-- **相對路徑**（以 `.` 開頭）：generator 自動拼接 `{instance 或 basePath}{path}`
-- **絕對路徑**（不以 `.` 開頭）：直接作為完整 TR-181 路徑使用
-- 此規則適用於 `parameters`、`presets`、`related` 中所有的 `path` 欄位
+- **Relative paths** (starting with `.`): the generator automatically concatenates `{instance or basePath}{path}`
+- **Absolute paths** (not starting with `.`): used directly as the full TR-181 path
+- These rules apply to all `path` fields in `parameters`, `presets`, and `related`
 
 ```
-# 相對路徑拼接
+# Relative path concatenation
 instance:  Device.DNS.Client
 path:      .Server.1.DNSServer
 full path: Device.DNS.Client.Server.1.DNSServer
 
-# 絕對路徑直接使用
+# Absolute path used directly
 path:      Device.DeviceInfo.ModelName
 full path: Device.DeviceInfo.ModelName
 ```
