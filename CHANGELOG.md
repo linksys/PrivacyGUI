@@ -6,6 +6,15 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 
 ### USP Protocol Integration
 
+#### Phase 3: UI Model Layer — Presentation/Data Decoupling
+- Establish Presentation Layer UI Models per constitution Article V Section 5.3 — views no longer import codegen `generated/*.g.dart` files
+- Add 6 UI Models: `SystemInfoUIModel`, `DeviceUIModel`, `WifiRadioUIModel`, `TimeSettingsUIModel`, `DhcpReservationUIModel`, `PortForwardingRuleUIModel`
+- Add `UspDeviceService` (Article VI stateless service) — consolidates all Data Model → UI Model transformation
+- Refactor all dashboard cards to consume UI Models with computed getters (`formattedUptime`, `signalQuality`, `displayName`, `portSummary`, etc.)
+- Refactor all dialogs (`TimeSettingsDialog`, `WifiChannelDialog`, `PortForwardingDialog`) to accept UI Models instead of codegen types
+- Change `updatePortForwardingRule` notifier to accept primitive params — eliminates last codegen import from view layer
+- Add USP Dashboard shell with tab navigation (Home / Menu / Support)
+
 #### Phase 0: Codegen Toolchain & Validation
 - Add USP (TR-369) HTTP/WASM client (`lib/usp/`) with JS interop
 - Implement `usp-codegen` CLI (v0.6.1) — YAML definition → Dart data class + CRUD methods

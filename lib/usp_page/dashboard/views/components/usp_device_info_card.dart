@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/generated/system_info.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 
 class UspDeviceInfoCard extends StatelessWidget {
-  final SystemInfo info;
+  final SystemInfoUIModel info;
 
   const UspDeviceInfoCard({super.key, required this.info});
 

@@ -1,27 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/generated/connected_devices.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
 
 class UspConnectedDevicesCard extends StatelessWidget {
-  final List<ConnectedDevice> devices;
-  final Map<String, WifiClient> wifiClientMap;
-  final MeshTopologyInfo meshTopology;
-  final Map<String, ClientConnectionDetail> connectionDetailMap;
-
-  /// Display name for the gateway (router model). Used to show "via [model]"
-  /// for devices connected to the master node.
-  final String gatewayName;
+  final List<DeviceUIModel> devices;
 
   const UspConnectedDevicesCard({
     super.key,
     required this.devices,
-    this.wifiClientMap = const {},
-    this.meshTopology = MeshTopologyInfo.empty,
-    this.connectionDetailMap = const {},
-    this.gatewayName = 'Router',
   });
 
   @override
@@ -63,40 +50,23 @@ class UspConnectedDevicesCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDeviceRow(ConnectedDevice device) {
-    final mac = device.macAddress.toUpperCase();
-    final wifiInfo = wifiClientMap[mac];
-    final isWifi = wifiInfo != null;
-    final connDetail = connectionDetailMap[mac];
-    final parentNodeName =
-        device.isActive ? _resolveParentNodeName(mac) : null;
-
+  Widget _buildDeviceRow(DeviceUIModel device) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
           UspStatusDot(isActive: device.isActive),
           AppGap.sm(),
-          // Connection type icon
-          _buildConnectionIcon(isWifi, wifiInfo, device.isActive),
+          _buildConnectionIcon(device),
           AppGap.sm(),
-          // Name + subtitle (MAC, band/SSID, parent node)
+          // Name + subtitle
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText.bodyMedium(
-                  device.hostName.isNotEmpty
-                      ? device.hostName
-                      : device.macAddress,
-                ),
+                AppText.bodyMedium(device.displayName),
                 Builder(builder: (context) {
-                  final subtitle = _buildSubtitle(
-                    device: device,
-                    isWifi: isWifi,
-                    connDetail: connDetail,
-                    parentNodeName: parentNodeName,
-                  );
+                  final subtitle = _buildSubtitle(device);
                   if (subtitle.isEmpty) return const SizedBox.shrink();
                   return AppText.bodySmall(
                     subtitle,
@@ -107,9 +77,9 @@ class UspConnectedDevicesCard extends StatelessWidget {
             ),
           ),
           // Signal strength or connection type badge
-          if (device.isActive && isWifi)
-            _buildSignalBadge(wifiInfo.signalStrength)
-          else if (device.isActive && !isWifi)
+          if (device.isActive && device.isWifi && device.signalStrength != null)
+            _buildSignalBadge(device.signalStrength!)
+          else if (device.isActive && !device.isWifi)
             Builder(builder: (context) {
               return AppText.bodySmall(
                 'Ethernet',
@@ -122,7 +92,7 @@ class UspConnectedDevicesCard extends StatelessWidget {
             return SizedBox(
               width: 130,
               child: AppText.bodySmall(
-                device.ipAddress,
+                device.ip,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             );
@@ -133,51 +103,48 @@ class UspConnectedDevicesCard extends StatelessWidget {
   }
 
   /// Builds the subtitle line: "MAC · 5GHz MyNetwork · via MR7500"
-  String _buildSubtitle({
-    required ConnectedDevice device,
-    required bool isWifi,
-    ClientConnectionDetail? connDetail,
-    String? parentNodeName,
-  }) {
+  String _buildSubtitle(DeviceUIModel device) {
     final parts = <String>[];
 
     // MAC (only if hostname is shown as primary)
-    if (device.hostName.isNotEmpty) parts.add(device.macAddress);
+    if (device.hostName.isNotEmpty) parts.add(device.mac);
 
     // Band + SSID or Ethernet
-    if (isWifi && connDetail != null) {
+    if (device.isWifi) {
       final bandSsid = [
-        if (connDetail.band.isNotEmpty) connDetail.band,
-        if (connDetail.ssidName.isNotEmpty) connDetail.ssidName,
+        if (device.band != null && device.band!.isNotEmpty) device.band!,
+        if (device.ssidName != null && device.ssidName!.isNotEmpty)
+          device.ssidName!,
       ].join(' ');
       if (bandSsid.isNotEmpty) parts.add(bandSsid);
-    } else if (!isWifi && device.isActive) {
+    } else if (device.isActive) {
       parts.add('Ethernet');
     }
 
     // Parent node
-    if (parentNodeName != null) parts.add('via $parentNodeName');
+    if (device.parentNodeName != null) {
+      parts.add('via ${device.parentNodeName}');
+    }
 
     return parts.join(' · ');
   }
 
-  Widget _buildConnectionIcon(
-      bool isWifi, WifiClient? wifiInfo, bool isActive) {
+  Widget _buildConnectionIcon(DeviceUIModel device) {
     return Builder(builder: (context) {
-      if (!isWifi) {
+      if (!device.isWifi) {
         return Icon(
           Icons.settings_ethernet,
           size: 18,
-          color: isActive
+          color: device.isActive
               ? Theme.of(context).colorScheme.onSurface
               : Theme.of(context).colorScheme.onSurfaceVariant,
         );
       }
       return Icon(
-        _wifiIconForSignal(wifiInfo!.signalStrength),
+        _wifiIconForSignal(device.signalStrength),
         size: 18,
-        color: isActive
-            ? _signalColor(context, wifiInfo.signalStrength)
+        color: device.isActive
+            ? _signalColor(context, device.signalStrength)
             : Theme.of(context).colorScheme.onSurfaceVariant,
       );
     });
@@ -192,45 +159,20 @@ class UspConnectedDevicesCard extends StatelessWidget {
     });
   }
 
-  static IconData _wifiIconForSignal(int rssi) {
+  static IconData _wifiIconForSignal(int? rssi) {
+    if (rssi == null) return Icons.wifi;
     if (rssi >= -50) return Icons.wifi;
     if (rssi >= -60) return Icons.wifi_2_bar;
     if (rssi >= -70) return Icons.wifi_2_bar;
     return Icons.wifi_1_bar;
   }
 
-  static Color _signalColor(BuildContext context, int rssi) {
+  static Color _signalColor(BuildContext context, int? rssi) {
     final scheme = Theme.of(context).colorScheme;
+    if (rssi == null) return scheme.onSurfaceVariant;
     if (rssi >= -50) return Colors.green;
     if (rssi >= -60) return Colors.lightGreen;
     if (rssi >= -70) return Colors.orange;
     return scheme.error;
-  }
-
-  /// Resolves the parent node name for a client device.
-  ///
-  /// - Single router (no mesh): returns [gatewayName] so active devices show
-  ///   "via MR7500" (or whatever the router model is).
-  /// - Mesh, client on gateway: returns [gatewayName].
-  /// - Mesh, client on extender: returns the extender model / device ID.
-  String? _resolveParentNodeName(String clientMac) {
-    // No mesh data — single router, all clients are on the gateway
-    if (meshTopology.isEmpty) return gatewayName;
-
-    final nodeId = meshTopology.clientToNodeMap[clientMac.toUpperCase()];
-    if (nodeId == null) return gatewayName; // not in map — assume gateway
-
-    // Gateway-connected client
-    if (meshTopology.nodes.isNotEmpty &&
-        meshTopology.nodes.first.deviceId == nodeId) {
-      return gatewayName;
-    }
-
-    // Extender-connected client
-    final node = meshTopology.nodes
-        .where((n) => n.deviceId == nodeId)
-        .firstOrNull;
-    if (node == null) return null;
-    return node.model.isNotEmpty ? node.model : nodeId;
   }
 }

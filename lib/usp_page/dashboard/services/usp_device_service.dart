@@ -1,0 +1,228 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
+import 'package:privacy_gui/generated/port_forwarding.g.dart';
+import 'package:privacy_gui/generated/system_info.g.dart';
+import 'package:privacy_gui/generated/time_settings.g.dart';
+import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
+import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
+import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
+
+/// Service provider — stateless, per Article VI.
+final uspDeviceServiceProvider = Provider<UspDeviceService>(
+  (ref) => UspDeviceService(),
+);
+
+/// Transforms raw codegen Data Models into Presentation Layer UI Models.
+///
+/// All Data → UI conversion is consolidated here so that UI widgets never
+/// import codegen types directly (constitution Section 5.3).
+class UspDeviceService {
+  // ---------------------------------------------------------------------------
+  // SystemInfo
+  // ---------------------------------------------------------------------------
+
+  SystemInfoUIModel buildSystemInfoUIModel(SystemInfo info) {
+    return SystemInfoUIModel(
+      manufacturer: info.manufacturer,
+      modelName: info.modelName,
+      serialNumber: info.serialNumber,
+      hardwareVersion: info.hardwareVersion,
+      softwareVersion: info.softwareVersion,
+      uptime: info.uptime,
+      totalMemory: info.totalMemory,
+      freeMemory: info.freeMemory,
+      cpuUsage: info.cpuUsage,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ConnectedDevices
+  // ---------------------------------------------------------------------------
+
+  List<DeviceUIModel> buildDeviceUIModels({
+    required ConnectedDevices connectedDevices,
+    required Map<String, WifiClient> wifiClientMap,
+    required Map<String, ClientConnectionDetail> connectionDetailMap,
+    required MeshTopologyInfo meshTopology,
+    required String gatewayName,
+  }) {
+    return connectedDevices.items
+        .where((d) => d.interface_.isNotEmpty)
+        .map((d) => _toDeviceUIModel(
+              d, wifiClientMap, connectionDetailMap, meshTopology, gatewayName))
+        .toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // WiFi Radios
+  // ---------------------------------------------------------------------------
+
+  List<WifiRadioUIModel> buildWifiRadioUIModels({
+    required WiFiRadios radios,
+    required WiFiSsids ssids,
+    required WiFiAccessPoints accessPoints,
+  }) {
+    final ssidByPath = {
+      for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
+    };
+
+    // Group APs by radio: AP.ssidReference → SSID.lowerLayers → Radio
+    final apsByRadioPath = <String, List<_ApWithSsid>>{};
+    for (final ap in accessPoints.items) {
+      final ssid = ssidByPath[_ensureTrailingDot(ap.ssidReference)];
+      if (ssid == null) continue;
+      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
+      apsByRadioPath.putIfAbsent(radioPath, () => []).add(_ApWithSsid(ap, ssid));
+    }
+
+    return radios.items.map((radio) {
+      final radioAps = apsByRadioPath[_ensureTrailingDot(radio.instancePath)] ?? [];
+      return WifiRadioUIModel(
+        instancePath: radio.instancePath,
+        band: radio.operatingFrequencyBand,
+        enable: radio.enable,
+        transmitPower: radio.transmitPower,
+        maxBitRate: radio.maxBitRate,
+        channel: radio.channel,
+        autoChannelEnable: radio.autoChannelEnable,
+        channelBandwidth: radio.operatingChannelBandwidth,
+        supportedStandards: radio.supportedStandards,
+        accessPoints: radioAps
+            .map((a) => WifiAccessPointUIModel(
+                  enable: a.ap.enable,
+                  ssidName: a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
+                  securityMode: a.ap.securityModeEnabled,
+                  encryptionMode: a.ap.encryptionMode,
+                ))
+            .toList(),
+      );
+    }).toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Time Settings
+  // ---------------------------------------------------------------------------
+
+  TimeSettingsUIModel buildTimeSettingsUIModel(TimeSettings settings) {
+    return TimeSettingsUIModel(
+      enable: settings.enable,
+      status: settings.status,
+      currentLocalTime: settings.currentLocalTime,
+      localTimeZone: settings.localTimeZone,
+      ntpServer1: settings.ntpServer1,
+      ntpServer2: settings.ntpServer2,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // DHCP Reservations
+  // ---------------------------------------------------------------------------
+
+  List<DhcpReservationUIModel> buildDhcpReservationUIModels(
+      DhcpReservations reservations) {
+    return reservations.items
+        .map((r) => DhcpReservationUIModel(
+              instancePath: r.instancePath,
+              mac: r.chaddr,
+              ip: r.yiaddr,
+              enable: r.enable,
+            ))
+        .toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Port Forwarding
+  // ---------------------------------------------------------------------------
+
+  List<PortForwardingRuleUIModel> buildPortForwardingRuleUIModels(
+      PortForwarding portForwarding) {
+    return portForwarding.items
+        .map((r) => PortForwardingRuleUIModel(
+              instancePath: r.instancePath,
+              description: r.description,
+              externalPort: r.externalPort,
+              internalPort: r.internalPort,
+              internalClient: r.internalClient,
+              protocol: r.protocol,
+              enabled: r.enabled,
+            ))
+        .toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  DeviceUIModel _toDeviceUIModel(
+    ConnectedDevice device,
+    Map<String, WifiClient> wifiClientMap,
+    Map<String, ClientConnectionDetail> connectionDetailMap,
+    MeshTopologyInfo meshTopology,
+    String gatewayName,
+  ) {
+    final mac = device.macAddress.trim().toUpperCase();
+    final isWifi = device.interface_.toLowerCase().contains('wifi');
+    final wifiClient = wifiClientMap[mac];
+    final detail = connectionDetailMap[mac];
+
+    String? parentNodeId;
+    String? parentNodeName;
+    if (meshTopology.isEmpty) {
+      if (device.isActive) parentNodeName = gatewayName;
+    } else {
+      parentNodeId = meshTopology.clientToNodeMap[mac];
+      if (parentNodeId != null) {
+        final isGateway = meshTopology.nodes.isNotEmpty &&
+            meshTopology.nodes.first.deviceId == parentNodeId;
+        if (isGateway) {
+          parentNodeName = gatewayName;
+        } else {
+          final matchingNode = meshTopology.nodes
+              .where((n) => n.deviceId == parentNodeId)
+              .firstOrNull;
+          parentNodeName = matchingNode?.model.isNotEmpty == true
+              ? matchingNode!.model
+              : parentNodeId;
+        }
+      } else {
+        parentNodeName = gatewayName;
+      }
+    }
+
+    return DeviceUIModel(
+      mac: mac,
+      ip: device.ipAddress,
+      hostName: device.hostName,
+      isActive: device.isActive,
+      isWifi: isWifi,
+      signalStrength: isWifi ? wifiClient?.signalStrength : null,
+      downlinkRate: isWifi ? wifiClient?.lastDataDownlinkRate : null,
+      uplinkRate: isWifi ? wifiClient?.lastDataUplinkRate : null,
+      band: detail?.band,
+      ssidName: detail?.ssidName,
+      parentNodeId: parentNodeId,
+      parentNodeName: parentNodeName,
+    );
+  }
+
+  static String _ensureTrailingDot(String path) {
+    if (path.isEmpty) return path;
+    return path.endsWith('.') ? path : '$path.';
+  }
+}
+
+/// Internal helper to pair AP with its resolved SSID.
+class _ApWithSsid {
+  final WiFiAccessPoint ap;
+  final WiFiSsid ssid;
+  const _ApWithSsid(this.ap, this.ssid);
+}

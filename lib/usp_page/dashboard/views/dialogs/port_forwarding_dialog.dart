@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/generated/port_forwarding.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Result returned by [PortForwardingDialog].
@@ -25,7 +25,7 @@ class PortForwardingDialogResult {
 ///
 /// Pass [rule] to pre-fill for editing; omit for adding.
 class PortForwardingDialog extends StatefulWidget {
-  final PortForwardingRule? rule;
+  final PortForwardingRuleUIModel? rule;
 
   const PortForwardingDialog({super.key, this.rule});
 

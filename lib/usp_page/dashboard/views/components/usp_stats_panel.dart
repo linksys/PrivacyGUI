@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A row of summary stat cards displayed at the top of the dashboard.
 class UspStatsPanel extends StatelessWidget {
   final UspDashboardState state;
-  final List<ConnectedDevice> devices;
+  final List<DeviceUIModel> devices;
 
   const UspStatsPanel({super.key, required this.state, required this.devices});
 
@@ -14,10 +14,10 @@ class UspStatsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final onlineCount = devices.where((d) => d.isActive).length;
     final offlineCount = devices.where((d) => !d.isActive).length;
-    final radioCount = state.wifiRadios.items.length;
-    final enabledRadios = state.wifiRadios.items.where((r) => r.enable).length;
+    final radioCount = state.wifiRadioModels.length;
+    final enabledRadios = state.wifiRadioModels.where((r) => r.enable).length;
     final ruleCount =
-        state.dhcpReservations.items.length + state.portForwarding.items.length;
+        state.dhcpReservationModels.length + state.portForwardingRuleModels.length;
 
     return Row(
       children: [

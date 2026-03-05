@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
@@ -16,7 +16,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final reservations = state.dhcpReservations.items;
+    final reservations = state.dhcpReservationModels;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
 
     return AppCard(
@@ -53,7 +53,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
   }
 
   Widget _buildReservationRow(BuildContext context, WidgetRef ref,
-      DhcpReservation reservation, bool isLoading) {
+      DhcpReservationUIModel reservation, bool isLoading) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
@@ -74,11 +74,11 @@ class UspDhcpReservationsCard extends ConsumerWidget {
                     ),
           ),
           AppGap.sm(),
-          Expanded(child: AppText.bodyMedium(reservation.chaddr)),
+          Expanded(child: AppText.bodyMedium(reservation.mac)),
           SizedBox(
             width: 130,
             child: AppText.bodySmall(
-              reservation.yiaddr,
+              reservation.ip,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
@@ -113,12 +113,12 @@ class UspDhcpReservationsCard extends ConsumerWidget {
   }
 
   Future<void> _confirmDeleteDhcp(
-      BuildContext context, WidgetRef ref, DhcpReservation reservation) async {
+      BuildContext context, WidgetRef ref, DhcpReservationUIModel reservation) async {
     final confirmed = await showSimpleAppDialog<bool>(
       context,
       title: 'Delete Reservation',
       content:
-          AppText.bodyMedium('Delete reservation for ${reservation.chaddr}?'),
+          AppText.bodyMedium('Delete reservation for ${reservation.mac}?'),
       actions: [
         AppButton.text(
           label: 'Cancel',

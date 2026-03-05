@@ -65,12 +65,16 @@ import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/usp_dashboard_view.dart';
+import 'package:privacy_gui/usp_page/menu/views/usp_menu_view.dart';
+import 'package:privacy_gui/usp_page/support/views/usp_support_view.dart';
+import 'package:privacy_gui/usp_page/shell/usp_dashboard_shell.dart';
 import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 
 part 'route_home.dart';
 part 'route_cloud_login.dart';
 part 'route_local_login.dart';
 part 'route_dashboard.dart';
+part 'route_usp_dashboard.dart';
 part 'route_settings.dart';
 part 'route_advanced_settings.dart';
 part 'route_pnp.dart';
@@ -109,12 +113,7 @@ final appRoutes = [
     builder: (context, state) => const SelectNetworkView(),
   ),
   dashboardRoute,
-  LinksysRoute(
-    name: RouteNamed.uspDashboard,
-    path: RoutePath.uspDashboard,
-    config: const LinksysRouteConfig(noNaviRail: true),
-    builder: (context, state) => const UspDashboardView(),
-  ),
+  uspDashboardRoute,
   pnpRoute,
   pnpTroubleshootingRoute,
   addNodesRoute,

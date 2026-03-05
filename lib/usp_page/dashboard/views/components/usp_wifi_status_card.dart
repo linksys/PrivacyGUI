@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
-import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
-import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
@@ -18,13 +16,8 @@ class UspWifiStatusCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final radios = state.wifiRadios.items;
-    final ssids = state.wifiSsids.items;
-    final aps = state.wifiAccessPoints.items;
+    final radios = state.wifiRadioModels;
     final enabledRadios = radios.where((r) => r.enable).length;
-
-    // Group APs by their parent Radio via AP → SSID → LowerLayers → Radio
-    final apsByRadioPath = _groupApsByRadio(aps, ssids);
 
     return AppCard(
       child: Column(
@@ -38,52 +31,18 @@ class UspWifiStatusCard extends ConsumerWidget {
             ],
           ),
           AppGap.xl(),
-          ...radios.map((radio) => _buildRadioSection(
-                context,
-                ref,
-                radio,
-                apsByRadioPath[radio.instancePath] ?? [],
-                ssids,
-              )),
+          ...radios.map((radio) => _buildRadioSection(context, ref, radio)),
         ],
       ),
     );
   }
 
-  /// Groups AccessPoints by their parent Radio instancePath.
-  ///
-  /// Chain: AP.ssidReference → SSID.lowerLayers → Radio.instancePath
-  Map<String, List<WiFiAccessPoint>> _groupApsByRadio(
-      List<WiFiAccessPoint> aps, List<WiFiSsid> ssids) {
-    final ssidByPath = {
-      for (final s in ssids)
-        _ensureTrailingDot(s.instancePath): s,
-    };
-
-    final result = <String, List<WiFiAccessPoint>>{};
-    for (final ap in aps) {
-      final ssid = ssidByPath[_ensureTrailingDot(ap.ssidReference)];
-      if (ssid == null) continue;
-      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
-      result.putIfAbsent(radioPath, () => []).add(ap);
-    }
-    return result;
-  }
-
-  static String _ensureTrailingDot(String path) {
-    if (path.isEmpty) return path;
-    return path.endsWith('.') ? path : '$path.';
-  }
-
   Widget _buildRadioSection(
     BuildContext context,
     WidgetRef ref,
-    WiFiRadio radio,
-    List<WiFiAccessPoint> radioAps,
-    List<WiFiSsid> ssids,
+    WifiRadioUIModel radio,
   ) {
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'wifi';
-    final txPower = radio.transmitPower == -1 ? 100 : radio.transmitPower.clamp(0, 100);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -94,7 +53,7 @@ class UspWifiStatusCard extends ConsumerWidget {
             children: [
               UspStatusDot(isActive: radio.enable),
               AppGap.sm(),
-              AppText.labelLarge('Radio: ${radio.operatingFrequencyBand}'),
+              AppText.labelLarge('Radio: ${radio.band}'),
               const Spacer(),
               AppSwitch(
                 value: radio.enable,
@@ -115,14 +74,14 @@ class UspWifiStatusCard extends ConsumerWidget {
           _buildLinearBar(
             context,
             label: 'Tx Power',
-            value: txPower / 100,
-            display: radio.transmitPower == -1 ? 'Max' : '$txPower%',
+            value: radio.txPowerPercent / 100,
+            display: radio.txPowerDisplay,
           ),
           AppGap.sm(),
           _buildLinearBar(
             context,
             label: 'Bit Rate',
-            value: _normalizeBitRate(radio.maxBitRate, radio.operatingFrequencyBand) / 100,
+            value: radio.bitRateNormalized / 100,
             display: '${radio.maxBitRate} Mbps',
           ),
           AppGap.md(),
@@ -133,9 +92,7 @@ class UspWifiStatusCard extends ConsumerWidget {
                 child: AppText.labelLarge('Channel'),
               ),
               Expanded(
-                child: AppText.bodyMedium(
-                  '${radio.channel}${radio.autoChannelEnable ? ' (Auto)' : ''}',
-                ),
+                child: AppText.bodyMedium(radio.channelDisplay),
               ),
               AppIconButton(
                 icon: AppIcon.font(Icons.edit, size: 18),
@@ -145,14 +102,14 @@ class UspWifiStatusCard extends ConsumerWidget {
               ),
             ],
           ),
-          UspInfoRow(label: 'Bandwidth', value: radio.operatingChannelBandwidth),
+          UspInfoRow(label: 'Bandwidth', value: radio.channelBandwidth),
           UspInfoRow(label: 'Standards', value: radio.supportedStandards),
           // Access Points on this radio
-          if (radioAps.isNotEmpty) ...[
+          if (radio.accessPoints.isNotEmpty) ...[
             AppGap.md(),
             AppText.labelLarge('Access Points'),
             AppGap.sm(),
-            ...radioAps.map((ap) => _buildApRow(context, ap, ssids)),
+            ...radio.accessPoints.map((ap) => _buildApRow(context, ap)),
           ],
         ],
       ),
@@ -186,16 +143,8 @@ class UspWifiStatusCard extends ConsumerWidget {
     );
   }
 
-  /// Normalize bit rate to a 0–100 scale based on band theoretical max.
-  double _normalizeBitRate(int bitRate, String band) {
-    final maxForBand = band.contains('6') ? 9600
-        : band.contains('5') ? 4800
-        : 600; // 2.4 GHz
-    return (bitRate / maxForBand * 100).clamp(0, 100).toDouble();
-  }
-
   Future<void> _showWifiChannelDialog(
-      BuildContext context, WidgetRef ref, WiFiRadio radio) async {
+      BuildContext context, WidgetRef ref, WifiRadioUIModel radio) async {
     final result = await showDialog<({int channel, bool autoChannel})>(
       context: context,
       builder: (_) => WifiChannelDialog(radio: radio),
@@ -214,22 +163,18 @@ class UspWifiStatusCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildApRow(
-      BuildContext context, WiFiAccessPoint ap, List<WiFiSsid> ssids) {
-    final ssidName = _resolveSsidName(ap.ssidReference, ssids);
-    final label = ssidName ?? ap.ssidReference;
-
+  Widget _buildApRow(BuildContext context, WifiAccessPointUIModel ap) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
           UspStatusDot(isActive: ap.enable),
           AppGap.sm(),
-          Expanded(child: AppText.bodyMedium(label)),
+          Expanded(child: AppText.bodyMedium(ap.ssidName)),
           SizedBox(
             width: 160,
             child: AppText.bodySmall(
-              ap.securityModeEnabled,
+              ap.securityMode,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
@@ -243,18 +188,5 @@ class UspWifiStatusCard extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  String? _resolveSsidName(String ssidReference, List<WiFiSsid> ssids) {
-    if (ssidReference.isEmpty) return null;
-    final normalizedRef = ssidReference.endsWith('.')
-        ? ssidReference
-        : '$ssidReference.';
-    for (final ssid in ssids) {
-      if (ssid.instancePath == normalizedRef) {
-        return ssid.ssid.isNotEmpty ? ssid.ssid : null;
-      }
-    }
-    return null;
   }
 }

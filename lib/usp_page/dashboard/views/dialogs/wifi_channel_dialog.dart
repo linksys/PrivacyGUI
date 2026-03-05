@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Dialog for editing WiFi radio channel settings.
 ///
 /// Returns a `({int channel, bool autoChannel})` record on Apply, or null on Cancel.
 class WifiChannelDialog extends StatefulWidget {
-  final WiFiRadio radio;
+  final WifiRadioUIModel radio;
 
   const WifiChannelDialog({super.key, required this.radio});
 
@@ -36,7 +36,7 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-          'Channel — ${widget.radio.operatingFrequencyBand}'),
+          'Channel — ${widget.radio.band}'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -11,13 +11,17 @@ import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
+import 'package:privacy_gui/usp_page/dashboard/services/usp_device_service.dart';
 import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
 
 /// USP Dashboard provider — AsyncNotifier for read + write operations.
+///
+/// NOT autoDispose — data persists across tab switches (Home/Menu/Support).
+/// Pull-to-refresh and explicit invalidate still work for manual refresh.
 final uspDashboardProvider =
-    AsyncNotifierProvider.autoDispose<UspDashboardNotifier, UspDashboardState>(
+    AsyncNotifierProvider<UspDashboardNotifier, UspDashboardState>(
   UspDashboardNotifier.new,
 );
 
@@ -25,8 +29,26 @@ final uspDashboardProvider =
 /// Values: null (idle), 'wifi', 'time', 'dhcp', 'portForwarding'
 final uspMutationLoadingProvider = StateProvider<String?>((ref) => null);
 
-class UspDashboardNotifier
-    extends AutoDisposeAsyncNotifier<UspDashboardState> {
+/// Loading progress for the USP Dashboard initial fetch.
+class UspLoadingProgress {
+  final int completed;
+  final int total;
+  final String currentTask;
+
+  const UspLoadingProgress({
+    this.completed = 0,
+    this.total = 10,
+    this.currentTask = '',
+  });
+
+  double get fraction => total > 0 ? completed / total : 0;
+}
+
+final uspLoadingProgressProvider = StateProvider<UspLoadingProgress>(
+  (ref) => const UspLoadingProgress(),
+);
+
+class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
   /// Sequential lock — prevents parallel USP calls (WASM bug)
   bool _mutating = false;
 
@@ -35,6 +57,8 @@ class UspDashboardNotifier
     if (usp == null) throw StateError('USP service not available');
     return usp;
   }
+
+  UspDeviceService get _svc => ref.read(uspDeviceServiceProvider);
 
   @override
   Future<UspDashboardState> build() async {
@@ -49,18 +73,32 @@ class UspDashboardNotifier
         throw StateError('USP not authenticated after restore attempt');
       }
     }
+    // Reset loading progress
+    final progressNotifier = ref.read(uspLoadingProgressProvider.notifier);
+    progressNotifier.state = const UspLoadingProgress();
+
+    void tick(String task) {
+      final prev = progressNotifier.state;
+      progressNotifier.state = UspLoadingProgress(
+        completed: prev.completed + 1,
+        total: prev.total,
+        currentTask: task,
+      );
+    }
+
     // Parallel fetch — WASM client v0.6.1+ supports concurrent HTTP requests.
+    // Each fetch reports progress on completion for the loading indicator.
     final results = await Future.wait([
-      SystemInfo.fetch(usp),
-      ConnectedDevices.fetch(usp),
-      WiFiRadios.fetch(usp),
-      WiFiSsids.fetch(usp),
-      WiFiAccessPoints.fetch(usp),
-      TimeSettings.fetch(usp),
-      DhcpReservations.fetch(usp),
-      PortForwarding.fetch(usp),
-      fetchWifiClients(usp),
-      fetchMeshNodes(usp), // graceful fallback if DataElements unsupported
+      SystemInfo.fetch(usp).then((v) { tick('System Info'); return v; }),
+      ConnectedDevices.fetch(usp).then((v) { tick('Devices'); return v; }),
+      WiFiRadios.fetch(usp).then((v) { tick('WiFi Radios'); return v; }),
+      WiFiSsids.fetch(usp).then((v) { tick('WiFi SSIDs'); return v; }),
+      WiFiAccessPoints.fetch(usp).then((v) { tick('Access Points'); return v; }),
+      TimeSettings.fetch(usp).then((v) { tick('Time Settings'); return v; }),
+      DhcpReservations.fetch(usp).then((v) { tick('DHCP'); return v; }),
+      PortForwarding.fetch(usp).then((v) { tick('Port Forwarding'); return v; }),
+      fetchWifiClients(usp).then((v) { tick('WiFi Clients'); return v; }),
+      fetchMeshNodes(usp).then((v) { tick('Mesh Nodes'); return v; }),
     ]);
 
     final systemInfo = results[0] as SystemInfo;
@@ -93,6 +131,12 @@ class UspDashboardNotifier
     );
     logger.d('[USP] Connection details: ${connectionDetailMap.length} entries');
 
+    // Data → UI Model transformation (constitution Section 5.3)
+    final svc = _svc;
+    final gatewayName = systemInfo.modelName.isNotEmpty
+        ? systemInfo.modelName
+        : 'Router';
+
     return UspDashboardState(
       systemInfo: systemInfo,
       connectedDevices: connectedDevices,
@@ -106,6 +150,22 @@ class UspDashboardNotifier
       wifiClientMap: wifiClientMap,
       meshTopology: meshTopology,
       connectionDetailMap: connectionDetailMap,
+      systemInfoModel: svc.buildSystemInfoUIModel(systemInfo),
+      deviceModels: svc.buildDeviceUIModels(
+        connectedDevices: connectedDevices,
+        wifiClientMap: wifiClientMap,
+        connectionDetailMap: connectionDetailMap,
+        meshTopology: meshTopology,
+        gatewayName: gatewayName,
+      ),
+      wifiRadioModels: svc.buildWifiRadioUIModels(
+        radios: wifiRadios,
+        ssids: wifiSsids,
+        accessPoints: wifiAccessPoints,
+      ),
+      timeSettingsModel: svc.buildTimeSettingsUIModel(timeSettings),
+      dhcpReservationModels: svc.buildDhcpReservationUIModels(dhcpReservations),
+      portForwardingRuleModels: svc.buildPortForwardingRuleUIModels(portForwarding),
     );
   }
 
@@ -132,7 +192,15 @@ class UspDashboardNotifier
       await WiFiRadios.update(
           _usp, WiFiRadioUpdate(instancePath: instancePath, enable: enable));
       final radios = await WiFiRadios.fetch(_usp);
-      state = AsyncData(state.requireValue.copyWith(wifiRadios: radios));
+      final s = state.requireValue;
+      state = AsyncData(s.copyWith(
+        wifiRadios: radios,
+        wifiRadioModels: _svc.buildWifiRadioUIModels(
+          radios: radios,
+          ssids: s.wifiSsids,
+          accessPoints: s.wifiAccessPoints,
+        ),
+      ));
     });
   }
 
@@ -148,7 +216,15 @@ class UspDashboardNotifier
         ),
       );
       final radios = await WiFiRadios.fetch(_usp);
-      state = AsyncData(state.requireValue.copyWith(wifiRadios: radios));
+      final s = state.requireValue;
+      state = AsyncData(s.copyWith(
+        wifiRadios: radios,
+        wifiRadioModels: _svc.buildWifiRadioUIModels(
+          radios: radios,
+          ssids: s.wifiSsids,
+          accessPoints: s.wifiAccessPoints,
+        ),
+      ));
     });
   }
 
@@ -159,15 +235,16 @@ class UspDashboardNotifier
   Future<void> updateTimeSettings(
       {bool? enable, String? ntpServer1, String? ntpServer2}) async {
     await _withLock(() async {
-      // Manual SET — codegen may not generate save() for single-instance
       final params = <String, dynamic>{};
       if (enable != null) params['Device.Time.Enable'] = enable;
       if (ntpServer1 != null) params['Device.Time.NTPServer1'] = ntpServer1;
       if (ntpServer2 != null) params['Device.Time.NTPServer2'] = ntpServer2;
       if (params.isNotEmpty) await _usp.set(params);
-      final timeSettings = await TimeSettings.fetch(_usp);
-      state =
-          AsyncData(state.requireValue.copyWith(timeSettings: timeSettings));
+      final ts = await TimeSettings.fetch(_usp);
+      state = AsyncData(state.requireValue.copyWith(
+        timeSettings: ts,
+        timeSettingsModel: _svc.buildTimeSettingsUIModel(ts),
+      ));
     });
   }
 
@@ -183,8 +260,10 @@ class UspDashboardNotifier
         DhcpReservationUpdate(instancePath: instancePath, enable: enable),
       );
       final reservations = await DhcpReservations.fetch(_usp);
-      state = AsyncData(
-          state.requireValue.copyWith(dhcpReservations: reservations));
+      state = AsyncData(state.requireValue.copyWith(
+        dhcpReservations: reservations,
+        dhcpReservationModels: _svc.buildDhcpReservationUIModels(reservations),
+      ));
     });
   }
 
@@ -194,8 +273,10 @@ class UspDashboardNotifier
       await DhcpReservations.add(_usp,
           enable: enable, chaddr: mac, yiaddr: ip);
       final reservations = await DhcpReservations.fetch(_usp);
-      state = AsyncData(
-          state.requireValue.copyWith(dhcpReservations: reservations));
+      state = AsyncData(state.requireValue.copyWith(
+        dhcpReservations: reservations,
+        dhcpReservationModels: _svc.buildDhcpReservationUIModels(reservations),
+      ));
     });
   }
 
@@ -203,8 +284,10 @@ class UspDashboardNotifier
     await _withLock(() async {
       await DhcpReservations.delete(_usp, instancePath);
       final reservations = await DhcpReservations.fetch(_usp);
-      state = AsyncData(
-          state.requireValue.copyWith(dhcpReservations: reservations));
+      state = AsyncData(state.requireValue.copyWith(
+        dhcpReservations: reservations,
+        dhcpReservationModels: _svc.buildDhcpReservationUIModels(reservations),
+      ));
     });
   }
 
@@ -220,7 +303,10 @@ class UspDashboardNotifier
         PortForwardingRuleUpdate(instancePath: instancePath, enabled: enabled),
       );
       final pf = await PortForwarding.fetch(_usp);
-      state = AsyncData(state.requireValue.copyWith(portForwarding: pf));
+      state = AsyncData(state.requireValue.copyWith(
+        portForwarding: pf,
+        portForwardingRuleModels: _svc.buildPortForwardingRuleUIModels(pf),
+      ));
     });
   }
 
@@ -243,16 +329,40 @@ class UspDashboardNotifier
         description: description,
       );
       final pf = await PortForwarding.fetch(_usp);
-      state = AsyncData(state.requireValue.copyWith(portForwarding: pf));
+      state = AsyncData(state.requireValue.copyWith(
+        portForwarding: pf,
+        portForwardingRuleModels: _svc.buildPortForwardingRuleUIModels(pf),
+      ));
     });
   }
 
-  Future<void> updatePortForwardingRule(
-      PortForwardingRuleUpdate update) async {
+  Future<void> updatePortForwardingRule({
+    required String instancePath,
+    bool? enabled,
+    int? externalPort,
+    int? internalPort,
+    String? internalClient,
+    String? protocol,
+    String? description,
+  }) async {
     await _withLock(() async {
-      await PortForwarding.update(_usp, update);
+      await PortForwarding.update(
+        _usp,
+        PortForwardingRuleUpdate(
+          instancePath: instancePath,
+          enabled: enabled,
+          externalPort: externalPort,
+          internalPort: internalPort,
+          internalClient: internalClient,
+          protocol: protocol,
+          description: description,
+        ),
+      );
       final pf = await PortForwarding.fetch(_usp);
-      state = AsyncData(state.requireValue.copyWith(portForwarding: pf));
+      state = AsyncData(state.requireValue.copyWith(
+        portForwarding: pf,
+        portForwardingRuleModels: _svc.buildPortForwardingRuleUIModels(pf),
+      ));
     });
   }
 
@@ -260,7 +370,10 @@ class UspDashboardNotifier
     await _withLock(() async {
       await PortForwarding.delete(_usp, instancePath);
       final pf = await PortForwarding.fetch(_usp);
-      state = AsyncData(state.requireValue.copyWith(portForwarding: pf));
+      state = AsyncData(state.requireValue.copyWith(
+        portForwarding: pf,
+        portForwardingRuleModels: _svc.buildPortForwardingRuleUIModels(pf),
+      ));
     });
   }
 }

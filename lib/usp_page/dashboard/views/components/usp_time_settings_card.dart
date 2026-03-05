@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/time_settings.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
@@ -15,8 +15,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final time = state.timeSettings;
-    final isSynced = time.status == 'Synchronized';
+    final time = state.timeSettingsModel;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'time';
 
     return AppCard(
@@ -31,7 +30,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
                 children: [
                   AppBadge(
                     label: time.status,
-                    color: isSynced
+                    color: time.isSynchronized
                         ? Theme.of(context)
                             .extension<AppColorScheme>()
                             ?.semanticSuccess
@@ -53,7 +52,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
           AppGap.xl(),
           UspInfoRow(
               label: 'Current Time',
-              value: _formatDateTime(time.currentLocalTime)),
+              value: time.formattedDateTime),
           UspInfoRow(label: 'Timezone', value: time.localTimeZone),
           UspInfoRow(label: 'NTP Server 1', value: time.ntpServer1),
           if (time.ntpServer2.isNotEmpty)
@@ -90,7 +89,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
   }
 
   Future<void> _showTimeSettingsDialog(
-      BuildContext context, WidgetRef ref, TimeSettings settings) async {
+      BuildContext context, WidgetRef ref, TimeSettingsUIModel settings) async {
     final result = await showDialog<TimeSettingsDialogResult>(
       context: context,
       builder: (_) => TimeSettingsDialog(settings: settings),
@@ -107,19 +106,5 @@ class UspTimeSettingsCard extends ConsumerWidget {
           ),
       successMessage: 'Time settings saved',
     );
-  }
-
-  String _formatDateTime(String isoString) {
-    if (isoString.isEmpty) return 'N/A';
-    try {
-      final dt = DateTime.parse(isoString);
-      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
-          '${dt.day.toString().padLeft(2, '0')} '
-          '${dt.hour.toString().padLeft(2, '0')}:'
-          '${dt.minute.toString().padLeft(2, '0')}:'
-          '${dt.second.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return isoString;
-    }
   }
 }

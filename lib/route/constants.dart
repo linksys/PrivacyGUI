@@ -24,6 +24,8 @@ class RoutePath {
 
   /// USP dashboard (standalone, no JNAP polling dependency)
   static const uspDashboard = '/uspDashboard';
+  static const uspMenu = '/uspMenu';
+  static const uspSupport = '/uspSupport';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -161,6 +163,8 @@ class RouteNamed {
 
   /// USP dashboard
   static const uspDashboard = 'uspDashboard';
+  static const uspMenu = 'uspMenu';
+  static const uspSupport = 'uspSupport';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';

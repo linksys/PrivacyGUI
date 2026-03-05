@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/generated/port_forwarding.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
@@ -16,7 +16,7 @@ class UspPortForwardingCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rules = state.portForwarding.items;
+    final rules = state.portForwardingRuleModels;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';
 
     return AppCard(
@@ -53,7 +53,7 @@ class UspPortForwardingCard extends ConsumerWidget {
   }
 
   Widget _buildPortForwardingRow(BuildContext context, WidgetRef ref,
-      PortForwardingRule rule, bool isLoading) {
+      PortForwardingRuleUIModel rule, bool isLoading) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
@@ -75,14 +75,12 @@ class UspPortForwardingCard extends ConsumerWidget {
           ),
           AppGap.sm(),
           Expanded(
-            child: AppText.bodyMedium(
-              rule.description.isNotEmpty ? rule.description : 'Unnamed rule',
-            ),
+            child: AppText.bodyMedium(rule.displayName),
           ),
           SizedBox(
             width: 180,
             child: AppText.bodySmall(
-              '${rule.externalPort} \u2192 ${rule.internalClient}:${rule.internalPort}',
+              rule.portSummary,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
@@ -135,7 +133,7 @@ class UspPortForwardingCard extends ConsumerWidget {
   }
 
   Future<void> _showEditPortForwardingDialog(
-      BuildContext context, WidgetRef ref, PortForwardingRule rule) async {
+      BuildContext context, WidgetRef ref, PortForwardingRuleUIModel rule) async {
     final result = await showDialog<PortForwardingDialogResult>(
       context: context,
       builder: (_) => PortForwardingDialog(rule: rule),
@@ -147,7 +145,7 @@ class UspPortForwardingCard extends ConsumerWidget {
       loadingKey: 'portForwarding',
       mutation: () => ref
           .read(uspDashboardProvider.notifier)
-          .updatePortForwardingRule(PortForwardingRuleUpdate(
+          .updatePortForwardingRule(
             instancePath: rule.instancePath,
             enabled: result.enabled,
             externalPort: result.externalPort,
@@ -155,19 +153,17 @@ class UspPortForwardingCard extends ConsumerWidget {
             internalClient: result.internalClient,
             protocol: result.protocol,
             description: result.description,
-          )),
+          ),
       successMessage: 'Rule updated',
     );
   }
 
   Future<void> _confirmDeletePortForwarding(
-      BuildContext context, WidgetRef ref, PortForwardingRule rule) async {
-    final name =
-        rule.description.isNotEmpty ? rule.description : 'this rule';
+      BuildContext context, WidgetRef ref, PortForwardingRuleUIModel rule) async {
     final confirmed = await showSimpleAppDialog<bool>(
       context,
       title: 'Delete Rule',
-      content: AppText.bodyMedium('Delete $name?'),
+      content: AppText.bodyMedium('Delete ${rule.displayName}?'),
       actions: [
         AppButton.text(
           label: 'Cancel',

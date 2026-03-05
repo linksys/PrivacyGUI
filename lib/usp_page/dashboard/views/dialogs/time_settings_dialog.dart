@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/generated/time_settings.g.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Result returned by [TimeSettingsDialog].
@@ -17,7 +17,7 @@ class TimeSettingsDialogResult {
 
 /// Dialog for editing Time Settings (enable + NTP servers).
 class TimeSettingsDialog extends StatefulWidget {
-  final TimeSettings settings;
+  final TimeSettingsUIModel settings;
 
   const TimeSettingsDialog({super.key, required this.settings});
 
