@@ -43,8 +43,7 @@ A definition file describes a set of USP parameters and their properties. File n
 | `parameters` | array | **Yes** | Array of parameter definitions |
 | `version` | string | No | Semantic version (e.g., `1.0.0`) |
 | `instance` | string | No | TR-181 single-instance path (e.g., `Device.WiFi.SSID.1`). Used as path prefix for parameters with relative paths. See [Path Modes](#path-modes) |
-| `basePath` | string | No | TR-181 multi-instance base path (e.g., `Device.Hosts.Host.`). Used with `multiInstance: true`. See [Path Modes](#path-modes) |
-| `multiInstance` | boolean | No | Set to `true` to generate a data class + collection class pattern (default: `false`). Alias: `multi_instance` |
+| `multiInstance` | string | No | TR-181 multi-instance base path (e.g., `Device.Hosts.Host.`). When present, generates a data class + collection class pattern with `getInstances()`. Alias: `multi_instance`. See [Path Modes](#path-modes) |
 | `singularName` | string | No | Override the auto-derived singular name for multi-instance definitions. Alias: `singular_name` |
 | `type` | string | No | Controls add/delete code generation. `"add"` generates both `add()` and `delete()` methods. `"delete"` generates only `delete()`. See [1.6 Add/Delete Operations](#16-adddelete-operations) |
 | `category` | string | No | Category tag (`core`, `extensions`, `vendor`). When `--categorize` is enabled, files are output into matching subdirectories |
@@ -54,6 +53,7 @@ A definition file describes a set of USP parameters and their properties. File n
 | `children` | array | No | Nested child multi-instance definitions. See [1.9 Nested Multi-Instance (Children)](#19-nested-multi-instance-children) |
 | `nestedPath` | string | No | Relative path to nested sub-table for flatten mode (e.g., `.AssociatedDevice.`). Alias: `nested_path`. See [1.10 Flatten Mode](#110-flatten-mode) |
 | `flatten` | boolean | No | When `true` with `nestedPath`, generates a flat list with `parentPath` field instead of nested hierarchy |
+| `fetchAll` | boolean | No | When `true`, forces the generated `fetch()` to use a partial path (e.g., `Device.Hosts.Host.`) instead of selective search paths. Default: `false` (selective get). Alias: `fetch_all`. See [Selective Get](#selective-get) |
 
 ```yaml
 name: DNSSettings
@@ -83,20 +83,19 @@ parameters:
   - path: .Server.2.DNSServer      # relative → Device.DNS.Client.Server.2.DNSServer
 ```
 
-**Mode B: `basePath` + `multiInstance` — Multi-instance, relative paths**
+**Mode B: `multiInstance` — Multi-instance, relative paths**
 
-Use `basePath` to provide a path prefix (trailing `.` is appended automatically). Combined with `multiInstance: true`, this generates a collection class with `getInstances()`.
+Use `multiInstance` with a TR-181 base path (trailing `.` or `.*` are normalized automatically). This generates a collection class with `getInstances()`.
 
 ```yaml
 name: connectedDevices
-multiInstance: true
-basePath: Device.Hosts.Host.       # path prefix (multi-instance table)
+multiInstance: Device.Hosts.Host.  # base path (multi-instance table)
 parameters:
   - path: .HostName                # relative → Device.Hosts.Host.{i}.HostName
   - path: .IPAddress               # relative → Device.Hosts.Host.{i}.IPAddress
 ```
 
-**Mode C: No `instance` / No `basePath` — Absolute path aggregation**
+**Mode C: No `instance` / No `multiInstance` — Absolute path aggregation**
 
 No path prefix is specified; each parameter's `path` must be a full TR-181 absolute path. Suitable for "API service" scenarios that aggregate parameters from multiple different TR-181 objects.
 
@@ -113,9 +112,9 @@ parameters:
 
 > All three modes produce the same generated structure (data class + `fetch()` + `save()`); they only differ in how paths are assembled.
 
-#### `instance` vs `basePath` vs `related` Comparison
+#### `instance` vs `multiInstance` vs `related` Comparison
 
-| | `instance` | `basePath` + `multiInstance` | No prefix (absolute) | `related` |
+| | `instance` | `multiInstance` | No prefix (absolute) | `related` |
 |---|---|---|---|---|
 | **Purpose** | Single TR-181 object | Multi-instance table (N entries) | Cross-object aggregation | Reference parameters from other objects within a single-instance definition |
 | **parameter `path`** | Relative (`.XXX`) | Relative (`.XXX`) | Absolute | Relative (prefixed by the related group's `instance`) |
@@ -353,7 +352,7 @@ public static func subscribe(client: UspClient) async throws -> Subscription<Wif
 
 ### 1.5 Multi-Instance Definitions
 
-When `multiInstance: true` is set, the generator produces **two classes** instead of one:
+When `multiInstance` is set (with a TR-181 base path string), the generator produces **two classes** instead of one:
 
 1. **Singular data class** (immutable) — represents a single instance row with an `instancePath` field plus all parameter fields
 2. **Collection class** — holds a `List`/array of singular instances, with a `fetch()` method that uses `getInstances()` to enumerate all instances
@@ -368,16 +367,18 @@ The singular name is derived automatically by stripping the trailing `s` from `n
 
 #### Path Resolution
 
-- Use `basePath` with `multiInstance: true` for dynamic collections (e.g., `Device.Hosts.Host.`). A trailing `.` is **auto-appended** if omitted — both `Device.Hosts.Host` and `Device.Hosts.Host.` are accepted
-- Do **not** use `instance` with `multiInstance: true`; `instance` is reserved for single-instance data class generation
+- `multiInstance` takes a TR-181 base path string for dynamic collections. The parser normalizes all three trailing formats to the same canonical form:
+  - `Device.Hosts.Host.` — trailing dot (canonical)
+  - `Device.Hosts.Host.*` — trailing `.*` (strip `*`)
+  - `Device.Hosts.Host` — bare path (append `.`)
+- Do **not** use `instance` with `multiInstance`; `instance` is reserved for single-instance data class generation
 
 #### Example
 
 ```yaml
 name: connectedDevices
 description: Connected devices on the network
-multiInstance: true
-basePath: Device.Hosts.Host.
+multiInstance: Device.Hosts.Host.
 singularName: connectedDevice  # optional override
 
 parameters:
@@ -566,6 +567,63 @@ public class ConnectedDevices {
 }
 ```
 
+#### Selective Get
+
+By default, multi-instance definitions generate **selective search paths** using the USP wildcard `*` syntax. Only the declared parameters are fetched, reducing response size significantly.
+
+**Default behavior (selective get):**
+
+```yaml
+name: firewallRules
+multiInstance: Device.Firewall.Chain.1.Rule.
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+  - field_name: description
+    path: .Description
+    type: string
+  - field_name: target
+    path: .Target
+    type: string
+```
+
+Generated `_paths` (Dart):
+```dart
+static const _paths = [
+  'Device.Firewall.Chain.1.Rule.*.Enable',
+  'Device.Firewall.Chain.1.Rule.*.Description',
+  'Device.Firewall.Chain.1.Rule.*.Target',
+];
+```
+
+This queries only the 3 declared parameters instead of all 20+ parameters under each rule instance.
+
+**Opt-out with `fetchAll: true`:**
+
+```yaml
+name: firewallRules
+multiInstance: Device.Firewall.Chain.1.Rule.
+fetchAll: true   # use partial path — fetches all parameters
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+```
+
+Generated `_paths` (Dart):
+```dart
+static const _paths = ['Device.Firewall.Chain.1.Rule.'];
+```
+
+**Subscribe paths** are unaffected — they always use the partial path (e.g., `'Device.Firewall.Chain.1.Rule.'`) regardless of `fetchAll`, because `ObjectCreation`/`ObjectDeletion` events require monitoring the entire subtree.
+
+**Nested children** produce double-wildcard search paths:
+```dart
+// Parent: Device.WiFi.AccessPoint.*.SSID
+// Child:  Device.WiFi.AccessPoint.*.AssociatedDevice.*.MACAddress
+```
+
 ### 1.6 Add/Delete Operations
 
 For multi-instance definitions that need to create or remove USP instances (e.g., Port Forwarding rules), use the `type` field.
@@ -583,8 +641,7 @@ The `type` field is **additive** — it does not replace `fetch`/`update` genera
 ```yaml
 name: portForwardingRules
 description: NAT port forwarding rules
-multiInstance: true
-basePath: Device.NAT.PortMapping.
+multiInstance: Device.NAT.PortMapping.
 singularName: PortForwardingRule
 type: add
 
@@ -762,7 +819,7 @@ Operate definitions generate wrapper methods for USP Operate commands. Instead o
 | `type` | string | **Yes** | Must be `"operate"` |
 | `operations` | array | **Yes** | Array of operation definitions |
 
-> **Note**: Operate definitions do not use `parameters`, `instance`, `basePath`, or `subscribe`.
+> **Note**: Operate definitions do not use `parameters`, `instance`, `multiInstance`, or `subscribe`.
 
 #### Operation
 
@@ -885,7 +942,7 @@ TR-181 data models often contain nested multi-instance tables, e.g., `Device.WiF
 |-------|------|----------|-------------|
 | `name` | string | **Yes** | Child collection name (camelCase, e.g., `associatedDevices`) |
 | `singularName` | string | No | Override auto-derived singular name |
-| `basePath` | string | **Yes** | Relative path to child table (e.g., `.AssociatedDevice.`). Trailing `.` auto-appended |
+| `path` | string | **Yes** | Relative path to child table (e.g., `.AssociatedDevice.`). Trailing `.` auto-appended |
 | `type` | string | No | `"add"` or `"delete"` — generates child add/delete methods with `parentInstancePath` parameter |
 | `parameters` | array | No | Child parameter definitions (same format as top-level `parameters`) |
 | `children` | array | No | Recursive — grandchild definitions for deeper nesting |
@@ -895,8 +952,7 @@ TR-181 data models often contain nested multi-instance tables, e.g., `Device.WiF
 ```yaml
 name: accessPoints
 description: WiFi access points with associated devices
-multiInstance: true
-basePath: Device.WiFi.AccessPoint.
+multiInstance: Device.WiFi.AccessPoint.
 singularName: accessPoint
 
 parameters:
@@ -907,7 +963,7 @@ parameters:
 children:
   - name: associatedDevices
     singularName: associatedDevice
-    basePath: .AssociatedDevice.
+    path: .AssociatedDevice.
     parameters:
       - field_name: macAddress
         path: .MACAddress
@@ -997,7 +1053,7 @@ When a child definition has `type: "add"`, add/delete methods are generated with
 children:
   - name: rules
     singularName: rule
-    basePath: .Rule.
+    path: .Rule.
     type: add
     parameters:
       - field_name: name
@@ -1019,10 +1075,10 @@ static Future<void> deleteRule(UspService client, String instancePath) async { .
 ```yaml
 children:
   - name: accessPoints
-    basePath: .AccessPoint.
+    path: .AccessPoint.
     children:
       - name: associatedDevices
-        basePath: .AssociatedDevice.
+        path: .AssociatedDevice.
         parameters: [...]
 ```
 
@@ -1041,15 +1097,14 @@ Use flatten mode when:
 | `nestedPath` | string | **Yes** | Relative path from parent to child table (e.g., `.AssociatedDevice.`). Trailing `.` auto-appended. Alias: `nested_path` |
 | `flatten` | boolean | **Yes** | Must be `true` |
 
-Both `nestedPath` and `flatten` are required together. `basePath` specifies the parent table; `nestedPath` specifies the child table within each parent.
+Both `nestedPath` and `flatten` are required together. `multiInstance` specifies the parent table; `nestedPath` specifies the child table within each parent.
 
 #### Example
 
 ```yaml
 name: wifiClients
 description: WiFi clients across all access points (flattened view)
-multiInstance: true
-basePath: Device.WiFi.AccessPoint.
+multiInstance: Device.WiFi.AccessPoint.
 singularName: wifiClient
 nestedPath: .AssociatedDevice.
 flatten: true
@@ -1384,7 +1439,7 @@ The Transforms library is generated once per codegen run, regardless of how many
 
 Path resolution rules (see [Path Modes](#path-modes) for details):
 
-- **Relative paths** (starting with `.`): the generator automatically concatenates `{instance or basePath}{path}`
+- **Relative paths** (starting with `.`): the generator automatically concatenates `{instance or multiInstance}{path}`
 - **Absolute paths** (not starting with `.`): used directly as the full TR-181 path
 - These rules apply to all `path` fields in `parameters`, `presets`, and `related`
 
@@ -1628,8 +1683,7 @@ transforms:
 ```yaml
 name: connectedDevices
 description: Connected devices on the network
-multiInstance: true
-basePath: Device.Hosts.Host.
+multiInstance: Device.Hosts.Host.
 
 parameters:
   - field_name: hostName
