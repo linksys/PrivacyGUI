@@ -16,7 +16,8 @@ class UspStatsPanel extends StatelessWidget {
     final offlineCount = devices.where((d) => !d.isActive).length;
     final radioCount = state.wifiRadioModels.length;
     final enabledRadios = state.wifiRadioModels.where((r) => r.enable).length;
-    final forwardCount = state.portForwardingRuleModels.length;
+    final forwardCount = state.portForwardingRuleModels.length +
+        state.portTriggeringRuleModels.length;
     final lanPorts = state.ethernetPortModels.where((p) => !p.isWan);
     final lanConnected = lanPorts.where((p) => p.isUp).length;
     final lanTotal = lanPorts.length;
@@ -51,7 +52,7 @@ class UspStatsPanel extends StatelessWidget {
           child: _StatTile(
             icon: Icons.shortcut,
             value: '$forwardCount',
-            label: 'Forwards',
+            label: 'Port Rules',
           ),
         ),
       ],

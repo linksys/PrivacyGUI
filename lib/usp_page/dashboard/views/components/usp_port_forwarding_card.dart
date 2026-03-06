@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
@@ -18,6 +18,7 @@ class UspPortForwardingCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rules = state.portForwardingRuleModels;
+    final triggers = state.portTriggeringRuleModels;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';
 
     return AppCard(
@@ -27,10 +28,10 @@ class UspPortForwardingCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.titleMedium('Port Forwarding'),
+              AppText.titleMedium('Port Rules'),
               Row(
                 children: [
-                  AppText.labelLarge('${rules.length}'),
+                  AppText.labelLarge('${rules.length + triggers.length}'),
                   AppGap.sm(),
                   AppIconButton(
                     icon: AppIcon.font(Icons.add, size: 20),
@@ -49,11 +50,23 @@ class UspPortForwardingCard extends ConsumerWidget {
             ],
           ),
           AppGap.xl(),
+          // Port Forwarding section
+          AppText.labelLarge('Port Forwarding'),
+          AppGap.sm(),
           if (rules.isEmpty)
             AppText.bodyMedium('No port forwarding rules configured')
           else
             ...rules.map(
                 (r) => _buildPortForwardingRow(context, ref, r, isLoading)),
+          AppGap.lg(),
+          // Port Triggering section
+          AppText.labelLarge('Port Triggering'),
+          AppGap.sm(),
+          if (triggers.isEmpty)
+            AppText.bodyMedium('No port triggering rules configured')
+          else
+            ...triggers.map(
+                (t) => _buildPortTriggeringRow(context, ref, t, isLoading)),
         ],
       ),
     );
@@ -97,17 +110,49 @@ class UspPortForwardingCard extends ConsumerWidget {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          AppIconButton(
-            icon: AppIcon.font(Icons.edit, size: 18),
-            onTap: isLoading
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPortTriggeringRow(BuildContext context, WidgetRef ref,
+      PortTriggeringRuleUIModel trigger, bool isLoading) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          AppSwitch(
+            value: trigger.enabled,
+            scale: 0.8,
+            onChanged: isLoading
                 ? null
-                : () => _showEditPortForwardingDialog(context, ref, rule),
+                : (value) => performUspMutation(
+                      context,
+                      ref,
+                      loadingKey: 'portForwarding',
+                      mutation: () => ref
+                          .read(uspDashboardProvider.notifier)
+                          .togglePortTriggerRule(
+                              trigger.instancePath, value),
+                    ),
           ),
-          AppIconButton(
-            icon: AppIcon.font(Icons.delete_outline, size: 18),
-            onTap: isLoading
-                ? null
-                : () => _confirmDeletePortForwarding(context, ref, rule),
+          AppGap.sm(),
+          Expanded(
+            child: AppText.bodyMedium(trigger.displayName),
+          ),
+          SizedBox(
+            width: 180,
+            child: AppText.bodySmall(
+              '${trigger.triggerPortDisplay} \u2192 ${trigger.forwardPortDisplay}',
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(
+            width: 50,
+            child: AppText.bodySmall(
+              trigger.triggerProtocol,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -135,60 +180,6 @@ class UspPortForwardingCard extends ConsumerWidget {
                 enabled: result.enabled,
               ),
       successMessage: 'Rule added',
-    );
-  }
-
-  Future<void> _showEditPortForwardingDialog(BuildContext context,
-      WidgetRef ref, PortForwardingRuleUIModel rule) async {
-    final result = await showDialog<PortForwardingDialogResult>(
-      context: context,
-      builder: (_) => PortForwardingDialog(rule: rule),
-    );
-    if (result == null || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'portForwarding',
-      mutation: () =>
-          ref.read(uspDashboardProvider.notifier).updatePortForwardingRule(
-                instancePath: rule.instancePath,
-                enabled: result.enabled,
-                externalPort: result.externalPort,
-                internalPort: result.internalPort,
-                internalClient: result.internalClient,
-                protocol: result.protocol,
-                description: result.description,
-              ),
-      successMessage: 'Rule updated',
-    );
-  }
-
-  Future<void> _confirmDeletePortForwarding(BuildContext context, WidgetRef ref,
-      PortForwardingRuleUIModel rule) async {
-    final confirmed = await showSimpleAppDialog<bool>(
-      context,
-      title: 'Delete Rule',
-      content: AppText.bodyMedium('Delete ${rule.displayName}?'),
-      actions: [
-        AppButton.text(
-          label: 'Cancel',
-          onTap: () => context.pop(),
-        ),
-        AppButton.dangerText(
-          label: 'Delete',
-          onTap: () => context.pop(true),
-        ),
-      ],
-    );
-    if (confirmed != true || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'portForwarding',
-      mutation: () => ref
-          .read(uspDashboardProvider.notifier)
-          .deletePortForwardingRule(rule.instancePath),
-      successMessage: 'Rule deleted',
     );
   }
 }

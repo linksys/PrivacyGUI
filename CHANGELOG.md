@@ -2,9 +2,28 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
-## [2.1.0] - 2026-03-03
+## [2.1.0] - 2026-03-06
 
 ### USP Protocol Integration
+
+#### Selective Get Optimization & Codegen v0.10.3
+- Migrate 8 YAML definitions to new `multiInstance` format with selective get search paths (connected_devices, data_elements_network, wi_fi_radios, wi_fi_access_points, wi_fi_ssids, port_forwarding, port_triggering, firewall_chain_rules)
+- Upgrade `usp-codegen` to v0.10.3 — phantom instance filter skips all-default empty instances from wildcard search path queries (BUG-003)
+- Remove `fetchAll` from port_forwarding — selective get now safe with phantom filter
+- Fix `UspService._coerceValue`: empty string returns `''` not `null`
+- Fix `UspService.get`: skip wildcard paths in missing-path check
+- Fix `_fetchDefaultGateway`: use wildcard search paths instead of index-based loop (non-contiguous routing table instance IDs)
+
+#### Firewall Settings Page (F-005)
+- Add `FirewallUIModel` with 8 boolean toggles (SPI IPv4/IPv6, VPN passthrough, internet filters)
+- Add `UspFirewallService` — scatter-gather fetch, Description-based rule identification, Target-aware toggle inversion
+- Add `UspFirewallNotifier` with `isDirty` / batch `save()` pattern
+- Add `UspFirewallView` — 3-section layout (Firewall Protection, VPN Passthrough, Internet Filters)
+
+#### System Log & System Monitor
+- Add System Log page — `VendorLogFiles` codegen definition, fetch + display log content
+- Add `UspSystemMonitorCard` with real-time CPU/memory polling via `Device.DeviceInfo.ProcessStatus`
+- Add `SignalStrengthIndicator` reusable component for WiFi signal display
 
 #### Phase 3: UI Model Layer — Presentation/Data Decoupling
 - Establish Presentation Layer UI Models per constitution Article V Section 5.3 — views no longer import codegen `generated/*.g.dart` files
