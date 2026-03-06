@@ -10,6 +10,7 @@ export 'usp_ethernet_ports_card.dart';
 export 'usp_info_row.dart';
 export 'usp_lan_info_card.dart';
 export 'usp_mutation_helper.dart';
+export 'usp_network_status_card.dart';
 export 'usp_network_topology_card.dart';
 export 'usp_port_forwarding_card.dart';
 export 'usp_protocol_info_card.dart';

@@ -4,6 +4,7 @@ import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
@@ -19,6 +20,7 @@ import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
@@ -47,6 +49,7 @@ class UspDashboardState extends Equatable {
   final Map<String, ClientConnectionDetail> connectionDetailMap;
   final LanNetworkInfo lanNetworkInfo;
   final EthernetInterfaces ethernetInterfaces;
+  final WanStatus wanStatus;
 
   // ─── Presentation Layer UI Models (used by views) ───
   final SystemInfoUIModel systemInfoModel;
@@ -60,6 +63,7 @@ class UspDashboardState extends Equatable {
   final List<PortTriggeringRuleUIModel> portTriggeringRuleModels;
   final List<EthernetPortUIModel> ethernetPortModels;
   final List<NodeUIModel> nodeModels;
+  final WanStatusUIModel wanStatusModel;
 
   const UspDashboardState({
     required this.systemInfo,
@@ -78,6 +82,13 @@ class UspDashboardState extends Equatable {
     this.connectionDetailMap = const {},
     required this.lanNetworkInfo,
     required this.ethernetInterfaces,
+    this.wanStatus = const WanStatus(
+      status: '',
+      ipAddress: '',
+      subnetMask: '',
+      addressingType: '',
+      maxMtuSize: 0,
+    ),
     this.ethernetPortModels = const [],
     this.lanInfoModel = const LanInfoUIModel(
       ipAddress: '',
@@ -112,6 +123,13 @@ class UspDashboardState extends Equatable {
     this.portForwardingRuleModels = const [],
     this.portTriggeringRuleModels = const [],
     this.nodeModels = const [],
+    this.wanStatusModel = const WanStatusUIModel(
+      isUp: false,
+      ipAddress: '',
+      subnetMask: '',
+      addressingType: '',
+      mtu: 0,
+    ),
   });
 
   int get onlineDeviceCount =>
@@ -134,6 +152,7 @@ class UspDashboardState extends Equatable {
     Map<String, ClientConnectionDetail>? connectionDetailMap,
     LanNetworkInfo? lanNetworkInfo,
     EthernetInterfaces? ethernetInterfaces,
+    WanStatus? wanStatus,
     List<EthernetPortUIModel>? ethernetPortModels,
     LanInfoUIModel? lanInfoModel,
     SystemInfoUIModel? systemInfoModel,
@@ -145,6 +164,7 @@ class UspDashboardState extends Equatable {
     List<PortForwardingRuleUIModel>? portForwardingRuleModels,
     List<PortTriggeringRuleUIModel>? portTriggeringRuleModels,
     List<NodeUIModel>? nodeModels,
+    WanStatusUIModel? wanStatusModel,
   }) {
     return UspDashboardState(
       systemInfo: systemInfo ?? this.systemInfo,
@@ -163,6 +183,7 @@ class UspDashboardState extends Equatable {
       connectionDetailMap: connectionDetailMap ?? this.connectionDetailMap,
       lanNetworkInfo: lanNetworkInfo ?? this.lanNetworkInfo,
       ethernetInterfaces: ethernetInterfaces ?? this.ethernetInterfaces,
+      wanStatus: wanStatus ?? this.wanStatus,
       ethernetPortModels: ethernetPortModels ?? this.ethernetPortModels,
       lanInfoModel: lanInfoModel ?? this.lanInfoModel,
       systemInfoModel: systemInfoModel ?? this.systemInfoModel,
@@ -177,6 +198,7 @@ class UspDashboardState extends Equatable {
       portTriggeringRuleModels:
           portTriggeringRuleModels ?? this.portTriggeringRuleModels,
       nodeModels: nodeModels ?? this.nodeModels,
+      wanStatusModel: wanStatusModel ?? this.wanStatusModel,
     );
   }
 
@@ -198,6 +220,7 @@ class UspDashboardState extends Equatable {
         connectionDetailMap.length,
         lanNetworkInfo.ipAddress,
         ethernetInterfaces.items.length,
+        wanStatus.ipAddress,
         ethernetPortModels.length,
         lanInfoModel,
         systemInfoModel,
@@ -209,5 +232,6 @@ class UspDashboardState extends Equatable {
         portForwardingRuleModels.length,
         portTriggeringRuleModels.length,
         nodeModels.length,
+        wanStatusModel,
       ];
 }

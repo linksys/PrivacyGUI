@@ -5,6 +5,7 @@ import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
@@ -41,7 +42,7 @@ class UspLoadingProgress {
 
   const UspLoadingProgress({
     this.completed = 0,
-    this.total = 14,
+    this.total = 15,
     this.currentTask = '',
   });
 
@@ -154,6 +155,10 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         tick('Ethernet Ports');
         return v;
       }),
+      WanStatus.fetch(usp).then((v) {
+        tick('WAN Status');
+        return v;
+      }),
     ]);
 
     final systemInfo = results[0] as SystemInfo;
@@ -177,6 +182,9 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     final meshTopology = results[11] as MeshTopologyInfo;
     final lanNetworkInfo = results[12] as LanNetworkInfo;
     final ethernetInterfaces = results[13] as EthernetInterfaces;
+    final wanStatus = results[14] as WanStatus;
+    logger.d('[USP] WAN: ${wanStatus.status}, IP: ${wanStatus.ipAddress}, '
+        'type: ${wanStatus.addressingType}');
     logger.d('[USP] WiFi clients enriched: ${wifiClientMap.length} entries');
     logger.d('[USP] Mesh nodes: ${meshTopology.nodes.length}, '
         'client mappings: ${meshTopology.clientToNodeMap.length}');
@@ -189,6 +197,10 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       radios: wifiRadios,
     );
     logger.d('[USP] Connection details: ${connectionDetailMap.length} entries');
+
+    // Fetch default gateway IP from routing table
+    final wanGateway = await _fetchDefaultGateway(usp);
+    logger.d('[USP] WAN gateway: $wanGateway');
 
     // Data → UI Model transformation (constitution Section 5.3)
     final svc = _svc;
@@ -222,6 +234,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       connectionDetailMap: connectionDetailMap,
       lanNetworkInfo: lanNetworkInfo,
       ethernetInterfaces: ethernetInterfaces,
+      wanStatus: wanStatus,
       ethernetPortModels: svc.buildEthernetPortUIModels(
         ethernetInterfaces: ethernetInterfaces,
         connectedDevices: connectedDevices,
@@ -244,12 +257,65 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
           svc.buildPortForwardingRuleUIModels(portForwarding),
       portTriggeringRuleModels:
           svc.buildPortTriggeringRuleUIModels(portTriggering),
+      wanStatusModel: svc.buildWanStatusUIModel(
+        wanStatus: wanStatus,
+        gateway: wanGateway,
+      ),
       nodeModels: svc.buildNodeUIModels(
         meshTopology: meshTopology,
         deviceModels: deviceModels,
         systemInfo: systemInfoModel,
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // WAN default gateway extraction
+  // ---------------------------------------------------------------------------
+
+  /// Fetches the default gateway IP from the IPv4 routing table.
+  ///
+  /// Looks for the entry with DestIPAddress=0.0.0.0 whose Interface points to
+  /// the WAN (Device.IP.Interface.2). Returns empty string on failure.
+  Future<String> _fetchDefaultGateway(UspService usp) async {
+    try {
+      // Get the number of forwarding entries
+      final countResp = await usp.get([
+        'Device.Routing.Router.1.IPv4ForwardingNumberOfEntries',
+      ]);
+      final count = int.tryParse(
+            countResp['Device.Routing.Router.1.IPv4ForwardingNumberOfEntries']
+                    ?.toString() ??
+                '0',
+          ) ??
+          0;
+      if (count == 0) return '';
+
+      // Fetch DestIPAddress + GatewayIPAddress + Interface for all entries
+      final paths = <String>[];
+      for (var i = 1; i <= count; i++) {
+        final prefix = 'Device.Routing.Router.1.IPv4Forwarding.$i.';
+        paths.add('${prefix}DestIPAddress');
+        paths.add('${prefix}GatewayIPAddress');
+        paths.add('${prefix}Interface');
+      }
+      final resp = await usp.get(paths);
+
+      // Find default route (DestIPAddress=0.0.0.0) pointing to WAN interface
+      for (var i = 1; i <= count; i++) {
+        final prefix = 'Device.Routing.Router.1.IPv4Forwarding.$i.';
+        final dest = resp['${prefix}DestIPAddress']?.toString() ?? '';
+        final gw = resp['${prefix}GatewayIPAddress']?.toString() ?? '';
+        final iface = resp['${prefix}Interface']?.toString() ?? '';
+        if (dest == '0.0.0.0' && iface.contains('Interface.2')) {
+          return gw;
+        }
+      }
+      return '';
+    } catch (e) {
+      logger.w('[USP] Failed to fetch default gateway: $e');
+      return '';
+    }
   }
 
   // ---------------------------------------------------------------------------

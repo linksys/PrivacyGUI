@@ -4,6 +4,7 @@ import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
@@ -20,6 +21,7 @@ import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_mo
 import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
@@ -237,6 +239,24 @@ class UspDeviceService {
       minAddress: info.minAddress,
       maxAddress: info.maxAddress,
       dnsServers: info.dnsServers,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // WAN Status
+  // ---------------------------------------------------------------------------
+
+  WanStatusUIModel buildWanStatusUIModel({
+    required WanStatus wanStatus,
+    required String gateway,
+  }) {
+    return WanStatusUIModel(
+      isUp: wanStatus.status.toLowerCase() == 'up',
+      ipAddress: wanStatus.ipAddress,
+      subnetMask: wanStatus.subnetMask,
+      addressingType: wanStatus.addressingType,
+      mtu: wanStatus.maxMtuSize,
+      gateway: gateway,
     );
   }
 

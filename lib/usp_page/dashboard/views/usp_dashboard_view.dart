@@ -143,13 +143,10 @@ class UspDashboardView extends ConsumerWidget {
       BuildContext context, WidgetRef ref, UspDashboardState state) {
     final info = state.systemInfoModel;
     final devices = state.deviceModels;
-    final activeCount = devices.where((d) => d.isActive).length;
 
     return AppResponsiveLayout(
-      mobile: (ctx) =>
-          _buildMobileLayout(ctx, ref, state, info, devices, activeCount),
-      desktop: (ctx) =>
-          _buildDesktopLayout(ctx, ref, state, info, devices, activeCount),
+      mobile: (ctx) => _buildMobileLayout(ctx, ref, state, info, devices),
+      desktop: (ctx) => _buildDesktopLayout(ctx, ref, state, info, devices),
     );
   }
 
@@ -181,7 +178,6 @@ class UspDashboardView extends ConsumerWidget {
     UspDashboardState state,
     SystemInfoUIModel info,
     List<DeviceUIModel> devices,
-    int activeCount,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,8 +186,7 @@ class UspDashboardView extends ConsumerWidget {
         AppGap.xl(),
         UspStatsPanel(state: state, devices: devices),
         AppGap.xl(),
-        UspConnectionStatusCard(
-            activeCount: activeCount, totalCount: devices.length),
+        UspNetworkStatusCard(wan: state.wanStatusModel),
         AppGap.xl(),
         UspNetworkTopologyCard(
             info: info, devices: devices, meshNodes: state.meshTopology.nodes),
@@ -228,7 +223,6 @@ class UspDashboardView extends ConsumerWidget {
     UspDashboardState state,
     SystemInfoUIModel info,
     List<DeviceUIModel> devices,
-    int activeCount,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,8 +231,7 @@ class UspDashboardView extends ConsumerWidget {
         AppGap.xl(),
         UspStatsPanel(state: state, devices: devices),
         AppGap.xl(),
-        UspConnectionStatusCard(
-            activeCount: activeCount, totalCount: devices.length),
+        UspNetworkStatusCard(wan: state.wanStatusModel),
         AppGap.xl(),
         UspNetworkTopologyCard(
             info: info, devices: devices, meshNodes: state.meshTopology.nodes),

@@ -1,8 +1,9 @@
 # Phase 2：JNAP → USP 遷移架構計畫
 
-> 文件版本：v2.4 | 日期：2026-03-06
+> 文件版本：v2.5 | 日期：2026-03-06
 > 前置文件：`phase1_router_datamodel_validation.md`
 > 變更歷史：
+> - v2.5 — Network Status Card（WAN 資料）、Stats Panel 改版、Upstream boolean 修正
 > - v2.4 — Dashboard Shimmer/Skeleton Loading + Refresh Progress Indicator
 > - v2.3 — Port Forwarding Detail Page（三 Tab）、Port Range Forwarding、Port Triggering 完整資料層 + UI、Admin 頁面修正
 > - v2.2 — Phase 2C 進度更新：Subscribe 基礎設施完成（被 BUG-003 阻擋）、BUG-001 已修復、codegen v0.9.0
@@ -1012,6 +1013,7 @@ Phase 2B-6: Port Range Forwarding     ✅ 完成 — ExternalPortEndRange 欄位
 Phase 2B-7: Port Triggering           ✅ 完成 — nested YAML + codegen + UI model + 7 mutation methods
 Phase 2B-8: Port Forwarding Detail    ✅ 完成 — 三 Tab 頁面 + routes + dialogs + menu + dashboard 導航
 Phase 2B-9: Dashboard Skeleton Loading ✅ 完成 — shimmer/skeleton 初始載入 + refresh LinearProgressIndicator
+Phase 2B-10: Network Status Card      ✅ 完成 — WAN 資料（IP/Subnet/Type/Gateway/MTU）+ Stats Panel 改版 + Upstream 修正
 Phase 2C-1: Ping OPERATE              ⏸️ 被阻擋 — BUG-003 (SSE) + BUG-004 (async OperateResp)
 Phase 2C-2: Traceroute OPERATE         ⏸️ 被阻擋 — 同上
 Phase 2C-3: Subscribe（即時通知）       🟡 基礎設施完成，被 BUG-003 阻擋
@@ -1140,6 +1142,11 @@ class ProtocolException implements Exception {
 - Admin 頁面修正：`AdminUsers.setPassword` → `AdminUsers.update` codegen API 對齊
 - Dashboard Skeleton Loading：`UspDashboardSkeleton`（5 種 skeleton 模板）+ `AppSkeleton` shimmer 動畫取代 `CircularProgressIndicator`
 - Dashboard Refresh Feedback：`LinearProgressIndicator`（4px）在 refresh 時顯示於頂部，舊資料保持可見
+- Network Status Card：`UspNetworkStatusCard` 取代 `UspConnectionStatusCard`，顯示 WAN IP/Subnet/Connection Type/Gateway/MTU
+- WAN Status codegen：`wan_status.yaml` + `wan_status.g.dart`（`Device.IP.Interface.2.*`）+ `WanStatusUIModel`
+- Default Gateway 取得：`_fetchDefaultGateway()` 查詢 `Device.Routing.Router.1.IPv4Forwarding` 路由表
+- Stats Panel 改版：Offline → LAN Ports（`lanConnected/lanTotal`）、Rules → Forwards（port forwarding count）
+- `_coerceValue()` 修正：新增 `Upstream` 至已知 boolean 路徑後綴（修正 Ethernet port WAN 判定）
 
 **Phase 2C 基礎設施** ✅（被 usp-bridge BUG-003/BUG-004 阻擋）
 - Subscribe 完整基礎設施：`NotifType` enum、`Subscription<T>` class、typed `subscribe<T>()`（polling 模擬）

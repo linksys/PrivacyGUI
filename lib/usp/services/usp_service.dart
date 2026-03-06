@@ -100,7 +100,8 @@ class UspService {
     // Ensure all requested paths exist in the result to prevent Null Cast errors in codegen
     for (final path in paths) {
       if (!result.containsKey(path)) {
-        debugPrint('[UspService.get] WARNING: missing path in response: "$path"');
+        debugPrint(
+            '[UspService.get] WARNING: missing path in response: "$path"');
       }
       result.putIfAbsent(path, () => null);
     }
@@ -122,7 +123,9 @@ class UspService {
     if (lower == 'false') return false;
 
     // "1"/"0" coercion for known boolean path suffixes
-    final isBoolPath = path.endsWith('Enable') || path.endsWith('Active');
+    final isBoolPath = path.endsWith('Enable') ||
+        path.endsWith('Active') ||
+        path.endsWith('Upstream');
     if (isBoolPath) {
       if (raw == '1') return true;
       if (raw == '0') return false;
