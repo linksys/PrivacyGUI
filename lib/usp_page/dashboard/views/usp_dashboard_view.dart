@@ -40,12 +40,29 @@ class UspDashboardView extends ConsumerWidget {
           ),
           backState: UiKitBackState.none,
           onRefresh: () => ref.refresh(uspDashboardProvider.future),
-          padding: const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+          padding:
+              const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
           child: (childContext, constraints) {
-            return asyncState.when(
-              loading: () => _buildLoading(childContext, ref),
-              error: (error, stack) => _buildError(childContext, ref, error),
-              data: (state) => _buildContent(childContext, ref, state),
+            final isRefreshing =
+                asyncState.isLoading && asyncState.valueOrNull != null;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isRefreshing)
+                  LinearProgressIndicator(
+                    minHeight: 4,
+                    backgroundColor: Theme.of(childContext)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.1),
+                  ),
+                asyncState.when(
+                  loading: () => _buildSkeleton(childContext, ref),
+                  error: (error, stack) =>
+                      _buildError(childContext, ref, error),
+                  data: (state) => _buildContent(childContext, ref, state),
+                ),
+              ],
             );
           },
         ),
@@ -79,44 +96,20 @@ class UspDashboardView extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoading(BuildContext context, WidgetRef ref) {
+  Widget _buildSkeleton(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(uspLoadingProgressProvider);
-    final pct = (progress.fraction * 100).toInt();
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 80,
-            height: 80,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox.expand(
-                  child: CircularProgressIndicator(
-                    value: progress.fraction,
-                    strokeWidth: 6,
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.1),
-                  ),
-                ),
-                AppText.titleMedium('$pct%'),
-              ],
-            ),
-          ),
-          AppGap.xl(),
-          if (progress.currentTask.isNotEmpty)
-            AppText.bodySmall(
-              progress.currentTask,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.5),
-            ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LinearProgressIndicator(
+          value: progress.fraction,
+          minHeight: 4,
+          backgroundColor:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+        AppGap.md(),
+        const UspDashboardSkeleton(),
+      ],
     );
   }
 
@@ -153,8 +146,10 @@ class UspDashboardView extends ConsumerWidget {
     final activeCount = devices.where((d) => d.isActive).length;
 
     return AppResponsiveLayout(
-      mobile: (ctx) => _buildMobileLayout(ctx, ref, state, info, devices, activeCount),
-      desktop: (ctx) => _buildDesktopLayout(ctx, ref, state, info, devices, activeCount),
+      mobile: (ctx) =>
+          _buildMobileLayout(ctx, ref, state, info, devices, activeCount),
+      desktop: (ctx) =>
+          _buildDesktopLayout(ctx, ref, state, info, devices, activeCount),
     );
   }
 
@@ -198,7 +193,8 @@ class UspDashboardView extends ConsumerWidget {
         UspConnectionStatusCard(
             activeCount: activeCount, totalCount: devices.length),
         AppGap.xl(),
-        UspNetworkTopologyCard(info: info, devices: devices, meshNodes: state.meshTopology.nodes),
+        UspNetworkTopologyCard(
+            info: info, devices: devices, meshNodes: state.meshTopology.nodes),
         AppGap.xl(),
         UspDeviceInfoCard(info: info),
         AppGap.xl(),
@@ -244,7 +240,8 @@ class UspDashboardView extends ConsumerWidget {
         UspConnectionStatusCard(
             activeCount: activeCount, totalCount: devices.length),
         AppGap.xl(),
-        UspNetworkTopologyCard(info: info, devices: devices, meshNodes: state.meshTopology.nodes),
+        UspNetworkTopologyCard(
+            info: info, devices: devices, meshNodes: state.meshTopology.nodes),
         AppGap.xl(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,

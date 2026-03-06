@@ -73,6 +73,9 @@ import 'package:privacy_gui/usp_page/devices/views/usp_device_detail_view.dart';
 import 'package:privacy_gui/usp_page/topology/views/usp_topology_view.dart';
 import 'package:privacy_gui/usp_page/topology/views/usp_node_detail_view.dart';
 import 'package:privacy_gui/usp_page/instant_safety/views/instant_safety_view.dart';
+import 'package:privacy_gui/usp_page/admin/views/usp_admin_view.dart';
+import 'package:privacy_gui/usp_page/dhcp/views/usp_dhcp_detail_view.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
 import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 
 part 'route_home.dart';

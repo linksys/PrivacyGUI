@@ -31,6 +31,7 @@ parameters:
   - field_name: localTimeZone
     path: LocalTimeZone
     type: string
+    writable: true
     description: POSIX timezone string
 
   - field_name: currentLocalTime

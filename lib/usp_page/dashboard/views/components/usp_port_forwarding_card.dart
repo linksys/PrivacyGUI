@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
@@ -37,6 +38,12 @@ class UspPortForwardingCard extends ConsumerWidget {
                         ? null
                         : () => _showAddPortForwardingDialog(context, ref),
                   ),
+                  AppGap.sm(),
+                  AppIconButton(
+                    icon: AppIcon.font(Icons.open_in_new, size: 18),
+                    onTap: () =>
+                        context.goNamed(RouteNamed.uspPortForwardingDetail),
+                  ),
                 ],
               ),
             ],
@@ -69,8 +76,7 @@ class UspPortForwardingCard extends ConsumerWidget {
                       loadingKey: 'portForwarding',
                       mutation: () => ref
                           .read(uspDashboardProvider.notifier)
-                          .togglePortForwardingRule(
-                              rule.instancePath, value),
+                          .togglePortForwardingRule(rule.instancePath, value),
                     ),
           ),
           AppGap.sm(),
@@ -132,8 +138,8 @@ class UspPortForwardingCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _showEditPortForwardingDialog(
-      BuildContext context, WidgetRef ref, PortForwardingRuleUIModel rule) async {
+  Future<void> _showEditPortForwardingDialog(BuildContext context,
+      WidgetRef ref, PortForwardingRuleUIModel rule) async {
     final result = await showDialog<PortForwardingDialogResult>(
       context: context,
       builder: (_) => PortForwardingDialog(rule: rule),
@@ -143,23 +149,22 @@ class UspPortForwardingCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'portForwarding',
-      mutation: () => ref
-          .read(uspDashboardProvider.notifier)
-          .updatePortForwardingRule(
-            instancePath: rule.instancePath,
-            enabled: result.enabled,
-            externalPort: result.externalPort,
-            internalPort: result.internalPort,
-            internalClient: result.internalClient,
-            protocol: result.protocol,
-            description: result.description,
-          ),
+      mutation: () =>
+          ref.read(uspDashboardProvider.notifier).updatePortForwardingRule(
+                instancePath: rule.instancePath,
+                enabled: result.enabled,
+                externalPort: result.externalPort,
+                internalPort: result.internalPort,
+                internalClient: result.internalClient,
+                protocol: result.protocol,
+                description: result.description,
+              ),
       successMessage: 'Rule updated',
     );
   }
 
-  Future<void> _confirmDeletePortForwarding(
-      BuildContext context, WidgetRef ref, PortForwardingRuleUIModel rule) async {
+  Future<void> _confirmDeletePortForwarding(BuildContext context, WidgetRef ref,
+      PortForwardingRuleUIModel rule) async {
     final confirmed = await showSimpleAppDialog<bool>(
       context,
       title: 'Delete Rule',

@@ -31,6 +31,9 @@ class RoutePath {
   static const uspTopology = '/uspTopology';
   static const uspNodeDetail = 'uspNodeDetail';
   static const uspInstantSafety = '/uspInstantSafety';
+  static const uspAdmin = '/uspAdmin';
+  static const uspDhcpDetail = '/uspDhcpDetail';
+  static const uspPortForwardingDetail = '/uspPortForwardingDetail';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -175,6 +178,9 @@ class RouteNamed {
   static const uspTopology = 'uspTopology';
   static const uspNodeDetail = 'uspNodeDetail';
   static const uspInstantSafety = 'uspInstantSafety';
+  static const uspAdmin = 'uspAdmin';
+  static const uspDhcpDetail = 'uspDhcpDetail';
+  static const uspPortForwardingDetail = 'uspPortForwardingDetail';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';

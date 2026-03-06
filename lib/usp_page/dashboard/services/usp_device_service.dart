@@ -1,19 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
+import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
@@ -63,7 +67,7 @@ class UspDeviceService {
     return connectedDevices.items
         .where((d) => d.interface_.isNotEmpty)
         .map((d) => _toDeviceUIModel(
-              d, wifiClientMap, connectionDetailMap, meshTopology, gatewayName))
+            d, wifiClientMap, connectionDetailMap, meshTopology, gatewayName))
         .toList();
   }
 
@@ -86,11 +90,14 @@ class UspDeviceService {
       final ssid = ssidByPath[_ensureTrailingDot(ap.ssidReference)];
       if (ssid == null) continue;
       final radioPath = _ensureTrailingDot(ssid.lowerLayers);
-      apsByRadioPath.putIfAbsent(radioPath, () => []).add(_ApWithSsid(ap, ssid));
+      apsByRadioPath
+          .putIfAbsent(radioPath, () => [])
+          .add(_ApWithSsid(ap, ssid));
     }
 
     return radios.items.map((radio) {
-      final radioAps = apsByRadioPath[_ensureTrailingDot(radio.instancePath)] ?? [];
+      final radioAps =
+          apsByRadioPath[_ensureTrailingDot(radio.instancePath)] ?? [];
       return WifiRadioUIModel(
         instancePath: radio.instancePath,
         band: radio.operatingFrequencyBand,
@@ -104,7 +111,8 @@ class UspDeviceService {
         accessPoints: radioAps
             .map((a) => WifiAccessPointUIModel(
                   enable: a.ap.enable,
-                  ssidName: a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
+                  ssidName:
+                      a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
                   securityMode: a.ap.securityModeEnabled,
                   encryptionMode: a.ap.encryptionMode,
                 ))
@@ -126,6 +134,33 @@ class UspDeviceService {
       ntpServer1: settings.ntpServer1,
       ntpServer2: settings.ntpServer2,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // DHCP Clients (active leases)
+  // ---------------------------------------------------------------------------
+
+  List<DhcpClientUIModel> buildDhcpClientUIModels({
+    required DhcpClients clients,
+    required ConnectedDevices connectedDevices,
+  }) {
+    // Build MAC → hostname lookup from connected devices
+    final hostNameByMac = <String, String>{};
+    for (final d in connectedDevices.items) {
+      if (d.hostName.isNotEmpty) {
+        hostNameByMac[d.macAddress.trim().toUpperCase()] = d.hostName;
+      }
+    }
+
+    return clients.items
+        .map((c) => DhcpClientUIModel(
+              mac: c.chaddr,
+              ip: c.ipAddress,
+              active: c.active,
+              hostName: hostNameByMac[c.chaddr.trim().toUpperCase()] ?? '',
+              leaseExpiry: c.leaseTimeRemaining,
+            ))
+        .toList();
   }
 
   // ---------------------------------------------------------------------------
@@ -155,10 +190,37 @@ class UspDeviceService {
               instancePath: r.instancePath,
               description: r.description,
               externalPort: r.externalPort,
+              externalPortEndRange: r.externalPortEndRange,
               internalPort: r.internalPort,
               internalClient: r.internalClient,
               protocol: r.protocol,
               enabled: r.enabled,
+            ))
+        .toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Port Triggering
+  // ---------------------------------------------------------------------------
+
+  List<PortTriggeringRuleUIModel> buildPortTriggeringRuleUIModels(
+      PortTriggering portTriggering) {
+    return portTriggering.items
+        .map((t) => PortTriggeringRuleUIModel(
+              instancePath: t.instancePath,
+              enabled: t.enabled,
+              description: t.description,
+              triggerPort: t.triggerPort,
+              triggerPortEndRange: t.triggerPortEndRange,
+              triggerProtocol: t.triggerProtocol,
+              forwardRules: t.rules
+                  .map((r) => PortTriggerForwardRuleUIModel(
+                        instancePath: r.instancePath,
+                        forwardPort: r.forwardPort,
+                        forwardPortEndRange: r.forwardPortEndRange,
+                        forwardProtocol: r.forwardProtocol,
+                      ))
+                  .toList(),
             ))
         .toList();
   }
@@ -270,8 +332,7 @@ class UspDeviceService {
           serialNumber: systemInfo.serialNumber,
           softwareVersion: systemInfo.softwareVersion,
           isMaster: true,
-          connectedDeviceCount:
-              deviceModels.where((d) => d.isActive).length,
+          connectedDeviceCount: deviceModels.where((d) => d.isActive).length,
         ),
       ];
     }

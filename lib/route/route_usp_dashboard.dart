@@ -46,8 +46,7 @@ final uspDashboardRoute = ShellRoute(
           name: RouteNamed.uspNodeDetail,
           path: RoutePath.uspNodeDetail,
           builder: (context, state) {
-            final deviceId =
-                state.uri.queryParameters['deviceId'] ?? '';
+            final deviceId = state.uri.queryParameters['deviceId'] ?? '';
             return UspNodeDetailView(deviceId: deviceId);
           },
         ),
@@ -57,6 +56,21 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspInstantSafety,
       path: RoutePath.uspInstantSafety,
       builder: (context, state) => const UspInstantSafetyView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspAdmin,
+      path: RoutePath.uspAdmin,
+      builder: (context, state) => const UspAdminView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspDhcpDetail,
+      path: RoutePath.uspDhcpDetail,
+      builder: (context, state) => const UspDhcpDetailView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspPortForwardingDetail,
+      path: RoutePath.uspPortForwardingDetail,
+      builder: (context, state) => const UspPortForwardingDetailView(),
     ),
   ],
 );

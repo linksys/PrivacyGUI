@@ -25,6 +25,12 @@ parameters:
     writable: true
     description: External port number
 
+  - field_name: externalPortEndRange
+    path: ExternalPortEndRange
+    type: int
+    writable: true
+    description: End of external port range (0 = single port)
+
   - field_name: internalPort
     path: InternalPort
     type: int

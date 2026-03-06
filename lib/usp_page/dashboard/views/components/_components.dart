@@ -2,6 +2,7 @@
 library;
 
 export 'usp_connection_status_card.dart';
+export 'usp_dashboard_skeleton.dart';
 export 'usp_connected_devices_card.dart';
 export 'usp_device_info_card.dart';
 export 'usp_dhcp_reservations_card.dart';

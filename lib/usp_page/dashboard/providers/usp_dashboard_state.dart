@@ -1,19 +1,23 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
+import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
@@ -33,8 +37,10 @@ class UspDashboardState extends Equatable {
   final WiFiSsids wifiSsids;
   final WiFiAccessPoints wifiAccessPoints;
   final TimeSettings timeSettings;
+  final DhcpClients dhcpClients;
   final DhcpReservations dhcpReservations;
   final PortForwarding portForwarding;
+  final PortTriggering portTriggering;
   final bool isAuthenticated;
   final Map<String, WifiClient> wifiClientMap;
   final MeshTopologyInfo meshTopology;
@@ -48,8 +54,10 @@ class UspDashboardState extends Equatable {
   final List<DeviceUIModel> deviceModels;
   final List<WifiRadioUIModel> wifiRadioModels;
   final TimeSettingsUIModel timeSettingsModel;
+  final List<DhcpClientUIModel> dhcpClientModels;
   final List<DhcpReservationUIModel> dhcpReservationModels;
   final List<PortForwardingRuleUIModel> portForwardingRuleModels;
+  final List<PortTriggeringRuleUIModel> portTriggeringRuleModels;
   final List<EthernetPortUIModel> ethernetPortModels;
   final List<NodeUIModel> nodeModels;
 
@@ -60,8 +68,10 @@ class UspDashboardState extends Equatable {
     required this.wifiSsids,
     required this.wifiAccessPoints,
     required this.timeSettings,
+    this.dhcpClients = const DhcpClients(items: []),
     required this.dhcpReservations,
     required this.portForwarding,
+    this.portTriggering = const PortTriggering(items: []),
     required this.isAuthenticated,
     this.wifiClientMap = const {},
     this.meshTopology = MeshTopologyInfo.empty,
@@ -97,8 +107,10 @@ class UspDashboardState extends Equatable {
       ntpServer1: '',
       ntpServer2: '',
     ),
+    this.dhcpClientModels = const [],
     this.dhcpReservationModels = const [],
     this.portForwardingRuleModels = const [],
+    this.portTriggeringRuleModels = const [],
     this.nodeModels = const [],
   });
 
@@ -112,8 +124,10 @@ class UspDashboardState extends Equatable {
     WiFiSsids? wifiSsids,
     WiFiAccessPoints? wifiAccessPoints,
     TimeSettings? timeSettings,
+    DhcpClients? dhcpClients,
     DhcpReservations? dhcpReservations,
     PortForwarding? portForwarding,
+    PortTriggering? portTriggering,
     bool? isAuthenticated,
     Map<String, WifiClient>? wifiClientMap,
     MeshTopologyInfo? meshTopology,
@@ -126,8 +140,10 @@ class UspDashboardState extends Equatable {
     List<DeviceUIModel>? deviceModels,
     List<WifiRadioUIModel>? wifiRadioModels,
     TimeSettingsUIModel? timeSettingsModel,
+    List<DhcpClientUIModel>? dhcpClientModels,
     List<DhcpReservationUIModel>? dhcpReservationModels,
     List<PortForwardingRuleUIModel>? portForwardingRuleModels,
+    List<PortTriggeringRuleUIModel>? portTriggeringRuleModels,
     List<NodeUIModel>? nodeModels,
   }) {
     return UspDashboardState(
@@ -137,8 +153,10 @@ class UspDashboardState extends Equatable {
       wifiSsids: wifiSsids ?? this.wifiSsids,
       wifiAccessPoints: wifiAccessPoints ?? this.wifiAccessPoints,
       timeSettings: timeSettings ?? this.timeSettings,
+      dhcpClients: dhcpClients ?? this.dhcpClients,
       dhcpReservations: dhcpReservations ?? this.dhcpReservations,
       portForwarding: portForwarding ?? this.portForwarding,
+      portTriggering: portTriggering ?? this.portTriggering,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       wifiClientMap: wifiClientMap ?? this.wifiClientMap,
       meshTopology: meshTopology ?? this.meshTopology,
@@ -151,10 +169,13 @@ class UspDashboardState extends Equatable {
       deviceModels: deviceModels ?? this.deviceModels,
       wifiRadioModels: wifiRadioModels ?? this.wifiRadioModels,
       timeSettingsModel: timeSettingsModel ?? this.timeSettingsModel,
+      dhcpClientModels: dhcpClientModels ?? this.dhcpClientModels,
       dhcpReservationModels:
           dhcpReservationModels ?? this.dhcpReservationModels,
       portForwardingRuleModels:
           portForwardingRuleModels ?? this.portForwardingRuleModels,
+      portTriggeringRuleModels:
+          portTriggeringRuleModels ?? this.portTriggeringRuleModels,
       nodeModels: nodeModels ?? this.nodeModels,
     );
   }
@@ -167,8 +188,10 @@ class UspDashboardState extends Equatable {
         wifiSsids.items.length,
         wifiAccessPoints.items.length,
         timeSettings.currentLocalTime,
+        dhcpClients.items.length,
         dhcpReservations.items.length,
         portForwarding.items.length,
+        portTriggering.items.length,
         isAuthenticated,
         wifiClientMap.length,
         meshTopology.nodes.length,
@@ -181,8 +204,10 @@ class UspDashboardState extends Equatable {
         deviceModels.length,
         wifiRadioModels.length,
         timeSettingsModel,
+        dhcpClientModels.length,
         dhcpReservationModels.length,
         portForwardingRuleModels.length,
+        portTriggeringRuleModels.length,
         nodeModels.length,
       ];
 }

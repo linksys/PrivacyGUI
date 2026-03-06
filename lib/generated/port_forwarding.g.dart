@@ -10,6 +10,7 @@ class PortForwardingRule {
   final String instancePath;
   final bool enabled;
   final int externalPort;
+  final int externalPortEndRange;
   final int internalPort;
   final String internalClient;
   final String protocol;
@@ -19,6 +20,7 @@ class PortForwardingRule {
     required this.instancePath,
     required this.enabled,
     required this.externalPort,
+    required this.externalPortEndRange,
     required this.internalPort,
     required this.internalClient,
     required this.protocol,
@@ -31,6 +33,7 @@ class PortForwardingRuleUpdate {
   final String instancePath;
   final bool? enabled;
   final int? externalPort;
+  final int? externalPortEndRange;
   final int? internalPort;
   final String? internalClient;
   final String? protocol;
@@ -40,6 +43,7 @@ class PortForwardingRuleUpdate {
     required this.instancePath,
     this.enabled,
     this.externalPort,
+    this.externalPortEndRange,
     this.internalPort,
     this.internalClient,
     this.protocol,
@@ -80,6 +84,7 @@ class PortForwarding {
         instancePath: p,
         enabled: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
         externalPort: int.tryParse(response['${p}ExternalPort']?.toString() ?? '') ?? 0,
+        externalPortEndRange: int.tryParse(response['${p}ExternalPortEndRange']?.toString() ?? '') ?? 0,
         internalPort: int.tryParse(response['${p}InternalPort']?.toString() ?? '') ?? 0,
         internalClient: (response['${p}InternalClient'] ?? '') as String,
         protocol: (response['${p}Protocol'] ?? '') as String,
@@ -94,6 +99,7 @@ class PortForwarding {
     final params = <String, dynamic>{};
     if (update.enabled != null) params['${update.instancePath}Enable'] = update.enabled;
     if (update.externalPort != null) params['${update.instancePath}ExternalPort'] = update.externalPort;
+    if (update.externalPortEndRange != null) params['${update.instancePath}ExternalPortEndRange'] = update.externalPortEndRange;
     if (update.internalPort != null) params['${update.instancePath}InternalPort'] = update.internalPort;
     if (update.internalClient != null) params['${update.instancePath}InternalClient'] = update.internalClient;
     if (update.protocol != null) params['${update.instancePath}Protocol'] = update.protocol;
@@ -107,6 +113,7 @@ class PortForwarding {
     for (final update in updates) {
       if (update.enabled != null) params['${update.instancePath}Enable'] = update.enabled;
       if (update.externalPort != null) params['${update.instancePath}ExternalPort'] = update.externalPort;
+      if (update.externalPortEndRange != null) params['${update.instancePath}ExternalPortEndRange'] = update.externalPortEndRange;
       if (update.internalPort != null) params['${update.instancePath}InternalPort'] = update.internalPort;
       if (update.internalClient != null) params['${update.instancePath}InternalClient'] = update.internalClient;
       if (update.protocol != null) params['${update.instancePath}Protocol'] = update.protocol;
@@ -119,6 +126,7 @@ class PortForwarding {
   static Future<String> add(UspService client, {
     bool? enabled,
     int? externalPort,
+    int? externalPortEndRange,
     int? internalPort,
     String? internalClient,
     String? protocol,
@@ -127,6 +135,7 @@ class PortForwarding {
     final params = <String, dynamic>{};
     if (enabled != null) params['Enable'] = enabled;
     if (externalPort != null) params['ExternalPort'] = externalPort;
+    if (externalPortEndRange != null) params['ExternalPortEndRange'] = externalPortEndRange;
     if (internalPort != null) params['InternalPort'] = internalPort;
     if (internalClient != null) params['InternalClient'] = internalClient;
     if (protocol != null) params['Protocol'] = protocol;

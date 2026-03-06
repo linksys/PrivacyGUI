@@ -1,8 +1,10 @@
 # Phase 2：JNAP → USP 遷移架構計畫
 
-> 文件版本：v2.2 | 日期：2026-03-04
+> 文件版本：v2.4 | 日期：2026-03-06
 > 前置文件：`phase1_router_datamodel_validation.md`
 > 變更歷史：
+> - v2.4 — Dashboard Shimmer/Skeleton Loading + Refresh Progress Indicator
+> - v2.3 — Port Forwarding Detail Page（三 Tab）、Port Range Forwarding、Port Triggering 完整資料層 + UI、Admin 頁面修正
 > - v2.2 — Phase 2C 進度更新：Subscribe 基礎設施完成（被 BUG-003 阻擋）、BUG-001 已修復、codegen v0.9.0
 > - v2.1 — Step 10 完成（USP Dashboard + router redirect 修復）、Phase 2 詳細展開
 > - v2.0 — 新增 E2E 測試發現、JNAP 停用環境修復、MVP 重新定義為獨立 USP Dashboard
@@ -848,24 +850,64 @@ parameters:
 
 ---
 
-### 2.5 Port Forwarding（完整 CRUD）✅ 完成
+### 2.5 Port Forwarding（完整 CRUD + Detail Page）✅ 完成
 
 **優先級**：P2 — Codegen 已存在，含寫入操作
-- **已實作**：USP Dashboard Port Forwarding 卡片（toggle + add/edit dialog + delete with confirmation）
+- **已實作**：
+  - USP Dashboard Port Forwarding 卡片（toggle + add/edit dialog + delete with confirmation + "View All" 導航）
+  - **Port Forwarding Detail Page**（三 Tab：Single Port / Port Range / Port Triggering）
+  - Port Range Forwarding（`ExternalPortEndRange` 欄位擴充）
+  - Port Triggering 完整資料層（nested multi-instance `Device.NAT.PortTrigger.{i}.Rule.{i}.`）
 
 **現狀**：
 - JNAP：`getSinglePortForwarding` / `setSinglePortForwarding`（4 actions）
-- Codegen：`port_forwarding.g.dart` — `fetch()` / `update()` / `updateMany()`（v5 已驗證）
-- TR-181：`Device.NAT.PortMapping.{i}.` — Phase 1 驗證完整
+- Codegen：`port_forwarding.g.dart` — `fetch()` / `update()` / `updateMany()` / `add()` / `delete()`
+- Codegen：`port_triggering.g.dart` — `fetch()` / `update()` / `add()` / `delete()` + child `addRule()` / `deleteRule()`
+- TR-181：`Device.NAT.PortMapping.{i}.` + `Device.NAT.PortTrigger.{i}.Rule.{i}.` — Phase 1 驗證完整
 
-**Codegen API 概覽**：
-- `PortForwarding.fetch(usp)` → `List<PortForwardingRule>`（GET）
-- `PortForwarding.update(usp, ruleUpdate)` → 修改單條規則（SET）
-- `PortForwarding.updateMany(usp, updates)` → 批量修改（SET batch）
-- `usp.add('Device.NAT.PortMapping.', params)` → 新增規則（ADD）
-- `usp.del('Device.NAT.PortMapping.{i}.')` → 刪除規則（DEL）
+**Port Range Forwarding 設計**：
+- 同一 TR-181 table `Device.NAT.PortMapping`，透過 `ExternalPortEndRange` 欄位區分
+- `ExternalPortEndRange == 0 || == ExternalPort` → Single Port
+- `ExternalPortEndRange > ExternalPort` → Port Range
+- UI Model 加入 `isSinglePort` / `isPortRange` getter
 
-**實作策略**：Phase 2 先做唯讀（`fetch`），Phase 3 再加入寫入（`update`/`add`/`del`）。
+**Port Triggering 設計**（Nested Multi-Instance）：
+- Parent: `Device.NAT.PortTrigger.{i}.` — trigger ports + description + enable
+- Child: `Device.NAT.PortTrigger.{i}.Rule.{i}.` — forward ports + protocol
+- YAML 使用 codegen `children` 語法（spec 1.9）
+- UI Model: `PortTriggeringRuleUIModel` + `PortTriggerForwardRuleUIModel`
+
+**Detail Page 設計**（三 Tab）：
+- Tab 1: Single Port Forwarding — filter `isSinglePort`，沿用 `PortForwardingDialog`
+- Tab 2: Port Range Forwarding — filter `isPortRange`，新 `PortRangeForwardingDialog`
+- Tab 3: Port Triggering — 獨立資料源，新 `PortTriggeringDialog`
+- `_PortForwardingTabs`：`ConsumerStatefulWidget` — TabController 不受 provider 更新影響
+- Loading keys: Tab 1 & 2 用 `'portForwarding'`，Tab 3 用 `'portTriggering'`
+
+**新增/修改的檔案**：
+
+| 檔案 | 操作 | 說明 |
+|------|------|------|
+| `doc/usp/definitions/firewall/port_forwarding.yaml` | 修改 | 加 `externalPortEndRange` 欄位 |
+| `doc/usp/definitions/firewall/port_triggering.yaml` | **新增** | nested multi-instance YAML |
+| `lib/generated/port_forwarding.g.dart` | codegen | 含 ExternalPortEndRange |
+| `lib/generated/port_triggering.g.dart` | codegen | nested PortTrigger + Rule |
+| `lib/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart` | 修改 | +externalPortEndRange, isSinglePort, isPortRange |
+| `lib/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart` | **新增** | PortTriggeringRuleUIModel + ForwardRule |
+| `lib/usp_page/dashboard/services/usp_device_service.dart` | 修改 | +buildPortTriggeringRuleUIModels |
+| `lib/usp_page/dashboard/providers/usp_dashboard_state.dart` | 修改 | +portTriggering + portTriggeringRuleModels |
+| `lib/usp_page/dashboard/providers/usp_dashboard_notifier.dart` | 修改 | +PortTriggering fetch + 7 mutation methods |
+| `lib/usp_page/port_forwarding/views/usp_port_forwarding_detail_view.dart` | **新增** | 主頁面（TabBar host） |
+| `lib/usp_page/port_forwarding/views/components/usp_single_port_tab.dart` | **新增** | Tab 1 |
+| `lib/usp_page/port_forwarding/views/components/usp_port_range_tab.dart` | **新增** | Tab 2 |
+| `lib/usp_page/port_forwarding/views/components/usp_port_triggering_tab.dart` | **新增** | Tab 3 |
+| `lib/usp_page/port_forwarding/views/dialogs/port_range_forwarding_dialog.dart` | **新增** | Port Range add/edit dialog |
+| `lib/usp_page/port_forwarding/views/dialogs/port_triggering_dialog.dart` | **新增** | Port Triggering add/edit dialog |
+| `lib/route/constants.dart` | 修改 | +uspPortForwardingDetail |
+| `lib/route/route_usp_dashboard.dart` | 修改 | +LinksysRoute |
+| `lib/route/router_provider.dart` | 修改 | +import |
+| `lib/usp_page/menu/views/usp_menu_view.dart` | 修改 | +"Port Forwarding" menu entry |
+| `lib/usp_page/dashboard/views/components/usp_port_forwarding_card.dart` | 修改 | +"View All" 導航 |
 
 ---
 
@@ -943,8 +985,10 @@ Phase 2A: 唯讀擴充
 Phase 2B: 寫入操作
 ├── WiFi 頻道/啟用切換（Radio SET）
 ├── DHCP 保留新增/刪除（ADD/DEL）
-├── Port Forwarding CRUD
-└── 時間設定修改（NTP SET）
+├── Port Forwarding CRUD（Single + Port Range + Triggering）
+├── Port Forwarding Detail Page（三 Tab 佈局 + 獨立路由）
+├── 時間設定修改（NTP SET）
+└── Admin 頁面（密碼修改、時區設定、重開機/恢復出廠）
 
 Phase 2C: 進階操作（全部被 BUG-003 SSE 阻擋）
 ├── Ping 診斷（OPERATE）— 另有 BUG-004 async OperateResp 問題
@@ -964,6 +1008,10 @@ Phase 2B-2: WiFi SET                   ✅ 完成 — enable toggle + channel ed
 Phase 2B-3: DHCP CRUD                 ✅ 完成 — toggle + add dialog + delete
 Phase 2B-4: Port Forwarding CRUD      ✅ 完成 — toggle + add/edit dialog + delete
 Phase 2B-5: Time SET                   ✅ 完成 — inline toggle + NTP edit dialog
+Phase 2B-6: Port Range Forwarding     ✅ 完成 — ExternalPortEndRange 欄位 + isSinglePort/isPortRange 分類
+Phase 2B-7: Port Triggering           ✅ 完成 — nested YAML + codegen + UI model + 7 mutation methods
+Phase 2B-8: Port Forwarding Detail    ✅ 完成 — 三 Tab 頁面 + routes + dialogs + menu + dashboard 導航
+Phase 2B-9: Dashboard Skeleton Loading ✅ 完成 — shimmer/skeleton 初始載入 + refresh LinearProgressIndicator
 Phase 2C-1: Ping OPERATE              ⏸️ 被阻擋 — BUG-003 (SSE) + BUG-004 (async OperateResp)
 Phase 2C-2: Traceroute OPERATE         ⏸️ 被阻擋 — 同上
 Phase 2C-3: Subscribe（即時通知）       🟡 基礎設施完成，被 BUG-003 阻擋
@@ -1073,8 +1121,8 @@ class ProtocolException implements Exception {
 - Router redirect 修復 — stored credentials 正確分流至 USP Dashboard
 
 **Phase 2A 唯讀擴充** ✅
-- 8 個 YAML 定義 + codegen v0.9.0 產出（SystemInfo、ConnectedDevices、WiFiRadios、WiFiSsids、WiFiAccessPoints、TimeSettings、DhcpReservations、PortForwarding）
-- USP Dashboard 8 張資料卡片 + Protocol Info
+- 9 個 YAML 定義 + codegen v0.9.0 產出（SystemInfo、ConnectedDevices、WiFiRadios、WiFiSsids、WiFiAccessPoints、TimeSettings、DhcpReservations、PortForwarding、PortTriggering）
+- USP Dashboard 8 張資料卡片 + Protocol Info + Port Forwarding Detail Page
 - 並行 `Future.wait` fetch（WASM client 修正後支援）
 - WiFi AP → SSID 交叉參照
 
@@ -1086,6 +1134,12 @@ class ProtocolException implements Exception {
 - Time Settings：inline toggle + NTP edit dialog
 - `uspMutationLoadingProvider` 追蹤每張卡片的 mutation 載入狀態
 - Codegen YAML 更新 `writable: true` 和 `type: add` 旗標
+- Port Range Forwarding：`ExternalPortEndRange` 欄位 + `isSinglePort`/`isPortRange` 分類邏輯
+- Port Triggering：nested multi-instance YAML（`children` 語法）+ codegen + UI model + 7 mutation methods
+- Port Forwarding Detail Page：三 Tab 佈局（Single Port / Port Range / Port Triggering），`ConsumerStatefulWidget` 確保 Tab 狀態穩定
+- Admin 頁面修正：`AdminUsers.setPassword` → `AdminUsers.update` codegen API 對齊
+- Dashboard Skeleton Loading：`UspDashboardSkeleton`（5 種 skeleton 模板）+ `AppSkeleton` shimmer 動畫取代 `CircularProgressIndicator`
+- Dashboard Refresh Feedback：`LinearProgressIndicator`（4px）在 refresh 時顯示於頂部，舊資料保持可見
 
 **Phase 2C 基礎設施** ✅（被 usp-bridge BUG-003/BUG-004 阻擋）
 - Subscribe 完整基礎設施：`NotifType` enum、`Subscription<T>` class、typed `subscribe<T>()`（polling 模擬）

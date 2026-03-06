@@ -288,8 +288,8 @@ All five bbfdm operations verified end-to-end:
 | 2 | `setSinglePortForwardingRules` | `Device.NAT.PortMapping.{i}.` | ✅ | SET available |
 | 3 | `getPortRangeForwardingRules` | `Device.NAT.PortMapping.{i}.` (with PortRange) | ✅ | Uses ExternalPortEndRange |
 | 4 | `setPortRangeForwardingRules` | `Device.NAT.PortMapping.{i}.` | ✅ | SET available |
-| 5 | `getPortRangeTriggeringRules` | `Device.NAT.PortTrigger.{i}.` | ✅ | Schema exists; empty = no rules |
-| 6 | `setPortRangeTriggeringRules` | `Device.NAT.PortTrigger.{i}.` | ✅ | SET available |
+| 5 | `getPortRangeTriggeringRules` | `Device.NAT.PortTrigger.{i}.` | ✅ | **Nested structure**: trigger ports on parent, forwarded ports on `Rule.{i}.` sub-table; verified via SSH 2026-03-06 |
+| 6 | `setPortRangeTriggeringRules` | `Device.NAT.PortTrigger.{i}.` | ✅ | SET available; ADD/DEL on both parent and Rule sub-instances |
 | 7 | `getIPv6FirewallRules` | `Device.Firewall.Chain.{i}.Rule.{i}.` | ✅ | 106KB data — complete rule chains |
 | 8 | `setIPv6FirewallRules` | `Device.Firewall.Chain.{i}.Rule.{i}.` | ✅ | SET available |
 | 9 | `getFirewallSettings` | `Device.Firewall.Enable` + `Level.{i}.` | 🟡 | Enable works; Level (8 entries); top-level enum bug (BUG-002) |
@@ -300,53 +300,86 @@ All five bbfdm operations verified end-to-end:
 | 14 | `setALGSettings` | `Device.Firewall.ConnectionTracking.` | ❌ | Same |
 
 <details>
-<summary>📋 GetSinglePortForwardingRules / SetSinglePortForwardingRules — Field Mapping</summary>
+<summary>📋 GetSinglePortForwardingRules / SetSinglePortForwardingRules — Field Mapping (SSH-verified 2026-03-06)</summary>
 
-| JNAP Field | Type | TR-181 Path | Notes |
-|------------|------|-------------|-------|
-| `maxRules` | int | — | Capability info |
-| `maxDescriptionLength` | int | — | Capability info |
-| `rules` | SinglePortForwardingRule[] | `Device.NAT.PortMapping.{i}.*` | Per-instance mapping below |
-| `rules[].isEnabled` | bool | `...PortMapping.{i}.Enable` | — |
-| `rules[].externalPort` | int | `...PortMapping.{i}.ExternalPort` | — |
-| `rules[].protocol` | IPProtocol | `...PortMapping.{i}.Protocol` | Enum: TCP, UDP, Both → "TCP", "UDP", "TCP/UDP" |
-| `rules[].internalServerIPAddress` | IPAddress | `...PortMapping.{i}.InternalClient` | — |
-| `rules[].internalPort` | int | `...PortMapping.{i}.InternalPort` | — |
-| `rules[].description` | string | `...PortMapping.{i}.Description` | — |
+> Single port forwarding uses `ExternalPortEndRange = 0` (or equal to ExternalPort).
 
-</details>
-
-<details>
-<summary>📋 GetPortRangeForwardingRules / SetPortRangeForwardingRules — Field Mapping</summary>
-
-| JNAP Field | Type | TR-181 Path | Notes |
-|------------|------|-------------|-------|
-| `maxRules` | int | — | Capability info |
-| `maxDescriptionLength` | int | — | Capability info |
-| `rules` | PortRangeForwardingRule[] | `Device.NAT.PortMapping.{i}.*` | Uses ExternalPortEndRange |
-| `rules[].isEnabled` | bool | `...PortMapping.{i}.Enable` | — |
-| `rules[].firstExternalPort` | int | `...PortMapping.{i}.ExternalPort` | — |
-| `rules[].lastExternalPort` | int | `...PortMapping.{i}.ExternalPortEndRange` | — |
-| `rules[].protocol` | IPProtocol | `...PortMapping.{i}.Protocol` | — |
-| `rules[].internalServerIPAddress` | IPAddress | `...PortMapping.{i}.InternalClient` | — |
-| `rules[].description` | string | `...PortMapping.{i}.Description` | — |
+| JNAP Field | Type | TR-181 Path | Type | Notes |
+|------------|------|-------------|------|-------|
+| `maxRules` | int | — | — | Capability info |
+| `maxDescriptionLength` | int | — | — | Capability info |
+| `rules` | SinglePortForwardingRule[] | `Device.NAT.PortMapping.{i}.*` | — | Per-instance mapping below |
+| `rules[].isEnabled` | bool | `...PortMapping.{i}.Enable` | boolean | — |
+| `rules[].externalPort` | int | `...PortMapping.{i}.ExternalPort` | unsignedInt | Unique |
+| `rules[].protocol` | IPProtocol | `...PortMapping.{i}.Protocol` | string | Enum: TCP, UDP, Both → "TCP", "UDP", "TCP/UDP" |
+| `rules[].internalServerIPAddress` | IPAddress | `...PortMapping.{i}.InternalClient` | string | — |
+| `rules[].internalPort` | int | `...PortMapping.{i}.InternalPort` | unsignedInt | — |
+| `rules[].description` | string | `...PortMapping.{i}.Description` | string | — |
+| — | — | `...PortMapping.{i}.ExternalPortEndRange` | unsignedInt | **Verified**: 0 = single port |
+| — | — | `...PortMapping.{i}.Status` | string | Read-only ("Enabled"/"Disabled") |
+| — | — | `...PortMapping.{i}.Alias` | string | Unique, auto-assigned (e.g. "cpe-1") |
+| — | — | `...PortMapping.{i}.Interface` | string | WAN interface reference |
+| — | — | `...PortMapping.{i}.AllInterfaces` | boolean | — |
+| — | — | `...PortMapping.{i}.LeaseDuration` | unsignedInt | — |
+| — | — | `...PortMapping.{i}.RemoteHost` | string | Unique |
 
 </details>
 
 <details>
-<summary>📋 GetPortRangeTriggeringRules / SetPortRangeTriggeringRules — Field Mapping</summary>
+<summary>📋 GetPortRangeForwardingRules / SetPortRangeForwardingRules — Field Mapping (SSH-verified 2026-03-06)</summary>
 
-| JNAP Field | Type | TR-181 Path | Notes |
-|------------|------|-------------|-------|
-| `maxRules` | int | — | Capability info |
-| `maxDescriptionLength` | int | — | Capability info |
-| `rules` | PortRangeTriggeringRule[] | `Device.NAT.PortTrigger.{i}.*` | Per-instance mapping below |
-| `rules[].isEnabled` | bool | `...PortTrigger.{i}.Enable` | — |
-| `rules[].firstTriggerPort` | int | `...PortTrigger.{i}.TriggerPortStart` | — |
-| `rules[].lastTriggerPort` | int | `...PortTrigger.{i}.TriggerPortEnd` | — |
-| `rules[].firstForwardedPort` | int | `...PortTrigger.{i}.OpenPortStart` | — |
-| `rules[].lastForwardedPort` | int | `...PortTrigger.{i}.OpenPortEnd` | — |
-| `rules[].description` | string | `...PortTrigger.{i}.Description` | — |
+> Port range forwarding uses the same `PortMapping` table with `ExternalPortEndRange > ExternalPort`.
+
+| JNAP Field | Type | TR-181 Path | Type | Notes |
+|------------|------|-------------|------|-------|
+| `maxRules` | int | — | — | Capability info |
+| `maxDescriptionLength` | int | — | — | Capability info |
+| `rules` | PortRangeForwardingRule[] | `Device.NAT.PortMapping.{i}.*` | — | Uses ExternalPortEndRange |
+| `rules[].isEnabled` | bool | `...PortMapping.{i}.Enable` | boolean | — |
+| `rules[].firstExternalPort` | int | `...PortMapping.{i}.ExternalPort` | unsignedInt | — |
+| `rules[].lastExternalPort` | int | `...PortMapping.{i}.ExternalPortEndRange` | unsignedInt | **Verified**: value > ExternalPort = port range |
+| `rules[].protocol` | IPProtocol | `...PortMapping.{i}.Protocol` | string | — |
+| `rules[].internalServerIPAddress` | IPAddress | `...PortMapping.{i}.InternalClient` | string | — |
+| `rules[].description` | string | `...PortMapping.{i}.Description` | string | — |
+
+</details>
+
+<details>
+<summary>📋 GetPortRangeTriggeringRules / SetPortRangeTriggeringRules — Field Mapping (SSH-verified 2026-03-06)</summary>
+
+> **Important**: The actual TR-181 structure is **nested** — trigger ports are on the parent
+> `PortTrigger.{i}` object, and forwarded ports are on a `Rule.{i}` sub-table.
+> This differs from the flat JNAP model which combines both into a single rule object.
+
+**Parent: `Device.NAT.PortTrigger.{i}.`** (Trigger definition)
+
+| JNAP Field | Type | TR-181 Path | Type | Notes |
+|------------|------|-------------|------|-------|
+| `rules[].isEnabled` | bool | `...PortTrigger.{i}.Enable` | boolean | — |
+| `rules[].description` | string | `...PortTrigger.{i}.Description` | string | — |
+| `rules[].firstTriggerPort` | int | `...PortTrigger.{i}.Port` | unsignedInt | ~~TriggerPortStart~~ → actual field is `Port` |
+| `rules[].lastTriggerPort` | int | `...PortTrigger.{i}.PortEndRange` | unsignedInt | ~~TriggerPortEnd~~ → actual field is `PortEndRange` |
+| — | — | `...PortTrigger.{i}.Protocol` | string | Trigger protocol (TCP/UDP/TCP,UDP) |
+| — | — | `...PortTrigger.{i}.Status` | string | Read-only status |
+| — | — | `...PortTrigger.{i}.Alias` | string | Unique alias |
+| — | — | `...PortTrigger.{i}.Interface` | string | WAN interface reference |
+| — | — | `...PortTrigger.{i}.Origin` | string | Origin info |
+| — | — | `...PortTrigger.{i}.AutoDisableDuration` | unsignedInt | Auto-disable timer |
+| — | — | `...PortTrigger.{i}.ActivationDate` | dateTime | Activation timestamp |
+| — | — | `...PortTrigger.{i}.RuleNumberOfEntries` | unsignedInt | Read-only count of Rule sub-instances |
+
+**Child: `Device.NAT.PortTrigger.{i}.Rule.{i}.`** (Forwarded port rules)
+
+| JNAP Field | Type | TR-181 Path | Type | Notes |
+|------------|------|-------------|------|-------|
+| `rules[].firstForwardedPort` | int | `...Rule.{i}.Port` | unsignedInt | ~~OpenPortStart~~ → actual field is `Port` |
+| `rules[].lastForwardedPort` | int | `...Rule.{i}.PortEndRange` | unsignedInt | ~~OpenPortEnd~~ → actual field is `PortEndRange` |
+| — | — | `...Rule.{i}.Protocol` | string | Forwarded protocol |
+| — | — | `...Rule.{i}.Alias` | string | Unique alias |
+
+> **Structural note**: JNAP returns a flat list where each rule contains both trigger and forwarded ports.
+> In TR-181, this maps to `PortTrigger.{i}` (trigger ports + protocol) with one or more `Rule.{i}` sub-instances
+> (forwarded port ranges). For a 1:1 JNAP mapping, each PortTrigger instance should have exactly one Rule.
 
 </details>
 
@@ -1395,3 +1428,75 @@ From `ubus call bbfdm services '{}'`:
 | Diagnostics | 6,250B | Full diagnostic suite |
 | Users | 2,383B | Admin + user accounts |
 | **Total** | **~278KB** | |
+
+---
+
+## Appendix: NAT Discovery Dump (SSH-verified 2026-03-06)
+
+Verification performed via `ubus call bbfdm.firewallmngr schema '{"path":"Device.NAT.","first_level":true}'`
+on router 192.168.1.1 (OpenWrt 23.05-SNAPSHOT).
+
+### Device.NAT.PortMapping.{i}. — Full Schema (13 fields)
+
+| Field | Type | Flags | Notes |
+|-------|------|-------|-------|
+| `Enable` | boolean | | Writable |
+| `Status` | string | | Read-only ("Enabled"/"Disabled") |
+| `Alias` | string | Unique | Auto-assigned (e.g. "cpe-1") |
+| `Interface` | string | Reference | WAN interface (e.g. "Device.IP.Interface.2") |
+| `AllInterfaces` | boolean | | — |
+| `LeaseDuration` | unsignedInt | | — |
+| `RemoteHost` | string | Unique | — |
+| `ExternalPort` | unsignedInt | Unique | — |
+| `ExternalPortEndRange` | unsignedInt | | 0 = single port, >ExternalPort = port range |
+| `InternalPort` | unsignedInt | | — |
+| `Protocol` | string | Unique | "TCP", "UDP", "TCP/UDP" |
+| `InternalClient` | string | | Target LAN IP |
+| `Description` | string | | User description |
+
+Sample instance data (PortMapping.1):
+```
+ExternalPort = 1, ExternalPortEndRange = 0, InternalPort = 123
+Protocol = TCP, InternalClient = 192.168.1.123, Description = "123"
+```
+
+### Device.NAT.PortTrigger.{i}. — Full Schema (Nested, 12+4 fields)
+
+**Important**: Structure is **nested**, not flat. Each PortTrigger instance has a `Rule.{i}.` sub-table.
+
+**Parent: `Device.NAT.PortTrigger.{i}.`** (12 fields)
+
+| Field | Type | Flags | Notes |
+|-------|------|-------|-------|
+| `Enable` | boolean | | Writable |
+| `Status` | string | | Read-only |
+| `Alias` | string | Unique | — |
+| `Origin` | string | | — |
+| `Description` | string | | User description |
+| `Interface` | string | Reference | WAN interface |
+| `Port` | unsignedInt | | Trigger port start |
+| `PortEndRange` | unsignedInt | | Trigger port end (0 or equal = single port) |
+| `Protocol` | string | | Trigger protocol |
+| `AutoDisableDuration` | unsignedInt | | Auto-disable timer (seconds) |
+| `ActivationDate` | dateTime | | — |
+| `RuleNumberOfEntries` | unsignedInt | | Read-only count of Rule sub-instances |
+
+**Child: `Device.NAT.PortTrigger.{i}.Rule.{i}.`** (4 fields)
+
+| Field | Type | Flags | Notes |
+|-------|------|-------|-------|
+| `Alias` | string | Unique | — |
+| `Port` | unsignedInt | | Forwarded port start |
+| `PortEndRange` | unsignedInt | | Forwarded port end |
+| `Protocol` | string | | Forwarded protocol |
+
+**Current state**: `PortTriggerNumberOfEntries = 0` (table exists but empty; no rules configured on test router)
+
+### Key Differences from Initial Phase 1 Assumptions
+
+| Original assumption | Actual (verified) |
+|---|---|
+| Flat fields: `TriggerPortStart`, `TriggerPortEnd` | `Port`, `PortEndRange` on parent object |
+| Flat fields: `OpenPortStart`, `OpenPortEnd` | `Port`, `PortEndRange` on `Rule.{i}.` sub-table |
+| Single-level table | **Two-level nested**: `PortTrigger.{i}.Rule.{i}.` |
+| Unknown field names | All fields confirmed via `bbfdm.firewallmngr schema` |

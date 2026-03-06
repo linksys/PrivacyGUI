@@ -62,6 +62,24 @@ class UspMenuView extends StatelessWidget {
         iconData: Icons.shield_outlined,
         onTap: () => context.goNamed(RouteNamed.uspInstantSafety),
       ),
+      AppSectionItemData(
+        title: 'Administration',
+        description: 'Password, timezone, reboot',
+        iconData: Icons.admin_panel_settings,
+        onTap: () => context.goNamed(RouteNamed.uspAdmin),
+      ),
+      AppSectionItemData(
+        title: 'DHCP',
+        description: 'Leases, reservations, server settings',
+        iconData: Icons.dns,
+        onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
+      ),
+      AppSectionItemData(
+        title: 'Port Forwarding',
+        description: 'Single port, range, and triggering rules',
+        iconData: Icons.settings_ethernet,
+        onTap: () => context.goNamed(RouteNamed.uspPortForwardingDetail),
+      ),
     ];
   }
 

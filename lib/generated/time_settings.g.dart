@@ -54,11 +54,13 @@ class TimeSettings {
     bool? enable,
     String? ntpServer1,
     String? ntpServer2,
+    String? localTimeZone,
   }) async {
     final params = <String, dynamic>{};
     if (enable != null) params['Device.Time.Enable'] = enable;
     if (ntpServer1 != null) params['Device.Time.NTPServer1'] = ntpServer1;
     if (ntpServer2 != null) params['Device.Time.NTPServer2'] = ntpServer2;
+    if (localTimeZone != null) params['Device.Time.LocalTimeZone'] = localTimeZone;
     if (params.isNotEmpty) await client.set(params);
   }
 
