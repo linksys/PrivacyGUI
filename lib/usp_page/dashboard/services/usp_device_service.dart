@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
+import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
+import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
@@ -9,12 +11,15 @@ import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/ethernet_port_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
+import 'package:privacy_gui/usp_page/topology/models/node_ui_model.dart';
 
 /// Service provider — stateless, per Article VI.
 final uspDeviceServiceProvider = Provider<UspDeviceService>(
@@ -156,6 +161,143 @@ class UspDeviceService {
               enabled: r.enabled,
             ))
         .toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // LAN Info
+  // ---------------------------------------------------------------------------
+
+  LanInfoUIModel buildLanInfoUIModel(LanNetworkInfo info) {
+    return LanInfoUIModel(
+      ipAddress: info.ipAddress,
+      subnetMask: info.subnetMask,
+      dhcpEnabled: info.dhcpEnabled,
+      minAddress: info.minAddress,
+      maxAddress: info.maxAddress,
+      dnsServers: info.dnsServers,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ethernet Ports
+  // ---------------------------------------------------------------------------
+
+  List<EthernetPortUIModel> buildEthernetPortUIModels({
+    required EthernetInterfaces ethernetInterfaces,
+    required ConnectedDevices connectedDevices,
+  }) {
+    final result = <EthernetPortUIModel>[];
+
+    // WAN (upstream): real physical port — use interface Status directly.
+    // LAN (non-upstream): switch chip aggregate — Status is always Up
+    // regardless of cable connections. Derive effective status from
+    // whether any active ConnectedDevice is wired to this interface.
+    final wanPorts = <EthernetInterface>[];
+    final lanPorts = <EthernetInterface>[];
+    for (final iface in ethernetInterfaces.items) {
+      if (iface.upstream) {
+        wanPorts.add(iface);
+      } else {
+        lanPorts.add(iface);
+      }
+    }
+
+    // WAN ports
+    for (final port in wanPorts) {
+      final isUp = port.status.toLowerCase() == 'up';
+      result.add(EthernetPortUIModel(
+        name: port.name,
+        label: 'WAN',
+        isWan: true,
+        isUp: isUp,
+        instancePath: port.instancePath,
+        currentBitRate: port.currentBitRate,
+      ));
+    }
+
+    // LAN ports — effective status from ConnectedDevices
+    lanPorts.sort((a, b) => a.name.compareTo(b.name));
+    for (var i = 0; i < lanPorts.length; i++) {
+      final port = lanPorts[i];
+      final portPath = _ensureTrailingDot(port.instancePath);
+      final wiredDevices = connectedDevices.items
+          .where((d) =>
+              d.isActive &&
+              d.interface_.isNotEmpty &&
+              _ensureTrailingDot(d.interface_) == portPath)
+          .toList();
+
+      final effectivelyUp = wiredDevices.isNotEmpty;
+      final deviceInfos = wiredDevices
+          .map((d) => WiredDeviceInfo(
+                hostName: d.hostName,
+                macAddress: d.macAddress,
+                ipAddress: d.ipAddress,
+              ))
+          .toList();
+
+      result.add(EthernetPortUIModel(
+        name: port.name,
+        label: lanPorts.length == 1 ? 'LAN' : 'LAN ${i + 1}',
+        isWan: false,
+        isUp: effectivelyUp,
+        instancePath: port.instancePath,
+        currentBitRate: effectivelyUp ? port.currentBitRate : 0,
+        connectedDevices: deviceInfos,
+      ));
+    }
+
+    return result;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mesh Nodes
+  // ---------------------------------------------------------------------------
+
+  List<NodeUIModel> buildNodeUIModels({
+    required MeshTopologyInfo meshTopology,
+    required List<DeviceUIModel> deviceModels,
+    required SystemInfoUIModel systemInfo,
+  }) {
+    // Non-mesh / DataElements unsupported: create a synthetic gateway node
+    // from SystemInfo so the node detail page has something to display.
+    if (meshTopology.isEmpty) {
+      return [
+        NodeUIModel(
+          deviceId: 'gateway',
+          model: systemInfo.modelName,
+          manufacturer: systemInfo.manufacturer,
+          serialNumber: systemInfo.serialNumber,
+          softwareVersion: systemInfo.softwareVersion,
+          isMaster: true,
+          connectedDeviceCount:
+              deviceModels.where((d) => d.isActive).length,
+        ),
+      ];
+    }
+
+    return meshTopology.nodes.asMap().entries.map((entry) {
+      final index = entry.key;
+      final node = entry.value;
+      final isMaster = index == 0;
+
+      final connectedCount = deviceModels
+          .where((d) =>
+              d.parentNodeId != null &&
+              d.parentNodeId!.toUpperCase() == node.deviceId.toUpperCase())
+          .length;
+
+      return NodeUIModel(
+        deviceId: node.deviceId,
+        model: node.model,
+        manufacturer: node.manufacturer,
+        serialNumber: node.serialNumber,
+        softwareVersion: node.softwareVersion,
+        radioCount: node.radioCount,
+        isMaster: isMaster,
+        connectedDeviceCount: connectedCount,
+      );
+    }).toList();
   }
 
   // ---------------------------------------------------------------------------

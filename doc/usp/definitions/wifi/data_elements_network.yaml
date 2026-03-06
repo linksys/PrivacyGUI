@@ -17,6 +17,21 @@ parameters:
     type: string
     description: Model name of the mesh node (e.g., MR7500, WHW03)
 
+  - field_name: manufacturer
+    path: Manufacturer
+    type: string
+    description: Manufacturer name of the mesh node
+
+  - field_name: serialNumber
+    path: SerialNumber
+    type: string
+    description: Serial number of the mesh node
+
+  - field_name: softwareVersion
+    path: SoftwareVersion
+    type: string
+    description: Current firmware/software version of the mesh node
+
 children:
   - name: radios
     singularName: meshRadio

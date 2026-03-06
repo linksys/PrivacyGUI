@@ -49,12 +49,18 @@ class MeshNode {
   final String instancePath;
   final String id;
   final String manufacturerModel;
+  final String manufacturer;
+  final String serialNumber;
+  final String softwareVersion;
   final List<MeshRadio> radios;
 
   const MeshNode({
     required this.instancePath,
     required this.id,
     required this.manufacturerModel,
+    required this.manufacturer,
+    required this.serialNumber,
+    required this.softwareVersion,
     required this.radios,
   });
 }
@@ -152,6 +158,9 @@ class DataElementsNetwork {
         instancePath: p,
         id: (response['${p}ID'] ?? '') as String,
         manufacturerModel: (response['${p}ManufacturerModel'] ?? '') as String,
+        manufacturer: (response['${p}Manufacturer'] ?? '') as String,
+        serialNumber: (response['${p}SerialNumber'] ?? '') as String,
+        softwareVersion: (response['${p}SoftwareVersion'] ?? '') as String,
         radios: radios,
       ));
     }

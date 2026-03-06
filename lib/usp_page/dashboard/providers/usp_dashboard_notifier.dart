@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
+import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
+import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
@@ -37,7 +39,7 @@ class UspLoadingProgress {
 
   const UspLoadingProgress({
     this.completed = 0,
-    this.total = 10,
+    this.total = 12,
     this.currentTask = '',
   });
 
@@ -99,6 +101,8 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       PortForwarding.fetch(usp).then((v) { tick('Port Forwarding'); return v; }),
       fetchWifiClients(usp).then((v) { tick('WiFi Clients'); return v; }),
       fetchMeshNodes(usp).then((v) { tick('Mesh Nodes'); return v; }),
+      LanNetworkInfo.fetch(usp).then((v) { tick('LAN Info'); return v; }),
+      EthernetInterfaces.fetch(usp).then((v) { tick('Ethernet Ports'); return v; }),
     ]);
 
     final systemInfo = results[0] as SystemInfo;
@@ -118,6 +122,8 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     final portForwarding = results[7] as PortForwarding;
     final wifiClientMap = results[8] as Map<String, WifiClient>;
     final meshTopology = results[9] as MeshTopologyInfo;
+    final lanNetworkInfo = results[10] as LanNetworkInfo;
+    final ethernetInterfaces = results[11] as EthernetInterfaces;
     logger.d('[USP] WiFi clients enriched: ${wifiClientMap.length} entries');
     logger.d('[USP] Mesh nodes: ${meshTopology.nodes.length}, '
         'client mappings: ${meshTopology.clientToNodeMap.length}');
@@ -137,6 +143,16 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         ? systemInfo.modelName
         : 'Router';
 
+    final deviceModels = svc.buildDeviceUIModels(
+      connectedDevices: connectedDevices,
+      wifiClientMap: wifiClientMap,
+      connectionDetailMap: connectionDetailMap,
+      meshTopology: meshTopology,
+      gatewayName: gatewayName,
+    );
+
+    final systemInfoModel = svc.buildSystemInfoUIModel(systemInfo);
+
     return UspDashboardState(
       systemInfo: systemInfo,
       connectedDevices: connectedDevices,
@@ -150,14 +166,15 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       wifiClientMap: wifiClientMap,
       meshTopology: meshTopology,
       connectionDetailMap: connectionDetailMap,
-      systemInfoModel: svc.buildSystemInfoUIModel(systemInfo),
-      deviceModels: svc.buildDeviceUIModels(
+      lanNetworkInfo: lanNetworkInfo,
+      ethernetInterfaces: ethernetInterfaces,
+      ethernetPortModels: svc.buildEthernetPortUIModels(
+        ethernetInterfaces: ethernetInterfaces,
         connectedDevices: connectedDevices,
-        wifiClientMap: wifiClientMap,
-        connectionDetailMap: connectionDetailMap,
-        meshTopology: meshTopology,
-        gatewayName: gatewayName,
       ),
+      lanInfoModel: svc.buildLanInfoUIModel(lanNetworkInfo),
+      systemInfoModel: systemInfoModel,
+      deviceModels: deviceModels,
       wifiRadioModels: svc.buildWifiRadioUIModels(
         radios: wifiRadios,
         ssids: wifiSsids,
@@ -166,6 +183,11 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       timeSettingsModel: svc.buildTimeSettingsUIModel(timeSettings),
       dhcpReservationModels: svc.buildDhcpReservationUIModels(dhcpReservations),
       portForwardingRuleModels: svc.buildPortForwardingRuleUIModels(portForwarding),
+      nodeModels: svc.buildNodeUIModels(
+        meshTopology: meshTopology,
+        deviceModels: deviceModels,
+        systemInfo: systemInfoModel,
+      ),
     );
   }
 

@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
+import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
+import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
@@ -9,12 +11,15 @@ import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/ethernet_port_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
+import 'package:privacy_gui/usp_page/topology/models/node_ui_model.dart';
 
 /// State for the standalone USP Dashboard.
 ///
@@ -34,14 +39,19 @@ class UspDashboardState extends Equatable {
   final Map<String, WifiClient> wifiClientMap;
   final MeshTopologyInfo meshTopology;
   final Map<String, ClientConnectionDetail> connectionDetailMap;
+  final LanNetworkInfo lanNetworkInfo;
+  final EthernetInterfaces ethernetInterfaces;
 
   // ─── Presentation Layer UI Models (used by views) ───
   final SystemInfoUIModel systemInfoModel;
+  final LanInfoUIModel lanInfoModel;
   final List<DeviceUIModel> deviceModels;
   final List<WifiRadioUIModel> wifiRadioModels;
   final TimeSettingsUIModel timeSettingsModel;
   final List<DhcpReservationUIModel> dhcpReservationModels;
   final List<PortForwardingRuleUIModel> portForwardingRuleModels;
+  final List<EthernetPortUIModel> ethernetPortModels;
+  final List<NodeUIModel> nodeModels;
 
   const UspDashboardState({
     required this.systemInfo,
@@ -56,6 +66,16 @@ class UspDashboardState extends Equatable {
     this.wifiClientMap = const {},
     this.meshTopology = MeshTopologyInfo.empty,
     this.connectionDetailMap = const {},
+    required this.lanNetworkInfo,
+    required this.ethernetInterfaces,
+    this.ethernetPortModels = const [],
+    this.lanInfoModel = const LanInfoUIModel(
+      ipAddress: '',
+      subnetMask: '',
+      dhcpEnabled: false,
+      minAddress: '',
+      maxAddress: '',
+    ),
     this.systemInfoModel = const SystemInfoUIModel(
       manufacturer: '',
       modelName: '',
@@ -79,6 +99,7 @@ class UspDashboardState extends Equatable {
     ),
     this.dhcpReservationModels = const [],
     this.portForwardingRuleModels = const [],
+    this.nodeModels = const [],
   });
 
   int get onlineDeviceCount =>
@@ -97,12 +118,17 @@ class UspDashboardState extends Equatable {
     Map<String, WifiClient>? wifiClientMap,
     MeshTopologyInfo? meshTopology,
     Map<String, ClientConnectionDetail>? connectionDetailMap,
+    LanNetworkInfo? lanNetworkInfo,
+    EthernetInterfaces? ethernetInterfaces,
+    List<EthernetPortUIModel>? ethernetPortModels,
+    LanInfoUIModel? lanInfoModel,
     SystemInfoUIModel? systemInfoModel,
     List<DeviceUIModel>? deviceModels,
     List<WifiRadioUIModel>? wifiRadioModels,
     TimeSettingsUIModel? timeSettingsModel,
     List<DhcpReservationUIModel>? dhcpReservationModels,
     List<PortForwardingRuleUIModel>? portForwardingRuleModels,
+    List<NodeUIModel>? nodeModels,
   }) {
     return UspDashboardState(
       systemInfo: systemInfo ?? this.systemInfo,
@@ -117,6 +143,10 @@ class UspDashboardState extends Equatable {
       wifiClientMap: wifiClientMap ?? this.wifiClientMap,
       meshTopology: meshTopology ?? this.meshTopology,
       connectionDetailMap: connectionDetailMap ?? this.connectionDetailMap,
+      lanNetworkInfo: lanNetworkInfo ?? this.lanNetworkInfo,
+      ethernetInterfaces: ethernetInterfaces ?? this.ethernetInterfaces,
+      ethernetPortModels: ethernetPortModels ?? this.ethernetPortModels,
+      lanInfoModel: lanInfoModel ?? this.lanInfoModel,
       systemInfoModel: systemInfoModel ?? this.systemInfoModel,
       deviceModels: deviceModels ?? this.deviceModels,
       wifiRadioModels: wifiRadioModels ?? this.wifiRadioModels,
@@ -125,6 +155,7 @@ class UspDashboardState extends Equatable {
           dhcpReservationModels ?? this.dhcpReservationModels,
       portForwardingRuleModels:
           portForwardingRuleModels ?? this.portForwardingRuleModels,
+      nodeModels: nodeModels ?? this.nodeModels,
     );
   }
 
@@ -142,11 +173,16 @@ class UspDashboardState extends Equatable {
         wifiClientMap.length,
         meshTopology.nodes.length,
         connectionDetailMap.length,
+        lanNetworkInfo.ipAddress,
+        ethernetInterfaces.items.length,
+        ethernetPortModels.length,
+        lanInfoModel,
         systemInfoModel,
         deviceModels.length,
         wifiRadioModels.length,
         timeSettingsModel,
         dhcpReservationModels.length,
         portForwardingRuleModels.length,
+        nodeModels.length,
       ];
 }

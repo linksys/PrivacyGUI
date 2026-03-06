@@ -29,6 +29,14 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Cross-reference WiFi AP → SSID via `ssidReference` path
 - Parallel `Future.wait` fetch for all 8 data categories (WASM client v0.6.1+)
 
+#### Phase 2D: USP Dashboard — Ethernet Port Status
+- Add `EthernetInterfaces` YAML definition + codegen for `Device.Ethernet.Interface.{i}` (multi-instance)
+- Add `EthernetPortUIModel` with `WiredDeviceInfo` for wired device detail (hostname, MAC, IP)
+- Add `UspEthernetPortsCard` with SVG port icons (green=Up, gray=Down) and speed label (supports 2.5 Gbps)
+- Add port detail dialog (`showEthernetPortDetailDialog`) — tap port to view interface info and connected devices
+- WAN ports use real `Ethernet.Interface.Status`; LAN ports derive effective status from `ConnectedDevices` cross-reference (switch chip always reports Up)
+- Manually patch codegen boolean parsing for integer 0/1 values (`Upstream` field)
+
 #### Phase 2C: USP Dashboard — Data Enrichment & Topology
 - Upgrade `usp-codegen` to v0.10.0 — recursive multi-level `children` nesting support
 - Add `DataElementsNetwork` YAML definition (4-level: Device → Radio → BSS → STA) for EasyMesh topology

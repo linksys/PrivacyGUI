@@ -46,9 +46,9 @@ class UspNetworkTopologyCard extends StatelessWidget {
               context,
               AppTopology(
                 topology: topology,
-                viewMode: TopologyViewMode.auto,
-                layoutMode: LayoutRecommendation.concentric,
-                clientVisibility: ClientVisibility.clustered,
+                viewMode: TopologyViewMode.graph,
+                layoutMode: LayoutRecommendation.auto,
+                clientVisibility: ClientVisibility.onHover,
                 nodeRendererRegistry: NodeRendererRegistry.unified,
                 enableAnimation: true,
                 interactive: false,

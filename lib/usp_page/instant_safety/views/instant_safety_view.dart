@@ -1,0 +1,165 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/usp_page/instant_safety/providers/instant_safety_provider.dart';
+import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+
+/// USP Instant Safety page — toggle safe browsing (OpenDNS) on/off.
+class UspInstantSafetyView extends ConsumerWidget {
+  const UspInstantSafetyView({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncState = ref.watch(uspInstantSafetyProvider);
+
+    return UiKitPageView.withSliver(
+      scrollable: true,
+      appBarStyle: UiKitAppBarStyle.none,
+      topbar: const PreferredSize(
+        preferredSize: Size.fromHeight(64),
+        child: UspTopBar(),
+      ),
+      backState: UiKitBackState.none,
+      padding:
+          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      child: (childContext, constraints) {
+        return asyncState.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _buildError(context, ref),
+          data: (state) => _buildContent(context, ref, state),
+        );
+      },
+    );
+  }
+
+  Widget _buildError(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppText.titleMedium('Unable to load safe browsing settings'),
+          AppGap.md(),
+          AppButton.text(
+            label: 'Retry',
+            onTap: () => ref.invalidate(uspInstantSafetyProvider),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    WidgetRef ref,
+    UspInstantSafetyState state,
+  ) {
+    final notifier = ref.read(uspInstantSafetyProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(context),
+        AppGap.xl(),
+        AppText.bodyMedium(
+          'Protect your family and block pre-determined adult, illegal and '
+          'malicious content with a single tap. Safe browsing applies to all '
+          'devices on your network.',
+        ),
+        AppGap.xl(),
+        _buildSafeBrowsingCard(context, state, notifier),
+        if (state.isDirty) ...[
+          AppGap.xl(),
+          SizedBox(
+            width: double.infinity,
+            child: AppButton.primary(
+              label: 'Save',
+              onTap: state.isSaving
+                  ? null
+                  : () => _onSave(context, ref),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        AppIconButton(
+          icon: AppIcon.font(Icons.arrow_back),
+          onTap: () => context.canPop()
+              ? context.pop()
+              : context.goNamed(RouteNamed.uspMenu),
+        ),
+        AppGap.md(),
+        Expanded(
+          child: AppText.headlineSmall('Instant Safety'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSafeBrowsingCard(
+    BuildContext context,
+    UspInstantSafetyState state,
+    UspInstantSafetyNotifier notifier,
+  ) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: AppText.labelLarge('Safe Browsing (OpenDNS)'),
+              ),
+              AppSwitch(
+                value: state.isEnabled,
+                onChanged: state.isSaving
+                    ? null
+                    : (value) => notifier.setEnabled(value),
+              ),
+            ],
+          ),
+          if (state.isEnabled) ...[
+            AppGap.lg(),
+            const Divider(height: 1),
+            AppGap.lg(),
+            AppText.bodySmall(
+              'DNS: 208.67.222.222, 208.67.220.220',
+              color: Colors.grey,
+            ),
+            AppGap.xs(),
+            AppText.bodySmall(
+              'All devices on your network will use OpenDNS Family Shield '
+              'for safer browsing.',
+              color: Colors.grey,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onSave(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(uspInstantSafetyProvider.notifier).save();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Safe browsing settings saved')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save: $e')),
+        );
+      }
+    }
+  }
+}

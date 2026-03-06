@@ -10,12 +10,18 @@ class MeshNodeInfo {
   final String instancePath;
   final String deviceId; // Device.{i}.ID (typically MAC of the node)
   final String model; // ManufacturerModel
+  final String manufacturer; // Manufacturer
+  final String serialNumber; // SerialNumber
+  final String softwareVersion; // SoftwareVersion
   final int radioCount;
 
   const MeshNodeInfo({
     required this.instancePath,
     required this.deviceId,
     required this.model,
+    this.manufacturer = '',
+    this.serialNumber = '',
+    this.softwareVersion = '',
     required this.radioCount,
   });
 }
@@ -72,7 +78,11 @@ MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
   final clientToNodeMap = <String, String>{};
 
   for (final node in network.items) {
-    final nodeDeviceId = node.id.trim().toUpperCase();
+    // Device.{i}.ID may be empty on some USP systems — fall back to
+    // the instance path which is always unique and present.
+    final rawId = node.id.trim().toUpperCase();
+    final nodeDeviceId =
+        rawId.isNotEmpty ? rawId : node.instancePath;
 
     // Walk radios → BSS → STA to build client→node map
     for (final radio in node.radios) {
@@ -90,6 +100,9 @@ MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
       instancePath: node.instancePath,
       deviceId: nodeDeviceId,
       model: node.manufacturerModel.trim(),
+      manufacturer: node.manufacturer.trim(),
+      serialNumber: node.serialNumber.trim(),
+      softwareVersion: node.softwareVersion.trim(),
       radioCount: node.radios.length,
     ));
   }

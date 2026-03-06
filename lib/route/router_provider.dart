@@ -68,6 +68,11 @@ import 'package:privacy_gui/usp_page/dashboard/views/usp_dashboard_view.dart';
 import 'package:privacy_gui/usp_page/menu/views/usp_menu_view.dart';
 import 'package:privacy_gui/usp_page/support/views/usp_support_view.dart';
 import 'package:privacy_gui/usp_page/shell/usp_dashboard_shell.dart';
+import 'package:privacy_gui/usp_page/devices/views/usp_device_list_view.dart';
+import 'package:privacy_gui/usp_page/devices/views/usp_device_detail_view.dart';
+import 'package:privacy_gui/usp_page/topology/views/usp_topology_view.dart';
+import 'package:privacy_gui/usp_page/topology/views/usp_node_detail_view.dart';
+import 'package:privacy_gui/usp_page/instant_safety/views/instant_safety_view.dart';
 import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 
 part 'route_home.dart';

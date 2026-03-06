@@ -5,10 +5,12 @@ import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.d
 
 class UspConnectedDevicesCard extends StatelessWidget {
   final List<DeviceUIModel> devices;
+  final VoidCallback? onViewAll;
 
   const UspConnectedDevicesCard({
     super.key,
     required this.devices,
+    this.onViewAll,
   });
 
   @override
@@ -24,8 +26,19 @@ class UspConnectedDevicesCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               AppText.titleMedium('Connected Devices'),
-              AppText.labelLarge(
-                '${activeDevices.length} / ${devices.length}',
+              Row(
+                children: [
+                  AppText.labelLarge(
+                    '${activeDevices.length} / ${devices.length}',
+                  ),
+                  if (onViewAll != null) ...[
+                    AppGap.sm(),
+                    AppButton.text(
+                      label: 'View All',
+                      onTap: onViewAll,
+                    ),
+                  ],
+                ],
               ),
             ],
           ),

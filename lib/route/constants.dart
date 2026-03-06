@@ -26,6 +26,11 @@ class RoutePath {
   static const uspDashboard = '/uspDashboard';
   static const uspMenu = '/uspMenu';
   static const uspSupport = '/uspSupport';
+  static const uspDeviceList = '/uspDeviceList';
+  static const uspDeviceDetail = 'uspDeviceDetail';
+  static const uspTopology = '/uspTopology';
+  static const uspNodeDetail = 'uspNodeDetail';
+  static const uspInstantSafety = '/uspInstantSafety';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -165,6 +170,11 @@ class RouteNamed {
   static const uspDashboard = 'uspDashboard';
   static const uspMenu = 'uspMenu';
   static const uspSupport = 'uspSupport';
+  static const uspDeviceList = 'uspDeviceList';
+  static const uspDeviceDetail = 'uspDeviceDetail';
+  static const uspTopology = 'uspTopology';
+  static const uspNodeDetail = 'uspNodeDetail';
+  static const uspInstantSafety = 'uspInstantSafety';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';

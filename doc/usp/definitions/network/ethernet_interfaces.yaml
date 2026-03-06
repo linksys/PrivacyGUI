@@ -1,0 +1,28 @@
+name: EthernetInterfaces
+singularName: EthernetInterface
+version: 1.0.0
+base_path: Device.Ethernet.Interface
+category: network
+description: Physical Ethernet port status
+multi_instance: true
+
+parameters:
+  - field_name: name
+    path: Name
+    type: string
+    description: Interface name (e.g. eth0, eth1)
+
+  - field_name: status
+    path: Status
+    type: string
+    description: Operational status (Up, Down, etc.)
+
+  - field_name: upstream
+    path: Upstream
+    type: boolean
+    description: Whether this is a WAN (upstream) port
+
+  - field_name: current_bit_rate
+    path: CurrentBitRate
+    type: int
+    description: Current link speed in Mbps

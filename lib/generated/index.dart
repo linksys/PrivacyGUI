@@ -9,6 +9,8 @@ export 'wi_fi_ssids.g.dart';
 export 'data_elements_network.g.dart';
 export 'system_info.g.dart';
 export 'time_settings.g.dart';
+export 'ethernet_interfaces.g.dart';
+export 'lan_network_info.g.dart';
 export 'dhcp_reservations.g.dart';
 export 'port_forwarding.g.dart';
 export 'wifi_clients.g.dart';
