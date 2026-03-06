@@ -71,7 +71,17 @@ class DataElementsNetwork {
 
   const DataElementsNetwork({required this.items});
 
-  static const _paths = ['Device.WiFi.DataElements.Network.Device.'];
+  static const _paths = [
+    'Device.WiFi.DataElements.Network.Device.*.ID',
+    'Device.WiFi.DataElements.Network.Device.*.ManufacturerModel',
+    'Device.WiFi.DataElements.Network.Device.*.Manufacturer',
+    'Device.WiFi.DataElements.Network.Device.*.SerialNumber',
+    'Device.WiFi.DataElements.Network.Device.*.SoftwareVersion',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.BSSID',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.SSID',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.MACAddress',
+    'Device.WiFi.DataElements.Network.Device.*.Radio.*.BSS.*.STA.*.SignalStrength',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<DataElementsNetwork> fetch(UspService client) async {
@@ -94,6 +104,7 @@ class DataElementsNetwork {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}ID'], response['${p}ManufacturerModel'], response['${p}Manufacturer'], response['${p}SerialNumber'], response['${p}SoftwareVersion']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       final childBase_0 = '${p}Radio.';
       final childIds_0 = <String>{};
       for (final key in response.keys) {

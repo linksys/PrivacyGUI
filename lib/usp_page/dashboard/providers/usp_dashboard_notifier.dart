@@ -14,7 +14,9 @@ import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/system_monitor_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/services/usp_device_service.dart';
 import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
@@ -198,8 +200,18 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     );
     logger.d('[USP] Connection details: ${connectionDetailMap.length} entries');
 
-    // Fetch default gateway IP from routing table
-    final wanGateway = await _fetchDefaultGateway(usp);
+    // Fetch default gateway + IPv6 info in parallel
+    final extraResults = await Future.wait([
+      _fetchDefaultGateway(usp),
+      _fetchIpv6Info(usp),
+    ]);
+    final wanGateway = extraResults[0] as String;
+    final ipv6Info = extraResults[1] as ({
+      bool lanEnabled,
+      List<String> lanAddresses,
+      bool wanEnabled,
+      List<String> wanAddresses
+    });
     logger.d('[USP] WAN gateway: $wanGateway');
 
     // Data → UI Model transformation (constitution Section 5.3)
@@ -216,6 +228,24 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     );
 
     final systemInfoModel = svc.buildSystemInfoUIModel(systemInfo);
+
+    // Push a snapshot to the system monitor (avoids duplicate fetch)
+    final memPct = systemInfo.totalMemory > 0
+        ? ((systemInfo.totalMemory - systemInfo.freeMemory) /
+                systemInfo.totalMemory *
+                100)
+            .round()
+            .clamp(0, 100)
+        : 0;
+    ref.read(uspSystemMonitorProvider.notifier).pushSnapshot(
+          SystemSnapshot(
+            timestamp: DateTime.now(),
+            cpuPercent: systemInfo.cpuUsage.clamp(0, 100),
+            memoryPercent: memPct,
+            totalMemoryKb: systemInfo.totalMemory,
+            freeMemoryKb: systemInfo.freeMemory,
+          ),
+        );
 
     return UspDashboardState(
       systemInfo: systemInfo,
@@ -239,7 +269,11 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         ethernetInterfaces: ethernetInterfaces,
         connectedDevices: connectedDevices,
       ),
-      lanInfoModel: svc.buildLanInfoUIModel(lanNetworkInfo),
+      lanInfoModel: svc.buildLanInfoUIModel(
+        lanNetworkInfo,
+        ipv6Enabled: ipv6Info.lanEnabled,
+        ipv6Addresses: ipv6Info.lanAddresses,
+      ),
       systemInfoModel: systemInfoModel,
       deviceModels: deviceModels,
       wifiRadioModels: svc.buildWifiRadioUIModels(
@@ -260,6 +294,8 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       wanStatusModel: svc.buildWanStatusUIModel(
         wanStatus: wanStatus,
         gateway: wanGateway,
+        ipv6Enabled: ipv6Info.wanEnabled,
+        ipv6Addresses: ipv6Info.wanAddresses,
       ),
       nodeModels: svc.buildNodeUIModels(
         meshTopology: meshTopology,
@@ -279,31 +315,27 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
   /// the WAN (Device.IP.Interface.2). Returns empty string on failure.
   Future<String> _fetchDefaultGateway(UspService usp) async {
     try {
-      // Get the number of forwarding entries
-      final countResp = await usp.get([
-        'Device.Routing.Router.1.IPv4ForwardingNumberOfEntries',
+      // Use wildcard search paths — instance IDs may not be contiguous
+      final resp = await usp.get([
+        'Device.Routing.Router.1.IPv4Forwarding.*.DestIPAddress',
+        'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress',
+        'Device.Routing.Router.1.IPv4Forwarding.*.Interface',
       ]);
-      final count = int.tryParse(
-            countResp['Device.Routing.Router.1.IPv4ForwardingNumberOfEntries']
-                    ?.toString() ??
-                '0',
-          ) ??
-          0;
-      if (count == 0) return '';
 
-      // Fetch DestIPAddress + GatewayIPAddress + Interface for all entries
-      final paths = <String>[];
-      for (var i = 1; i <= count; i++) {
-        final prefix = 'Device.Routing.Router.1.IPv4Forwarding.$i.';
-        paths.add('${prefix}DestIPAddress');
-        paths.add('${prefix}GatewayIPAddress');
-        paths.add('${prefix}Interface');
+      // Extract instance IDs from response keys
+      const basePath = 'Device.Routing.Router.1.IPv4Forwarding.';
+      final ids = <String>{};
+      for (final key in resp.keys) {
+        if (key.startsWith(basePath)) {
+          final rest = key.substring(basePath.length);
+          final dot = rest.indexOf('.');
+          if (dot > 0) ids.add(rest.substring(0, dot));
+        }
       }
-      final resp = await usp.get(paths);
 
       // Find default route (DestIPAddress=0.0.0.0) pointing to WAN interface
-      for (var i = 1; i <= count; i++) {
-        final prefix = 'Device.Routing.Router.1.IPv4Forwarding.$i.';
+      for (final id in ids) {
+        final prefix = '$basePath$id.';
         final dest = resp['${prefix}DestIPAddress']?.toString() ?? '';
         final gw = resp['${prefix}GatewayIPAddress']?.toString() ?? '';
         final iface = resp['${prefix}Interface']?.toString() ?? '';
@@ -319,6 +351,67 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
   }
 
   // ---------------------------------------------------------------------------
+  // IPv6 status fetch (F-008)
+  // ---------------------------------------------------------------------------
+
+  /// Fetches IPv6 enable flags and addresses for LAN (Interface.1) and
+  /// WAN (Interface.2). Returns a record with both sides.
+  /// Fails silently if the router doesn't support IPv6 queries.
+  Future<
+      ({
+        bool lanEnabled,
+        List<String> lanAddresses,
+        bool wanEnabled,
+        List<String> wanAddresses
+      })> _fetchIpv6Info(UspService usp) async {
+    try {
+      final resp = await usp.get([
+        'Device.IP.Interface.1.IPv6Enable',
+        'Device.IP.Interface.2.IPv6Enable',
+        'Device.IP.Interface.1.IPv6Address.',
+        'Device.IP.Interface.2.IPv6Address.',
+      ]);
+
+      final lanEnabled = resp['Device.IP.Interface.1.IPv6Enable'] == true;
+      final wanEnabled = resp['Device.IP.Interface.2.IPv6Enable'] == true;
+
+      final lanInstances =
+          resp.getInstances('Device.IP.Interface.1.IPv6Address.');
+      final wanInstances =
+          resp.getInstances('Device.IP.Interface.2.IPv6Address.');
+
+      final lanAddresses = lanInstances
+          .map((i) => i.getString('IPAddress'))
+          .where((ip) => ip.isNotEmpty)
+          .toList();
+      final wanAddresses = wanInstances
+          .map((i) => i.getString('IPAddress'))
+          .where((ip) => ip.isNotEmpty)
+          .toList();
+
+      logger.d('[USP] IPv6 LAN: enabled=$lanEnabled, '
+          'addresses=${lanAddresses.length}');
+      logger.d('[USP] IPv6 WAN: enabled=$wanEnabled, '
+          'addresses=${wanAddresses.length}');
+
+      return (
+        lanEnabled: lanEnabled,
+        lanAddresses: lanAddresses,
+        wanEnabled: wanEnabled,
+        wanAddresses: wanAddresses,
+      );
+    } catch (e) {
+      logger.w('[USP] IPv6 fetch failed (router may not support IPv6): $e');
+      return (
+        lanEnabled: false,
+        lanAddresses: <String>[],
+        wanEnabled: false,
+        wanAddresses: <String>[],
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Sequential lock guard
   // ---------------------------------------------------------------------------
 
@@ -330,6 +423,25 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     } finally {
       _mutating = false;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // WAN DHCP Lease Renewal (F-002)
+  // ---------------------------------------------------------------------------
+
+  Future<void> renewWanLease() async {
+    await _withLock(() async {
+      await _usp.operate('Device.DHCPv4.Client.1.Renew()');
+      final wan = await WanStatus.fetch(_usp);
+      final s = state.requireValue;
+      state = AsyncData(s.copyWith(
+        wanStatus: wan,
+        wanStatusModel: _svc.buildWanStatusUIModel(
+          wanStatus: wan,
+          gateway: s.wanStatusModel.gateway,
+        ),
+      ));
+    });
   }
 
   // ---------------------------------------------------------------------------

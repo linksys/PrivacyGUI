@@ -13,6 +13,7 @@ class UspStatsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onlineCount = devices.where((d) => d.isActive).length;
+    final offlineCount = devices.where((d) => !d.isActive).length;
     final radioCount = state.wifiRadioModels.length;
     final enabledRadios = state.wifiRadioModels.where((r) => r.enable).length;
     final forwardCount = state.portForwardingRuleModels.length;
@@ -25,10 +26,8 @@ class UspStatsPanel extends StatelessWidget {
         Expanded(
           child: _StatTile(
             icon: Icons.devices,
-            value: '$onlineCount',
-            label: 'Online',
-            color:
-                Theme.of(context).extension<AppColorScheme>()?.semanticSuccess,
+            value: '$onlineCount / $offlineCount',
+            label: 'Online / Offline',
           ),
         ),
         AppGap.sm(),
@@ -64,26 +63,24 @@ class _StatTile extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
-  final Color? color;
 
   const _StatTile({
     required this.icon,
     required this.value,
     required this.label,
-    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? Theme.of(context).colorScheme.onSurface;
+    final color = Theme.of(context).colorScheme.onSurface;
 
     return AppCard(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppIcon.font(icon, size: 24, color: effectiveColor),
+          AppIcon.font(icon, size: 24, color: color),
           AppGap.sm(),
-          AppText.titleSmall(value, color: effectiveColor),
+          AppText.titleSmall(value, color: color),
           AppGap.xs(),
           AppText.bodySmall(
             label,

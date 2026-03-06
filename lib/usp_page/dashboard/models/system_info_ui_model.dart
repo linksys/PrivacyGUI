@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/generated/transforms.g.dart';
 
 /// Presentation Layer Model for router system information.
 class SystemInfoUIModel extends Equatable {
@@ -36,6 +37,15 @@ class SystemInfoUIModel extends Equatable {
   /// Memory usage percentage.
   int get memoryPercent =>
       totalMemory > 0 ? (memoryUsedKb / totalMemory * 100).round() : 0;
+
+  /// Human-readable total memory (e.g. "512 MB").
+  String get formattedTotalMemory => Transforms.formatBytes(totalMemory * 1024);
+
+  /// Human-readable free memory (e.g. "256 MB").
+  String get formattedFreeMemory => Transforms.formatBytes(freeMemory * 1024);
+
+  /// Human-readable used memory (e.g. "256 MB").
+  String get formattedUsedMemory => Transforms.formatBytes(memoryUsedKb * 1024);
 
   /// Formatted uptime string (e.g. "2d 5h 30m").
   String get formattedUptime {

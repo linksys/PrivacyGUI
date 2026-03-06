@@ -90,6 +90,16 @@ class UspService {
   Future<Map<String, dynamic>> get(List<String> paths) async {
     final rawMap = await _client.getMultiple(paths);
 
+    // DEBUG: log raw response summary
+    debugPrint('[UspService.get] requested ${paths.length} paths, '
+        'got ${rawMap.length} keys back');
+    if (rawMap.isNotEmpty) {
+      final sampleKeys = rawMap.keys.take(5).toList();
+      debugPrint('[UspService.get] sample response keys: $sampleKeys');
+    } else {
+      debugPrint('[UspService.get] response is EMPTY for paths: $paths');
+    }
+
     final Map<String, dynamic> result = {};
 
     // Include all returned paths (may include extra child paths)
@@ -97,8 +107,12 @@ class UspService {
       result[entry.key] = _coerceValue(entry.key, entry.value);
     }
 
-    // Ensure all requested paths exist in the result to prevent Null Cast errors in codegen
+    // Ensure all requested non-wildcard paths exist in the result to prevent
+    // Null Cast errors in codegen. Wildcard search paths (containing '*') are
+    // expanded by the router into concrete instance paths, so the original
+    // wildcard path won't appear in the response — skip those.
     for (final path in paths) {
+      if (path.contains('*')) continue;
       if (!result.containsKey(path)) {
         debugPrint(
             '[UspService.get] WARNING: missing path in response: "$path"');
@@ -112,10 +126,12 @@ class UspService {
   /// Coerce a raw string value from USP into the appropriate Dart type.
   /// - "true" / "false" → bool (any path)
   /// - "1" / "0" → bool (for known boolean suffixes: Enable, Active)
-  /// - Empty or null → null
+  /// - null → null (key absent from response)
+  /// - Empty string → '' (preserve String type for generated code)
   /// - Everything else stays as String (generated code handles int parsing)
   dynamic _coerceValue(String path, String? raw) {
-    if (raw == null || raw.isEmpty) return null;
+    if (raw == null) return null;
+    if (raw.isEmpty) return '';
 
     // Boolean coercion
     final lower = raw.toLowerCase();

@@ -30,7 +30,13 @@ class WiFiAccessPoints {
 
   const WiFiAccessPoints({required this.items});
 
-  static const _paths = ['Device.WiFi.AccessPoint.'];
+  static const _paths = [
+    'Device.WiFi.AccessPoint.*.Enable',
+    'Device.WiFi.AccessPoint.*.Status',
+    'Device.WiFi.AccessPoint.*.Security.ModeEnabled',
+    'Device.WiFi.AccessPoint.*.Security.EncryptionMode',
+    'Device.WiFi.AccessPoint.*.SSIDReference',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<WiFiAccessPoints> fetch(UspService client) async {
@@ -53,9 +59,10 @@ class WiFiAccessPoints {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}Enable'], response['${p}Status'], response['${p}Security.ModeEnabled'], response['${p}Security.EncryptionMode'], response['${p}SSIDReference']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(WiFiAccessPoint(
         instancePath: p,
-        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true' || response['${p}Enable'] == '1',
         status: (response['${p}Status'] ?? '') as String,
         securityModeEnabled: (response['${p}Security.ModeEnabled'] ?? '') as String,
         encryptionMode: (response['${p}Security.EncryptionMode'] ?? '') as String,

@@ -38,7 +38,7 @@ class UspSystemStatusCard extends StatelessWidget {
           AppGap.sm(),
           Center(
             child: AppText.bodySmall(
-              '${info.freeMemory} / ${info.totalMemory} KB free',
+              '${info.formattedUsedMemory} / ${info.formattedTotalMemory} used',
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),

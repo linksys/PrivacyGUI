@@ -1,33 +1,35 @@
+# WiFi SSID instances (network names)
+# SSH-verified 2026-03-06
+
 name: WiFiSsids
 singularName: WiFiSsid
 version: 1.0.0
-base_path: Device.WiFi.SSID
+multiInstance: Device.WiFi.SSID.
 category: wifi
 description: WiFi SSID instances (network names)
-multi_instance: true
 
 parameters:
   - field_name: ssid
-    path: SSID
+    path: .SSID
     type: string
     description: The network name/identifier
 
   - field_name: enable
-    path: Enable
+    path: .Enable
     type: boolean
     description: Whether this SSID interface is enabled
 
   - field_name: status
-    path: Status
+    path: .Status
     type: string
     description: Operational status (Up, Down, etc.)
 
   - field_name: bssid
-    path: BSSID
+    path: .BSSID
     type: string
     description: Basic Service Set ID (AP MAC address)
 
   - field_name: lowerLayers
-    path: LowerLayers
+    path: .LowerLayers
     type: string
     description: Reference to the Radio instance (e.g. Device.WiFi.Radio.1.)

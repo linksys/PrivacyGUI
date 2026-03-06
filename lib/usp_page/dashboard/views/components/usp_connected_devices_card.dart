@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
 
@@ -28,9 +29,13 @@ class UspConnectedDevicesCard extends StatelessWidget {
               AppText.titleMedium('Connected Devices'),
               Row(
                 children: [
-                  AppText.labelLarge(
-                    '${activeDevices.length} / ${devices.length}',
-                  ),
+                  UspStatusDot(isActive: true, size: 8),
+                  AppGap.xs(),
+                  AppText.labelLarge('${activeDevices.length} Online'),
+                  AppGap.md(),
+                  UspStatusDot(isActive: false, size: 8),
+                  AppGap.xs(),
+                  AppText.labelLarge('${inactiveDevices.length} Offline'),
                   if (onViewAll != null) ...[
                     AppGap.sm(),
                     AppButton.text(
@@ -164,12 +169,7 @@ class UspConnectedDevicesCard extends StatelessWidget {
   }
 
   Widget _buildSignalBadge(int rssi) {
-    return Builder(builder: (context) {
-      return AppText.bodySmall(
-        '$rssi dBm',
-        color: _signalColor(context, rssi),
-      );
-    });
+    return UspSignalStrengthIndicator(rssi: rssi);
   }
 
   static IconData _wifiIconForSignal(int? rssi) {

@@ -231,7 +231,11 @@ class UspDeviceService {
   // LAN Info
   // ---------------------------------------------------------------------------
 
-  LanInfoUIModel buildLanInfoUIModel(LanNetworkInfo info) {
+  LanInfoUIModel buildLanInfoUIModel(
+    LanNetworkInfo info, {
+    bool ipv6Enabled = false,
+    List<String> ipv6Addresses = const [],
+  }) {
     return LanInfoUIModel(
       ipAddress: info.ipAddress,
       subnetMask: info.subnetMask,
@@ -239,6 +243,8 @@ class UspDeviceService {
       minAddress: info.minAddress,
       maxAddress: info.maxAddress,
       dnsServers: info.dnsServers,
+      ipv6Enabled: ipv6Enabled,
+      ipv6Addresses: ipv6Addresses,
     );
   }
 
@@ -249,6 +255,8 @@ class UspDeviceService {
   WanStatusUIModel buildWanStatusUIModel({
     required WanStatus wanStatus,
     required String gateway,
+    bool ipv6Enabled = false,
+    List<String> ipv6Addresses = const [],
   }) {
     return WanStatusUIModel(
       isUp: wanStatus.status.toLowerCase() == 'up',
@@ -257,6 +265,8 @@ class UspDeviceService {
       addressingType: wanStatus.addressingType,
       mtu: wanStatus.maxMtuSize,
       gateway: gateway,
+      ipv6Enabled: ipv6Enabled,
+      ipv6Addresses: ipv6Addresses,
     );
   }
 
@@ -364,6 +374,7 @@ class UspDeviceService {
 
       final connectedCount = deviceModels
           .where((d) =>
+              d.isActive &&
               d.parentNodeId != null &&
               d.parentNodeId!.toUpperCase() == node.deviceId.toUpperCase())
           .length;

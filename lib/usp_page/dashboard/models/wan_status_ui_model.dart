@@ -11,6 +11,8 @@ class WanStatusUIModel extends Equatable {
   final String addressingType;
   final int mtu;
   final String gateway;
+  final bool ipv6Enabled;
+  final List<String> ipv6Addresses;
 
   const WanStatusUIModel({
     required this.isUp,
@@ -19,6 +21,8 @@ class WanStatusUIModel extends Equatable {
     required this.addressingType,
     required this.mtu,
     this.gateway = '',
+    this.ipv6Enabled = false,
+    this.ipv6Addresses = const [],
   });
 
   @override
@@ -29,5 +33,7 @@ class WanStatusUIModel extends Equatable {
         addressingType,
         mtu,
         gateway,
+        ipv6Enabled,
+        ipv6Addresses,
       ];
 }

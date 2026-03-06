@@ -30,7 +30,13 @@ class WiFiSsids {
 
   const WiFiSsids({required this.items});
 
-  static const _paths = ['Device.WiFi.SSID.'];
+  static const _paths = [
+    'Device.WiFi.SSID.*.SSID',
+    'Device.WiFi.SSID.*.Enable',
+    'Device.WiFi.SSID.*.Status',
+    'Device.WiFi.SSID.*.BSSID',
+    'Device.WiFi.SSID.*.LowerLayers',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<WiFiSsids> fetch(UspService client) async {
@@ -53,10 +59,11 @@ class WiFiSsids {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}SSID'], response['${p}Enable'], response['${p}Status'], response['${p}BSSID'], response['${p}LowerLayers']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(WiFiSsid(
         instancePath: p,
         ssid: (response['${p}SSID'] ?? '') as String,
-        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true' || response['${p}Enable'] == '1',
         status: (response['${p}Status'] ?? '') as String,
         bssid: (response['${p}BSSID'] ?? '') as String,
         lowerLayers: (response['${p}LowerLayers'] ?? '') as String,

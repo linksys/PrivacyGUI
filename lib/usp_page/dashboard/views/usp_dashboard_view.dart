@@ -199,6 +199,8 @@ class UspDashboardView extends ConsumerWidget {
         AppGap.xl(),
         UspSystemStatusCard(info: info),
         AppGap.xl(),
+        UspSystemMonitorCard(),
+        AppGap.xl(),
         UspConnectedDevicesCard(
           devices: devices,
           onViewAll: () => context.goNamed(RouteNamed.uspDeviceList),
@@ -250,6 +252,8 @@ class UspDashboardView extends ConsumerWidget {
                   UspEthernetPortsCard(ports: state.ethernetPortModels),
                   AppGap.xl(),
                   UspSystemStatusCard(info: info),
+                  AppGap.xl(),
+                  UspSystemMonitorCard(),
                   AppGap.xl(),
                   UspConnectedDevicesCard(
                     devices: devices,

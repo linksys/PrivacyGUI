@@ -75,10 +75,22 @@ class UspMenuView extends StatelessWidget {
         onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
       ),
       AppSectionItemData(
+        title: 'Firewall',
+        description: 'Firewall, VPN passthrough, internet filters',
+        iconData: Icons.security,
+        onTap: () => context.goNamed(RouteNamed.uspFirewall),
+      ),
+      AppSectionItemData(
         title: 'Port Forwarding',
         description: 'Single port, range, and triggering rules',
         iconData: Icons.settings_ethernet,
         onTap: () => context.goNamed(RouteNamed.uspPortForwardingDetail),
+      ),
+      AppSectionItemData(
+        title: 'System Logs',
+        description: 'View router log files',
+        iconData: Icons.article_outlined,
+        onTap: () => context.goNamed(RouteNamed.uspSystemLog),
       ),
     ];
   }

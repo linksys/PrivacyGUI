@@ -57,7 +57,15 @@ class PortForwarding {
 
   const PortForwarding({required this.items});
 
-  static const _paths = ['Device.NAT.PortMapping.'];
+  static const _paths = [
+    'Device.NAT.PortMapping.*.Enable',
+    'Device.NAT.PortMapping.*.ExternalPort',
+    'Device.NAT.PortMapping.*.ExternalPortEndRange',
+    'Device.NAT.PortMapping.*.InternalPort',
+    'Device.NAT.PortMapping.*.InternalClient',
+    'Device.NAT.PortMapping.*.Protocol',
+    'Device.NAT.PortMapping.*.Description',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<PortForwarding> fetch(UspService client) async {
@@ -80,9 +88,10 @@ class PortForwarding {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}Enable'], response['${p}ExternalPort'], response['${p}ExternalPortEndRange'], response['${p}InternalPort'], response['${p}InternalClient'], response['${p}Protocol'], response['${p}Description']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(PortForwardingRule(
         instancePath: p,
-        enabled: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        enabled: response['${p}Enable'] == true || response['${p}Enable'] == 'true' || response['${p}Enable'] == '1',
         externalPort: int.tryParse(response['${p}ExternalPort']?.toString() ?? '') ?? 0,
         externalPortEndRange: int.tryParse(response['${p}ExternalPortEndRange']?.toString() ?? '') ?? 0,
         internalPort: int.tryParse(response['${p}InternalPort']?.toString() ?? '') ?? 0,

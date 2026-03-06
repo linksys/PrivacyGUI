@@ -96,7 +96,19 @@ class UspClientWeb {
     final map = resultJs.dartify() as Map?;
     if (map == null) return {};
 
-    return map.map((key, value) => MapEntry(key.toString(), value.toString()));
+    final result = <String, String>{};
+    for (final entry in map.entries) {
+      final key = entry.key?.toString() ?? '';
+      final value = entry.value;
+      if (value == null) {
+        // ignore: avoid_print
+        print('[WASM] null value for key: $key');
+        result[key] = '';
+      } else {
+        result[key] = value.toString();
+      }
+    }
+    return result;
   }
 
   Future<void> set(String path, String value) async {

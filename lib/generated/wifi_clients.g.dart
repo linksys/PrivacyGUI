@@ -34,7 +34,14 @@ class WifiClients {
 
   const WifiClients({required this.items});
 
-  static const _paths = ['Device.WiFi.AccessPoint.'];
+  static const _paths = [
+    'Device.WiFi.AccessPoint.*.AssociatedDevice.*.MACAddress',
+    'Device.WiFi.AccessPoint.*.AssociatedDevice.*.SignalStrength',
+    'Device.WiFi.AccessPoint.*.AssociatedDevice.*.Noise',
+    'Device.WiFi.AccessPoint.*.AssociatedDevice.*.LastDataDownlinkRate',
+    'Device.WiFi.AccessPoint.*.AssociatedDevice.*.LastDataUplinkRate',
+    'Device.WiFi.AccessPoint.*.AssociatedDevice.*.Active',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<WifiClients> fetch(UspService client) async {
@@ -70,6 +77,7 @@ class WifiClients {
           (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
       for (final cid in sortedChildren) {
         final cp = '$childBase$cid.';
+        if ([response['${cp}MACAddress'], response['${cp}SignalStrength'], response['${cp}Noise'], response['${cp}LastDataDownlinkRate'], response['${cp}LastDataUplinkRate'], response['${cp}Active']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
         items.add(WifiClient(
           instancePath: cp,
           parentPath: parentPath,
@@ -78,7 +86,7 @@ class WifiClients {
           noise: int.tryParse(response['${cp}Noise']?.toString() ?? '') ?? 0,
           lastDataDownlinkRate: int.tryParse(response['${cp}LastDataDownlinkRate']?.toString() ?? '') ?? 0,
           lastDataUplinkRate: int.tryParse(response['${cp}LastDataUplinkRate']?.toString() ?? '') ?? 0,
-          active: response['${cp}Active'] == true || response['${cp}Active'] == 'true',
+          active: response['${cp}Active'] == true || response['${cp}Active'] == 'true' || response['${cp}Active'] == '1',
         ));
       }
     }

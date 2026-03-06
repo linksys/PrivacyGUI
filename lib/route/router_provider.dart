@@ -76,6 +76,8 @@ import 'package:privacy_gui/usp_page/instant_safety/views/instant_safety_view.da
 import 'package:privacy_gui/usp_page/admin/views/usp_admin_view.dart';
 import 'package:privacy_gui/usp_page/dhcp/views/usp_dhcp_detail_view.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
+import 'package:privacy_gui/usp_page/system_log/views/usp_system_log_view.dart';
+import 'package:privacy_gui/usp_page/firewall/views/usp_firewall_view.dart';
 import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 
 part 'route_home.dart';

@@ -1,56 +1,54 @@
-# Multi-instance test definition #2
-# Purpose: Validate codegen multi_instance support with writable parameters
+# NAT port forwarding rules
+# SSH-verified 2026-03-06 via bbfdm.firewallmngr schema
+#
 
 name: PortForwarding
 singularName: PortForwardingRule
 version: 1.0.0
-base_path: Device.NAT.PortMapping
+multiInstance: Device.NAT.PortMapping.
 category: firewall
 description: NAT port forwarding rules (multi-instance)
-
-# Multi-instance flag
-multi_instance: true
 type: add
 
 parameters:
   - field_name: enabled
-    path: Enable
+    path: .Enable
     type: boolean
     writable: true
     description: Enable this rule
 
   - field_name: externalPort
-    path: ExternalPort
+    path: .ExternalPort
     type: int
     writable: true
     description: External port number
 
   - field_name: externalPortEndRange
-    path: ExternalPortEndRange
+    path: .ExternalPortEndRange
     type: int
     writable: true
     description: End of external port range (0 = single port)
 
   - field_name: internalPort
-    path: InternalPort
+    path: .InternalPort
     type: int
     writable: true
     description: Internal port number
 
   - field_name: internalClient
-    path: InternalClient
+    path: .InternalClient
     type: string
     writable: true
     description: Internal client IP address
 
   - field_name: protocol
-    path: Protocol
+    path: .Protocol
     type: string
     writable: true
     description: Protocol (TCP, UDP, or Both)
 
   - field_name: description
-    path: Description
+    path: .Description
     type: string
     writable: true
     description: Rule description

@@ -26,6 +26,11 @@ class UspLanInfoCard extends StatelessWidget {
             UspInfoRow(label: 'DHCP IP Range', value: info.dhcpRange),
           if (info.dnsServers.isNotEmpty)
             UspInfoRow(label: 'DNS Servers', value: info.dnsServers),
+          if (info.ipv6Addresses.isNotEmpty)
+            for (final addr in info.ipv6Addresses)
+              UspInfoRow(label: 'LAN IPv6', value: addr),
+          if (info.ipv6Addresses.isEmpty && info.ipv6Enabled)
+            UspInfoRow(label: 'IPv6', value: 'Enabled (no address)'),
         ],
       ),
     );

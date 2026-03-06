@@ -53,7 +53,17 @@ class WiFiRadios {
 
   const WiFiRadios({required this.items});
 
-  static const _paths = ['Device.WiFi.Radio.'];
+  static const _paths = [
+    'Device.WiFi.Radio.*.Enable',
+    'Device.WiFi.Radio.*.Status',
+    'Device.WiFi.Radio.*.Channel',
+    'Device.WiFi.Radio.*.OperatingFrequencyBand',
+    'Device.WiFi.Radio.*.OperatingChannelBandwidth',
+    'Device.WiFi.Radio.*.SupportedStandards',
+    'Device.WiFi.Radio.*.TransmitPower',
+    'Device.WiFi.Radio.*.MaxBitRate',
+    'Device.WiFi.Radio.*.AutoChannelEnable',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<WiFiRadios> fetch(UspService client) async {
@@ -76,9 +86,10 @@ class WiFiRadios {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}Enable'], response['${p}Status'], response['${p}Channel'], response['${p}OperatingFrequencyBand'], response['${p}OperatingChannelBandwidth'], response['${p}SupportedStandards'], response['${p}TransmitPower'], response['${p}MaxBitRate'], response['${p}AutoChannelEnable']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(WiFiRadio(
         instancePath: p,
-        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true' || response['${p}Enable'] == '1',
         status: (response['${p}Status'] ?? '') as String,
         channel: int.tryParse(response['${p}Channel']?.toString() ?? '') ?? 0,
         operatingFrequencyBand: (response['${p}OperatingFrequencyBand'] ?? '') as String,
@@ -86,7 +97,7 @@ class WiFiRadios {
         supportedStandards: (response['${p}SupportedStandards'] ?? '') as String,
         transmitPower: int.tryParse(response['${p}TransmitPower']?.toString() ?? '') ?? 0,
         maxBitRate: int.tryParse(response['${p}MaxBitRate']?.toString() ?? '') ?? 0,
-        autoChannelEnable: response['${p}AutoChannelEnable'] == true || response['${p}AutoChannelEnable'] == 'true',
+        autoChannelEnable: response['${p}AutoChannelEnable'] == true || response['${p}AutoChannelEnable'] == 'true' || response['${p}AutoChannelEnable'] == '1',
       ));
     }
     return WiFiRadios(items: items);

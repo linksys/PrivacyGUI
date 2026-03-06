@@ -1,34 +1,36 @@
+# EasyMesh DataElements network topology
+# SSH-verified 2026-03-06
+
 name: dataElementsNetwork
 singularName: meshNode
 version: 1.0.0
-base_path: Device.WiFi.DataElements.Network.Device
+multiInstance: Device.WiFi.DataElements.Network.Device.
 category: wifi
 description: EasyMesh DataElements network topology — mesh nodes, radios, BSSes, and client stations
-multi_instance: true
 
 parameters:
   - field_name: id
-    path: ID
+    path: .ID
     type: string
     description: Device identifier (typically MAC address of the mesh node)
 
   - field_name: manufacturerModel
-    path: ManufacturerModel
+    path: .ManufacturerModel
     type: string
     description: Model name of the mesh node (e.g., MR7500, WHW03)
 
   - field_name: manufacturer
-    path: Manufacturer
+    path: .Manufacturer
     type: string
     description: Manufacturer name of the mesh node
 
   - field_name: serialNumber
-    path: SerialNumber
+    path: .SerialNumber
     type: string
     description: Serial number of the mesh node
 
   - field_name: softwareVersion
-    path: SoftwareVersion
+    path: .SoftwareVersion
     type: string
     description: Current firmware/software version of the mesh node
 
@@ -43,11 +45,11 @@ children:
         basePath: .BSS.
         parameters:
           - field_name: bssid
-            path: BSSID
+            path: .BSSID
             type: string
             description: BSS identifier (MAC address of the BSS)
           - field_name: ssid
-            path: SSID
+            path: .SSID
             type: string
             description: Network name advertised by this BSS
         children:
@@ -56,10 +58,10 @@ children:
             basePath: .STA.
             parameters:
               - field_name: macAddress
-                path: MACAddress
+                path: .MACAddress
                 type: string
                 description: Client station MAC address
               - field_name: signalStrength
-                path: SignalStrength
+                path: .SignalStrength
                 type: int
                 description: Client signal strength in dBm

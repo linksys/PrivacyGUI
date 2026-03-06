@@ -32,7 +32,14 @@ class ConnectedDevices {
 
   const ConnectedDevices({required this.items});
 
-  static const _paths = ['Device.Hosts.Host.'];
+  static const _paths = [
+    'Device.Hosts.Host.*.PhysAddress',
+    'Device.Hosts.Host.*.IPAddress',
+    'Device.Hosts.Host.*.HostName',
+    'Device.Hosts.Host.*.Active',
+    'Device.Hosts.Host.*.Layer1Interface',
+    'Device.Hosts.Host.*.AddressSource',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<ConnectedDevices> fetch(UspService client) async {
@@ -55,12 +62,13 @@ class ConnectedDevices {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}PhysAddress'], response['${p}IPAddress'], response['${p}HostName'], response['${p}Active'], response['${p}Layer1Interface'], response['${p}AddressSource']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(ConnectedDevice(
         instancePath: p,
         macAddress: (response['${p}PhysAddress'] ?? '') as String,
         ipAddress: (response['${p}IPAddress'] ?? '') as String,
         hostName: (response['${p}HostName'] ?? '') as String,
-        isActive: response['${p}Active'] == true || response['${p}Active'] == 'true',
+        isActive: response['${p}Active'] == true || response['${p}Active'] == 'true' || response['${p}Active'] == '1',
         interface_: (response['${p}Layer1Interface'] ?? '') as String,
         addressSource: (response['${p}AddressSource'] ?? '') as String,
       ));
@@ -72,7 +80,7 @@ class ConnectedDevices {
     return client.subscribe<ConnectedDevices>(
       id: 'connected-devices-01',
       notifType: NotifType.objectCreation,
-      paths: _paths,
+      paths: ['Device.Hosts.Host.'],
       parser: ConnectedDevices._fromResponse,
     );
   }

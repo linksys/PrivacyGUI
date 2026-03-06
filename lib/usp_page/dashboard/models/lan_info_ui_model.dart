@@ -11,6 +11,8 @@ class LanInfoUIModel extends Equatable {
   final String minAddress;
   final String maxAddress;
   final String dnsServers;
+  final bool ipv6Enabled;
+  final List<String> ipv6Addresses;
 
   const LanInfoUIModel({
     required this.ipAddress,
@@ -19,13 +21,14 @@ class LanInfoUIModel extends Equatable {
     required this.minAddress,
     required this.maxAddress,
     this.dnsServers = '',
+    this.ipv6Enabled = false,
+    this.ipv6Addresses = const [],
   });
 
   /// Formatted DHCP range for display (e.g. "192.168.1.100 ~ 192.168.1.199").
-  String get dhcpRange =>
-      (minAddress.isNotEmpty && maxAddress.isNotEmpty)
-          ? '$minAddress ~ $maxAddress'
-          : 'N/A';
+  String get dhcpRange => (minAddress.isNotEmpty && maxAddress.isNotEmpty)
+      ? '$minAddress ~ $maxAddress'
+      : 'N/A';
 
   @override
   List<Object?> get props => [
@@ -35,5 +38,7 @@ class LanInfoUIModel extends Equatable {
         minAddress,
         maxAddress,
         dnsServers,
+        ipv6Enabled,
+        ipv6Addresses,
       ];
 }

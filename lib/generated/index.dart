@@ -3,6 +3,8 @@
 // Any modifications will be overwritten on next generation
 
 
-export 'port_triggering.g.dart';
-export 'port_forwarding.g.dart';
+export 'wi_fi_radios.g.dart';
+export 'wi_fi_access_points.g.dart';
+export 'wi_fi_ssids.g.dart';
+export 'data_elements_network.g.dart';
 export 'transforms.g.dart';

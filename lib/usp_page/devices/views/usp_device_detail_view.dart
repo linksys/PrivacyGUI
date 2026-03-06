@@ -8,6 +8,7 @@ import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
 import 'package:privacy_gui/usp_page/devices/providers/device_detail_provider.dart';
+import 'package:privacy_gui/usp_page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -57,8 +58,8 @@ class UspDeviceDetailView extends ConsumerWidget {
             _buildHeader(context),
             AppGap.xl(),
             AppResponsiveLayout(
-              mobile: (_) => _buildSingleColumn(
-                  context, ref, device, detail, isLoading),
+              mobile: (_) =>
+                  _buildSingleColumn(context, ref, device, detail, isLoading),
               desktop: (_) =>
                   _buildTwoColumn(context, ref, device, detail, isLoading),
             ),
@@ -171,8 +172,22 @@ class UspDeviceDetailView extends ConsumerWidget {
             if (device.ssidName != null)
               _infoRow(context, 'SSID', device.ssidName!),
             if (device.signalStrength != null) ...[
-              _infoRow(context, 'Signal',
-                  '${device.signalStrength} dBm (${_signalLabel(device.signalLevel)})'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 130,
+                      child: AppText.labelLarge('Signal'),
+                    ),
+                    UspSignalStrengthIndicator(
+                      rssi: device.signalStrength!,
+                      maxBarHeight: 18,
+                    ),
+                  ],
+                ),
+              ),
             ],
             if (device.downlinkRate != null)
               _infoRow(context, 'Downlink',
@@ -217,9 +232,7 @@ class UspDeviceDetailView extends ConsumerWidget {
             AppButton.primary(
               label: 'Reserve IP Address',
               isLoading: isLoading,
-              onTap: isLoading
-                  ? null
-                  : () => _reserveIp(context, ref, device),
+              onTap: isLoading ? null : () => _reserveIp(context, ref, device),
             ),
           ],
         ],
@@ -277,18 +290,5 @@ class UspDeviceDetailView extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  static String _signalLabel(int level) {
-    switch (level) {
-      case 3:
-        return 'Excellent';
-      case 2:
-        return 'Good';
-      case 1:
-        return 'Fair';
-      default:
-        return 'Weak';
-    }
   }
 }

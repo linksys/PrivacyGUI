@@ -2,44 +2,43 @@
 # Parent: Device.NAT.PortTrigger.{i}  (trigger ports)
 # Child:  Device.NAT.PortTrigger.{i}.Rule.{i}  (forwarded ports)
 # SSH-verified 2026-03-06 via bbfdm.firewallmngr schema
+#
 
 name: PortTriggering
 singularName: PortTrigger
 version: 1.0.0
-base_path: Device.NAT.PortTrigger
+multiInstance: Device.NAT.PortTrigger.
 category: firewall
 description: NAT port triggering rules with forwarded port sub-rules
-
-multi_instance: true
 type: add
 
 parameters:
   - field_name: enabled
-    path: Enable
+    path: .Enable
     type: boolean
     writable: true
     description: Enable this port trigger rule
 
   - field_name: description
-    path: Description
+    path: .Description
     type: string
     writable: true
     description: Rule description
 
   - field_name: triggerPort
-    path: Port
+    path: .Port
     type: int
     writable: true
     description: Trigger port number (start)
 
   - field_name: triggerPortEndRange
-    path: PortEndRange
+    path: .PortEndRange
     type: int
     writable: true
     description: Trigger port end range (0 = single port)
 
   - field_name: triggerProtocol
-    path: Protocol
+    path: .Protocol
     type: string
     writable: true
     description: Trigger protocol (TCP, UDP, or Both)
@@ -47,23 +46,23 @@ parameters:
 children:
   - name: rules
     singularName: PortTriggerForwardRule
-    basePath: .Rule.
+    path: .Rule.
     type: add
     parameters:
       - field_name: forwardPort
-        path: Port
+        path: .Port
         type: int
         writable: true
         description: Forwarded port number (start)
 
       - field_name: forwardPortEndRange
-        path: PortEndRange
+        path: .PortEndRange
         type: int
         writable: true
         description: Forwarded port end range (0 = single port)
 
       - field_name: forwardProtocol
-        path: Protocol
+        path: .Protocol
         type: string
         writable: true
         description: Forwarded protocol (TCP, UDP, or Both)

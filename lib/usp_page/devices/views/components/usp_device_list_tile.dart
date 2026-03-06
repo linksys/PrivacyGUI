@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
+import 'package:privacy_gui/usp_page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A tappable tile showing device summary info for the device list.
@@ -104,10 +105,7 @@ class UspDeviceListTile extends StatelessWidget {
   }
 
   Widget _buildSignalBadge(BuildContext context) {
-    return AppText.bodySmall(
-      '${device.signalStrength} dBm',
-      color: _signalColor(context, device.signalStrength),
-    );
+    return UspSignalStrengthIndicator(rssi: device.signalStrength!);
   }
 
   static IconData _wifiIconForSignal(int? rssi) {

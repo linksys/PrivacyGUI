@@ -72,5 +72,15 @@ final uspDashboardRoute = ShellRoute(
       path: RoutePath.uspPortForwardingDetail,
       builder: (context, state) => const UspPortForwardingDetailView(),
     ),
+    LinksysRoute(
+      name: RouteNamed.uspSystemLog,
+      path: RoutePath.uspSystemLog,
+      builder: (context, state) => const UspSystemLogView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspFirewall,
+      path: RoutePath.uspFirewall,
+      builder: (context, state) => const UspFirewallView(),
+    ),
   ],
 );
