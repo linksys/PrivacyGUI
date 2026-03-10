@@ -1,0 +1,189 @@
+name: WanSettings
+version: 1.0.0
+category: network
+description: WAN IPv4 connection settings aggregated from multiple TR-181 objects
+
+parameters:
+  # === WAN Interface Status ===
+  - path: Device.IP.Interface.2.IPv4Address.1.AddressingType
+    field_name: addressingType
+    type: string
+    description: IPv4 addressing type (Static, DHCP, IPCP, AutoIP)
+
+  - path: Device.IP.Interface.2.MaxMTUSize
+    field_name: mtu
+    type: int
+    writable: true
+    description: Maximum transmission unit size (64-65535)
+
+  # === Static IP Configuration ===
+  - path: Device.IP.Interface.2.IPv4Address.1.IPAddress
+    field_name: staticIpAddress
+    type: string
+    writable: true
+    description: Static IPv4 address (used when AddressingType=Static)
+
+  - path: Device.IP.Interface.2.IPv4Address.1.SubnetMask
+    field_name: subnetMask
+    type: string
+    writable: true
+    description: IPv4 subnet mask
+
+  - path: Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress
+    field_name: defaultGateway
+    type: string
+    writable: true
+    description: Default gateway IPv4 address
+
+  # === DNS Servers ===
+  - path: Device.DNS.Client.Server.1.DNSServer
+    field_name: dnsServer1
+    type: string
+    writable: true
+    description: Primary DNS server address
+
+  - path: Device.DNS.Client.Server.2.DNSServer
+    field_name: dnsServer2
+    type: string
+    writable: true
+    description: Secondary DNS server address
+
+  - path: Device.DNS.Client.Server.3.DNSServer
+    field_name: dnsServer3
+    type: string
+    writable: true
+    description: Tertiary DNS server address
+
+  # === PPPoE / PPP Configuration ===
+  - path: Device.PPP.Interface.1.Username
+    field_name: pppUsername
+    type: string
+    writable: true
+    sensitive: true
+    description: PPP authentication username (PPPoE/PPTP/L2TP)
+
+  - path: Device.PPP.Interface.1.Password
+    field_name: pppPassword
+    type: string
+    writable: true
+    sensitive: true
+    description: PPP authentication password
+
+  - path: Device.PPP.Interface.1.PPPoE.ServiceName
+    field_name: pppoeServiceName
+    type: string
+    writable: true
+    description: PPPoE service name (optional)
+
+  - path: Device.PPP.Interface.1.ConnectionTrigger
+    field_name: connectionTrigger
+    type: string
+    writable: true
+    description: PPP connection mode (AlwaysOn, OnDemand, Manual)
+    # Value mapping: JNAP KeepAlive → TR-181 AlwaysOn, JNAP ConnectOnDemand → TR-181 OnDemand
+
+  - path: Device.PPP.Interface.1.IdleDisconnectTime
+    field_name: idleDisconnectTime
+    type: int
+    writable: true
+    description: Idle timeout before disconnection in seconds (0=never)
+    # Unit conversion: JNAP maxIdleMinutes (minutes) → TR-181 IdleDisconnectTime (seconds), multiply by 60
+
+  - path: Device.PPP.Interface.1.LCPEcho
+    field_name: lcpEchoInterval
+    type: int
+    writable: true
+    description: LCP Echo keep-alive interval in seconds (0=disabled)
+
+  - path: Device.PPP.Interface.1.ConnectionStatus
+    field_name: pppConnectionStatus
+    type: string
+    description: PPP connection status (Connected, Disconnected, etc.)
+
+  # === VLAN Tagging ===
+  - path: Device.Ethernet.VLANTermination.1.Enable
+    field_name: vlanEnabled
+    type: boolean
+    writable: true
+    description: Enable VLAN tagging on WAN port
+
+  - path: Device.Ethernet.VLANTermination.1.VLANID
+    field_name: vlanId
+    type: int
+    writable: true
+    description: VLAN tag ID (1-4094)
+
+  # === Bridge Mode ===
+  - path: Device.Bridging.Bridge.1.Enable
+    field_name: bridgeEnabled
+    type: boolean
+    writable: true
+    description: Enable bridge mode
+
+  # === MAC Address ===
+  - path: Device.Ethernet.Link.1.MACAddress
+    field_name: wanMacAddress
+    type: string
+    writable: true
+    description: WAN interface MAC address (for MAC clone, writable)
+
+  - path: Device.Ethernet.Interface.1.MACAddress
+    field_name: currentMacAddress
+    type: string
+    description: Current WAN Ethernet MAC address (read-only)
+
+  # === NO TR-181 MAPPING (preserved from JNAP for reference) ===
+  # - field_name: tpServer
+  #   jnap_source: tpSettings.server
+  #   type: string
+  #   description: "PPTP/L2TP tunnel server address (no standard TR-181 path)"
+  #
+  # - field_name: useStaticSettings
+  #   jnap_source: tpSettings.useStaticSettings
+  #   type: boolean
+  #   description: "Use static IP settings for PPTP (JNAP logic field, no TR-181)"
+  #
+  # - field_name: domainName
+  #   jnap_source: staticSettings.domainName
+  #   type: string
+  #   description: "Domain name for static configuration (no standard TR-181 path)"
+  #
+  # - field_name: vlanStatus
+  #   jnap_source: wanTaggingSettings.vlanTaggingSettings.vlanStatus
+  #   type: string
+  #   description: "VLAN tagging status Tagged/Untagged (no standard TR-181)"
+  #
+  # - field_name: isMACAddressCloneEnabled
+  #   jnap_source: isMACAddressCloneEnabled
+  #   type: boolean
+  #   description: "MAC clone enable flag (Vendor Extension: X_LINKSYS_COM_MACClone.Enable)"
+  #
+  # - field_name: supportedWANTypes
+  #   jnap_source: wanStatus.supportedWANTypes
+  #   type: string
+  #   description: "Supported WAN connection types (device capability, no TR-181)"
+  #
+  # - field_name: supportedIPv6WANTypes
+  #   jnap_source: wanStatus.supportedIPv6WANTypes
+  #   type: string
+  #   description: "Supported IPv6 WAN types (device capability, no TR-181)"
+  #
+  # - field_name: supportedWANCombinations
+  #   jnap_source: wanStatus.supportedWANCombinations
+  #   type: string
+  #   description: "Valid WAN IPv4/IPv6 type combinations (device capability, no TR-181)"
+  #
+  # - field_name: hostName
+  #   jnap_source: lanSettings.hostName
+  #   type: string
+  #   description: "Router hostname (Vendor-specific, no standard TR-181)"
+  #
+  # - field_name: remoteSettingEnabled
+  #   jnap_source: SetRemoteSetting.isEnabled
+  #   type: boolean
+  #   description: "Remote management enable (Vendor Extension: X_LINKSYS_COM_UI.RemoteSetting)"
+  #
+  # - field_name: deviceId
+  #   jnap_source: GetLocalDevice.deviceID
+  #   type: string
+  #   description: "Local device ID for MAC lookup (JNAP-specific, no TR-181)"

@@ -85,6 +85,8 @@ import 'package:privacy_gui/usp_page/static_routing/views/usp_static_routing_vie
 import 'package:privacy_gui/usp_page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:privacy_gui/usp_page/test_console/views/usp_test_console_view.dart';
+import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
+import 'package:privacy_gui/usp_page/internet_settings/views/usp_internet_settings_view.dart';
 import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 
 part 'route_home.dart';
@@ -131,6 +133,14 @@ final appRoutes = [
   ),
   dashboardRoute,
   uspDashboardRoute,
+  LinksysRoute(
+    name: RouteNamed.uspInternetSettings,
+    path: RoutePath.uspInternetSettings,
+    config: const LinksysRouteConfig(noNaviRail: true),
+    builder: (context, state) => const UspInternetSettingsView(),
+    enableDirtyCheck: true,
+    preservableProvider: preservableUspInternetSettingsProvider,
+  ),
   pnpRoute,
   pnpTroubleshootingRoute,
   addNodesRoute,
