@@ -6,13 +6,23 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 
 ### USP Protocol Integration
 
-#### Device Search Field & IPv6 Data Extension
+#### USP Feature Pages (947a3dba, 8eecf073)
+- Add DMZ settings page — View/Provider/Service with enable toggle, host IP configuration
+- Add IPv6 Port Service page — full CRUD for IPv6 inbound port rules (add/edit/delete/toggle)
+- Add Local Network page — LAN IP, subnet mask, DHCP range display and configuration
+- Add Static Routing page — route table with add/edit/delete dialogs
+- Add Port Forwarding Detail page — tabbed view with Single Port, Port Range, Port Triggering
+- Add Admin page — password change, timezone configuration, reboot
+- Add DHCP Detail page — active client leases + reservation management
+- Add codegen definitions: `firmware_images`, `dmz`, `ipv6_port_service`, `static_routing`
+
+#### Device Search Field & IPv6 Data Extension (947a3dba)
 - Extend `connected_devices.yaml` with IPv6 children (`Device.Hosts.Host.{i}.IPv6Address.{i}.IPAddress`)
 - Add `DeviceSearchField` reusable widget with `DeviceSearchMode` (ipv4/ipv6/mac) — `RawAutocomplete` with device name, address, and MAC fuzzy search
 - Integrate into IPv6 Port Service Add/Edit Rule dialog — select from known devices with IPv6 addresses
 - Add `ipv6Addresses: List<String>` to `DeviceUIModel`
 
-#### USP Console & Menu Improvements
+#### USP Console & Menu Improvements (947a3dba)
 - Add TR-181 path autocomplete to USP Console (8K+ paths from `tr-181-2-20-0-usp-full.xml`)
 - Migrate USP Console to UI Kit components (`AppButton.*`, `AppTextField`)
 - Add Advanced Settings submenu (Local Network, Firewall, DMZ, Port Forwarding, Static Routing)
@@ -21,7 +31,18 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Increase dashboard topology card client-node spacing (`nodeSpacing * 1.4`, `orbitRadius * 1.4`)
 - Wrap TR-181 autocomplete and generated path data in `kDebugMode` for production size protection
 
-#### Selective Get Optimization & Codegen v0.10.3
+#### Dashboard & Shell Improvements (947a3dba, 3169d7c6, 8eecf073)
+- Merge `UspSystemMonitorCard` into `UspSystemStatusCard` — unified CPU/memory/firmware display
+- Add `FirmwareImages` codegen definition — display firmware slots with active/boot status in Device Info card
+- Add `WanStatus` YAML definition + `UspNetworkStatusCard` with WAN IP, gateway, MTU, IPv6 display
+- Redesign `UspStatsPanel` summary row layout
+- Add dashboard skeleton loading animation during initial fetch
+- Fix shell/topbar theme design style reactivity (`AppDesignTheme` listener)
+- Fix `EthernetInterface.Upstream` boolean coercion for integer 0/1 values
+- Add USP Bridge Client turbo HTTP session support (start/heartbeat/status/release)
+- Relocate USP dashboard from `lib/page/usp_test/` to `lib/usp_page/`
+
+#### Selective Get Optimization & Codegen v0.10.3 (61b45a4b, bcb843c6)
 - Migrate 8 YAML definitions to new `multiInstance` format with selective get search paths (connected_devices, data_elements_network, wi_fi_radios, wi_fi_access_points, wi_fi_ssids, port_forwarding, port_triggering, firewall_chain_rules)
 - Upgrade `usp-codegen` to v0.10.3 — phantom instance filter skips all-default empty instances from wildcard search path queries (BUG-003)
 - Remove `fetchAll` from port_forwarding — selective get now safe with phantom filter
@@ -29,18 +50,18 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Fix `UspService.get`: skip wildcard paths in missing-path check
 - Fix `_fetchDefaultGateway`: use wildcard search paths instead of index-based loop (non-contiguous routing table instance IDs)
 
-#### Firewall Settings Page (F-005)
+#### Firewall Settings Page (61b45a4b)
 - Add `FirewallUIModel` with 8 boolean toggles (SPI IPv4/IPv6, VPN passthrough, internet filters)
 - Add `UspFirewallService` — scatter-gather fetch, Description-based rule identification, Target-aware toggle inversion
 - Add `UspFirewallNotifier` with `isDirty` / batch `save()` pattern
 - Add `UspFirewallView` — 3-section layout (Firewall Protection, VPN Passthrough, Internet Filters)
 
-#### System Log & System Monitor
+#### System Log & System Monitor (61b45a4b, c772bcb3)
 - Add System Log page — `VendorLogFiles` codegen definition, fetch + display log content
 - Add `UspSystemMonitorCard` with real-time CPU/memory polling via `Device.DeviceInfo.ProcessStatus`
 - Add `SignalStrengthIndicator` reusable component for WiFi signal display
 
-#### Phase 3: UI Model Layer — Presentation/Data Decoupling
+#### Phase 3: UI Model Layer — Presentation/Data Decoupling (86e8815a)
 - Establish Presentation Layer UI Models per constitution Article V Section 5.3 — views no longer import codegen `generated/*.g.dart` files
 - Add 6 UI Models: `SystemInfoUIModel`, `DeviceUIModel`, `WifiRadioUIModel`, `TimeSettingsUIModel`, `DhcpReservationUIModel`, `PortForwardingRuleUIModel`
 - Add `UspDeviceService` (Article VI stateless service) — consolidates all Data Model → UI Model transformation
@@ -49,7 +70,7 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Change `updatePortForwardingRule` notifier to accept primitive params — eliminates last codegen import from view layer
 - Add USP Dashboard shell with tab navigation (Home / Menu / Support)
 
-#### Phase 0: Codegen Toolchain & Validation
+#### Phase 0: Codegen Toolchain & Validation (e5382392, 5acebdbc)
 - Add USP (TR-369) HTTP/WASM client (`lib/usp/`) with JS interop
 - Implement `usp-codegen` CLI (v0.6.1) — YAML definition → Dart data class + CRUD methods
 - Add 8 YAML definitions: SystemInfo, ConnectedDevices, WiFiRadios, WiFiSsids, WiFiAccessPoints, TimeSettings, DhcpReservations, PortForwarding
@@ -57,21 +78,24 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Add `UspResponseExtension` helpers (`getInstances`, `getString`, `getBool`, `getInt`)
 - Validate codegen through 5 iterations (v1→v5), fixing class name collision, reserved word escaping, trailing dot normalization
 
-#### Phase 2A: USP Dashboard — Read-Only
+#### Phase 2A: USP Dashboard — Read-Only (7ddd7c08)
 - Add standalone USP Dashboard page with 7 read-only cards: Device Info, System Status, Connected Devices, WiFi Status, Time Settings, DHCP Reservations, Protocol Info
 - Implement session restore on page reload (WASM state recovery)
 - Cross-reference WiFi AP → SSID via `ssidReference` path
 - Parallel `Future.wait` fetch for all 8 data categories (WASM client v0.6.1+)
 
-#### Phase 2D: USP Dashboard — Ethernet Port Status
+#### Phase 2D: USP Dashboard — Ethernet Ports, Device List & Topology (e2bd260f)
 - Add `EthernetInterfaces` YAML definition + codegen for `Device.Ethernet.Interface.{i}` (multi-instance)
 - Add `EthernetPortUIModel` with `WiredDeviceInfo` for wired device detail (hostname, MAC, IP)
 - Add `UspEthernetPortsCard` with SVG port icons (green=Up, gray=Down) and speed label (supports 2.5 Gbps)
 - Add port detail dialog (`showEthernetPortDetailDialog`) — tap port to view interface info and connected devices
 - WAN ports use real `Ethernet.Interface.Status`; LAN ports derive effective status from `ConnectedDevices` cross-reference (switch chip always reports Up)
 - Manually patch codegen boolean parsing for integer 0/1 values (`Upstream` field)
+- Add Device List view with filter panel (by mesh node, SSID, band) and device detail view
+- Add Topology view with interactive mesh node visualization and node detail view
+- Add `LanNetworkInfo` codegen definition for LAN IP/subnet/DHCP display
 
-#### Phase 2C: USP Dashboard — Data Enrichment & Topology
+#### Phase 2C: USP Dashboard — Data Enrichment & Topology (6ab0b72e, c772bcb3, 1281594e)
 - Upgrade `usp-codegen` to v0.10.0 — recursive multi-level `children` nesting support
 - Add `DataElementsNetwork` YAML definition (4-level: Device → Radio → BSS → STA) for EasyMesh topology
 - Add `WiFiClients` YAML definition with `flatten: true` + `nestedPath` for nested multi-instance
@@ -86,7 +110,7 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Add codegen example YAMLs: `example_nested_multi_instance.yaml`, `example_flatten_multi_instance.yaml`
 - Rename `usp_dashboard_provider.dart` → `usp_dashboard_state.dart` (clarify state vs provider)
 
-#### Phase 2B: USP Dashboard — Write Operations
+#### Phase 2B: USP Dashboard — Write Operations (7ddd7c08, 6c89d808, 98dd0f79, 1e5f8d57)
 - Refactor provider architecture: `FutureProvider` → `AsyncNotifierProvider` with `_withLock()` sequential mutation guard
 - Add `copyWith()` immutable state updates to `UspDashboardState`
 - **WiFi Radio**: Enable/disable toggle (`AppSwitch`) + channel edit dialog (auto/manual)
