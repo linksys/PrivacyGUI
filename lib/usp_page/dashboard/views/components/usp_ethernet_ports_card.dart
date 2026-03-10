@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/ethernet_port_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/ethernet_port_detail_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class UspEthernetPortsCard extends StatelessWidget {
-  final List<EthernetPortUIModel> ports;
+class UspEthernetPortsCard extends ConsumerWidget {
+  final List<EthernetPortUIModel>? ports;
 
-  const UspEthernetPortsCard({super.key, required this.ports});
+  const UspEthernetPortsCard({super.key, this.ports});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ports = this.ports ??
+        ref.watch(uspDashboardProvider).valueOrNull?.ethernetPortModels ?? [];
     return SizedBox(
       width: double.infinity,
       child: AppCard(

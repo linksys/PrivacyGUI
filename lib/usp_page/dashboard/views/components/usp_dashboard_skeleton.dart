@@ -20,33 +20,31 @@ class UspDashboardSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SkeletonHeader(),
-        AppGap.xl(),
         const _SkeletonStatsPanel(),
         AppGap.xl(),
-        const _SkeletonConnectionStatus(),
-        AppGap.xl(),
-        const _SkeletonTopologyCard(),
-        AppGap.xl(),
         const _SkeletonInfoCard(rows: 5), // Device Info
+        AppGap.xl(),
+        const _SkeletonInfoCard(rows: 4), // Network Status
+        AppGap.xl(),
+        const _SkeletonInfoCard(rows: 3), // System Status
         AppGap.xl(),
         const _SkeletonInfoCard(rows: 4), // LAN Info
         AppGap.xl(),
         const _SkeletonInfoCard(rows: 4), // Ethernet Ports
         AppGap.xl(),
-        const _SkeletonInfoCard(rows: 3), // System Status
-        AppGap.xl(),
         const _SkeletonListCard(rows: 3), // Connected Devices
         AppGap.xl(),
         const _SkeletonListCard(rows: 2), // WiFi Status
         AppGap.xl(),
+        const _SkeletonTopologyCard(),
+        AppGap.xl(),
         const _SkeletonInfoCard(rows: 3), // Time Settings
+        AppGap.xl(),
+        const _SkeletonConnectionStatus(),
         AppGap.xl(),
         const _SkeletonListCard(rows: 2), // DHCP Reservations
         AppGap.xl(),
         const _SkeletonListCard(rows: 2), // Port Forwarding
-        AppGap.xl(),
-        const _SkeletonInfoCard(rows: 3), // Protocol Info
       ],
     );
   }
@@ -55,79 +53,60 @@ class UspDashboardSkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SkeletonHeader(),
-        AppGap.xl(),
+        // Stats Panel (full width)
         const _SkeletonStatsPanel(),
-        AppGap.xl(),
-        const _SkeletonConnectionStatus(),
-        AppGap.xl(),
-        const _SkeletonTopologyCard(),
-        AppGap.xl(),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left column: static info cards
-            Expanded(
-              child: Column(
-                children: [
-                  const _SkeletonInfoCard(rows: 5), // Device Info
-                  AppGap.xl(),
-                  const _SkeletonInfoCard(rows: 4), // LAN Info
-                  AppGap.xl(),
-                  const _SkeletonInfoCard(rows: 4), // Ethernet Ports
-                  AppGap.xl(),
-                  const _SkeletonInfoCard(rows: 3), // System Status
-                  AppGap.xl(),
-                  const _SkeletonListCard(rows: 3), // Connected Devices
-                  AppGap.xl(),
-                  const _SkeletonInfoCard(rows: 3), // Protocol Info
-                ],
-              ),
-            ),
-            AppGap.gutter(),
-            // Right column: interactive cards
-            Expanded(
-              child: Column(
-                children: [
-                  const _SkeletonListCard(rows: 2), // WiFi Status
-                  AppGap.xl(),
-                  const _SkeletonInfoCard(rows: 3), // Time Settings
-                  AppGap.xl(),
-                  const _SkeletonListCard(rows: 2), // DHCP Reservations
-                  AppGap.xl(),
-                  const _SkeletonListCard(rows: 2), // Port Forwarding
-                ],
-              ),
-            ),
-          ],
+
+        // Device Info | Network Status
+        _skeletonRow(
+          const _SkeletonInfoCard(rows: 5),
+          const _SkeletonInfoCard(rows: 4),
         ),
+
+        // System Status | LAN Info
+        _skeletonRow(
+          const _SkeletonInfoCard(rows: 3),
+          const _SkeletonInfoCard(rows: 4),
+        ),
+
+        // Ethernet Ports | Connected Devices
+        _skeletonRow(
+          const _SkeletonInfoCard(rows: 4),
+          const _SkeletonListCard(rows: 3),
+        ),
+
+        // WiFi Status | Topology
+        _skeletonRow(
+          const _SkeletonListCard(rows: 2),
+          const _SkeletonTopologyCard(),
+        ),
+
+        // Time Settings | Connection Status
+        _skeletonRow(
+          const _SkeletonInfoCard(rows: 3),
+          const _SkeletonConnectionStatus(),
+        ),
+
+        // DHCP Reservations | Port Forwarding
+        _skeletonRow(
+          const _SkeletonListCard(rows: 2),
+          const _SkeletonListCard(rows: 2),
+        ),
+        AppGap.xl(),
       ],
     );
   }
-}
 
-// ---------------------------------------------------------------------------
-// Header skeleton
-// ---------------------------------------------------------------------------
-
-class _SkeletonHeader extends StatelessWidget {
-  const _SkeletonHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        AppSkeleton.text(width: 160, height: 24),
-        Row(
-          children: [
-            AppSkeleton(
-                width: 36, height: 36, borderRadius: BorderRadius.circular(8)),
-            AppGap.md(),
-            AppSkeleton.text(width: 60),
-          ],
-        ),
-      ],
+  static Widget _skeletonRow(Widget left, Widget right) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xl),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: left),
+          AppGap.gutter(),
+          Expanded(child: right),
+        ],
+      ),
     );
   }
 }

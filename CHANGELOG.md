@@ -31,6 +31,20 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Increase dashboard topology card client-node spacing (`nodeSpacing * 1.4`, `orbitRadius * 1.4`)
 - Wrap TR-181 autocomplete and generated path data in `kDebugMode` for production size protection
 
+#### Dashboard Custom Layout (SliverDashboard)
+- Add drag-drop / resize dashboard with `sliver_dashboard` — `UspSliverDashboardView`, `DashboardOverlay`, edit mode with jiggle animation
+- Default 2-column grid layout (`slotAspectRatio: 0.5`, 12-column, w=6 per card)
+- Add `UspWidgetSpecs` — per-card `WidgetGridConstraints` (min/max columns, height rows, `HeightStrategy`)
+- Add `UspWidgetFactory` — ID → Widget mapping for grid item builder
+- Add `UspLayoutController` — SharedPreferences persistence for layout & edit mode state
+- Add `UspLayoutPreferences` — widget visibility, layout reset; `useCustomLayout = true` default
+- Add `UspLayoutSettingsPanel` — hidden widgets re-add, reset layout to defaults
+- Convert `UspStatsPanel` to `ConsumerWidget` (self-contained provider read) + add to widget specs registry
+- Remove firmware images section from `UspDeviceInfoCard` (reduce height for grid fit)
+- Increase `SystemStatus` card height (h=3→4) to accommodate gauges + chart
+- Header buttons switch between normal (print/refresh/edit) and edit mode (optimize/tune/cancel/save)
+- Add `UspDashboardSkeleton` with paired-row layout matching grid structure
+
 #### Dashboard Layout & Topology Improvements
 - Ethernet Ports: Show one LAN port entry per active wired device instead of single aggregate (switch chip limitation — TR-181 only exposes 1 LAN `Ethernet.Interface` for 3 physical ports)
 - Use bridge membership (`Device.Bridging.Bridge.*.Port.*.LowerLayers`) for WAN/LAN classification instead of inverted `Upstream` flag

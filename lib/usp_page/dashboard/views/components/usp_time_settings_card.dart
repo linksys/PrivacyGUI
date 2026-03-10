@@ -9,12 +9,15 @@ import 'package:privacy_gui/usp_page/dashboard/views/dialogs/time_settings_dialo
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspTimeSettingsCard extends ConsumerWidget {
-  final UspDashboardState state;
+  final UspDashboardState? state;
 
-  const UspTimeSettingsCard({super.key, required this.state});
+  const UspTimeSettingsCard({super.key, this.state});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = this.state ??
+        ref.watch(uspDashboardProvider).valueOrNull;
+    if (state == null) return const SizedBox.shrink();
     final time = state.timeSettingsModel;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'time';
 

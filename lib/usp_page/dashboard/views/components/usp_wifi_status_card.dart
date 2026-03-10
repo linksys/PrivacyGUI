@@ -10,12 +10,15 @@ import 'package:privacy_gui/usp_page/dashboard/views/dialogs/wifi_channel_dialog
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspWifiStatusCard extends ConsumerWidget {
-  final UspDashboardState state;
+  final UspDashboardState? state;
 
-  const UspWifiStatusCard({super.key, required this.state});
+  const UspWifiStatusCard({super.key, this.state});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = this.state ??
+        ref.watch(uspDashboardProvider).valueOrNull;
+    if (state == null) return const SizedBox.shrink();
     final radios = state.wifiRadioModels;
     final enabledRadios = radios.where((r) => r.enable).length;
 
@@ -88,7 +91,7 @@ class UspWifiStatusCard extends ConsumerWidget {
           Row(
             children: [
               SizedBox(
-                width: 160,
+                width: context.colWidth(2),
                 child: AppText.labelLarge('Channel'),
               ),
               Expanded(
@@ -125,7 +128,7 @@ class UspWifiStatusCard extends ConsumerWidget {
     return Row(
       children: [
         SizedBox(
-          width: 80,
+          width: context.colWidth(1),
           child: AppText.labelLarge(label),
         ),
         Expanded(
@@ -136,7 +139,7 @@ class UspWifiStatusCard extends ConsumerWidget {
         ),
         AppGap.sm(),
         SizedBox(
-          width: 80,
+          width: context.colWidth(1),
           child: AppText.bodySmall(display, textAlign: TextAlign.end),
         ),
       ],
@@ -172,14 +175,14 @@ class UspWifiStatusCard extends ConsumerWidget {
           AppGap.sm(),
           Expanded(child: AppText.bodyMedium(ap.ssidName)),
           SizedBox(
-            width: 160,
+            width: context.colWidth(2),
             child: AppText.bodySmall(
               ap.securityMode,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           SizedBox(
-            width: 60,
+            width: context.colWidth(1),
             child: AppText.bodySmall(
               ap.encryptionMode,
               color: Theme.of(context).colorScheme.onSurfaceVariant,

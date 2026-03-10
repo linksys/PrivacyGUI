@@ -11,12 +11,15 @@ import 'package:privacy_gui/usp_page/dashboard/views/dialogs/port_forwarding_dia
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspPortForwardingCard extends ConsumerWidget {
-  final UspDashboardState state;
+  final UspDashboardState? state;
 
-  const UspPortForwardingCard({super.key, required this.state});
+  const UspPortForwardingCard({super.key, this.state});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = this.state ??
+        ref.watch(uspDashboardProvider).valueOrNull;
+    if (state == null) return const SizedBox.shrink();
     final rules = state.portForwardingRuleModels;
     final triggers = state.portTriggeringRuleModels;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';
@@ -97,14 +100,14 @@ class UspPortForwardingCard extends ConsumerWidget {
             child: AppText.bodyMedium(rule.displayName),
           ),
           SizedBox(
-            width: 180,
+            width: context.colWidth(2),
             child: AppText.bodySmall(
               rule.portSummary,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           SizedBox(
-            width: 50,
+            width: context.colWidth(1),
             child: AppText.bodySmall(
               rule.protocol,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -141,14 +144,14 @@ class UspPortForwardingCard extends ConsumerWidget {
             child: AppText.bodyMedium(trigger.displayName),
           ),
           SizedBox(
-            width: 180,
+            width: context.colWidth(2),
             child: AppText.bodySmall(
               '${trigger.triggerPortDisplay} \u2192 ${trigger.forwardPortDisplay}',
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           SizedBox(
-            width: 50,
+            width: context.colWidth(1),
             child: AppText.bodySmall(
               trigger.triggerProtocol,
               color: Theme.of(context).colorScheme.onSurfaceVariant,

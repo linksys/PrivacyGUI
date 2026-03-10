@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class UspLanInfoCard extends StatelessWidget {
-  final LanInfoUIModel info;
+class UspLanInfoCard extends ConsumerWidget {
+  final LanInfoUIModel? info;
 
-  const UspLanInfoCard({super.key, required this.info});
+  const UspLanInfoCard({super.key, this.info});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final info = this.info ??
+        ref.watch(uspDashboardProvider).valueOrNull?.lanInfoModel;
+    if (info == null) return const SizedBox.shrink();
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

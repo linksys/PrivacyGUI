@@ -1,0 +1,375 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
+import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
+import 'package:privacy_gui/usp_page/dashboard/factories/usp_widget_factory.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/usp_layout_preferences.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/usp_widget_specs.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_controller.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_preferences_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/services/usp_pdf_service.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
+import 'package:sliver_dashboard/sliver_dashboard.dart';
+import 'package:ui_kit_library/ui_kit.dart';
+
+/// USP Dashboard view using SliverDashboard grid layout.
+///
+/// Supports drag-drop/resize in edit mode.
+class UspSliverDashboardView extends ConsumerStatefulWidget {
+  const UspSliverDashboardView({super.key});
+
+  @override
+  ConsumerState<UspSliverDashboardView> createState() =>
+      _UspSliverDashboardViewState();
+}
+
+class _UspSliverDashboardViewState
+    extends ConsumerState<UspSliverDashboardView> {
+  bool _isEditMode = false;
+  List<dynamic>? _initialLayoutSnapshot;
+  UspLayoutPreferences? _initialPrefsSnapshot;
+
+  void _enterEditMode() {
+    final controller = ref.read(uspSliverDashboardControllerProvider);
+    _initialLayoutSnapshot = controller.exportLayout();
+    _initialPrefsSnapshot = ref.read(uspLayoutPreferencesProvider);
+
+    setState(() {
+      _isEditMode = true;
+    });
+    controller.setEditMode(true);
+  }
+
+  void _exitEditMode({bool save = true}) async {
+    final controller = ref.read(uspSliverDashboardControllerProvider);
+
+    if (!save) {
+      if (_initialLayoutSnapshot != null) {
+        controller.importLayout(_initialLayoutSnapshot!);
+        await ref
+            .read(uspSliverDashboardControllerProvider.notifier)
+            .saveLayout();
+      }
+      if (_initialPrefsSnapshot != null) {
+        await ref
+            .read(uspLayoutPreferencesProvider.notifier)
+            .restoreSnapshot(_initialPrefsSnapshot!);
+      }
+    }
+
+    setState(() {
+      _isEditMode = false;
+      _initialLayoutSnapshot = null;
+      _initialPrefsSnapshot = null;
+    });
+    controller.setEditMode(false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Fixed Header (title + action buttons)
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: context.pageMargin,
+            vertical: AppSpacing.md,
+          ),
+          child: _buildHeader(context),
+        ),
+
+        // SliverDashboard grid
+        Expanded(
+          child: _buildSliverDashboard(context),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Header
+  // ---------------------------------------------------------------------------
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        AppText.headlineSmall('USP Dashboard'),
+        Row(
+          children: [
+            if (_isEditMode) ...[
+              AppIconButton(
+                icon: AppIcon.font(Icons.auto_fix_high),
+                onTap: () {
+                  final controller =
+                      ref.read(uspSliverDashboardControllerProvider);
+                  controller.optimizeLayout();
+                  ref
+                      .read(uspSliverDashboardControllerProvider.notifier)
+                      .saveLayout();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Layout optimized'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  }
+                },
+              ),
+              AppGap.sm(),
+              AppIconButton(
+                icon: AppIcon.font(Icons.tune),
+                onTap: () => _openLayoutSettings(context),
+              ),
+              AppGap.sm(),
+              AppIconButton(
+                icon: AppIcon.font(Icons.close),
+                onTap: () => _exitEditMode(save: false),
+              ),
+              AppGap.sm(),
+              AppIconButton(
+                icon: AppIcon.font(Icons.check),
+                onTap: () => _exitEditMode(save: true),
+              ),
+            ] else ...[
+              AppIconButton(
+                icon: AppIcon.font(Icons.print),
+                onTap: () {
+                  final state = ref.read(uspDashboardProvider).valueOrNull;
+                  if (state != null) {
+                    doSomethingWithSpinner(
+                      context,
+                      UspPdfService.generatePdf(state),
+                    );
+                  }
+                },
+              ),
+              AppGap.sm(),
+              AppIconButton(
+                icon: AppIcon.font(Icons.refresh),
+                onTap: () => ref.invalidate(uspDashboardProvider),
+              ),
+              AppGap.sm(),
+              AppIconButton(
+                icon: AppIcon.font(Icons.edit),
+                onTap: _enterEditMode,
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SliverDashboard Layout (Edit Mode) — fixed grid cells, drag-drop
+  // ---------------------------------------------------------------------------
+
+  Widget _buildSliverDashboard(BuildContext context) {
+    final controller = ref.watch(uspSliverDashboardControllerProvider);
+    final factory = ref.watch(uspWidgetFactoryProvider);
+    final uiKitColumns = context.currentMaxColumns;
+    final scrollController = ScrollController();
+
+    final editModeGridStyle = GridStyle(
+      lineColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+      lineWidth: 1,
+      fillColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+    );
+
+    return DashboardOverlay(
+      controller: controller,
+      scrollController: scrollController,
+      itemBuilder: (context, item) {
+        return _buildItemWidget(context, item, _isEditMode, factory);
+      },
+      slotAspectRatio: 0.5,
+      mainAxisSpacing: AppSpacing.lg,
+      crossAxisSpacing: AppSpacing.lg,
+      padding: EdgeInsets.symmetric(horizontal: context.pageMargin),
+      gridStyle: _isEditMode ? editModeGridStyle : null,
+      onItemResizeEnd: (item) {
+        _handleResizeEnd(context, item);
+      },
+      child: CustomScrollView(
+        controller: scrollController,
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: context.pageMargin),
+            sliver: SliverDashboard(
+              itemBuilder: (context, item) {
+                return _buildItemWidget(
+                    context, item, _isEditMode, factory);
+              },
+              slotAspectRatio: 0.5,
+              mainAxisSpacing: AppSpacing.lg,
+              crossAxisSpacing: AppSpacing.lg,
+              breakpoints: {0: uiKitColumns},
+              gridStyle: _isEditMode ? editModeGridStyle : null,
+            ),
+          ),
+          const SliverToBoxAdapter(
+            child: SizedBox(height: AppSpacing.md),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Edit Mode — resize, settings, item builder
+  // ---------------------------------------------------------------------------
+
+  void _handleResizeEnd(BuildContext context, LayoutItem item) {
+    final factory = ref.read(uspWidgetFactoryProvider);
+    final spec = factory.getSpec(item.id);
+    if (spec == null) return;
+
+    final constraints = spec.constraints[DisplayMode.normal];
+    if (constraints == null) return;
+
+    bool violated = false;
+    int newW = item.w;
+    int newH = item.h;
+
+    if (item.w < constraints.minColumns) {
+      newW = constraints.minColumns;
+      violated = true;
+    }
+    if (item.w > constraints.maxColumns) {
+      newW = constraints.maxColumns;
+      violated = true;
+    }
+    if (item.h < constraints.minHeightRows) {
+      newH = constraints.minHeightRows;
+      violated = true;
+    }
+    if (item.h > constraints.maxHeightRows) {
+      newH = constraints.maxHeightRows;
+      violated = true;
+    }
+
+    if (violated && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Widget "${item.id}" resized to fit constraints'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+
+    if (violated) {
+      ref
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .updateItemSize(item.id, newW, newH);
+    }
+    ref.read(uspSliverDashboardControllerProvider.notifier).saveLayout();
+  }
+
+  Future<void> _openLayoutSettings(BuildContext context) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AppDialog(
+        title: AppText.titleMedium('Dashboard Settings'),
+        content: const UspLayoutSettingsPanel(),
+        actions: [
+          AppButton(
+            label: 'Close',
+            onTap: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+
+    if ((result == 'reset' || result == 'toggle_off') && mounted) {
+      setState(() {
+        _isEditMode = false;
+        _initialLayoutSnapshot = null;
+        _initialPrefsSnapshot = null;
+      });
+    }
+  }
+
+  Widget _buildItemWidget(
+    BuildContext context,
+    LayoutItem item,
+    bool isEditMode,
+    UspWidgetFactory factory,
+  ) {
+    final widget = factory.buildWidget(item.id);
+
+    if (widget == null) {
+      return AppCard(
+        child: Center(
+          child: AppText.bodyMedium('Unknown widget: ${item.id}'),
+        ),
+      );
+    }
+
+    final displayedWidget = widget;
+
+    if (isEditMode) {
+      final spec = UspWidgetSpecs.getById(item.id);
+      final canHide = spec?.canHide ?? true;
+
+      return JiggleShake(
+        active: true,
+        child: Stack(
+          fit: StackFit.expand,
+          clipBehavior: Clip.none,
+          children: [
+            AbsorbPointer(
+              absorbing: true,
+              child: displayedWidget,
+            ),
+            if (canHide)
+              Positioned(
+                left: 8,
+                top: 8,
+                child: GestureDetector(
+                  onTap: () async {
+                    await ref
+                        .read(uspSliverDashboardControllerProvider.notifier)
+                        .removeWidget(item.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Removed ${item.id}'),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.error,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                        )
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      size: 14,
+                      color: Theme.of(context).colorScheme.onError,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
+    return displayedWidget;
+  }
+}

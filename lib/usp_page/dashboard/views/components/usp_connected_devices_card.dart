@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
 
-class UspConnectedDevicesCard extends StatelessWidget {
-  final List<DeviceUIModel> devices;
+class UspConnectedDevicesCard extends ConsumerWidget {
+  final List<DeviceUIModel>? devices;
   final VoidCallback? onViewAll;
 
   const UspConnectedDevicesCard({
     super.key,
-    required this.devices,
+    this.devices,
     this.onViewAll,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final devices = this.devices ??
+        ref.watch(uspDashboardProvider).valueOrNull?.deviceModels ?? [];
     final activeDevices = devices.where((d) => d.isActive).toList();
     final inactiveDevices = devices.where((d) => !d.isActive).toList();
 
@@ -109,7 +113,7 @@ class UspConnectedDevicesCard extends StatelessWidget {
           // IP address
           Builder(builder: (context) {
             return SizedBox(
-              width: 130,
+              width: context.colWidth(2),
               child: AppText.bodySmall(
                 device.ip,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,

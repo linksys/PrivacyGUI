@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Displays a network topology visualization of the router and connected devices.
@@ -12,21 +14,26 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// (connected devices) linked via WiFi or Ethernet connections.
 /// When mesh topology data is available, extender nodes are shown between
 /// gateway and their connected clients.
-class UspNetworkTopologyCard extends StatelessWidget {
-  final SystemInfoUIModel info;
-  final List<DeviceUIModel> devices;
-  final List<MeshNodeInfo> meshNodes;
+class UspNetworkTopologyCard extends ConsumerWidget {
+  final SystemInfoUIModel? info;
+  final List<DeviceUIModel>? devices;
+  final List<MeshNodeInfo>? meshNodes;
 
   const UspNetworkTopologyCard({
     super.key,
-    required this.info,
-    required this.devices,
-    this.meshNodes = const [],
+    this.info,
+    this.devices,
+    this.meshNodes,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final topology = _buildTopology();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashState = ref.watch(uspDashboardProvider).valueOrNull;
+    final info = this.info ?? dashState?.systemInfoModel;
+    if (info == null) return const SizedBox.shrink();
+    final devices = this.devices ?? dashState?.deviceModels ?? [];
+    final meshNodes = this.meshNodes ?? dashState?.meshTopology.nodes ?? [];
+    final topology = _buildTopology(info, devices, meshNodes);
     final clientCount = devices.length;
     final useRing = clientCount >= 8;
 
@@ -112,7 +119,7 @@ class UspNetworkTopologyCard extends StatelessWidget {
     );
   }
 
-  MeshTopology _buildTopology() {
+  MeshTopology _buildTopology(SystemInfoUIModel info, List<DeviceUIModel> devices, List<MeshNodeInfo> meshNodes) {
     final nodes = <MeshNode>[];
     final links = <MeshLink>[];
 

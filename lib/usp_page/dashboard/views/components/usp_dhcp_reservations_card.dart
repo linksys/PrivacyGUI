@@ -12,12 +12,15 @@ import 'package:privacy_gui/usp_page/dashboard/views/dialogs/dhcp_reservation_di
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspDhcpReservationsCard extends ConsumerWidget {
-  final UspDashboardState state;
+  final UspDashboardState? state;
 
-  const UspDhcpReservationsCard({super.key, required this.state});
+  const UspDhcpReservationsCard({super.key, this.state});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = this.state ??
+        ref.watch(uspDashboardProvider).valueOrNull;
+    if (state == null) return const SizedBox.shrink();
     final reservations = state.dhcpReservationModels;
     final clients = state.dhcpClientModels;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
@@ -101,7 +104,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
           AppGap.sm(),
           Expanded(child: AppText.bodyMedium(reservation.mac)),
           SizedBox(
-            width: 130,
+            width: context.colWidth(2),
             child: AppText.bodySmall(
               reservation.ip,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -145,7 +148,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
             ),
           ),
           SizedBox(
-            width: 130,
+            width: context.colWidth(2),
             child: AppText.bodySmall(
               client.ip,
               color: colorScheme.onSurfaceVariant,
@@ -153,7 +156,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
           ),
           if (lease.isNotEmpty)
             SizedBox(
-              width: 70,
+              width: context.colWidth(1),
               child: AppText.bodySmall(
                 lease,
                 color: colorScheme.onSurfaceVariant,

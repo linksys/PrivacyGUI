@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/transforms.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_monitor_state.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -12,9 +13,9 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Combined System Status + Monitor card.
 /// Shows gauges (CPU/Memory), uptime, trend chart, and auto-refresh controls.
 class UspSystemStatusCard extends ConsumerWidget {
-  final SystemInfoUIModel info;
+  final SystemInfoUIModel? info;
 
-  const UspSystemStatusCard({super.key, required this.info});
+  const UspSystemStatusCard({super.key, this.info});
 
   static final _intervalOptions = <(Duration?, String)>[
     (null, 'Off'),
@@ -25,6 +26,9 @@ class UspSystemStatusCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final info = this.info ??
+        ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
+    if (info == null) return const SizedBox.shrink();
     final monitorState = ref.watch(uspSystemMonitorProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final latest = monitorState.latest;

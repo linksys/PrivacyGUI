@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A row of summary stat cards displayed at the top of the dashboard.
-class UspStatsPanel extends StatelessWidget {
-  final UspDashboardState state;
-  final List<DeviceUIModel> devices;
-
-  const UspStatsPanel({super.key, required this.state, required this.devices});
+class UspStatsPanel extends ConsumerWidget {
+  const UspStatsPanel({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(uspDashboardProvider).valueOrNull;
+    if (state == null) return const SizedBox.shrink();
+
+    final devices = state.deviceModels;
     final onlineCount = devices.where((d) => d.isActive).length;
     final nodeCount = state.nodeModels.length;
     final radioCount = state.wifiRadioModels.length;

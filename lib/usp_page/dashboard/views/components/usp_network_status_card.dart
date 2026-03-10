@@ -8,12 +8,15 @@ import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.d
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspNetworkStatusCard extends ConsumerWidget {
-  final WanStatusUIModel wan;
+  final WanStatusUIModel? wan;
 
-  const UspNetworkStatusCard({super.key, required this.wan});
+  const UspNetworkStatusCard({super.key, this.wan});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final wan = this.wan ??
+        ref.watch(uspDashboardProvider).valueOrNull?.wanStatusModel;
+    if (wan == null) return const SizedBox.shrink();
     final isRenewing = ref.watch(uspMutationLoadingProvider) == 'wanRenew';
 
     return AppCard(

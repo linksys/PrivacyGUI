@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A label–value row used throughout the USP Dashboard cards.
+///
+/// Uses the UI Kit 12-column grid system for responsive label sizing.
+/// [labelColumns] controls how many grid columns the label occupies
+/// (default 2, calculated via `context.colWidth()`).
 class UspInfoRow extends StatelessWidget {
   final String label;
   final String value;
-  final double labelWidth;
+  final int labelColumns;
 
   const UspInfoRow({
     super.key,
     required this.label,
     required this.value,
-    this.labelWidth = 160,
+    this.labelColumns = 2,
   });
 
   @override
@@ -21,7 +25,10 @@ class UspInfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: labelWidth, child: AppText.labelLarge(label)),
+          SizedBox(
+            width: context.colWidth(labelColumns),
+            child: AppText.labelLarge(label),
+          ),
           Expanded(child: AppText.bodyMedium(value)),
         ],
       ),
