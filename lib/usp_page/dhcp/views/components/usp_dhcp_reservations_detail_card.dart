@@ -81,7 +81,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
           AppGap.sm(),
           Expanded(child: AppText.bodyMedium(reservation.mac)),
           SizedBox(
-            width: 130,
+            width: context.colWidth(2),
             child: AppText.bodySmall(
               reservation.ip,
               color: Theme.of(context).colorScheme.onSurfaceVariant,

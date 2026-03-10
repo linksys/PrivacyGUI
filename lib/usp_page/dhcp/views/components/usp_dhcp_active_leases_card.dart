@@ -71,7 +71,7 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 130,
+            width: context.colWidth(2),
             child: AppText.bodySmall(
               client.ip,
               color: colorScheme.onSurfaceVariant,
@@ -79,7 +79,7 @@ class UspDhcpActiveLeasesCard extends StatelessWidget {
           ),
           if (lease.isNotEmpty)
             SizedBox(
-              width: 70,
+              width: context.colWidth(1),
               child: AppText.bodySmall(
                 lease,
                 color: colorScheme.onSurfaceVariant,

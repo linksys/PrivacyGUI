@@ -136,7 +136,8 @@ class UspAdminView extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Left column
-        Expanded(
+        SizedBox(
+          width: context.colWidth(6),
           child: Column(
             children: [
               UspTimezoneCard(
@@ -153,7 +154,8 @@ class UspAdminView extends ConsumerWidget {
         ),
         AppGap.gutter(),
         // Right column
-        Expanded(
+        SizedBox(
+          width: context.colWidth(6),
           child: Column(
             children: [
               UspPasswordCard(

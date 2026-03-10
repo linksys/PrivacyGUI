@@ -25,7 +25,7 @@ class UspWidgetFactory {
       'time_settings' => UspTimeSettingsCard(),
       'dhcp_reservations' => UspDhcpReservationsCard(),
       'port_forwarding' => UspPortForwardingCard(),
-      'connection_status' => UspConnectionStatusCard(),
+      'traffic_monitor' => UspTrafficMonitorCard(),
       _ => null,
     };
   }

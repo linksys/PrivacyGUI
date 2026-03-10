@@ -50,7 +50,7 @@ class UspDeviceListTile extends StatelessWidget {
             ),
           AppGap.sm(),
           SizedBox(
-            width: 130,
+            width: context.colWidth(2),
             child: AppText.bodySmall(
               device.ip,
               color: Theme.of(context).colorScheme.onSurfaceVariant,

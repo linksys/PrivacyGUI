@@ -169,6 +169,9 @@ class _UspSliverDashboardViewState
   // SliverDashboard Layout (Edit Mode) — fixed grid cells, drag-drop
   // ---------------------------------------------------------------------------
 
+  /// Fixed slot height in logical pixels.
+  static const _slotHeight = 120.0;
+
   Widget _buildSliverDashboard(BuildContext context) {
     final controller = ref.watch(uspSliverDashboardControllerProvider);
     final factory = ref.watch(uspWidgetFactoryProvider);
@@ -181,43 +184,52 @@ class _UspSliverDashboardViewState
       fillColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
     );
 
-    return DashboardOverlay(
-      controller: controller,
-      scrollController: scrollController,
-      itemBuilder: (context, item) {
-        return _buildItemWidget(context, item, _isEditMode, factory);
-      },
-      slotAspectRatio: 0.5,
-      mainAxisSpacing: AppSpacing.lg,
-      crossAxisSpacing: AppSpacing.lg,
-      padding: EdgeInsets.symmetric(horizontal: context.pageMargin),
-      gridStyle: _isEditMode ? editModeGridStyle : null,
-      onItemResizeEnd: (item) {
-        _handleResizeEnd(context, item);
-      },
-      child: CustomScrollView(
-        controller: scrollController,
-        slivers: [
-          SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: context.pageMargin),
-            sliver: SliverDashboard(
-              itemBuilder: (context, item) {
-                return _buildItemWidget(
-                    context, item, _isEditMode, factory);
-              },
-              slotAspectRatio: 0.5,
-              mainAxisSpacing: AppSpacing.lg,
-              crossAxisSpacing: AppSpacing.lg,
-              breakpoints: {0: uiKitColumns},
-              gridStyle: _isEditMode ? editModeGridStyle : null,
+    return LayoutBuilder(builder: (context, constraints) {
+      // slotAspectRatio = width / height, compute from fixed height
+      final pageMargin = context.pageMargin;
+      final availableWidth = constraints.maxWidth - pageMargin * 2;
+      final slotWidth =
+          (availableWidth - (uiKitColumns - 1) * AppSpacing.lg) / uiKitColumns;
+      final ratio = slotWidth / _slotHeight;
+
+      return DashboardOverlay(
+        controller: controller,
+        scrollController: scrollController,
+        itemBuilder: (context, item) {
+          return _buildItemWidget(context, item, _isEditMode, factory);
+        },
+        slotAspectRatio: ratio,
+        mainAxisSpacing: AppSpacing.lg,
+        crossAxisSpacing: AppSpacing.lg,
+        padding: EdgeInsets.symmetric(horizontal: pageMargin),
+        gridStyle: _isEditMode ? editModeGridStyle : null,
+        onItemResizeEnd: (item) {
+          _handleResizeEnd(context, item);
+        },
+        child: CustomScrollView(
+          controller: scrollController,
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: pageMargin),
+              sliver: SliverDashboard(
+                itemBuilder: (context, item) {
+                  return _buildItemWidget(
+                      context, item, _isEditMode, factory);
+                },
+                slotAspectRatio: ratio,
+                mainAxisSpacing: AppSpacing.lg,
+                crossAxisSpacing: AppSpacing.lg,
+                breakpoints: {0: uiKitColumns},
+                gridStyle: _isEditMode ? editModeGridStyle : null,
+              ),
             ),
-          ),
-          const SliverToBoxAdapter(
-            child: SizedBox(height: AppSpacing.md),
-          ),
-        ],
-      ),
-    );
+            const SliverToBoxAdapter(
+              child: SizedBox(height: AppSpacing.md),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   // ---------------------------------------------------------------------------

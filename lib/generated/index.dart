@@ -16,6 +16,7 @@ export 'ethernet_interfaces.g.dart';
 export 'wan_status.g.dart';
 export 'lan_network_info.g.dart';
 export 'dhcp_clients.g.dart';
+export 'wan_traffic_stats.g.dart';
 export 'dhcp_reservations.g.dart';
 export 'admin_users.g.dart';
 export 'port_triggering.g.dart';

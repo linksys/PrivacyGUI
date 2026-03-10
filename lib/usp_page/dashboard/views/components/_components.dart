@@ -1,7 +1,6 @@
 /// USP Dashboard components barrel file.
 library;
 
-export 'usp_connection_status_card.dart';
 export 'usp_dashboard_skeleton.dart';
 export 'usp_connected_devices_card.dart';
 export 'usp_device_info_card.dart';
@@ -17,4 +16,5 @@ export 'usp_stats_panel.dart';
 export 'usp_status_dot.dart';
 export 'usp_system_status_card.dart';
 export 'usp_time_settings_card.dart';
+export 'usp_traffic_monitor_card.dart';
 export 'usp_wifi_status_card.dart';

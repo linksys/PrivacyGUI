@@ -4,6 +4,7 @@ import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// USP Advanced Settings — a list of network configuration sub-pages.
@@ -15,30 +16,73 @@ class UspAdvancedSettingsView extends StatelessWidget {
     final items = _buildItems(context);
 
     return UiKitPageView.withSliver(
-      title: 'Advanced Settings',
       scrollable: true,
-      child: (context, constraints) => AppResponsiveLayout(
-        desktop: (ctx) => GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: AppSpacing.lg,
-            crossAxisSpacing: AppSpacing.lg,
-            childAspectRatio: (430 / 60),
-            mainAxisExtent: 60,
-          ),
-          physics: const ScrollPhysics(),
-          itemCount: items.length,
-          itemBuilder: (context, index) => _buildCard(items[index]),
-          shrinkWrap: true,
-        ),
-        mobile: (ctx) => ListView.separated(
-          itemCount: items.length,
-          shrinkWrap: true,
-          itemBuilder: (context, index) => _buildCard(items[index]),
-          separatorBuilder: (_, __) => AppGap.sm(),
-        ),
+      appBarStyle: UiKitAppBarStyle.none,
+      topbar: const PreferredSize(
+        preferredSize: Size.fromHeight(64),
+        child: UspTopBar(),
       ),
+      backState: UiKitBackState.none,
+      padding:
+          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      child: (childContext, constraints) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context),
+            AppGap.xl(),
+            AppResponsiveLayout(
+              mobile: (_) => _buildMobileList(items),
+              desktop: (_) => _buildDesktopGrid(items),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        AppIconButton(
+          icon: AppIcon.font(Icons.arrow_back),
+          onTap: () => context.canPop()
+              ? context.pop()
+              : context.goNamed(RouteNamed.uspMenu),
+        ),
+        AppGap.md(),
+        AppText.headlineSmall('Advanced Settings'),
+      ],
+    );
+  }
+
+  Widget _buildMobileList(List<AppSectionItemData> items) {
+    return Column(
+      children: items
+          .map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _buildCard(item),
+              ))
+          .toList(),
+    );
+  }
+
+  Widget _buildDesktopGrid(List<AppSectionItemData> items) {
+    final rows = <Widget>[];
+    for (var i = 0; i < items.length; i += 2) {
+      final left = Expanded(child: _buildCard(items[i]));
+      final right = i + 1 < items.length
+          ? Expanded(child: _buildCard(items[i + 1]))
+          : const Expanded(child: SizedBox.shrink());
+      rows.add(Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [left, AppGap.gutter(), right],
+        ),
+      ));
+    }
+    return Column(children: rows);
   }
 
   List<AppSectionItemData> _buildItems(BuildContext context) {

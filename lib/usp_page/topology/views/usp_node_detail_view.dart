@@ -100,9 +100,15 @@ class UspNodeDetailView extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _buildNodeInfoCard(context, node)),
+        SizedBox(
+          width: context.colWidth(6),
+          child: _buildNodeInfoCard(context, node),
+        ),
         AppGap.gutter(),
-        Expanded(child: _buildConnectedDevicesCard(context, detail)),
+        SizedBox(
+          width: context.colWidth(6),
+          child: _buildConnectedDevicesCard(context, detail),
+        ),
       ],
     );
   }
@@ -199,7 +205,7 @@ class UspNodeDetailView extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 150,
+            width: context.colWidth(2),
             child: AppText.labelLarge(label),
           ),
           Expanded(

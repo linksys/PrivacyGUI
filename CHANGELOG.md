@@ -31,9 +31,19 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Increase dashboard topology card client-node spacing (`nodeSpacing * 1.4`, `orbitRadius * 1.4`)
 - Wrap TR-181 autocomplete and generated path data in `kDebugMode` for production size protection
 
+#### Real-Time Traffic Monitor (F-018)
+- Add `WanTrafficStats` codegen definition — `Device.IP.Interface.2.Stats.{BytesSent,BytesReceived,PacketsSent,PacketsReceived}`
+- Add `UspTrafficMonitorCard` with dual-line chart (upload primary / download secondary), auto-scaled Y-axis, gradient fill
+- Add `UspTrafficMonitorNotifier` — 2s default polling interval, delta-based rate calculation, 60-point ring buffer
+- Add `TrafficMonitorState` / `TrafficSnapshot` state model following SystemMonitor pattern
+- Speed display with auto-scaled units (B/s → KB/s → MB/s → GB/s), cumulative totals via `Transforms.formatBytes`
+- Interval selector (Off / 2s / 5s / 10s) matching SystemStatus card pattern
+- Register in `UspWidgetSpecs` (6×4), `UspWidgetFactory`, default layout next to System Status
+
 #### Dashboard Custom Layout (SliverDashboard)
 - Add drag-drop / resize dashboard with `sliver_dashboard` — `UspSliverDashboardView`, `DashboardOverlay`, edit mode with jiggle animation
-- Default 2-column grid layout (`slotAspectRatio: 0.5`, 12-column, w=6 per card)
+- Fixed slot height (120px per row) via dynamic `slotAspectRatio` calculation using `LayoutBuilder`
+- Default 2-column grid layout (12-column, w=6 per card)
 - Add `UspWidgetSpecs` — per-card `WidgetGridConstraints` (min/max columns, height rows, `HeightStrategy`)
 - Add `UspWidgetFactory` — ID → Widget mapping for grid item builder
 - Add `UspLayoutController` — SharedPreferences persistence for layout & edit mode state
@@ -44,6 +54,7 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Increase `SystemStatus` card height (h=3→4) to accommodate gauges + chart
 - Header buttons switch between normal (print/refresh/edit) and edit mode (optimize/tune/cancel/save)
 - Add `UspDashboardSkeleton` with paired-row layout matching grid structure
+- Remove `UspConnectionStatusCard` (redundant with Stats Panel)
 
 #### Dashboard Layout & Topology Improvements
 - Ethernet Ports: Show one LAN port entry per active wired device instead of single aggregate (switch chip limitation — TR-181 only exposes 1 LAN `Ethernet.Interface` for 3 physical ports)
@@ -62,6 +73,9 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Add `WanStatus` YAML definition + `UspNetworkStatusCard` with WAN IP, gateway, MTU, IPv6 display
 - Redesign `UspStatsPanel` summary row layout
 - Add dashboard skeleton loading animation during initial fetch
+- Refactor USP navigation to shared `MenuHolder` pattern — `MenuController` with configurable `navigatorKey` + `pathResolver`, `NaviType.resolveUspPath()`, delete `UspNavTab`
+- Fix MenuHolder theme: prefer inherited dark theme from parent context, fallback to getIt for JNAP compatibility
+- Fix Advanced Settings page styling — add `UspTopBar`, back button header, responsive 2-column layout
 - Fix shell/topbar theme design style reactivity (`AppDesignTheme` listener)
 - Fix `EthernetInterface.Upstream` boolean coercion for integer 0/1 values
 - Add USP Bridge Client turbo HTTP session support (start/heartbeat/status/release)

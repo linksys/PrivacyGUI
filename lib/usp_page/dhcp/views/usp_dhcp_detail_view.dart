@@ -130,11 +130,13 @@ class UspDhcpDetailView extends ConsumerWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            SizedBox(
+              width: context.colWidth(6),
               child: UspDhcpActiveLeasesCard(clients: state.dhcpClientModels),
             ),
             AppGap.gutter(),
-            Expanded(
+            SizedBox(
+              width: context.colWidth(6),
               child: UspDhcpReservationsDetailCard(
                   reservations: state.dhcpReservationModels),
             ),

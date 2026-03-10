@@ -12,9 +12,9 @@ import 'package:ui_kit_library/ui_kit.dart';
 final menuController = Provider((ref) => MenuController());
 
 class MenuHolder extends ConsumerStatefulWidget {
-  // final Widget Function(BuildContext, MenuController) builder;
   final MenuDisplay type;
-  const MenuHolder({super.key, required this.type});
+  final Provider<MenuController>? controllerProvider;
+  const MenuHolder({super.key, required this.type, this.controllerProvider});
 
   @override
   ConsumerState<MenuHolder> createState() => MenuHolderState();
@@ -27,7 +27,7 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
   @override
   void initState() {
     super.initState();
-    _controller = ref.read(menuController);
+    _controller = ref.read(widget.controllerProvider ?? menuController);
   }
 
   @override
@@ -66,9 +66,10 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
 
     const autoHide = false; //LinksysRoute.autoHideNaviRail(context);
     final showNavi = LinksysRoute.isShowNaviRail(context, pageRoute?.config);
+    final naviKey = _controller.navigatorKey ?? shellNavigatorKey;
     Future.doWhile(() => !mounted).then((value) {
       MenuDisplay displayType;
-      if (shellNavigatorKey.currentContext == null || autoHide || !showNavi) {
+      if (naviKey.currentContext == null || autoHide || !showNavi) {
         displayType = MenuDisplay.none;
       } else {
         if (context.mounted) {
@@ -114,6 +115,11 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
 }
 
 class MenuController {
+  final GlobalKey<NavigatorState>? navigatorKey;
+  final String Function(NaviType)? pathResolver;
+
+  MenuController({this.navigatorKey, this.pathResolver});
+
   final ValueNotifier<NavigationMenus> _menuNotifier = ValueNotifier(
     const NavigationMenus(
       items: NaviType.values,
@@ -141,8 +147,10 @@ class MenuController {
   }
 
   void select(NaviType type) {
-    shellNavigatorKey.currentContext!.goNamed(
-      type.resolvePath(),
+    final key = navigatorKey ?? shellNavigatorKey;
+    final path = pathResolver?.call(type) ?? type.resolvePath();
+    key.currentContext!.goNamed(
+      path,
       extra: type,
     );
   }

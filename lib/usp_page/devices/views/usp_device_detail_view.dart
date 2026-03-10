@@ -102,7 +102,8 @@ class UspDeviceDetailView extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
+        SizedBox(
+          width: context.colWidth(6),
           child: Column(
             children: [
               _buildDeviceInfoCard(context, device),
@@ -112,7 +113,8 @@ class UspDeviceDetailView extends ConsumerWidget {
           ),
         ),
         AppGap.gutter(),
-        Expanded(
+        SizedBox(
+          width: context.colWidth(6),
           child: _buildDhcpCard(context, ref, device, detail, isLoading),
         ),
       ],
@@ -178,7 +180,7 @@ class UspDeviceDetailView extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: 130,
+                      width: context.colWidth(2),
                       child: AppText.labelLarge('Signal'),
                     ),
                     UspSignalStrengthIndicator(
@@ -281,7 +283,7 @@ class UspDeviceDetailView extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 130,
+            width: context.colWidth(2),
             child: AppText.labelLarge(label),
           ),
           Expanded(

@@ -49,11 +49,11 @@ class _BottomNavigationMenuState extends State<BottomNavigationMenu> {
         .map((e) => _createNavItem(e))
         .toList();
 
-    // Watch Theme.of(context) to trigger rebuild when global theme changes
-    Theme.of(context);
-
-    // Force dark theme for AppNavigationBar
-    final darkTheme = getIt.get<ThemeData>(instanceName: 'darkThemeData');
+    // Prefer inherited dark theme (e.g. USP demo config); fall back to getIt
+    final parentTheme = Theme.of(context);
+    final darkTheme = parentTheme.brightness == Brightness.dark
+        ? parentTheme
+        : getIt.get<ThemeData>(instanceName: 'darkThemeData');
     return Theme(
       data: darkTheme,
       child: AppNavigationBar(

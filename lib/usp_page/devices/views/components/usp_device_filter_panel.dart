@@ -4,7 +4,7 @@ import 'package:privacy_gui/usp_page/devices/providers/device_filter_provider.da
 import 'package:privacy_gui/usp_page/devices/providers/device_filter_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Desktop filter panel — vertical sidebar (fixed width 220).
+/// Desktop filter panel — vertical sidebar sized to 3 grid columns.
 class UspDeviceFilterPanel extends ConsumerWidget {
   const UspDeviceFilterPanel({super.key});
 
@@ -14,7 +14,7 @@ class UspDeviceFilterPanel extends ConsumerWidget {
     final options = ref.watch(deviceFilterOptionsProvider);
 
     return SizedBox(
-      width: 220,
+      width: context.colWidth(3),
       child: AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

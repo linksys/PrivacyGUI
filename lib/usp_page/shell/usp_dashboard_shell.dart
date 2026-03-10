@@ -1,18 +1,26 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide MenuController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
+import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
-import 'package:privacy_gui/usp_page/shell/usp_nav_tab.dart';
-import 'package:ui_kit_library/ui_kit.dart';
+import 'package:privacy_gui/route/router_provider.dart';
+
+/// Riverpod provider for the USP-specific [MenuController].
+///
+/// Uses [uspShellNavigatorKey] and [NaviType.resolveUspPath] so that tab
+/// selection navigates to USP routes instead of JNAP routes.
+final uspMenuController = Provider((ref) => MenuController(
+      navigatorKey: uspShellNavigatorKey,
+      pathResolver: (type) => type.resolveUspPath(),
+    ));
 
 /// USP Dashboard shell — wraps USP child routes with a shared Scaffold.
 ///
-/// Parallel to the JNAP [DashboardShell] but independent of JNAP providers.
-/// Shows a bottom navigation bar on mobile; desktop uses chip navigation
-/// in [UspTopBar] instead.
+/// Uses the shared [MenuHolder] widget (same as JNAP) with the USP-specific
+/// [uspMenuController] so that tab selection targets USP routes.
 class UspDashboardShell extends ConsumerWidget {
   final Widget child;
 
@@ -20,19 +28,6 @@ class UspDashboardShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isMobile = context.isMobileLayout;
-    final uri = GoRouterState.of(context).uri.toString();
-    final activeTab = UspNavTab.fromUri(uri);
-
-    return Scaffold(
-      body: child,
-      bottomNavigationBar:
-          isMobile ? _buildBottomNav(context, ref, activeTab) : null,
-    );
-  }
-
-  Widget _buildBottomNav(
-      BuildContext context, WidgetRef ref, UspNavTab activeTab) {
     // Build dark theme reactively from current design style
     final demoConfig = ref.watch(demoThemeConfigProvider);
     final themeConfig = ref.watch(themeConfigProvider).valueOrNull;
@@ -46,21 +41,14 @@ class UspDashboardShell extends ConsumerWidget {
       userThemeColor: userThemeColor,
     );
 
-    const tabs = UspNavTab.values;
-
-    return Theme(
-      data: darkTheme,
-      child: AppNavigationBar(
-        currentIndex: tabs.indexOf(activeTab),
-        items: tabs
-            .map((tab) => AppNavigationItem(
-                  icon: Icon(tab.icon),
-                  label: tab.label(context),
-                ))
-            .toList(),
-        onTap: (index) {
-          context.goNamed(tabs[index].routeName);
-        },
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: Theme(
+        data: darkTheme,
+        child: MenuHolder(
+          type: MenuDisplay.bottom,
+          controllerProvider: uspMenuController,
+        ),
       ),
     );
   }
