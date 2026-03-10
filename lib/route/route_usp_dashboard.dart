@@ -68,19 +68,52 @@ final uspDashboardRoute = ShellRoute(
       builder: (context, state) => const UspDhcpDetailView(),
     ),
     LinksysRoute(
-      name: RouteNamed.uspPortForwardingDetail,
-      path: RoutePath.uspPortForwardingDetail,
-      builder: (context, state) => const UspPortForwardingDetailView(),
-    ),
-    LinksysRoute(
       name: RouteNamed.uspSystemLog,
       path: RoutePath.uspSystemLog,
       builder: (context, state) => const UspSystemLogView(),
     ),
     LinksysRoute(
-      name: RouteNamed.uspFirewall,
-      path: RoutePath.uspFirewall,
-      builder: (context, state) => const UspFirewallView(),
+      name: RouteNamed.uspAdvancedSettings,
+      path: RoutePath.uspAdvancedSettings,
+      builder: (context, state) => const UspAdvancedSettingsView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.uspLocalNetwork,
+          path: RouteNamed.uspLocalNetwork,
+          builder: (context, state) => const UspLocalNetworkView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspFirewall,
+          path: RouteNamed.uspFirewall,
+          builder: (context, state) => const UspFirewallView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspDmz,
+          path: RouteNamed.uspDmz,
+          builder: (context, state) => const UspDmzView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspPortForwardingDetail,
+          path: RouteNamed.uspPortForwardingDetail,
+          builder: (context, state) => const UspPortForwardingDetailView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspStaticRouting,
+          path: RouteNamed.uspStaticRouting,
+          builder: (context, state) => const UspStaticRoutingView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspIpv6PortService,
+          path: RouteNamed.uspIpv6PortService,
+          builder: (context, state) => const UspIpv6PortServiceView(),
+        ),
+      ],
     ),
+    if (kDebugMode)
+      LinksysRoute(
+        name: RouteNamed.uspTestConsole,
+        path: RoutePath.uspTestConsole,
+        builder: (context, state) => const UspTestConsoleView(),
+      ),
   ],
 );

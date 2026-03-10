@@ -28,7 +28,12 @@ class EthernetInterfaces {
 
   const EthernetInterfaces({required this.items});
 
-  static const _paths = ['Device.Ethernet.Interface.'];
+  static const _paths = [
+    'Device.Ethernet.Interface.*.Name',
+    'Device.Ethernet.Interface.*.Status',
+    'Device.Ethernet.Interface.*.Upstream',
+    'Device.Ethernet.Interface.*.CurrentBitRate',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<EthernetInterfaces> fetch(UspService client) async {
@@ -51,11 +56,12 @@ class EthernetInterfaces {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}Name'], response['${p}Status'], response['${p}Upstream'], response['${p}CurrentBitRate']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(EthernetInterface(
         instancePath: p,
         name: (response['${p}Name'] ?? '') as String,
         status: (response['${p}Status'] ?? '') as String,
-        upstream: response['${p}Upstream'] == true || response['${p}Upstream'] == 'true',
+        upstream: response['${p}Upstream'] == true || response['${p}Upstream'] == 'true' || response['${p}Upstream'] == '1',
         currentBitRate: int.tryParse(response['${p}CurrentBitRate']?.toString() ?? '') ?? 0,
       ));
     }

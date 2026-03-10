@@ -14,12 +14,11 @@
 
 name: wifi_clients
 version: 1.0.0
-base_path: Device.WiFi.AccessPoint
+multiInstance: Device.WiFi.AccessPoint.
 category: devices
 description: WiFi clients across all access points (flattened view)
-multi_instance: true
-singular_name: wifi_client
-nested_path: .AssociatedDevice.
+singularName: wifi_client
+nestedPath: .AssociatedDevice.
 flatten: true
 
 parameters:

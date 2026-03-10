@@ -37,11 +37,11 @@ class WanStatus {
 
   factory WanStatus._fromResponse(Map<String, dynamic> response) {
     return WanStatus(
-      status: response['Device.IP.Interface.2.Status'] as String,
-      ipAddress: response['Device.IP.Interface.2.IPv4Address.1.IPAddress'] as String,
-      subnetMask: response['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] as String,
-      addressingType: response['Device.IP.Interface.2.IPv4Address.1.AddressingType'] as String,
-      maxMtuSize: int.parse(response['Device.IP.Interface.2.MaxMTUSize'] as String),
+      status: (response['Device.IP.Interface.2.Status'] ?? '') as String,
+      ipAddress: (response['Device.IP.Interface.2.IPv4Address.1.IPAddress'] ?? '') as String,
+      subnetMask: (response['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] ?? '') as String,
+      addressingType: (response['Device.IP.Interface.2.IPv4Address.1.AddressingType'] ?? '') as String,
+      maxMtuSize: int.tryParse(response['Device.IP.Interface.2.MaxMTUSize']?.toString() ?? '') ?? 0,
     );
   }
 

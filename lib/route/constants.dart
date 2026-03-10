@@ -36,6 +36,12 @@ class RoutePath {
   static const uspPortForwardingDetail = '/uspPortForwardingDetail';
   static const uspSystemLog = '/uspSystemLog';
   static const uspFirewall = '/uspFirewall';
+  static const uspDmz = '/uspDmz';
+  static const uspLocalNetwork = '/uspLocalNetwork';
+  static const uspStaticRouting = '/uspStaticRouting';
+  static const uspAdvancedSettings = '/uspAdvancedSettings';
+  static const uspIpv6PortService = '/uspIpv6PortService';
+  static const uspTestConsole = '/uspTestConsole';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -185,6 +191,12 @@ class RouteNamed {
   static const uspPortForwardingDetail = 'uspPortForwardingDetail';
   static const uspSystemLog = 'uspSystemLog';
   static const uspFirewall = 'uspFirewall';
+  static const uspDmz = 'uspDmz';
+  static const uspLocalNetwork = 'uspLocalNetwork';
+  static const uspStaticRouting = 'uspStaticRouting';
+  static const uspAdvancedSettings = 'uspAdvancedSettings';
+  static const uspIpv6PortService = 'uspIpv6PortService';
+  static const uspTestConsole = 'uspTestConsole';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';

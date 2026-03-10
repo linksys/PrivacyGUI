@@ -1,0 +1,70 @@
+# IPv6 Port Service — firewall rules for IPv6 inbound port access
+# SSH-verified 2026-03-10 via bbfdm Device.Firewall.Chain.1.Rule.{i}.*
+# Same table as firewall_chain_rules.yaml but with extended fields
+# for IPv6 port service management (add/edit/delete user rules).
+#
+# Separate from firewall_chain_rules.yaml which only needs Enable/Description/Target
+# for the SPI/VPN/filter toggle page.
+
+name: Ipv6PortService
+singularName: Ipv6PortServiceRule
+version: 1.0.0
+multiInstance: Device.Firewall.Chain.1.Rule.
+category: firewall
+description: IPv6 port service rules (firewall chain rules with port/protocol fields)
+type: add
+
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+    writable: true
+    description: Whether this rule is active
+
+  - field_name: description
+    path: .Description
+    type: string
+    writable: true
+    description: Rule name / application description
+
+  - field_name: ip_version
+    path: .IPVersion
+    type: int
+    writable: true
+    description: IP version filter (4=IPv4, 6=IPv6, -1=Any)
+
+  - field_name: dest_ip
+    path: .DestIP
+    type: string
+    writable: true
+    description: Destination IPv6 address
+
+  - field_name: dest_port
+    path: .DestPort
+    type: int
+    writable: true
+    description: Destination port number (-1 means any)
+
+  - field_name: dest_port_range_max
+    path: .DestPortRangeMax
+    type: int
+    writable: true
+    description: End of destination port range (-1 or same as destPort means single port)
+
+  - field_name: protocol
+    path: .Protocol
+    type: int
+    writable: true
+    description: IANA protocol number (6=TCP, 17=UDP, 255=all protocols)
+
+  - field_name: target
+    path: .Target
+    type: string
+    writable: true
+    description: Rule action (Accept or Drop). User IPv6 port rules are always Accept
+
+  - field_name: creation_date
+    path: .CreationDate
+    type: string
+    writable: false
+    description: Rule creation timestamp. System rules have zero date (0001-01-01T00:00:00Z)

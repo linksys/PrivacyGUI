@@ -1,5 +1,5 @@
 name: LanNetworkInfo
-version: 1.0.0
+version: 1.1.0
 category: network
 description: LAN IP configuration and DHCP server pool settings
 
@@ -7,30 +7,47 @@ parameters:
   - field_name: ip_address
     path: Device.IP.Interface.1.IPv4Address.1.IPAddress
     type: string
+    writable: true
     description: Router LAN IP address
 
   - field_name: subnet_mask
     path: Device.IP.Interface.1.IPv4Address.1.SubnetMask
     type: string
+    writable: true
     description: LAN subnet mask
 
   - field_name: dhcp_enabled
     path: Device.DHCPv4.Server.Pool.1.Enable
     type: boolean
+    writable: true
     description: Whether the DHCP server is enabled
 
   - field_name: min_address
     path: Device.DHCPv4.Server.Pool.1.MinAddress
     type: string
+    writable: true
     description: DHCP pool start address
 
   - field_name: max_address
     path: Device.DHCPv4.Server.Pool.1.MaxAddress
     type: string
+    writable: true
     description: DHCP pool end address
+
+  - field_name: lease_time
+    path: Device.DHCPv4.Server.Pool.1.LeaseTime
+    type: int
+    writable: true
+    description: DHCP lease time in seconds
 
   - field_name: dns_servers
     path: Device.DHCPv4.Server.Pool.1.DNSServers
     type: string
     writable: true
     description: Comma-separated list of DNS server IP addresses
+
+  - field_name: host_name
+    path: Device.DeviceInfo.HostName
+    type: string
+    writable: true
+    description: Router hostname

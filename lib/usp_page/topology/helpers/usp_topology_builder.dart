@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
@@ -26,12 +28,16 @@ class UspTopologyBuilder {
         ? meshNodes.first.deviceId
         : 'gateway';
 
+    final gatewayIconName = routerIconTestByModel(
+      modelNumber: info.modelName,
+      hardwareVersion: info.hardwareVersion,
+    );
     nodes.add(MeshNode(
       id: gatewayId,
       name: info.gatewayName,
       type: MeshNodeType.gateway,
       status: MeshNodeStatus.online,
-      iconData: Icons.router,
+      image: DeviceImageHelper.getRouterImage(gatewayIconName),
       extra: info.manufacturer,
       level: 1.0,
       metadata: {'deviceId': gatewayDeviceId},
@@ -46,6 +52,9 @@ class UspTopologyBuilder {
         final extenderId = 'extender-${meshNode.deviceId}';
         extenderNodeIds.add(meshNode.deviceId);
 
+        final extenderIconName = routerIconTestByModel(
+          modelNumber: meshNode.model,
+        );
         nodes.add(MeshNode(
           id: extenderId,
           name: meshNode.model.isNotEmpty
@@ -54,7 +63,7 @@ class UspTopologyBuilder {
           type: MeshNodeType.extender,
           status: MeshNodeStatus.online,
           parentId: gatewayId,
-          iconData: Icons.router,
+          image: DeviceImageHelper.getRouterImage(extenderIconName),
           level: 0.8,
           metadata: {'deviceId': meshNode.deviceId},
         ));

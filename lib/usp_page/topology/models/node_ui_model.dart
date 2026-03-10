@@ -11,7 +11,6 @@ class NodeUIModel extends Equatable {
   final String manufacturer;
   final String serialNumber;
   final String softwareVersion;
-  final int radioCount;
   final bool isMaster; // First node in DataElements = gateway
   final int connectedDeviceCount; // Devices connected to this node
 
@@ -21,7 +20,6 @@ class NodeUIModel extends Equatable {
     this.manufacturer = '',
     this.serialNumber = '',
     this.softwareVersion = '',
-    this.radioCount = 0,
     this.isMaster = false,
     this.connectedDeviceCount = 0,
   });
@@ -39,7 +37,6 @@ class NodeUIModel extends Equatable {
         manufacturer,
         serialNumber,
         softwareVersion,
-        radioCount,
         isMaster,
         connectedDeviceCount,
       ];

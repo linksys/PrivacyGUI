@@ -41,7 +41,11 @@ class DhcpReservations {
 
   const DhcpReservations({required this.items});
 
-  static const _paths = ['Device.DHCPv4.Server.Pool.1.StaticAddress.'];
+  static const _paths = [
+    'Device.DHCPv4.Server.Pool.1.StaticAddress.*.Enable',
+    'Device.DHCPv4.Server.Pool.1.StaticAddress.*.Chaddr',
+    'Device.DHCPv4.Server.Pool.1.StaticAddress.*.Yiaddr',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<DhcpReservations> fetch(UspService client) async {
@@ -64,9 +68,10 @@ class DhcpReservations {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}Enable'], response['${p}Chaddr'], response['${p}Yiaddr']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(DhcpReservation(
         instancePath: p,
-        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true' || response['${p}Enable'] == '1',
         chaddr: (response['${p}Chaddr'] ?? '') as String,
         yiaddr: (response['${p}Yiaddr'] ?? '') as String,
       ));

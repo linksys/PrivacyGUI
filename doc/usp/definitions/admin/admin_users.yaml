@@ -1,24 +1,23 @@
 name: AdminUsers
 singularName: AdminUser
 version: 1.0.0
-base_path: Device.Users.User
+multiInstance: Device.Users.User.
 category: admin
 description: Router admin user accounts (multi-instance)
-multi_instance: true
 
 parameters:
   - field_name: username
-    path: Username
+    path: .Username
     type: string
     description: User login name
 
   - field_name: password
-    path: Password
+    path: .Password
     type: string
     writable: true
     description: User password (write-only — returns null on read)
 
   - field_name: enable
-    path: Enable
+    path: .Enable
     type: boolean
     description: Whether user account is enabled

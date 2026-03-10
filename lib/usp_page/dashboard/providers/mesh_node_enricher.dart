@@ -13,7 +13,6 @@ class MeshNodeInfo {
   final String manufacturer; // Manufacturer
   final String serialNumber; // SerialNumber
   final String softwareVersion; // SoftwareVersion
-  final int radioCount;
 
   const MeshNodeInfo({
     required this.instancePath,
@@ -22,7 +21,6 @@ class MeshNodeInfo {
     this.manufacturer = '',
     this.serialNumber = '',
     this.softwareVersion = '',
-    required this.radioCount,
   });
 }
 
@@ -103,7 +101,6 @@ MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
       manufacturer: node.manufacturer.trim(),
       serialNumber: node.serialNumber.trim(),
       softwareVersion: node.softwareVersion.trim(),
-      radioCount: node.radios.length,
     ));
   }
 

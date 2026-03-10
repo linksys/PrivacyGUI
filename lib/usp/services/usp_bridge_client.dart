@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
 
@@ -11,6 +12,9 @@ import 'usp_service.dart';
 ///
 /// Uses the JWT session token from [UspService] for authentication.
 /// Handles: Health, SSE Notifications, Subscription, Turbo Channel.
+///
+/// All REST endpoints are wrapped with 401 retry logic that delegates
+/// re-authentication to [UspService.reauth].
 class UspBridgeClient {
   final UspService _usp;
 
@@ -21,8 +25,7 @@ class UspBridgeClient {
   String get _token {
     final token = _usp.sessionToken;
     if (token == null) {
-      throw StateError(
-          'Session token not available. '
+      throw StateError('Session token not available. '
           'Ensure the WASM client exports sessionToken() and login is complete.');
     }
     return token;
@@ -34,16 +37,35 @@ class UspBridgeClient {
       };
 
   // ══════════════════════════════════════════════════════════════════════════
+  // 401 Auth Retry (REST path)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Wraps a REST request with 401 retry. On 401, delegates to
+  /// [UspService.reauth] (shared Completer lock) then retries once.
+  Future<T> _withAuthRetry<T>(
+    Future<http.Response> Function() request,
+    T Function(http.Response) parser,
+  ) async {
+    var response = await request();
+    if (response.statusCode == 401) {
+      debugPrint('[UspBridgeClient] 401 detected, triggering reauth...');
+      await _usp.reauth();
+      response = await request();
+    }
+    return parser(response);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   // Health
   // ══════════════════════════════════════════════════════════════════════════
 
   /// Calls GET /api/v1/health.
   Future<Map<String, dynamic>> health() async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/api/v1/health'),
-      headers: _authHeaders,
+    return _withAuthRetry(
+      () =>
+          http.get(Uri.parse('$_baseUrl/api/v1/health'), headers: _authHeaders),
+      (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
-    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -73,10 +95,12 @@ class UspBridgeClient {
   /// Quick diagnostic: hit the SSE endpoint with a regular http.get
   /// to check if it's reachable (will buffer and timeout for SSE streams).
   Future<Map<String, String>> notificationsProbe() async {
-    final response = await http.get(
+    final response = await http
+        .get(
       Uri.parse('$_baseUrl/api/v1/notifications'),
       headers: _authHeaders,
-    ).timeout(const Duration(seconds: 5), onTimeout: () {
+    )
+        .timeout(const Duration(seconds: 5), onTimeout: () {
       return http.Response('(timeout after 5s - expected for SSE)', 200);
     });
     return {
@@ -122,6 +146,19 @@ class UspBridgeClient {
           'type=${response.type} headers.content-type=${response.headers.get('content-type')}');
 
       if (!response.ok) {
+        if (response.status == 401) {
+          debug('401 detected, attempting reauth and reconnect...');
+          try {
+            await _usp.reauth();
+            debug('Reauth succeeded, reconnecting SSE...');
+            await _startSseStream(controller, abortController);
+          } catch (e) {
+            debug('Reauth failed: $e');
+            controller.addError('SSE 401 reauth failed: $e');
+            await controller.close();
+          }
+          return;
+        }
         controller.addError(
             'SSE connection failed: ${response.status} ${response.statusText}');
         await controller.close();
@@ -157,7 +194,8 @@ class UspBridgeClient {
 
         chunkCount++;
         final chunk = decoder.decode(jsValue as web.AllowSharedBufferSource);
-        debug('Chunk #$chunkCount (${chunk.length} chars): ${chunk.length > 200 ? '${chunk.substring(0, 200)}...' : chunk}');
+        debug(
+            'Chunk #$chunkCount (${chunk.length} chars): ${chunk.length > 200 ? '${chunk.substring(0, 200)}...' : chunk}');
         buffer += chunk;
 
         // Parse SSE frames: double newline separates events
@@ -228,32 +266,36 @@ class UspBridgeClient {
     required String path,
     required int notifType,
   }) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/api/v1/subscription'),
-      headers: _authHeaders,
-      body: jsonEncode({
-        'action': 'register',
-        'subscription_id': subscriptionId,
-        'path': path,
-        'type': notifType,
-      }),
+    return _withAuthRetry(
+      () => http.post(
+        Uri.parse('$_baseUrl/api/v1/subscription'),
+        headers: _authHeaders,
+        body: jsonEncode({
+          'action': 'register',
+          'subscription_id': subscriptionId,
+          'path': path,
+          'type': notifType,
+        }),
+      ),
+      (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
-    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   /// Unregisters an existing subscription.
   Future<Map<String, dynamic>> unsubscribe({
     required String subscriptionId,
   }) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/api/v1/subscription'),
-      headers: _authHeaders,
-      body: jsonEncode({
-        'action': 'unregister',
-        'subscription_id': subscriptionId,
-      }),
+    return _withAuthRetry(
+      () => http.post(
+        Uri.parse('$_baseUrl/api/v1/subscription'),
+        headers: _authHeaders,
+        body: jsonEncode({
+          'action': 'unregister',
+          'subscription_id': subscriptionId,
+        }),
+      ),
+      (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
-    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -272,11 +314,11 @@ class UspBridgeClient {
 
   /// Gets the current turbo channel status.
   Future<Map<String, dynamic>> turboStatus() async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl/api/v1/turbo/status'),
-      headers: _authHeaders,
+    return _withAuthRetry(
+      () => http.get(Uri.parse('$_baseUrl/api/v1/turbo/status'),
+          headers: _authHeaders),
+      (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
-    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   /// Releases the turbo channel.
@@ -285,11 +327,11 @@ class UspBridgeClient {
   }
 
   Future<Map<String, dynamic>> _turboPost(String action) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/api/v1/turbo/$action'),
-      headers: _authHeaders,
+    return _withAuthRetry(
+      () => http.post(Uri.parse('$_baseUrl/api/v1/turbo/$action'),
+          headers: _authHeaders),
+      (r) => jsonDecode(r.body) as Map<String, dynamic>,
     );
-    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 }
 

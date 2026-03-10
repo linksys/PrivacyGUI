@@ -40,12 +40,12 @@ class TimeSettings {
 
   factory TimeSettings._fromResponse(Map<String, dynamic> response) {
     return TimeSettings(
-      enable: response['Device.Time.Enable'] == true,
-      status: response['Device.Time.Status'] as String,
-      ntpServer1: response['Device.Time.NTPServer1'] as String,
-      ntpServer2: response['Device.Time.NTPServer2'] as String,
-      localTimeZone: response['Device.Time.LocalTimeZone'] as String,
-      currentLocalTime: response['Device.Time.CurrentLocalTime'] as String,
+      enable: response['Device.Time.Enable'] == true || response['Device.Time.Enable'] == 'true' || response['Device.Time.Enable'] == '1',
+      status: (response['Device.Time.Status'] ?? '') as String,
+      ntpServer1: (response['Device.Time.NTPServer1'] ?? '') as String,
+      ntpServer2: (response['Device.Time.NTPServer2'] ?? '') as String,
+      localTimeZone: (response['Device.Time.LocalTimeZone'] ?? '') as String,
+      currentLocalTime: (response['Device.Time.CurrentLocalTime'] ?? '') as String,
     );
   }
 

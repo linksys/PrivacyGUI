@@ -22,7 +22,9 @@ class UspAuthCoordinator {
   final UspService? _usp;
   final FlutterSecureStorage _storage;
 
-  UspAuthCoordinator(this._usp, this._storage);
+  UspAuthCoordinator(this._usp, this._storage) {
+    _usp?.onReauthRequired = () => restoreSession();
+  }
 
   /// Called after JNAP localLogin succeeds — auto-sync USP authentication.
   Future<void> syncAfterLocalLogin(String password) async {

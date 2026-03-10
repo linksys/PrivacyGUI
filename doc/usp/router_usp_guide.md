@@ -1,8 +1,8 @@
 # Router USP 使用指南
 
 **適用機型:** Linksys M60TB-EU (PINNACLE 2.0)
-**韌體版本:** 1.0.14.26013014
-**最後驗證:** 2026-03-03
+**韌體版本:** 1.0.16.26013014（前版 1.0.14.26013014）
+**最後驗證:** 2026-03-09
 **TR-181 版本:** v2.18.1
 
 ---
@@ -286,17 +286,12 @@ curl -k -s -o /dev/null -w "%{http_code}" \
 
 ## 5. SSE 通知與 Subscribe
 
-> **驗證日期:** 2026-03-03
+> **驗證日期:** 2026-03-09（韌體 1.0.16）
 >
-> **SSE 狀態: 不通（Server Bug）**
-> usp-bridge v0.1.1 的 SSE 端點 (`/api/v1/notifications`) 存在 bug：
-> - 連線建立後 **HTTP response（含 headers）從未送出**（curl 在 localhost 測試收到 0 bytes）
-> - 伺服器 log 顯示 `SSE connection established` 和 `Started SSE heartbeat timer`，但 `Sent SSE heartbeat` 從未出現
-> - Heartbeat timer callback 從未被觸發
-> - Subscribe 註冊/取消正常，但通知事件無法透過 SSE 送達
-> - **影響範圍:** 所有 SSE 資料（heartbeat + subscription 通知）均無法送出
->
-> Subscribe/Unsubscribe API 本身正常運作（`{"status":"success"}`）。
+> **SSE 狀態: Heartbeat 正常 / 通知不通（Bridge 限制）**
+> - ~~BUG-003（SSE 從未送出資料）~~ **已在 1.0.16 修復** — heartbeat 正常每 30 秒送出
+> - Subscribe/Unsubscribe API 正常（`{"status":"success"}`）
+> - **通知仍無法送達** — 見下方 5.7 節詳細分析
 
 ### 5.1 概述
 
@@ -451,15 +446,159 @@ ubus call bbfdm.timemngr set '{"path":"Device.Time.NTPServer5","value":"2.openwr
 
 | 層級 | 狀態 | 說明 |
 |------|------|------|
-| Router (OBUSPA) | ✅ 就緒 | 支援 ValueChange / ObjectCreation / ObjectDeletion |
-| Router (usp-bridge) | 🔴 **Bug** | SSE 連線建立但 **從未送出任何資料**（heartbeat + 通知均無）|
+| Router (OBUSPA) | ✅ 就緒 | 支援 ValueChange / ObjectCreation / ObjectDeletion / OperationComplete |
+| Router (usp-bridge) | ⚠️ 部分 | SSE heartbeat ✅（1.0.16 修復）；通知轉發 ❌（見 5.7） |
 | WASM Client (JS) | ❌ 未實作 | `web/usp_client.js` 無 subscribe/SSE API |
 | Dart 綁定 | ✅ 就緒 | `UspBridgeClient`（HTTP/SSE helper）+ `UspService.sessionToken` getter |
 | Dart 測試頁面 | ✅ 就緒 | SSE / Subscribe / Turbo / Health UI sections 已實作 |
 | Codegen | ✅ 就緒 | 已產生 subscribe 方法（呼叫 `client.subscribe()`） |
 
-> **Dart 層已完成，待 SSE server bug 修復後即可端對端驗證。**
-> Subscribe/Unsubscribe API 本身正常（`{"status":"success"}`），但通知無法經 SSE 送達。
+> **SSE heartbeat 已可運作（1.0.16）。** 但通知轉發受限於 usp-bridge 架構（見 5.7 節）。
+
+### 5.7 通知機制深度分析（2026-03-09 驗證）
+
+#### 兩層 Subscription 機制
+
+Router 上存在**兩套獨立**的 subscription 系統：
+
+| 層級 | 機制 | 管理方式 | 通知路徑 |
+|------|------|----------|----------|
+| **OBUSPA** (USP Agent) | `Device.LocalAgent.Subscription.{i}` | USP Add/Set 或 CLI | OBUSPA → UDS → usp-bridge |
+| **usp-bridge** | `/api/v1/subscription` HTTP API | HTTP POST register/unregister | bridge 自行管理 → SSE |
+
+這兩套系統**互不相通**：
+- Bridge 的 `/api/v1/subscription` 註冊**不會**在 OBUSPA 建立 Subscription 物件
+- OBUSPA 的 Subscription 送出的 Notify message，bridge **不會**轉發到 SSE
+
+#### OBUSPA Subscription 建立方式
+
+`Device.LocalAgent.Subscription.` 在 bbfdm 中回傳 `fault 9005`，因為它由 **OBUSPA 內部管理**，不經過 bbfdm。
+
+建立方式：
+
+**方式一：透過 USP protobuf（推薦）**
+
+在 Flutter 測試頁面使用 USP Add：
+- Path: `Device.LocalAgent.Subscription.`
+- Parameters:
+```json
+{
+  "Enable": "true",
+  "NotifType": "OperationComplete",
+  "ReferenceList": "Device.IP.Diagnostics.IPPing()"
+}
+```
+
+> **重要:** `Recipient` 為 read-only，會自動設為發出 Add 請求的 Controller。透過 WASM client 建立時，Recipient 自動指向 `Device.LocalAgent.Controller.2`（controller::localui / usp-bridge）。
+
+**方式二：透過 OBUSPA CLI（SSH）**
+
+```bash
+# 新增 Subscription
+obuspa -s /tmp/usp_cli -c 'add' 'Device.LocalAgent.Subscription.'
+
+# 設定參數（Recipient 為 read-only，自動指向 Controller.1 / MQTT）
+obuspa -s /tmp/usp_cli -c 'set' 'Device.LocalAgent.Subscription.1.Enable' 'true'
+obuspa -s /tmp/usp_cli -c 'set' 'Device.LocalAgent.Subscription.1.NotifType' 'OperationComplete'
+obuspa -s /tmp/usp_cli -c 'set' 'Device.LocalAgent.Subscription.1.ReferenceList' 'Device.IP.Diagnostics.IPPing()'
+
+# 查詢
+obuspa -s /tmp/usp_cli -c 'get' 'Device.LocalAgent.Subscription.1.'
+
+# 傾印所有訂閱
+obuspa -s /tmp/usp_cli -c 'dump' 'subscriptions'
+
+# 刪除
+obuspa -s /tmp/usp_cli -c 'del' 'Device.LocalAgent.Subscription.1.'
+```
+
+> **注意:** CLI 建立的 Subscription，Recipient 預設指向 Controller.1（MQTT 雲端），**不是** Controller.2（localui）。若要指向 localui，必須透過 USP protobuf（方式一）建立。
+
+**Controller 對應表：**
+
+| Controller | EndpointID | Protocol | 用途 |
+|------------|-----------|----------|------|
+| Controller.1 | `self:ft:1` | MQTT | 雲端控制 |
+| Controller.2 | `controller::localui` | UDS | usp-bridge (本地 UI) |
+
+#### Subscription NotifType 完整列表
+
+| NotifType | 說明 | 需要 Subscription | OBUSPA 支援 |
+|-----------|------|-------------------|-------------|
+| `ValueChange` | 參數值變更 | ✅ 是 | ✅ |
+| `ObjectCreation` | 新增物件實例 | ✅ 是 | ✅ |
+| `ObjectDeletion` | 刪除物件實例 | ✅ 是 | ✅ |
+| `OperationComplete` | 非同步 Operate 完成 | ✅ 是 | ✅ |
+| `Event` | 自訂事件 | ✅ 是 | ✅ |
+
+#### 已驗證的通知流程（OperationComplete）
+
+```
+Flutter 測試頁面                usp-bridge              OBUSPA              bbfdm
+  │                                │                      │                   │
+  ├── Operate(IPPing) ────────────►│── USP Record ───────►│                   │
+  │                                │                      ├── CMD_OPERATE ───►│
+  │                                │                      │◄── Async ACK ─────┤
+  │                                │◄── OperateResp ──────┤                   │
+  │◄── OPERATE OK (no output) ────┤                      │                   │
+  │                                │                      │  (Ping 執行中...)  │
+  │                                │                      │◄── OPR_COMPLETE ──┤
+  │                                │                      │                   │
+  │                                │  ┌── 匹配 Subscription (cpe-1) ──┐     │
+  │                                │  │  NotifType=OperationComplete   │     │
+  │                                │  │  Recipient=Controller.2        │     │
+  │                                │  └────────────────────────────────┘     │
+  │                                │                      │                   │
+  │                                │◄── USP Notify ───────┤                   │
+  │                                │   (含完整 Ping 結果)   │                   │
+  │                                │                      │                   │
+  │    ❌ bridge 未轉發到 SSE      │                      │                   │
+```
+
+**OBUSPA prototrace 確認送出的 Notify message：**
+```protobuf
+body {
+  request {
+    notify {
+      subscription_id: "cpe-1"
+      send_resp: false
+      oper_complete {
+        obj_path: "Device.IP.Diagnostics."
+        command_name: "IPPing()"
+        command_key: "d268a5ef-23ab-4a88-abc2-2201bed32fa6"
+        req_output_args {
+          output_args { key: "Status"              value: "Complete" }
+          output_args { key: "IPAddressUsed"       value: "192.168.15.2" }
+          output_args { key: "SuccessCount"        value: "3" }
+          output_args { key: "FailureCount"        value: "0" }
+          output_args { key: "AverageResponseTime" value: "5" }
+          ...
+        }
+      }
+    }
+  }
+}
+```
+
+#### 瓶頸：usp-bridge 不轉發 USP Notify
+
+usp-bridge 收到 OBUSPA 的 USP Notify protobuf message 後，**沒有**：
+1. 解析 Notify message 內容
+2. 匹配到自己的 SSE session
+3. 推送到 SSE stream
+
+**原因推測：** usp-bridge 的 SSE 推送僅處理自己 `/api/v1/subscription` API 註冊的通知（bridge 層級），不處理來自 OBUSPA 的 USP Notify message（Agent 層級）。這兩套系統設計上是獨立的。
+
+#### 影響範圍
+
+| 功能 | 狀態 | 說明 |
+|------|------|------|
+| SSE Heartbeat | ✅ 正常 | 1.0.16 修復 |
+| Bridge Subscribe/Unsubscribe API | ✅ API 正常 | 但不會建立 OBUSPA Subscription |
+| OBUSPA Subscription 建立 | ✅ 可建立 | 透過 USP Add 或 CLI |
+| OBUSPA → bridge Notify 傳送 | ✅ 已送出 | prototrace 確認 |
+| bridge → SSE 通知轉發 | ❌ 不通 | bridge 不處理 incoming USP Notify |
+| 端對端通知（ValueChange/ObjectCreation/OperationComplete） | ❌ 不通 | 被 bridge 阻斷 |
 
 ---
 
@@ -751,37 +890,48 @@ ubus call bbfdm.dhcpmngr del '{"path":"Device.DHCPv4.Server.Pool.1.StaticAddress
 
 ### 8.6 OPERATE — 執行指令
 
-> **注意:** 此韌體版本 **不支援 Ping 和 Traceroute**（`IPv4PingSupported=0`）。
-> 以下以 NSLookup 為可用範例。
+> **韌體 1.0.16 更新:** Ping 和 Traceroute **已啟用**（`IPv4PingSupported=1`, `IPv4TraceRouteSupported=1`）。
+> 1.0.14 版不支援這兩個指令。
 
 ```bash
-# DNS 查詢（非同步指令 — ubus 會立即回傳結果）
-ubus call bbfdm operate '{"path":"Device.DNS.Diagnostics.NSLookupDiagnostics()","action":"nslookup","input":{"HostName":"google.com","DNSServer":"8.8.8.8"}}'
+# Ping（非同步指令 — ubus 會同步等待並回傳結果）
+ubus call bbfdm operate '{"path":"Device.IP.Diagnostics.IPPing()","action":"ping","input":{"Host":"8.8.8.8","NumberOfRepetitions":"3"}}'
 ```
 
 回應：
 ```json
 {
   "results": [{
-    "path": "Device.DNS.Diagnostics.NSLookupDiagnostics()",
+    "path": "Device.IP.Diagnostics.IPPing()",
     "output": [
       {"path": "Status", "data": "Complete"},
-      {"path": "SuccessCount", "data": "1"},
-      {"path": "Result.1.Status", "data": "Complete"},
-      {"path": "Result.1.HostNameReturned", "data": "google.com"},
-      {"path": "Result.1.IPAddresses", "data": "142.250.xxx.xxx"}
+      {"path": "SuccessCount", "data": "3"},
+      {"path": "FailureCount", "data": "0"},
+      {"path": "AverageResponseTime", "data": "4"},
+      {"path": "MinimumResponseTime", "data": "3"},
+      {"path": "MaximumResponseTime", "data": "6"},
+      {"path": "AverageResponseTimeDetailed", "data": "4677"},
+      {"path": "MinimumResponseTimeDetailed", "data": "3722"},
+      {"path": "MaximumResponseTimeDetailed", "data": "6533"}
     ]
   }]
 }
 ```
 
 ```bash
+# DNS 查詢（非同步指令）
+ubus call bbfdm operate '{"path":"Device.DNS.Diagnostics.NSLookupDiagnostics()","action":"nslookup","input":{"HostName":"google.com","DNSServer":"8.8.8.8"}}'
+
 # 重啟路由器（⚠️ 會中斷所有連線！）
 ubus call bbfdm operate '{"path":"Device.Reboot()"}'
 ```
 
-> **非同步指令注意:** NSLookup 等非同步指令透過 `ubus` 可正常取得結果，但透過 WASM protobuf client 會失敗（BUG-004）。
-> 這是因為 USP OperateResp 對非同步指令的 `oneof operate_resp` 為空，Rust client 無法正確解析。
+> **非同步指令注意（ubus vs USP protobuf）：**
+> - **ubus：** 同步回傳完整結果（如上方範例）
+> - **USP protobuf（WASM client）：** 回傳空的 OperateResp（`OPERATE OK (no output)`），結果需透過 OperationComplete 通知取得
+> - **結果不寫入 data model：** Operate 後 GET 查詢 `Device.IP.Diagnostics.IPPing.` 仍為空值（BUG-006）
+> - **OperationComplete 需 Subscription：** 需先透過 USP Add 建立 `Device.LocalAgent.Subscription.`（見 5.7 節）
+> - **端對端不通：** OBUSPA 已正確送出 Notify，但 usp-bridge 不轉發到 SSE（BUG-005）
 
 ### 8.7 SCHEMA — 查詢結構定義
 
@@ -1055,17 +1205,16 @@ ubus call bbfdm.dhcpmngr instances '{"path":"Device.DHCPv4.Server.Pool.1.StaticA
 #### OPERATE 驗證
 
 ```bash
-# ❌ Ping — 此韌體不支援（IPv4PingSupported=0）
-# ubus call bbfdm operate '{"path":"Device.IP.Diagnostics.IPPing()","action":"ping","input":{"Host":"8.8.8.8","NumberOfRepetitions":"3"}}'
+# ✅ Ping（1.0.16 新增支援）
+ubus call bbfdm operate '{"path":"Device.IP.Diagnostics.IPPing()","action":"ping","input":{"Host":"8.8.8.8","NumberOfRepetitions":"3"}}'
+# 預期: Status=Complete, SuccessCount=3, AverageResponseTime=...
 
-# ❌ Traceroute — 此韌體不支援（IPv4TraceRouteSupported=0）
-# ubus call bbfdm operate '{"path":"Device.IP.Diagnostics.TraceRoute()","action":"traceroute","input":{"Host":"8.8.8.8","MaxHopCount":"5"}}'
-
-# ✅ DNS 查詢（非同步指令，ubus 可正常回傳結果）
+# ✅ DNS 查詢
 ubus call bbfdm operate '{"path":"Device.DNS.Diagnostics.NSLookupDiagnostics()","action":"nslookup","input":{"HostName":"google.com","DNSServer":"8.8.8.8"}}'
-# 預期: Status=Complete, SuccessCount=1, Result.1.IPAddresses=...
+# 預期: Status=Complete, SuccessCount=2, Result.1.IPAddresses=142.250...
 
-# ⚠️ 注意: NSLookup 透過 WASM protobuf client 會失敗（BUG-004）
+# ⚠️ 透過 WASM client: Operate 可觸發但回傳空結果（OPERATE OK, no output）
+# 結果需透過 OperationComplete 通知取得（目前受 BUG-005 阻斷）
 ```
 
 ### 10.3 核心模組驗證（按 JNAP 對應）
@@ -1074,7 +1223,7 @@ ubus call bbfdm operate '{"path":"Device.DNS.Diagnostics.NSLookupDiagnostics()",
 |----------|------|------|
 | Device Info | `ubus call bbfdm get '{"path":"Device.DeviceInfo.Manufacturer"}'` | "Linksys" |
 | WiFi Radio | `ubus call bbfdm.wifidmd get '{"path":"Device.WiFi.Radio."}'` | 2 radios 資料 |
-| WiFi SSID | `ubus call bbfdm.wifidmd get '{"path":"Device.WiFi.SSID."}'` | ❌ 已知 Bug — 回傳空 |
+| WiFi SSID | `ubus call bbfdm.wifidmd get '{"path":"Device.WiFi.SSID."}'` | ✅ 128 params（1.0.16 修復 BUG-001） |
 | WiFi AP | `ubus call bbfdm.wifidmd get '{"path":"Device.WiFi.AccessPoint."}'` | 4 APs 資料 |
 | AP Security | `ubus call bbfdm.wifidmd get '{"path":"Device.WiFi.AccessPoint.1.Security."}'` | ModeEnabled, KeyPassphrase |
 | WAN IP | `ubus call bbfdm.netmngr get '{"path":"Device.IP.Interface."}'` | 多個 Interface 資料 |
@@ -1108,35 +1257,54 @@ ubus call bbfdm operate '{"path":"Device.DNS.Diagnostics.NSLookupDiagnostics()",
 ### 10.5 SSE / Subscribe 驗證
 
 > SSH 進入 router 後執行。詳細說明見第 5 節。
->
-> **⚠️ SSE heartbeat 測試目前會失敗** — usp-bridge v0.1.1 的 SSE 端點存在 server bug，
-> 連線建立後從未送出任何資料。詳見第 5 節頂部警告及 BUG-003。
 
 ```bash
 TOKEN=$(curl -sk -X POST https://127.0.0.1/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"password":"admin"}' | jsonfilter -e '@.token')
 
-# ❌ SSE heartbeat — 目前不通（BUG-003）
-# 連線會建立但收不到任何資料，curl 會掛住直到 session 過期（~34s）
+# ✅ SSE heartbeat（1.0.16 修復，BUG-003 已解決）
 timeout 35 curl -s http://127.0.0.1:8083/api/v1/notifications \
   -H "Authorization: Bearer $TOKEN" 2>&1 || true
-# 預期（修復後）: event: heartbeat + data: {"timestamp":...}
-# 實際: 0 bytes received
+# 預期: event: heartbeat + data: {"timestamp":...}（每 30 秒一次）
 
-# ✅ 註冊 subscription（API 正常）
+# ✅ 註冊 bridge subscription（API 正常）
 curl -s -X POST http://127.0.0.1:8083/api/v1/subscription \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"action":"register","subscription_id":"test-1","path":"Device.Hosts.Host.","type":2}'
 # 預期: {"status":"success"}
+# ⚠️ 注意: 此 API 不會建立 OBUSPA Subscription，通知不會送達 SSE（BUG-005）
 
-# ✅ 取消 subscription（只需 subscription_id，不需 path/type）
+# ✅ 取消 bridge subscription
 curl -s -X POST http://127.0.0.1:8083/api/v1/subscription \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"action":"unregister","subscription_id":"test-1"}'
 # 預期: {"status":"success"}
+```
+
+#### OBUSPA Subscription 驗證（CLI）
+
+```bash
+# 查看目前有效的 OBUSPA subscription
+obuspa -s /tmp/usp_cli -c 'dump' 'subscriptions'
+# 預期: "No enabled active subscriptions" 或列出已建立的 subscription
+
+# 建立 OperationComplete subscription（透過 CLI，Recipient 指向 Controller.1）
+obuspa -s /tmp/usp_cli -c 'add' 'Device.LocalAgent.Subscription.'
+obuspa -s /tmp/usp_cli -c 'set' 'Device.LocalAgent.Subscription.1.Enable' 'true'
+obuspa -s /tmp/usp_cli -c 'set' 'Device.LocalAgent.Subscription.1.NotifType' 'OperationComplete'
+obuspa -s /tmp/usp_cli -c 'set' 'Device.LocalAgent.Subscription.1.ReferenceList' 'Device.IP.Diagnostics.IPPing()'
+
+# 驗證
+obuspa -s /tmp/usp_cli -c 'get' 'Device.LocalAgent.Subscription.1.'
+# 預期: Enable=true, NotifType=OperationComplete, Recipient=Device.LocalAgent.Controller.1
+
+# ⚠️ 若要 Recipient 指向 Controller.2（localui），必須透過 USP protobuf Add（測試頁面）
+
+# 清理
+obuspa -s /tmp/usp_cli -c 'del' 'Device.LocalAgent.Subscription.1.'
 ```
 
 ### 10.6 Turbo Channel 驗證
@@ -1172,24 +1340,34 @@ curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/release -H "Authorization: Be
 
 ### 11.1 韌體 Bug
 
-| ID | 嚴重度 | 說明 | 影響 |
-|----|--------|------|------|
-| BUG-001 | ~~🔴 Critical~~ ✅ Fixed | `Device.WiFi.SSID.` 實例列舉回傳空 | **已修復**（2026-03-04 確認） |
-| BUG-002 | 🟡 Low | `Device.Firewall.` 頂層 GET 回傳空 | 需個別查詢子路徑 |
-| BUG-003 | 🔴 Critical | usp-bridge v0.1.1 SSE 端點從未送出任何資料 | SSE heartbeat 和 subscription 通知均無法送達 |
-| BUG-004 | 🟠 Medium | Rust WASM client `decode_operate_response` 不處理 async command OperateResp | 非同步 Operate 指令（如 NSLookup）回傳 "No operation result in response" |
+| ID | 嚴重度 | 說明 | 影響 | 韌體狀態 |
+|----|--------|------|------|----------|
+| BUG-001 | ✅ Fixed | `Device.WiFi.SSID.` 實例列舉回傳空 | — | 1.0.16 修復（回傳 128 params） |
+| BUG-002 | 🟡 Low | `Device.Firewall.` 頂層 GET 回傳空 | 需個別查詢子路徑 | 1.0.16 未驗證 |
+| BUG-003 | ✅ Fixed | usp-bridge SSE 端點從未送出任何資料 | — | 1.0.16 修復（heartbeat 正常） |
+| BUG-004 | 🟢 Changed | Rust WASM client 非同步 OperateResp 處理 | 不再 crash，改回傳空結果 | 1.0.16 行為改變（見詳情） |
+| BUG-005 | 🔴 Critical | usp-bridge 不轉發 OBUSPA 的 USP Notify message 到 SSE | 所有 subscription 通知（ValueChange/ObjectCreation/OperationComplete）無法送達 client | 1.0.16 確認 |
+| BUG-006 | 🟠 Medium | 非同步 Operate 結果不寫入 TR-181 data model | 無法透過 GET 輪詢取得 Operate 結果 | 1.0.16 確認 |
 
-**BUG-003 詳情：**
-- usp-bridge log 顯示 `SSE connection established` 和 `Started SSE heartbeat timer (interval=30s)`
-- 但 `Sent SSE heartbeat` 從未出現 — heartbeat timer callback 從未被觸發
-- HTTP response headers 從未被 flush 到 client（curl 在 localhost 測試收到 0 bytes）
-- Session 在 ~34 秒後因「無活動」過期
-- Subscribe/Unsubscribe API 本身正常運作
+**BUG-003（已修復）：**
+- 1.0.14：SSE 連線建立後從未送出任何資料（heartbeat + 通知均無），0 bytes received
+- 1.0.16：SSE heartbeat 正常每 30 秒送出，連線穩定
 
-**BUG-004 詳情：**
-- USP 非同步 Operate 指令（如 `Device.DNS.Diagnostics.NSLookupDiagnostics()`）回傳的 OperateResp 中 `oneof operate_resp` 為空（既非 success 也非 failure）
-- Rust client `decode.rs:269-276` 將 `None` 視為失敗
-- 同一指令透過 `ubus call bbfdm operate` 可正常執行並回傳結果
+**BUG-004（行為改變）：**
+- 1.0.14：Rust client `decode.rs` 將空的 `oneof operate_resp` 視為失敗，回傳 "No operation result in response"
+- 1.0.16：不再報錯，改回傳 `OPERATE OK (no output)` — 非同步 Operate 的確認回應正確處理，但結果需透過 OperationComplete 通知取得（受 BUG-005 阻斷）
+
+**BUG-005 詳情（新發現 2026-03-09）：**
+- OBUSPA 正確送出 USP Notify message（含完整 Operate 結果）到 usp-bridge via UDS（prototrace 確認）
+- usp-bridge 收到 Notify 後**不解析、不轉發**到 SSE stream
+- 原因：bridge 的 SSE 推送僅處理自己 `/api/v1/subscription` API 層的通知，不處理來自 OBUSPA 的 USP Notify message
+- **影響範圍：** 所有類型的 subscription 通知（ValueChange、ObjectCreation、ObjectDeletion、OperationComplete）均無法從 OBUSPA 到達 client
+- 詳見第 5.7 節完整分析
+
+**BUG-006 詳情（新發現 2026-03-09）：**
+- bbfdm 的 Operate 實作為 fire-and-return：結果只存在 operate response 的 `output` 中
+- `Device.IP.Diagnostics.IPPing.` 在 Operate 後 GET 查詢，`DiagnosticsState` 仍為 `None`，所有結果欄位為 0
+- 這表示 GET 輪詢 workaround 不可行，必須依賴 OperationComplete 通知（受 BUG-005 阻斷）
 
 ### 11.2 未實作的模組
 
@@ -1204,7 +1382,7 @@ curl -s -X POST http://127.0.0.1:8083/api/v1/turbo/release -H "Authorization: Be
 | `Device.SoftwareModules.` | 軟體模組 | getFirmwareUpdateSettings |
 | `Device.X_LINKSYS_COM.` | 廠商擴充 | 多個 Linksys 專屬功能 |
 | `Device.Firewall.ConnectionTracking.` | ALG 設定 | getALGSettings |
-| `Device.LocalAgent.` | USP Agent 設定 | — |
+| `Device.LocalAgent.` | USP Agent 設定（bbfdm 不支援，但 OBUSPA 內部管理） | 需透過 OBUSPA CLI 或 USP protobuf 存取 |
 
 ### 11.3 usp-bridge 不會自動啟動
 
@@ -1320,19 +1498,21 @@ USP bridge 只接受 binary protobuf 格式（`application/octet-stream`），�
 
 ### 操作指令
 
-| 用途 | 指令路徑 | 參數 | 狀態 |
-|------|----------|------|------|
-| 重啟 | `Device.Reboot()` | (無) | ✅ 可用 |
-| 恢復原廠 | `Device.FactoryReset()` | (無) | ✅ 可用 |
-| DNS 查詢 | `Device.DNS.Diagnostics.NSLookupDiagnostics()` | HostName, DNSServer | ⚠️ ubus 可用，WASM 不通 (BUG-004) |
-| 排程計時器 | `Device.ScheduleTimer()` | (依實作) | ✅ 可用 |
-| 批次資料蒐集 | `Device.BulkData.Profile.{i}.ForceCollection()` | (無) | ✅ 可用 |
-| Session 管理 | `Device.LocalAgent.X_LINKSYS_Session.{Start\|Commit\|Abort}()` | (無) | ✅ 可用 |
-| ~~Ping~~ | ~~`Device.IP.Diagnostics.IPPing()`~~ | ~~Host, NumberOfRepetitions~~ | ❌ 不支援 (`IPv4PingSupported=0`) |
-| ~~Traceroute~~ | ~~`Device.IP.Diagnostics.TraceRoute()`~~ | ~~Host, MaxHopCount~~ | ❌ 不支援 (`IPv4TraceRouteSupported=0`) |
+| 用途 | 指令路徑 | 參數 | ubus | WASM |
+|------|----------|------|------|------|
+| 重啟 | `Device.Reboot()` | (無) | ✅ | ✅（不需結果） |
+| 恢復原廠 | `Device.FactoryReset()` | (無) | ✅ | ✅（不需結果） |
+| Ping | `Device.IP.Diagnostics.IPPing()` | Host, NumberOfRepetitions | ✅ | ⚠️ 可觸發，結果需 OperationComplete |
+| DNS 查詢 | `Device.DNS.Diagnostics.NSLookupDiagnostics()` | HostName, DNSServer | ✅ | ⚠️ 同上 |
+| Traceroute | `Device.IP.Diagnostics.TraceRoute()` | Host, MaxHopCount | ✅ 1.0.16 新增 | ⚠️ 同上 |
+| 排程計時器 | `Device.ScheduleTimer()` | (依實作) | ✅ | ✅ |
+| 批次資料蒐集 | `Device.BulkData.Profile.{i}.ForceCollection()` | (無) | ✅ | ✅ |
 
-> **注意:** Ping 和 Traceroute 在此韌體版本（1.0.14.26013014）中不受支援。
-> `Device.IP.Diagnostics.IPv4PingSupported` = `0`，`IPv4TraceRouteSupported` = `0`。
+> **韌體 1.0.16 更新：** Ping 和 Traceroute 已啟用（`IPv4PingSupported=1`，`IPv4TraceRouteSupported=1`）。
+> 1.0.14 版不支援這兩個指令。
+>
+> **WASM 非同步限制：** 透過 WASM client 執行非同步 Operate 只會收到空確認，結果需透過 OperationComplete 通知取得。
+> 目前受 BUG-005（bridge 不轉發 Notify）阻斷，端對端無法取得結果。
 
 ---
 

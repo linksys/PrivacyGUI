@@ -49,15 +49,15 @@ class SystemInfo {
 
   factory SystemInfo._fromResponse(Map<String, dynamic> response) {
     return SystemInfo(
-      manufacturer: response['Device.DeviceInfo.Manufacturer'] as String,
-      modelName: response['Device.DeviceInfo.ModelName'] as String,
-      serialNumber: response['Device.DeviceInfo.SerialNumber'] as String,
-      hardwareVersion: response['Device.DeviceInfo.HardwareVersion'] as String,
-      softwareVersion: response['Device.DeviceInfo.SoftwareVersion'] as String,
-      uptime: int.parse(response['Device.DeviceInfo.UpTime'] as String),
-      totalMemory: int.parse(response['Device.DeviceInfo.MemoryStatus.Total'] as String),
-      freeMemory: int.parse(response['Device.DeviceInfo.MemoryStatus.Free'] as String),
-      cpuUsage: int.parse(response['Device.DeviceInfo.ProcessStatus.CPUUsage'] as String),
+      manufacturer: (response['Device.DeviceInfo.Manufacturer'] ?? '') as String,
+      modelName: (response['Device.DeviceInfo.ModelName'] ?? '') as String,
+      serialNumber: (response['Device.DeviceInfo.SerialNumber'] ?? '') as String,
+      hardwareVersion: (response['Device.DeviceInfo.HardwareVersion'] ?? '') as String,
+      softwareVersion: (response['Device.DeviceInfo.SoftwareVersion'] ?? '') as String,
+      uptime: int.tryParse(response['Device.DeviceInfo.UpTime']?.toString() ?? '') ?? 0,
+      totalMemory: int.tryParse(response['Device.DeviceInfo.MemoryStatus.Total']?.toString() ?? '') ?? 0,
+      freeMemory: int.tryParse(response['Device.DeviceInfo.MemoryStatus.Free']?.toString() ?? '') ?? 0,
+      cpuUsage: int.tryParse(response['Device.DeviceInfo.ProcessStatus.CPUUsage']?.toString() ?? '') ?? 0,
     );
   }
 

@@ -1,7 +1,7 @@
 # USP Integration Report
 
-> Date: 2026-03-06 | Branch: `feat/usp-protocol-integration`
-> Covers: Phase 1 (Infrastructure) + Phase 2A (Read) + Phase 2B (Write) + Phase 2C (Subscribe Infrastructure)
+> Date: 2026-03-10 (updated) | Branch: `feat/usp-protocol-integration`
+> Covers: Phase 1 (Infrastructure) + Phase 2A (Read) + Phase 2B (Write) + Phase 2C (Subscribe Infrastructure) + Phase 4A (Standalone Feature Pages) + 401 Auth Retry
 
 ---
 
@@ -13,40 +13,44 @@ PrivacyGUI has been extended with a parallel USP (User Services Platform / TR-36
 
 | Metric | Value |
 |--------|-------|
-| YAML definitions | 16 |
-| Generated `.g.dart` files | 17 (16 data + 1 transforms) |
-| UI model classes | 15 (across 13 files) |
+| YAML definitions | 22 (was 20) |
+| Generated `.g.dart` files | 23 (22 data + transforms) |
+| UI model classes | 21 (across 21 files) |
 | Dashboard cards | 14 |
 | Dashboard dialogs | 7 |
-| Mutation methods | 21 |
-| TR-181 data models covered | 16 |
+| Standalone feature pages | 12 (Admin, DHCP Detail, Port Forwarding Detail, Devices, Topology, System Log, Firewall, DMZ, Instant Safety, Local Network, Static Routing, IPv6 Port Service) |
+| Standalone dialogs | 6 (password, timezone, confirm action, DHCP edit, static route, IPv6 port rule) |
+| Mutation methods | 34+ |
+| TR-181 data models covered | 22 |
 | Parallel fetch tasks | 15 |
-| Supported CRUD operations | fetch, update, add, delete, subscribe (stub) |
+| Supported CRUD operations | fetch, update, add, delete, subscribe (stub), operate |
+| Infrastructure | 401 Auth Retry (two-stage reauth with Completer lock) |
 
 ### Architecture at a Glance
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        USP Dashboard View                       │
-│   14 cards + 7 dialogs + skeleton loading + responsive layout   │
+│   14 cards + 7 dialogs + skeleton loading + responsive layout    │
 ├─────────────────────────────────────────────────────────────────┤
 │                     UI Models (Presentation)                     │
-│   15 Equatable classes with computed display properties          │
+│   21 Equatable classes with computed display properties          │
 ├─────────────────────────────────────────────────────────────────┤
-│                     UspDeviceService (Transform)                 │
-│   13 builder methods: codegen DTO → UI Model                    │
+│              UspDeviceService + Feature Services (Transform)     │
+│   13 dashboard builders + 5 standalone feature services          │
 ├─────────────────────────────────────────────────────────────────┤
-│                  UspDashboardNotifier (Orchestration)            │
-│   build() parallel fetch + 21 mutation methods + _withLock      │
+│          UspDashboardNotifier + Feature Notifiers (Orchestration)│
+│   build() parallel fetch + 34 mutation methods + _withLock      │
 ├─────────────────────────────────────────────────────────────────┤
 │                   UspDashboardState (Equatable)                  │
 │   Raw codegen DTOs + UI model fields + copyWith                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                Codegen .g.dart (Data Transfer Objects)           │
-│   17 files: fetch/update/add/delete/subscribe                   │
+│   22 files: fetch/update/add/delete/subscribe                   │
 ├─────────────────────────────────────────────────────────────────┤
 │                      UspService (Transport)                      │
 │   WASM JS interop + _coerceValue + CRUD + Operate + Subscribe   │
+│   + 401 Auth Retry (_withAuthRetry + two-stage reauth)          │
 ├─────────────────────────────────────────────────────────────────┤
 │                    WASM Client (Rust → JS)                       │
 │   HTTP transport to router's usp-bridge API                     │
@@ -170,6 +174,12 @@ class ConnectedDevices {
 | 14 | admin | `admin/admin_users.yaml` | AdminUsers | `Device.Users.User` | Multi | fetch, update |
 | 15 | firewall | `firewall/port_forwarding.yaml` | PortForwarding | `Device.NAT.PortMapping` | Multi | fetch, update, add, delete |
 | 16 | firewall | `firewall/port_triggering.yaml` | PortTriggering | `Device.NAT.PortTrigger` | Multi + children | fetch, update, add, delete, child add/delete |
+| 17 | firewall | `firewall/firewall_chain_rules.yaml` | FirewallChainRules | `Device.Firewall.Chain.{i}.Rule` | Multi (nested) | fetch |
+| 18 | firewall | `firewall/dmz.yaml` | Dmz | `Device.Firewall.DMZ` | Multi | fetch, update, add, delete |
+| 19 | core | `core/vendor_log_files.yaml` | VendorLogFiles | `Device.DeviceInfo.VendorLogFile` | Multi | fetch |
+| 20 | core | `core/firmware_images.yaml` | FirmwareImages | `Device.DeviceInfo.FirmwareImage` | Multi | fetch |
+| 21 | network | `network/static_routing.yaml` | StaticRouting | `Device.Routing.Router.1.IPv4Forwarding` | Multi | fetch, update, add, delete |
+| 22 | firewall | `firewall/ipv6_port_service.yaml` | Ipv6PortService | `Device.Firewall.Chain.1.Rule` | Multi | fetch, update, add, delete |
 
 ### 3.2 Scatter-Gather Definitions (No Base Path)
 
@@ -492,6 +502,119 @@ Used by Admin page for password change, not displayed in dashboard.
 
 ---
 
+### 4.14 Firewall Settings
+
+| TR-181 Path | Codegen Field | UI Model Field | Writable |
+|-------------|---------------|----------------|----------|
+| `Device.Firewall.Chain.1.Rule.{i}.Enable` | `enable` | (derived by Description match) | Yes |
+| `Device.Firewall.Chain.1.Rule.{i}.Description` | `description` | (feature identifier key) | No |
+| `Device.Firewall.Chain.1.Rule.{i}.Target` | `target` | (Accept/Drop) | No |
+
+**Mapping Logic:** Rules are identified by `Description` field matching feature names (e.g., "SPI_IPv4", "SPI_IPv6", "IPSec_Passthrough", "PPTP_Passthrough", "L2TP_Passthrough", "AnonymousRequests", "Multicast", "IDENT"). The `UspFirewallService` maps these Description-based rules to the unified `FirewallUIModel` fields (e.g., `isIPv4FirewallEnabled`, `blockIPSec`, etc.). Toggle mutations update the individual rule's `Enable` field.
+
+**Codegen DTO:** `FirewallChainRules` (multi-instance, 3 fields, writable Enable)
+**UI Model:** `FirewallUIModel` (8 boolean fields + copyWith)
+**Transform:** `UspFirewallService.buildFirewallUIModel()`
+
+---
+
+### 4.15 DMZ Configuration
+
+| TR-181 Path | Codegen Field | UI Model Field | Writable |
+|-------------|---------------|----------------|----------|
+| `Device.Firewall.DMZ.{i}.Enable` | `enable` | `isEnabled` | Yes |
+| `Device.Firewall.DMZ.{i}.DestIP` | `destIp` | `destIp` | Yes |
+| `Device.Firewall.DMZ.{i}.SourcePrefix` | `sourcePrefix` | `sourceType` + `sourcePrefix` | Yes |
+| `Device.Firewall.DMZ.{i}.Interface` | `interface_` | — (defaults to WAN) | Yes |
+| `Device.Firewall.DMZ.{i}.Description` | `description` | — | Yes |
+| `Device.Firewall.DMZ.{i}.Status` | `status` | — | No |
+
+**Mapping Logic:** Multi-instance on router but UI treats as 0-or-1 entry. `sourcePrefix == "0.0.0.0/0"` or empty → `DmzSourceType.any`, otherwise `DmzSourceType.cidr`. Enable/disable uses add (create entry) or delete (remove entry) + toggle via update.
+
+**Codegen DTO:** `Dmz` (multi-instance, 6 fields, full CRUD)
+**UI Model:** `DmzUIModel` (4 fields + `DmzSourceType` enum + copyWith + `.disabled()` factory)
+**Transform:** `UspDmzService.buildDmzUIModel()`
+
+---
+
+### 4.16 Local Network Settings
+
+| TR-181 Path | Codegen Field | UI Model Field | Writable |
+|-------------|---------------|----------------|----------|
+| `Device.IP.Interface.1.IPv4Address.1.IPAddress` | `ipAddress` | `ipAddress` | Yes |
+| `Device.IP.Interface.1.IPv4Address.1.SubnetMask` | `subnetMask` | `subnetMask` | Yes |
+| `Device.DHCPv4.Server.Pool.1.Enable` | `dhcpEnabled` | `dhcpEnabled` | Yes |
+| `Device.DHCPv4.Server.Pool.1.MinAddress` | `minAddress` | `minAddress` | Yes |
+| `Device.DHCPv4.Server.Pool.1.MaxAddress` | `maxAddress` | `maxAddress` | Yes |
+| `Device.DHCPv4.Server.Pool.1.LeaseTime` | `leaseTime` | `leaseTimeMinutes` (÷60) | Yes |
+| `Device.DHCPv4.Server.Pool.1.DNSServers` | `dnsServers` | `dnsServer1/2/3` (split) | Yes |
+| `Device.DNS.Client.HostName` | `hostName` | `hostName` | Yes |
+
+**Mapping Logic:** Uses `LanNetworkInfo` codegen (scatter-gather) with extended writable fields. DNS servers stored as comma-separated string in codegen, split into 3 fields in UI model. Lease time stored in seconds (codegen) → minutes (UI). Subnet mask enforces prefix-locked octets (UI validation). Dirty guard tracks field-level changes.
+
+**Codegen DTO:** `LanNetworkInfo` (single-instance scatter-gather, extended with lease/hostname)
+**UI Model:** `LocalNetworkUIModel` (10 fields + copyWith + `.initial()` factory)
+**Transform:** `UspLocalNetworkService.buildLocalNetworkUIModel()`
+
+---
+
+### 4.17 Static Routing
+
+| TR-181 Path | Codegen Field | UI Model Field | Writable |
+|-------------|---------------|----------------|----------|
+| `Device.Routing.Router.1.IPv4Forwarding.{i}.Enable` | `enable` | `enabled` | Yes |
+| `...IPv4Forwarding.{i}.DestIPAddress` | `destIpAddress` | `destIpAddress` | Yes |
+| `...IPv4Forwarding.{i}.DestSubnetMask` | `destSubnetMask` | `destSubnetMask` | Yes |
+| `...IPv4Forwarding.{i}.GatewayIPAddress` | `gatewayIpAddress` | `gatewayIpAddress` | Yes |
+| `...IPv4Forwarding.{i}.Interface` | `interface_` | `interfaceName` + `interfacePath` | Yes |
+| `...IPv4Forwarding.{i}.Origin` | `origin` | (filter key) | No |
+| `...IPv4Forwarding.{i}.Alias` | `alias` | `name` | Yes |
+
+**Mapping Logic:** The routing table contains both kernel routes (`Origin=DHCPv4`) and user-created static routes (`Origin=Static`). The service filters by `Origin == "Static"` to only show user-configurable entries. Interface path (e.g., `Device.IP.Interface.1`) is mapped to display name ("LAN"/"Internet").
+
+**Codegen DTO:** `StaticRouting` (multi-instance, 7 fields, full CRUD)
+**UI Model:** `StaticRouteUIModel` (8 fields)
+**Transform:** `UspStaticRoutingService.buildStaticRouteUIModels()`
+
+---
+
+### 4.18 IPv6 Port Service
+
+| TR-181 Path | Codegen Field | UI Model Field | Writable |
+|-------------|---------------|----------------|----------|
+| `Device.Firewall.Chain.1.Rule.{i}.Enable` | `enable` | `enabled` | Yes |
+| `...Rule.{i}.Description` | `description` | `description` | Yes |
+| `...Rule.{i}.IPVersion` | `ipVersion` | (filter: must be 6) | Yes |
+| `...Rule.{i}.DestIP` | `destIp` | `ipv6Address` | Yes |
+| `...Rule.{i}.DestPort` | `destPort` | `startPort` | Yes |
+| `...Rule.{i}.DestPortRangeMax` | `destPortRangeMax` | `endPort` | Yes |
+| `...Rule.{i}.Protocol` | `protocol` | `protocol` (mapped) | Yes |
+| `...Rule.{i}.Target` | `target` | (filter: must be "Accept") | Yes |
+| `...Rule.{i}.CreationDate` | `creationDate` | (filter: exclude system rules) | No |
+
+**Mapping Logic:** Shares the same `Device.Firewall.Chain.1.Rule` table as Firewall Settings, but with extended fields for port/protocol management. Filters: `IPVersion == 6`, `Target == "Accept"`, `CreationDate != "0001-01-01T00:00:00Z"` (excludes firmware system rules). IANA protocol numbers mapped to display names: 6→"TCP", 17→"UDP", 255→"Both".
+
+**Codegen DTO:** `Ipv6PortService` (multi-instance, 9 fields, full CRUD)
+**UI Model:** `Ipv6PortServiceRuleUIModel` (7 fields + `portDisplay` getter)
+**Transform:** `UspIpv6PortServiceService.buildRuleUIModels()`
+
+---
+
+### 4.19 Safe Browsing (Instant Safety)
+
+| TR-181 Path | Source | UI Model Field |
+|-------------|--------|----------------|
+| `Device.DHCPv4.Server.Pool.1.DNSServers` | `LanNetworkInfo.dnsServers` | `currentDnsServers` |
+| (derived) | DNS value matching | `type` (off / openDNS) |
+
+**Mapping Logic:** Safe browsing is implemented by setting the router's DNS servers to OpenDNS Family Shield IPs (`208.67.222.123,208.67.220.123`). The service checks if the current DNS matches OpenDNS and derives the `SafeBrowsingType`. Toggle sets or clears the DNS servers via `LanNetworkInfo.save()`.
+
+**Codegen DTO:** Reuses `LanNetworkInfo` (DNS field)
+**UI Model:** `SafeBrowsingUIModel` (2 fields + `isEnabled` getter + `SafeBrowsingType` enum)
+**Transform:** `InstantSafetyService.buildSafeBrowsingUIModel()`
+
+---
+
 ## 5. UspService Transport Layer
 
 ### 5.1 Core API
@@ -535,7 +658,42 @@ The WASM client returns all values as strings. `_coerceValue()` converts them to
 
 **Known Boolean Path Suffixes:** `Enable`, `Active`, `Upstream`
 
-### 5.3 Response Helpers (`UspResponseExtension`)
+### 5.3 401 Auth Retry Mechanism
+
+All `UspService` CRUD methods are wrapped with `_withAuthRetry()` for automatic re-authentication on HTTP 401 (token expiry):
+
+```dart
+Future<T> _withAuthRetry<T>(Future<T> Function() action) async {
+  try {
+    return await action();
+  } catch (e) {
+    if (!_isAuthError(e)) rethrow;
+    await reauth();         // two-stage reauth
+    return await action();  // retry once
+  }
+}
+```
+
+**Two-Stage Reauth:**
+1. **Stage 1:** `refreshToken()` — fast, no password needed
+2. **Stage 2:** `onReauthRequired()` callback → `UspAuthCoordinator.restoreSession()` — reads stored password from `FlutterSecureStorage`, performs full re-login
+
+**Concurrent Protection:** `Completer<void>` lock ensures only one reauth runs at a time. Concurrent 401 errors await the same Completer.
+
+**Detection:**
+- WASM/protobuf path: `error.toString().contains('HTTP 401')`
+- REST path (`UspBridgeClient`): `response.statusCode == 401`
+
+**Wrapped Methods (11):** `getSingle`, `setSingle`, `get`, `set`, `getMultiple`, `setMultiple`, `add`, `addMultiple`, `delete`, `deleteMultiple`, `operate`
+
+**UspBridgeClient:** Also has `_withAuthRetry()` for REST endpoints (`health`, `subscribe`, `unsubscribe`, `turboStatus`, `turboPost`) and SSE 401 reconnect in `_startSseStream`.
+
+**Files:**
+- `lib/usp/services/usp_service.dart` — `_withAuthRetry`, `reauth()`, `_reauthInProgress`
+- `lib/usp/services/usp_bridge_client.dart` — REST `_withAuthRetry`, SSE 401 reconnect
+- `lib/usp/providers/usp_auth_coordinator.dart` — registers `onReauthRequired` callback in constructor
+
+### 5.4 Response Helpers (`UspResponseExtension`)
 
 ```dart
 extension UspResponseExtension on Map<String, dynamic> {
@@ -698,7 +856,7 @@ Future<void> toggleSomething(String instancePath, bool value) async {
 | 13 | `UspProtocolInfoCard` | UspService metadata | Read-only (USP endpoint, auth status, session) |
 | 14 | `UspConnectionStatusCard` | (legacy, exported but unused) | — |
 
-### 7.2 Dialogs (7)
+### 7.2 Dashboard Dialogs (7)
 
 | # | Dialog | Feature |
 |---|--------|---------|
@@ -710,7 +868,35 @@ Future<void> toggleSomething(String instancePath, bool value) async {
 | 6 | `port_range_forwarding_dialog.dart` | Add/edit port range forwarding rule |
 | 7 | `port_triggering_dialog.dart` | Add/edit port triggering rule + forward rules |
 
-### 7.3 Port Forwarding Detail Page (3 Tabs)
+### 7.3 Standalone Feature Pages (12)
+
+| # | Page | Route | Feature | Interaction |
+|---|------|-------|---------|-------------|
+| 1 | `UspAdminView` | `/uspAdmin` | Password change, timezone, reboot, factory reset | Write |
+| 2 | `UspDhcpDetailView` | `/uspDhcpDetail` | DHCP server info + reservations detail + active leases | Read + CRUD |
+| 3 | `UspPortForwardingDetailView` | `/uspPortForwardingDetail` | 3-tab: Single Port / Port Range / Port Triggering | Full CRUD |
+| 4 | `UspDeviceListView` | `/uspDevices` | Filterable device list (WiFi/Wired/Online/Offline) | Read-only |
+| 5 | `UspTopologyView` | `/uspTopology` | Mesh node tree + node detail | Read-only |
+| 6 | `UspSystemLogView` | `/uspSystemLog` | VendorLogFile metadata (graceful empty state) | Read-only |
+| 7 | `UspFirewallView` | `/uspFirewall` | SPI, VPN passthrough, filter toggles | Read + Write |
+| 8 | `UspDmzView` | `/uspDmz` | DMZ enable/disable, dest IP, source CIDR | Full CRUD |
+| 9 | `InstantSafetyView` | `/uspInstantSafety` | OpenDNS Family Shield toggle | Write |
+| 10 | `UspLocalNetworkView` | `/uspLocalNetwork` | Router IP, subnet, hostname, DHCP pool, DNS, lease time | Read + Write (dirty guard) |
+| 11 | `UspStaticRoutingView` | `/uspStaticRouting` | IPv4 static routes CRUD, Origin filter, interface mapping | Full CRUD |
+| 12 | `UspIpv6PortServiceView` | `/uspIpv6PortService` | IPv6 inbound port rules CRUD, IANA protocol mapping | Full CRUD |
+
+### 7.4 Standalone Page Dialogs (6)
+
+| # | Dialog | Page | Feature |
+|---|--------|------|---------|
+| 1 | `change_password_dialog.dart` | Admin | Change admin password |
+| 2 | `timezone_edit_dialog.dart` | Admin | Edit timezone settings |
+| 3 | `confirm_action_dialog.dart` | Admin | Confirm reboot / factory reset |
+| 4 | `dhcp_reservation_edit_dialog.dart` | DHCP Detail | Add/edit DHCP reservation |
+| 5 | `static_route_dialog.dart` | Static Routing | Add/edit static route |
+| 6 | `ipv6_port_service_rule_dialog.dart` | IPv6 Port Service | Add/edit IPv6 port rule |
+
+### 7.5 Port Forwarding Detail Page (3 Tabs)
 
 | Tab | Component | Data |
 |-----|-----------|------|
@@ -718,7 +904,7 @@ Future<void> toggleSomething(String instancePath, bool value) async {
 | Port Range | `UspPortRangeTab` | `portForwardingRuleModels.where(isPortRange)` |
 | Port Triggering | `UspPortTriggeringTab` | `portTriggeringRuleModels` |
 
-### 7.4 Skeleton Loading
+### 7.6 Skeleton Loading
 
 `UspDashboardSkeleton` renders 5 skeleton templates matching dashboard layout:
 
@@ -732,7 +918,7 @@ Future<void> toggleSomething(String instancePath, bool value) async {
 
 Loading state shows `LinearProgressIndicator` (4px) reflecting actual fetch progress (`uspLoadingProgressProvider`).
 
-### 7.5 Responsive Layout
+### 7.7 Responsive Layout
 
 | Mode | Layout |
 |------|--------|
@@ -813,6 +999,88 @@ Multiple fixes to prevent JNAP failures from crashing the app when USP is the pr
 | `isReady` requires non-empty data | `polling_provider.dart` |
 | Stored credentials USP-only bypass | `router_provider.dart` |
 
+### 9.4 YAML `base_path` Format Migration (BUG — Fixed)
+
+**Date:** 2026-03-09
+
+**Problem:** 8 YAML definitions used the deprecated `base_path` + `multi_instance: true` format. For multi-instance definitions, codegen generated broken wildcard paths missing the dot separator: `Device.X.Y.*FieldName` instead of `Device.X.Y.*.FieldName`.
+
+**Impact:**
+- 4 multi-instance files generated **broken paths** (USP Get returns empty):
+  - `vendor_log_files.yaml` → `*Name` instead of `*.Name`
+  - `dhcp_clients.yaml` → `*Chaddr` instead of `*.Chaddr`
+  - `dhcp_reservations.yaml` → `*Enable` instead of `*.Enable`
+  - `admin_users.yaml` → `*Username` instead of `*.Username`
+- 2 single-instance files had correct output but deprecated format:
+  - `system_info.yaml` → `instance: Device.DeviceInfo` (no trailing dot)
+  - `time_settings.yaml` → `instance: Device.Time` (no trailing dot)
+- 1 file with dot-prefixed paths worked correctly but used old field names:
+  - `wifi_clients.yaml` → `multiInstance:`, `singularName:`, `nestedPath:`
+- 1 file already fixed earlier in this session:
+  - `ethernet_interfaces.yaml` → `multiInstance: Device.Ethernet.Interface.`
+
+**Fix:** Migrated all 8 YAMLs to modern format:
+- Multi-instance: `base_path` + `multi_instance: true` → `multiInstance: Device.X.Y.` + `path: .FieldName`
+- Single-instance: `base_path` → `instance: Device.X.Y` (no trailing dot) + `path: .FieldName`
+- Deprecated fields: `singular_name` → `singularName`, `nested_path` → `nestedPath`
+
+**Note:** `instance:` must NOT have a trailing dot (codegen inserts one), while `multiInstance:` MUST have a trailing dot (codegen inserts `*.` between it and the field path).
+
+**Files:** 8 YAML definitions + regenerated all 20 `.g.dart` files
+
+### 9.5 USP Auto-Logout on Navigation (BUG — Fixed)
+
+**Date:** 2026-03-09
+
+**Problem:** Navigating from USP Dashboard to USP Menu triggered automatic logout. Three independent root causes:
+
+1. **Router redirect bypass too narrow:** Only `/uspDashboard` was excluded from JNAP redirect logic. Other USP routes (`/uspMenu`, `/uspDmz`, etc.) fell through to `redirectLogic()` → `_prepare()` → `checkAndStartPolling()`.
+2. **JNAP polling in USP-only mode:** Polling kicked off JNAP requests that failed with `_ErrorUnauthorized`, triggering logout.
+3. **Error handler too strict:** Polling error handler only tolerated `_ErrorJNAPUnavailable` but not `_ErrorUnauthorized` in USP-only mode.
+
+**Fix (3-layer defense):**
+
+| Layer | Fix | File |
+|-------|-----|------|
+| Router | `state.matchedLocation.startsWith('/usp')` bypasses ALL USP routes | `router_provider.dart` |
+| Polling | `ProtocolResolver.isUspOnlyMode` → skip `checkAndStartPolling()` entirely | `polling_provider.dart` |
+| Error handler | Tolerate `_ErrorUnauthorized` when `isUspOnlyMode` is true | `polling_provider.dart` |
+
+### 9.6 Ethernet Ports Empty Card (BUG — Fixed)
+
+**Date:** 2026-03-09
+
+**Problem:** Ethernet Ports dashboard card showed empty despite WAN and LAN cables being connected. Root cause: `ethernet_interfaces.yaml` used old `base_path` format generating `Device.Ethernet.Interface.*Name` (invalid wildcard). USP Get returned empty response.
+
+**SSH verification:** Router confirmed `Interface.1` (WAN eth1, 2500Mbps) and `Interface.2` (LAN eth0, 1000Mbps) present.
+
+**Fix:** Part of the YAML format migration (9.4). Updated to `multiInstance: Device.Ethernet.Interface.` + `path: .Name` → generates `Device.Ethernet.Interface.*.Name`.
+
+### 9.7 LAN Port Layer1Interface Mismatch (BUG — Fixed)
+
+**Date:** 2026-03-09
+
+**Problem:** LAN Ethernet port showed as "Up" but with no connected devices listed. The code matched `ConnectedDevice.Layer1Interface` against `Device.Ethernet.Interface.2.`, but the router's `Layer1Interface` points to a bridge port (e.g., `Device.Bridging.Bridge.1.Port.X`) instead of the physical Ethernet interface.
+
+**Fix (2 changes in `usp_device_service.dart`):**
+
+1. **Port status fallback:** LAN `isUp` = `wiredDevices.isNotEmpty || port.status == 'up'` (was only device-based).
+2. **Device fallback:** When exact `Layer1Interface` match fails and there's a single LAN port, assign all non-WiFi active devices to that port. Non-WiFi detection: `!interface_.toLowerCase().contains('wifi')`.
+
+**File:** `lib/usp_page/dashboard/services/usp_device_service.dart`
+
+### 9.8 Connected Devices Card Layout Overflow (UI — Fixed)
+
+**Date:** 2026-03-09
+
+**Problem:** Title "Connected Devices" and online/offline status counts were on the same `Row` without `Expanded`/`Flexible`, causing overflow on narrow screens.
+
+**Fix:** Split into two rows:
+- Row 1: Title (`Expanded`) + "View All" button
+- Row 2: Online/Offline status dots and counts
+
+**File:** `lib/usp_page/dashboard/views/components/usp_connected_devices_card.dart`
+
 ---
 
 ## 10. Authentication Architecture
@@ -849,6 +1117,28 @@ Page reload / App restart
 | Page reload (local) | SecureStorage | restoreSession | USP + JNAP |
 | Page reload (cloud) | SecureStorage | No password | JNAP only |
 
+### 10.4 Token Expiry Handling (401 Auth Retry)
+
+```
+Request fails with HTTP 401
+        │
+        └─→ _withAuthRetry catches 401
+                   │
+                   ├─ Stage 1: refreshToken() (fast, no password)
+                   │    └─ Success? → retry original request
+                   │    └─ Fail? → Stage 2
+                   │
+                   └─ Stage 2: onReauthRequired()
+                              └─→ UspAuthCoordinator.restoreSession()
+                              └─→ Read password from SecureStorage
+                              └─→ UspService.login(password)
+                              └─→ retry original request
+```
+
+**Concurrent Protection:** `Completer<void>` lock prevents N concurrent 401s from triggering N reauths — all wait for the first reauth to complete.
+
+**Coverage:** All 11 UspService CRUD methods + all UspBridgeClient REST endpoints + SSE stream reconnect.
+
 ---
 
 ## 11. Phase Status and Blocked Items
@@ -862,6 +1152,20 @@ Page reload / App restart
 | Phase 2B | Write operations (21 mutations) | ✅ Complete |
 | Phase 2B-9 | Dashboard skeleton loading | ✅ Complete |
 | Phase 2B-10 | Network Status Card + Stats Panel | ✅ Complete |
+| Phase 4A | Standalone feature pages (7 pages) | ✅ Complete (2026-03-10) |
+| Infra | 401 Auth Retry (two-stage reauth) | ✅ Complete (2026-03-10) |
+
+**Phase 4A Details:**
+
+| Feature | Page | Date |
+|---------|------|------|
+| F-005: Firewall Settings | `UspFirewallView` — SPI/VPN passthrough toggles | 2026-03-09 |
+| F-006: DMZ Configuration | `UspDmzView` — enable/disable, dest IP, source CIDR, CRUD | 2026-03-09 |
+| F-013: Firmware Dual Image | `UspDeviceInfoCard` — Active/Boot badge, graceful fallback | 2026-03-09 |
+| F-014: CPU/Memory Monitoring | `UspSystemStatusCard` — merged gauge+chart, 30s auto-refresh | 2026-03-09 |
+| F-016: Local Network Settings | `UspLocalNetworkView` — router IP, hostname, DHCP, dirty guard | 2026-03-10 |
+| F-015: Static Routing | `UspStaticRoutingView` — route CRUD, Origin filter, interface map | 2026-03-10 |
+| F-017: IPv6 Port Service | `UspIpv6PortServiceView` — IPv6 rules CRUD, IANA protocol mapping, CreationDate filter | 2026-03-10 |
 
 ### 11.2 Blocked by usp-bridge Server
 
@@ -886,19 +1190,23 @@ Page reload / App restart
 
 | Layer | Files | Location |
 |-------|-------|----------|
-| YAML Definitions | 16 | `doc/usp/definitions/` |
-| Codegen Output | 17 | `lib/generated/` |
+| YAML Definitions | 22 | `doc/usp/definitions/` |
+| Codegen Output | 23 | `lib/generated/` (22 data + transforms) |
 | USP Service | 3 | `lib/usp/services/` |
-| UI Models | 13 | `lib/usp_page/**/models/` |
-| Dashboard State | 1 | `lib/usp_page/dashboard/providers/usp_dashboard_state.dart` |
-| Dashboard Notifier | 1 | `lib/usp_page/dashboard/providers/usp_dashboard_notifier.dart` |
-| Dashboard Service | 1 | `lib/usp_page/dashboard/services/usp_device_service.dart` |
-| Dashboard Components | 19 | `lib/usp_page/dashboard/views/components/` |
+| USP Auth | 2 | `lib/usp/providers/` |
+| UI Models | 21 | `lib/usp_page/**/models/` |
+| Dashboard Providers | 7 | `lib/usp_page/dashboard/providers/` |
+| Dashboard Service | 1 | `lib/usp_page/dashboard/services/` |
+| Dashboard Components | 20 | `lib/usp_page/dashboard/views/components/` |
 | Dashboard Dialogs | 5 | `lib/usp_page/dashboard/views/dialogs/` |
 | Dashboard Main View | 1 | `lib/usp_page/dashboard/views/usp_dashboard_view.dart` |
-| Port Forwarding Detail | 7 | `lib/usp_page/port_forwarding/` |
+| Standalone Services | 8 | `lib/usp_page/**/services/` (excl. dashboard) |
+| Standalone Providers | 11 | `lib/usp_page/**/providers/` (excl. dashboard) |
+| Standalone Views | 16 | `lib/usp_page/**/views/*_view.dart` (excl. dashboard) |
+| Standalone Components | 11 | `lib/usp_page/**/views/components/` (excl. dashboard) |
+| Standalone Dialogs | 8 | `lib/usp_page/**/views/dialogs/` (excl. dashboard) |
 | Menu | 1 | `lib/usp_page/menu/` |
-| **Total** | **~85** | |
+| **Total** | **~160** | |
 
 ### 12.2 Codegen Definition → Generated File → UI Model Traceability
 
@@ -920,3 +1228,9 @@ Page reload / App restart
 | `admin_users.yaml` | `admin_users.g.dart` | — | Admin page |
 | `port_forwarding.yaml` | `port_forwarding.g.dart` | `PortForwardingRuleUIModel` | PortForwarding |
 | `port_triggering.yaml` | `port_triggering.g.dart` | `PortTriggeringRuleUIModel` | PortTriggering |
+| `firewall_chain_rules.yaml` | `firewall_chain_rules.g.dart` | `FirewallUIModel` | Firewall page |
+| `dmz.yaml` | `dmz.g.dart` | `DmzUIModel` | DMZ page |
+| `vendor_log_files.yaml` | `vendor_log_files.g.dart` | `LogFileUIModel` | System Log page |
+| `firmware_images.yaml` | `firmware_images.g.dart` | — | DeviceInfoCard (dual image) |
+| `static_routing.yaml` | `static_routing.g.dart` | `StaticRouteUIModel` | Static Routing page |
+| `ipv6_port_service.yaml` | `ipv6port_service.g.dart` | `Ipv6PortServiceRuleUIModel` | IPv6 Port Service page |

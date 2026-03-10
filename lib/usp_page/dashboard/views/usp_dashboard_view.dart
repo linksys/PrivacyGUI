@@ -9,7 +9,9 @@ import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart'
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
+import 'package:privacy_gui/usp_page/dashboard/services/usp_pdf_service.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/_components.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
@@ -158,13 +160,21 @@ class UspDashboardView extends ConsumerWidget {
         Row(
           children: [
             AppIconButton(
+              icon: AppIcon.font(Icons.print),
+              onTap: () {
+                final state = ref.read(uspDashboardProvider).valueOrNull;
+                if (state != null) {
+                  doSomethingWithSpinner(
+                    context,
+                    UspPdfService.generatePdf(state),
+                  );
+                }
+              },
+            ),
+            AppGap.sm(),
+            AppIconButton(
               icon: AppIcon.font(Icons.refresh),
               onTap: () => ref.invalidate(uspDashboardProvider),
-            ),
-            AppGap.md(),
-            AppButton.text(
-              label: 'Logout',
-              onTap: () => _logout(context, ref),
             ),
           ],
         ),
@@ -198,8 +208,6 @@ class UspDashboardView extends ConsumerWidget {
         UspEthernetPortsCard(ports: state.ethernetPortModels),
         AppGap.xl(),
         UspSystemStatusCard(info: info),
-        AppGap.xl(),
-        UspSystemMonitorCard(),
         AppGap.xl(),
         UspConnectedDevicesCard(
           devices: devices,
@@ -252,8 +260,6 @@ class UspDashboardView extends ConsumerWidget {
                   UspEthernetPortsCard(ports: state.ethernetPortModels),
                   AppGap.xl(),
                   UspSystemStatusCard(info: info),
-                  AppGap.xl(),
-                  UspSystemMonitorCard(),
                   AppGap.xl(),
                   UspConnectedDevicesCard(
                     devices: devices,

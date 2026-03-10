@@ -39,6 +39,16 @@ parameters:
     type: string
     description: Address assignment method (DHCP, Static)
 
+children:
+  - name: ipv6Addresses
+    singularName: connectedDeviceIpv6
+    path: .IPv6Address.
+    parameters:
+      - field_name: address
+        path: .IPAddress
+        type: string
+        description: IPv6 address
+
 subscribe:
   enabled: true
   notifType: ObjectCreation

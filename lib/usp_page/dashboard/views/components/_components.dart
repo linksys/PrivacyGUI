@@ -16,7 +16,6 @@ export 'usp_port_forwarding_card.dart';
 export 'usp_protocol_info_card.dart';
 export 'usp_stats_panel.dart';
 export 'usp_status_dot.dart';
-export 'usp_system_monitor_card.dart';
 export 'usp_system_status_card.dart';
 export 'usp_time_settings_card.dart';
 export 'usp_wifi_status_card.dart';

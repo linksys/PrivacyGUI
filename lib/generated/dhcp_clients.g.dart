@@ -28,7 +28,12 @@ class DhcpClients {
 
   const DhcpClients({required this.items});
 
-  static const _paths = ['Device.DHCPv4.Server.Pool.1.Client.'];
+  static const _paths = [
+    'Device.DHCPv4.Server.Pool.1.Client.*.Chaddr',
+    'Device.DHCPv4.Server.Pool.1.Client.*.Active',
+    'Device.DHCPv4.Server.Pool.1.Client.*.IPv4Address.1.IPAddress',
+    'Device.DHCPv4.Server.Pool.1.Client.*.IPv4Address.1.LeaseTimeRemaining',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<DhcpClients> fetch(UspService client) async {
@@ -51,10 +56,11 @@ class DhcpClients {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}Chaddr'], response['${p}Active'], response['${p}IPv4Address.1.IPAddress'], response['${p}IPv4Address.1.LeaseTimeRemaining']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(DhcpClient(
         instancePath: p,
         chaddr: (response['${p}Chaddr'] ?? '') as String,
-        active: response['${p}Active'] == true || response['${p}Active'] == 'true',
+        active: response['${p}Active'] == true || response['${p}Active'] == 'true' || response['${p}Active'] == '1',
         ipAddress: (response['${p}IPv4Address.1.IPAddress'] ?? '') as String,
         leaseTimeRemaining: DateTime.parse(response['${p}IPv4Address.1.LeaseTimeRemaining']?.toString() ?? ''),
       ));

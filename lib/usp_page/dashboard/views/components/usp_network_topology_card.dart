@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
@@ -84,7 +86,8 @@ class UspNetworkTopologyCard extends StatelessWidget {
     );
   }
 
-  /// Wraps [child] in a local Theme override that enables topology animation.
+  /// Wraps [child] in a local Theme override that enables topology animation
+  /// and increases client–node spacing for the dashboard card.
   Widget _withTopologyAnimation(BuildContext context, Widget child) {
     final appTheme = Theme.of(context).extension<AppDesignTheme>();
     if (appTheme == null) return child;
@@ -95,6 +98,10 @@ class UspNetworkTopologyCard extends StatelessWidget {
           appTheme.copyWith(
             visualEffects:
                 appTheme.visualEffects | AppThemeConfig.effectTopologyAnimation,
+            topologySpec: appTheme.topologySpec.copyWith(
+              nodeSpacing: appTheme.topologySpec.nodeSpacing * 1.4,
+              orbitRadius: appTheme.topologySpec.orbitRadius * 1.4,
+            ),
           ),
         ],
       ),
@@ -108,12 +115,16 @@ class UspNetworkTopologyCard extends StatelessWidget {
 
     // Gateway node (the router)
     const gatewayId = 'gateway';
+    final gatewayIconName = routerIconTestByModel(
+      modelNumber: info.modelName,
+      hardwareVersion: info.hardwareVersion,
+    );
     nodes.add(MeshNode(
       id: gatewayId,
       name: info.gatewayName,
       type: MeshNodeType.gateway,
       status: MeshNodeStatus.online,
-      iconData: Icons.router,
+      image: DeviceImageHelper.getRouterImage(gatewayIconName),
       extra: info.manufacturer,
       level: 1.0,
     ));
@@ -127,6 +138,9 @@ class UspNetworkTopologyCard extends StatelessWidget {
         final extenderId = 'extender-${meshNode.deviceId}';
         extenderNodeIds.add(meshNode.deviceId);
 
+        final extenderIconName = routerIconTestByModel(
+          modelNumber: meshNode.model,
+        );
         nodes.add(MeshNode(
           id: extenderId,
           name: meshNode.model.isNotEmpty
@@ -135,7 +149,7 @@ class UspNetworkTopologyCard extends StatelessWidget {
           type: MeshNodeType.extender,
           status: MeshNodeStatus.online,
           parentId: gatewayId,
-          iconData: Icons.router,
+          image: DeviceImageHelper.getRouterImage(extenderIconName),
           level: 0.8,
         ));
 
@@ -164,9 +178,8 @@ class UspNetworkTopologyCard extends StatelessWidget {
         id: clientId,
         name: device.displayName,
         type: MeshNodeType.client,
-        status: device.isActive
-            ? MeshNodeStatus.online
-            : MeshNodeStatus.offline,
+        status:
+            device.isActive ? MeshNodeStatus.online : MeshNodeStatus.offline,
         parentId: parentId,
         iconData: isEthernet ? Icons.settings_ethernet : Icons.wifi,
         extra: device.ip,
@@ -180,9 +193,8 @@ class UspNetworkTopologyCard extends StatelessWidget {
         connectionType:
             isEthernet ? ConnectionType.ethernet : ConnectionType.wifi,
         rssi: device.signalStrength,
-        throughput: device.totalThroughput > 0
-            ? device.totalThroughput / 1000.0
-            : null,
+        throughput:
+            device.totalThroughput > 0 ? device.totalThroughput / 1000.0 : null,
       ));
     }
 

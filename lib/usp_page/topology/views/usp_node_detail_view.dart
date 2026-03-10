@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
@@ -116,12 +118,6 @@ class UspNodeDetailView extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.router,
-                size: 32,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              AppGap.md(),
               Expanded(
                 child: AppText.titleLarge(node.displayName),
               ),
@@ -130,7 +126,17 @@ class UspNodeDetailView extends ConsumerWidget {
               AppText.labelLarge(node.roleLabel),
             ],
           ),
-          AppGap.xl(),
+          AppGap.lg(),
+          Center(
+            child: Image(
+              image: DeviceImageHelper.getRouterImage(
+                routerIconTestByModel(modelNumber: node.model),
+              ),
+              width: 100,
+              height: 100,
+            ),
+          ),
+          AppGap.lg(),
           _infoRow(context, 'Device ID', node.deviceId),
           _infoRow(context, 'Model', node.model),
           if (node.manufacturer.isNotEmpty)
@@ -139,7 +145,6 @@ class UspNodeDetailView extends ConsumerWidget {
             _infoRow(context, 'Serial Number', node.serialNumber),
           if (node.softwareVersion.isNotEmpty)
             _infoRow(context, 'Firmware', node.softwareVersion),
-          _infoRow(context, 'Radios', '${node.radioCount}'),
           _infoRow(context, 'Connected Devices',
               '${node.connectedDeviceCount}'),
         ],

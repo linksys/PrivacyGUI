@@ -2,9 +2,24 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
-## [2.1.0] - 2026-03-06
+## [2.1.0] - 2026-03-10
 
 ### USP Protocol Integration
+
+#### Device Search Field & IPv6 Data Extension
+- Extend `connected_devices.yaml` with IPv6 children (`Device.Hosts.Host.{i}.IPv6Address.{i}.IPAddress`)
+- Add `DeviceSearchField` reusable widget with `DeviceSearchMode` (ipv4/ipv6/mac) — `RawAutocomplete` with device name, address, and MAC fuzzy search
+- Integrate into IPv6 Port Service Add/Edit Rule dialog — select from known devices with IPv6 addresses
+- Add `ipv6Addresses: List<String>` to `DeviceUIModel`
+
+#### USP Console & Menu Improvements
+- Add TR-181 path autocomplete to USP Console (8K+ paths from `tr-181-2-20-0-usp-full.xml`)
+- Migrate USP Console to UI Kit components (`AppButton.*`, `AppTextField`)
+- Add Advanced Settings submenu (Local Network, Firewall, DMZ, Port Forwarding, Static Routing)
+- Nest sub-routes under Advanced Settings for proper back navigation
+- Remove IPv6 Firewall standalone menu item (merged into Firewall)
+- Increase dashboard topology card client-node spacing (`nodeSpacing * 1.4`, `orbitRadius * 1.4`)
+- Wrap TR-181 autocomplete and generated path data in `kDebugMode` for production size protection
 
 #### Selective Get Optimization & Codegen v0.10.3
 - Migrate 8 YAML definitions to new `multiInstance` format with selective get search paths (connected_devices, data_elements_network, wi_fi_radios, wi_fi_access_points, wi_fi_ssids, port_forwarding, port_triggering, firewall_chain_rules)

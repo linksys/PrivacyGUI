@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -69,22 +70,10 @@ class UspMenuView extends StatelessWidget {
         onTap: () => context.goNamed(RouteNamed.uspAdmin),
       ),
       AppSectionItemData(
-        title: 'DHCP',
-        description: 'Leases, reservations, server settings',
-        iconData: Icons.dns,
-        onTap: () => context.goNamed(RouteNamed.uspDhcpDetail),
-      ),
-      AppSectionItemData(
-        title: 'Firewall',
-        description: 'Firewall, VPN passthrough, internet filters',
-        iconData: Icons.security,
-        onTap: () => context.goNamed(RouteNamed.uspFirewall),
-      ),
-      AppSectionItemData(
-        title: 'Port Forwarding',
-        description: 'Single port, range, and triggering rules',
-        iconData: Icons.settings_ethernet,
-        onTap: () => context.goNamed(RouteNamed.uspPortForwardingDetail),
+        title: 'Advanced Settings',
+        description: 'Firewall, local network, DMZ, port forwarding, routing',
+        iconData: Icons.tune,
+        onTap: () => context.goNamed(RouteNamed.uspAdvancedSettings),
       ),
       AppSectionItemData(
         title: 'System Logs',
@@ -92,6 +81,13 @@ class UspMenuView extends StatelessWidget {
         iconData: Icons.article_outlined,
         onTap: () => context.goNamed(RouteNamed.uspSystemLog),
       ),
+      if (kDebugMode)
+        AppSectionItemData(
+          title: 'USP Console',
+          description: 'Raw USP CRUD, SSE, subscription & turbo debug tool',
+          iconData: Icons.terminal,
+          onTap: () => context.goNamed(RouteNamed.uspTestConsole),
+        ),
     ];
   }
 

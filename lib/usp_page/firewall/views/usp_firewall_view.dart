@@ -88,6 +88,8 @@ class UspFirewallView extends ConsumerWidget {
         _buildVpnSection(context, fw, notifier, disabled),
         AppGap.md(),
         _buildFiltersSection(context, fw, notifier, disabled),
+        AppGap.md(),
+        _buildIpv6PortServiceLink(context),
         if (state.isDirty) ...[
           AppGap.xl(),
           SizedBox(
@@ -289,6 +291,37 @@ class UspFirewallView extends ConsumerWidget {
             onChanged: disabled ? null : onChanged,
           ),
         ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // IPv6 Port Service Link
+  // ---------------------------------------------------------------------------
+
+  Widget _buildIpv6PortServiceLink(BuildContext context) {
+    return AppCard(
+      child: InkWell(
+        onTap: () => context.goNamed(RouteNamed.uspIpv6PortService),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppText.titleSmall('IPv6 Port Service'),
+                  AppGap.xs(),
+                  AppText.bodySmall(
+                    'Manage IPv6 inbound port access rules',
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+            AppIcon.font(Icons.chevron_right),
+          ],
+        ),
       ),
     );
   }

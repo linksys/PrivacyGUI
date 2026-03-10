@@ -12,7 +12,9 @@ class LanNetworkInfo {
   final bool dhcpEnabled;
   final String minAddress;
   final String maxAddress;
+  final int leaseTime;
   final String dnsServers;
+  final String hostName;
 
   const LanNetworkInfo({
     required this.ipAddress,
@@ -20,7 +22,9 @@ class LanNetworkInfo {
     required this.dhcpEnabled,
     required this.minAddress,
     required this.maxAddress,
+    required this.leaseTime,
     required this.dnsServers,
+    required this.hostName,
   });
 
   static const _paths = [
@@ -29,7 +33,9 @@ class LanNetworkInfo {
     'Device.DHCPv4.Server.Pool.1.Enable',
     'Device.DHCPv4.Server.Pool.1.MinAddress',
     'Device.DHCPv4.Server.Pool.1.MaxAddress',
+    'Device.DHCPv4.Server.Pool.1.LeaseTime',
     'Device.DHCPv4.Server.Pool.1.DNSServers',
+    'Device.DeviceInfo.HostName',
   ];
 
   /// Fetch all parameters via USP Get message
@@ -40,21 +46,37 @@ class LanNetworkInfo {
 
   factory LanNetworkInfo._fromResponse(Map<String, dynamic> response) {
     return LanNetworkInfo(
-      ipAddress: response['Device.IP.Interface.1.IPv4Address.1.IPAddress'] as String,
-      subnetMask: response['Device.IP.Interface.1.IPv4Address.1.SubnetMask'] as String,
-      dhcpEnabled: response['Device.DHCPv4.Server.Pool.1.Enable'] == true,
-      minAddress: response['Device.DHCPv4.Server.Pool.1.MinAddress'] as String,
-      maxAddress: response['Device.DHCPv4.Server.Pool.1.MaxAddress'] as String,
-      dnsServers: response['Device.DHCPv4.Server.Pool.1.DNSServers'] as String,
+      ipAddress: (response['Device.IP.Interface.1.IPv4Address.1.IPAddress'] ?? '') as String,
+      subnetMask: (response['Device.IP.Interface.1.IPv4Address.1.SubnetMask'] ?? '') as String,
+      dhcpEnabled: response['Device.DHCPv4.Server.Pool.1.Enable'] == true || response['Device.DHCPv4.Server.Pool.1.Enable'] == 'true' || response['Device.DHCPv4.Server.Pool.1.Enable'] == '1',
+      minAddress: (response['Device.DHCPv4.Server.Pool.1.MinAddress'] ?? '') as String,
+      maxAddress: (response['Device.DHCPv4.Server.Pool.1.MaxAddress'] ?? '') as String,
+      leaseTime: int.tryParse(response['Device.DHCPv4.Server.Pool.1.LeaseTime']?.toString() ?? '') ?? 0,
+      dnsServers: (response['Device.DHCPv4.Server.Pool.1.DNSServers'] ?? '') as String,
+      hostName: (response['Device.DeviceInfo.HostName'] ?? '') as String,
     );
   }
 
   /// Update writable parameters via USP Set message
   static Future<void> save(UspService client, {
+    String? ipAddress,
+    String? subnetMask,
+    bool? dhcpEnabled,
+    String? minAddress,
+    String? maxAddress,
+    int? leaseTime,
     String? dnsServers,
+    String? hostName,
   }) async {
     final params = <String, dynamic>{};
+    if (ipAddress != null) params['Device.IP.Interface.1.IPv4Address.1.IPAddress'] = ipAddress;
+    if (subnetMask != null) params['Device.IP.Interface.1.IPv4Address.1.SubnetMask'] = subnetMask;
+    if (dhcpEnabled != null) params['Device.DHCPv4.Server.Pool.1.Enable'] = dhcpEnabled;
+    if (minAddress != null) params['Device.DHCPv4.Server.Pool.1.MinAddress'] = minAddress;
+    if (maxAddress != null) params['Device.DHCPv4.Server.Pool.1.MaxAddress'] = maxAddress;
+    if (leaseTime != null) params['Device.DHCPv4.Server.Pool.1.LeaseTime'] = leaseTime;
     if (dnsServers != null) params['Device.DHCPv4.Server.Pool.1.DNSServers'] = dnsServers;
+    if (hostName != null) params['Device.DeviceInfo.HostName'] = hostName;
     if (params.isNotEmpty) await client.set(params);
   }
 
@@ -66,7 +88,9 @@ class LanNetworkInfo {
       'dhcpEnabled: $dhcpEnabled, '
       'minAddress: $minAddress, '
       'maxAddress: $maxAddress, '
-      'dnsServers: $dnsServers'
+      'leaseTime: $leaseTime, '
+      'dnsServers: $dnsServers, '
+      'hostName: $hostName'
     ')';
   }
 }

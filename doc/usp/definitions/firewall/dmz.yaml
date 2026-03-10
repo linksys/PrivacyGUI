@@ -1,0 +1,47 @@
+# DMZ (Demilitarized Zone) configuration
+# SSH-verified 2026-03-09 via Device.Firewall.DMZ.{i}. schema
+# Multi-instance but UI treats as single-entry (0-1 entries)
+
+name: Dmz
+singularName: DmzEntry
+version: 1.0.0
+multiInstance: Device.Firewall.DMZ.
+category: firewall
+description: DMZ configuration (Demilitarized Zone)
+type: add
+
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+    writable: true
+    description: Enable/disable this DMZ rule
+
+  - field_name: destIp
+    path: .DestIP
+    type: string
+    writable: true
+    description: DMZ destination host IP address
+
+  - field_name: sourcePrefix
+    path: .SourcePrefix
+    type: string
+    writable: true
+    description: Source IP restriction in CIDR notation (e.g. 0.0.0.0/0 for any)
+
+  - field_name: interface_
+    path: .Interface
+    type: string
+    writable: true
+    description: WAN interface reference (e.g. Device.IP.Interface.2)
+
+  - field_name: description
+    path: .Description
+    type: string
+    writable: true
+    description: User-friendly rule description
+
+  - field_name: status
+    path: .Status
+    type: string
+    description: Operational status (read-only)

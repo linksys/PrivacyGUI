@@ -62,6 +62,10 @@ class UspService {
 
   String? get sessionToken => _client.sessionToken;
 
+  /// Callback for full re-authentication when token refresh fails.
+  /// Set by [UspAuthCoordinator] to provide re-login via stored password.
+  Future<void> Function()? onReauthRequired;
+
   Future<void> login(String password) async {
     await _client.login(password);
   }
@@ -74,13 +78,70 @@ class UspService {
     await _client.refreshToken();
   }
 
+  // ===========================================================================
+  // 401 Auth Retry
+  // ===========================================================================
+
+  Completer<void>? _reauthInProgress;
+
+  static bool _isAuthError(Object error) {
+    return error.toString().contains('HTTP 401');
+  }
+
+  /// Two-stage re-authentication: refreshToken first, then full re-login.
+  /// Uses a Completer lock to prevent concurrent reauth attempts.
+  Future<void> reauth() async {
+    if (_reauthInProgress != null) {
+      await _reauthInProgress!.future;
+      return;
+    }
+    _reauthInProgress = Completer<void>();
+    try {
+      // Stage 1: quick token refresh (no password needed)
+      try {
+        await refreshToken();
+        debugPrint('[UspService] Token refreshed successfully');
+        _reauthInProgress!.complete();
+        return;
+      } catch (e) {
+        debugPrint('[UspService] Token refresh failed: $e');
+      }
+      // Stage 2: full re-login via stored password
+      final reauth = onReauthRequired;
+      if (reauth != null) {
+        await reauth();
+        debugPrint('[UspService] Full re-login succeeded');
+      }
+      _reauthInProgress!.complete();
+    } catch (e) {
+      if (!_reauthInProgress!.isCompleted) {
+        _reauthInProgress!.completeError(e);
+      }
+      rethrow;
+    } finally {
+      _reauthInProgress = null;
+    }
+  }
+
+  /// Wraps an async operation with automatic 401 retry.
+  Future<T> _withAuthRetry<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } catch (e) {
+      if (!_isAuthError(e)) rethrow;
+      debugPrint('[UspService] 401 detected, attempting reauth...');
+      await reauth();
+      return await action();
+    }
+  }
+
   // Legacy single getters if needed
   Future<String?> getSingle(String path) async {
-    return await _client.get(path);
+    return _withAuthRetry(() => _client.get(path));
   }
 
   Future<void> setSingle(String path, String value) async {
-    await _client.set(path, value);
+    await _withAuthRetry(() => _client.set(path, value));
   }
 
   /// Fetches multiple USP paths in a single getMultiple call.
@@ -88,7 +149,7 @@ class UspService {
   /// Returns a coerced `Map<String, dynamic>` where booleans and nulls are
   /// properly typed (not left as raw strings).
   Future<Map<String, dynamic>> get(List<String> paths) async {
-    final rawMap = await _client.getMultiple(paths);
+    final rawMap = await _withAuthRetry(() => _client.getMultiple(paths));
 
     // DEBUG: log raw response summary
     debugPrint('[UspService.get] requested ${paths.length} paths, '
@@ -152,20 +213,21 @@ class UspService {
 
   Future<void> set(Map<String, dynamic> parameters,
       {bool allowPartial = false}) async {
-    // Convert Map<String, dynamic> to Map<String, String> as required by the lower-level UI client
     final Map<String, String> stringParams =
         parameters.map((key, value) => MapEntry(key, value.toString()));
-    await _client.setMultiple(stringParams, allowPartial: allowPartial);
+    await _withAuthRetry(
+        () => _client.setMultiple(stringParams, allowPartial: allowPartial));
   }
 
   // Legacy multiple getters
   Future<Map<String, String>> getMultiple(List<String> paths) async {
-    return await _client.getMultiple(paths);
+    return _withAuthRetry(() => _client.getMultiple(paths));
   }
 
   Future<void> setMultiple(Map<String, String> parameters,
       {bool allowPartial = false}) async {
-    await _client.setMultiple(parameters, allowPartial: allowPartial);
+    await _withAuthRetry(
+        () => _client.setMultiple(parameters, allowPartial: allowPartial));
   }
 
   // ===========================================================================
@@ -179,7 +241,7 @@ class UspService {
   /// Returns the full path of the created instance (e.g., "Device.NAT.PortMapping.3.").
   Future<String> add(String objectPath, Map<String, dynamic> parameters) async {
     final stringParams = parameters.map((k, v) => MapEntry(k, v.toString()));
-    return await _client.add(objectPath, stringParams);
+    return _withAuthRetry(() => _client.add(objectPath, stringParams));
   }
 
   /// Creates multiple object instances in a single operation.
@@ -191,7 +253,8 @@ class UspService {
   /// Returns a list of created instance paths.
   Future<List<String>> addMultiple(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
-    return await _client.addMultiple(objects, allowPartial: allowPartial);
+    return _withAuthRetry(
+        () => _client.addMultiple(objects, allowPartial: allowPartial));
   }
 
   // ===========================================================================
@@ -202,13 +265,14 @@ class UspService {
   ///
   /// [path] must be a specific instance path (e.g., "Device.NAT.PortMapping.3.").
   Future<void> delete(String path) async {
-    await _client.delete(path);
+    await _withAuthRetry(() => _client.delete(path));
   }
 
   /// Deletes multiple object instances in a single operation.
   Future<void> deleteMultiple(List<String> paths,
       {bool allowPartial = false}) async {
-    await _client.deleteMultiple(paths, allowPartial: allowPartial);
+    await _withAuthRetry(
+        () => _client.deleteMultiple(paths, allowPartial: allowPartial));
   }
 
   // ===========================================================================
@@ -223,7 +287,7 @@ class UspService {
   /// Returns the output arguments from the operation, or an empty map.
   Future<Map<String, String>> operate(String command,
       {Map<String, String> args = const {}}) async {
-    return await _client.operate(command, args: args);
+    return _withAuthRetry(() => _client.operate(command, args: args));
   }
 
   // ===========================================================================

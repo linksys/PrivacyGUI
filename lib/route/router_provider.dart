@@ -77,7 +77,14 @@ import 'package:privacy_gui/usp_page/admin/views/usp_admin_view.dart';
 import 'package:privacy_gui/usp_page/dhcp/views/usp_dhcp_detail_view.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
 import 'package:privacy_gui/usp_page/system_log/views/usp_system_log_view.dart';
+import 'package:privacy_gui/usp_page/advanced_settings/views/usp_advanced_settings_view.dart';
 import 'package:privacy_gui/usp_page/firewall/views/usp_firewall_view.dart';
+import 'package:privacy_gui/usp_page/dmz/views/usp_dmz_view.dart';
+import 'package:privacy_gui/usp_page/local_network/views/usp_local_network_view.dart';
+import 'package:privacy_gui/usp_page/static_routing/views/usp_static_routing_view.dart';
+import 'package:privacy_gui/usp_page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:privacy_gui/usp_page/test_console/views/usp_test_console_view.dart';
 import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 
 part 'route_home.dart';
@@ -149,8 +156,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
         return state.uri.toString();
-      } else if (state.matchedLocation == RoutePath.uspDashboard) {
-        // USP Dashboard bypasses JNAP-dependent redirect logic
+      } else if (state.matchedLocation.startsWith('/usp')) {
+        // All USP routes bypass JNAP-dependent redirect logic
         return state.uri.toString();
       }
       return router.redirectLogic(state);

@@ -3,6 +3,7 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
+import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
@@ -41,7 +42,10 @@ class UspDeviceService {
   // SystemInfo
   // ---------------------------------------------------------------------------
 
-  SystemInfoUIModel buildSystemInfoUIModel(SystemInfo info) {
+  SystemInfoUIModel buildSystemInfoUIModel(
+    SystemInfo info, {
+    List<FirmwareImageUIModel> firmwareImages = const [],
+  }) {
     return SystemInfoUIModel(
       manufacturer: info.manufacturer,
       modelName: info.modelName,
@@ -52,8 +56,39 @@ class UspDeviceService {
       totalMemory: info.totalMemory,
       freeMemory: info.freeMemory,
       cpuUsage: info.cpuUsage,
+      firmwareImages: firmwareImages,
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Firmware Images
+  // ---------------------------------------------------------------------------
+
+  List<FirmwareImageUIModel> buildFirmwareImageUIModels({
+    required FirmwareImages data,
+    required String activeRef,
+    required String bootRef,
+  }) {
+    final normalizedActive = _stripTrailingDot(activeRef);
+    final normalizedBoot = _stripTrailingDot(bootRef);
+    return data.items.map((img) {
+      final normalizedPath = _stripTrailingDot(img.instancePath);
+      return FirmwareImageUIModel(
+        instancePath: img.instancePath,
+        name: img.name,
+        version: img.version,
+        status: img.status,
+        available: img.available,
+        isActive:
+            normalizedActive.isNotEmpty && normalizedPath == normalizedActive,
+        isBootTarget:
+            normalizedBoot.isNotEmpty && normalizedPath == normalizedBoot,
+      );
+    }).toList();
+  }
+
+  static String _stripTrailingDot(String path) =>
+      path.endsWith('.') ? path.substring(0, path.length - 1) : path;
 
   // ---------------------------------------------------------------------------
   // ConnectedDevices
@@ -307,19 +342,35 @@ class UspDeviceService {
       ));
     }
 
-    // LAN ports — effective status from ConnectedDevices
+    // LAN ports — try matching ConnectedDevices via Layer1Interface.
+    // Layer1Interface often points to a bridge port
+    // (e.g. Device.Bridging.Bridge.1.Port.X) instead of Ethernet.Interface,
+    // so also collect non-WiFi active devices as wired fallback.
+    final nonWifiDevices = connectedDevices.items
+        .where(
+            (d) => d.isActive && !d.interface_.toLowerCase().contains('wifi'))
+        .toList();
+
     lanPorts.sort((a, b) => a.name.compareTo(b.name));
     for (var i = 0; i < lanPorts.length; i++) {
       final port = lanPorts[i];
       final portPath = _ensureTrailingDot(port.instancePath);
-      final wiredDevices = connectedDevices.items
+
+      // Try exact Layer1Interface match first.
+      var wiredDevices = connectedDevices.items
           .where((d) =>
               d.isActive &&
               d.interface_.isNotEmpty &&
               _ensureTrailingDot(d.interface_) == portPath)
           .toList();
 
-      final effectivelyUp = wiredDevices.isNotEmpty;
+      // Fallback: assign all non-WiFi devices to the LAN port when
+      // Layer1Interface doesn't directly reference Ethernet.Interface.
+      if (wiredDevices.isEmpty && lanPorts.length == 1) {
+        wiredDevices = nonWifiDevices;
+      }
+
+      final isUp = wiredDevices.isNotEmpty || port.status.toLowerCase() == 'up';
       final deviceInfos = wiredDevices
           .map((d) => WiredDeviceInfo(
                 hostName: d.hostName,
@@ -332,9 +383,9 @@ class UspDeviceService {
         name: port.name,
         label: lanPorts.length == 1 ? 'LAN' : 'LAN ${i + 1}',
         isWan: false,
-        isUp: effectivelyUp,
+        isUp: isUp,
         instancePath: port.instancePath,
-        currentBitRate: effectivelyUp ? port.currentBitRate : 0,
+        currentBitRate: isUp ? port.currentBitRate : 0,
         connectedDevices: deviceInfos,
       ));
     }
@@ -385,7 +436,6 @@ class UspDeviceService {
         manufacturer: node.manufacturer,
         serialNumber: node.serialNumber,
         softwareVersion: node.softwareVersion,
-        radioCount: node.radioCount,
         isMaster: isMaster,
         connectedDeviceCount: connectedCount,
       );
@@ -438,6 +488,10 @@ class UspDeviceService {
       hostName: device.hostName,
       isActive: device.isActive,
       isWifi: isWifi,
+      ipv6Addresses: device.ipv6Addresses
+          .map((e) => e.address)
+          .where((a) => a.isNotEmpty)
+          .toList(),
       signalStrength: isWifi ? wifiClient?.signalStrength : null,
       downlinkRate: isWifi ? wifiClient?.lastDataDownlinkRate : null,
       uplinkRate: isWifi ? wifiClient?.lastDataUplinkRate : null,

@@ -22,7 +22,12 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
       _timer?.cancel();
       _timer = null;
     });
-    return const SystemMonitorState();
+    // Auto-start with 30s default interval
+    const defaultInterval = Duration(seconds: 30);
+    Future.microtask(() => setRefreshInterval(defaultInterval));
+    return const SystemMonitorState(
+      refreshInterval: defaultInterval,
+    );
   }
 
   /// Push a snapshot from the dashboard notifier (avoids duplicate fetch).

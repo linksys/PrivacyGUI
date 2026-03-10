@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/build_config.dart';
+import 'package:privacy_gui/constants/error_code.dart';
 import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
@@ -116,18 +117,23 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             ))
         .onError((error, stackTrace) {
       logger.e('Polling error: $error, $stackTrace');
-      // When JNAP is unavailable (e.g. disabled on USP-only routers),
+      // When JNAP is unavailable or unauthorized (e.g. USP-only routers),
       // don't force logout — return empty data so the dashboard stays up.
-      if (error is JNAPError && error.result == '_ErrorJNAPUnavailable') {
-        logger.w('[Polling]: JNAP unavailable — keeping session alive');
-        return previousSnapshot?.copyWith(
-              lastUpdate: DateTime.now().millisecondsSinceEpoch,
-            ) ??
-            CoreTransactionData(
-              lastUpdate: DateTime.now().millisecondsSinceEpoch,
-              isReady: false,
-              data: const {},
-            );
+      if (error is JNAPError &&
+          (error.result == '_ErrorJNAPUnavailable' ||
+              error.result == errorJNAPUnauthorized)) {
+        final resolver = ref.read(protocolResolverProvider);
+        if (resolver.isUspOnlyMode) {
+          logger.w('[Polling]: JNAP error in USP mode — keeping session alive');
+          return previousSnapshot?.copyWith(
+                lastUpdate: DateTime.now().millisecondsSinceEpoch,
+              ) ??
+              CoreTransactionData(
+                lastUpdate: DateTime.now().millisecondsSinceEpoch,
+                isReady: false,
+                data: const {},
+              );
+        }
       }
       logger.f('[Auth]: Force to log out because of failed polling');
       ref.read(authProvider.notifier).logout();
@@ -198,6 +204,12 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   void checkAndStartPolling([bool force = false]) {
     final loginType = ref.read(authProvider).value?.loginType;
     if (loginType == LoginType.none) {
+      return;
+    }
+    // USP-only mode: JNAP polling is pointless — all calls will fail.
+    final resolver = ref.read(protocolResolverProvider);
+    if (resolver.isUspOnlyMode) {
+      logger.d('[Polling]: Skipped — USP-only mode, no JNAP polling needed');
       return;
     }
     if (!force && (_timer?.isActive ?? false)) {

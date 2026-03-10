@@ -1,6 +1,38 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/generated/transforms.g.dart';
 
+/// Presentation Layer Model for a firmware image partition.
+class FirmwareImageUIModel extends Equatable {
+  final String instancePath;
+  final String name;
+  final String version;
+  final String status;
+  final bool available;
+  final bool isActive;
+  final bool isBootTarget;
+
+  const FirmwareImageUIModel({
+    required this.instancePath,
+    required this.name,
+    required this.version,
+    required this.status,
+    required this.available,
+    this.isActive = false,
+    this.isBootTarget = false,
+  });
+
+  @override
+  List<Object?> get props => [
+        instancePath,
+        name,
+        version,
+        status,
+        available,
+        isActive,
+        isBootTarget,
+      ];
+}
+
 /// Presentation Layer Model for router system information.
 class SystemInfoUIModel extends Equatable {
   final String manufacturer;
@@ -12,6 +44,7 @@ class SystemInfoUIModel extends Equatable {
   final int totalMemory;
   final int freeMemory;
   final int cpuUsage;
+  final List<FirmwareImageUIModel> firmwareImages;
 
   const SystemInfoUIModel({
     required this.manufacturer,
@@ -23,6 +56,7 @@ class SystemInfoUIModel extends Equatable {
     required this.totalMemory,
     required this.freeMemory,
     required this.cpuUsage,
+    this.firmwareImages = const [],
   });
 
   /// Display name for the gateway (router model or fallback).
@@ -68,5 +102,6 @@ class SystemInfoUIModel extends Equatable {
         totalMemory,
         freeMemory,
         cpuUsage,
+        firmwareImages,
       ];
 }

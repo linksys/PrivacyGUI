@@ -4,6 +4,7 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
+import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
@@ -200,10 +201,11 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     );
     logger.d('[USP] Connection details: ${connectionDetailMap.length} entries');
 
-    // Fetch default gateway + IPv6 info in parallel
+    // Fetch default gateway + IPv6 info + firmware images in parallel
     final extraResults = await Future.wait([
       _fetchDefaultGateway(usp),
       _fetchIpv6Info(usp),
+      _fetchFirmwareImages(usp),
     ]);
     final wanGateway = extraResults[0] as String;
     final ipv6Info = extraResults[1] as ({
@@ -211,6 +213,11 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       List<String> lanAddresses,
       bool wanEnabled,
       List<String> wanAddresses
+    });
+    final firmwareImageData = extraResults[2] as ({
+      FirmwareImages images,
+      String activeRef,
+      String bootRef
     });
     logger.d('[USP] WAN gateway: $wanGateway');
 
@@ -227,7 +234,15 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       gatewayName: gatewayName,
     );
 
-    final systemInfoModel = svc.buildSystemInfoUIModel(systemInfo);
+    final firmwareImageModels = svc.buildFirmwareImageUIModels(
+      data: firmwareImageData.images,
+      activeRef: firmwareImageData.activeRef,
+      bootRef: firmwareImageData.bootRef,
+    );
+    final systemInfoModel = svc.buildSystemInfoUIModel(
+      systemInfo,
+      firmwareImages: firmwareImageModels,
+    );
 
     // Push a snapshot to the system monitor (avoids duplicate fetch)
     final memPct = systemInfo.totalMemory > 0
@@ -407,6 +422,41 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         lanAddresses: <String>[],
         wanEnabled: false,
         wanAddresses: <String>[],
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Firmware Images fetch (F-013)
+  // ---------------------------------------------------------------------------
+
+  /// Fetches firmware image partitions and the active/boot reference paths.
+  /// Returns empty data on failure (graceful fallback for unsupported routers).
+  Future<({FirmwareImages images, String activeRef, String bootRef})>
+      _fetchFirmwareImages(UspService usp) async {
+    try {
+      final results = await Future.wait([
+        FirmwareImages.fetch(usp),
+        usp.get([
+          'Device.DeviceInfo.ActiveFirmwareImage',
+          'Device.DeviceInfo.BootFirmwareImage',
+        ]),
+      ]);
+      final images = results[0] as FirmwareImages;
+      final refs = results[1] as Map<String, dynamic>;
+      final activeRef =
+          refs['Device.DeviceInfo.ActiveFirmwareImage']?.toString() ?? '';
+      final bootRef =
+          refs['Device.DeviceInfo.BootFirmwareImage']?.toString() ?? '';
+      logger.d('[USP] Firmware images: ${images.items.length}, '
+          'active=$activeRef, boot=$bootRef');
+      return (images: images, activeRef: activeRef, bootRef: bootRef);
+    } catch (e) {
+      logger.w('[USP] Firmware images fetch failed: $e');
+      return (
+        images: FirmwareImages(items: const []),
+        activeRef: '',
+        bootRef: '',
       );
     }
   }

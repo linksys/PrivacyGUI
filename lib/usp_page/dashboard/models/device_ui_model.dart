@@ -17,8 +17,12 @@ class DeviceUIModel extends Equatable {
   final int? signalStrength; // RSSI dBm (from WifiClient)
   final int? downlinkRate; // bits/sec (from WifiClient)
   final int? uplinkRate; // bits/sec (from WifiClient)
-  final String? band; // "2.4GHz" / "5GHz" / "6GHz" (from ClientConnectionDetail)
+  final String?
+      band; // "2.4GHz" / "5GHz" / "6GHz" (from ClientConnectionDetail)
   final String? ssidName; // SSID name (from ClientConnectionDetail)
+
+  // ─── IPv6 addresses (from ConnectedDeviceIpv6 children) ───
+  final List<String> ipv6Addresses;
 
   // ─── Mesh enrichment ───
   final String? parentNodeId; // Connected mesh node device ID
@@ -35,6 +39,7 @@ class DeviceUIModel extends Equatable {
     this.uplinkRate,
     this.band,
     this.ssidName,
+    this.ipv6Addresses = const [],
     this.parentNodeId,
     this.parentNodeName,
   });
@@ -70,6 +75,7 @@ class DeviceUIModel extends Equatable {
         hostName,
         isActive,
         isWifi,
+        ipv6Addresses,
         signalStrength,
         downlinkRate,
         uplinkRate,

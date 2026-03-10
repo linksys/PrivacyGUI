@@ -1,29 +1,28 @@
 name: DhcpClients
 singularName: DhcpClient
 version: 1.0.0
-base_path: Device.DHCPv4.Server.Pool.1.Client
+multiInstance: Device.DHCPv4.Server.Pool.1.Client.
 category: network
 description: Active DHCP client leases
-multi_instance: true
 
 parameters:
   - field_name: chaddr
-    path: Chaddr
+    path: .Chaddr
     type: string
     description: Client hardware (MAC) address
 
   - field_name: active
-    path: Active
+    path: .Active
     type: boolean
     description: Whether the client lease is currently active
 
   # Nested sub-object — IPv4Address is multi-instance but we read .1. only
   - field_name: ipAddress
-    path: IPv4Address.1.IPAddress
+    path: .IPv4Address.1.IPAddress
     type: string
     description: Leased IPv4 address
 
   - field_name: leaseTimeRemaining
-    path: IPv4Address.1.LeaseTimeRemaining
+    path: .IPv4Address.1.LeaseTimeRemaining
     type: datetime
     description: Lease expiry time (ISO 8601 datetime)

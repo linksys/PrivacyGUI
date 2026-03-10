@@ -26,7 +26,11 @@ class VendorLogFiles {
 
   const VendorLogFiles({required this.items});
 
-  static const _paths = ['Device.DeviceInfo.VendorLogFile.'];
+  static const _paths = [
+    'Device.DeviceInfo.VendorLogFile.*.Name',
+    'Device.DeviceInfo.VendorLogFile.*.MaximumSize',
+    'Device.DeviceInfo.VendorLogFile.*.Persistent',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<VendorLogFiles> fetch(UspService client) async {
@@ -49,11 +53,12 @@ class VendorLogFiles {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}Name'], response['${p}MaximumSize'], response['${p}Persistent']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(VendorLogFile(
         instancePath: p,
         name: (response['${p}Name'] ?? '') as String,
         maximumSize: int.tryParse(response['${p}MaximumSize']?.toString() ?? '') ?? 0,
-        persistent: response['${p}Persistent'] == true || response['${p}Persistent'] == 'true',
+        persistent: response['${p}Persistent'] == true || response['${p}Persistent'] == 'true' || response['${p}Persistent'] == '1',
       ));
     }
     return VendorLogFiles(items: items);

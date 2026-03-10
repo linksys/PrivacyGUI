@@ -26,25 +26,26 @@ class UspConnectedDevicesCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              AppText.titleMedium('Connected Devices'),
-              Row(
-                children: [
-                  UspStatusDot(isActive: true, size: 8),
-                  AppGap.xs(),
-                  AppText.labelLarge('${activeDevices.length} Online'),
-                  AppGap.md(),
-                  UspStatusDot(isActive: false, size: 8),
-                  AppGap.xs(),
-                  AppText.labelLarge('${inactiveDevices.length} Offline'),
-                  if (onViewAll != null) ...[
-                    AppGap.sm(),
-                    AppButton.text(
-                      label: 'View All',
-                      onTap: onViewAll,
-                    ),
-                  ],
-                ],
+              Expanded(
+                child: AppText.titleMedium('Connected Devices'),
               ),
+              if (onViewAll != null)
+                AppButton.text(
+                  label: 'View All',
+                  onTap: onViewAll,
+                ),
+            ],
+          ),
+          AppGap.xs(),
+          Row(
+            children: [
+              UspStatusDot(isActive: true, size: 8),
+              AppGap.xs(),
+              AppText.labelLarge('${activeDevices.length} Online'),
+              AppGap.md(),
+              UspStatusDot(isActive: false, size: 8),
+              AppGap.xs(),
+              AppText.labelLarge('${inactiveDevices.length} Offline'),
             ],
           ),
           AppGap.xl(),

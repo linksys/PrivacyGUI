@@ -37,7 +37,11 @@ class AdminUsers {
 
   const AdminUsers({required this.items});
 
-  static const _paths = ['Device.Users.User.'];
+  static const _paths = [
+    'Device.Users.User.*.Username',
+    'Device.Users.User.*.Password',
+    'Device.Users.User.*.Enable',
+  ];
 
   /// Fetch all instances via USP Get message
   static Future<AdminUsers> fetch(UspService client) async {
@@ -60,11 +64,12 @@ class AdminUsers {
         (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
+      if ([response['${p}Username'], response['${p}Password'], response['${p}Enable']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(AdminUser(
         instancePath: p,
         username: (response['${p}Username'] ?? '') as String,
         password: (response['${p}Password'] ?? '') as String,
-        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true',
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true' || response['${p}Enable'] == '1',
       ));
     }
     return AdminUsers(items: items);
