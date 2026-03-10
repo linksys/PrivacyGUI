@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/usp_page/components/select_auto_complete.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
@@ -95,10 +96,25 @@ class UspSinglePortTab extends ConsumerWidget {
     );
   }
 
+  List<AutoCompleteOption> _buildIpv4DeviceOptions(WidgetRef ref) {
+    final devices =
+        ref.read(uspDashboardProvider).valueOrNull?.deviceModels ?? [];
+    return devices
+        .where((d) => d.ip.isNotEmpty)
+        .map((d) => AutoCompleteOption(
+              label: d.displayName,
+              value: d.ip,
+              subtitle: d.mac,
+              isActive: d.isActive,
+            ))
+        .toList();
+  }
+
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+    final deviceOptions = _buildIpv4DeviceOptions(ref);
     final result = await showDialog<PortForwardingDialogResult>(
       context: context,
-      builder: (_) => const PortForwardingDialog(),
+      builder: (_) => PortForwardingDialog(deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
     await performUspMutation(
@@ -120,9 +136,11 @@ class UspSinglePortTab extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
       PortForwardingRuleUIModel rule) async {
+    final deviceOptions = _buildIpv4DeviceOptions(ref);
     final result = await showDialog<PortForwardingDialogResult>(
       context: context,
-      builder: (_) => PortForwardingDialog(rule: rule),
+      builder: (_) =>
+          PortForwardingDialog(rule: rule, deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
     await performUspMutation(

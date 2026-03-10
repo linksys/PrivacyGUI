@@ -1,5 +1,16 @@
 # Physical Ethernet port status
-# SSH-verified 2026-03-09: Interface.1 (WAN eth1, 2500Mbps), Interface.2 (LAN eth0, 1000Mbps)
+# SSH-verified 2026-03-10 (M60TB FW 1.0.16):
+#   Interface.1 (eth1, 2500Mbps, bridge member = LAN aggregate)
+#   Interface.2 (eth0, 1000Mbps, no bridge = WAN)
+#
+# KNOWN ISSUES:
+# 1. Upstream flag is INVERTED on M60TB — do NOT use for WAN/LAN classification.
+#    Use bridge membership from Device.Bridging.Bridge.*.Port.*.LowerLayers instead.
+# 2. Physical LAN ports (3x on M60TB) are behind a switch chip (QCA MHT, switch1)
+#    aggregated as single eth1. TR-181 only exposes 1 LAN Ethernet Interface.
+#    Per-switch-port data is only available via swconfig, not TR-181.
+#    All wired devices report Layer1Interface → Interface.1 regardless of
+#    which physical port they're plugged into.
 
 name: EthernetInterfaces
 singularName: EthernetInterface

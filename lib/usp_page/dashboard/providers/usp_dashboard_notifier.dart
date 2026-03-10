@@ -166,13 +166,6 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
 
     final systemInfo = results[0] as SystemInfo;
     final connectedDevices = results[1] as ConnectedDevices;
-    // DEBUG: Log connected devices Active field values
-    for (final d in connectedDevices.items) {
-      logger.d('[USP] Device ${d.hostName.isEmpty ? d.macAddress : d.hostName} '
-          '— isActive: ${d.isActive}, IP: ${d.ipAddress}');
-    }
-    logger.d('[USP] Total devices: ${connectedDevices.items.length}, '
-        'active: ${connectedDevices.items.where((d) => d.isActive).length}');
     final wifiRadios = results[2] as WiFiRadios;
     final wifiSsids = results[3] as WiFiSsids;
     final wifiAccessPoints = results[4] as WiFiAccessPoints;
@@ -186,11 +179,11 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     final lanNetworkInfo = results[12] as LanNetworkInfo;
     final ethernetInterfaces = results[13] as EthernetInterfaces;
     final wanStatus = results[14] as WanStatus;
-    logger.d('[USP] WAN: ${wanStatus.status}, IP: ${wanStatus.ipAddress}, '
-        'type: ${wanStatus.addressingType}');
-    logger.d('[USP] WiFi clients enriched: ${wifiClientMap.length} entries');
-    logger.d('[USP] Mesh nodes: ${meshTopology.nodes.length}, '
-        'client mappings: ${meshTopology.clientToNodeMap.length}');
+    logger.d('[USP] Dashboard fetch complete — '
+        'devices: ${connectedDevices.items.length}, '
+        'ethIfaces: ${ethernetInterfaces.items.length}, '
+        'wifiClients: ${wifiClientMap.length}, '
+        'meshNodes: ${meshTopology.nodes.length}');
 
     // Cross-reference AP → SSID → Radio to get band + SSID name per client
     final connectionDetailMap = buildConnectionDetailMap(
@@ -199,13 +192,12 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       ssids: wifiSsids,
       radios: wifiRadios,
     );
-    logger.d('[USP] Connection details: ${connectionDetailMap.length} entries');
-
-    // Fetch default gateway + IPv6 info + firmware images in parallel
+    // Fetch default gateway + IPv6 info + firmware images + bridge ports in parallel
     final extraResults = await Future.wait([
       _fetchDefaultGateway(usp),
       _fetchIpv6Info(usp),
       _fetchFirmwareImages(usp),
+      _fetchBridgePortMap(usp),
     ]);
     final wanGateway = extraResults[0] as String;
     final ipv6Info = extraResults[1] as ({
@@ -219,7 +211,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       String activeRef,
       String bootRef
     });
-    logger.d('[USP] WAN gateway: $wanGateway');
+    final bridgePortMap = extraResults[3] as Map<String, String>;
 
     // Data → UI Model transformation (constitution Section 5.3)
     final svc = _svc;
@@ -282,7 +274,8 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       wanStatus: wanStatus,
       ethernetPortModels: svc.buildEthernetPortUIModels(
         ethernetInterfaces: ethernetInterfaces,
-        connectedDevices: connectedDevices,
+        deviceModels: deviceModels,
+        bridgePortMap: bridgePortMap,
       ),
       lanInfoModel: svc.buildLanInfoUIModel(
         lanNetworkInfo,
@@ -458,6 +451,49 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         activeRef: '',
         bootRef: '',
       );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bridge port → Ethernet interface mapping
+  // ---------------------------------------------------------------------------
+
+  /// Fetches `Device.Bridging.Bridge.*.Port.*.LowerLayers` and builds a map
+  /// from bridge port path → ethernet interface path.
+  ///
+  /// Example: `Device.Bridging.Bridge.1.Port.2.` → `Device.Ethernet.Interface.3.`
+  /// This lets us correlate a device's Layer1Interface (bridge port) with
+  /// the physical Ethernet port it's connected to.
+  Future<Map<String, String>> _fetchBridgePortMap(UspService usp) async {
+    try {
+      final resp = await usp.get([
+        'Device.Bridging.Bridge.*.Port.*.LowerLayers',
+      ]);
+      final map = <String, String>{};
+      for (final entry in resp.entries) {
+        if (!entry.key.endsWith('.LowerLayers')) continue;
+        final lowerLayers = entry.value?.toString() ?? '';
+        if (lowerLayers.isEmpty) continue;
+        // Extract bridge port path: remove trailing "LowerLayers"
+        final bridgePortPath = entry.key.substring(
+          0,
+          entry.key.length - 'LowerLayers'.length,
+        );
+        // LowerLayers may be comma-separated; take first entry that points
+        // to an Ethernet interface.
+        for (final layer in lowerLayers.split(',')) {
+          final trimmed = layer.trim();
+          if (trimmed.startsWith('Device.Ethernet.Interface.')) {
+            final normalized = trimmed.endsWith('.') ? trimmed : '$trimmed.';
+            map[bridgePortPath] = normalized;
+            break;
+          }
+        }
+      }
+      return map;
+    } catch (e) {
+      logger.w('[USP] Bridge port map fetch failed: $e');
+      return {};
     }
   }
 

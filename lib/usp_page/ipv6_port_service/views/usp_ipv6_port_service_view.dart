@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
+import 'package:privacy_gui/usp_page/components/select_auto_complete.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
@@ -211,12 +212,24 @@ class UspIpv6PortServiceView extends ConsumerWidget {
     }
   }
 
-  Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+  List<AutoCompleteOption> _buildIpv6DeviceOptions(WidgetRef ref) {
     final devices =
         ref.read(uspDashboardProvider).valueOrNull?.deviceModels ?? [];
+    return devices
+        .expand((d) => d.ipv6Addresses.map((addr) => AutoCompleteOption(
+              label: d.displayName,
+              value: addr,
+              subtitle: d.mac,
+              isActive: d.isActive,
+            )))
+        .toList();
+  }
+
+  Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+    final deviceOptions = _buildIpv6DeviceOptions(ref);
     final result = await showDialog<Ipv6PortServiceRuleDialogResult>(
       context: context,
-      builder: (_) => Ipv6PortServiceRuleDialog(devices: devices),
+      builder: (_) => Ipv6PortServiceRuleDialog(deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
     final svc = ref.read(uspIpv6PortServiceServiceProvider);
@@ -237,11 +250,11 @@ class UspIpv6PortServiceView extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
       Ipv6PortServiceRuleUIModel rule) async {
-    final devices =
-        ref.read(uspDashboardProvider).valueOrNull?.deviceModels ?? [];
+    final deviceOptions = _buildIpv6DeviceOptions(ref);
     final result = await showDialog<Ipv6PortServiceRuleDialogResult>(
       context: context,
-      builder: (_) => Ipv6PortServiceRuleDialog(rule: rule, devices: devices),
+      builder: (_) =>
+          Ipv6PortServiceRuleDialog(rule: rule, deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
     final svc = ref.read(uspIpv6PortServiceServiceProvider);

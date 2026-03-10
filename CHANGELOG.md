@@ -31,6 +31,17 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Increase dashboard topology card client-node spacing (`nodeSpacing * 1.4`, `orbitRadius * 1.4`)
 - Wrap TR-181 autocomplete and generated path data in `kDebugMode` for production size protection
 
+#### Dashboard Layout & Topology Improvements
+- Ethernet Ports: Show one LAN port entry per active wired device instead of single aggregate (switch chip limitation — TR-181 only exposes 1 LAN `Ethernet.Interface` for 3 physical ports)
+- Use bridge membership (`Device.Bridging.Bridge.*.Port.*.LowerLayers`) for WAN/LAN classification instead of inverted `Upstream` flag
+- Stats Panel: Add Router count tile, Port Rules tile; simplify Devices tile to online count only
+- Topology: Auto-switch `ClientVisibility` — expanded (`always`) when <8 clients, indicator ring (`onHover`) when >=8
+- Desktop layout: Place Device Info and Network Status cards side by side
+- Remove `UspProtocolInfoCard` (no longer needed)
+- Clean up verbose debug logging in dashboard notifier
+- Replace `DeviceSearchField` with `SelectAutoComplete` reusable widget
+- Port Forwarding dialog: Integrate device search for IP address selection
+
 #### Dashboard & Shell Improvements (947a3dba, 3169d7c6, 8eecf073)
 - Merge `UspSystemMonitorCard` into `UspSystemStatusCard` — unified CPU/memory/firmware display
 - Add `FirmwareImages` codegen definition — display firmware slots with active/boot status in Device Info card

@@ -309,84 +309,68 @@ class UspDeviceService {
   // Ethernet Ports
   // ---------------------------------------------------------------------------
 
+  /// Builds UI models for ethernet ports.
+  ///
+  /// Uses [bridgePortMap] to classify WAN vs LAN — the `Upstream` flag on
+  /// `EthernetInterface` is unreliable (M60TB reports it inverted).
+  /// An Ethernet Interface referenced by any bridge port is a LAN interface;
+  /// one not referenced by any bridge is WAN.
+  ///
+  /// TR-181 aggregates physical switch ports into a single Ethernet Interface
+  /// (e.g. 3 LAN ports → 1 eth1). Since per-port data isn't available, each
+  /// active wired device is shown as its own LAN port entry.
   List<EthernetPortUIModel> buildEthernetPortUIModels({
     required EthernetInterfaces ethernetInterfaces,
-    required ConnectedDevices connectedDevices,
+    required List<DeviceUIModel> deviceModels,
+    Map<String, String> bridgePortMap = const {},
   }) {
     final result = <EthernetPortUIModel>[];
 
-    // WAN (upstream): real physical port — use interface Status directly.
-    // LAN (non-upstream): switch chip aggregate — Status is always Up
-    // regardless of cable connections. Derive effective status from
-    // whether any active ConnectedDevice is wired to this interface.
-    final wanPorts = <EthernetInterface>[];
-    final lanPorts = <EthernetInterface>[];
+    // Collect all Ethernet Interface paths that are bridge members → LAN.
+    final bridgeMemberPaths =
+        bridgePortMap.values.map(_ensureTrailingDot).toSet();
+
+    // Classify by bridge membership (reliable) instead of Upstream flag.
+    EthernetInterface? lanAggregate;
     for (final iface in ethernetInterfaces.items) {
-      if (iface.upstream) {
-        wanPorts.add(iface);
+      final path = _ensureTrailingDot(iface.instancePath);
+      if (bridgeMemberPaths.contains(path)) {
+        lanAggregate ??= iface;
       } else {
-        lanPorts.add(iface);
+        // WAN port
+        final isUp = iface.status.toLowerCase() == 'up';
+        result.add(EthernetPortUIModel(
+          name: iface.name,
+          label: 'WAN',
+          isWan: true,
+          isUp: isUp,
+          instancePath: iface.instancePath,
+          currentBitRate: iface.currentBitRate,
+        ));
       }
     }
 
-    // WAN ports
-    for (final port in wanPorts) {
-      final isUp = port.status.toLowerCase() == 'up';
+    // Each active wired device → its own LAN port entry.
+    final wiredDevices =
+        deviceModels.where((d) => d.isActive && !d.isWifi).toList();
+    final lanBitRate = lanAggregate?.currentBitRate ?? 0;
+
+    for (var i = 0; i < wiredDevices.length; i++) {
+      final d = wiredDevices[i];
       result.add(EthernetPortUIModel(
-        name: port.name,
-        label: 'WAN',
-        isWan: true,
-        isUp: isUp,
-        instancePath: port.instancePath,
-        currentBitRate: port.currentBitRate,
-      ));
-    }
-
-    // LAN ports — try matching ConnectedDevices via Layer1Interface.
-    // Layer1Interface often points to a bridge port
-    // (e.g. Device.Bridging.Bridge.1.Port.X) instead of Ethernet.Interface,
-    // so also collect non-WiFi active devices as wired fallback.
-    final nonWifiDevices = connectedDevices.items
-        .where(
-            (d) => d.isActive && !d.interface_.toLowerCase().contains('wifi'))
-        .toList();
-
-    lanPorts.sort((a, b) => a.name.compareTo(b.name));
-    for (var i = 0; i < lanPorts.length; i++) {
-      final port = lanPorts[i];
-      final portPath = _ensureTrailingDot(port.instancePath);
-
-      // Try exact Layer1Interface match first.
-      var wiredDevices = connectedDevices.items
-          .where((d) =>
-              d.isActive &&
-              d.interface_.isNotEmpty &&
-              _ensureTrailingDot(d.interface_) == portPath)
-          .toList();
-
-      // Fallback: assign all non-WiFi devices to the LAN port when
-      // Layer1Interface doesn't directly reference Ethernet.Interface.
-      if (wiredDevices.isEmpty && lanPorts.length == 1) {
-        wiredDevices = nonWifiDevices;
-      }
-
-      final isUp = wiredDevices.isNotEmpty || port.status.toLowerCase() == 'up';
-      final deviceInfos = wiredDevices
-          .map((d) => WiredDeviceInfo(
-                hostName: d.hostName,
-                macAddress: d.macAddress,
-                ipAddress: d.ipAddress,
-              ))
-          .toList();
-
-      result.add(EthernetPortUIModel(
-        name: port.name,
-        label: lanPorts.length == 1 ? 'LAN' : 'LAN ${i + 1}',
+        name: lanAggregate?.name ?? 'lan',
+        label: 'LAN ${i + 1}',
         isWan: false,
-        isUp: isUp,
-        instancePath: port.instancePath,
-        currentBitRate: isUp ? port.currentBitRate : 0,
-        connectedDevices: deviceInfos,
+        isUp: true,
+        instancePath: lanAggregate?.instancePath ?? '',
+        currentBitRate: lanBitRate,
+        connectedDevices: [
+          WiredDeviceInfo(
+            hostName: d.hostName,
+            macAddress: d.mac,
+            ipAddress: d.ip,
+          ),
+        ],
       ));
     }
 
@@ -488,6 +472,7 @@ class UspDeviceService {
       hostName: device.hostName,
       isActive: device.isActive,
       isWifi: isWifi,
+      layer1Interface: device.interface_,
       ipv6Addresses: device.ipv6Addresses
           .map((e) => e.address)
           .where((a) => a.isNotEmpty)

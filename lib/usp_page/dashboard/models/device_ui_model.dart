@@ -24,6 +24,9 @@ class DeviceUIModel extends Equatable {
   // ─── IPv6 addresses (from ConnectedDeviceIpv6 children) ───
   final List<String> ipv6Addresses;
 
+  // ─── Layer1 interface path (for port correlation) ───
+  final String layer1Interface; // Raw TR-181 Layer1Interface path
+
   // ─── Mesh enrichment ───
   final String? parentNodeId; // Connected mesh node device ID
   final String? parentNodeName; // Mesh node model name (display)
@@ -34,6 +37,7 @@ class DeviceUIModel extends Equatable {
     required this.hostName,
     required this.isActive,
     required this.isWifi,
+    this.layer1Interface = '',
     this.signalStrength,
     this.downlinkRate,
     this.uplinkRate,
@@ -75,6 +79,7 @@ class DeviceUIModel extends Equatable {
         hostName,
         isActive,
         isWifi,
+        layer1Interface,
         ipv6Addresses,
         signalStrength,
         downlinkRate,

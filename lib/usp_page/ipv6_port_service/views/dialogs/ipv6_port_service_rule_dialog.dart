@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/components/device_search_field.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/components/select_auto_complete.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -29,12 +28,12 @@ class Ipv6PortServiceRuleDialogResult {
 /// Pass [rule] to pre-fill for editing; omit for adding.
 class Ipv6PortServiceRuleDialog extends StatefulWidget {
   final Ipv6PortServiceRuleUIModel? rule;
-  final List<DeviceUIModel> devices;
+  final List<AutoCompleteOption> deviceOptions;
 
   const Ipv6PortServiceRuleDialog({
     super.key,
     this.rule,
-    this.devices = const [],
+    this.deviceOptions = const [],
   });
 
   @override
@@ -116,21 +115,17 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
-            DeviceSearchField(
-              devices: widget.devices,
-              mode: DeviceSearchMode.ipv6,
+            SelectAutoComplete(
+              options: widget.deviceOptions,
               controller: _ipv6Controller,
-              labelText: 'IPv6 Address (type to search devices)',
               onSelected: (_) => _validate(),
-            ),
-            if (_errors['ipv6Address'] != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, left: 12),
-                child: AppText.bodySmall(
-                  _errors['ipv6Address']!,
-                  color: Theme.of(context).colorScheme.error,
-                ),
+              child: AppTextField(
+                controller: _ipv6Controller,
+                hintText: 'IPv6 Address (type to search devices)',
+                errorText: _errors['ipv6Address'],
+                onChanged: (_) => _validate(),
               ),
+            ),
             AppGap.lg(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

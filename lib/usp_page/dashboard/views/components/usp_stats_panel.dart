@@ -13,22 +13,30 @@ class UspStatsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onlineCount = devices.where((d) => d.isActive).length;
-    final offlineCount = devices.where((d) => !d.isActive).length;
+    final nodeCount = state.nodeModels.length;
     final radioCount = state.wifiRadioModels.length;
     final enabledRadios = state.wifiRadioModels.where((r) => r.enable).length;
-    final forwardCount = state.portForwardingRuleModels.length +
-        state.portTriggeringRuleModels.length;
     final lanPorts = state.ethernetPortModels.where((p) => !p.isWan);
     final lanConnected = lanPorts.where((p) => p.isUp).length;
     final lanTotal = lanPorts.length;
+    final forwardCount = state.portForwardingRuleModels.length +
+        state.portTriggeringRuleModels.length;
 
     return Row(
       children: [
         Expanded(
           child: _StatTile(
+            icon: Icons.router,
+            value: '$nodeCount',
+            label: 'Router',
+          ),
+        ),
+        AppGap.sm(),
+        Expanded(
+          child: _StatTile(
             icon: Icons.devices,
-            value: '$onlineCount / $offlineCount',
-            label: 'Online / Offline',
+            value: '$onlineCount',
+            label: 'Devices',
           ),
         ),
         AppGap.sm(),

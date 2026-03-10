@@ -13,7 +13,6 @@ export 'usp_mutation_helper.dart';
 export 'usp_network_status_card.dart';
 export 'usp_network_topology_card.dart';
 export 'usp_port_forwarding_card.dart';
-export 'usp_protocol_info_card.dart';
 export 'usp_stats_panel.dart';
 export 'usp_status_dot.dart';
 export 'usp_system_status_card.dart';

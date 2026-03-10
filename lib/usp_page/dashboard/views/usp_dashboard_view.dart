@@ -196,12 +196,12 @@ class UspDashboardView extends ConsumerWidget {
         AppGap.xl(),
         UspStatsPanel(state: state, devices: devices),
         AppGap.xl(),
+        UspDeviceInfoCard(info: info),
+        AppGap.xl(),
         UspNetworkStatusCard(wan: state.wanStatusModel),
         AppGap.xl(),
         UspNetworkTopologyCard(
             info: info, devices: devices, meshNodes: state.meshTopology.nodes),
-        AppGap.xl(),
-        UspDeviceInfoCard(info: info),
         AppGap.xl(),
         UspLanInfoCard(info: state.lanInfoModel),
         AppGap.xl(),
@@ -221,8 +221,6 @@ class UspDashboardView extends ConsumerWidget {
         UspDhcpReservationsCard(state: state),
         AppGap.xl(),
         UspPortForwardingCard(state: state),
-        AppGap.xl(),
-        UspProtocolInfoCard(),
       ],
     );
   }
@@ -241,7 +239,14 @@ class UspDashboardView extends ConsumerWidget {
         AppGap.xl(),
         UspStatsPanel(state: state, devices: devices),
         AppGap.xl(),
-        UspNetworkStatusCard(wan: state.wanStatusModel),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: UspDeviceInfoCard(info: info)),
+            AppGap.gutter(),
+            Expanded(child: UspNetworkStatusCard(wan: state.wanStatusModel)),
+          ],
+        ),
         AppGap.xl(),
         UspNetworkTopologyCard(
             info: info, devices: devices, meshNodes: state.meshTopology.nodes),
@@ -253,8 +258,6 @@ class UspDashboardView extends ConsumerWidget {
             Expanded(
               child: Column(
                 children: [
-                  UspDeviceInfoCard(info: info),
-                  AppGap.xl(),
                   UspLanInfoCard(info: state.lanInfoModel),
                   AppGap.xl(),
                   UspEthernetPortsCard(ports: state.ethernetPortModels),
@@ -265,8 +268,6 @@ class UspDashboardView extends ConsumerWidget {
                     devices: devices,
                     onViewAll: () => context.goNamed(RouteNamed.uspDeviceList),
                   ),
-                  AppGap.xl(),
-                  UspProtocolInfoCard(),
                 ],
               ),
             ),

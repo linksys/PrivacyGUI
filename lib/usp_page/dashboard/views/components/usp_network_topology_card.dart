@@ -27,6 +27,8 @@ class UspNetworkTopologyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topology = _buildTopology();
+    final clientCount = devices.length;
+    final useRing = clientCount >= 8;
 
     return AppCard(
       child: Column(
@@ -50,7 +52,8 @@ class UspNetworkTopologyCard extends StatelessWidget {
                 topology: topology,
                 viewMode: TopologyViewMode.graph,
                 layoutMode: LayoutRecommendation.auto,
-                clientVisibility: ClientVisibility.onHover,
+                clientVisibility:
+                    useRing ? ClientVisibility.onHover : ClientVisibility.always,
                 nodeRendererRegistry: NodeRendererRegistry.unified,
                 enableAnimation: true,
                 interactive: false,
