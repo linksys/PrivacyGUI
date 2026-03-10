@@ -11,6 +11,8 @@ class WiFiAccessPoint {
   final String status;
   final String securityModeEnabled;
   final String encryptionMode;
+  final String keyPassphrase;
+  final bool macAddressControlEnabled;
   final String ssidReference;
 
   const WiFiAccessPoint({
@@ -19,7 +21,22 @@ class WiFiAccessPoint {
     required this.status,
     required this.securityModeEnabled,
     required this.encryptionMode,
+    required this.keyPassphrase,
+    required this.macAddressControlEnabled,
     required this.ssidReference,
+  });
+}
+
+/// Update descriptor for WiFiAccessPoint instances
+class WiFiAccessPointUpdate {
+  final String instancePath;
+  final String? keyPassphrase;
+  final bool? macAddressControlEnabled;
+
+  const WiFiAccessPointUpdate({
+    required this.instancePath,
+    this.keyPassphrase,
+    this.macAddressControlEnabled,
   });
 }
 
@@ -77,13 +94,32 @@ class WiFiAccessPoints {
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',
         status: (response['${p}Status'] ?? '') as String,
-        securityModeEnabled:
-            (response['${p}Security.ModeEnabled'] ?? '') as String,
-        encryptionMode:
-            (response['${p}Security.EncryptionMode'] ?? '') as String,
+        securityModeEnabled: (response['${p}Security.ModeEnabled'] ?? '') as String,
+        encryptionMode: (response['${p}Security.EncryptionMode'] ?? '') as String,
+        keyPassphrase: (response['${p}Security.KeyPassphrase'] ?? '') as String,
+        macAddressControlEnabled: response['${p}MACAddressControlEnabled'] == true || response['${p}MACAddressControlEnabled'] == 'true',
         ssidReference: (response['${p}SSIDReference'] ?? '') as String,
       ));
     }
     return WiFiAccessPoints(items: items);
   }
+
+  /// Update a single instance via USP Set message
+  static Future<void> update(UspService client, WiFiAccessPointUpdate update) async {
+    final params = <String, dynamic>{};
+    if (update.keyPassphrase != null) params['${update.instancePath}Security.KeyPassphrase'] = update.keyPassphrase;
+    if (update.macAddressControlEnabled != null) params['${update.instancePath}MACAddressControlEnabled'] = update.macAddressControlEnabled;
+    if (params.isNotEmpty) await client.set(params);
+  }
+
+  /// Update multiple instances in a single USP Set message
+  static Future<void> updateMany(UspService client, List<WiFiAccessPointUpdate> updates, {bool allowPartial = false}) async {
+    final params = <String, dynamic>{};
+    for (final update in updates) {
+      if (update.keyPassphrase != null) params['${update.instancePath}Security.KeyPassphrase'] = update.keyPassphrase;
+      if (update.macAddressControlEnabled != null) params['${update.instancePath}MACAddressControlEnabled'] = update.macAddressControlEnabled;
+    }
+    if (params.isNotEmpty) await client.set(params, allowPartial: allowPartial);
+  }
+
 }

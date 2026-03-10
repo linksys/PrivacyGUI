@@ -29,6 +29,19 @@ parameters:
     type: string
     description: Encryption mode (AES, TKIP+AES, etc.)
 
+  - field_name: keyPassphrase
+    path: Security.KeyPassphrase
+    type: string
+    writable: true
+    sensitive: true
+    description: WPA/WPA2/WPA3 passphrase
+
+  - field_name: macAddressControlEnabled
+    path: MACAddressControlEnabled
+    type: boolean
+    writable: true
+    description: Enable MAC address access control (allow-list mode)
+
   - field_name: ssidReference
     path: .SSIDReference
     type: string

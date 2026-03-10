@@ -11,6 +11,7 @@ export 'vendor_log_files.g.dart';
 export 'firmware_images.g.dart';
 export 'time_settings.g.dart';
 export 'static_routing.g.dart';
+export 'time_settings.g.dart';
 export 'ethernet_interfaces.g.dart';
 export 'wan_settings.g.dart';
 export 'wan_status.g.dart';

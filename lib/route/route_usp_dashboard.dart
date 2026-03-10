@@ -128,5 +128,10 @@ final uspDashboardRoute = ShellRoute(
         path: RoutePath.uspTestConsole,
         builder: (context, state) => const UspTestConsoleView(),
       ),
+    LinksysRoute(
+      name: RouteNamed.uspWifiSettings,
+      path: RoutePath.uspWifiSettings,
+      builder: (context, state) => const UspWifiSettingsView(),
+    ),
   ],
 );

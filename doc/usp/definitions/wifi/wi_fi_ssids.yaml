@@ -12,12 +12,20 @@ parameters:
   - field_name: ssid
     path: .SSID
     type: string
+    writable: true
     description: The network name/identifier
 
   - field_name: enable
     path: .Enable
     type: boolean
+    writable: true
     description: Whether this SSID interface is enabled
+
+  - field_name: ssidAdvertisementEnabled
+    path: SSIDAdvertisementEnabled
+    type: boolean
+    writable: true
+    description: Whether the SSID is broadcast (visible to clients)
 
   - field_name: status
     path: .Status

@@ -9,6 +9,7 @@ class WiFiSsid {
   final String instancePath;
   final String ssid;
   final bool enable;
+  final bool ssidAdvertisementEnabled;
   final String status;
   final String bssid;
   final String lowerLayers;
@@ -17,9 +18,25 @@ class WiFiSsid {
     required this.instancePath,
     required this.ssid,
     required this.enable,
+    required this.ssidAdvertisementEnabled,
     required this.status,
     required this.bssid,
     required this.lowerLayers,
+  });
+}
+
+/// Update descriptor for WiFiSsid instances
+class WiFiSsidUpdate {
+  final String instancePath;
+  final String? ssid;
+  final bool? enable;
+  final bool? ssidAdvertisementEnabled;
+
+  const WiFiSsidUpdate({
+    required this.instancePath,
+    this.ssid,
+    this.enable,
+    this.ssidAdvertisementEnabled,
   });
 }
 
@@ -74,9 +91,8 @@ class WiFiSsids {
       items.add(WiFiSsid(
         instancePath: p,
         ssid: (response['${p}SSID'] ?? '') as String,
-        enable: response['${p}Enable'] == true ||
-            response['${p}Enable'] == 'true' ||
-            response['${p}Enable'] == '1',
+        enable: response['${p}Enable'] == true || response['${p}Enable'] == 'true' || response['${p}Enable'] == '1',
+        ssidAdvertisementEnabled: response['${p}SSIDAdvertisementEnabled'] == true || response['${p}SSIDAdvertisementEnabled'] == 'true',
         status: (response['${p}Status'] ?? '') as String,
         bssid: (response['${p}BSSID'] ?? '') as String,
         lowerLayers: (response['${p}LowerLayers'] ?? '') as String,
@@ -84,4 +100,25 @@ class WiFiSsids {
     }
     return WiFiSsids(items: items);
   }
+
+  /// Update a single instance via USP Set message
+  static Future<void> update(UspService client, WiFiSsidUpdate update) async {
+    final params = <String, dynamic>{};
+    if (update.ssid != null) params['${update.instancePath}SSID'] = update.ssid;
+    if (update.enable != null) params['${update.instancePath}Enable'] = update.enable;
+    if (update.ssidAdvertisementEnabled != null) params['${update.instancePath}SSIDAdvertisementEnabled'] = update.ssidAdvertisementEnabled;
+    if (params.isNotEmpty) await client.set(params);
+  }
+
+  /// Update multiple instances in a single USP Set message
+  static Future<void> updateMany(UspService client, List<WiFiSsidUpdate> updates, {bool allowPartial = false}) async {
+    final params = <String, dynamic>{};
+    for (final update in updates) {
+      if (update.ssid != null) params['${update.instancePath}SSID'] = update.ssid;
+      if (update.enable != null) params['${update.instancePath}Enable'] = update.enable;
+      if (update.ssidAdvertisementEnabled != null) params['${update.instancePath}SSIDAdvertisementEnabled'] = update.ssidAdvertisementEnabled;
+    }
+    if (params.isNotEmpty) await client.set(params, allowPartial: allowPartial);
+  }
+
 }

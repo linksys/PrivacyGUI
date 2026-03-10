@@ -46,6 +46,12 @@ class UspMenuView extends StatelessWidget {
   List<AppSectionItemData> _buildMenuItems(BuildContext context) {
     return [
       AppSectionItemData(
+        title: 'WiFi Settings',
+        description: 'Networks, security, MAC filtering',
+        iconData: Icons.wifi,
+        onTap: () => context.goNamed(RouteNamed.uspWifiSettings),
+      ),
+      AppSectionItemData(
         title: 'Topology',
         description: 'View network topology and mesh nodes',
         iconData: Icons.account_tree,
