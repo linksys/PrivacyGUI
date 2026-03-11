@@ -18,15 +18,16 @@ class UspFirewallView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'Firewall',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspMenu),
       onRefresh: () => ref.refresh(uspFirewallProvider.future),
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: AppLoader()),
@@ -76,8 +77,6 @@ class UspFirewallView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context, ref),
-        AppGap.md(),
         AppText.bodyMedium(
           'Configure firewall and VPN passthrough settings',
           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -100,31 +99,6 @@ class UspFirewallView extends ConsumerWidget {
             ),
           ),
         ],
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Header
-  // ---------------------------------------------------------------------------
-
-  Widget _buildHeader(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspMenu),
-        ),
-        AppGap.md(),
-        Expanded(
-          child: AppText.headlineSmall('Firewall'),
-        ),
-        AppIconButton(
-          icon: AppIcon.font(Icons.refresh),
-          onTap: () => ref.invalidate(uspFirewallProvider),
-        ),
       ],
     );
   }

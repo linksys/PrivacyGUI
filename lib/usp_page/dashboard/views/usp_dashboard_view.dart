@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_fab.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
@@ -9,6 +8,7 @@ import 'package:privacy_gui/usp_page/dashboard/views/components/_components.dart
 import 'package:privacy_gui/usp_page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -132,7 +132,11 @@ class UspDashboardView extends ConsumerWidget {
   }
 
   void _logout(BuildContext context, WidgetRef ref) {
+    // Fire-and-forget logout (same pattern as JNAP general_settings_widget).
+    // Navigate synchronously — no async gap avoids WidgetRef invalidation.
+    // Go directly to localLoginPassword instead of '/' to skip the heavy
+    // autoConfigurationLogic redirect that re-runs authCheck/init().
     ref.read(authProvider.notifier).logout();
-    context.goNamed(RouteNamed.home);
+    ref.read(routerProvider).go(RoutePath.localLoginPassword);
   }
 }

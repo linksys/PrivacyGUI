@@ -1,7 +1,7 @@
 # USP Dashboard Feature Roadmap
 
-> Date: 2026-03-06 | Updated: 2026-03-10 | Branch: `feat/usp-protocol-integration`
-> Last feature: F-017 IPv6 Port Service + 401 Auth Retry (2026-03-10)
+> Date: 2026-03-06 | Updated: 2026-03-11 | Branch: `feat/usp-protocol-integration`
+> Last feature: F-024 WiFi Performance Analytics (2026-03-11)
 > Based on: Phase 1 Validation Report + Current Implementation Inventory
 
 ---
@@ -23,7 +23,7 @@
 | 9 | Ethernet Interfaces | EthernetPortsCard | — | Read-only + device mapping |
 | 10 | LAN Network Info | LanInfoCard (+ IPv6) | — | Read-only |
 | 11 | WAN Status | NetworkStatusCard (+ IPv6, DHCP Renew) | renewWanLease | Read + Write |
-| 12 | Mesh Topology | NetworkTopologyCard | — | Read-only |
+| 12 | Mesh Topology | NetworkTopologyCard (+ distance factor, coverage rings) | — | Read-only + RSSI viz |
 | 13 | Admin (Password/Reboot) | Admin page (Menu) | changePassword, reboot, factoryReset | Write |
 | 14 | Safe Browsing | Instant Safety page (Menu) | toggle OpenDNS | Write |
 | 15 | CPU/Memory Monitoring | SystemStatusCard (merged gauge+chart, 30s auto) | — | Read-only + auto-refresh |
@@ -34,8 +34,13 @@
 | 20 | Local Network Settings | Local Network page (Menu) | save (IP, DHCP, hostname) | Read + Write (dirty guard) |
 | 21 | Static Routing | Static Routing page (Menu) | add, update, toggle, delete | Full CRUD |
 | 22 | IPv6 Port Service | IPv6 Port Service page (Menu + Firewall link) | add, update, toggle, delete | Full CRUD |
+| 23 | Multi-IF Traffic Analysis | TrafficAnalysisCard (4 tabs: Monitor, Comparison, Distribution, Trends) | — | Read-only + polling |
+| 24 | Device Connection Analytics | DeviceAnalyticsCard (4 tabs: Distribution, Trend, Activity, Signal) | — | Read-only + persistence |
+| 25 | Network Health Monitoring | NetworkHealthCard (3 tabs: Health, Errors, Loss) | — | Read-only (shared traffic timer) |
+| 26 | Firewall Config Overview | FirewallOverviewCard (2 tabs: Rules, Ports) | — | Read-only (static config viz) |
+| 27 | WiFi Performance Analytics | WifiPerformanceCard (3 tabs: Signal, Speed, Channels) | — | Read-only (per-client metrics) |
 
-**Total: 23 YAML definitions, 23 .g.dart files, 15 dashboard cards, 12 menu pages, 30+ mutation methods**
+**Total: 24 YAML definitions, 24 .g.dart files, 19 dashboard cards, 12 menu pages, 30+ mutation methods**
 
 ### Infrastructure
 
@@ -66,6 +71,16 @@
 | F-015: Static Routing | Standalone page — route CRUD (add/edit/toggle/delete), Origin filter (Static only), interface mapping (LAN/Internet). No NAT/RIP (RIP unsupported, NAT per-interface) | 2026-03-10 |
 | F-017: IPv6 Port Service | Standalone page — IPv6 inbound port rules CRUD (add/edit/toggle/delete), IANA protocol mapping (TCP/UDP/Both), CreationDate-based system rule filtering, Menu + Firewall page link | 2026-03-10 |
 | Infra: 401 Auth Retry | `UspService._withAuthRetry()` wraps all 11 CRUD methods + `UspBridgeClient` REST/SSE endpoints. Two-stage reauth (refreshToken → restoreSession), Completer lock for concurrent 401s. `UspAuthCoordinator` registers callback | 2026-03-10 |
+| F-018: Real-Time Traffic Monitor | WAN traffic polling (2s default), delta-based rate calc, ring buffer (60 max), dual-line CustomPainter chart (upload/download), interval selector (Off/2s/5s/10s), cumulative totals. Daily/monthly stats deferred to F-025 | 2026-03-10 |
+| F-019: Multi-Interface Traffic Analysis | Unified 4-tab traffic card (Monitor: `AppLineChart` dual-line + gradient, Comparison: `AppBarChart` stacked WAN vs LAN, Distribution: `AppPieChart` donut + per-IF breakdown bars, Trends: dual-axis CustomPainter bytes/packets). WAN+LAN delta-based rate calc, `MultiInterfaceSnapshot` model, 60-point ring buffer, interval selector | 2026-03-11 |
+| F-020: Device Connection Analytics | 4-tab analytics card (Distribution: `AppPieChart` donut WiFi/Wired + band bars, Trend: `AppBarChart` stacked 24h hourly, Activity: `AppHeatmapChart` 12 devices × 24h, Signal: `AppRadarChart` / `AppBarChart` fallback per-band quality). `DeviceAnalyticsState` with hourly persistence, `HourlyAggregate` MAC tracking, `WifiClients` enricher with fallback fetch | 2026-03-11 |
+| UI: Topology Enhancement | `MeshLink.distanceFactor` (RSSI → 0.0–1.0 visual distance), `MeshNode.coverageRings` (Gateway 2 rings, Extender 2 rings), node spacing 1.4× multiplier, auto-expand for <8 clients | 2026-03-11 |
+| UI: UI Kit Chart Migration | Migrated all dashboard charts from CustomPainter to UI Kit library (`AppLineChart`, `AppBarChart`, `AppPieChart`, `AppRadarChart`, `AppHeatmapChart`). Discovered `AppBarChart` horizontal mode RotatedBox rendering bug — workaround: use vertical mode | 2026-03-11 |
+| Bugfix: WiFi Client Enricher | Added fallback fetch for `WifiClients` — if selective-get nested wildcards return empty, falls back to parent-path `Device.WiFi.AccessPoint.*.AssociatedDevice.` with manual parse | 2026-03-11 |
+| F-022: Network Health Monitoring | 3-tab card (Health gauge + WAN/LAN traffic lights, Errors area chart, Packet Loss line chart). Composite health score (0-100) from packet loss + error/discard rates. Shares polling timer with `uspTrafficAnalysisProvider` — no separate fetch. Files: `network_health_helpers.dart` + `usp_network_health_card.dart` | 2026-03-11 |
+| F-023: Firewall Config Overview | 2-tab card (Rules: target distribution `AppPieChart` donut + active rule count; Ports: top-5 port forwarding list + DMZ entries + protocol distribution `AppBarChart`). Descoped from "Activity Visualization" — TR-181 `FirewallChainRule` has no hit count/timestamp/event log. Extended `UspDashboardState` with `FirewallChainRules` + `Dmz` raw data. Files: `usp_firewall_overview_card.dart` | 2026-03-11 |
+| F-024: WiFi Performance Analytics | 3-tab card (Signal: per-client RSSI `AppBarChart` with tier coloring, Speed: DL/UL grouped `AppBarChart` per client, Channels: per-radio info + band distribution `AppPieChart` donut). Uses `WifiClient` signal/noise/speed + `connectionDetailMap` for AP→Radio band mapping. Files: `wifi_performance_helpers.dart` + `usp_wifi_performance_card.dart` | 2026-03-11 |
+| Bugfix: SliverDashboard crash | Fixed "Unexpected null value" at `sliver_dashboard.dart:621` — removed `optimizeLayout()` calls that mutated DashboardController after widget tree was built. Added stale layout validation (saved 15-item layout vs new 17-item spec). Files: `usp_layout_controller.dart` | 2026-03-11 |
 
 ### Blocked Features (Phase 2C)
 
@@ -135,82 +150,44 @@
   Device.IP.Diagnostics.TraceRoute.RouteHops.{i}.*  → hop results
   ```
 
-### F-018: Real-Time Traffic Monitor
+### ~~F-018: Real-Time Traffic Monitor~~ ✅ Done — 2026-03-10
 
-**Priority:** P0 | **Effort:** Medium | **Status:** Not started
+**Priority:** P0 | **Effort:** Medium | **Status:** ✅ Done
 
-- **Feasibility:** ✅ Fully verified — complete traffic statistics available on router
-- **Verified data sources:**
-  ```bash
-  # WAN Interface Statistics (primary monitoring point)
-  Device.IP.Interface.2.Stats.BytesSent      → WAN upload total
-  Device.IP.Interface.2.Stats.BytesReceived  → WAN download total
-  Device.IP.Interface.2.Stats.PacketsSent    → WAN upload packets
-  Device.IP.Interface.2.Stats.PacketsReceived → WAN download packets
-
-  # LAN Interface Statistics
-  Device.IP.Interface.1.Stats.*              → LAN traffic stats
-
-  # Ethernet Port Statistics
-  Device.Ethernet.Interface.*.Stats.*        → Per-port traffic stats
-
-  # WiFi Radio Statistics
-  Device.WiFi.Radio.*.Stats.*                → WiFi traffic stats
-  ```
-- **Live testing results:**
-  - WAN download: 2.1 GB accumulated
-  - WAN upload: 705 MB accumulated
-  - Real-time sampling: 19,902 bytes in 5 seconds (≈ 3.9 KB/s)
-- **Implementation approach:** Polling-based (1-2 second intervals)
-- **UI components:**
-  - Real-time speed tiles (upload/download KB/s or MB/s)
-  - Dynamic line chart showing last 60 seconds of traffic
-  - Daily/monthly cumulative statistics
-  - Data persistence using Hive for historical tracking
-- **Dashboard integration:** New `TrafficMonitorCard` in dashboard layout (high priority position)
+- **Implemented:** WAN traffic polling (2s default), delta-based rate calculation, ring buffer (60 max), dual-line CustomPainter chart (upload/download), interval selector (Off/2s/5s/10s), cumulative totals
+- **Deferred to F-025:** Daily/monthly cumulative statistics, Hive data persistence for historical tracking
+- **Files:** `wan_traffic_stats.yaml` → codegen → `traffic_monitor_state.dart` + `usp_traffic_monitor_notifier.dart` + `usp_traffic_monitor_card.dart`
 - **Future enhancement:** When BUG-005 (Subscribe) is fixed, migrate to ValueChange notifications for sub-second updates
 
 ---
 
 ## Advanced Chart & Analytics Features
 
-### F-019: Multi-Interface Traffic Analysis
+### ~~F-019: Multi-Interface Traffic Analysis~~ ✅ Done — 2026-03-11
 
-**Priority:** P1 | **Effort:** Medium | **Status:** Not started
+**Priority:** P1 | **Effort:** Medium | **Status:** ✅ Done
 
-- **USP Verification:** ✅ Verified — all interface statistics available
-- **Verified data sources:**
-  ```bash
-  Device.IP.Interface.1.Stats.*              → LAN: 2.1GB sent, 705MB received ✅
-  Device.IP.Interface.2.Stats.*              → WAN: 705MB sent, 2.1GB received ✅
-  Device.Ethernet.Interface.1.Stats.*        → ETH1: 969MB sent, 303MB received ✅
-  Device.Ethernet.Interface.2.Stats.*        → ETH2: (additional ports) ✅
-  Device.WiFi.Radio.1.Stats.*               → 2.4GHz: available but currently 0 ✅
-  Device.WiFi.Radio.2.Stats.*               → 5GHz: available but currently 0 ✅
-  ```
-- **Chart types:**
-  - **Stacked bar chart:** WAN vs LAN upload/download comparison
-  - **Donut chart:** Per-port traffic distribution
-  - **Dual-axis line chart:** Bytes vs packets trends
-- **Implementation:** Extend F-018 with multi-source data aggregation
+- **Implemented:** Unified 4-tab traffic card extending F-018:
+  - **Monitor:** `AppLineChart` dual-line (upload/download) with gradient fill, speed tiles
+  - **Comparison:** `AppBarChart` stacked WAN vs LAN rate comparison over time
+  - **Distribution:** `AppPieChart` donut with cumulative WAN/LAN proportion + per-interface breakdown bars
+  - **Trends:** Dual-axis CustomPainter (solid: Bytes/s, dashed: Packets/s)
+- **Data model:** `TrafficInterface` enum (wan/lan), `MultiInterfaceSnapshot`, 60-point ring buffer, delta-based rate calc
+- **Files:** `traffic_analysis_state.dart` + `usp_traffic_analysis_notifier.dart` + `usp_traffic_analysis_card.dart`
 
-### F-020: Device Connection Analytics
+### ~~F-020: Device Connection Analytics~~ ✅ Done — 2026-03-11
 
-**Priority:** P1 | **Effort:** Medium | **Status:** Not started
+**Priority:** P1 | **Effort:** Medium | **Status:** ✅ Done
 
-- **USP Verification:** ✅ Verified — comprehensive device data available (from existing implementation)
-- **Verified data sources:**
-  ```bash
-  Device.Hosts.Host.{i}.Active               → Online/offline status ✅
-  Device.Hosts.Host.{i}.Layer1Interface      → WiFi vs wired detection ✅
-  Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}.SignalStrength → WiFi quality ✅
-  ```
-- **Chart types:**
-  - **Pie chart:** WiFi vs wired device distribution
-  - **Stacked column chart:** Hourly device count changes
-  - **Heatmap:** 24-hour device activity patterns
-  - **Radar chart:** WiFi signal quality per AP
-- **Implementation:** Leverage existing `ConnectedDevices` + `WifiClients` codegen
+- **Implemented:** 4-tab analytics card:
+  - **Distribution:** `AppPieChart` donut (WiFi vs Wired) + band breakdown bars
+  - **Trend:** `AppBarChart` stacked 24h hourly device count
+  - **Activity:** `AppHeatmapChart` (12 devices × 24h per-device activity matrix)
+  - **Signal:** `AppRadarChart` (≥3 bands) or `AppBarChart` fallback per-band quality %
+- **Data model:** `DeviceDistribution`, `HourlyAggregate` with MAC tracking, `DeviceAnalyticsState` with SharedPreferences persistence
+- **Enrichment:** `WifiClients` enricher with nested-wildcard selective-get + parent-path fallback
+- **Files:** `device_analytics_state.dart` + `device_analytics_persistence.dart` + `usp_device_analytics_notifier.dart` + `usp_device_analytics_card.dart`
+- **Known issue:** `AppBarChart(horizontal: true)` RotatedBox rendering bug — workaround: vertical bar chart for Signal tab
 
 ### F-021: System Performance Dashboard
 
@@ -229,61 +206,39 @@
   - **Correlation chart:** Traffic peaks vs CPU usage relationship
 - **Implementation:** Enhance existing `UspSystemMonitorNotifier` with multiple chart types
 
-### F-022: Network Health Monitoring
+### ~~F-022: Network Health Monitoring~~ ✅ Done — 2026-03-11
 
-**Priority:** P2 | **Effort:** Medium | **Status:** Not started
+**Priority:** P2 | **Effort:** Medium | **Status:** ✅ Done
 
-- **USP Verification:** ✅ Verified — error statistics available
-- **Verified data sources:**
-  ```bash
-  Device.IP.Interface.2.Stats.ErrorsSent     → WAN TX errors: 0 ✅
-  Device.IP.Interface.2.Stats.ErrorsReceived → WAN RX errors: 0 ✅
-  Device.IP.Interface.2.Stats.DiscardPacketsSent     → Discarded packets: 0 ✅
-  Device.IP.Interface.2.Stats.DiscardPacketsReceived → Discarded packets: 12 ✅
-  ```
-- **Chart types:**
-  - **Area chart:** Error packets vs normal packets ratio
-  - **Traffic light indicators:** Error rate threshold warnings
-  - **Composite health score:** Network reliability metric (0-100%)
-- **Implementation:** New `NetworkHealthService` with error rate calculations
+- **Implemented:** 3-tab card sharing `uspTrafficAnalysisProvider` (no separate poll):
+  - **Health:** Composite score gauge (0-100) + WAN/LAN traffic light indicators + error/discard/loss summary
+  - **Errors:** Error/discard rate `AppLineChart` area chart over time
+  - **Loss:** Packet loss % `AppLineChart` over time
+- **Data model:** `HealthTier` enum (excellent/good/fair/critical), `NetworkHealthHelpers` with score computation from packet loss + error/discard rates
+- **Files:** `network_health_helpers.dart` + `usp_network_health_card.dart`
 
-### F-023: Firewall Activity Visualization
+### ~~F-023: Firewall Configuration Overview~~ ✅ Done — 2026-03-11
 
-**Priority:** P2 | **Effort:** Large | **Status:** Not started
+**Priority:** P2 | **Effort:** Medium | **Status:** ✅ Done
 
-- **USP Verification:** ✅ Verified — firewall rules data available
-- **Verified data sources:**
-  ```bash
-  Device.Firewall.Chain.1.Rule.{i}.*        → 29 firewall rules available ✅
-  Device.NAT.PortMapping.{i}.*               → Port forwarding rules ✅
-  Device.Firewall.DMZ.{i}.*                 → DMZ configuration ✅
-  ```
-- **Chart types:**
-  - **Activity timeline:** Blocked events distribution
-  - **Network topology diagram:** Visual port usage status
-  - **Rule effectiveness chart:** Most/least triggered rules
-- **Implementation:** Extend existing `FirewallUIModel` with activity tracking
-- **Note:** Requires event logging capability (not verified if available via USP)
+- **Descoped from "Activity Visualization":** TR-181 `FirewallChainRule` has no hit count, timestamp, or event log — activity timeline / rule effectiveness charts not feasible
+- **Implemented:** 2-tab Firewall Configuration Overview card:
+  - **Rules:** Target distribution `AppPieChart` donut (Accept/Drop/Reject) + active/total rule count + port forward + DMZ stats
+  - **Ports:** Top-5 port forwarding rules with protocol badge + external→internal mapping + DMZ section + protocol distribution `AppBarChart`
+- **Dashboard state extension:** Added `FirewallChainRules` + `Dmz` raw data fields to `UspDashboardState`, fetched in `_fetchAll()`
+- **Files:** `usp_firewall_overview_card.dart` (new), `usp_dashboard_state.dart` (extended), `usp_dashboard_notifier.dart` (extended)
 
-### F-024: WiFi Performance Analytics
+### ~~F-024: WiFi Performance Analytics~~ ✅ Done — 2026-03-11
 
-**Priority:** P2 | **Effort:** Medium | **Status:** Not started
+**Priority:** P2 | **Effort:** Medium | **Status:** ✅ Done
 
-- **USP Verification:** ⚠️ Partially verified — some WiFi stats unavailable
-- **Verified data sources:**
-  ```bash
-  Device.WiFi.Radio.{i}.Stats.*              → Basic radio stats ✅ (but values = 0)
-  Device.WiFi.AccessPoint.{i}.Stats.*        → ❌ Not supported (fault 9005)
-  Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}.SignalStrength → ✅ Available
-  Device.WiFi.Radio.{i}.Channel              → Current channel ✅
-  Device.WiFi.Radio.{i}.Stats.Noise          → Noise level ✅
-  ```
-- **Chart types:**
-  - **Radar chart:** Multi-AP signal quality comparison
-  - **Bar chart:** Channel usage distribution
-  - **Scatter plot:** Signal strength vs connection speed correlation
-- **Implementation:** Requires investigation of why WiFi Radio.Stats values are 0
-- **Limitation:** AP-level statistics not available in current firmware
+- **Implemented:** 3-tab card using existing `uspDashboardProvider` + `uspDeviceAnalyticsProvider`:
+  - **Signal:** Per-client RSSI `AppBarChart` with tier coloring (Excellent ≥-50, Good ≥-60, Fair ≥-70, Weak <-70 dBm)
+  - **Speed:** Per-client DL/UL grouped `AppBarChart` (kbps → Mbps/Gbps auto-format)
+  - **Channels:** Per-radio info (band + channel + bandwidth + client count) + band distribution `AppPieChart` donut
+- **Data sources:** `WifiClient.signalStrength/noise/lastDataDownlinkRate/lastDataUplinkRate`, `connectionDetailMap[mac].band` for AP→Radio mapping, `WifiRadioUIModel` for channel info
+- **Files:** `wifi_performance_helpers.dart` + `usp_wifi_performance_card.dart`
+- **Resolved:** AP-level stats (fault 9005) bypassed — uses per-client `AssociatedDevice` data instead of AP Stats
 
 ### F-025: Historical Trend Analysis
 
@@ -310,15 +265,15 @@
                         │
     ┌───────────────────┼───────────────────┐
     │                   │                   │
-    │  F-001 WiFi PW    │ F-018 Traffic Mon │
-    │  F-021 Sys Perf   │  F-019 Multi-IF  │
+    │  F-001 WiFi PW    │ F-018 ✅ Done     │
+    │  F-021 Sys Perf   │ F-019 ✅ Done     │
     │                   │  F-011 Ping       │
     │                   │  F-007 Guest Net  │
  Low├───────────────────┼───────────────────┤High
 Cost│                   │                   │Cost
-    │  F-004 CH Width   │  F-020 Dev Conn  │
-    │  F-022 Net Health │  F-023 Firewall  │
-    │                   │  F-024 WiFi Perf │
+    │  F-004 CH Width   │ F-020 ✅ Done     │
+    │  F-022 ✅ Done    │  F-023 ✅ Done   │
+    │                   │  F-024 ✅ Done   │
     │                   │  F-025 Historical │
     └───────────────────┼───────────────────┘
                         │
@@ -334,37 +289,37 @@ Cost│                   │                   │Cost
 | ~~**4A**~~ | ~~F-003 DHCP Pool Edit~~ | ~~Subsumed by F-016~~ ✅ |
 | ~~**4A**~~ | ~~F-017 IPv6 Port Service~~ | ~~Done~~ ✅ 2026-03-10 |
 | ~~**4A**~~ | ~~401 Auth Retry~~ | ~~Done~~ ✅ 2026-03-10 |
-| **Next (4B)** | F-018 Real-Time Traffic Monitor | **✅ USP Verified** — High impact, complete data sources |
+| ~~**4B**~~ | ~~F-018 Real-Time Traffic Monitor~~ | ~~Done~~ ✅ 2026-03-10 (daily/monthly stats → F-025) |
 | **4B** | F-021 System Performance Dashboard | **✅ USP Verified** — Extend existing SystemStatusCard |
 | **4B** | F-001 WiFi Password, F-004 Channel Width | **✅ USP Verified** — Low cost daily-use WiFi management |
-| **4C** | F-019 Multi-Interface Traffic Analysis | **✅ USP Verified** — Extend F-018 with multi-source data |
-| **4C** | F-020 Device Connection Analytics | **✅ USP Verified** — Leverage existing ConnectedDevices codegen |
-| **4C** | F-022 Network Health Monitoring | **✅ USP Verified** — Error statistics available |
+| ~~**4C**~~ | ~~F-019 Multi-Interface Traffic Analysis~~ | ~~Done~~ ✅ 2026-03-11 |
+| ~~**4C**~~ | ~~F-020 Device Connection Analytics~~ | ~~Done~~ ✅ 2026-03-11 |
+| ~~**4C**~~ | ~~F-022 Network Health Monitoring~~ | ~~Done~~ ✅ 2026-03-11 |
+| ~~**4D**~~ | ~~F-023 Firewall Configuration Overview~~ | ~~Done~~ ✅ 2026-03-11 (descoped from Activity Viz — no TR-181 event data) |
+| ~~**4D**~~ | ~~F-024 WiFi Performance Analytics~~ | ~~Done~~ ✅ 2026-03-11 (uses per-client AssociatedDevice, bypasses AP Stats fault) |
 | **4D** | F-007 Guest Network, F-011 Ping (polling) | **✅ USP Verified** — Medium cost, high value networking features |
-| **4D** | F-023 Firewall Activity Visualization | **✅ USP Verified** — Firewall rules data available, needs event logging investigation |
-| **4E** | F-024 WiFi Performance Analytics | **⚠️ Partially Verified** — Radio stats available but AP stats unsupported |
 | **4E** | F-025 Historical Trend Analysis | **⚠️ Client-side Only** — Requires data collection, no USP historical storage |
 
 ---
 
 ## USP Data Model Verification Summary
 
+### ✅ **Fully Verified & Implemented**
+
+| Feature | TR-181 Data Sources | Status |
+|---------|---------------------|--------|
+| **F-018 Real-Time Traffic Monitor** | `Device.IP.Interface.2.Stats.*` | ✅ Done 2026-03-10 |
+| **F-019 Multi-Interface Traffic** | `Device.IP.Interface.{1,2}.Stats.*`<br>`Device.Ethernet.Interface.*.Stats.*` | ✅ Done 2026-03-11 |
+| **F-020 Device Connection Analytics** | `Device.Hosts.Host.{i}.*`<br>`Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}.*` | ✅ Done 2026-03-11 |
+| **F-022 Network Health Monitoring** | `Device.IP.Interface.{1,2}.Stats.Errors*`<br>`Device.IP.Interface.{1,2}.Stats.DiscardPackets*` | ✅ Done 2026-03-11 |
+| **F-023 Firewall Config Overview** | `Device.Firewall.Chain.1.Rule.{i}.*`<br>`Device.NAT.PortMapping.{i}.*`<br>`Device.Firewall.DMZ.{i}.*` | ✅ Done 2026-03-11 (descoped: no activity data) |
+| **F-024 WiFi Performance Analytics** | `WifiClient.signalStrength/noise/lastData*Rate`<br>`Device.WiFi.Radio.{i}.Channel/Band/Bandwidth` | ✅ Done 2026-03-11 (AP Stats bypassed) |
+
 ### ✅ **Fully Verified Features** (Ready for Implementation)
 
 | Feature | TR-181 Data Sources | Live Test Results |
 |---------|---------------------|-------------------|
-| **F-018 Real-Time Traffic Monitor** | `Device.IP.Interface.2.Stats.*` | WAN: 2.1GB↓ 705MB↑, real-time sampling confirmed |
-| **F-019 Multi-Interface Traffic** | `Device.IP.Interface.{1,2}.Stats.*`<br>`Device.Ethernet.Interface.*.Stats.*` | LAN: 2.1GB↑ 705MB↓<br>ETH1: 969MB↑ 303MB↓ |
-| **F-020 Device Connection Analytics** | `Device.Hosts.Host.{i}.*`<br>`Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}.*` | From existing ConnectedDevices implementation |
 | **F-021 System Performance Dashboard** | `Device.DeviceInfo.ProcessStatus.*`<br>`Device.DeviceInfo.MemoryStatus.*` | From existing SystemStatusCard implementation |
-| **F-022 Network Health Monitoring** | `Device.IP.Interface.2.Stats.Errors*`<br>`Device.IP.Interface.2.Stats.DiscardPackets*` | WAN errors: 0, discarded: 12 packets |
-| **F-023 Firewall Activity** | `Device.Firewall.Chain.1.Rule.{i}.*` | 29 firewall rules available |
-
-### ⚠️ **Partially Verified Features** (Requires Investigation)
-
-| Feature | Available Data | Missing Data | Workaround |
-|---------|----------------|--------------|------------|
-| **F-024 WiFi Performance Analytics** | `Device.WiFi.Radio.{i}.Stats.*`<br>`Device.WiFi.Radio.{i}.Channel`<br>`Device.WiFi.Radio.{i}.Stats.Noise` | `Device.WiFi.AccessPoint.{i}.Stats.*`<br>(fault 9005) | Use Radio-level stats + AssociatedDevice signal strength |
 
 ### ⚠️ **Client-Side Implementation Required**
 
@@ -383,17 +338,17 @@ Cost│                   │                   │Cost
 ## Recommended Chart Implementation Sequence
 
 ### **Phase 4B: Core Analytics** (Immediate — 1-2 weeks)
-1. **F-018 Real-Time Traffic Monitor** — Dynamic line charts, speed tiles
+1. ~~**F-018 Real-Time Traffic Monitor**~~ — ✅ Done 2026-03-10
 2. **F-021 System Performance Dashboard** — Multi-gauge display, extend existing SystemStatusCard
 
-### **Phase 4C: Extended Analytics** (Short-term — 2-3 weeks)
-3. **F-019 Multi-Interface Traffic Analysis** — Stacked bar charts, donut charts
-4. **F-020 Device Connection Analytics** — Pie charts, heatmaps
-5. **F-022 Network Health Monitoring** — Area charts, traffic light indicators
+### **Phase 4C: Extended Analytics** — ✅ All Done 2026-03-11
+3. ~~**F-019 Multi-Interface Traffic Analysis**~~ — ✅ Done (AppLineChart, AppBarChart stacked, AppPieChart donut, dual-axis CustomPainter)
+4. ~~**F-020 Device Connection Analytics**~~ — ✅ Done (AppPieChart, AppBarChart stacked, AppHeatmapChart, AppRadarChart)
+5. ~~**F-022 Network Health Monitoring**~~ — ✅ Done (AppGauge + traffic lights, AppLineChart area charts)
 
-### **Phase 4D: Advanced Visualizations** (Medium-term — 4-6 weeks)
-6. **F-023 Firewall Activity Visualization** — Network topology, activity timelines
-7. **F-024 WiFi Performance Analytics** — Radar charts, channel usage bars
+### **Phase 4D: Advanced Visualizations** — ✅ F-023/F-024 Done 2026-03-11
+6. ~~**F-023 Firewall Configuration Overview**~~ — ✅ Done (AppPieChart donut rules, AppBarChart protocol distribution)
+7. ~~**F-024 WiFi Performance Analytics**~~ — ✅ Done (AppBarChart signal/speed, AppPieChart band distribution)
 
 ### **Phase 4E: Long-term Analytics** (Future — 2+ months)
 8. **F-025 Historical Trend Analysis** — Weekly/monthly trends, seasonal analysis

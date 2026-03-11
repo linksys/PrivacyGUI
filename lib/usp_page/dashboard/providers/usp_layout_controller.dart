@@ -37,27 +37,51 @@ class UspSliverDashboardControllerNotifier
     );
   }
 
-  /// Load saved layout from SharedPreferences, or use default.
+  /// Load saved layout from SharedPreferences, or keep the constructor default.
+  ///
+  /// The constructor already initialises with [UspWidgetSpecs.createDefaultLayout].
+  /// This method only replaces the state when a **valid** saved layout exists.
+  /// If the saved layout is stale (missing widget IDs from new cards), it is
+  /// discarded and the default layout is persisted instead.
   Future<void> _initializeLayout() async {
     final prefs = await SharedPreferences.getInstance();
     final layoutJson = prefs.getString(_uspLayoutKey);
 
-    if (layoutJson != null) {
-      try {
-        final layoutData = jsonDecode(layoutJson) as List<dynamic>;
-        state.importLayout(layoutData);
-      } catch (e) {
-        debugPrint('Failed to load USP sliver dashboard layout: $e');
-        _resetToDefault();
-      }
-    } else {
-      _resetToDefault();
+    if (layoutJson == null) {
+      // No saved layout — persist the constructor's default for next time.
+      await saveLayout();
+      return;
     }
-  }
 
-  void _resetToDefault() {
-    state = _createDefaultController();
-    state.optimizeLayout();
+    try {
+      final layoutData = jsonDecode(layoutJson) as List<dynamic>;
+
+      // Validate: saved layout must include every widget in the current spec
+      final savedIds = layoutData
+          .map((item) => (item as Map<String, dynamic>)['id'] as String)
+          .toSet();
+      final requiredIds = UspWidgetSpecs.all.map((s) => s.id).toSet();
+      final missingIds = requiredIds.difference(savedIds);
+
+      if (missingIds.isNotEmpty) {
+        debugPrint(
+            'USP layout missing widgets: $missingIds — keeping default');
+        // Discard stale layout, persist the constructor's default.
+        await saveLayout();
+        return;
+      }
+
+      // Create a NEW controller then swap via state= so Riverpod
+      // properly notifies listeners (avoids mutating the existing
+      // controller in-place which can desync the render tree).
+      final newController = _createDefaultController();
+      newController.importLayout(layoutData);
+      state = newController;
+    } catch (e) {
+      debugPrint('Failed to load USP sliver dashboard layout: $e');
+      // Keep the constructor's default — no state change needed.
+      await saveLayout();
+    }
   }
 
   /// Persist current layout to SharedPreferences.
@@ -70,7 +94,6 @@ class UspSliverDashboardControllerNotifier
   /// Reset to default layout and clear persisted data.
   Future<void> resetLayout() async {
     state = _createDefaultController();
-    state.optimizeLayout();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_uspLayoutKey);

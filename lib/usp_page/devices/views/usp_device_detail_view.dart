@@ -24,14 +24,15 @@ class UspDeviceDetailView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'Device Detail',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspDeviceList),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         if (detail.device == null) {
           return Center(
@@ -52,35 +53,13 @@ class UspDeviceDetailView extends ConsumerWidget {
         }
 
         final device = detail.device!;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            AppGap.xl(),
-            AppResponsiveLayout(
-              mobile: (_) =>
-                  _buildSingleColumn(context, ref, device, detail, isLoading),
-              desktop: (_) =>
-                  _buildTwoColumn(context, ref, device, detail, isLoading),
-            ),
-          ],
+        return AppResponsiveLayout(
+          mobile: (_) =>
+              _buildSingleColumn(context, ref, device, detail, isLoading),
+          desktop: (_) =>
+              _buildTwoColumn(context, ref, device, detail, isLoading),
         );
       },
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspDeviceList),
-        ),
-        AppGap.md(),
-        AppText.headlineSmall('Device Detail'),
-      ],
     );
   }
 

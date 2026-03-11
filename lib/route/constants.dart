@@ -41,6 +41,7 @@ class RoutePath {
   static const uspStaticRouting = '/uspStaticRouting';
   static const uspAdvancedSettings = '/uspAdvancedSettings';
   static const uspIpv6PortService = '/uspIpv6PortService';
+  static const uspStatistics = '/uspStatistics';
   static const uspTestConsole = '/uspTestConsole';
   static const uspInternetSettings = 'uspInternetSettings';
 
@@ -197,6 +198,7 @@ class RouteNamed {
   static const uspStaticRouting = 'uspStaticRouting';
   static const uspAdvancedSettings = 'uspAdvancedSettings';
   static const uspIpv6PortService = 'uspIpv6PortService';
+  static const uspStatistics = 'uspStatistics';
   static const uspTestConsole = 'uspTestConsole';
   static const uspInternetSettings = 'uspInternetSettings';
 

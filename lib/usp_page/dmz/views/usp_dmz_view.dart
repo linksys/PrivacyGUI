@@ -54,15 +54,16 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'DMZ',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspMenu),
       onRefresh: () => ref.refresh(uspDmzProvider.future),
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: AppLoader()),
@@ -115,8 +116,6 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context, ref),
-        AppGap.md(),
         AppText.bodyMedium(
           'Route all incoming traffic to a specific host on your network',
           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -141,31 +140,6 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
             ),
           ),
         ],
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Header
-  // ---------------------------------------------------------------------------
-
-  Widget _buildHeader(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspMenu),
-        ),
-        AppGap.md(),
-        Expanded(
-          child: AppText.headlineSmall('DMZ'),
-        ),
-        AppIconButton(
-          icon: AppIcon.font(Icons.refresh),
-          onTap: () => ref.invalidate(uspDmzProvider),
-        ),
       ],
     );
   }

@@ -24,15 +24,16 @@ class UspAdminView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'Administration',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspMenu),
       onRefresh: () => ref.refresh(uspAdminProvider.future),
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(
@@ -71,31 +72,9 @@ class UspAdminView extends ConsumerWidget {
 
   Widget _buildContent(
       BuildContext context, WidgetRef ref, UspAdminState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context),
-        AppGap.xl(),
-        AppResponsiveLayout(
-          mobile: (ctx) => _buildMobileLayout(ctx, ref, state),
-          desktop: (ctx) => _buildDesktopLayout(ctx, ref, state),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspMenu),
-        ),
-        AppGap.md(),
-        AppText.headlineSmall('Administration'),
-      ],
+    return AppResponsiveLayout(
+      mobile: (ctx) => _buildMobileLayout(ctx, ref, state),
+      desktop: (ctx) => _buildDesktopLayout(ctx, ref, state),
     );
   }
 

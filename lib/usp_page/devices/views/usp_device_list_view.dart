@@ -32,24 +32,26 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
     final asyncDashboard = ref.watch(uspDashboardProvider);
     final devices = ref.watch(filteredDeviceListProvider);
     final filter = ref.watch(deviceFilterConfigProvider);
+    final totalCount =
+        asyncDashboard.valueOrNull?.deviceModels.length ?? 0;
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'Devices',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspDashboard),
       onRefresh: () => ref.refresh(uspDashboardProvider.future),
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncDashboard.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: AppText.bodyMedium('Error: $e')),
           data: (state) {
-            final totalCount = state.deviceModels.length;
             return AppResponsiveLayout(
               mobile: (_) =>
                   _buildMobileLayout(context, devices, filter, totalCount),
@@ -59,22 +61,6 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, int filteredCount, int totalCount) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspDashboard),
-        ),
-        AppGap.md(),
-        Expanded(child: AppText.headlineSmall('Devices')),
-        AppText.labelLarge('$filteredCount / $totalCount'),
-      ],
     );
   }
 
@@ -98,6 +84,16 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
         ref.read(deviceFilterConfigProvider.notifier).state =
             ref.read(deviceFilterConfigProvider).copyWith(searchQuery: value);
       },
+    );
+  }
+
+  Widget _buildCountRow(List devices, int totalCount) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: AppText.labelLarge(
+        '${devices.length} / $totalCount',
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
   }
 
@@ -131,8 +127,6 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context, devices.length, totalCount),
-        AppGap.xl(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -142,6 +136,8 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
               child: Column(
                 children: [
                   _buildSearchBar(),
+                  AppGap.sm(),
+                  _buildCountRow(devices, totalCount),
                   AppGap.lg(),
                   _buildDeviceList(devices),
                 ],
@@ -158,9 +154,9 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context, devices.length, totalCount),
-        AppGap.lg(),
         _buildSearchBar(),
+        AppGap.sm(),
+        _buildCountRow(devices, totalCount),
         AppGap.md(),
         const UspDeviceFilterChipBar(),
         AppGap.lg(),

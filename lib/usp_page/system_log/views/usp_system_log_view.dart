@@ -17,59 +17,23 @@ class UspSystemLogView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'System Logs',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspMenu),
       onRefresh: () => ref.refresh(uspSystemLogProvider.future),
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context, ref),
-            AppGap.xl(),
-            asyncState.when(
-              loading: () => const Center(child: AppLoader()),
-              error: (error, stack) => _buildError(context, ref, error),
-              data: (logFiles) => _buildContent(context, logFiles),
-            ),
-          ],
+        return asyncState.when(
+          loading: () => const Center(child: AppLoader()),
+          error: (error, stack) => _buildError(context, ref, error),
+          data: (logFiles) => _buildContent(context, logFiles),
         );
       },
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspMenu),
-        ),
-        AppGap.md(),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText.headlineSmall('System Logs'),
-              AppText.bodySmall(
-                'View router log files',
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-        AppIconButton(
-          icon: AppIcon.font(Icons.refresh),
-          onTap: () => ref.invalidate(uspSystemLogProvider),
-        ),
-      ],
     );
   }
 

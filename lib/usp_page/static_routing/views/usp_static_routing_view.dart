@@ -21,15 +21,16 @@ class UspStaticRoutingView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'Static Routing',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspMenu),
       onRefresh: () => ref.refresh(uspStaticRoutingProvider.future),
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: AppLoader()),
@@ -78,8 +79,6 @@ class UspStaticRoutingView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context, ref, isMutating),
-        AppGap.md(),
         AppText.bodyMedium(
           'Manage static IPv4 routes on your network',
           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -89,9 +88,26 @@ class UspStaticRoutingView extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             AppText.titleMedium('Static Routes'),
-            AppIconButton(
-              icon: AppIcon.font(Icons.add, size: 20),
-              onTap: isMutating ? null : () => _showAddDialog(context, ref),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isMutating)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  AppIconButton(
+                    icon: AppIcon.font(Icons.refresh, size: 20),
+                    onTap: () => ref.invalidate(uspStaticRoutingProvider),
+                  ),
+                AppIconButton(
+                  icon: AppIcon.font(Icons.add, size: 20),
+                  onTap:
+                      isMutating ? null : () => _showAddDialog(context, ref),
+                ),
+              ],
             ),
           ],
         ),
@@ -100,38 +116,6 @@ class UspStaticRoutingView extends ConsumerWidget {
           AppText.bodyMedium('No static routes configured')
         else
           ...routes.map((r) => _buildRouteCard(context, ref, r, isMutating)),
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Header
-  // ---------------------------------------------------------------------------
-
-  Widget _buildHeader(BuildContext context, WidgetRef ref, bool isMutating) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspMenu),
-        ),
-        AppGap.md(),
-        Expanded(
-          child: AppText.headlineSmall('Static Routing'),
-        ),
-        if (isMutating)
-          const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        else
-          AppIconButton(
-            icon: AppIcon.font(Icons.refresh),
-            onTap: () => ref.invalidate(uspStaticRoutingProvider),
-          ),
       ],
     );
   }

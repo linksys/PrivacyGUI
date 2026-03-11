@@ -2,9 +2,20 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
-## [2.1.0] - 2026-03-10
+## [2.1.0] - 2026-03-11
 
 ### USP Protocol Integration
+
+#### USP Page App Bar Migration
+- Migrate 15 USP pages from custom `_buildHeader()` to `UiKitPageView` built-in app bar (`title` + `onBackTap`)
+- Wire `onBackTap` through UI Kit chain: `UiKitPageView` → `PageAppBarConfig` → `AppPageView` → `AppUnifiedBar`
+- `onBackTap` callback always shows back button with custom fallback navigation (`context.canPop()` → `context.goNamed()`)
+- Remove app bar `actions` — move refresh, spinner, and device count into page content:
+  - 5 refresh-only pages (Topology, Firewall, Local Network, DMZ, System Log): rely on `onRefresh` pull-to-refresh
+  - Static Routing / IPv6 Port Service: spinner/refresh moved to section title Row alongside add button
+  - Device List: count text (`N / total`) moved below search bar
+- Add `onRefresh` to Topology page (previously missing)
+- Skipped: Sliver Dashboard (custom layout), Test Console (special purpose)
 
 #### USP Feature Pages (947a3dba, 8eecf073)
 - Add DMZ settings page — View/Provider/Service with enable toggle, host IP configuration
@@ -66,6 +77,36 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Clean up verbose debug logging in dashboard notifier
 - Replace `DeviceSearchField` with `SelectAutoComplete` reusable widget
 - Port Forwarding dialog: Integrate device search for IP address selection
+
+#### Network Health Monitoring (F-022)
+- Add `UspNetworkHealthCard` — 3-tab card (Health, Errors, Loss) sharing `uspTrafficAnalysisProvider` timer
+- Health tab: `AppGauge` composite score (0-100) from packet loss + error/discard rates, WAN/LAN traffic light indicators
+- Errors tab: Error/discard rate `AppLineChart` area chart over time with avg/peak legend
+- Loss tab: Packet loss % `AppLineChart` over time with avg/peak legend
+- Add `NetworkHealthHelpers` — `HealthTier` enum, score computation, tier color mapping, fault rate formatting
+- Register in `UspWidgetSpecs` (6×4), `UspWidgetFactory`, default layout at y=4
+
+#### Firewall Configuration Overview (F-023)
+- Add `UspFirewallOverviewCard` — 2-tab card (Rules, Ports)
+- Rules tab: Target distribution `AppPieChart` donut (Accept/Drop/Reject/Other) + active/total rule count + port forward/DMZ stats
+- Ports tab: Top-5 port forwarding rules with protocol badge + enable dot, DMZ section, protocol `AppBarChart` distribution
+- Extend `UspDashboardState` with `FirewallChainRules` + `Dmz` raw data fields
+- Extend `UspDashboardNotifier._fetchAll()` with `FirewallChainRules.fetch()` + `Dmz.fetch()` (17 parallel fetches)
+- Descoped from "Activity Visualization" — TR-181 `FirewallChainRule` lacks hit count/timestamp/event log
+- Register in `UspWidgetSpecs` (6×4), `UspWidgetFactory`, default layout at y=29
+
+#### WiFi Performance Analytics (F-024)
+- Add `UspWifiPerformanceCard` — 3-tab card (Signal, Speed, Channels)
+- Signal tab: Per-client RSSI `AppBarChart` with tier coloring (Excellent ≥-50, Good ≥-60, Fair ≥-70, Weak <-70 dBm)
+- Speed tab: Per-client DL/UL grouped `AppBarChart` with auto-format (kbps → Mbps → Gbps)
+- Channels tab: Per-radio info (band + channel + bandwidth + client count) + band distribution `AppPieChart` donut
+- Add `WifiPerformanceHelpers` — `SignalTier` enum, SNR computation, speed formatting, tier color mapping
+- Uses `connectionDetailMap[mac].band` for accurate AP→Radio band mapping (replaces naive AP index heuristic)
+- Register in `UspWidgetSpecs` (6×5), `UspWidgetFactory`, default layout at y=23
+
+#### Bugfix: SliverDashboard crash
+- Fix "Unexpected null value" at `sliver_dashboard.dart:621` during paint — removed `optimizeLayout()` calls from `UspLayoutController` that mutated `DashboardController` after widget tree was built
+- Add stale layout validation — saved layout from SharedPreferences checked against current `UspWidgetSpecs.all` IDs; discarded if missing new widget IDs
 
 #### Dashboard & Shell Improvements (947a3dba, 3169d7c6, 8eecf073)
 - Merge `UspSystemMonitorCard` into `UspSystemStatusCard` — unified CPU/memory/firmware display

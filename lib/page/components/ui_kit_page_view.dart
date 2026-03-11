@@ -481,6 +481,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       title: widget.title,
       showBackButton: showBackButton,
       toolbarHeight: widget.toolbarHeight,
+      onBackTap: widget.onBackTap,
     );
   }
 

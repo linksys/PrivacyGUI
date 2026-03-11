@@ -25,7 +25,11 @@ class UspWidgetFactory {
       'time_settings' => UspTimeSettingsCard(),
       'dhcp_reservations' => UspDhcpReservationsCard(),
       'port_forwarding' => UspPortForwardingCard(),
-      'traffic_monitor' => UspTrafficMonitorCard(),
+      'traffic_analysis' => UspTrafficAnalysisCard(),
+      'device_analytics' => UspDeviceAnalyticsCard(),
+      'network_health' => UspNetworkHealthCard(),
+      'firewall_overview' => UspFirewallOverviewCard(),
+      'wifi_performance' => UspWifiPerformanceCard(),
       _ => null,
     };
   }

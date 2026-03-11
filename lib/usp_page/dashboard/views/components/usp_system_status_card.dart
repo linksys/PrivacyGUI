@@ -1,21 +1,39 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/transforms.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_monitor_state.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Combined System Status + Monitor card.
-/// Shows gauges (CPU/Memory), uptime, trend chart, and auto-refresh controls.
-class UspSystemStatusCard extends ConsumerWidget {
-  final SystemInfoUIModel? info;
+/// System Performance Dashboard — 4-tab card (F-021).
+///
+/// - Monitor: CPU/Memory gauges + uptime
+/// - Trends: CPU/Memory line chart with area fill + avg/peak stats
+/// - Distribution: CPU bucket bar chart + Memory donut
+/// - Correlation: CPU % vs WAN traffic rate dual-axis chart
+class UspSystemStatusCard extends ConsumerStatefulWidget {
+  const UspSystemStatusCard({super.key});
 
-  const UspSystemStatusCard({super.key, this.info});
+  @override
+  ConsumerState<UspSystemStatusCard> createState() =>
+      _UspSystemStatusCardState();
+}
+
+class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
+  static const _cardId = 'system_status';
+
+  static const _tabs = [
+    TabItem(label: 'Monitor'),
+    TabItem(label: 'Trends'),
+    TabItem(label: 'Distribution'),
+    TabItem(label: 'Correlation'),
+  ];
 
   static final _intervalOptions = <(Duration?, String)>[
     (null, 'Off'),
@@ -25,23 +43,13 @@ class UspSystemStatusCard extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final info = this.info ??
+  Widget build(BuildContext context) {
+    final info =
         ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
     if (info == null) return const SizedBox.shrink();
     final monitorState = ref.watch(uspSystemMonitorProvider);
+    final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
     final colorScheme = Theme.of(context).colorScheme;
-    final latest = monitorState.latest;
-
-    // Use live monitor data when available, fallback to dashboard info
-    final cpuPercent = latest?.cpuPercent ?? info.cpuPercent;
-    final memPercent = latest?.memoryPercent ?? info.memoryPercent;
-    final memUsedStr = latest != null
-        ? Transforms.formatBytes(latest.usedMemoryKb * 1024)
-        : info.formattedUsedMemory;
-    final memTotalStr = latest != null
-        ? Transforms.formatBytes(latest.totalMemoryKb * 1024)
-        : info.formattedTotalMemory;
 
     return AppCard(
       child: Column(
@@ -80,50 +88,125 @@ class UspSystemStatusCard extends ConsumerWidget {
               ),
             ],
           ),
-          AppGap.md(),
-
-          // Uptime
-          UspInfoRow(label: 'Uptime', value: info.formattedUptime),
-          AppGap.md(),
-
-          // Gauges — synced with monitor's latest snapshot
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildGauge(
-                context,
-                value: cpuPercent.toDouble(),
-                label: 'CPU',
-                display: '$cpuPercent%',
-              ),
-              _buildGauge(
-                context,
-                value: memPercent.toDouble(),
-                label: 'Memory',
-                display: '$memPercent%',
-              ),
-            ],
-          ),
           AppGap.sm(),
-          Center(
-            child: AppText.bodySmall(
-              '$memUsedStr / $memTotalStr used',
-              color: colorScheme.onSurfaceVariant,
-            ),
+          AppTabs(
+            tabs: _tabs,
+            initialIndex: selectedTab,
+            displayMode: TabDisplayMode.segmented,
+            isScrollable: true,
+            onTabChanged: (index) => ref
+                .read(cardTabIndexProvider(_cardId).notifier)
+                .state = index,
           ),
-          AppGap.lg(),
-
-          // Chart
-          if (monitorState.history.isEmpty)
-            _buildEmptyState(context)
-          else
-            _buildChart(context, monitorState),
-          AppGap.sm(),
-
-          // Legend (no sample count)
-          _buildLegend(context, monitorState),
+          AppGap.md(),
+          Expanded(
+            child: _buildTabView(context, info, monitorState, selectedTab),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTabView(
+    BuildContext context,
+    SystemInfoUIModel info,
+    SystemMonitorState monitorState,
+    int selectedTab,
+  ) {
+    return switch (selectedTab) {
+      0 => _MonitorView(info: info, monitorState: monitorState),
+      1 => monitorState.history.isNotEmpty
+          ? _TrendsView(monitorState: monitorState)
+          : _buildEmptyState(context, 'Waiting for data...'),
+      2 => monitorState.history.isNotEmpty
+          ? _DistributionView(monitorState: monitorState)
+          : _buildEmptyState(context, 'Waiting for data...'),
+      3 => _CorrelationView(monitorState: monitorState, ref: ref),
+      _ => const SizedBox.shrink(),
+    };
+  }
+
+  Widget _buildEmptyState(BuildContext context, String message) {
+    return Center(
+      child: AppText.bodyMedium(
+        message,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Tab 1: Monitor (Gauges + Uptime)
+// =============================================================================
+
+class _MonitorView extends StatelessWidget {
+  final SystemInfoUIModel info;
+  final SystemMonitorState monitorState;
+
+  const _MonitorView({required this.info, required this.monitorState});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final latest = monitorState.latest;
+    final cpuPercent = latest?.cpuPercent ?? info.cpuPercent;
+    final memPercent = latest?.memoryPercent ?? info.memoryPercent;
+    final memUsedStr = latest != null
+        ? Transforms.formatBytes(latest.usedMemoryKb * 1024)
+        : info.formattedUsedMemory;
+    final memTotalStr = latest != null
+        ? Transforms.formatBytes(latest.totalMemoryKb * 1024)
+        : info.formattedTotalMemory;
+
+    final intervalLabel = _UspSystemStatusCardState._intervalOptions
+            .where((e) => e.$1 == monitorState.refreshInterval)
+            .map((e) => e.$2)
+            .firstOrNull ??
+        'Off';
+
+    return Column(
+      children: [
+        UspInfoRow(label: 'Uptime', value: info.formattedUptime),
+        AppGap.md(),
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildGauge(context, value: cpuPercent.toDouble(),
+                  label: 'CPU', display: '$cpuPercent%'),
+              _buildGauge(context, value: memPercent.toDouble(),
+                  label: 'Memory', display: '$memPercent%'),
+            ],
+          ),
+        ),
+        AppGap.sm(),
+        Center(
+          child: AppText.bodySmall(
+            '$memUsedStr / $memTotalStr used',
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        AppGap.md(),
+        Row(
+          children: [
+            _LegendDot(color: colorScheme.primary),
+            AppGap.xs(),
+            AppText.labelSmall('CPU: ${latest?.cpuPercent ?? '--'}%'),
+            AppGap.lg(),
+            _LegendDot(color: colorScheme.secondary),
+            AppGap.xs(),
+            AppText.labelSmall('Memory: ${latest?.memoryPercent ?? '--'}%'),
+            const Spacer(),
+            if (monitorState.refreshInterval != null) ...[
+              AppIcon.font(Icons.autorenew, size: 12,
+                  color: colorScheme.onSurfaceVariant),
+              AppText.labelSmall(intervalLabel,
+                  color: colorScheme.onSurfaceVariant),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
@@ -145,74 +228,257 @@ class UspSystemStatusCard extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildEmptyState(BuildContext context) {
-    return SizedBox(
-      height: 200,
-      child: Center(
-        child: AppText.bodyMedium(
-          'Waiting for data...',
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
+// =============================================================================
+// Tab 2: Trends (Line Chart + Stats)
+// =============================================================================
 
-  Widget _buildChart(BuildContext context, SystemMonitorState monitorState) {
-    return SizedBox(
-      height: 200,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return CustomPaint(
-            size: Size(constraints.maxWidth, 200),
-            painter: _SystemMonitorChartPainter(
-              context: context,
-              history: monitorState.history,
-            ),
-          );
-        },
-      ),
-    );
-  }
+class _TrendsView extends StatelessWidget {
+  final SystemMonitorState monitorState;
+  const _TrendsView({required this.monitorState});
 
-  Widget _buildLegend(BuildContext context, SystemMonitorState monitorState) {
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final latest = monitorState.latest;
-    final intervalLabel = _intervalOptions
-            .where((e) => e.$1 == monitorState.refreshInterval)
-            .map((e) => e.$2)
-            .firstOrNull ??
-        'Off';
+    final history = monitorState.history;
+    final cpuValues = history.map((s) => s.cpuPercent.toDouble()).toList();
+    final memValues = history.map((s) => s.memoryPercent.toDouble()).toList();
 
-    return Row(
+    // Compute summary stats
+    final avgCpu = cpuValues.isEmpty
+        ? 0
+        : (cpuValues.reduce((a, b) => a + b) / cpuValues.length).round();
+    final peakCpu = cpuValues.isEmpty
+        ? 0
+        : cpuValues.reduce((a, b) => a > b ? a : b).round();
+    final avgMem = memValues.isEmpty
+        ? 0
+        : (memValues.reduce((a, b) => a + b) / memValues.length).round();
+
+    return Column(
       children: [
-        _LegendDot(color: colorScheme.primary),
-        AppGap.xs(),
-        AppText.labelSmall(
-          'CPU: ${latest?.cpuPercent ?? '--'}%',
-        ),
-        AppGap.lg(),
-        _LegendDot(color: colorScheme.secondary),
-        AppGap.xs(),
-        AppText.labelSmall(
-          'Memory: ${latest?.memoryPercent ?? '--'}%',
-        ),
-        const Spacer(),
-        if (monitorState.refreshInterval != null) ...[
-          AppIcon.font(
-            Icons.autorenew,
-            size: 12,
-            color: colorScheme.onSurfaceVariant,
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: AppLineChart(
+              series: [
+                AppChartSeries(
+                  label: 'CPU',
+                  data: cpuValues,
+                  filled: true,
+                  color: colorScheme.primary,
+                ),
+                AppChartSeries(
+                  label: 'Memory',
+                  data: memValues,
+                  color: colorScheme.secondary,
+                ),
+              ],
+              yAxis: AppChartAxis(min: 0, max: 100, interval: 25),
+              yLabelFormatter: (v) => '${v.toInt()}%',
+              showTooltip: false,
+            ),
           ),
-          AppText.labelSmall(
-            intervalLabel,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ],
+        ),
+        AppGap.sm(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _LegendDot(color: colorScheme.primary),
+            AppGap.xs(),
+            AppText.labelSmall('Avg: $avgCpu%  Peak: $peakCpu%'),
+            AppGap.lg(),
+            _LegendDot(color: colorScheme.secondary),
+            AppGap.xs(),
+            AppText.labelSmall('Avg: $avgMem%'),
+          ],
+        ),
       ],
     );
   }
 }
+
+// =============================================================================
+// Tab 3: Distribution (CPU usage histogram)
+// =============================================================================
+
+class _DistributionView extends StatelessWidget {
+  final SystemMonitorState monitorState;
+  const _DistributionView({required this.monitorState});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final history = monitorState.history;
+
+    // CPU distribution: 4 buckets
+    final buckets = [0, 0, 0, 0]; // 0-25, 25-50, 50-75, 75-100
+    for (final s in history) {
+      final idx = (s.cpuPercent / 25).floor().clamp(0, 3);
+      buckets[idx]++;
+    }
+    final maxBucket = buckets.reduce((a, b) => a > b ? a : b);
+    // Round up to nice integer ceiling with room for value labels
+    final yMax = maxBucket < 1 ? 2.0 : (maxBucket + 2).toDouble();
+    final yInterval = yMax <= 4 ? 1.0 : (yMax / 4).ceilToDouble();
+
+    return Column(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: AppBarChart(
+              series: [
+                AppChartSeries(
+                  label: 'CPU',
+                  data: buckets.map((b) => b.toDouble()).toList(),
+                  color: colorScheme.primary,
+                ),
+              ],
+              xLabels: const ['0-25%', '25-50%', '50-75%', '75-100%'],
+              yAxis: AppChartAxis(min: 0, max: yMax, interval: yInterval),
+              yLabelFormatter: (v) => v.toInt().toString(),
+              showValueLabels: true,
+              valueLabelFormatter: (v) => v.toInt().toString(),
+              showTooltip: false,
+            ),
+          ),
+        ),
+        AppGap.sm(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _LegendDot(color: colorScheme.primary),
+            AppGap.xs(),
+            AppText.labelSmall('CPU usage samples: ${history.length}'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// Tab 4: Correlation (CPU vs Traffic dual-axis)
+// =============================================================================
+
+class _CorrelationView extends StatelessWidget {
+  final SystemMonitorState monitorState;
+  final WidgetRef ref;
+
+  const _CorrelationView({required this.monitorState, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final trafficState = ref.watch(uspTrafficAnalysisProvider);
+    final sysHistory = monitorState.history;
+
+    if (sysHistory.isEmpty) {
+      return Center(
+        child: AppText.bodyMedium(
+          'Waiting for data...',
+          color: colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    final trafficHistory = trafficState.history;
+    if (trafficHistory.isEmpty) {
+      return Center(
+        child: AppText.bodyMedium(
+          'Enable traffic monitor for correlation data',
+          color: colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    final cpuData = sysHistory.map((s) => s.cpuPercent.toDouble()).toList();
+    final trafficData = _alignTrafficToSystem(sysHistory, trafficHistory);
+
+    // Auto-scale traffic Y-axis
+    final maxTraffic = trafficData.isEmpty
+        ? 1.0
+        : trafficData.reduce((a, b) => a > b ? a : b);
+    final trafficMax = maxTraffic < 1 ? 1.0 : maxTraffic * 1.2;
+
+    return Column(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: AppLineChart(
+              series: [
+                AppChartSeries(
+                  label: 'CPU',
+                  data: cpuData,
+                  filled: true,
+                  color: colorScheme.primary,
+                ),
+                AppChartSeries(
+                  label: 'Traffic',
+                  data: trafficData,
+                  dashed: true,
+                  color: colorScheme.tertiary,
+                  useSecondaryAxis: true,
+                ),
+              ],
+              yAxis: AppChartAxis(min: 0, max: 100, interval: 25),
+              yLabelFormatter: (v) => '${v.toInt()}%',
+              secondaryYAxis: AppChartAxis(min: 0, max: trafficMax),
+              secondaryYLabelFormatter: (v) => _formatRate(v),
+              showTooltip: false,
+            ),
+          ),
+        ),
+        AppGap.sm(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _LegendDot(color: colorScheme.primary),
+            AppGap.xs(),
+            AppText.labelSmall('CPU %'),
+            AppGap.lg(),
+            _LegendDot(color: colorScheme.tertiary),
+            AppGap.xs(),
+            AppText.labelSmall('Traffic rate'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Aligns traffic snapshots to system monitor timestamps.
+  List<double> _alignTrafficToSystem(
+    List<SystemSnapshot> sysHistory,
+    List<MultiInterfaceSnapshot> trafficHistory,
+  ) {
+    return sysHistory.map((sys) {
+      final closest = trafficHistory.reduce((a, b) =>
+          (a.timestamp.difference(sys.timestamp).abs() <
+                  b.timestamp.difference(sys.timestamp).abs())
+              ? a
+              : b);
+      final wan = closest.interfaces[TrafficInterface.wan];
+      return (wan?.uploadBytesPerSec ?? 0) + (wan?.downloadBytesPerSec ?? 0);
+    }).toList();
+  }
+
+  static String _formatRate(double bytesPerSec) {
+    if (bytesPerSec >= 1024 * 1024) {
+      return '${(bytesPerSec / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+    }
+    if (bytesPerSec >= 1024) {
+      return '${(bytesPerSec / 1024).toStringAsFixed(0)} KB/s';
+    }
+    return '${bytesPerSec.toStringAsFixed(0)} B/s';
+  }
+}
+
+// =============================================================================
+// Shared widgets
+// =============================================================================
 
 class _LegendDot extends StatelessWidget {
   final Color color;
@@ -225,146 +491,5 @@ class _LegendDot extends StatelessWidget {
       height: 8,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
-  }
-}
-
-/// CustomPainter for CPU & Memory trend lines (0-100% fixed Y axis).
-class _SystemMonitorChartPainter extends CustomPainter {
-  final BuildContext context;
-  final List<SystemSnapshot> history;
-
-  _SystemMonitorChartPainter({
-    required this.context,
-    required this.history,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (history.isEmpty) return;
-
-    final colorScheme = Theme.of(context).colorScheme;
-    const padding = EdgeInsets.only(left: 36, right: 12, top: 8, bottom: 20);
-    final chartRect = Rect.fromLTWH(
-      padding.left,
-      padding.top,
-      size.width - padding.left - padding.right,
-      size.height - padding.top - padding.bottom,
-    );
-
-    _drawGrid(canvas, chartRect, colorScheme);
-    _drawYLabels(canvas, chartRect, colorScheme);
-
-    final cpuValues = history.map((s) => s.cpuPercent.toDouble()).toList();
-    final memValues = history.map((s) => s.memoryPercent.toDouble()).toList();
-
-    // Memory line (below CPU, no fill)
-    _drawLine(
-      canvas,
-      chartRect,
-      memValues,
-      colorScheme.secondary,
-      filled: false,
-    );
-    // CPU line (on top, with gradient fill)
-    _drawLine(
-      canvas,
-      chartRect,
-      cpuValues,
-      colorScheme.primary,
-      filled: true,
-    );
-  }
-
-  void _drawGrid(Canvas canvas, Rect rect, ColorScheme colorScheme) {
-    final gridPaint = Paint()
-      ..color = colorScheme.outlineVariant.withValues(alpha: 0.4)
-      ..strokeWidth = 1;
-
-    // Horizontal grid lines at 0%, 25%, 50%, 75%, 100%
-    for (final pct in [0.0, 0.25, 0.5, 0.75, 1.0]) {
-      final y = rect.bottom - pct * rect.height;
-      canvas.drawLine(Offset(rect.left, y), Offset(rect.right, y), gridPaint);
-    }
-  }
-
-  void _drawYLabels(Canvas canvas, Rect rect, ColorScheme colorScheme) {
-    final style = TextStyle(
-      fontSize: 10,
-      color: colorScheme.onSurfaceVariant,
-    );
-
-    for (final pct in [0, 25, 50, 75, 100]) {
-      final y = rect.bottom - (pct / 100) * rect.height;
-      final tp = TextPainter(
-        text: TextSpan(text: '$pct%', style: style),
-        textDirection: ui.TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset(rect.left - tp.width - 4, y - tp.height / 2));
-    }
-  }
-
-  void _drawLine(
-    Canvas canvas,
-    Rect rect,
-    List<double> values,
-    Color color, {
-    required bool filled,
-  }) {
-    if (values.isEmpty) return;
-
-    final path = Path();
-    final count = values.length;
-    final stepX = count > 1 ? rect.width / (count - 1) : rect.width;
-
-    for (int i = 0; i < count; i++) {
-      final x = rect.left + i * stepX;
-      final y = rect.bottom - (values[i] / 100) * rect.height;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-
-      // Point marker
-      canvas.drawCircle(Offset(x, y), 2.5, Paint()..color = color);
-    }
-
-    // Stroke
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = color
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke,
-    );
-
-    // Gradient fill
-    if (filled) {
-      final fillPath = Path.from(path);
-      fillPath.lineTo(rect.left + (count - 1) * stepX, rect.bottom);
-      fillPath.lineTo(rect.left, rect.bottom);
-      fillPath.close();
-
-      final gradient = ui.Gradient.linear(
-        Offset(0, rect.top),
-        Offset(0, rect.bottom),
-        [color.withValues(alpha: 0.3), color.withValues(alpha: 0.02)],
-      );
-
-      canvas.drawPath(
-        fillPath,
-        Paint()
-          ..shader = gradient
-          ..style = PaintingStyle.fill,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _SystemMonitorChartPainter oldDelegate) {
-    return history.length != oldDelegate.history.length ||
-        (history.isNotEmpty &&
-            oldDelegate.history.isNotEmpty &&
-            history.last.timestamp != oldDelegate.history.last.timestamp);
   }
 }

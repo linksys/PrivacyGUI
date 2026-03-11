@@ -24,14 +24,15 @@ class UspNodeDetailView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'Node Detail',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspTopology),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         if (detail.node == null) {
           return Center(
@@ -52,33 +53,13 @@ class UspNodeDetailView extends ConsumerWidget {
         }
 
         final node = detail.node!;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            AppGap.xl(),
-            AppResponsiveLayout(
-              mobile: (_) => _buildSingleColumn(context, node, detail),
-              desktop: (_) => _buildTwoColumn(context, node, detail),
-            ),
-          ],
+        return AppResponsiveLayout(
+          mobile: (_) =>
+              _buildSingleColumn(context, node, detail),
+          desktop: (_) =>
+              _buildTwoColumn(context, node, detail),
         );
       },
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspTopology),
-        ),
-        AppGap.md(),
-        AppText.headlineSmall('Node Detail'),
-      ],
     );
   }
 

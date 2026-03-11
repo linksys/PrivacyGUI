@@ -81,6 +81,12 @@ class UspMenuView extends StatelessWidget {
         iconData: Icons.article_outlined,
         onTap: () => context.goNamed(RouteNamed.uspSystemLog),
       ),
+      AppSectionItemData(
+        title: 'Statistics',
+        description: 'Network, device, and system analytics',
+        iconData: Icons.bar_chart,
+        onTap: () => context.goNamed(RouteNamed.uspStatistics),
+      ),
       if (kDebugMode)
         AppSectionItemData(
           title: 'USP Console',

@@ -2,7 +2,9 @@ import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
+import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
+import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
@@ -43,6 +45,8 @@ class UspDashboardState extends Equatable {
   final DhcpReservations dhcpReservations;
   final PortForwarding portForwarding;
   final PortTriggering portTriggering;
+  final FirewallChainRules firewallRules;
+  final Dmz dmzEntries;
   final bool isAuthenticated;
   final Map<String, WifiClient> wifiClientMap;
   final MeshTopologyInfo meshTopology;
@@ -76,6 +80,8 @@ class UspDashboardState extends Equatable {
     required this.dhcpReservations,
     required this.portForwarding,
     this.portTriggering = const PortTriggering(items: []),
+    this.firewallRules = const FirewallChainRules(items: []),
+    this.dmzEntries = const Dmz(items: []),
     required this.isAuthenticated,
     this.wifiClientMap = const {},
     this.meshTopology = MeshTopologyInfo.empty,
@@ -146,6 +152,8 @@ class UspDashboardState extends Equatable {
     DhcpReservations? dhcpReservations,
     PortForwarding? portForwarding,
     PortTriggering? portTriggering,
+    FirewallChainRules? firewallRules,
+    Dmz? dmzEntries,
     bool? isAuthenticated,
     Map<String, WifiClient>? wifiClientMap,
     MeshTopologyInfo? meshTopology,
@@ -177,6 +185,8 @@ class UspDashboardState extends Equatable {
       dhcpReservations: dhcpReservations ?? this.dhcpReservations,
       portForwarding: portForwarding ?? this.portForwarding,
       portTriggering: portTriggering ?? this.portTriggering,
+      firewallRules: firewallRules ?? this.firewallRules,
+      dmzEntries: dmzEntries ?? this.dmzEntries,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       wifiClientMap: wifiClientMap ?? this.wifiClientMap,
       meshTopology: meshTopology ?? this.meshTopology,
@@ -214,6 +224,8 @@ class UspDashboardState extends Equatable {
         dhcpReservations.items.length,
         portForwarding.items.length,
         portTriggering.items.length,
+        firewallRules.items.length,
+        dmzEntries.items.length,
         isAuthenticated,
         wifiClientMap.length,
         meshTopology.nodes.length,

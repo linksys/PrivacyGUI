@@ -73,6 +73,11 @@ final uspDashboardRoute = ShellRoute(
       builder: (context, state) => const UspSystemLogView(),
     ),
     LinksysRoute(
+      name: RouteNamed.uspStatistics,
+      path: RoutePath.uspStatistics,
+      builder: (context, state) => const UspStatisticsView(),
+    ),
+    LinksysRoute(
       name: RouteNamed.uspAdvancedSettings,
       path: RoutePath.uspAdvancedSettings,
       builder: (context, state) => const UspAdvancedSettingsView(),

@@ -118,8 +118,8 @@ abstract class UspWidgetSpecs {
         minColumns: 3,
         maxColumns: 8,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(4),
-        minHeightRows: 3,
+        heightStrategy: HeightStrategy.strict(5),
+        minHeightRows: 4,
         maxHeightRows: 8,
       ),
     },
@@ -200,9 +200,24 @@ abstract class UspWidgetSpecs {
     },
   );
 
-  static const trafficMonitor = WidgetSpec(
-    id: 'traffic_monitor',
-    displayName: 'Traffic Monitor',
+  static const deviceAnalytics = WidgetSpec(
+    id: 'device_analytics',
+    displayName: 'Device Analytics',
+    constraints: {
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 12,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(5),
+        minHeightRows: 4,
+        maxHeightRows: 8,
+      ),
+    },
+  );
+
+  static const networkHealth = WidgetSpec(
+    id: 'network_health',
+    displayName: 'Network Health',
     constraints: {
       DisplayMode.normal: WidgetGridConstraints(
         minColumns: 3,
@@ -210,6 +225,51 @@ abstract class UspWidgetSpecs {
         preferredColumns: 6,
         heightStrategy: HeightStrategy.strict(4),
         minHeightRows: 3,
+        maxHeightRows: 6,
+      ),
+    },
+  );
+
+  static const firewallOverview = WidgetSpec(
+    id: 'firewall_overview',
+    displayName: 'Firewall Overview',
+    constraints: {
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 3,
+        maxColumns: 8,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(4),
+        minHeightRows: 3,
+        maxHeightRows: 6,
+      ),
+    },
+  );
+
+  static const wifiPerformance = WidgetSpec(
+    id: 'wifi_performance',
+    displayName: 'WiFi Performance',
+    constraints: {
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 8,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(5),
+        minHeightRows: 4,
+        maxHeightRows: 8,
+      ),
+    },
+  );
+
+  static const trafficAnalysis = WidgetSpec(
+    id: 'traffic_analysis',
+    displayName: 'Traffic Analysis',
+    constraints: {
+      DisplayMode.normal: WidgetGridConstraints(
+        minColumns: 4,
+        maxColumns: 12,
+        preferredColumns: 6,
+        heightStrategy: HeightStrategy.strict(5),
+        minHeightRows: 4,
         maxHeightRows: 8,
       ),
     },
@@ -232,7 +292,11 @@ abstract class UspWidgetSpecs {
     timeSettings,
     dhcpReservations,
     portForwarding,
-    trafficMonitor,
+    networkHealth,
+    firewallOverview,
+    wifiPerformance,
+    trafficAnalysis,
+    deviceAnalytics,
   ];
 
   static WidgetSpec? getById(String id) {
@@ -253,12 +317,14 @@ abstract class UspWidgetSpecs {
   ///
   /// ```
   /// y=0:  StatsPanel (12×1)
-  /// y=1:  DeviceInfo (6×3)       | NetworkStatus (6×3)
-  /// y=4:  SystemStatus (6×4)     | TrafficMonitor (6×4)
-  /// y=8:  LanInfo (6×3)          | EthernetPorts (6×3)
-  /// y=11: ConnectedDevices (6×4) | Topology (6×5)
-  /// y=16: WifiStatus (6×6)       | TimeSettings (6×3)
-  /// y=22: DhcpReservations (6×4) | PortForwarding (6×4)
+  /// y=1:  DeviceInfo (6×3)          | NetworkStatus (6×3)
+  /// y=4:  NetworkHealth (6×4)       | SystemStatus (6×5)
+  /// y=9:  TrafficAnalysis (6×5)     | LanInfo (6×3)
+  /// y=14: EthernetPorts (6×3)       | ConnectedDevices (6×4)
+  /// y=18: Topology (6×5)            | DeviceAnalytics (6×5)
+  /// y=23: WiFiStatus (6×6)          | WiFiPerformance (6×5)
+  /// y=29: FirewallOverview (6×4)    | TimeSettings (6×3)
+  /// y=33: DhcpReservations (6×4)    | PortForwarding (6×4)
   /// ```
   static List<LayoutItem> createDefaultLayout() {
     return [
@@ -269,25 +335,33 @@ abstract class UspWidgetSpecs {
       LayoutItemFactory.fromSpec(deviceInfo, x: 0, y: 1, w: 6, h: 3),
       LayoutItemFactory.fromSpec(networkStatus, x: 6, y: 1, w: 6, h: 3),
 
-      // y=4: System Status | Traffic Monitor
-      LayoutItemFactory.fromSpec(systemStatus, x: 0, y: 4, w: 6, h: 4),
-      LayoutItemFactory.fromSpec(trafficMonitor, x: 6, y: 4, w: 6, h: 4),
+      // y=4: Network Health | System Status
+      LayoutItemFactory.fromSpec(networkHealth, x: 0, y: 4, w: 6, h: 4),
+      LayoutItemFactory.fromSpec(systemStatus, x: 6, y: 4, w: 6, h: 5),
 
-      // y=8: LAN Info | Ethernet Ports
-      LayoutItemFactory.fromSpec(lanInfo, x: 0, y: 8, w: 6, h: 3),
-      LayoutItemFactory.fromSpec(ethernetPorts, x: 6, y: 8, w: 6, h: 3),
+      // y=9: Traffic Analysis | LAN Info
+      LayoutItemFactory.fromSpec(trafficAnalysis, x: 0, y: 9, w: 6, h: 5),
+      LayoutItemFactory.fromSpec(lanInfo, x: 6, y: 9, w: 6, h: 3),
 
-      // y=11: Connected Devices | Topology
-      LayoutItemFactory.fromSpec(connectedDevices, x: 0, y: 11, w: 6, h: 4),
-      LayoutItemFactory.fromSpec(topology, x: 6, y: 11, w: 6, h: 5),
+      // y=14: Ethernet Ports | Connected Devices
+      LayoutItemFactory.fromSpec(ethernetPorts, x: 0, y: 14, w: 6, h: 3),
+      LayoutItemFactory.fromSpec(connectedDevices, x: 6, y: 14, w: 6, h: 4),
 
-      // y=16: WiFi Status | Time Settings
-      LayoutItemFactory.fromSpec(wifiStatus, x: 0, y: 16, w: 6, h: 6),
-      LayoutItemFactory.fromSpec(timeSettings, x: 6, y: 16, w: 6, h: 3),
+      // y=18: Topology | Device Analytics
+      LayoutItemFactory.fromSpec(topology, x: 0, y: 18, w: 6, h: 5),
+      LayoutItemFactory.fromSpec(deviceAnalytics, x: 6, y: 18, w: 6, h: 5),
 
-      // y=22: DHCP Reservations | Port Forwarding
-      LayoutItemFactory.fromSpec(dhcpReservations, x: 0, y: 22, w: 6, h: 4),
-      LayoutItemFactory.fromSpec(portForwarding, x: 6, y: 22, w: 6, h: 4),
+      // y=23: WiFi Status | WiFi Performance
+      LayoutItemFactory.fromSpec(wifiStatus, x: 0, y: 23, w: 6, h: 6),
+      LayoutItemFactory.fromSpec(wifiPerformance, x: 6, y: 23, w: 6, h: 5),
+
+      // y=29: Firewall Overview | Time Settings
+      LayoutItemFactory.fromSpec(firewallOverview, x: 0, y: 29, w: 6, h: 4),
+      LayoutItemFactory.fromSpec(timeSettings, x: 6, y: 29, w: 6, h: 3),
+
+      // y=33: DHCP Reservations | Port Forwarding
+      LayoutItemFactory.fromSpec(dhcpReservations, x: 0, y: 33, w: 6, h: 4),
+      LayoutItemFactory.fromSpec(portForwarding, x: 6, y: 33, w: 6, h: 4),
     ];
   }
 }

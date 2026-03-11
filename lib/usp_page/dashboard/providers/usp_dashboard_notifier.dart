@@ -3,7 +3,9 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
+import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
+import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
@@ -45,7 +47,7 @@ class UspLoadingProgress {
 
   const UspLoadingProgress({
     this.completed = 0,
-    this.total = 15,
+    this.total = 17,
     this.currentTask = '',
   });
 
@@ -162,6 +164,14 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         tick('WAN Status');
         return v;
       }),
+      FirewallChainRules.fetch(usp).then((v) {
+        tick('Firewall Rules');
+        return v;
+      }),
+      Dmz.fetch(usp).then((v) {
+        tick('DMZ');
+        return v;
+      }),
     ]);
 
     final systemInfo = results[0] as SystemInfo;
@@ -179,6 +189,8 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     final lanNetworkInfo = results[12] as LanNetworkInfo;
     final ethernetInterfaces = results[13] as EthernetInterfaces;
     final wanStatus = results[14] as WanStatus;
+    final firewallRules = results[15] as FirewallChainRules;
+    final dmzEntries = results[16] as Dmz;
     logger.d('[USP] Dashboard fetch complete — '
         'devices: ${connectedDevices.items.length}, '
         'ethIfaces: ${ethernetInterfaces.items.length}, '
@@ -265,6 +277,8 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       dhcpReservations: dhcpReservations,
       portForwarding: portForwarding,
       portTriggering: portTriggering,
+      firewallRules: firewallRules,
+      dmzEntries: dmzEntries,
       isAuthenticated: usp.isAuthenticated,
       wifiClientMap: wifiClientMap,
       meshTopology: meshTopology,

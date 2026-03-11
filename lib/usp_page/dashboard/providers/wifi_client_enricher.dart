@@ -11,12 +11,101 @@ export 'package:privacy_gui/generated/wifi_clients.g.dart' show WifiClient;
 ///
 /// Delegates to codegen-generated [WifiClients.fetch] which handles the nested
 /// multi-instance parsing (AccessPoint.{i}.AssociatedDevice.{j}).
+///
+/// If the selective-get wildcard paths return empty (possible USP agent
+/// limitation), falls back to a broader parent-path fetch and manual parse.
 Future<Map<String, WifiClient>> fetchWifiClients(UspService client) async {
   final result = await WifiClients.fetch(client);
-  return {
-    for (final c in result.items)
-      if (c.macAddress.isNotEmpty) c.macAddress.toUpperCase(): c,
-  };
+  logger.d('[USP] WifiClients raw: ${result.items.length} items');
+
+  if (result.items.isNotEmpty) {
+    return {
+      for (final c in result.items)
+        if (c.macAddress.isNotEmpty) c.macAddress.toUpperCase(): c,
+    };
+  }
+
+  // Fallback: selective-get with nested wildcards may not be supported by
+  // some USP agents. Try fetching the whole AssociatedDevice subtree instead.
+  logger.d('[USP] WifiClients selective-get empty, trying parent-path fallback');
+  try {
+    final fallback = await _fetchWifiClientsFallback(client);
+    if (fallback.isNotEmpty) {
+      logger.d('[USP] WifiClients fallback: ${fallback.length} clients');
+    }
+    return fallback;
+  } catch (e) {
+    logger.d('[USP] WifiClients fallback failed: $e');
+    return {};
+  }
+}
+
+/// Fallback fetch using parent object path (non-selective).
+///
+/// Requests `Device.WiFi.AccessPoint.*.AssociatedDevice.` which returns
+/// ALL parameters under each AssociatedDevice instance. Then manually
+/// parses the response map into [WifiClient] objects.
+Future<Map<String, WifiClient>> _fetchWifiClientsFallback(
+    UspService client) async {
+  final response = await client.get([
+    'Device.WiFi.AccessPoint.*.AssociatedDevice.',
+  ]);
+  logger.d('[USP] WifiClients fallback response: ${response.length} keys');
+  if (response.isEmpty) return {};
+
+  // Parse response keys to find AP and AssociatedDevice instance IDs.
+  // Key format: Device.WiFi.AccessPoint.{apId}.AssociatedDevice.{devId}.{Param}
+  const basePath = 'Device.WiFi.AccessPoint.';
+  final apIds = <String>{};
+  for (final key in response.keys) {
+    if (key.startsWith(basePath)) {
+      final rest = key.substring(basePath.length);
+      final dot = rest.indexOf('.');
+      if (dot > 0) apIds.add(rest.substring(0, dot));
+    }
+  }
+
+  final result = <String, WifiClient>{};
+  for (final apId in apIds) {
+    final childBase = '$basePath$apId.AssociatedDevice.';
+    final childIds = <String>{};
+    for (final key in response.keys) {
+      if (key.startsWith(childBase)) {
+        final rest = key.substring(childBase.length);
+        final dot = rest.indexOf('.');
+        if (dot > 0) childIds.add(rest.substring(0, dot));
+      }
+    }
+
+    for (final devId in childIds) {
+      final cp = '$childBase$devId.';
+      final mac = (response['${cp}MACAddress'] ?? '').toString();
+      if (mac.isEmpty) continue;
+
+      final wc = WifiClient(
+        instancePath: cp,
+        parentPath: '$basePath$apId.',
+        macAddress: mac,
+        signalStrength: int.tryParse(
+                response['${cp}SignalStrength']?.toString() ?? '') ??
+            0,
+        noise:
+            int.tryParse(response['${cp}Noise']?.toString() ?? '') ?? 0,
+        lastDataDownlinkRate: int.tryParse(
+                response['${cp}LastDataDownlinkRate']?.toString() ?? '') ??
+            0,
+        lastDataUplinkRate: int.tryParse(
+                response['${cp}LastDataUplinkRate']?.toString() ?? '') ??
+            0,
+        active: response['${cp}Active'] == true ||
+            response['${cp}Active'] == 'true' ||
+            response['${cp}Active'] == '1',
+      );
+
+      result[mac.toUpperCase()] = wc;
+    }
+  }
+  return result;
 }
 
 /// Connection detail for a WiFi client: band + SSID name.

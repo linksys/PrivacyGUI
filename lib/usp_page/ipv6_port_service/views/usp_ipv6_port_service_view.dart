@@ -23,15 +23,16 @@ class UspIpv6PortServiceView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'IPv6 Port Service',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspMenu),
       onRefresh: () => ref.refresh(uspIpv6PortServiceProvider.future),
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: AppLoader()),
@@ -80,8 +81,6 @@ class UspIpv6PortServiceView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context, ref, isMutating),
-        AppGap.md(),
         AppText.bodyMedium(
           'Manage IPv6 inbound port access rules',
           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -91,9 +90,26 @@ class UspIpv6PortServiceView extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             AppText.titleMedium('Rules'),
-            AppIconButton(
-              icon: AppIcon.font(Icons.add, size: 20),
-              onTap: isMutating ? null : () => _showAddDialog(context, ref),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isMutating)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  AppIconButton(
+                    icon: AppIcon.font(Icons.refresh, size: 20),
+                    onTap: () => ref.invalidate(uspIpv6PortServiceProvider),
+                  ),
+                AppIconButton(
+                  icon: AppIcon.font(Icons.add, size: 20),
+                  onTap:
+                      isMutating ? null : () => _showAddDialog(context, ref),
+                ),
+              ],
             ),
           ],
         ),
@@ -102,38 +118,6 @@ class UspIpv6PortServiceView extends ConsumerWidget {
           AppText.bodyMedium('No IPv6 port service rules configured')
         else
           ...rules.map((r) => _buildRuleCard(context, ref, r, isMutating)),
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Header
-  // ---------------------------------------------------------------------------
-
-  Widget _buildHeader(BuildContext context, WidgetRef ref, bool isMutating) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspMenu),
-        ),
-        AppGap.md(),
-        Expanded(
-          child: AppText.headlineSmall('IPv6 Port Service'),
-        ),
-        if (isMutating)
-          const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        else
-          AppIconButton(
-            icon: AppIcon.font(Icons.refresh),
-            onTap: () => ref.invalidate(uspIpv6PortServiceProvider),
-          ),
       ],
     );
   }

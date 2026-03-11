@@ -24,15 +24,16 @@ class UspDhcpDetailView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'DHCP Settings',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspMenu),
       onRefresh: () => ref.refresh(uspDashboardProvider.future),
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(
@@ -71,31 +72,9 @@ class UspDhcpDetailView extends ConsumerWidget {
 
   Widget _buildContent(
       BuildContext context, WidgetRef ref, UspDashboardState state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context),
-        AppGap.xl(),
-        AppResponsiveLayout(
-          mobile: (ctx) => _buildMobileLayout(ctx, state),
-          desktop: (ctx) => _buildDesktopLayout(ctx, state),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspMenu),
-        ),
-        AppGap.md(),
-        AppText.headlineSmall('DHCP Settings'),
-      ],
+    return AppResponsiveLayout(
+      mobile: (ctx) => _buildMobileLayout(ctx, state),
+      desktop: (ctx) => _buildDesktopLayout(ctx, state),
     );
   }
 

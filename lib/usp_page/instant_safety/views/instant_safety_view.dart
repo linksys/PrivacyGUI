@@ -17,14 +17,15 @@ class UspInstantSafetyView extends ConsumerWidget {
 
     return UiKitPageView.withSliver(
       scrollable: true,
-      appBarStyle: UiKitAppBarStyle.none,
+      title: 'Instant Safety',
       topbar: const PreferredSize(
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backState: UiKitBackState.none,
-      padding:
-          const EdgeInsets.only(top: AppSpacing.xxl, bottom: AppSpacing.md),
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspMenu),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -61,8 +62,6 @@ class UspInstantSafetyView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context),
-        AppGap.xl(),
         AppText.bodyMedium(
           'Protect your family and block pre-determined adult, illegal and '
           'malicious content with a single tap. Safe browsing applies to all '
@@ -80,23 +79,6 @@ class UspInstantSafetyView extends ConsumerWidget {
             ),
           ),
         ],
-      ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        AppIconButton(
-          icon: AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspMenu),
-        ),
-        AppGap.md(),
-        Expanded(
-          child: AppText.headlineSmall('Instant Safety'),
-        ),
       ],
     );
   }

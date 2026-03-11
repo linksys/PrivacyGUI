@@ -16,6 +16,7 @@ class UspTopologyBuilder {
     required SystemInfoUIModel info,
     required List<DeviceUIModel> devices,
     required List<MeshNodeInfo> meshNodes,
+    Color? coverageColor,
   }) {
     final nodes = <MeshNode>[];
     final links = <MeshLink>[];
@@ -40,6 +41,9 @@ class UspTopologyBuilder {
       extra: info.manufacturer,
       level: 1.0,
       metadata: {'deviceId': gatewayDeviceId},
+      coverageRings: coverageColor != null
+          ? _buildCoverageRings(MeshNodeType.gateway, coverageColor)
+          : null,
     ));
 
     // Mesh extender nodes (if > 1 node, first is gateway)
@@ -65,6 +69,9 @@ class UspTopologyBuilder {
           image: DeviceImageHelper.getRouterImage(extenderIconName),
           level: 0.8,
           metadata: {'deviceId': meshNode.deviceId},
+          coverageRings: coverageColor != null
+              ? _buildCoverageRings(MeshNodeType.extender, coverageColor)
+              : null,
         ));
 
         links.add(MeshLink(
@@ -108,8 +115,10 @@ class UspTopologyBuilder {
         connectionType:
             isEthernet ? ConnectionType.ethernet : ConnectionType.wifi,
         rssi: device.signalStrength,
-        throughput:
-            device.totalThroughput > 0 ? device.totalThroughput / 1000.0 : null,
+        throughput: device.totalThroughput > 0
+            ? device.totalThroughput / 1000.0
+            : null,
+        distanceFactor: _rssiToDistanceFactor(device.signalStrength),
       ));
     }
 
@@ -137,5 +146,42 @@ class UspTopologyBuilder {
     if (rssi >= -50) return SignalQuality.strong;
     if (rssi >= -65) return SignalQuality.medium;
     return SignalQuality.weak;
+  }
+
+  /// Maps RSSI (dBm) to normalized distance factor [0.0, 1.0].
+  /// Strong signal (>= -45) → close (0.0), Weak signal (<= -75) → far (1.0).
+  /// Ethernet (null RSSI) → null (use default spacing).
+  static double? _rssiToDistanceFactor(int? rssi) {
+    if (rssi == null) return null;
+    final clamped = rssi.clamp(-75, -45);
+    return (clamped - (-45)).abs() / 30.0;
+  }
+
+  /// Builds coverage rings for infrastructure nodes (gateway / extender).
+  static List<NodeCoverageRing> _buildCoverageRings(
+    MeshNodeType type,
+    Color color,
+  ) {
+    final (innerR, outerR, innerOp, outerOp) = switch (type) {
+      MeshNodeType.gateway => (100.0, 180.0, 0.18, 0.12),
+      MeshNodeType.extender => (80.0, 140.0, 0.15, 0.10),
+      _ => (0.0, 0.0, 0.0, 0.0),
+    };
+    if (innerR == 0) return [];
+    return [
+      NodeCoverageRing(
+        radius: innerR,
+        color: color,
+        opacity: innerOp,
+        style: CoverageRingStyle.gradient,
+      ),
+      NodeCoverageRing(
+        radius: outerR,
+        color: color,
+        opacity: outerOp,
+        style: CoverageRingStyle.dashed,
+        strokeWidth: 2.0,
+      ),
+    ];
   }
 }
