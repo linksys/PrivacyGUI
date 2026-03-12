@@ -123,8 +123,7 @@ class UspClientWeb {
   /// Creates a new object instance at the given path with initial parameters.
   /// Returns the created instance path (e.g., "Device.NAT.PortMapping.3.").
   Future<String> add(String objectPath, Map<String, String> parameters) async {
-    final result =
-        await _client.add(objectPath, parameters.jsify()!).toDart;
+    final result = await _client.add(objectPath, parameters.jsify()!).toDart;
     return result?.dartify()?.toString() ?? '';
   }
 
@@ -134,8 +133,7 @@ class UspClientWeb {
   Future<List<String>> addMultiple(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
     final jsObjects = objects.map((obj) => obj.jsify()!).toList().toJS;
-    final result =
-        await _client.addMultiple(jsObjects, allowPartial).toDart;
+    final result = await _client.addMultiple(jsObjects, allowPartial).toDart;
     final list = result.dartify() as List?;
     if (list == null) return [];
     return list.map((e) => e.toString()).toList();
@@ -157,8 +155,7 @@ class UspClientWeb {
   /// Returns the output arguments as a map, or empty map if no output.
   Future<Map<String, String>> operate(String command,
       {Map<String, String> args = const {}}) async {
-    final result =
-        await _client.operate(command, args.jsify()!).toDart;
+    final result = await _client.operate(command, args.jsify()!).toDart;
     if (result == null || result.isUndefinedOrNull) return {};
     final map = result.dartify() as Map?;
     if (map == null) return {};

@@ -19,7 +19,6 @@ class ProtocolException implements Exception {
   });
 
   @override
-  String toString() =>
-      'ProtocolException(${source.name}): $message'
+  String toString() => 'ProtocolException(${source.name}): $message'
       '${protocolErrorCode != null ? ' [$protocolErrorCode]' : ''}';
 }

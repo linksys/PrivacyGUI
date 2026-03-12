@@ -64,8 +64,7 @@ class UspConnectionStatusBanner extends StatelessWidget {
     );
   }
 
-  String _connectionTypeLabel(
-      BuildContext context, UspWanConnectionType type) {
+  String _connectionTypeLabel(BuildContext context, UspWanConnectionType type) {
     final l = loc(context);
     return switch (type) {
       UspWanConnectionType.dhcp => l.connectionTypeDhcp,

@@ -157,11 +157,12 @@ class UspWifiStatusCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'wifi',
-      mutation: () => ref.read(uspDashboardProvider.notifier).updateWifiRadioChannel(
-            radio.instancePath,
-            result.channel,
-            result.autoChannel,
-          ),
+      mutation: () =>
+          ref.read(uspDashboardProvider.notifier).updateWifiRadioChannel(
+                radio.instancePath,
+                result.channel,
+                result.autoChannel,
+              ),
       successMessage: 'Channel updated',
     );
   }

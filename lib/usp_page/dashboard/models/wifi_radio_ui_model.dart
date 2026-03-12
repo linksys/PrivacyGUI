@@ -29,13 +29,13 @@ class WifiRadioUIModel extends Equatable {
   });
 
   /// Tx power display: "Max" if -1, otherwise "X%".
-  int get txPowerPercent => transmitPower == -1 ? 100 : transmitPower.clamp(0, 100);
+  int get txPowerPercent =>
+      transmitPower == -1 ? 100 : transmitPower.clamp(0, 100);
 
   String get txPowerDisplay => transmitPower == -1 ? 'Max' : '$txPowerPercent%';
 
   /// Channel display: "6 (Auto)" or "6".
-  String get channelDisplay =>
-      '$channel${autoChannelEnable ? ' (Auto)' : ''}';
+  String get channelDisplay => '$channel${autoChannelEnable ? ' (Auto)' : ''}';
 
   /// Bit rate normalized to 0–100 scale based on band max.
   double get bitRateNormalized {

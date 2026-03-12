@@ -55,7 +55,9 @@ bool _matches(DeviceUIModel device, DeviceFilterConfig filter) {
   }
 
   // SSID filter (Ethernet devices pass through — SSID doesn't apply)
-  if (filter.ssidName != null && device.isWifi && device.ssidName != filter.ssidName) {
+  if (filter.ssidName != null &&
+      device.isWifi &&
+      device.ssidName != filter.ssidName) {
     return false;
   }
 

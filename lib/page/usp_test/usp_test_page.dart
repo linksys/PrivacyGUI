@@ -16,8 +16,8 @@ class UspTestPage extends StatefulWidget {
 class _UspTestPageState extends State<UspTestPage> {
   final _urlController = TextEditingController(text: 'http://localhost:8081');
   final _passwordController = TextEditingController(text: 'admin');
-  final _getPathController = TextEditingController(
-      text: 'Device.DeviceInfo.Manufacturer');
+  final _getPathController =
+      TextEditingController(text: 'Device.DeviceInfo.Manufacturer');
   final _setPathController = TextEditingController();
   final _setValueController = TextEditingController();
   final _addPathController = TextEditingController();
@@ -87,7 +87,8 @@ class _UspTestPageState extends State<UspTestPage> {
       if (token != null) {
         _log('Token available (${token.length} chars)');
       } else {
-        _log('WARNING: sessionToken is null — WASM client may not export getToken() yet');
+        _log(
+            'WARNING: sessionToken is null — WASM client may not export getToken() yet');
       }
     } catch (e) {
       _log('ERROR login: $e');
@@ -161,8 +162,8 @@ class _UspTestPageState extends State<UspTestPage> {
     if (path.isEmpty) return;
     _log('ADD $path params=$paramsJson');
     try {
-      final params = Map<String, String>.from(
-          jsonDecode(paramsJson) as Map? ?? {});
+      final params =
+          Map<String, String>.from(jsonDecode(paramsJson) as Map? ?? {});
       final created = await _service!.add(path, params);
       _log('ADD OK -> created: $created');
     } catch (e) {
@@ -190,8 +191,7 @@ class _UspTestPageState extends State<UspTestPage> {
     if (command.isEmpty) return;
     _log('OPERATE $command args=$argsJson');
     try {
-      final args = Map<String, String>.from(
-          jsonDecode(argsJson) as Map? ?? {});
+      final args = Map<String, String>.from(jsonDecode(argsJson) as Map? ?? {});
       final result = await _service!.operate(command, args: args);
       if (result.isEmpty) {
         _log('OPERATE OK (no output)');
@@ -275,7 +275,11 @@ class _UspTestPageState extends State<UspTestPage> {
     final subId = _subIdController.text.trim();
     final path = _subPathController.text.trim();
     if (subId.isEmpty || path.isEmpty) return;
-    final typeNames = {1: 'ValueChange', 2: 'ObjectCreation', 3: 'ObjectDeletion'};
+    final typeNames = {
+      1: 'ValueChange',
+      2: 'ObjectCreation',
+      3: 'ObjectDeletion'
+    };
     _log('SUBSCRIBE id=$subId path=$path type=${typeNames[_notifType]}');
     try {
       final result = await _bridgeClient!.subscribe(
@@ -524,8 +528,7 @@ class _UspTestPageState extends State<UspTestPage> {
             ElevatedButton(onPressed: _login, child: const Text('Login')),
             OutlinedButton(onPressed: _logout, child: const Text('Logout')),
             OutlinedButton(
-                onPressed: _refreshToken,
-                child: const Text('Refresh Token')),
+                onPressed: _refreshToken, child: const Text('Refresh Token')),
           ],
         ),
       ],
@@ -771,8 +774,7 @@ class _UspTestPageState extends State<UspTestPage> {
           runSpacing: 8,
           children: [
             ElevatedButton(
-                onPressed: () => _doTurbo('start'),
-                child: const Text('Start')),
+                onPressed: () => _doTurbo('start'), child: const Text('Start')),
             OutlinedButton(
                 onPressed: () => _doTurbo('heartbeat'),
                 child: const Text('Heartbeat')),

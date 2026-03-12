@@ -34,9 +34,8 @@ class UspRenewSection extends ConsumerWidget {
             protocolLabel: l.ipv4,
             ipAddress: wanIp,
             isLoading: loadingKey == 'renewIpv4',
-            onRenew: isBridge
-                ? null
-                : () => _renewDhcp(context, ref, isIpv6: false),
+            onRenew:
+                isBridge ? null : () => _renewDhcp(context, ref, isIpv6: false),
           ),
           AppGap.lg(),
           AppDivider(),
@@ -45,9 +44,8 @@ class UspRenewSection extends ConsumerWidget {
           UspRenewActionCard(
             protocolLabel: l.ipv6,
             isLoading: loadingKey == 'renewIpv6',
-            onRenew: isBridge
-                ? null
-                : () => _renewDhcp(context, ref, isIpv6: true),
+            onRenew:
+                isBridge ? null : () => _renewDhcp(context, ref, isIpv6: true),
           ),
         ],
       ),

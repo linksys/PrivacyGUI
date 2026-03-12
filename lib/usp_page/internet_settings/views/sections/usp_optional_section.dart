@@ -103,8 +103,8 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
                 controller: _mtuController,
                 label: l.size,
                 keyboardType: TextInputType.number,
-                onChanged: (v) => _updateField(
-                    (f) => f.copyWith(mtu: int.tryParse(v) ?? 0)),
+                onChanged: (v) =>
+                    _updateField((f) => f.copyWith(mtu: int.tryParse(v) ?? 0)),
               ),
             ],
           ],
@@ -114,7 +114,8 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
           // MAC Address Clone
           AppText.labelLarge(l.macAddressClone),
           AppGap.md(),
-          UspInfoRow(label: l.currentMac, value: widget.state.currentMacAddress),
+          UspInfoRow(
+              label: l.currentMac, value: widget.state.currentMacAddress),
           AppGap.md(),
           if (!isEditing) ...[
             UspInfoRow(

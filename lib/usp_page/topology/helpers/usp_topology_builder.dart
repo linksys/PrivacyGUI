@@ -24,9 +24,8 @@ class UspTopologyBuilder {
     const gatewayId = 'gateway';
     // For non-mesh (DataElements empty/unsupported), use 'gateway' as a
     // synthetic identifier so the Detail button can still navigate.
-    final gatewayDeviceId = meshNodes.isNotEmpty
-        ? meshNodes.first.deviceId
-        : 'gateway';
+    final gatewayDeviceId =
+        meshNodes.isNotEmpty ? meshNodes.first.deviceId : 'gateway';
 
     final gatewayIconName = routerIconTestByModel(
       modelNumber: info.modelName,
@@ -93,9 +92,8 @@ class UspTopologyBuilder {
         id: clientId,
         name: device.displayName,
         type: MeshNodeType.client,
-        status: device.isActive
-            ? MeshNodeStatus.online
-            : MeshNodeStatus.offline,
+        status:
+            device.isActive ? MeshNodeStatus.online : MeshNodeStatus.offline,
         parentId: parentId,
         iconData: isEthernet ? Icons.settings_ethernet : Icons.wifi,
         extra: device.ip,
@@ -110,9 +108,8 @@ class UspTopologyBuilder {
         connectionType:
             isEthernet ? ConnectionType.ethernet : ConnectionType.wifi,
         rssi: device.signalStrength,
-        throughput: device.totalThroughput > 0
-            ? device.totalThroughput / 1000.0
-            : null,
+        throughput:
+            device.totalThroughput > 0 ? device.totalThroughput / 1000.0 : null,
       ));
     }
 

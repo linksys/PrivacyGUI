@@ -35,8 +35,7 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
-          'Channel — ${widget.radio.band}'),
+      title: Text('Channel — ${widget.radio.band}'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -66,8 +65,8 @@ class _WifiChannelDialogState extends State<WifiChannelDialog> {
         ),
         FilledButton(
           onPressed: () {
-            final channel = int.tryParse(_channelController.text) ??
-                widget.radio.channel;
+            final channel =
+                int.tryParse(_channelController.text) ?? widget.radio.channel;
             Navigator.of(context)
                 .pop((channel: channel, autoChannel: _autoChannel));
           },

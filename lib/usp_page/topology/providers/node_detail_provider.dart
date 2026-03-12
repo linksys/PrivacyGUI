@@ -11,8 +11,7 @@ final uspNodeDetailProvider =
   if (state == null) return UspNodeDetailState.empty();
 
   final node = state.nodeModels
-      .where(
-          (n) => n.deviceId.toUpperCase() == deviceId.toUpperCase())
+      .where((n) => n.deviceId.toUpperCase() == deviceId.toUpperCase())
       .firstOrNull;
 
   // For non-mesh routers the synthetic gateway uses deviceId 'gateway',
@@ -43,8 +42,7 @@ class UspNodeDetailState extends Equatable {
 
   factory UspNodeDetailState.empty() => const UspNodeDetailState();
 
-  int get activeDeviceCount =>
-      connectedDevices.where((d) => d.isActive).length;
+  int get activeDeviceCount => connectedDevices.where((d) => d.isActive).length;
 
   @override
   List<Object?> get props => [node, connectedDevices];

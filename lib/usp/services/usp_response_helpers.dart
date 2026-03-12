@@ -101,9 +101,8 @@ extension UspResponseExtension on Map<String, dynamic> {
       final paramName = suffix.substring(dotIndex + 1);
       final instancePath = '$basePath$instanceId.';
 
-      instanceMap
-          .putIfAbsent(instancePath, () => <String, dynamic>{})
-          [paramName] = entry.value;
+      instanceMap.putIfAbsent(
+          instancePath, () => <String, dynamic>{})[paramName] = entry.value;
     }
 
     // Sort by instance number for consistent ordering

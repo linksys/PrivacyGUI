@@ -21,14 +21,12 @@ class UspStatusDot extends StatelessWidget {
     final successColor =
         Theme.of(context).extension<AppColorScheme>()?.semanticSuccess ??
             Colors.green;
-    final inactiveColor =
-        Theme.of(context).colorScheme.surfaceContainerHighest;
+    final inactiveColor = Theme.of(context).colorScheme.surfaceContainerHighest;
 
     return AppBreathDot(
       color: isActive ? successColor : inactiveColor,
       size: size,
-      animation:
-          isActive ? BreathDotAnimation.pulse : BreathDotAnimation.none,
+      animation: isActive ? BreathDotAnimation.pulse : BreathDotAnimation.none,
     );
   }
 }

@@ -52,9 +52,8 @@ class UspDeviceFilterPanel extends ConsumerWidget {
                 value: filter.nodeId,
                 itemAsString: (id) {
                   if (id == null) return 'All';
-                  final node = options.nodes
-                      .where((n) => n.deviceId == id)
-                      .firstOrNull;
+                  final node =
+                      options.nodes.where((n) => n.deviceId == id).firstOrNull;
                   return node?.model ?? id;
                 },
                 onChanged: (value) {

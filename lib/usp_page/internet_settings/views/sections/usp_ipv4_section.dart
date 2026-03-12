@@ -237,8 +237,7 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
         UspInfoRow(label: l.username, value: form.pppUsername),
         UspInfoRow(label: l.serviceName, value: form.pppoeServiceName),
         UspInfoRow(label: l.connectionMode, value: form.connectionTrigger),
-        UspInfoRow(
-            label: l.pppStatus, value: widget.state.pppConnectionStatus),
+        UspInfoRow(label: l.pppStatus, value: widget.state.pppConnectionStatus),
         if (form.vlanEnabled)
           UspInfoRow(label: l.vlanIdOptional, value: '${form.vlanId}'),
       ];

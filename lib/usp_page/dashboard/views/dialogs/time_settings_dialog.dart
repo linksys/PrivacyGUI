@@ -34,10 +34,8 @@ class _TimeSettingsDialogState extends State<TimeSettingsDialog> {
   void initState() {
     super.initState();
     _enable = widget.settings.enable;
-    _ntp1Controller =
-        TextEditingController(text: widget.settings.ntpServer1);
-    _ntp2Controller =
-        TextEditingController(text: widget.settings.ntpServer2);
+    _ntp1Controller = TextEditingController(text: widget.settings.ntpServer1);
+    _ntp2Controller = TextEditingController(text: widget.settings.ntpServer2);
   }
 
   @override

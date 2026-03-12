@@ -62,8 +62,7 @@ class _DhcpReservationDialogState extends State<DhcpReservationDialog> {
             final mac = _macController.text.trim();
             final ip = _ipController.text.trim();
             if (mac.isEmpty || ip.isEmpty) return;
-            Navigator.of(context)
-                .pop((mac: mac, ip: ip, enable: _enabled));
+            Navigator.of(context).pop((mac: mac, ip: ip, enable: _enabled));
           },
           child: const Text('Add'),
         ),

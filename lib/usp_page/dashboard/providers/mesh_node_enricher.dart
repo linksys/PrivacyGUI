@@ -79,8 +79,7 @@ MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
     // Device.{i}.ID may be empty on some USP systems — fall back to
     // the instance path which is always unique and present.
     final rawId = node.id.trim().toUpperCase();
-    final nodeDeviceId =
-        rawId.isNotEmpty ? rawId : node.instancePath;
+    final nodeDeviceId = rawId.isNotEmpty ? rawId : node.instancePath;
 
     // Walk radios → BSS → STA to build client→node map
     for (final radio in node.radios) {

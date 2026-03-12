@@ -58,10 +58,8 @@ class UspNodeDetailView extends ConsumerWidget {
             _buildHeader(context),
             AppGap.xl(),
             AppResponsiveLayout(
-              mobile: (_) =>
-                  _buildSingleColumn(context, node, detail),
-              desktop: (_) =>
-                  _buildTwoColumn(context, node, detail),
+              mobile: (_) => _buildSingleColumn(context, node, detail),
+              desktop: (_) => _buildTwoColumn(context, node, detail),
             ),
           ],
         );
@@ -151,8 +149,8 @@ class UspNodeDetailView extends ConsumerWidget {
             _infoRow(context, 'Serial Number', node.serialNumber),
           if (node.softwareVersion.isNotEmpty)
             _infoRow(context, 'Firmware', node.softwareVersion),
-          _infoRow(context, 'Connected Devices',
-              '${node.connectedDeviceCount}'),
+          _infoRow(
+              context, 'Connected Devices', '${node.connectedDeviceCount}'),
         ],
       ),
     );

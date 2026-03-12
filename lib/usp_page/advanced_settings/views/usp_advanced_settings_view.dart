@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/composed/app_list_card.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
@@ -88,15 +89,19 @@ class UspAdvancedSettingsView extends StatelessWidget {
   List<AppSectionItemData> _buildItems(BuildContext context) {
     return [
       AppSectionItemData(
-        title: 'Local Network',
+        title: loc(context).internetSettings,
+        onTap: () => context.pushNamed(RouteNamed.uspInternetSettings),
+      ),
+      AppSectionItemData(
+        title: loc(context).localNetwork,
         onTap: () => context.goNamed(RouteNamed.uspLocalNetwork),
       ),
       AppSectionItemData(
-        title: 'Firewall',
+        title: loc(context).firewall,
         onTap: () => context.goNamed(RouteNamed.uspFirewall),
       ),
       AppSectionItemData(
-        title: 'DMZ',
+        title: loc(context).dmz,
         onTap: () => context.goNamed(RouteNamed.uspDmz),
       ),
       AppSectionItemData(
@@ -104,7 +109,7 @@ class UspAdvancedSettingsView extends StatelessWidget {
         onTap: () => context.goNamed(RouteNamed.uspPortForwardingDetail),
       ),
       AppSectionItemData(
-        title: 'Static Routing',
+        title: loc(context).staticRouting,
         onTap: () => context.goNamed(RouteNamed.uspStaticRouting),
       ),
     ];

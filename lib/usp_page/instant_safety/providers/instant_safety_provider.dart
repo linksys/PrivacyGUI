@@ -55,8 +55,8 @@ class UspInstantSafetyState extends Equatable {
 // Provider
 // ---------------------------------------------------------------------------
 
-final uspInstantSafetyProvider = AsyncNotifierProvider<
-    UspInstantSafetyNotifier, UspInstantSafetyState>(
+final uspInstantSafetyProvider =
+    AsyncNotifierProvider<UspInstantSafetyNotifier, UspInstantSafetyState>(
   UspInstantSafetyNotifier.new,
 );
 
@@ -64,8 +64,7 @@ final uspInstantSafetyProvider = AsyncNotifierProvider<
 // Notifier
 // ---------------------------------------------------------------------------
 
-class UspInstantSafetyNotifier
-    extends AsyncNotifier<UspInstantSafetyState> {
+class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
   @override
   Future<UspInstantSafetyState> build() async {
     final usp = ref.watch(uspServiceProvider);
@@ -89,8 +88,7 @@ class UspInstantSafetyNotifier
   void setEnabled(bool enabled) {
     final s = state.valueOrNull;
     if (s == null) return;
-    final newType =
-        enabled ? SafeBrowsingType.openDNS : SafeBrowsingType.off;
+    final newType = enabled ? SafeBrowsingType.openDNS : SafeBrowsingType.off;
     state = AsyncData(s.copyWith(pendingType: newType));
   }
 

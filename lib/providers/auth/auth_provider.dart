@@ -56,8 +56,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
           // doesn't support JNAP, so stray JNAP calls should NOT trigger logout.
           final usp = ref.read(uspServiceProvider);
           if (usp != null && usp.isAuthenticated) {
-            logger.d(
-                '[Auth]: Ignoring JNAP unauthorized — USP session active');
+            logger.d('[Auth]: Ignoring JNAP unauthorized — USP session active');
             return;
           }
           final sessionToken =
@@ -291,7 +290,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
             );
           },
           failure: (error) async {
-            logger.d('[Auth]: JNAP login returned failure, trying USP fallback');
+            logger
+                .d('[Auth]: JNAP login returned failure, trying USP fallback');
             return await _tryUspFallbackLogin(password, previousState, error);
           },
         );
@@ -311,8 +311,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   Future<AuthState> _tryUspFallbackLogin(
       String password, AuthState previousState, Object error) async {
     final preference = BuildConfig.protocolPreference;
-    logger.d(
-        '[Auth]: USP fallback check: preference=$preference');
+    logger.d('[Auth]: USP fallback check: preference=$preference');
     if (preference != ProtocolPreference.jnapOnly) {
       final uspCoordinator = ref.read(uspAuthCoordinatorProvider);
       final uspSuccess = await uspCoordinator.tryUspLogin(password);

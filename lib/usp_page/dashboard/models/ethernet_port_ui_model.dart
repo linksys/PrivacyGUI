@@ -12,8 +12,7 @@ class WiredDeviceInfo extends Equatable {
     required this.ipAddress,
   });
 
-  String get displayName =>
-      hostName.isNotEmpty ? hostName : macAddress;
+  String get displayName => hostName.isNotEmpty ? hostName : macAddress;
 
   @override
   List<Object?> get props => [hostName, macAddress, ipAddress];

@@ -78,6 +78,14 @@ final uspDashboardRoute = ShellRoute(
       builder: (context, state) => const UspAdvancedSettingsView(),
       routes: [
         LinksysRoute(
+          name: RouteNamed.uspInternetSettings,
+          path: RoutePath.uspInternetSettings,
+          config: const LinksysRouteConfig(noNaviRail: true),
+          builder: (context, state) => const UspInternetSettingsView(),
+          enableDirtyCheck: true,
+          preservableProvider: preservableUspInternetSettingsProvider,
+        ),
+        LinksysRoute(
           name: RouteNamed.uspLocalNetwork,
           path: RouteNamed.uspLocalNetwork,
           builder: (context, state) => const UspLocalNetworkView(),

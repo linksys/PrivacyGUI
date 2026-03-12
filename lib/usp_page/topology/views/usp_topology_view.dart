@@ -107,8 +107,7 @@ class UspTopologyView extends ConsumerWidget {
             enableAnimation: true,
             interactive: true,
             // Tree view (mobile): navigate directly on tap.
-            onNodeTap: (nodeId) =>
-                _navigateByNodeId(router, nodeId, topology),
+            onNodeTap: (nodeId) => _navigateByNodeId(router, nodeId, topology),
             treeConfig: TopologyTreeConfiguration(
               titleBuilder: (node) => node.name,
               subtitleBuilder: (node) => node.extra ?? '',

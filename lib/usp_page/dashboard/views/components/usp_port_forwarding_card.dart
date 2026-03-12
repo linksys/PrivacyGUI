@@ -135,8 +135,7 @@ class UspPortForwardingCard extends ConsumerWidget {
                       loadingKey: 'portForwarding',
                       mutation: () => ref
                           .read(uspDashboardProvider.notifier)
-                          .togglePortTriggerRule(
-                              trigger.instancePath, value),
+                          .togglePortTriggerRule(trigger.instancePath, value),
                     ),
           ),
           AppGap.sm(),

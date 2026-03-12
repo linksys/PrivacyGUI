@@ -147,8 +147,7 @@ class _UspIpv6SectionState extends ConsumerState<UspIpv6Section> {
         controller: _borderRelayController,
         label: l.borderRelay,
         hintText: '192.0.2.1',
-        onChanged: (v) =>
-            _updateField((f) => f.copyWith(ipv6rdBorderRelay: v)),
+        onChanged: (v) => _updateField((f) => f.copyWith(ipv6rdBorderRelay: v)),
       ),
     ];
   }

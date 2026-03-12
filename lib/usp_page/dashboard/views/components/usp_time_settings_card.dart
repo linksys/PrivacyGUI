@@ -53,9 +53,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
             ],
           ),
           AppGap.xl(),
-          UspInfoRow(
-              label: 'Current Time',
-              value: time.formattedDateTime),
+          UspInfoRow(label: 'Current Time', value: time.formattedDateTime),
           UspInfoRow(label: 'Timezone', value: time.localTimeZone),
           UspInfoRow(label: 'NTP Server 1', value: time.ntpServer1),
           if (time.ntpServer2.isNotEmpty)
@@ -67,8 +65,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
                 child: AppText.labelLarge('Time Client'),
               ),
               Expanded(
-                child:
-                    AppText.bodyMedium(time.enable ? 'Enabled' : 'Disabled'),
+                child: AppText.bodyMedium(time.enable ? 'Enabled' : 'Disabled'),
               ),
               AppSwitch(
                 value: time.enable,
@@ -102,11 +99,12 @@ class UspTimeSettingsCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'time',
-      mutation: () => ref.read(uspDashboardProvider.notifier).updateTimeSettings(
-            enable: result.enable,
-            ntpServer1: result.ntpServer1,
-            ntpServer2: result.ntpServer2,
-          ),
+      mutation: () =>
+          ref.read(uspDashboardProvider.notifier).updateTimeSettings(
+                enable: result.enable,
+                ntpServer1: result.ntpServer1,
+                ntpServer2: result.ntpServer2,
+              ),
       successMessage: 'Time settings saved',
     );
   }

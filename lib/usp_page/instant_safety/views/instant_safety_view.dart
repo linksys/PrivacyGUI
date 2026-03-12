@@ -76,9 +76,7 @@ class UspInstantSafetyView extends ConsumerWidget {
             width: double.infinity,
             child: AppButton.primary(
               label: 'Save',
-              onTap: state.isSaving
-                  ? null
-                  : () => _onSave(context, ref),
+              onTap: state.isSaving ? null : () => _onSave(context, ref),
             ),
           ),
         ],

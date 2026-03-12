@@ -42,14 +42,16 @@ Map<String, ClientConnectionDetail> buildConnectionDetailMap({
   // Codegen instancePath always has trailing dot, but SSIDReference and
   // LowerLayers from the router may or may not include it.
   final apByPath = {
-    for (final ap in accessPoints.items) _ensureTrailingDot(ap.instancePath): ap,
+    for (final ap in accessPoints.items)
+      _ensureTrailingDot(ap.instancePath): ap,
   };
   final ssidByPath = {
     for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
   };
   final bandByRadioPath = {
     for (final r in radios.items)
-      _ensureTrailingDot(r.instancePath): _normalizeBand(r.operatingFrequencyBand),
+      _ensureTrailingDot(r.instancePath):
+          _normalizeBand(r.operatingFrequencyBand),
   };
 
   logger.d('[USP] Connection detail: '
@@ -63,7 +65,8 @@ Map<String, ClientConnectionDetail> buildConnectionDetailMap({
     // parentPath = "Device.WiFi.AccessPoint.1." (from codegen, always has dot)
     final ap = apByPath[_ensureTrailingDot(client.parentPath)];
     if (ap == null) {
-      logger.d('[USP] Connection detail: no AP for parentPath=${client.parentPath}');
+      logger.d(
+          '[USP] Connection detail: no AP for parentPath=${client.parentPath}');
       continue;
     }
 

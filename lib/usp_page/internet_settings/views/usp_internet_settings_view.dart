@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_form_validator.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
@@ -92,12 +94,12 @@ class UspInternetSettingsView extends ConsumerWidget {
           state: state,
           isEditing: isEditing,
           onEditToggle: () {
-              if (isEditing) {
-                notifier.exitEditMode();
-              } else {
-                notifier.enterEditMode();
-              }
-            },
+            if (isEditing) {
+              notifier.exitEditMode();
+            } else {
+              notifier.enterEditMode();
+            }
+          },
         ),
         AppGap.lg(),
         // IPv4 Connection section
@@ -132,12 +134,12 @@ class UspInternetSettingsView extends ConsumerWidget {
           state: state,
           isEditing: isEditing,
           onEditToggle: () {
-              if (isEditing) {
-                notifier.exitEditMode();
-              } else {
-                notifier.enterEditMode();
-              }
-            },
+            if (isEditing) {
+              notifier.exitEditMode();
+            } else {
+              notifier.enterEditMode();
+            }
+          },
         ),
         AppGap.lg(),
         // Two-column layout
@@ -185,21 +187,26 @@ class UspInternetSettingsView extends ConsumerWidget {
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
       isPositiveEnabled: state.isDirty && isValid && !isLoading,
-      onPositiveTap: () => _save(ref, state),
+      onPositiveTap: () => _save(context, ref),
       onNegativeTap: () =>
           ref.read(uspInternetSettingsProvider.notifier).exitEditMode(),
     );
   }
 
-  Future<void> _save(
-    WidgetRef ref,
-    UspInternetSettingsState state,
-  ) async {
+  Future<void> _save(BuildContext context, WidgetRef ref) async {
     ref.read(uspInternetMutationLoadingProvider.notifier).state = 'save';
     try {
-      await ref.read(uspInternetSettingsProvider.notifier).save();
-    } catch (_) {
-      // Error handled by the notifier state
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspInternetSettingsProvider.notifier).save(),
+      );
+      if (context.mounted) {
+        showSuccessSnackBar(context, loc(context).changesSaved);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, '$e');
+      }
     } finally {
       ref.read(uspInternetMutationLoadingProvider.notifier).state = null;
     }

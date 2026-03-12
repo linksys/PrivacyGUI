@@ -49,13 +49,15 @@ class UspService {
   Future<void> set(Map<String, dynamic> parameters,
       {bool allowPartial = false}) async {}
 
-  Future<String> add(String objectPath, Map<String, dynamic> parameters) async =>
+  Future<String> add(
+          String objectPath, Map<String, dynamic> parameters) async =>
       '';
 
   Future<void> delete(String path) async {}
 
   Future<Map<String, String>> operate(String command,
-      {Map<String, String> args = const {}}) async => {};
+          {Map<String, String> args = const {}}) async =>
+      {};
 
   Future<Subscription<T>> subscribe<T>({
     required String id,

@@ -51,10 +51,10 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
           data: (state) {
             final totalCount = state.deviceModels.length;
             return AppResponsiveLayout(
-              mobile: (_) => _buildMobileLayout(
-                  context, devices, filter, totalCount),
-              desktop: (_) => _buildDesktopLayout(
-                  context, devices, filter, totalCount),
+              mobile: (_) =>
+                  _buildMobileLayout(context, devices, filter, totalCount),
+              desktop: (_) =>
+                  _buildDesktopLayout(context, devices, filter, totalCount),
             );
           },
         );
