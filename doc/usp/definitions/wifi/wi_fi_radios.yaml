@@ -34,12 +34,24 @@ parameters:
   - field_name: operatingChannelBandwidth
     path: .OperatingChannelBandwidth
     type: string
+    writable: true
     description: Channel bandwidth (Auto, 20MHz, 40MHz, 80MHz, 160MHz)
+
+  - field_name: possibleChannels
+    path: .PossibleChannels
+    type: string
+    description: Comma-separated list of available channel numbers (may include ranges e.g. "1-13,36,40")
+
+  - field_name: operatingStandards
+    path: .OperatingStandards
+    type: string
+    writable: true
+    description: Currently active WiFi standards (subset of SupportedStandards, e.g. "a,n,ac,ax")
 
   - field_name: supportedStandards
     path: .SupportedStandards
     type: string
-    description: Comma-separated supported WiFi standards
+    description: Comma-separated supported WiFi standards (read-only, e.g. "a,n,ac,ax")
 
   - field_name: transmitPower
     path: .TransmitPower
@@ -56,3 +68,9 @@ parameters:
     type: boolean
     writable: true
     description: Whether automatic channel selection is enabled
+
+  - field_name: ieee80211hEnabled
+    path: .IEEE80211hEnabled
+    type: boolean
+    writable: true
+    description: Enables IEEE 802.11h on this radio, which activates both Dynamic Frequency Selection (DFS) and Transmit Power Control (TPC)

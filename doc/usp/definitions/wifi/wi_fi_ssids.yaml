@@ -21,11 +21,12 @@ parameters:
     writable: true
     description: Whether this SSID interface is enabled
 
-  - field_name: ssidAdvertisementEnabled
-    path: SSIDAdvertisementEnabled
-    type: boolean
-    writable: true
-    description: Whether the SSID is broadcast (visible to clients)
+  # NOTE: SSIDAdvertisementEnabled lives on Device.WiFi.AccessPoint.{i}, not SSID.
+  # See wi_fi_access_points.yaml
+
+  # TODO(vendor-ext): Device.WiFi.SSID.{i}.X_LINKSYS_COM_IsGuest
+  #   Required for: distinguishing guest vs. main SSID in the WiFi settings UI
+  #   Pending: firmware support confirmation
 
   - field_name: status
     path: .Status

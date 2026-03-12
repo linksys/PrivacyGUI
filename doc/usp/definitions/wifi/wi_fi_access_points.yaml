@@ -19,9 +19,15 @@ parameters:
     type: string
     description: Operational status (Up, Disabled, Error)
 
+  - field_name: modesSupported
+    path: .Security.ModesSupported
+    type: string
+    description: Comma-separated list of supported security modes (e.g. "None, WPA2-Personal, WPA3-Personal")
+
   - field_name: securityModeEnabled
     path: .Security.ModeEnabled
     type: string
+    writable: true
     description: Active security mode (None, WPA2-Personal, WPA3-Personal, etc.)
 
   - field_name: encryptionMode
@@ -30,17 +36,27 @@ parameters:
     description: Encryption mode (AES, TKIP+AES, etc.)
 
   - field_name: keyPassphrase
-    path: Security.KeyPassphrase
+    path: .Security.KeyPassphrase
     type: string
     writable: true
     sensitive: true
     description: WPA/WPA2/WPA3 passphrase
 
+  - field_name: ssidAdvertisementEnabled
+    path: .SSIDAdvertisementEnabled
+    type: boolean
+    writable: true
+    description: Whether the SSID is broadcast (visible to scanning clients)
+
   - field_name: macAddressControlEnabled
-    path: MACAddressControlEnabled
+    path: .MACAddressControlEnabled
     type: boolean
     writable: true
     description: Enable MAC address access control (allow-list mode)
+
+  # TODO(vendor-ext): Device.WiFi.AccessPoint.{i}.X_LINKSYS_COM_MACFilter.*
+  #   Required for: deny-list MAC filtering (current standard only supports allow-list)
+  #   Pending: firmware support confirmation
 
   - field_name: ssidReference
     path: .SSIDReference

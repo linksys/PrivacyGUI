@@ -60,25 +60,71 @@ class UspWifiSettingsService {
           'AP=${ap?.instancePath ?? "none"}, '
           'radio=${radio?.operatingFrequencyBand ?? "none"}');
 
+      // TODO(vendor-ext): Replace with Device.WiFi.SSID.{i}.X_LINKSYS_COM_IsGuest
+      //   once firmware support is confirmed.
+      final isGuest = ssid.ssid.toLowerCase().contains('guest');
+
+      // Parse Security.ModesSupported comma-separated string into a list.
+      // e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
+      final supportedModes = _parseModesSupported(ap?.modesSupported ?? '');
+
       networks.add(WifiNetworkUIModel(
         ssidInstancePath: ssid.instancePath,
         accessPointInstancePath: ap?.instancePath,
         radioInstancePath: radio?.instancePath,
         ssid: ssid.ssid,
         enabled: ssid.enable,
-        ssidAdvertisementEnabled: ssid.ssidAdvertisementEnabled,
+        ssidAdvertisementEnabled: ap?.ssidAdvertisementEnabled ?? true,
+        supportedSecurityModes: supportedModes,
         securityMode: ap?.securityModeEnabled ?? '',
         keyPassphrase: ap?.keyPassphrase ?? '',
         macAddressControlEnabled: ap?.macAddressControlEnabled ?? false,
+        isGuest: isGuest,
         band: _normalizeBand(radio?.operatingFrequencyBand ?? ''),
         channel: radio?.channel ?? 0,
         channelBandwidth: radio?.operatingChannelBandwidth ?? '',
         autoChannelEnable: radio?.autoChannelEnable ?? true,
+        possibleChannels: _parsePossibleChannels(radio?.possibleChannels ?? ''),
+        operatingStandards: radio?.operatingStandards ?? '',
+        supportedStandards: radio?.supportedStandards ?? '',
       ));
     }
 
     return networks;
   }
+}
+
+/// Parses a comma-separated TR-181 Security.ModesSupported string into a trimmed list.
+/// e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
+List<String> _parseModesSupported(String raw) {
+  if (raw.isEmpty) return [];
+  return raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+}
+
+/// Parses a TR-181 PossibleChannels string into a sorted list of channel numbers.
+/// Handles both comma-separated values and range notation.
+/// e.g. "1-13,36,40,44,48" → [1,2,3,4,5,6,7,8,9,10,11,12,13,36,40,44,48]
+List<int> _parsePossibleChannels(String raw) {
+  if (raw.isEmpty) return [];
+  final result = <int>[];
+  for (final part in raw.split(',')) {
+    final trimmed = part.trim();
+    if (trimmed.contains('-')) {
+      final bounds = trimmed.split('-');
+      final start = int.tryParse(bounds[0].trim());
+      final end = int.tryParse(bounds[1].trim());
+      if (start != null && end != null) {
+        for (var i = start; i <= end; i++) {
+          result.add(i);
+        }
+      }
+    } else {
+      final ch = int.tryParse(trimmed);
+      if (ch != null) result.add(ch);
+    }
+  }
+  result.sort();
+  return result;
 }
 
 /// Ensures a TR-181 path ends with a dot.

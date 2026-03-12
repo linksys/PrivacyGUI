@@ -9,9 +9,11 @@ class WiFiAccessPoint {
   final String instancePath;
   final bool enable;
   final String status;
+  final String modesSupported;
   final String securityModeEnabled;
   final String encryptionMode;
   final String keyPassphrase;
+  final bool ssidAdvertisementEnabled;
   final bool macAddressControlEnabled;
   final String ssidReference;
 
@@ -19,9 +21,11 @@ class WiFiAccessPoint {
     required this.instancePath,
     required this.enable,
     required this.status,
+    required this.modesSupported,
     required this.securityModeEnabled,
     required this.encryptionMode,
     required this.keyPassphrase,
+    required this.ssidAdvertisementEnabled,
     required this.macAddressControlEnabled,
     required this.ssidReference,
   });
@@ -30,12 +34,16 @@ class WiFiAccessPoint {
 /// Update descriptor for WiFiAccessPoint instances
 class WiFiAccessPointUpdate {
   final String instancePath;
+  final String? securityModeEnabled;
   final String? keyPassphrase;
+  final bool? ssidAdvertisementEnabled;
   final bool? macAddressControlEnabled;
 
   const WiFiAccessPointUpdate({
     required this.instancePath,
+    this.securityModeEnabled,
     this.keyPassphrase,
+    this.ssidAdvertisementEnabled,
     this.macAddressControlEnabled,
   });
 }
@@ -49,8 +57,12 @@ class WiFiAccessPoints {
   static const _paths = [
     'Device.WiFi.AccessPoint.*.Enable',
     'Device.WiFi.AccessPoint.*.Status',
+    'Device.WiFi.AccessPoint.*.Security.ModesSupported',
     'Device.WiFi.AccessPoint.*.Security.ModeEnabled',
     'Device.WiFi.AccessPoint.*.Security.EncryptionMode',
+    'Device.WiFi.AccessPoint.*.Security.KeyPassphrase',
+    'Device.WiFi.AccessPoint.*.SSIDAdvertisementEnabled',
+    'Device.WiFi.AccessPoint.*.MACAddressControlEnabled',
     'Device.WiFi.AccessPoint.*.SSIDReference',
   ];
 
@@ -75,29 +87,19 @@ class WiFiAccessPoints {
       ..sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
     for (final id in sorted) {
       final p = '$basePath$id.';
-      if ([
-        response['${p}Enable'],
-        response['${p}Status'],
-        response['${p}Security.ModeEnabled'],
-        response['${p}Security.EncryptionMode'],
-        response['${p}SSIDReference']
-      ].every((v) =>
-          v == null ||
-          v == '' ||
-          v == '0' ||
-          v == 0 ||
-          v == false ||
-          v == 'false')) continue;
+      if ([response['${p}Enable'], response['${p}Status'], response['${p}Security.ModesSupported'], response['${p}Security.ModeEnabled'], response['${p}Security.EncryptionMode'], response['${p}Security.KeyPassphrase'], response['${p}SSIDAdvertisementEnabled'], response['${p}MACAddressControlEnabled'], response['${p}SSIDReference']].every((v) => v == null || v == '' || v == '0' || v == 0 || v == false || v == 'false')) continue;
       items.add(WiFiAccessPoint(
         instancePath: p,
         enable: response['${p}Enable'] == true ||
             response['${p}Enable'] == 'true' ||
             response['${p}Enable'] == '1',
         status: (response['${p}Status'] ?? '') as String,
+        modesSupported: (response['${p}Security.ModesSupported'] ?? '') as String,
         securityModeEnabled: (response['${p}Security.ModeEnabled'] ?? '') as String,
         encryptionMode: (response['${p}Security.EncryptionMode'] ?? '') as String,
         keyPassphrase: (response['${p}Security.KeyPassphrase'] ?? '') as String,
-        macAddressControlEnabled: response['${p}MACAddressControlEnabled'] == true || response['${p}MACAddressControlEnabled'] == 'true',
+        ssidAdvertisementEnabled: response['${p}SSIDAdvertisementEnabled'] == true || response['${p}SSIDAdvertisementEnabled'] == 'true' || response['${p}SSIDAdvertisementEnabled'] == '1',
+        macAddressControlEnabled: response['${p}MACAddressControlEnabled'] == true || response['${p}MACAddressControlEnabled'] == 'true' || response['${p}MACAddressControlEnabled'] == '1',
         ssidReference: (response['${p}SSIDReference'] ?? '') as String,
       ));
     }
@@ -107,7 +109,9 @@ class WiFiAccessPoints {
   /// Update a single instance via USP Set message
   static Future<void> update(UspService client, WiFiAccessPointUpdate update) async {
     final params = <String, dynamic>{};
+    if (update.securityModeEnabled != null) params['${update.instancePath}Security.ModeEnabled'] = update.securityModeEnabled;
     if (update.keyPassphrase != null) params['${update.instancePath}Security.KeyPassphrase'] = update.keyPassphrase;
+    if (update.ssidAdvertisementEnabled != null) params['${update.instancePath}SSIDAdvertisementEnabled'] = update.ssidAdvertisementEnabled;
     if (update.macAddressControlEnabled != null) params['${update.instancePath}MACAddressControlEnabled'] = update.macAddressControlEnabled;
     if (params.isNotEmpty) await client.set(params);
   }
@@ -116,7 +120,9 @@ class WiFiAccessPoints {
   static Future<void> updateMany(UspService client, List<WiFiAccessPointUpdate> updates, {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
+      if (update.securityModeEnabled != null) params['${update.instancePath}Security.ModeEnabled'] = update.securityModeEnabled;
       if (update.keyPassphrase != null) params['${update.instancePath}Security.KeyPassphrase'] = update.keyPassphrase;
+      if (update.ssidAdvertisementEnabled != null) params['${update.instancePath}SSIDAdvertisementEnabled'] = update.ssidAdvertisementEnabled;
       if (update.macAddressControlEnabled != null) params['${update.instancePath}MACAddressControlEnabled'] = update.macAddressControlEnabled;
     }
     if (params.isNotEmpty) await client.set(params, allowPartial: allowPartial);

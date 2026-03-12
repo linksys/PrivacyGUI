@@ -94,6 +94,77 @@ class UspWifiSettingsNotifier
     });
   }
 
+  /// Updates editable network settings: SSID name, passphrase, and/or security mode.
+  ///
+  /// Only non-null fields are written. Automatically refreshes state after save.
+  Future<void> updateNetworkSettings({
+    required String ssidInstancePath,
+    String? apInstancePath,
+    String? newSsid,
+    String? newPassphrase,
+    String? newSecurityMode,
+  }) async {
+    await _withLock(() async {
+      if (newSsid != null) {
+        await WiFiSsids.update(
+          _usp,
+          WiFiSsidUpdate(instancePath: ssidInstancePath, ssid: newSsid),
+        );
+      }
+      if (apInstancePath != null &&
+          (newPassphrase != null || newSecurityMode != null)) {
+        await WiFiAccessPoints.update(
+          _usp,
+          WiFiAccessPointUpdate(
+            instancePath: apInstancePath,
+            keyPassphrase: newPassphrase,
+            securityModeEnabled: newSecurityMode,
+          ),
+        );
+      }
+      await _refetchAndUpdateState();
+    });
+  }
+
+  /// Updates Radio settings: channel bandwidth, channel number, auto-channel,
+  /// and/or operating standards (WiFi Mode).
+  Future<void> updateRadioSettings({
+    required String radioInstancePath,
+    String? channelBandwidth,
+    int? channel,
+    bool? autoChannelEnable,
+    String? operatingStandards,
+  }) async {
+    await _withLock(() async {
+      await WiFiRadios.update(
+        _usp,
+        WiFiRadioUpdate(
+          instancePath: radioInstancePath,
+          operatingChannelBandwidth: channelBandwidth,
+          channel: channel,
+          autoChannelEnable: autoChannelEnable,
+          operatingStandards: operatingStandards,
+        ),
+      );
+      await _refetchAndUpdateState();
+    });
+  }
+
+  /// Toggles Broadcast SSID (SSIDAdvertisementEnabled) via AccessPoint.
+  /// Correct TR-181 path: Device.WiFi.AccessPoint.{i}.SSIDAdvertisementEnabled
+  Future<void> toggleBroadcastSsid(
+      String apInstancePath, bool enabled) async {
+    await _withLock(() async {
+      await WiFiAccessPoints.update(
+        _usp,
+        WiFiAccessPointUpdate(
+            instancePath: apInstancePath,
+            ssidAdvertisementEnabled: enabled),
+      );
+      await _refetchAndUpdateState();
+    });
+  }
+
   /// Toggles MAC address control (allow-list) for an AccessPoint.
   Future<void> toggleMacAddressControl(
       String apInstancePath, bool enabled) async {

@@ -12,10 +12,13 @@ class WiFiRadio {
   final int channel;
   final String operatingFrequencyBand;
   final String operatingChannelBandwidth;
+  final String operatingStandards;
   final String supportedStandards;
   final int transmitPower;
   final int maxBitRate;
   final bool autoChannelEnable;
+  final String possibleChannels;
+  final bool ieee80211hEnabled;
 
   const WiFiRadio({
     required this.instancePath,
@@ -24,10 +27,13 @@ class WiFiRadio {
     required this.channel,
     required this.operatingFrequencyBand,
     required this.operatingChannelBandwidth,
+    required this.operatingStandards,
     required this.supportedStandards,
     required this.transmitPower,
     required this.maxBitRate,
     required this.autoChannelEnable,
+    required this.possibleChannels,
+    required this.ieee80211hEnabled,
   });
 }
 
@@ -37,12 +43,18 @@ class WiFiRadioUpdate {
   final bool? enable;
   final int? channel;
   final bool? autoChannelEnable;
+  final String? operatingChannelBandwidth;
+  final String? operatingStandards;
+  final bool? ieee80211hEnabled;
 
   const WiFiRadioUpdate({
     required this.instancePath,
     this.enable,
     this.channel,
     this.autoChannelEnable,
+    this.operatingChannelBandwidth,
+    this.operatingStandards,
+    this.ieee80211hEnabled,
   });
 }
 
@@ -58,10 +70,13 @@ class WiFiRadios {
     'Device.WiFi.Radio.*.Channel',
     'Device.WiFi.Radio.*.OperatingFrequencyBand',
     'Device.WiFi.Radio.*.OperatingChannelBandwidth',
+    'Device.WiFi.Radio.*.OperatingStandards',
     'Device.WiFi.Radio.*.SupportedStandards',
     'Device.WiFi.Radio.*.TransmitPower',
     'Device.WiFi.Radio.*.MaxBitRate',
     'Device.WiFi.Radio.*.AutoChannelEnable',
+    'Device.WiFi.Radio.*.PossibleChannels',
+    'Device.WiFi.Radio.*.IEEE80211hEnabled',
   ];
 
   /// Fetch all instances via USP Get message
@@ -109,19 +124,15 @@ class WiFiRadios {
             response['${p}Enable'] == '1',
         status: (response['${p}Status'] ?? '') as String,
         channel: int.tryParse(response['${p}Channel']?.toString() ?? '') ?? 0,
-        operatingFrequencyBand:
-            (response['${p}OperatingFrequencyBand'] ?? '') as String,
-        operatingChannelBandwidth:
-            (response['${p}OperatingChannelBandwidth'] ?? '') as String,
-        supportedStandards:
-            (response['${p}SupportedStandards'] ?? '') as String,
-        transmitPower:
-            int.tryParse(response['${p}TransmitPower']?.toString() ?? '') ?? 0,
-        maxBitRate:
-            int.tryParse(response['${p}MaxBitRate']?.toString() ?? '') ?? 0,
-        autoChannelEnable: response['${p}AutoChannelEnable'] == true ||
-            response['${p}AutoChannelEnable'] == 'true' ||
-            response['${p}AutoChannelEnable'] == '1',
+        operatingFrequencyBand: (response['${p}OperatingFrequencyBand'] ?? '') as String,
+        operatingChannelBandwidth: (response['${p}OperatingChannelBandwidth'] ?? '') as String,
+        operatingStandards: (response['${p}OperatingStandards'] ?? '') as String,
+        supportedStandards: (response['${p}SupportedStandards'] ?? '') as String,
+        transmitPower: int.tryParse(response['${p}TransmitPower']?.toString() ?? '') ?? 0,
+        maxBitRate: int.tryParse(response['${p}MaxBitRate']?.toString() ?? '') ?? 0,
+        autoChannelEnable: response['${p}AutoChannelEnable'] == true || response['${p}AutoChannelEnable'] == 'true' || response['${p}AutoChannelEnable'] == '1',
+        possibleChannels: (response['${p}PossibleChannels'] ?? '') as String,
+        ieee80211hEnabled: response['${p}IEEE80211hEnabled'] == true || response['${p}IEEE80211hEnabled'] == 'true' || response['${p}IEEE80211hEnabled'] == '1',
       ));
     }
     return WiFiRadios(items: items);
@@ -130,13 +141,12 @@ class WiFiRadios {
   /// Update a single instance via USP Set message
   static Future<void> update(UspService client, WiFiRadioUpdate update) async {
     final params = <String, dynamic>{};
-    if (update.enable != null)
-      params['${update.instancePath}Enable'] = update.enable;
-    if (update.channel != null)
-      params['${update.instancePath}Channel'] = update.channel;
-    if (update.autoChannelEnable != null)
-      params['${update.instancePath}AutoChannelEnable'] =
-          update.autoChannelEnable;
+    if (update.enable != null) params['${update.instancePath}Enable'] = update.enable;
+    if (update.channel != null) params['${update.instancePath}Channel'] = update.channel;
+    if (update.autoChannelEnable != null) params['${update.instancePath}AutoChannelEnable'] = update.autoChannelEnable;
+    if (update.operatingChannelBandwidth != null) params['${update.instancePath}OperatingChannelBandwidth'] = update.operatingChannelBandwidth;
+    if (update.operatingStandards != null) params['${update.instancePath}OperatingStandards'] = update.operatingStandards;
+    if (update.ieee80211hEnabled != null) params['${update.instancePath}IEEE80211hEnabled'] = update.ieee80211hEnabled;
     if (params.isNotEmpty) await client.set(params);
   }
 
@@ -146,13 +156,12 @@ class WiFiRadios {
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
-      if (update.enable != null)
-        params['${update.instancePath}Enable'] = update.enable;
-      if (update.channel != null)
-        params['${update.instancePath}Channel'] = update.channel;
-      if (update.autoChannelEnable != null)
-        params['${update.instancePath}AutoChannelEnable'] =
-            update.autoChannelEnable;
+      if (update.enable != null) params['${update.instancePath}Enable'] = update.enable;
+      if (update.channel != null) params['${update.instancePath}Channel'] = update.channel;
+      if (update.autoChannelEnable != null) params['${update.instancePath}AutoChannelEnable'] = update.autoChannelEnable;
+      if (update.operatingChannelBandwidth != null) params['${update.instancePath}OperatingChannelBandwidth'] = update.operatingChannelBandwidth;
+      if (update.operatingStandards != null) params['${update.instancePath}OperatingStandards'] = update.operatingStandards;
+      if (update.ieee80211hEnabled != null) params['${update.instancePath}IEEE80211hEnabled'] = update.ieee80211hEnabled;
     }
     if (params.isNotEmpty) await client.set(params, allowPartial: allowPartial);
   }
