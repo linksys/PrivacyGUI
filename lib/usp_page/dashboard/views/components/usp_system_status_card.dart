@@ -94,6 +94,7 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
             initialIndex: selectedTab,
             displayMode: TabDisplayMode.segmented,
             isScrollable: true,
+            showBorder: false,
             onTabChanged: (index) => ref
                 .read(cardTabIndexProvider(_cardId).notifier)
                 .state = index,

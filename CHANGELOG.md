@@ -2,9 +2,43 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
-## [2.1.0] - 2026-03-11
+## [2.1.0] - 2026-03-12
 
 ### USP Protocol Integration
+
+#### USP Subscription & Notification Pipeline
+- Add `UspService.createNotifySubscription()` — client-side OBUSPA subscription creation via USP Add + Set with GET-diff instance discovery (workaround for WASM `add` returning empty on `Device.LocalAgent.Subscription.`)
+- Add `UspService.deleteNotifySubscription()` — USP Delete for subscription cleanup
+- Add OperationComplete and Event notification types to test console subscription dropdown
+- Add "Create USP Subscription" button to test console — creates OBUSPA `Device.LocalAgent.Subscription.{i}` with proper Recipient (UDS controller) for SSE delivery
+- Verified end-to-end async Operate flow: IPPing + TraceRoute → OperationComplete via SSE ✅
+- Update `subscription-notify-blocked.md` — Issue 2 (Notify→SSE) verified fixed, add bridge enhancement request for auto-register
+
+#### Comprehensive PDF Report (F-025)
+- Rewrite `UspPdfService` — expand from basic dashboard export to comprehensive multi-page report
+- Add `PdfReportData` model — aggregates dashboard state, polling providers, and feature data
+- Report sections: System Overview, Network Status, Connected Devices, WiFi Performance, Traffic Analysis, Network Health, Firewall, Port Forwarding, DMZ, Static Routing
+- Include charts and statistics from dashboard card data
+
+#### Dashboard Layout Presets & Responsive Scaling
+- Add `UspDashboardPreset` — predefined layout configurations (default, compact, monitoring, etc.)
+- Add `PresetSelectionDialog` — visual preset picker for quick layout switching
+- Add `UspWidgetSpecs.scaleLayout()` — proportional 12→8 (tablet) / 12→4 (mobile) column scaling
+- Add `UspBarsVisibleProvider` — scroll-direction-aware top/bottom bar visibility
+
+#### Shell & Navigation Improvements
+- Add scroll-aware bar hiding to `UspDashboardShell` — `NotificationListener<UserScrollNotification>` hides top/bottom bars on scroll-down, restores on scroll-up
+- Add `UiKitPageView` back button visibility control
+- Add session token refresh retry to `AuthProvider`
+
+#### Statistics Page Improvements
+- Add `StatsSectionCard` reusable component for consistent section styling
+- Refactor `stats_traffic_trends_section` — simplify chart configuration
+- Refactor `stats_activity_heatmap_section` and `stats_signal_quality_section` layout improvements
+- Add statistics view section registration updates
+
+#### Port Forwarding Detail View Refactor
+- Refactor `UspPortForwardingDetailView` tab layout and styling
 
 #### USP Page App Bar Migration
 - Migrate 15 USP pages from custom `_buildHeader()` to `UiKitPageView` built-in app bar (`title` + `onBackTap`)

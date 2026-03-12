@@ -6,11 +6,21 @@ import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_c
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// 24-hour per-device activity heatmap (top 12 devices by activity frequency).
-class StatsActivityHeatmapSection extends ConsumerWidget {
+class StatsActivityHeatmapSection extends ConsumerStatefulWidget {
   const StatsActivityHeatmapSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StatsActivityHeatmapSection> createState() =>
+      _StatsActivityHeatmapSectionState();
+}
+
+class _StatsActivityHeatmapSectionState
+    extends ConsumerState<StatsActivityHeatmapSection> {
+  int? _touchedRow;
+  int? _touchedCol;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(uspDeviceAnalyticsProvider);
 
     return StatsSectionCard(
@@ -78,18 +88,57 @@ class StatsActivityHeatmapSection extends ConsumerWidget {
         .map((h) => h.hour % 6 == 0 ? '${h.hour}'.padLeft(2, '0') : '')
         .toList();
 
-    return AppHeatmapChart(
-      data: AppHeatmapData(
-        rows: displayMacs.length,
-        columns: 24,
-        values: values,
-        rowLabels: rowLabels,
-        columnLabels: columnLabels,
-        minValue: 0,
-        maxValue: 1,
-      ),
-      lowColor: colorScheme.surfaceContainerHighest,
-      highColor: colorScheme.primary,
+    // Build tooltip text for tapped cell
+    String? tooltipText;
+    if (_touchedRow != null &&
+        _touchedCol != null &&
+        _touchedRow! < rowLabels.length &&
+        _touchedCol! < 24) {
+      final device = rowLabels[_touchedRow!];
+      final hour = hourSlots[_touchedCol!];
+      final active = values[_touchedRow!][_touchedCol!] == 1.0;
+      tooltipText =
+          '$device @ ${hour.hour.toString().padLeft(2, '0')}:00 — ${active ? 'Active' : 'Inactive'}';
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: AppHeatmapChart(
+            data: AppHeatmapData(
+              rows: displayMacs.length,
+              columns: 24,
+              values: values,
+              rowLabels: rowLabels,
+              columnLabels: columnLabels,
+              minValue: 0,
+              maxValue: 1,
+            ),
+            lowColor: colorScheme.surfaceContainerHighest,
+            highColor: colorScheme.primary,
+            onTouch: (event) {
+              setState(() {
+                if (event.type == AppChartTouchType.exit ||
+                    event.touchedPoints.isEmpty) {
+                  _touchedRow = null;
+                  _touchedCol = null;
+                } else {
+                  final point = event.touchedPoints.first;
+                  _touchedRow = point.seriesIndex;
+                  _touchedCol = point.dataIndex;
+                }
+              });
+            },
+          ),
+        ),
+        if (tooltipText != null) ...[
+          AppGap.xs(),
+          AppText.labelSmall(
+            tooltipText,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ],
     );
   }
 }

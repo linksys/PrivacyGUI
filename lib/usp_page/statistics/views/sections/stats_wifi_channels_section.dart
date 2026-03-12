@@ -189,10 +189,9 @@ class _BandDistributionDonut extends StatelessWidget {
         clientsPerRadio.values.fold(0, (a, b) => a + b);
 
     return Center(
-      child: AppPieChart(
+      child: InteractivePieChart(
         sections: sections,
-        donut: true,
-        centerWidget: Column(
+        defaultCenter: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.titleMedium('$totalClients'),
@@ -200,6 +199,8 @@ class _BandDistributionDonut extends StatelessWidget {
                 color: colorScheme.onSurfaceVariant),
           ],
         ),
+        touchedCenterLabel: (section, _) =>
+            '${section.value.toInt()}',
         size: 120,
       ),
     );

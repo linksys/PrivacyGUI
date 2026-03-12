@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_preferences_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/dialogs/preset_selection_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Settings panel for customizing USP dashboard layout.
@@ -37,6 +39,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
           ),
           AppGap.xl(),
 
+          _buildPresetSection(context, ref),
+
           _buildHiddenWidgets(context, ref),
 
           // Reset Button
@@ -64,6 +68,53 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPresetSection(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(uspLayoutPreferencesProvider);
+    final currentPreset = prefs.selectedPreset;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppText.labelLarge('Dashboard Style'),
+        AppGap.sm(),
+        AppCard(
+          child: Row(
+            children: [
+              if (currentPreset != null) ...[
+                Icon(currentPreset.icon, size: 20),
+                AppGap.sm(),
+                Expanded(
+                  child: AppText.bodyMedium(currentPreset.displayName),
+                ),
+              ] else
+                Expanded(
+                  child: AppText.bodyMedium('No preset selected'),
+                ),
+              AppButton.text(
+                label: 'Change',
+                onTap: () async {
+                  final result = await showPresetSelectionDialog(
+                    context,
+                    currentPreset: currentPreset,
+                  );
+                  if (result != null && context.mounted) {
+                    await ref
+                        .read(uspLayoutPreferencesProvider.notifier)
+                        .selectPreset(result);
+                    if (context.mounted) {
+                      Navigator.pop(context, 'preset_changed');
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        AppGap.xl(),
+      ],
     );
   }
 

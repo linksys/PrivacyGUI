@@ -66,7 +66,9 @@ class StatsPacketLossSection extends ConsumerWidget {
               ],
               yAxis: AppChartAxis(min: 0, max: yMax),
               yLabelFormatter: (v) => '${v.toStringAsFixed(2)}%',
-              showTooltip: false,
+              tooltipFormatter: (label, v) =>
+                  '$label: ${v.toStringAsFixed(3)}%',
+              enableZoom: true,
             ),
           ),
         ),

@@ -106,7 +106,6 @@ class StatsPortMappingSection extends ConsumerWidget {
               xLabels: protocolCounts.keys.toList(),
               showValueLabels: true,
               valueLabelFormatter: (v) => '${v.toInt()}',
-              showTooltip: false,
             ),
           ),
         ],

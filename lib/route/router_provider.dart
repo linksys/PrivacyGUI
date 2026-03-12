@@ -160,7 +160,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         // bypass auto parent first login page
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
-        // All USP routes bypass JNAP-dependent redirect logic
+        // USP routes bypass JNAP-dependent redirect logic but still
+        // check auth — redirect to login when logged out.
+        final loginType =
+            ref.watch(authProvider.select((value) => value.value?.loginType));
+        if (loginType == null || loginType == LoginType.none) {
+          return router._home();
+        }
         return state.uri.toString();
       }
       return router.redirectLogic(state);

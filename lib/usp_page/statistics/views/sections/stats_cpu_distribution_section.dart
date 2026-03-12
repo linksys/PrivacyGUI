@@ -58,7 +58,6 @@ class StatsCpuDistributionSection extends ConsumerWidget {
               yLabelFormatter: (v) => v.toInt().toString(),
               showValueLabels: true,
               valueLabelFormatter: (v) => v.toInt().toString(),
-              showTooltip: false,
             ),
           ),
         ),

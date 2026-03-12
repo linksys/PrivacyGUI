@@ -35,7 +35,7 @@ class StatsDeviceDistributionSection extends ConsumerWidget {
       children: [
         Flexible(
           child: Center(
-            child: AppPieChart(
+            child: InteractivePieChart(
               sections: [
                 AppPieSection(
                     value: distribution.wifiCount.toDouble(),
@@ -46,8 +46,7 @@ class StatsDeviceDistributionSection extends ConsumerWidget {
                     label: 'Wired',
                     color: colorScheme.secondary),
               ],
-              donut: true,
-              centerWidget: Column(
+              defaultCenter: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.titleMedium('${distribution.onlineCount}'),
@@ -55,6 +54,8 @@ class StatsDeviceDistributionSection extends ConsumerWidget {
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
+              touchedCenterLabel: (section, _) =>
+                  '${section.value.toInt()}',
               size: 180,
             ),
           ),

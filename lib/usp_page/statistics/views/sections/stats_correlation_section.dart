@@ -81,7 +81,11 @@ class StatsCorrelationSection extends ConsumerWidget {
               yLabelFormatter: (v) => '${v.toInt()}%',
               secondaryYAxis: AppChartAxis(min: 0, max: trafficMax),
               secondaryYLabelFormatter: (v) => _formatRate(v),
-              showTooltip: false,
+              tooltipFormatter: (label, v) {
+                if (label == 'CPU') return '$label: ${v.toStringAsFixed(1)}%';
+                return '$label: ${_formatRate(v)}';
+              },
+              enableZoom: true,
             ),
           ),
         ),

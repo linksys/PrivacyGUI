@@ -35,6 +35,7 @@ class UspFirewallOverviewCard extends ConsumerWidget {
             tabs: _tabs,
             initialIndex: selectedTab,
             displayMode: TabDisplayMode.segmented,
+            showBorder: false,
             onTabChanged: (index) => ref
                 .read(cardTabIndexProvider(_cardId).notifier)
                 .state = index,

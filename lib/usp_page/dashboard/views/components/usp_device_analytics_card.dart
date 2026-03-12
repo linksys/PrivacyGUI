@@ -46,6 +46,7 @@ class _UspDeviceAnalyticsCardState
             initialIndex: selectedTab,
             displayMode: TabDisplayMode.segmented,
             isScrollable: true,
+            showBorder: false,
             onTabChanged: (index) => ref
                 .read(cardTabIndexProvider(_cardId).notifier)
                 .state = index,

@@ -6,11 +6,20 @@ import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_c
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// WiFi signal quality per band — radar chart (>= 3 bands) or bar fallback.
-class StatsSignalQualitySection extends ConsumerWidget {
+class StatsSignalQualitySection extends ConsumerStatefulWidget {
   const StatsSignalQualitySection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StatsSignalQualitySection> createState() =>
+      _StatsSignalQualitySectionState();
+}
+
+class _StatsSignalQualitySectionState
+    extends ConsumerState<StatsSignalQualitySection> {
+  int? _touchedAxisIndex;
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(uspDeviceAnalyticsProvider);
     final current = state.current;
 
@@ -51,6 +60,17 @@ class StatsSignalQualitySection extends ConsumerWidget {
                     ],
                     axisLabels: bands.keys.toList(),
                     tickCount: 4,
+                    onTouch: (event) {
+                      setState(() {
+                        if (event.type == AppChartTouchType.exit ||
+                            event.touchedPoints.isEmpty) {
+                          _touchedAxisIndex = null;
+                        } else {
+                          _touchedAxisIndex =
+                              event.touchedPoints.first.dataIndex;
+                        }
+                      });
+                    },
                   )
                 : AppBarChart(
                     series: [
@@ -65,12 +85,18 @@ class StatsSignalQualitySection extends ConsumerWidget {
                     yLabelFormatter: (v) => '${v.toInt()}%',
                     showValueLabels: true,
                     valueLabelFormatter: (v) => '${v.toInt()}%',
-                    showTooltip: false,
                   ),
           ),
         ),
         AppGap.sm(),
-        if (distribution.signalLevelDistribution.isNotEmpty)
+        if (_touchedAxisIndex != null &&
+            _touchedAxisIndex! < bands.length) ...[
+          _RadarTooltipRow(
+            band: bands.keys.elementAt(_touchedAxisIndex!),
+            quality: bands.values.elementAt(_touchedAxisIndex!),
+            color: colorScheme.primary,
+          ),
+        ] else if (distribution.signalLevelDistribution.isNotEmpty)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -92,6 +118,29 @@ class StatsSignalQualitySection extends ConsumerWidget {
               ],
             ],
           ),
+      ],
+    );
+  }
+}
+
+class _RadarTooltipRow extends StatelessWidget {
+  final String band;
+  final double quality;
+  final Color color;
+  const _RadarTooltipRow({
+    required this.band,
+    required this.quality,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        StatsLegendDot(color: color),
+        AppGap.xs(),
+        AppText.labelSmall('$band: ${(quality * 100).toInt()}%'),
       ],
     );
   }

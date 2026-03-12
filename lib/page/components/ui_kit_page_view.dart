@@ -134,6 +134,12 @@ class UiKitPageView extends ConsumerStatefulWidget {
       unboundedFallbackHeight; // Fallback height for unbounded content
   final bool isTabScrollable;
 
+  /// Whether the app bar renders its border.
+  final bool showAppBarBorder;
+
+  /// Whether the tab bar surface shows borders.
+  final bool showTabBorder;
+
   const UiKitPageView({
     super.key,
     this.title,
@@ -169,6 +175,8 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.onBackTap,
     this.unboundedFallbackHeight,
     this.isTabScrollable = true,
+    this.showAppBarBorder = false,
+    this.showTabBorder = true,
   });
 
   /// Inner page factory constructor (similar to StyledAppPageView.innerPage)
@@ -249,6 +257,8 @@ class UiKitPageView extends ConsumerStatefulWidget {
     TextStyle? tabTextStyle,
     Color? tabIndicatorColor,
     bool isTabScrollable = true,
+    bool showAppBarBorder = false,
+    bool showTabBorder = true,
   }) {
     return UiKitPageView(
       key: key,
@@ -284,6 +294,8 @@ class UiKitPageView extends ConsumerStatefulWidget {
       onBackTap: onBackTap,
       unboundedFallbackHeight: unboundedFallbackHeight,
       isTabScrollable: isTabScrollable,
+      showAppBarBorder: showAppBarBorder,
+      showTabBorder: showTabBorder,
     );
   }
 
@@ -437,6 +449,9 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       // Unbounded content height fallback
       unboundedFallbackHeight: widget.unboundedFallbackHeight ?? 600,
 
+      // Border control
+      showTabBorder: widget.showTabBorder,
+
       // Content - use childBuilder for function type
       childBuilder: widget.child,
     );
@@ -482,6 +497,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       showBackButton: showBackButton,
       toolbarHeight: widget.toolbarHeight,
       onBackTap: widget.onBackTap,
+      showBorder: widget.showAppBarBorder,
     );
   }
 

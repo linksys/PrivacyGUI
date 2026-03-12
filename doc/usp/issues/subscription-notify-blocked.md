@@ -7,14 +7,14 @@
 | Device | Linksys M60TB-EU (PINNACLE 2.0) |
 | Firmware | 1.0.16.26013014 |
 | usp-bridge | v0.1.1 |
-| Date | 2026-03-09 |
+| Date | 2026-03-09 (updated 2026-03-12) |
 | Method | Flutter WASM client + SSH + OBUSPA prototrace |
 
 ---
 
 ## Summary
 
-After creating a Subscription and triggering an async Operate via the WASM client, the client **receives no notifications whatsoever**. There are two breakpoints in the notification pipeline; both must be fixed for end-to-end delivery.
+The notification pipeline has two issues. **Issue 2 is now fixed** in FW 1.0.16. Issue 1 remains open.
 
 ```
 Flutter App (WASM client)
@@ -27,9 +27,9 @@ Flutter App (WASM client)
     │                                            │
     │                               Notify delivered to bridge via UDS ✅
     │                                            │
-    │                               bridge ──✗──→ SSE                  (Issue 2)
+    │                               bridge ──→ SSE ✅                  (Issue 2 — FIXED)
     │
-    └── SSE stream ──→ only heartbeat, no notification events
+    └── SSE stream ──→ heartbeat + notification events ✅ (when subscription exists)
 ```
 
 ---
@@ -67,106 +67,157 @@ Option B: WASM subscribe → bridge API → bridge proxies USP Add → OBUSPA ma
 
 ---
 
-## Issue 2: usp-bridge does not forward OBUSPA USP Notify to SSE
+## Issue 2: usp-bridge does not forward OBUSPA USP Notify to SSE — ✅ FIXED
 
-### Symptom
+> **Status**: Fixed in FW 1.0.16.26013014. Verified 2026-03-12.
 
-After manually creating an OBUSPA Subscription via USP Add and triggering Operate (IPPing), OBUSPA correctly generates a USP Notify and delivers it to the bridge, but the bridge **does not parse or forward** the message to the SSE stream.
+### Verification (2026-03-12)
 
-### Reproduction Steps
+Created OBUSPA Subscription via WASM client USP Add (`Device.LocalAgent.Subscription.3`), then triggered Operate TraceRoute. Bridge successfully forwarded OperationComplete Notify to SSE:
 
-1. Create a Subscription via the test page using USP Add:
-   - Path: `Device.LocalAgent.Subscription.`
-   - Parameters: `Enable=true`, `NotifType=OperationComplete`, `ReferenceList=Device.IP.Diagnostics.IPPing()`
-2. Verify Recipient is automatically set to `Device.LocalAgent.Controller.2` (controller::localui / usp-bridge)
-3. Send Operate IPPing via WASM client → receive empty OperateResp (expected for async commands)
-4. Enable OBUSPA prototrace (`ubus call obuspa set '{"path":"Device.LocalAgent.Controller.2.SendOnBoardRequest","value":"1"}'`) and confirm:
-   - `CMD_OPERATE_ASYNC` delivered to bbfdm ✅
-   - `NOTIFY_OPR_COMPLETE` returned from bbfdm ✅
-   - OBUSPA matches Subscription and generates Notify ✅
-   - **USP Notify delivered to bridge via UDS** ✅
-5. SSE stream: only heartbeat, **no notification event** ❌
-
-> This test bypasses Issue 1 (OBUSPA Subscription created directly via USP Add), isolating Issue 2 independently.
-
-### OBUSPA Log Evidence
-
-```
-Sending NotifyRequest (OperationComplete for path=Device.IP.Diagnostics.IPPing())
-NOTIFY sent to controller::localui via UDS
-```
-
-### Notify Protobuf Content (captured via prototrace)
-
-```protobuf
-body {
-  request {
-    notify {
-      subscription_id: "cpe-1"
-      send_resp: false
-      oper_complete {
-        obj_path: "Device.IP.Diagnostics."
-        command_name: "IPPing()"
-        command_key: "d268a5ef-23ab-4a88-abc2-2201bed32fa6"
-        req_output_args {
-          output_args { key: "Status"              value: "Complete" }
-          output_args { key: "IPAddressUsed"       value: "192.168.15.2" }
-          output_args { key: "SuccessCount"        value: "3" }
-          output_args { key: "FailureCount"        value: "0" }
-          output_args { key: "AverageResponseTime" value: "5" }
-          output_args { key: "MinimumResponseTime" value: "3" }
-          output_args { key: "MaximumResponseTime" value: "6" }
-          output_args { key: "AverageResponseTimeDetailed" value: "4677" }
-          output_args { key: "MinimumResponseTimeDetailed" value: "3722" }
-          output_args { key: "MaximumResponseTimeDetailed" value: "6533" }
-        }
-      }
+```json
+{
+  "subscription_id": "cpe-3",
+  "type": "OperationComplete",
+  "oper_complete": {
+    "obj_path": "Device.IP.Diagnostics.",
+    "command_name": "TraceRoute()",
+    "command_key": "f7a93db5-1321-49ec-b2ca-413781a9a2b7",
+    "output_args": {
+      "Status": "Complete",
+      "RouteHops.1.Host": "10.92.12.1",
+      "RouteHops.7.Host": "dns.google",
+      "RouteHops.7.HostAddress": "8.8.8.8"
     }
   }
 }
 ```
 
-### Scope of Impact
+All notification types now expected to work:
 
-All USP Notification types are blocked:
-
-| NotifType | Description | OBUSPA Generates | Bridge Forwards |
-|-----------|-------------|------------------|-----------------|
-| ValueChange | Parameter value changed | ✅ | ❌ |
-| ObjectCreation | Object instance created | ✅ | ❌ |
-| ObjectDeletion | Object instance deleted | ✅ | ❌ |
-| OperationComplete | Async Operate completed | ✅ verified | ❌ verified |
-| Event | Custom event | ✅ | ❌ |
-
-### Expected Behavior
-
-When the bridge receives a USP Notify protobuf from OBUSPA via UDS, it should:
-1. Parse the Notify message content
-2. Push the event to the corresponding SSE session
+| NotifType | OBUSPA Generates | Bridge Forwards |
+|-----------|------------------|-----------------|
+| ValueChange | ✅ | ✅ (expected) |
+| ObjectCreation | ✅ | ✅ (expected) |
+| ObjectDeletion | ✅ | ✅ (expected) |
+| OperationComplete | ✅ | ✅ **verified** |
+| Event | ✅ | ✅ (expected) |
 
 ---
 
 ## Fix Dependencies
 
 ```
-Issue 1 (subscribe does not create OBUSPA Subscription)
-   │
-   │  After fix → OBUSPA starts generating Notify messages
+Issue 2 (bridge does not forward Notify to SSE) ── ✅ FIXED in FW 1.0.16
    │
    ▼
-Issue 2 (bridge does not forward Notify to SSE)
+Issue 1 (subscribe does not create OBUSPA Subscription) ── ❌ OPEN
    │
-   │  After fix → Client receives notifications via SSE
+   │  After fix → End-to-end notifications working
    │
    ▼
 End-to-end notifications working ✅
 ```
 
-**Both issues must be fixed** for end-to-end notifications to work.
+**Issue 2 is fixed.** Issue 1 remains — the bridge subscribe API must be enhanced to create OBUSPA subscriptions.
 
-Suggested fix order:
-1. **Issue 2 first** — bridge forwards Notify to SSE. Once fixed, can be verified end-to-end by manually creating an OBUSPA Subscription via USP Add.
-2. **Issue 1 follows** — WASM subscribe routes through USP Add (or bridge proxies to OBUSPA), so the subscribe API automatically creates a proper OBUSPA Subscription.
+### Current Workaround (Dart client-side)
+
+`UspService.createNotifySubscription()` performs the full flow from the Dart client:
+
+```
+Step 1: GET Device.LocalAgent.Subscription. (snapshot existing IDs)
+Step 2: USP Add Device.LocalAgent.Subscription. (create instance)
+Step 3: GET Device.LocalAgent.Subscription. (diff to find new instance ID)*
+Step 4: USP SetMultiple Enable=true, NotifType=..., ReferenceList=...
+Step 5: GET verify Recipient points to UDS controller
+```
+
+> *Step 3 is needed because the WASM client's `add()` returns empty for `Device.LocalAgent.Subscription.` — OBUSPA's AddResp has no `updated_inst_results`. This is a Rust WASM client bug (`wasm/mod.rs:435-441`).
+
+**Problems with the workaround:**
+- 5 round-trips instead of 1
+- Client must know OBUSPA internals (`Device.LocalAgent.Subscription.` schema)
+- GET-diff is fragile under concurrent access
+- WASM `add` return value bug requires extra GET
+
+---
+
+## Enhancement Request: Bridge Auto-Register OBUSPA Subscription
+
+### Goal
+
+The bridge `POST /api/v1/subscription` endpoint should create a proper `Device.LocalAgent.Subscription.{i}` instance in OBUSPA, not just register an internal session mapping.
+
+### Proposed API
+
+**Request** (same endpoint, enhanced behavior):
+
+```http
+POST /api/v1/subscription
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "action": "register",
+  "subscription_id": "client-sub-1",
+  "path": "Device.IP.Diagnostics.TraceRoute()",
+  "type": "OperationComplete"
+}
+```
+
+`type` field should accept string names (preferred) or numeric values:
+
+| type (string) | type (numeric) | Description |
+|---------------|----------------|-------------|
+| `ValueChange` | 1 | Parameter value changed |
+| `ObjectCreation` | 2 | Object instance created |
+| `ObjectDeletion` | 3 | Object instance deleted |
+| `OperationComplete` | 4 | Async Operate completed |
+| `Event` | 5 | Custom event |
+
+**Bridge internal flow:**
+
+```
+1. Receive POST /api/v1/subscription
+2. USP Add → Device.LocalAgent.Subscription.    (create OBUSPA instance)
+3. USP Set → Enable=true, NotifType=<type>, ReferenceList=<path>
+4. Verify Recipient → must point to bridge's own UDS controller
+5. Register SSE session mapping (existing behavior)
+6. Return response with instance details
+```
+
+**Response** (enhanced):
+
+```json
+{
+  "status": "success",
+  "instance_path": "Device.LocalAgent.Subscription.3.",
+  "recipient": "Device.LocalAgent.Controller.3",
+  "notif_type": "OperationComplete",
+  "reference_list": "Device.IP.Diagnostics.TraceRoute()"
+}
+```
+
+**Unregister** should also clean up the OBUSPA instance:
+
+```http
+POST /api/v1/subscription
+{
+  "action": "unregister",
+  "subscription_id": "client-sub-1"
+}
+```
+
+Bridge internal: USP Delete `Device.LocalAgent.Subscription.{i}.` + remove SSE mapping.
+
+### Benefits
+
+- Single round-trip from client
+- Client doesn't need to know OBUSPA `Device.LocalAgent.` schema
+- Bridge controls the full lifecycle (create + cleanup)
+- No dependency on WASM `add` return value bug
+- Atomic operation — no race conditions from GET-diff
 
 ---
 

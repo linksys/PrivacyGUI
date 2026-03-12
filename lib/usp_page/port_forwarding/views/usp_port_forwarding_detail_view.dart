@@ -17,47 +17,18 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Reads from [uspDashboardProvider] (shared state). All mutations delegate
 /// to [UspDashboardNotifier] to keep state in sync with the dashboard.
-class UspPortForwardingDetailView extends ConsumerWidget {
+class UspPortForwardingDetailView extends ConsumerStatefulWidget {
   const UspPortForwardingDetailView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return UiKitPageView.withSliver(
-      scrollable: true,
-      title: 'Port Forwarding',
-      topbar: const PreferredSize(
-        preferredSize: Size.fromHeight(64),
-        child: UspTopBar(),
-      ),
-      onBackTap: () => context.canPop()
-          ? context.pop()
-          : context.goNamed(RouteNamed.uspMenu),
-      onRefresh: () => ref.refresh(uspDashboardProvider.future),
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: (childContext, constraints) {
-        return const _PortForwardingTabs();
-      },
-    );
-  }
-
+  ConsumerState<UspPortForwardingDetailView> createState() =>
+      _UspPortForwardingDetailViewState();
 }
 
-/// TabBar widget that watches [uspDashboardProvider] internally.
-///
-/// By owning its own [TabController] as a [ConsumerStatefulWidget], the
-/// selected tab index is preserved across provider state changes — the
-/// widget tree for the TabBar never gets torn down by parent rebuilds.
-class _PortForwardingTabs extends ConsumerStatefulWidget {
-  const _PortForwardingTabs();
-
-  @override
-  ConsumerState<_PortForwardingTabs> createState() =>
-      _PortForwardingTabsState();
-}
-
-class _PortForwardingTabsState extends ConsumerState<_PortForwardingTabs>
+class _UspPortForwardingDetailViewState
+    extends ConsumerState<UspPortForwardingDetailView>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late final TabController _tabController;
 
   @override
   void initState() {
@@ -76,67 +47,78 @@ class _PortForwardingTabsState extends ConsumerState<_PortForwardingTabs>
     final asyncState = ref.watch(uspDashboardProvider);
     final state = asyncState.valueOrNull;
 
-    final singlePortRules =
-        state?.portForwardingRuleModels.where((r) => r.isSinglePort).toList() ??
-            [];
-    final portRangeRules =
-        state?.portForwardingRuleModels.where((r) => r.isPortRange).toList() ??
-            [];
+    final singlePortRules = state?.portForwardingRuleModels
+            .where((r) => r.isSinglePort)
+            .toList() ??
+        [];
+    final portRangeRules = state?.portForwardingRuleModels
+            .where((r) => r.isPortRange)
+            .toList() ??
+        [];
     final triggeringRules = state?.portTriggeringRuleModels ?? [];
 
-    return Column(
-      children: [
-        TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: 'Single Port (${singlePortRules.length})'),
-            Tab(text: 'Port Range (${portRangeRules.length})'),
-            Tab(text: 'Triggering (${triggeringRules.length})'),
+    return LayoutBuilder(builder: (context, constraints) {
+      return UiKitPageView.withSliver(
+        title: 'Port Forwarding',
+        topbar: const PreferredSize(
+          preferredSize: Size.fromHeight(64),
+          child: UspTopBar(),
+        ),
+        useMainPadding: false,
+        showAppBarBorder: false,
+        showTabBorder: false,
+        onBackTap: () => context.canPop()
+            ? context.pop()
+            : context.goNamed(RouteNamed.uspMenu),
+        onRefresh: () => ref.refresh(uspDashboardProvider.future),
+        tabs: [
+          Tab(text: 'Single Port (${singlePortRules.length})'),
+          Tab(text: 'Port Range (${portRangeRules.length})'),
+          Tab(text: 'Triggering (${triggeringRules.length})'),
+        ],
+        tabContentViews: [
+          _buildTabContent(
+              asyncState, UspSinglePortTab(rules: singlePortRules)),
+          _buildTabContent(asyncState, UspPortRangeTab(rules: portRangeRules)),
+          _buildTabContent(
+              asyncState, UspPortTriggeringTab(rules: triggeringRules)),
+        ],
+        tabController: _tabController,
+        unboundedFallbackHeight: constraints.maxHeight,
+      );
+    });
+  }
+
+  Widget _buildTabContent(AsyncValue asyncState, Widget tabContent) {
+    if (asyncState.isLoading && asyncState.valueOrNull == null) {
+      return const Center(child: AppLoader());
+    }
+    if (asyncState.hasError && asyncState.valueOrNull == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcon.font(Icons.error_outline,
+                size: 48, color: Theme.of(context).colorScheme.error),
+            AppGap.xl(),
+            AppText.titleMedium('Unable to load data'),
+            AppGap.md(),
+            AppButton(
+              label: 'Retry',
+              onTap: () => ref.invalidate(uspDashboardProvider),
+            ),
           ],
         ),
-        AppGap.xl(),
-        if (asyncState.isLoading && state == null)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.xxxl),
-              child: AppLoader(),
-            ),
-          )
-        else if (asyncState.hasError && state == null)
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppIcon.font(Icons.error_outline,
-                    size: 48, color: Theme.of(context).colorScheme.error),
-                AppGap.xl(),
-                AppText.titleMedium('Unable to load data'),
-                AppGap.md(),
-                AppText.bodyMedium(asyncState.error.toString()),
-                AppGap.xxl(),
-                AppButton(
-                  label: 'Retry',
-                  onTap: () => ref.invalidate(uspDashboardProvider),
-                ),
-              ],
-            ),
-          )
-        else
-          AnimatedBuilder(
-            animation: _tabController,
-            builder: (context, _) {
-              switch (_tabController.index) {
-                case 0:
-                  return UspSinglePortTab(rules: singlePortRules);
-                case 1:
-                  return UspPortRangeTab(rules: portRangeRules);
-                case 2:
-                  return UspPortTriggeringTab(rules: triggeringRules);
-                default:
-                  return const SizedBox.shrink();
-              }
-            },
+      );
+    }
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: context.layoutMargin),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([tabContent, AppGap.md()]),
           ),
+        ),
       ],
     );
   }

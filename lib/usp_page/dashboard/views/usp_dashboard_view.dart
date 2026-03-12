@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_fab.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/_components.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/usp_sliver_dashboard_view.dart';
@@ -19,11 +20,15 @@ import 'package:ui_kit_library/ui_kit.dart';
 class UspDashboardView extends ConsumerWidget {
   const UspDashboardView({super.key});
 
+  static const _animDuration = Duration(milliseconds: 250);
+  static const _topBarHeight = 64.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncState = ref.watch(uspDashboardProvider);
     final isRefreshing =
         asyncState.isLoading && asyncState.valueOrNull != null;
+    final barsVisible = ref.watch(uspBarsVisibleProvider);
 
     return Stack(
       fit: StackFit.expand,
@@ -32,14 +37,23 @@ class UspDashboardView extends ConsumerWidget {
         SafeArea(
           child: Column(
             children: [
-              const UspTopBar(),
+              AnimatedContainer(
+                duration: _animDuration,
+                height: barsVisible ? _topBarHeight : 0,
+                clipBehavior: Clip.hardEdge,
+                decoration: const BoxDecoration(),
+                child: const UspTopBar(),
+              ),
               if (isRefreshing)
-                LinearProgressIndicator(
-                  minHeight: 4,
-                  backgroundColor: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.1),
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  child: LinearProgressIndicator(
+                    minHeight: 4,
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.1),
+                  ),
                 ),
               Expanded(
                 child: asyncState.when(
@@ -89,13 +103,16 @@ class UspDashboardView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LinearProgressIndicator(
-              value: progress.fraction,
-              minHeight: 4,
-              backgroundColor: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.1),
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.md),
+              child: LinearProgressIndicator(
+                value: progress.fraction,
+                minHeight: 4,
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.1),
+              ),
             ),
             AppGap.md(),
             const UspDashboardSkeleton(),

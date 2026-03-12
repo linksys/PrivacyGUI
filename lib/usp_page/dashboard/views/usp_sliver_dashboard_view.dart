@@ -4,13 +4,25 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
 import 'package:privacy_gui/usp_page/dashboard/factories/usp_widget_factory.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_preferences_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/pdf_report_data.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_device_analytics_notifier.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/services/usp_pdf_service.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/dialogs/preset_selection_dialog.dart';
+import 'package:privacy_gui/usp_page/dmz/services/usp_dmz_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/usp_page/firewall/services/usp_firewall_service.dart';
+import 'package:privacy_gui/usp_page/instant_safety/providers/instant_safety_provider.dart';
+import 'package:privacy_gui/usp_page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
+import 'package:privacy_gui/usp_page/static_routing/providers/usp_static_routing_notifier.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -30,6 +42,71 @@ class _UspSliverDashboardViewState
   bool _isEditMode = false;
   List<dynamic>? _initialLayoutSnapshot;
   UspLayoutPreferences? _initialPrefsSnapshot;
+  bool _presetDialogShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showPresetDialogIfNeeded();
+    });
+  }
+
+  Future<void> _showPresetDialogIfNeeded() async {
+    if (_presetDialogShown) return;
+    _presetDialogShown = true;
+
+    // Read persisted prefs directly to avoid race with async provider loading.
+    // The Notifier.build() returns defaults then loads async — by the time
+    // addPostFrameCallback fires the provider state may still be default.
+    final sharedPrefs = await SharedPreferences.getInstance();
+    final prefsJson = sharedPrefs.getString('usp_layout_preferences');
+    if (prefsJson != null) {
+      final persisted = UspLayoutPreferences.fromJsonString(prefsJson);
+      if (persisted.hasSeenPresetDialog) return;
+    }
+
+    if (!mounted) return;
+
+    final result = await showPresetSelectionDialog(context);
+    if (!mounted) return;
+
+    if (result != null) {
+      await ref
+          .read(uspLayoutPreferencesProvider.notifier)
+          .selectPreset(result);
+    } else {
+      // User cancelled — apply standard preset as default and don't ask again.
+      await ref
+          .read(uspLayoutPreferencesProvider.notifier)
+          .selectPreset(UspDashboardPreset.standard);
+    }
+  }
+
+  /// Ensures polling providers have completed at least one fetch cycle.
+  /// Called before PDF generation as a safety net for very early clicks.
+  Future<void> _ensurePollingData() async {
+    final futures = <Future<void>>[];
+
+    // System monitor — one fetch produces a snapshot.
+    if (ref.read(uspSystemMonitorProvider).history.isEmpty) {
+      futures.add(ref.read(uspSystemMonitorProvider.notifier).fetchNow());
+    }
+
+    // Traffic analysis — needs 2 fetches (1st = baseline, 2nd = rates).
+    final traffic = ref.read(uspTrafficAnalysisProvider);
+    if (traffic.history.isEmpty) {
+      final notifier = ref.read(uspTrafficAnalysisProvider.notifier);
+      if (traffic.lastBaselines == null) {
+        await notifier.fetchNow(); // sets baseline
+      }
+      futures.add(notifier.fetchNow()); // computes rates
+    }
+
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+  }
 
   void _enterEditMode() {
     final controller = ref.read(uspSliverDashboardControllerProvider);
@@ -69,6 +146,12 @@ class _UspSliverDashboardViewState
 
   @override
   Widget build(BuildContext context) {
+    // Eager-init polling providers so they start fetching immediately,
+    // regardless of whether their dashboard cards are visible in the viewport.
+    ref.watch(uspTrafficAnalysisProvider);
+    ref.watch(uspDeviceAnalyticsProvider);
+    ref.watch(uspSystemMonitorProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -138,14 +221,47 @@ class _UspSliverDashboardViewState
             ] else ...[
               AppIconButton(
                 icon: AppIcon.font(Icons.print),
-                onTap: () {
+                onTap: () async {
                   final state = ref.read(uspDashboardProvider).valueOrNull;
-                  if (state != null) {
-                    doSomethingWithSpinner(
-                      context,
-                      UspPdfService.generatePdf(state),
-                    );
-                  }
+                  if (state == null) return;
+
+                  // Ensure polling providers have data before generating PDF.
+                  await _ensurePollingData();
+
+                  if (!context.mounted) return;
+
+                  final fwSvc = UspFirewallService();
+                  final dmzSvc = UspDmzService();
+                  final reportData = PdfReportData(
+                    dashboard: state,
+                    trafficAnalysis:
+                        ref.read(uspTrafficAnalysisProvider),
+                    deviceAnalytics:
+                        ref.read(uspDeviceAnalyticsProvider),
+                    systemMonitor:
+                        ref.read(uspSystemMonitorProvider),
+                    firewallSettings: fwSvc.buildUIModel(
+                        rules: fwSvc
+                            .parseFirewallRules(state.firewallRules)),
+                    dmzSettings:
+                        dmzSvc.buildUIModel(state.dmzEntries),
+                    staticRoutes: ref
+                        .read(uspStaticRoutingProvider)
+                        .valueOrNull
+                        ?.routes,
+                    ipv6PortRules: ref
+                        .read(uspIpv6PortServiceProvider)
+                        .valueOrNull
+                        ?.rules,
+                    safeBrowsing: ref
+                        .read(uspInstantSafetyProvider)
+                        .valueOrNull
+                        ?.uiModel,
+                  );
+                  doSomethingWithSpinner(
+                    context,
+                    UspPdfService.generatePdf(reportData),
+                  );
                 },
               ),
               AppGap.sm(),
@@ -298,7 +414,9 @@ class _UspSliverDashboardViewState
       ),
     );
 
-    if ((result == 'reset' || result == 'toggle_off') && mounted) {
+    if ((result == 'reset' || result == 'toggle_off' ||
+            result == 'preset_changed') &&
+        mounted) {
       setState(() {
         _isEditMode = false;
         _initialLayoutSnapshot = null;
@@ -323,7 +441,9 @@ class _UspSliverDashboardViewState
       );
     }
 
-    final displayedWidget = widget;
+    // ClipRect prevents content from visually overflowing the grid cell.
+    // Individual cards can add their own SingleChildScrollView if needed.
+    final displayedWidget = ClipRect(child: widget);
 
     if (isEditMode) {
       final spec = UspWidgetSpecs.getById(item.id);

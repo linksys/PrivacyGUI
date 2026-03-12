@@ -43,7 +43,7 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
       children: [
         Flexible(
           child: Center(
-            child: AppPieChart(
+            child: InteractivePieChart(
               sections: [
                 AppPieSection(
                     value: wanTotal.toDouble(),
@@ -54,8 +54,7 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
                     label: 'LAN',
                     color: colorScheme.secondary),
               ],
-              donut: true,
-              centerWidget: Column(
+              defaultCenter: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.titleSmall(Transforms.formatBytes(grandTotal)),
@@ -63,6 +62,8 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
+              touchedCenterLabel: (section, _) =>
+                  Transforms.formatBytes(section.value.toInt()),
               size: 180,
             ),
           ),

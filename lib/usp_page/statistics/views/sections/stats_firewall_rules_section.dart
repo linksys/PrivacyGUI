@@ -86,10 +86,9 @@ class StatsFirewallRulesSection extends ConsumerWidget {
         AppGap.md(),
         Expanded(
           child: Center(
-            child: AppPieChart(
+            child: InteractivePieChart(
               sections: sections,
-              donut: true,
-              centerWidget: Column(
+              defaultCenter: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppText.titleMedium('${firewallRules.length}'),
@@ -97,6 +96,8 @@ class StatsFirewallRulesSection extends ConsumerWidget {
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
+              touchedCenterLabel: (section, _) =>
+                  '${section.value.toInt()}',
               size: 160,
             ),
           ),

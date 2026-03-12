@@ -89,7 +89,8 @@ class StatsWifiSpeedSection extends ConsumerWidget {
             yLabelFormatter: (v) => '${v.toInt()} Mbps',
             showValueLabels: clients.length <= 4,
             valueLabelFormatter: (v) => '${v.toInt()}',
-            showTooltip: false,
+            tooltipFormatter: (label, v) =>
+                '$label: ${v.toInt()} Mbps',
           ),
         ),
         AppGap.sm(),

@@ -306,10 +306,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   /// Attempts USP login as fallback when JNAP login fails.
   ///
-  /// This handles both cases: AuthService returning AuthFailure,
-  /// and AuthService throwing exceptions (e.g., JNAPError rethrow).
+  /// Only attempts USP when JNAP is **unavailable** (network/protocol error).
+  /// Password errors (wrong password, account locked, delayed) are NOT
+  /// retried via USP because both protocols share the same credential.
   Future<AuthState> _tryUspFallbackLogin(
       String password, AuthState previousState, Object error) async {
+    // Password errors → same password, same result on USP. Skip fallback.
+    if (_isPasswordError(error)) {
+      logger.d('[Auth]: USP fallback skipped — password error');
+      throw error;
+    }
+
     final preference = BuildConfig.protocolPreference;
     logger.d('[Auth]: USP fallback check: preference=$preference');
     if (preference != ProtocolPreference.jnapOnly) {
@@ -328,6 +335,24 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
     // Both failed — throw original error
     throw error;
+  }
+
+  /// Returns true if the error indicates a credential / password problem.
+  ///
+  /// These errors will produce the same result on USP (same password),
+  /// so retrying via USP is pointless.
+  static bool _isPasswordError(Object error) {
+    final String? code;
+    if (error is JNAPError) {
+      code = error.result;
+    } else if (error is UnexpectedError) {
+      code = error.message;
+    } else {
+      return false;
+    }
+    return code == errorInvalidAdminPassword ||
+        code == errorPasswordCheckDelayed ||
+        code == errorAdminAccountLocked;
   }
 
   /// Retrieves password hint by delegating to AuthService.

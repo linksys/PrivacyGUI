@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/usp_dashboard_preset.dart';
 import '../models/usp_layout_preferences.dart';
 import 'usp_layout_controller.dart';
 
@@ -56,6 +57,21 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   /// Restore preferences from a snapshot (used for edit mode cancel).
   Future<void> restoreSnapshot(UspLayoutPreferences snapshot) async {
     state = snapshot;
+    await _saveToPrefs();
+  }
+
+  /// Select a dashboard preset and apply its layout.
+  Future<void> selectPreset(UspDashboardPreset preset) async {
+    state = state.withPreset(preset);
+    await _saveToPrefs();
+    await ref
+        .read(uspSliverDashboardControllerProvider.notifier)
+        .applyPreset(preset);
+  }
+
+  /// Mark the preset dialog as seen without changing the preset.
+  Future<void> markPresetDialogSeen() async {
+    state = state.withPresetDialogSeen();
     await _saveToPrefs();
   }
 

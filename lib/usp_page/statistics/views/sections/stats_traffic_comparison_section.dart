@@ -74,7 +74,7 @@ class StatsTrafficComparisonSection extends ConsumerWidget {
             ],
             stacked: true,
             yLabelFormatter: _formatSpeed,
-            showTooltip: false,
+            tooltipFormatter: statsFormatSpeedTooltip,
           ),
         ),
         AppGap.sm(),

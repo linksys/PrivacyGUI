@@ -64,7 +64,6 @@ class StatsConnectionTrendsSection extends ConsumerWidget {
             ],
             stacked: true,
             xLabels: xLabels,
-            showTooltip: false,
           ),
         ),
         AppGap.sm(),

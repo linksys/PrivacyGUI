@@ -45,6 +45,8 @@ class _UspStatisticsViewState extends ConsumerState<UspStatisticsView>
           child: UspTopBar(),
         ),
         useMainPadding: false,
+        showAppBarBorder: false,
+        showTabBorder: false,
         onBackTap: () => context.canPop()
             ? context.pop()
             : context.goNamed(RouteNamed.uspMenu),

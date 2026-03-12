@@ -307,6 +307,60 @@ abstract class UspWidgetSpecs {
   }
 
   // ---------------------------------------------------------------------------
+  // Layout Scaling
+  // ---------------------------------------------------------------------------
+
+  /// Proportionally scales a serialised layout from [fromCols] to [toCols].
+  ///
+  /// * Tablet (12→8): `w=6` → `w=4`, preserving two-column pairs.
+  /// * Mobile (12→4): all items become full-width (`w=toCols`) for
+  ///   single-column stacking — `compact()` then resolves y positions.
+  /// * Constraints (minW / maxW) are scaled accordingly.
+  static List<dynamic> scaleLayout(
+    List<dynamic> layout,
+    int fromCols,
+    int toCols,
+  ) {
+    return layout.map((item) {
+      final map = Map<String, dynamic>.from(item as Map);
+      final x = map['x'] as int;
+      final w = map['w'] as int;
+      final minW = map['minW'] as int? ?? 1;
+      final maxW = (map['maxW'] as num?)?.toInt() ?? fromCols;
+
+      int newW;
+      int newX;
+
+      if (toCols <= 4) {
+        // Mobile: full-width single-column
+        newW = toCols;
+        newX = 0;
+      } else {
+        // Proportional scaling
+        newW = (w * toCols / fromCols).round().clamp(1, toCols);
+        newX = (x * toCols / fromCols).round();
+        if (newX + newW > toCols) newX = toCols - newW;
+        if (newX < 0) {
+          newX = 0;
+          newW = toCols;
+        }
+      }
+
+      final newMinW = (minW * toCols / fromCols).round().clamp(1, toCols);
+      final newMaxW =
+          (maxW * toCols / fromCols).round().clamp(newMinW, toCols);
+
+      return {
+        ...map,
+        'x': newX,
+        'w': newW,
+        'minW': newMinW,
+        'maxW': newMaxW.toDouble(),
+      };
+    }).toList();
+  }
+
+  // ---------------------------------------------------------------------------
   // Default Layout
   // ---------------------------------------------------------------------------
 
@@ -327,41 +381,50 @@ abstract class UspWidgetSpecs {
   /// y=33: DhcpReservations (6×4)    | PortForwarding (6×4)
   /// ```
   static List<LayoutItem> createDefaultLayout() {
-    return [
-      // y=0: Stats Panel (full width)
-      LayoutItemFactory.fromSpec(statsPanel, x: 0, y: 0, w: 12, h: 1),
+    return createLayoutForCards(all.map((s) => s.id).toList());
+  }
 
-      // y=1: Device Info | Network Status
-      LayoutItemFactory.fromSpec(deviceInfo, x: 0, y: 1, w: 6, h: 3),
-      LayoutItemFactory.fromSpec(networkStatus, x: 6, y: 1, w: 6, h: 3),
+  /// Creates a 2-column layout for the given [cardIds].
+  ///
+  /// * `stats_panel` is always placed full-width (12 cols) if present.
+  /// * Remaining cards are placed in 6-col pairs, auto-calculating y.
+  /// * Uses each spec's preferred height from its `HeightStrategy`.
+  static List<LayoutItem> createLayoutForCards(List<String> cardIds) {
+    final items = <LayoutItem>[];
+    int y = 0;
 
-      // y=4: Network Health | System Status
-      LayoutItemFactory.fromSpec(networkHealth, x: 0, y: 4, w: 6, h: 4),
-      LayoutItemFactory.fromSpec(systemStatus, x: 6, y: 4, w: 6, h: 5),
+    // stats_panel first (full width) if present
+    if (cardIds.contains('stats_panel')) {
+      final spec = getById('stats_panel')!;
+      items.add(LayoutItemFactory.fromSpec(spec, x: 0, y: y, w: 12));
+      y += items.last.h;
+    }
 
-      // y=9: Traffic Analysis | LAN Info
-      LayoutItemFactory.fromSpec(trafficAnalysis, x: 0, y: 9, w: 6, h: 5),
-      LayoutItemFactory.fromSpec(lanInfo, x: 6, y: 9, w: 6, h: 3),
+    // Remaining cards in 6-col pairs
+    final remaining =
+        cardIds.where((id) => id != 'stats_panel').toList();
+    for (int i = 0; i < remaining.length; i += 2) {
+      final leftSpec = getById(remaining[i]);
+      if (leftSpec == null) continue;
+      final leftItem =
+          LayoutItemFactory.fromSpec(leftSpec, x: 0, y: y, w: 6);
+      items.add(leftItem);
 
-      // y=14: Ethernet Ports | Connected Devices
-      LayoutItemFactory.fromSpec(ethernetPorts, x: 0, y: 14, w: 6, h: 3),
-      LayoutItemFactory.fromSpec(connectedDevices, x: 6, y: 14, w: 6, h: 4),
+      int rowHeight = leftItem.h;
 
-      // y=18: Topology | Device Analytics
-      LayoutItemFactory.fromSpec(topology, x: 0, y: 18, w: 6, h: 5),
-      LayoutItemFactory.fromSpec(deviceAnalytics, x: 6, y: 18, w: 6, h: 5),
+      if (i + 1 < remaining.length) {
+        final rightSpec = getById(remaining[i + 1]);
+        if (rightSpec != null) {
+          final rightItem =
+              LayoutItemFactory.fromSpec(rightSpec, x: 6, y: y, w: 6);
+          items.add(rightItem);
+          if (rightItem.h > rowHeight) rowHeight = rightItem.h;
+        }
+      }
 
-      // y=23: WiFi Status | WiFi Performance
-      LayoutItemFactory.fromSpec(wifiStatus, x: 0, y: 23, w: 6, h: 6),
-      LayoutItemFactory.fromSpec(wifiPerformance, x: 6, y: 23, w: 6, h: 5),
+      y += rowHeight;
+    }
 
-      // y=29: Firewall Overview | Time Settings
-      LayoutItemFactory.fromSpec(firewallOverview, x: 0, y: 29, w: 6, h: 4),
-      LayoutItemFactory.fromSpec(timeSettings, x: 6, y: 29, w: 6, h: 3),
-
-      // y=33: DHCP Reservations | Port Forwarding
-      LayoutItemFactory.fromSpec(dhcpReservations, x: 0, y: 33, w: 6, h: 4),
-      LayoutItemFactory.fromSpec(portForwarding, x: 6, y: 33, w: 6, h: 4),
-    ];
+    return items;
   }
 }

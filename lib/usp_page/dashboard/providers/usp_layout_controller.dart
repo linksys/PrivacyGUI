@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/dashboard/providers/layout_item_factory.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 
+import '../models/usp_dashboard_preset.dart';
 import '../models/usp_widget_specs.dart';
 
 const _uspLayoutKey = 'usp_sliver_dashboard_layout';
@@ -41,8 +42,10 @@ class UspSliverDashboardControllerNotifier
   ///
   /// The constructor already initialises with [UspWidgetSpecs.createDefaultLayout].
   /// This method only replaces the state when a **valid** saved layout exists.
-  /// If the saved layout is stale (missing widget IDs from new cards), it is
-  /// discarded and the default layout is persisted instead.
+  ///
+  /// Validation: reject layouts that reference **unknown** widget IDs (removed
+  /// from specs). Layouts with **fewer** cards than the full spec are valid —
+  /// they come from presets or user customisation.
   Future<void> _initializeLayout() async {
     final prefs = await SharedPreferences.getInstance();
     final layoutJson = prefs.getString(_uspLayoutKey);
@@ -50,24 +53,26 @@ class UspSliverDashboardControllerNotifier
     if (layoutJson == null) {
       // No saved layout — persist the constructor's default for next time.
       await saveLayout();
+      _preSeedBreakpoints();
       return;
     }
 
     try {
       final layoutData = jsonDecode(layoutJson) as List<dynamic>;
 
-      // Validate: saved layout must include every widget in the current spec
+      // Validate: reject layouts with unknown IDs (widget was removed from specs).
+      // Layouts with fewer cards than specs are fine (preset / user customisation).
       final savedIds = layoutData
           .map((item) => (item as Map<String, dynamic>)['id'] as String)
           .toSet();
-      final requiredIds = UspWidgetSpecs.all.map((s) => s.id).toSet();
-      final missingIds = requiredIds.difference(savedIds);
+      final knownIds = UspWidgetSpecs.all.map((s) => s.id).toSet();
+      final unknownIds = savedIds.difference(knownIds);
 
-      if (missingIds.isNotEmpty) {
+      if (unknownIds.isNotEmpty) {
         debugPrint(
-            'USP layout missing widgets: $missingIds — keeping default');
-        // Discard stale layout, persist the constructor's default.
+            'USP layout has unknown widgets: $unknownIds — resetting');
         await saveLayout();
+        _preSeedBreakpoints();
         return;
       }
 
@@ -77,11 +82,40 @@ class UspSliverDashboardControllerNotifier
       final newController = _createDefaultController();
       newController.importLayout(layoutData);
       state = newController;
+      _preSeedBreakpoints();
     } catch (e) {
       debugPrint('Failed to load USP sliver dashboard layout: $e');
       // Keep the constructor's default — no state change needed.
       await saveLayout();
+      _preSeedBreakpoints();
     }
+  }
+
+  /// Pre-seeds the controller's internal per-slot-count layout cache with
+  /// proportionally scaled layouts for tablet (8) and mobile (4) breakpoints.
+  ///
+  /// Without this, `DashboardController.setSlotCount` falls back to
+  /// `correctBounds` which only shifts items left without scaling widths,
+  /// breaking the two-column layout at tablet widths (w=6 can't pair in 8).
+  void _preSeedBreakpoints() {
+    final controller = state;
+    final layout12 = controller.exportLayout();
+
+    // --- Seed 8-column (tablet) cache ---
+    controller.setSlotCount(8);
+    controller.importLayout(
+      UspWidgetSpecs.scaleLayout(layout12, 12, 8),
+    );
+
+    // --- Seed 4-column (mobile) cache ---
+    controller.setSlotCount(4);
+    controller.importLayout(
+      UspWidgetSpecs.scaleLayout(layout12, 12, 4),
+    );
+
+    // --- Return to 12-column (desktop) ---
+    // This finds the cached layout12 saved during the first setSlotCount(8).
+    controller.setSlotCount(12);
   }
 
   /// Persist current layout to SharedPreferences.
@@ -167,6 +201,20 @@ class UspSliverDashboardControllerNotifier
     final newController = _createDefaultController();
     newController.importLayout(newLayout);
     state = newController;
+    await saveLayout();
+  }
+
+  /// Apply a preset layout, replacing the current layout entirely.
+  ///
+  /// Uses the preset's hand-crafted layout (optimised card positions and sizes)
+  /// rather than generic 2-column packing.
+  Future<void> applyPreset(UspDashboardPreset preset) async {
+    final layout = preset.createLayout();
+    state = DashboardController(
+      initialSlotCount: 12,
+      initialLayout: layout,
+    );
+    _preSeedBreakpoints();
     await saveLayout();
   }
 

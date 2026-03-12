@@ -360,6 +360,43 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   // Bridge: Subscription
   // ════════════════════════════════════════════════════════════════════════════
 
+  /// Creates an OBUSPA subscription via USP Add + Set (through WASM client).
+  /// This ensures Recipient auto-points to Controller.2 (usp-bridge / UDS),
+  /// which is required for OperationComplete notifications to reach SSE.
+  Future<void> _doCreateUspSubscription() async {
+    if (_service == null) return;
+    final refList = _subPathController.text.trim();
+    if (refList.isEmpty) return;
+    final typeNames = {
+      1: 'ValueChange',
+      2: 'ObjectCreation',
+      3: 'ObjectDeletion',
+      4: 'OperationComplete',
+      5: 'Event',
+    };
+    final typeName = typeNames[_notifType] ?? 'Unknown';
+    _log('CREATE USP Subscription: refList=$refList type=$typeName');
+    try {
+      final result = await _service!.createNotifySubscription(
+        notifType: typeName,
+        referenceList: refList,
+      );
+      for (final e in result.entries) {
+        final key = e.key.contains('.') ? e.key.split('.').last : e.key;
+        _log('  $key = ${e.value}');
+      }
+      final recipient = result.values
+          .firstWhere((v) => v.contains('Controller.'), orElse: () => '');
+      if (recipient.isNotEmpty) {
+        _log('CREATE USP Subscription OK');
+      } else {
+        _log('WARNING: Recipient not found — SSE delivery may not work');
+      }
+    } catch (e) {
+      _log('ERROR createUspSubscription: $e');
+    }
+  }
+
   Future<void> _doSubscribe() async {
     if (_bridgeClient == null) return;
     final subId = _subIdController.text.trim();
@@ -368,7 +405,9 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     final typeNames = {
       1: 'ValueChange',
       2: 'ObjectCreation',
-      3: 'ObjectDeletion'
+      3: 'ObjectDeletion',
+      4: 'OperationComplete',
+      5: 'Event',
     };
     _log('SUBSCRIBE id=$subId path=$path type=${typeNames[_notifType]}');
     try {
@@ -864,16 +903,23 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
             DropdownMenuItem(value: 1, child: Text('1 - ValueChange')),
             DropdownMenuItem(value: 2, child: Text('2 - ObjectCreation')),
             DropdownMenuItem(value: 3, child: Text('3 - ObjectDeletion')),
+            DropdownMenuItem(value: 4, child: Text('4 - OperationComplete')),
+            DropdownMenuItem(value: 5, child: Text('5 - Event')),
           ],
           onChanged: (v) => setState(() => _notifType = v ?? 1),
         ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
+          runSpacing: 8,
           children: [
-            AppButton.primary(label: 'Subscribe', onTap: _doSubscribe),
+            AppButton.primary(
+                label: 'Create USP Subscription',
+                onTap: _doCreateUspSubscription),
             AppButton.primaryOutline(
-                label: 'Unsubscribe', onTap: _doUnsubscribe),
+                label: 'Bridge Subscribe', onTap: _doSubscribe),
+            AppButton.primaryOutline(
+                label: 'Bridge Unsubscribe', onTap: _doUnsubscribe),
           ],
         ),
       ],

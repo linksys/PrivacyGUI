@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide MenuController;
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
@@ -7,6 +8,7 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dar
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/providers/usp_bars_visible_provider.dart';
 
 /// Riverpod provider for the USP-specific [MenuController].
 ///
@@ -21,6 +23,9 @@ final uspMenuController = Provider((ref) => MenuController(
 ///
 /// Uses the shared [MenuHolder] widget (same as JNAP) with the USP-specific
 /// [uspMenuController] so that tab selection targets USP routes.
+///
+/// Scroll detection is at the shell level so top/bottom bar hide-on-scroll
+/// applies to ALL child pages, not just the dashboard.
 class UspDashboardShell extends ConsumerWidget {
   final Widget child;
 
@@ -42,7 +47,22 @@ class UspDashboardShell extends ConsumerWidget {
     );
 
     return Scaffold(
-      body: child,
+      body: NotificationListener<UserScrollNotification>(
+        onNotification: (notification) {
+          final direction = notification.direction;
+          if (direction == ScrollDirection.reverse) {
+            // Scrolling down → hide bars
+            ref.read(uspBarsVisibleProvider.notifier).state = false;
+            ref.read(uspMenuController).setMenuVisible(false);
+          } else if (direction == ScrollDirection.forward) {
+            // Scrolling up → show bars
+            ref.read(uspBarsVisibleProvider.notifier).state = true;
+            ref.read(uspMenuController).setMenuVisible(true);
+          }
+          return false;
+        },
+        child: child,
+      ),
       bottomNavigationBar: Theme(
         data: darkTheme,
         child: MenuHolder(
