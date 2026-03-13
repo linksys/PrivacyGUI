@@ -51,3 +51,8 @@ parameters:
     path: .Active
     type: boolean
     description: Whether this client is currently active
+
+subscribe:
+  enabled: true
+  notifType: ObjectCreation
+  id: wifi-clients-01

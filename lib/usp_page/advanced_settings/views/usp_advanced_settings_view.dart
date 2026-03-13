@@ -91,6 +91,10 @@ class UspAdvancedSettingsView extends StatelessWidget {
         title: loc(context).staticRouting,
         onTap: () => context.goNamed(RouteNamed.uspStaticRouting),
       ),
+      AppSectionItemData(
+        title: 'Network Diagnostics',
+        onTap: () => context.goNamed(RouteNamed.uspNetworkDiagnostics),
+      ),
     ];
   }
 

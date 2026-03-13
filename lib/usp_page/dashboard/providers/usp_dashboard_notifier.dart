@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
@@ -22,6 +24,7 @@ import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dar
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/services/usp_device_service.dart';
+import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
@@ -62,6 +65,10 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
   /// Sequential lock — prevents parallel USP calls (WASM bug)
   bool _mutating = false;
 
+  /// SSE invalidation debounce — batches rapid SSE events (500ms).
+  Timer? _invalidationDebounce;
+  final Set<InvalidationDomain> _pendingDomains = {};
+
   UspService get _usp {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
@@ -83,6 +90,25 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         throw StateError('USP not authenticated after restore attempt');
       }
     }
+    // SSE invalidation: listen for domain-specific change signals.
+    // When SSE delivers a notification (e.g., device connected, WiFi changed),
+    // we selectively re-fetch only the affected data instead of all 17 classes.
+    ref.listen(sseInvalidationProvider, (prev, next) {
+      final domain = next.valueOrNull;
+      if (domain != null) {
+        _pendingDomains.add(domain);
+        _invalidationDebounce?.cancel();
+        _invalidationDebounce = Timer(const Duration(milliseconds: 500), () {
+          final domains = Set<InvalidationDomain>.from(_pendingDomains);
+          _pendingDomains.clear();
+          _handleInvalidation(domains);
+        });
+      }
+    });
+    ref.onDispose(() {
+      _invalidationDebounce?.cancel();
+    });
+
     // Yield so Riverpod finishes provider initialization before we modify
     // another provider (uspLoadingProgressProvider). Without this, Riverpod
     // throws "Providers are not allowed to modify other providers during
@@ -508,6 +534,186 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     } catch (e) {
       logger.w('[USP] Bridge port map fetch failed: $e');
       return {};
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // SSE Invalidation — selective re-fetch by domain
+  // ---------------------------------------------------------------------------
+
+  /// Handles batched SSE invalidation signals by selectively re-fetching
+  /// only the affected data domains. Avoids the full 17-class rebuild.
+  Future<void> _handleInvalidation(Set<InvalidationDomain> domains) async {
+    final s = state.valueOrNull;
+    if (s == null || _mutating) return;
+
+    logger.d('[USP] SSE invalidation: $domains');
+
+    try {
+      for (final domain in domains) {
+        switch (domain) {
+          case InvalidationDomain.connectedDevices:
+            final devices = await ConnectedDevices.fetch(_usp);
+            final wifiClientMap = await fetchWifiClients(_usp);
+            final cur = state.requireValue;
+            final connectionDetailMap = buildConnectionDetailMap(
+              wifiClientMap: wifiClientMap,
+              accessPoints: cur.wifiAccessPoints,
+              ssids: cur.wifiSsids,
+              radios: cur.wifiRadios,
+            );
+            final deviceModels = _svc.buildDeviceUIModels(
+              connectedDevices: devices,
+              wifiClientMap: wifiClientMap,
+              connectionDetailMap: connectionDetailMap,
+              meshTopology: cur.meshTopology,
+              gatewayName: cur.systemInfo.modelName.isNotEmpty
+                  ? cur.systemInfo.modelName
+                  : 'Router',
+            );
+            state = AsyncData(cur.copyWith(
+              connectedDevices: devices,
+              wifiClientMap: wifiClientMap,
+              connectionDetailMap: connectionDetailMap,
+              deviceModels: deviceModels,
+            ));
+            break;
+
+          case InvalidationDomain.wifiSsids:
+            final ssids = await WiFiSsids.fetch(_usp);
+            final cur = state.requireValue;
+            state = AsyncData(cur.copyWith(
+              wifiSsids: ssids,
+              wifiRadioModels: _svc.buildWifiRadioUIModels(
+                radios: cur.wifiRadios,
+                ssids: ssids,
+                accessPoints: cur.wifiAccessPoints,
+              ),
+            ));
+            break;
+
+          case InvalidationDomain.wifiRadios:
+            final radios = await WiFiRadios.fetch(_usp);
+            final cur = state.requireValue;
+            state = AsyncData(cur.copyWith(
+              wifiRadios: radios,
+              wifiRadioModels: _svc.buildWifiRadioUIModels(
+                radios: radios,
+                ssids: cur.wifiSsids,
+                accessPoints: cur.wifiAccessPoints,
+              ),
+            ));
+            break;
+
+          case InvalidationDomain.wifiAccessPoints:
+            final aps = await WiFiAccessPoints.fetch(_usp);
+            final cur = state.requireValue;
+            state = AsyncData(cur.copyWith(
+              wifiAccessPoints: aps,
+              wifiRadioModels: _svc.buildWifiRadioUIModels(
+                radios: cur.wifiRadios,
+                ssids: cur.wifiSsids,
+                accessPoints: aps,
+              ),
+            ));
+            break;
+
+          case InvalidationDomain.portForwarding:
+            final pf = await PortForwarding.fetch(_usp);
+            state = AsyncData(state.requireValue.copyWith(
+              portForwarding: pf,
+              portForwardingRuleModels:
+                  _svc.buildPortForwardingRuleUIModels(pf),
+            ));
+            break;
+
+          case InvalidationDomain.firewallRules:
+            final rules = await FirewallChainRules.fetch(_usp);
+            state = AsyncData(state.requireValue.copyWith(
+              firewallRules: rules,
+            ));
+            break;
+
+          case InvalidationDomain.dhcpReservations:
+            final reservations = await DhcpReservations.fetch(_usp);
+            state = AsyncData(state.requireValue.copyWith(
+              dhcpReservations: reservations,
+              dhcpReservationModels:
+                  _svc.buildDhcpReservationUIModels(reservations),
+            ));
+            break;
+
+          case InvalidationDomain.dmz:
+            final dmzEntries = await Dmz.fetch(_usp);
+            state = AsyncData(state.requireValue.copyWith(
+              dmzEntries: dmzEntries,
+            ));
+            break;
+
+          case InvalidationDomain.staticRouting:
+            // Static routing is a standalone page, not part of dashboard state.
+            // Its notifier handles its own invalidation.
+            break;
+
+          case InvalidationDomain.dhcpClients:
+            // DHCP lease creation often accompanies device connect —
+            // trigger same re-fetch as connectedDevices.
+            final devices = await ConnectedDevices.fetch(_usp);
+            final wifiClientMap = await fetchWifiClients(_usp);
+            final curDhcp = state.requireValue;
+            final connDetailMap = buildConnectionDetailMap(
+              wifiClientMap: wifiClientMap,
+              accessPoints: curDhcp.wifiAccessPoints,
+              ssids: curDhcp.wifiSsids,
+              radios: curDhcp.wifiRadios,
+            );
+            final devModels = _svc.buildDeviceUIModels(
+              connectedDevices: devices,
+              wifiClientMap: wifiClientMap,
+              connectionDetailMap: connDetailMap,
+              meshTopology: curDhcp.meshTopology,
+              gatewayName: curDhcp.systemInfo.modelName.isNotEmpty
+                  ? curDhcp.systemInfo.modelName
+                  : 'Router',
+            );
+            state = AsyncData(curDhcp.copyWith(
+              connectedDevices: devices,
+              wifiClientMap: wifiClientMap,
+              connectionDetailMap: connDetailMap,
+              deviceModels: devModels,
+            ));
+            break;
+
+          case InvalidationDomain.wifiClients:
+            // WiFi client association change — re-fetch WiFi enricher data.
+            final wifiMap = await fetchWifiClients(_usp);
+            final curWifi = state.requireValue;
+            final connDetail = buildConnectionDetailMap(
+              wifiClientMap: wifiMap,
+              accessPoints: curWifi.wifiAccessPoints,
+              ssids: curWifi.wifiSsids,
+              radios: curWifi.wifiRadios,
+            );
+            final models = _svc.buildDeviceUIModels(
+              connectedDevices: curWifi.connectedDevices,
+              wifiClientMap: wifiMap,
+              connectionDetailMap: connDetail,
+              meshTopology: curWifi.meshTopology,
+              gatewayName: curWifi.systemInfo.modelName.isNotEmpty
+                  ? curWifi.systemInfo.modelName
+                  : 'Router',
+            );
+            state = AsyncData(curWifi.copyWith(
+              wifiClientMap: wifiMap,
+              connectionDetailMap: connDetail,
+              deviceModels: models,
+            ));
+            break;
+        }
+      }
+    } catch (e) {
+      logger.w('[USP] SSE-triggered re-fetch failed: $e');
+      // Non-fatal: data remains stale until next manual refresh
     }
   }
 

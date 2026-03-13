@@ -435,6 +435,35 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     }
   }
 
+  Future<void> _doListSubscriptions() async {
+    if (_service == null) return;
+    _log('LIST SUBSCRIPTIONS...');
+    try {
+      final subs = await _service!.listSubscriptions();
+      if (subs.isEmpty) {
+        _log('  (no subscriptions found)');
+      } else {
+        for (var i = 0; i < subs.length; i++) {
+          _log('  [$i] ${jsonEncode(subs[i])}');
+        }
+        _log('LIST SUBSCRIPTIONS: ${subs.length} total');
+      }
+    } catch (e) {
+      _log('ERROR listSubscriptions: $e');
+    }
+  }
+
+  Future<void> _doPurgeSubscriptions() async {
+    if (_service == null) return;
+    _log('PURGE ALL SUBSCRIPTIONS...');
+    try {
+      final deleted = await _service!.purgeAllSubscriptions();
+      _log('PURGE complete: $deleted deleted');
+    } catch (e) {
+      _log('ERROR purgeSubscriptions: $e');
+    }
+  }
+
   // ════════════════════════════════════════════════════════════════════════════
   // Bridge: Turbo Channel
   // ════════════════════════════════════════════════════════════════════════════
@@ -920,6 +949,10 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
                 label: 'Bridge Subscribe', onTap: _doSubscribe),
             AppButton.primaryOutline(
                 label: 'Bridge Unsubscribe', onTap: _doUnsubscribe),
+            AppButton.primaryOutline(
+                label: 'List All', onTap: _doListSubscriptions),
+            AppButton.dangerOutline(
+                label: 'Purge All', onTap: _doPurgeSubscriptions),
           ],
         ),
       ],

@@ -19,6 +19,7 @@ import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
+import 'package:privacy_gui/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -413,6 +414,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
       // Sync USP logout before clearing credentials
       await ref.read(uspAuthCoordinatorProvider).syncAfterLogout();
+
+      // Disconnect SSE and unregister subscriptions
+      final sseManager = ref.read(sseManagerProvider);
+      if (sseManager != null) {
+        await sseManager.registry.unregisterAll();
+        await sseManager.disconnect();
+      }
 
       // Delegate credential cleanup to AuthService
       await _authService.clearAllCredentials();

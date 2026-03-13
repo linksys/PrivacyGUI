@@ -50,6 +50,9 @@ children:
         description: IPv6 address
 
 subscribe:
-  enabled: true
-  notifType: ObjectCreation
-  id: connected-devices-01
+  - notifType: ObjectCreation
+    id: connected-devices-objectcreation
+  - notifType: ObjectDeletion
+    id: connected-devices-objectdeletion
+  - notifType: ValueChange
+    id: connected-devices-valuechange

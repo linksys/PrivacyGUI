@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
+import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp_page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/usp_page/dmz/services/usp_dmz_service.dart';
@@ -73,6 +74,17 @@ class UspDmzNotifier extends AutoDisposeAsyncNotifier<UspDmzState> {
   Future<UspDmzState> build() async {
     final usp = ref.watch(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
+
+    // SSE invalidation: re-fetch when DMZ config changes externally.
+    // Only invalidate if user has no unsaved edits.
+    ref.listen(sseInvalidationProvider, (prev, next) {
+      if (next.valueOrNull == InvalidationDomain.dmz) {
+        final s = state.valueOrNull;
+        if (s != null && !s.isDirty && !s.isSaving) {
+          ref.invalidateSelf();
+        }
+      }
+    });
 
     final dmzData = await Dmz.fetch(usp);
 

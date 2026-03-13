@@ -25,6 +25,18 @@ enum NotifType {
   event,
 }
 
+/// SSE subscription delegate. Set by [SseManager] to enable SSE-backed
+/// subscriptions. When null, [UspService.subscribe] falls back to polling.
+typedef SseSubscribeDelegate = Future<({
+  void Function() removeHandler,
+  Future<void> Function() unregister,
+})> Function({
+  required String subscriptionId,
+  required String notifType,
+  required String referenceList,
+  required void Function() onNotification,
+});
+
 /// Represents an active USP subscription that delivers typed updates.
 ///
 /// Wraps a [Stream] of parsed model objects, with the ability to cancel
@@ -69,6 +81,10 @@ class UspService {
   /// Callback for full re-authentication when token refresh fails.
   /// Set by [UspAuthCoordinator] to provide re-login via stored password.
   Future<void> Function()? onReauthRequired;
+
+  /// SSE subscription delegate. Set by [SseManager] to route subscriptions
+  /// through SSE instead of polling. When null, falls back to polling.
+  SseSubscribeDelegate? onSseSubscribe;
 
   Future<void> login(String password) async {
     await _client.login(password);
@@ -446,23 +462,176 @@ class UspService {
         '(${sw.elapsedMilliseconds}ms)');
   }
 
+  /// Lists all OBUSPA subscriptions via the WASM client.
+  ///
+  /// Returns raw subscription objects from the router. Each entry typically
+  /// contains fields like `instance_path`, `notif_type`, `reference_list`, etc.
+  Future<List<Map<String, dynamic>>> listSubscriptions() async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    final subs = await _withAuthRetry(() => _client.listSubscriptions());
+    sw.stop();
+    logger.d('[UspService]:#$id LIST_SUBSCRIPTIONS → ${subs.length} entries '
+        '(${sw.elapsedMilliseconds}ms)');
+    return subs;
+  }
+
+  /// Deletes all OBUSPA subscriptions on the router.
+  ///
+  /// Called at startup to purge stale subscriptions from previous sessions.
+  /// Browser refresh doesn't trigger dispose(), so subscriptions accumulate
+  /// on the router, causing duplicate SSE notifications.
+  ///
+  /// Uses GET-based enumeration (same proven approach as
+  /// [createNotifySubscription] Step 1) rather than relying on the WASM
+  /// `listSubscriptions()` output format.
+  ///
+  /// Returns the number of subscriptions deleted.
+  Future<int> purgeAllSubscriptions() async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    const objectPath = 'Device.LocalAgent.Subscription.';
+
+    // Enumerate all subscription instances via GET
+    final allParams =
+        await _withAuthRetry(() => _client.getMultiple([objectPath]));
+
+    // Extract unique instance IDs from keys like
+    // "Device.LocalAgent.Subscription.3.Enable"
+    final instanceIds = <String>{};
+    for (final key in allParams.keys) {
+      final match =
+          RegExp(r'Device\.LocalAgent\.Subscription\.(\d+)\.').firstMatch(key);
+      if (match != null) {
+        instanceIds.add(match.group(1)!);
+      }
+    }
+
+    if (instanceIds.isEmpty) {
+      sw.stop();
+      logger.d('[UspService]:#$id PURGE_SUBSCRIPTIONS → 0 (none found, '
+          '${sw.elapsedMilliseconds}ms)');
+      return 0;
+    }
+
+    // Log what we're about to delete
+    for (final instId in instanceIds) {
+      final prefix = '$objectPath$instId.';
+      final notifType = allParams['${prefix}NotifType'] ?? '?';
+      final refList = allParams['${prefix}ReferenceList'] ?? '?';
+      logger.d('[UspService]:#$id PURGE: $prefix '
+          '(type=$notifType, ref=$refList)');
+    }
+
+    int deleted = 0;
+    for (final instId in instanceIds) {
+      final instancePath = '$objectPath$instId.';
+      try {
+        await _withAuthRetry(() => _client.delete(instancePath));
+        deleted++;
+      } catch (e) {
+        logger.w('[UspService]:#$id PURGE failed to delete '
+            '$instancePath: $e');
+      }
+    }
+
+    sw.stop();
+    logger.d('[UspService]:#$id PURGE_SUBSCRIPTIONS → deleted $deleted/'
+        '${instanceIds.length} (${sw.elapsedMilliseconds}ms)');
+    return deleted;
+  }
+
   // ===========================================================================
-  // Subscribe — USP Notify-based subscriptions (polling fallback)
+  // Subscribe — SSE-backed with polling fallback
   // ===========================================================================
 
-  /// Creates a typed subscription that polls the given paths and delivers
-  /// parsed model updates via a [Stream].
+  /// Creates a typed subscription that delivers parsed model updates via a
+  /// [Stream].
   ///
-  /// In a full USP implementation this would use USP Subscribe / Notify
-  /// messages (TR-369 §7.2). For this POC, we simulate it with periodic
-  /// polling since the WASM client does not yet support WebSocket-based
-  /// notifications.
+  /// When [onSseSubscribe] is set (by [SseManager]), uses SSE notifications
+  /// as triggers to re-fetch and emit updated data. Otherwise, falls back to
+  /// periodic polling.
   Future<Subscription<T>> subscribe<T>({
     required String id,
     required NotifType notifType,
     required List<String> paths,
     required T Function(Map<String, dynamic>) parser,
     Duration interval = const Duration(seconds: 5),
+  }) async {
+    if (onSseSubscribe != null) {
+      return _sseSubscribe(
+          id: id, notifType: notifType, paths: paths, parser: parser);
+    }
+    return _pollingSubscribe(
+        id: id,
+        notifType: notifType,
+        paths: paths,
+        parser: parser,
+        interval: interval);
+  }
+
+  /// SSE-backed subscription: registers via delegate, re-fetches on notification.
+  Future<Subscription<T>> _sseSubscribe<T>({
+    required String id,
+    required NotifType notifType,
+    required List<String> paths,
+    required T Function(Map<String, dynamic>) parser,
+  }) async {
+    final controller = StreamController<T>.broadcast();
+    Timer? debounce;
+
+    final (:removeHandler, :unregister) = await onSseSubscribe!(
+      subscriptionId: id,
+      notifType: _notifTypeToString(notifType),
+      referenceList: paths.first,
+      onNotification: () {
+        // Debounce: re-fetch after 300ms of quiet
+        debounce?.cancel();
+        debounce = Timer(const Duration(milliseconds: 300), () async {
+          try {
+            final response = await get(paths);
+            final parsed = parser(response);
+            if (!controller.isClosed) {
+              controller.add(parsed);
+            }
+          } catch (e) {
+            logger.w('[UspService]:SSE subscribe re-fetch error for "$id": $e');
+          }
+        });
+      },
+    );
+
+    // Initial fetch
+    try {
+      final response = await get(paths);
+      final parsed = parser(response);
+      if (!controller.isClosed) {
+        controller.add(parsed);
+      }
+    } catch (e) {
+      logger.w('[UspService]:SSE subscribe initial fetch error for "$id": $e');
+    }
+
+    return Subscription<T>(
+      id: id,
+      notifType: notifType,
+      stream: controller.stream,
+      cancel: () async {
+        debounce?.cancel();
+        removeHandler();
+        await unregister();
+        await controller.close();
+      },
+    );
+  }
+
+  /// Polling fallback subscription.
+  Future<Subscription<T>> _pollingSubscribe<T>({
+    required String id,
+    required NotifType notifType,
+    required List<String> paths,
+    required T Function(Map<String, dynamic>) parser,
+    required Duration interval,
   }) async {
     late StreamController<T> controller;
     Timer? timer;
@@ -495,6 +664,24 @@ class UspService {
         await controller.close();
       },
     );
+  }
+
+  /// Converts [NotifType] enum to the USP string representation.
+  static String _notifTypeToString(NotifType type) {
+    switch (type) {
+      case NotifType.valueChange:
+        return 'ValueChange';
+      case NotifType.objectCreation:
+        return 'ObjectCreation';
+      case NotifType.objectDeletion:
+        return 'ObjectDeletion';
+      case NotifType.operationComplete:
+        return 'OperationComplete';
+      case NotifType.onBoardRequest:
+        return 'OnBoardRequest';
+      case NotifType.event:
+        return 'Event';
+    }
   }
 
   // ===========================================================================

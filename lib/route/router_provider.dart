@@ -83,6 +83,7 @@ import 'package:privacy_gui/usp_page/dmz/views/usp_dmz_view.dart';
 import 'package:privacy_gui/usp_page/local_network/views/usp_local_network_view.dart';
 import 'package:privacy_gui/usp_page/static_routing/views/usp_static_routing_view.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
+import 'package:privacy_gui/usp_page/network_diagnostics/views/usp_network_diagnostics_view.dart';
 import 'package:privacy_gui/usp_page/statistics/views/usp_statistics_view.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:privacy_gui/usp_page/test_console/views/usp_test_console_view.dart';

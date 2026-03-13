@@ -110,13 +110,39 @@ class ConnectedDevices {
     return ConnectedDevices(items: items);
   }
 
-  static Future<Subscription<ConnectedDevices>> subscribe(UspService client) async {
+  static Future<Subscription<ConnectedDevices>> subscribeObjectCreation(UspService client) async {
     return client.subscribe<ConnectedDevices>(
-      id: 'connected-devices-01',
+      id: 'connected-devices-objectcreation',
       notifType: NotifType.objectCreation,
       paths: ['Device.Hosts.Host.'],
       parser: ConnectedDevices._fromResponse,
     );
+  }
+
+  static Future<Subscription<ConnectedDevices>> subscribeObjectDeletion(UspService client) async {
+    return client.subscribe<ConnectedDevices>(
+      id: 'connected-devices-objectdeletion',
+      notifType: NotifType.objectDeletion,
+      paths: ['Device.Hosts.Host.'],
+      parser: ConnectedDevices._fromResponse,
+    );
+  }
+
+  static Future<Subscription<ConnectedDevices>> subscribeValueChange(UspService client) async {
+    return client.subscribe<ConnectedDevices>(
+      id: 'connected-devices-valuechange',
+      notifType: NotifType.valueChange,
+      paths: ['Device.Hosts.Host.'],
+      parser: ConnectedDevices._fromResponse,
+    );
+  }
+
+  static Future<List<Subscription<ConnectedDevices>>> subscribeAll(UspService client) async {
+    return [
+      await subscribeObjectCreation(client),
+      await subscribeObjectDeletion(client),
+      await subscribeValueChange(client),
+    ];
   }
 
 }

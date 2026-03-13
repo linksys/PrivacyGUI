@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dar
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
+import 'package:privacy_gui/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_bars_visible_provider.dart';
 
 /// Riverpod provider for the USP-specific [MenuController].
@@ -33,6 +34,11 @@ class UspDashboardShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Trigger SSE bootstrap — connects SSE + registers core subscriptions.
+    // FutureProvider is lazy; watching it ensures the connection starts
+    // as soon as the shell is rendered (i.e., after successful login).
+    ref.watch(sseBootstrapProvider);
+
     // Build dark theme reactively from current design style
     final demoConfig = ref.watch(demoThemeConfigProvider);
     final themeConfig = ref.watch(themeConfigProvider).valueOrNull;

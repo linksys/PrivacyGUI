@@ -26,3 +26,8 @@ parameters:
     path: .IPv4Address.1.LeaseTimeRemaining
     type: datetime
     description: Lease expiry time (ISO 8601 datetime)
+
+subscribe:
+  enabled: true
+  notifType: ObjectCreation
+  id: dhcp-clients-01

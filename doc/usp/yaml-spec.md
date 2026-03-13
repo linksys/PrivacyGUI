@@ -22,6 +22,8 @@ This document describes the YAML format supported by `usp-codegen`, based on the
   - [2.2 Formula Transform](#22-formula-transform)
   - [2.3 Mapping Transform](#23-mapping-transform)
   - [2.4 Converter Transform](#24-converter-transform)
+  - [2.5 Built-in Transforms Library](#25-built-in-transforms-library)
+  - [2.6 Subscription Registry](#26-subscription-registry)
 - [3. Type Mapping](#3-type-mapping)
 - [4. Path Conventions](#4-path-conventions)
 - [5. Naming Conventions](#5-naming-conventions)
@@ -272,7 +274,11 @@ presets:
 
 ### 1.4 Subscribe
 
-Subscription configuration. When `enabled: true`, the generator produces **typed** subscription methods that return `Subscription<ClassName>` instead of untyped streams.
+Subscription configuration. The generator produces **typed** subscription methods that return `Subscription<ClassName>` instead of untyped streams. Each subscription maps 1:1 to a `Device.LocalAgent.Subscription.{i}` in OBUSPA.
+
+Two formats are supported:
+
+#### Format A — Single Object (legacy, backward-compatible)
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -281,6 +287,34 @@ Subscription configuration. When `enabled: true`, the generator produces **typed
 | `notifType` | string | No | Notification type |
 | `paths` | array | No | Subscription path array (currently only the first element is used) |
 | `description` | string | No | Description |
+
+```yaml
+subscribe:
+  enabled: true
+  notifType: ValueChange
+  id: wifi-settings-01
+```
+
+#### Format B — Array (multiple subscriptions)
+
+Each element is an independent subscription. Presence in the array implies `enabled` — no `enabled` field required.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | No | Subscription identifier |
+| `notifType` | string | No | Notification type |
+| `paths` | array | No | Subscription path array |
+| `description` | string | No | Description |
+
+```yaml
+subscribe:
+  - notifType: ObjectCreation
+    id: connected-devices-objectcreation
+  - notifType: ObjectDeletion
+    id: connected-devices-objectdeletion
+  - notifType: ValueChange
+    id: connected-devices-valuechange
+```
 
 #### Supported `notifType` Values
 
@@ -292,22 +326,21 @@ Subscription configuration. When `enabled: true`, the generator produces **typed
 | `OperationComplete` | Operation completed |
 | `Event` | Event notification |
 
-```yaml
-subscribe:
-  enabled: true
-  notifType: ValueChange
-  id: wifi-settings-01
-```
-
 #### Generated Output
 
 The subscribe feature generates:
 
 1. **`_paths` constant** — shared between `fetch()` and `subscribe()` (DRY)
 2. **`_fromResponse` / `parseXxx` / `fromResponse`** — shared parser for typed response parsing
-3. **Typed `subscribe()` method** — returns `Subscription<ClassName>` with parser reference
+3. **Typed subscription methods** — returns `Subscription<ClassName>` with parser reference
 
-**Dart (single-instance):**
+**Single subscription** — generates one `subscribe()` / `subscribeXxx()` function (backward-compatible naming).
+
+**Multiple subscriptions** — generates:
+- Individual functions suffixed with the `notifType` name (e.g., `subscribeObjectCreation`, `subscribeValueChange`)
+- A `subscribeAll()` convenience function that returns all subscriptions as an array
+
+**Dart — single subscription:**
 ```dart
 static const _paths = ['Device.WiFi.SSID.1.SSID', ...];
 
@@ -321,7 +354,22 @@ static Future<Subscription<WifiSettings>> subscribe(UspService client) async {
 }
 ```
 
-**TypeScript:**
+**Dart — multiple subscriptions:**
+```dart
+static Future<Subscription<ConnectedDevices>> subscribeObjectCreation(UspService client) async { ... }
+static Future<Subscription<ConnectedDevices>> subscribeObjectDeletion(UspService client) async { ... }
+static Future<Subscription<ConnectedDevices>> subscribeValueChange(UspService client) async { ... }
+
+static Future<List<Subscription<ConnectedDevices>>> subscribeAll(UspService client) async {
+  return [
+    await subscribeObjectCreation(client),
+    await subscribeObjectDeletion(client),
+    await subscribeValueChange(client),
+  ];
+}
+```
+
+**TypeScript — single subscription:**
 ```typescript
 const PATHS = ['Device.WiFi.SSID.1.SSID', ...] as const;
 function parseWifiSettings(response: Record<string, any>): WifiSettings { ... }
@@ -336,7 +384,22 @@ export function subscribeWifiSettings(client: UspClient): Subscription<WifiSetti
 }
 ```
 
-**Swift:**
+**TypeScript — multiple subscriptions:**
+```typescript
+export function subscribeConnectedDevicesObjectCreation(client: UspClient): Subscription<ConnectedDevices> { ... }
+export function subscribeConnectedDevicesObjectDeletion(client: UspClient): Subscription<ConnectedDevices> { ... }
+export function subscribeConnectedDevicesValueChange(client: UspClient): Subscription<ConnectedDevices> { ... }
+
+export function subscribeAllConnectedDevices(client: UspClient): Subscription<ConnectedDevices>[] {
+  return [
+    subscribeConnectedDevicesObjectCreation(client),
+    subscribeConnectedDevicesObjectDeletion(client),
+    subscribeConnectedDevicesValueChange(client),
+  ];
+}
+```
+
+**Swift — single subscription:**
 ```swift
 private static let paths = ["Device.WiFi.SSID.1.SSID", ...]
 
@@ -347,6 +410,19 @@ public static func subscribe(client: UspClient) async throws -> Subscription<Wif
     paths: paths,
     parser: WifiSettings.fromResponse
   )
+}
+```
+
+**Swift — multiple subscriptions:**
+```swift
+public static func subscribeObjectCreation(client: UspClient) async throws -> Subscription<ConnectedDevices> { ... }
+public static func subscribeObjectDeletion(client: UspClient) async throws -> Subscription<ConnectedDevices> { ... }
+
+public static func subscribeAll(client: UspClient) async throws -> [Subscription<ConnectedDevices>] {
+  return [
+    try await subscribeObjectCreation(client: client),
+    try await subscribeObjectDeletion(client: client),
+  ]
 }
 ```
 
@@ -1404,6 +1480,51 @@ Codegen automatically generates a `Transforms` utility class/module containing 9
 | `formatSpeed` | `(double, precision?) → String` | Auto-scaled speed from Kbps (SI 1000: Kbps/Mbps/Gbps) |
 
 The Transforms library is generated once per codegen run, regardless of how many definition files exist.
+
+### 2.6 Subscription Registry
+
+Codegen automatically generates a centralized `subscriptions.g.*` aggregate file that collects **all** `subscribe:` entries across every YAML definition processed in a single run. The file has zero imports and zero dependencies — it is a pure data list suitable for bootstrap registration loops (e.g., registering `Device.LocalAgent.Subscription.{i}` entries in OBUSPA).
+
+**Output files:**
+- Dart: `subscriptions.g.dart`
+- TypeScript: `Subscriptions.g.ts`
+- Swift: `Subscriptions.g.swift`
+
+**Generated format:**
+
+Dart — Record tuples:
+```dart
+const coreSubscriptions = [
+  ('connected-devices-objectcreation', 'ObjectCreation', 'Device.Hosts.Host'),
+  ('event-state-01', 'ValueChange', 'Device.Event'),
+];
+```
+
+TypeScript — const object array:
+```typescript
+export const coreSubscriptions = [
+  { id: 'connected-devices-objectcreation', notifType: 'ObjectCreation', path: 'Device.Hosts.Host' },
+  { id: 'event-state-01', notifType: 'ValueChange', path: 'Device.Event' },
+] as const;
+```
+
+Swift — named-tuple array:
+```swift
+let coreSubscriptions: [(id: String, notifType: String, path: String)] = [
+  (id: "connected-devices-objectcreation", notifType: "ObjectCreation", path: "Device.Hosts.Host"),
+  (id: "event-state-01", notifType: "ValueChange", path: "Device.Event"),
+]
+```
+
+Each entry contains:
+
+| Field | Description |
+|-------|-------------|
+| `id` | Subscription identifier from `subscribe.id` |
+| `notifType` | Notification type string (e.g., `ValueChange`, `ObjectCreation`, `ObjectDeletion`) |
+| `path` | Base path from the definition's `base_path` field |
+
+The registry file is only generated when at least one definition contains a `subscribe:` block. It is included in the barrel export alongside other generated files.
 
 ---
 

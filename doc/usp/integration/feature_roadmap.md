@@ -1,7 +1,7 @@
 # USP Dashboard Feature Roadmap
 
-> Date: 2026-03-06 | Updated: 2026-03-11 | Branch: `feat/usp-protocol-integration`
-> Last feature: F-024 WiFi Performance Analytics (2026-03-11)
+> Date: 2026-03-06 | Updated: 2026-03-13 | Branch: `feat/usp-protocol-integration`
+> Last feature: SSE Infrastructure complete (Phases 1-4) — 2026-03-13
 > Based on: Phase 1 Validation Report + Current Implementation Inventory
 
 ---
@@ -39,14 +39,21 @@
 | 25 | Network Health Monitoring | NetworkHealthCard (3 tabs: Health, Errors, Loss) | — | Read-only (shared traffic timer) |
 | 26 | Firewall Config Overview | FirewallOverviewCard (2 tabs: Rules, Ports) | — | Read-only (static config viz) |
 | 27 | WiFi Performance Analytics | WifiPerformanceCard (3 tabs: Signal, Speed, Channels) | — | Read-only (per-client metrics) |
+| 28 | System Performance Dashboard | SystemStatusCard (4 tabs: Monitor, Trends, Distribution, Correlation) + Statistics page (4 sections) | — | Read-only + auto-refresh |
 
-**Total: 24 YAML definitions, 24 .g.dart files, 19 dashboard cards, 12 menu pages, 30+ mutation methods**
+**Total: 24 YAML definitions, 24 .g.dart files, 20 dashboard cards, 12 menu pages, 30+ mutation methods**
 
 ### Infrastructure
 
 | Feature | Description | Status |
 |---------|-------------|--------|
 | 401 Auth Retry | Auto reauth on token expiry — two-stage (refreshToken → re-login), Completer lock, transparent to notifiers | Active |
+| SSE Connection Manager | Exponential backoff reconnection (1s → 60s), heartbeat watchdog (45s timeout), auto-reconnect | Active |
+| SSE Subscription Registry | Two-layer subscription (OBUSPA + bridge), `resubscribeAll()` on reconnect, lifecycle tracking | Active |
+| SSE Event Router | Demux by subscription_id, wildcard handlers for cross-cutting concerns, JSON parse + route | Active |
+| SSE Invalidation Provider | Path-based domain mapping, `.Stats.` noise filter, 11 invalidation domains for selective re-fetch | Active |
+| SSE Operation Awaiter | Async Operate commands (Ping/Traceroute) via OperationComplete, wildcard command_name matching, polling fallback | Active |
+| SSE Bootstrap Purge | `purgeAllSubscriptions()` on app start — clears stale OBUSPA subscriptions from previous sessions | Active |
 
 ### Completed Feature Work (Phase 3)
 
@@ -81,20 +88,33 @@
 | F-023: Firewall Config Overview | 2-tab card (Rules: target distribution `AppPieChart` donut + active rule count; Ports: top-5 port forwarding list + DMZ entries + protocol distribution `AppBarChart`). Descoped from "Activity Visualization" — TR-181 `FirewallChainRule` has no hit count/timestamp/event log. Extended `UspDashboardState` with `FirewallChainRules` + `Dmz` raw data. Files: `usp_firewall_overview_card.dart` | 2026-03-11 |
 | F-024: WiFi Performance Analytics | 3-tab card (Signal: per-client RSSI `AppBarChart` with tier coloring, Speed: DL/UL grouped `AppBarChart` per client, Channels: per-radio info + band distribution `AppPieChart` donut). Uses `WifiClient` signal/noise/speed + `connectionDetailMap` for AP→Radio band mapping. Files: `wifi_performance_helpers.dart` + `usp_wifi_performance_card.dart` | 2026-03-11 |
 | Bugfix: SliverDashboard crash | Fixed "Unexpected null value" at `sliver_dashboard.dart:621` — removed `optimizeLayout()` calls that mutated DashboardController after widget tree was built. Added stale layout validation (saved 15-item layout vs new 17-item spec). Files: `usp_layout_controller.dart` | 2026-03-11 |
+| F-021: System Performance Dashboard | 4-tab dashboard card (Monitor: CPU/Memory gauges + uptime, Trends: dual-line `AppLineChart` CPU+Memory, Distribution: 4-bucket CPU histogram `AppBarChart`, Correlation: dual-axis CPU vs WAN traffic). Statistics page with 4 sections (Gauges, Resource Trends, CPU Distribution, CPU-Traffic Correlation). 60-point ring buffer, configurable auto-refresh (Off/10s/30s/60s). Files: `usp_system_status_card.dart` + `system_monitor_state.dart` + `usp_system_monitor_notifier.dart` + `stats_*_section.dart` | 2026-03-13 (confirmed) |
+| SSE Infrastructure (Phases 1-4) | Full SSE pipeline: `SseConnectionManager` (backoff + heartbeat watchdog), `SseSubscriptionRegistry` (OBUSPA + bridge two-layer), `SseEventRouter` (demux + wildcard handlers), `SseInvalidationProvider` (path-based domain mapping, `.Stats.` filter), `SseOperationAwaiter` (OperationComplete for Ping/Traceroute, polling fallback), bootstrap purge for stale subscriptions. See `doc/usp/integration/sse_implementation.md` | 2026-03-13 |
+| SSE × Codegen Subscribe Alignment | YAML `subscribe:` array format (codegen v0.10.5), auto-generated `subscriptions.g.dart` replaces manual `subscription_config.dart`. 5 bootstrap subscriptions: Hosts (OC+OD+VC), DHCP Clients (OC), WiFi AP (OC). `UspService.subscribe<T>()` SSE delegate pattern, 11 invalidation domains | 2026-03-13 |
+| Bugfix: SSE Stats flooding | Removed WiFi SSID/Radio ValueChange from bootstrap subscriptions — `.Stats.*` counters fire every second. Path-based `_mapToDomain` replaces broken subscription_id matching | 2026-03-13 |
+| Bugfix: Stale OBUSPA subscriptions | `purgeAllSubscriptions()` via GET-based enumeration of `Device.LocalAgent.Subscription.` — clears subscriptions from previous sessions on browser refresh | 2026-03-13 |
 
-### Blocked Features (Phase 2C)
+### Previously Blocked Features (Phase 2C) — ✅ Unblocked & Implemented 2026-03-13
 
-| Feature | Blocker |
-|---------|---------|
-| Ping/Traceroute OPERATE | BUG-003 (SSE) + BUG-004 (async OperateResp) — polling alternative available |
-| Subscribe (real-time) | BUG-005 (bridge doesn't forward OBUSPA Notify → SSE) |
-| Turbo Channel | BUG-003 (SSE transport) |
+> SSE confirmed working on FW 1.0.16 (2026-03-13). All blockers resolved.
+> SSE infrastructure (Phases 1-4) fully implemented 2026-03-13.
+
+| Feature | Original Blocker | New Status |
+|---------|-----------------|------------|
+| Ping/Traceroute OPERATE | BUG-003 (SSE) + BUG-004 (async OperateResp) | ✅ **Implemented** — `SseOperationAwaiter` with polling fallback |
+| Subscribe (real-time) | BUG-005 (bridge doesn't forward OBUSPA Notify → SSE) | ✅ **Implemented** — full subscription pipeline + invalidation provider |
+| Turbo Channel | BUG-003 (SSE transport) | ✅ **Unblocked** — SSE transport operational (Turbo Channel not yet implemented) |
 
 ### Known Router Limitations
 
 | Issue | Detail |
 |-------|--------|
 | VendorLogFile not supported | Router's USP agent (obuspa) does not implement `Device.DeviceInfo.VendorLogFile.{i}.` — syslog available via SSH (`logread`) but no HTTP/USP access |
+| WASM `add` returns empty for LocalAgent | `UspClientWeb.add('Device.LocalAgent.Subscription.')` returns empty — Rust WASM client bug. Workaround: GET-diff in `UspService.createNotifySubscription()` |
+| CPE subscription_id mismatch | CPE uses internal IDs (`cpe-3`, `cpe-15`) not client-assigned IDs. Affects both OperationComplete matching and invalidation routing. Workaround: wildcard handler + `command_name` / `param_path` matching |
+| WiFi Stats noise | `Device.WiFi.SSID.*.Stats.*` and `Device.WiFi.Radio.*.Stats.*` fire every second via ValueChange. Must NOT subscribe to broad WiFi ValueChange |
+| BUG-006: Operate results not in data model | `GET Device.IP.Diagnostics.IPPing.` returns empty after Operate — results only available via SSE OperationComplete |
+| Bridge subscribe doesn't create OBUSPA sub | `POST /api/v1/subscription` only registers bridge session mapping, does NOT create `Device.LocalAgent.Subscription.{i}`. Client must create OBUSPA subscriptions directly |
 
 ---
 
@@ -132,22 +152,21 @@
 
 ### F-011: Network Diagnostics (Ping / Traceroute)
 
-**Priority:** P1 | **Effort:** Large | **Status:** Not started
+**Priority:** P1 | **Effort:** Medium | **Status:** Infrastructure ready — UI page pending
 
 - **Feasibility:** `Device.IP.Diagnostics.IPPing()` verified (3/3 success, avg 6ms on router)
-- **Approach:** Polling-based (no SSE dependency)
-  ```
-  1. usp.operate('Device.IP.Diagnostics.IPPing()', args: {'Host': '...', ...})
-  2. Poll: usp.get(['Device.IP.Diagnostics.IPPing.']) every 1s
-  3. Stop when DiagnosticsState == 'Complete'
-  ```
+- **SSE Infrastructure:** ✅ All backend work complete (2026-03-13)
+  - `SseOperationAwaiter.execute()` handles both SSE and polling fallback
+  - `PingResult.fromOperateResult()` + `TracerouteResult.fromOperateResult()` parse SSE data
+  - CPE subscription_id mismatch solved via wildcard `command_name` matching
+- **Remaining work:** UI page only — models, notifier, view, routing
+  - See plan file: `noble-tickling-pumpkin.md`
 - **TR-181 paths:**
   ```
   Device.IP.Diagnostics.IPPing()                    → OPERATE
-  Device.IP.Diagnostics.IPPing.DiagnosticsState     → Complete/Error/Requested
-  Device.IP.Diagnostics.IPPing.AverageResponseTime  → result (ms)
+  Device.IP.Diagnostics.IPPing.AverageResponseTime  → result (ms, via SSE OperationComplete)
   Device.IP.Diagnostics.TraceRoute()                → OPERATE
-  Device.IP.Diagnostics.TraceRoute.RouteHops.{i}.*  → hop results
+  Device.IP.Diagnostics.TraceRoute.RouteHops.{i}.*  → hop results (via SSE OperationComplete)
   ```
 
 ### ~~F-018: Real-Time Traffic Monitor~~ ✅ Done — 2026-03-10
@@ -157,7 +176,7 @@
 - **Implemented:** WAN traffic polling (2s default), delta-based rate calculation, ring buffer (60 max), dual-line CustomPainter chart (upload/download), interval selector (Off/2s/5s/10s), cumulative totals
 - **Deferred to F-025:** Daily/monthly cumulative statistics, Hive data persistence for historical tracking
 - **Files:** `wan_traffic_stats.yaml` → codegen → `traffic_monitor_state.dart` + `usp_traffic_monitor_notifier.dart` + `usp_traffic_monitor_card.dart`
-- **Future enhancement:** When BUG-005 (Subscribe) is fixed, migrate to ValueChange notifications for sub-second updates
+- **Future enhancement:** SSE now working (2026-03-13) — can migrate to ValueChange notifications for sub-second updates
 
 ---
 
@@ -189,22 +208,18 @@
 - **Files:** `device_analytics_state.dart` + `device_analytics_persistence.dart` + `usp_device_analytics_notifier.dart` + `usp_device_analytics_card.dart`
 - **Known issue:** `AppBarChart(horizontal: true)` RotatedBox rendering bug — workaround: vertical bar chart for Signal tab
 
-### F-021: System Performance Dashboard
+### ~~F-021: System Performance Dashboard~~ ✅ Done — 2026-03-13 (confirmed)
 
-**Priority:** P1 | **Effort:** Small | **Status:** Not started
+**Priority:** P1 | **Effort:** Small | **Status:** ✅ Done
 
-- **USP Verification:** ✅ Verified — system metrics fully available (from existing implementation)
-- **Verified data sources:**
-  ```bash
-  Device.DeviceInfo.ProcessStatus.CPUUsage   → CPU percentage ✅
-  Device.DeviceInfo.MemoryStatus.Total/Free  → Memory usage ✅
-  Device.DeviceInfo.UpTime                   → System uptime ✅
-  ```
-- **Chart types:**
-  - **Multi-gauge dashboard:** CPU, Memory, Temperature (if available)
-  - **Time series:** Resource usage trends (extend existing SystemStatusCard)
-  - **Correlation chart:** Traffic peaks vs CPU usage relationship
-- **Implementation:** Enhance existing `UspSystemMonitorNotifier` with multiple chart types
+- **Implemented:** 4-tab dashboard card + Statistics page with 4 sections:
+  - **Monitor:** CPU/Memory circular gauges (`AppGauge`) + uptime display + live indicator
+  - **Trends:** Dual-line `AppLineChart` (CPU + Memory over time) with area fill, avg/peak stats
+  - **Distribution:** 4-bucket CPU histogram `AppBarChart` (0-25%, 25-50%, 50-75%, 75-100%)
+  - **Correlation:** Dual-axis chart — CPU % (primary) vs WAN traffic rate (secondary, dashed)
+- **Statistics page sections:** System Gauges, Resource Trends, CPU Distribution, CPU-Traffic Correlation
+- **Data model:** `SystemMonitorState` with `SystemSnapshot` (cpuPercent, memoryPercent, totalMemoryKb, freeMemoryKb), 60-point ring buffer, configurable auto-refresh (Off/10s/30s/60s)
+- **Files:** `usp_system_status_card.dart` + `system_monitor_state.dart` + `usp_system_monitor_notifier.dart` + `stats_system_gauges_section.dart` + `stats_resource_trends_section.dart` + `stats_cpu_distribution_section.dart` + `stats_correlation_section.dart`
 
 ### ~~F-022: Network Health Monitoring~~ ✅ Done — 2026-03-11
 
@@ -266,7 +281,7 @@
     ┌───────────────────┼───────────────────┐
     │                   │                   │
     │  F-001 WiFi PW    │ F-018 ✅ Done     │
-    │  F-021 Sys Perf   │ F-019 ✅ Done     │
+    │  F-021 ✅ Done    │ F-019 ✅ Done     │
     │                   │  F-011 Ping       │
     │                   │  F-007 Guest Net  │
  Low├───────────────────┼───────────────────┤High
@@ -290,14 +305,14 @@ Cost│                   │                   │Cost
 | ~~**4A**~~ | ~~F-017 IPv6 Port Service~~ | ~~Done~~ ✅ 2026-03-10 |
 | ~~**4A**~~ | ~~401 Auth Retry~~ | ~~Done~~ ✅ 2026-03-10 |
 | ~~**4B**~~ | ~~F-018 Real-Time Traffic Monitor~~ | ~~Done~~ ✅ 2026-03-10 (daily/monthly stats → F-025) |
-| **4B** | F-021 System Performance Dashboard | **✅ USP Verified** — Extend existing SystemStatusCard |
+| ~~**4B**~~ | ~~F-021 System Performance Dashboard~~ | ~~Done~~ ✅ 2026-03-13 (confirmed) — 4-tab card + Statistics page |
 | **4B** | F-001 WiFi Password, F-004 Channel Width | **✅ USP Verified** — Low cost daily-use WiFi management |
 | ~~**4C**~~ | ~~F-019 Multi-Interface Traffic Analysis~~ | ~~Done~~ ✅ 2026-03-11 |
 | ~~**4C**~~ | ~~F-020 Device Connection Analytics~~ | ~~Done~~ ✅ 2026-03-11 |
 | ~~**4C**~~ | ~~F-022 Network Health Monitoring~~ | ~~Done~~ ✅ 2026-03-11 |
 | ~~**4D**~~ | ~~F-023 Firewall Configuration Overview~~ | ~~Done~~ ✅ 2026-03-11 (descoped from Activity Viz — no TR-181 event data) |
 | ~~**4D**~~ | ~~F-024 WiFi Performance Analytics~~ | ~~Done~~ ✅ 2026-03-11 (uses per-client AssociatedDevice, bypasses AP Stats fault) |
-| **4D** | F-007 Guest Network, F-011 Ping (polling) | **✅ USP Verified** — Medium cost, high value networking features |
+| **4D** | F-007 Guest Network, F-011 Ping (SSE infra ✅, UI pending) | **✅ SSE Infra Complete** — F-011 only needs UI page; F-007 needs guest AP identification |
 | **4E** | F-025 Historical Trend Analysis | **⚠️ Client-side Only** — Requires data collection, no USP historical storage |
 
 ---
@@ -315,11 +330,7 @@ Cost│                   │                   │Cost
 | **F-023 Firewall Config Overview** | `Device.Firewall.Chain.1.Rule.{i}.*`<br>`Device.NAT.PortMapping.{i}.*`<br>`Device.Firewall.DMZ.{i}.*` | ✅ Done 2026-03-11 (descoped: no activity data) |
 | **F-024 WiFi Performance Analytics** | `WifiClient.signalStrength/noise/lastData*Rate`<br>`Device.WiFi.Radio.{i}.Channel/Band/Bandwidth` | ✅ Done 2026-03-11 (AP Stats bypassed) |
 
-### ✅ **Fully Verified Features** (Ready for Implementation)
-
-| Feature | TR-181 Data Sources | Live Test Results |
-|---------|---------------------|-------------------|
-| **F-021 System Performance Dashboard** | `Device.DeviceInfo.ProcessStatus.*`<br>`Device.DeviceInfo.MemoryStatus.*` | From existing SystemStatusCard implementation |
+| **F-021 System Performance Dashboard** | `Device.DeviceInfo.ProcessStatus.*`<br>`Device.DeviceInfo.MemoryStatus.*`<br>`Device.DeviceInfo.UpTime` | ✅ Done 2026-03-13 (confirmed) |
 
 ### ⚠️ **Client-Side Implementation Required**
 
@@ -339,7 +350,7 @@ Cost│                   │                   │Cost
 
 ### **Phase 4B: Core Analytics** (Immediate — 1-2 weeks)
 1. ~~**F-018 Real-Time Traffic Monitor**~~ — ✅ Done 2026-03-10
-2. **F-021 System Performance Dashboard** — Multi-gauge display, extend existing SystemStatusCard
+2. ~~**F-021 System Performance Dashboard**~~ — ✅ Done 2026-03-13 (confirmed) (4-tab card: Monitor gauges, Trends, Distribution, Correlation + Statistics page)
 
 ### **Phase 4C: Extended Analytics** — ✅ All Done 2026-03-11
 3. ~~**F-019 Multi-Interface Traffic Analysis**~~ — ✅ Done (AppLineChart, AppBarChart stacked, AppPieChart donut, dual-axis CustomPainter)

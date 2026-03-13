@@ -120,6 +120,12 @@ final uspDashboardRoute = ShellRoute(
           path: RouteNamed.uspIpv6PortService,
           builder: (context, state) => const UspIpv6PortServiceView(),
         ),
+        LinksysRoute(
+          name: RouteNamed.uspNetworkDiagnostics,
+          path: RouteNamed.uspNetworkDiagnostics,
+          builder: (context, state) =>
+              const UspNetworkDiagnosticsView(),
+        ),
       ],
     ),
     if (kDebugMode)

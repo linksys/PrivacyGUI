@@ -275,6 +275,23 @@ export class UspClient {
         return ret !== 0;
     }
     /**
+     * Lists all active subscriptions for the current session.
+     *
+     * # Returns
+     * * Promise that resolves with an array of subscription objects
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * const subs = await client.listSubscriptions();
+     * // [{ subscription_id: "wifi-status", path: "Device.WiFi.", active: true }, ...]
+     * ```
+     * @returns {Promise<any>}
+     */
+    listSubscriptions() {
+        const ret = wasm.uspclient_listSubscriptions(this.__wbg_ptr);
+        return takeObject(ret);
+    }
+    /**
      * Authenticates with the router using password
      *
      * # Arguments
@@ -667,7 +684,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2111(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2137(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -816,8 +833,8 @@ function __wbg_get_imports() {
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 151, function: Function { arguments: [Externref], shim_idx: 152, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1249, __wasm_bindgen_func_elem_1264);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 155, function: Function { arguments: [Externref], shim_idx: 156, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1275, __wasm_bindgen_func_elem_1290);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
@@ -839,12 +856,12 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1264(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1264(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1290(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1290(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_2111(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2111(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_2137(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2137(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 

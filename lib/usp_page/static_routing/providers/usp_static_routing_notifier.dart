@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
+import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp_page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/usp_page/static_routing/services/usp_static_routing_service.dart';
@@ -52,6 +53,16 @@ class UspStaticRoutingNotifier
   Future<UspStaticRoutingState> build() async {
     final usp = ref.watch(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
+
+    // SSE invalidation: re-fetch when static routes change externally.
+    ref.listen(sseInvalidationProvider, (prev, next) {
+      if (next.valueOrNull == InvalidationDomain.staticRouting) {
+        final s = state.valueOrNull;
+        if (s != null && !s.isMutating) {
+          ref.invalidateSelf();
+        }
+      }
+    });
 
     final data = await StaticRouting.fetch(usp);
     final svc = ref.read(uspStaticRoutingServiceProvider);

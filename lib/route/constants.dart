@@ -45,6 +45,7 @@ class RoutePath {
   static const uspTestConsole = '/uspTestConsole';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = '/uspWifiSettings';
+  static const uspNetworkDiagnostics = 'uspNetworkDiagnostics';
 
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
@@ -203,6 +204,7 @@ class RouteNamed {
   static const uspTestConsole = 'uspTestConsole';
   static const uspInternetSettings = 'uspInternetSettings';
   static const uspWifiSettings = 'uspWifiSettings';
+  static const uspNetworkDiagnostics = 'uspNetworkDiagnostics';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';

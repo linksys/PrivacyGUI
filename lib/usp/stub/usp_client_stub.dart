@@ -56,5 +56,8 @@ class UspClientWeb {
           {Map<String, String> args = const {}}) =>
       throw UnsupportedError('USP is only available on Web');
 
+  Future<List<Map<String, dynamic>>> listSubscriptions() =>
+      throw UnsupportedError('USP is only available on Web');
+
   void dispose() {}
 }

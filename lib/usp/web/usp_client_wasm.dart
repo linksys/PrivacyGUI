@@ -50,6 +50,9 @@ extension type UspClientJS._(JSObject _) implements JSObject {
   // Operate: execute a USP command
   external JSPromise<JSAny?> operate(String command, JSAny args);
 
+  // List all active OBUSPA subscriptions
+  external JSPromise<JSAny?> listSubscriptions();
+
   external void free();
 }
 
@@ -160,6 +163,20 @@ class UspClientWeb {
     final map = result.dartify() as Map?;
     if (map == null) return {};
     return map.map((key, value) => MapEntry(key.toString(), value.toString()));
+  }
+
+  /// Lists all active OBUSPA subscriptions on the router.
+  /// Returns a list of subscription objects (maps with subscription details).
+  Future<List<Map<String, dynamic>>> listSubscriptions() async {
+    final result = await _client.listSubscriptions().toDart;
+    if (result == null || result.isUndefinedOrNull) return [];
+    final list = result.dartify() as List?;
+    if (list == null) return [];
+    return list
+        .whereType<Map>()
+        .map((m) => m.map((k, v) => MapEntry(k.toString(), v)))
+        .toList()
+        .cast<Map<String, dynamic>>();
   }
 
   void dispose() {

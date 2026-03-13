@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
+import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp_page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/usp_page/firewall/services/usp_firewall_service.dart';
@@ -69,6 +70,17 @@ class UspFirewallNotifier extends AutoDisposeAsyncNotifier<UspFirewallState> {
   Future<UspFirewallState> build() async {
     final usp = ref.watch(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
+
+    // SSE invalidation: re-fetch when firewall rules change externally.
+    // Only invalidate if user has no unsaved edits.
+    ref.listen(sseInvalidationProvider, (prev, next) {
+      if (next.valueOrNull == InvalidationDomain.firewallRules) {
+        final s = state.valueOrNull;
+        if (s != null && !s.isDirty && !s.isSaving) {
+          ref.invalidateSelf();
+        }
+      }
+    });
 
     // Use codegen fetch — queries Device.Firewall.Chain.1.Rule.*
     final chainRules = await FirewallChainRules.fetch(usp);
