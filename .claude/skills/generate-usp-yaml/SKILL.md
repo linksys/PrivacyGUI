@@ -30,7 +30,7 @@ Convert JNAP actions into USP YAML definition files by looking up TR-181 field m
 2. `doc/jnap_to_tr181_field_mapping.md` — JNAP to TR-181 field-level mappings.
 
 Also scan existing definitions for style consistency:
-- `doc/usp/definitions/` — Production YAML files organized by category.
+- `definitions/` — Production YAML files organized by category.
 
 **CRITICAL: If yaml-spec.md defines a field name, type, convention, or rule, follow it exactly. This skill only provides the workflow logic for translating JNAP actions — the spec owns all format decisions.**
 
@@ -275,7 +275,7 @@ When JNAP and TR-181 use different value formats for the same concept, document 
    - Any value transformations documented
 4. Ask the user:
    - Confirm or override the suggested `name`
-   - Where to save the file (suggest `doc/usp/definitions/{category}/{snake_case_name}.yaml`)
+   - Where to save the file (suggest `definitions/{category}/{snake_case_name}.yaml`)
    - Whether to add subscribe configuration
    - Whether any fields need adjustment
    - Whether the YAML file grouping/split is acceptable (especially for Mode C aggregation)
@@ -297,7 +297,7 @@ When JNAP and TR-181 use different value formats for the same concept, document 
 
 ## Output File Location
 
-Suggest saving to: `doc/usp/definitions/{category}/{snake_case_name}.yaml`
+Suggest saving to: `definitions/{category}/{snake_case_name}.yaml`
 
 Categories:
 - `core` — Device info, system settings, time

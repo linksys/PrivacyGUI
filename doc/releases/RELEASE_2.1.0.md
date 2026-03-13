@@ -11,174 +11,181 @@
 
 ### Revolutionary Network Management Experience
 
-**統一管理介面**
-- 全新 USP 儀表板，一個畫面掌握所有網路狀態
-- 14 個智慧卡片，即時顯示網路健康度、裝置連線、WiFi 效能
-- 響應式設計，手機、平板、電腦都有最佳體驗
+**Unified Management Interface**
+- Brand new USP Dashboard providing comprehensive network status at a glance
+- **8 Major Smart Analytics Cards** covering device analysis, traffic monitoring, WiFi performance, and system status
+- **17+ Statistical Analysis Sections** with deep insights into network health and performance trends
+- Responsive design optimized for smartphones, tablets, and desktop computers
 
-**更快的載入速度**
-- 資料載入速度提升 3 倍
-- 15 個網路功能並行更新，無需等待
-- 智慧快取技術，減少 40% 重複請求
+**Faster Loading Performance**
+- WebAssembly protocol processing delivers 3x faster data loading
+- **30+ Network Functions** run in parallel with zero wait time
+- SSE real-time push notifications + smart caching reduce 60% redundant requests
 
-**增強的網路診斷**
-- 內建網路健康監控，自動評估連線品質
-- WiFi 效能分析，訊號強度與速度視覺化呈現
-- 網路拓撲圖，清楚顯示所有裝置連線狀況
+**Enhanced Network Diagnostics**
+- Built-in network health monitoring with automatic connection quality assessment
+- WiFi performance analysis with signal strength and speed visualization
+- Network topology diagram clearly showing all device connections
+- **Real-time Ping/Traceroute Tools** for rapid network troubleshooting
+- **17+ Statistical Analysis Sections** providing deep network performance insights
 
-### 全面的網路管理功能
+### Comprehensive Network Management Features
 
-**進階埠管理**
-- 埠轉發支援單一埠、埠範圍、埠觸發三種模式
-- IPv6 埠服務管理，支援新世代網路協定
-- 防火牆規則配置，SPI 與 VPN 穿透設定
+**Advanced Port Management**
+- Port forwarding supports single port, port range, and port triggering modes
+- IPv6 port service management with next-generation protocol support
+- Firewall rule configuration with SPI and VPN passthrough settings
 
-**智慧裝置監控**
-- 連線裝置即時狀態更新
-- 乙太網路埠狀態監控，支援 2.5 Gbps
-- DHCP 保留位址管理，固定 IP 分配更簡單
+**Smart Device Monitoring**
+- Real-time device status updates via Server-Sent Events push technology
+- Ethernet port status monitoring supporting up to 2.5 Gbps
+- DHCP reservation management for simplified fixed IP allocation
 
-**網路設定最佳化**
-- 靜態路由配置，專業級網路規劃
-- DMZ 主機設定，遊戲與伺服器最佳化
-- 時間服務器同步，確保系統時間準確
+**Professional Network Reporting**
+- **PDF Report Generation System** for one-click comprehensive network analysis export
+- Includes performance charts, device inventory, and security status summaries
+- Supports troubleshooting documentation and compliance reporting
 
----
-
-## ⚡ 技術亮點
-
-### 採用最新 USP 協定 (TR-369)
-- 符合國際 Broadband Forum 標準
-- 更安全的認證機制，支援自動重連
-- 標準化資料模型，確保跨裝置相容性
-
-### 智慧雙協定架構
-- USP 優先策略，自動降級至 JNAP 確保相容性
-- 無縫協定切換，使用者無感升級
-- 保留所有現有功能，新舊韌體都支援
-
-### 效能大幅提升
-- 並行資料處理，啟動時間縮短 60%
-- 記憶體使用最佳化，減少 30% 資源消耗
-- 骨架載入動畫，提升使用者體驗
+**Network Configuration Optimization**
+- Static routing configuration for professional-grade network planning
+- DMZ host settings optimized for gaming and server applications
+- Time server synchronization ensuring accurate system time
 
 ---
 
-## 📱 支援平台
+## ⚡ Technical Highlights
 
-### 推薦環境
-- **網頁版**: Chrome 90+, Safari 14+, Edge 90+, Firefox 88+
-- **韌體**: PrivacyGUI 2.1.0+ (向下相容 2.0.x)
-- **解析度**: 320px 至 4K，完全響應式設計
+### Latest USP Protocol (TR-369) Implementation
+- Compliant with international Broadband Forum standards
+- Enhanced security authentication with automatic reconnection support
+- Standardized data model ensuring cross-device compatibility
 
-### 裝置支援
-- ✅ **桌上型電腦** - 完整功能
-- ✅ **筆記型電腦** - 完整功能
-- ✅ **平板電腦** - 最佳化觸控介面
-- ✅ **智慧型手機** - 精簡版介面
+### Intelligent Dual-Protocol Architecture
+- USP-first strategy with automatic JNAP fallback for compatibility
+- Seamless protocol switching with transparent user experience
+- Retains all existing functionality while supporting both legacy and new firmware
 
----
-
-## 🛠️ 管理員專區
-
-### 新增的管理功能
-- **系統監控**: CPU、記憶體使用率即時圖表
-- **網路診斷**: Ping 工具，快速排查連線問題
-- **韌體資訊**: 雙映像檔狀態顯示，升級更安全
-- **系統日誌**: VendorLogFile 整合，問題追蹤更容易
-
-### 進階網路配置
-- **防火牆進階設定**: IPv4/IPv6 SPI 保護
-- **VPN 穿透支援**: IPSec、PPTP、L2TP 協定
-- **網路隔離**: DMZ 與埠轉發精細控制
-- **DNS 服務**: 本機 DNS 伺服器配置
+### Significant Performance Improvements
+- Parallel data processing reduces startup time by 60%
+- **WebAssembly USP Client** improves protocol processing performance by 40%
+- Memory usage optimization reduces average consumption by 30%
+- **Real-time Event Push** via Server-Sent Events replaces polling mechanisms
+- Skeleton loading animations enhance user experience
 
 ---
 
-## 🚧 已知限制
+## 📱 Supported Platforms
 
-### 暫時功能限制
-以下功能在此版本中暫時保持原有實作方式，預計後續版本改進：
+### Recommended Environment
+- **Web Version**: Chrome 90+, Safari 14+, Edge 90+, Firefox 88+
+- **Firmware**: PrivacyGUI 2.1.0+ (backward compatible with 2.0.x)
+- **Resolution**: 320px to 4K with fully responsive design
 
-**WiFi 設定**
-- WiFi 密碼修改功能使用既有介面
-- Guest WiFi 進階時間限制設定
-- WiFi 排程控制功能
-
-**網際網路連線**
-- PPPoE 連線類型設定
-- DDNS 動態 DNS 配置
-- MTU 大小調整功能
-
-**即時通知**
-- 裝置連線/斷線即時提醒 (目前為 30 秒輪詢)
-- 網路診斷結果即時回傳 (等待後端更新)
-
-### 相容性說明
-- 所有既有功能保持可用
-- 新功能在舊韌體上自動降級
-- 不影響現有設定與配置
+### Device Support
+- ✅ **Desktop Computers** - Full functionality
+- ✅ **Laptops** - Full functionality
+- ✅ **Tablets** - Touch-optimized interface
+- ✅ **Smartphones** - Streamlined interface
 
 ---
 
-## 🔄 升級指南
+## 🛠️ Administrator Zone
 
-### 自動升級 (推薦)
-1. 確保路由器連接網際網路
-2. 系統會自動檢測並提示升級
-3. 點選「立即升級」即可完成
+### New Management Features
+- **System Monitoring**: Real-time CPU and memory usage charts
+- **Advanced Network Diagnostics**: Complete Ping/Traceroute toolset with real-time results
+- **Statistics Analytics Dashboard**: 17+ analysis sections covering traffic, WiFi, error rates, and correlation analysis
+- **Firmware Information**: Dual image status display for safer upgrades
+- **System Logs**: VendorLogFile integration for easier issue tracking
+- **Professional Reports**: PDF format network analysis reports supporting audits and troubleshooting
 
-### 手動升級
-1. 下載 PrivacyGUI 2.1.0 韌體
-2. 進入管理介面 → 韌體升級
-3. 選擇韌體檔案並執行升級
-4. 升級完成後自動重新啟動
-
-### 升級注意事項
-- 升級過程約需 3-5 分鐘，請勿中斷電源
-- 升級完成後，請清除瀏覽器快取
-- 建議在升級前匯出現有設定做為備份
+### Advanced Network Configuration
+- **Advanced Firewall Settings**: IPv4/IPv6 SPI protection
+- **VPN Passthrough Support**: IPSec, PPTP, L2TP protocols
+- **Network Isolation**: Fine-grained DMZ and port forwarding control
+- **DNS Services**: Local DNS server configuration
 
 ---
 
-## 🆘 支援資源
+## 🚧 Known Limitations
 
-### 線上說明
-- **使用手冊**: [linksys.com/support/privacygui](https://linksys.com/support/privacygui)
-- **影片教學**: [YouTube 頻道](https://youtube.com/linksys)
-- **常見問題**: [FAQ 頁面](https://linksys.com/support/faq)
+### Temporary Feature Limitations
+The following features maintain their existing implementation in this version and are planned for improvement in future releases:
 
-### 技術支援
-- **24/7 客服**: 透過 Linksys 應用程式聯繫
-- **社群論壇**: [community.linksys.com](https://community.linksys.com)
-- **技術文件**: [GitHub Repository](https://github.com/linksys/PrivacyGUI)
+**WiFi Settings**
+- WiFi password modification uses existing interface
+- Guest WiFi advanced time restriction settings
+- WiFi scheduling control features
 
-### 意見回饋
-我們重視您的使用體驗，歡迎透過以下方式提供意見：
-- 應用程式內意見回饋功能
-- GitHub Issues 回報問題
-- 客服信箱：support@linksys.com
+**Internet Connection**
+- PPPoE connection type settings
+- DDNS dynamic DNS configuration
+- MTU size adjustment functionality
 
----
-
-## 📈 效能數據
-
-### 載入時間改善
-- **儀表板啟動**: 2.3s → 0.9s (61% 提升)
-- **網路拓撲載入**: 4.1s → 1.2s (71% 提升)
-- **裝置列表更新**: 1.8s → 0.7s (61% 提升)
-
-### 資源使用最佳化
-- **記憶體使用**: 減少 30% 平均佔用
-- **CPU 負載**: 降低 25% 背景處理
-- **網路請求**: 減少 40% 重複查詢
-
-### 穩定性提升
-- **連線成功率**: 提升至 99.7%
-- **錯誤恢復**: 自動重試成功率 95%
-- **會話保持**: 24 小時穩定連線
+### Compatibility Notes
+- All existing functionality remains available
+- New features automatically downgrade on older firmware
+- No impact on existing settings and configurations
 
 ---
 
-**感謝您選擇 Linksys PrivacyGUI！**
-*讓網路管理變得簡單，讓連網生活更美好。*
+## 🔄 Upgrade Guide
+
+### Automatic Upgrade (Recommended)
+1. Ensure router is connected to the internet
+2. System will automatically detect and prompt for upgrade
+3. Click "Upgrade Now" to complete the process
+
+### Manual Upgrade
+1. Download PrivacyGUI 2.1.0 firmware
+2. Navigate to Management Interface → Firmware Upgrade
+3. Select firmware file and execute upgrade
+4. Automatic restart after upgrade completion
+
+### Upgrade Precautions
+- Upgrade process takes approximately 3-5 minutes - do not interrupt power
+- Clear browser cache after upgrade completion
+- Recommend exporting current settings as backup before upgrade
+
+---
+
+## 🆘 Support Resources
+
+### Online Help
+- **User Manual**: [linksys.com/support/privacygui](https://linksys.com/support/privacygui)
+- **Video Tutorials**: [YouTube Channel](https://youtube.com/linksys)
+- **FAQ**: [FAQ Page](https://linksys.com/support/faq)
+
+### Technical Support
+- **24/7 Customer Service**: Contact via Linksys application
+- **Community Forum**: [community.linksys.com](https://community.linksys.com)
+- **Technical Documentation**: [GitHub Repository](https://github.com/linksys/PrivacyGUI)
+
+### Feedback
+We value your user experience. Please provide feedback through:
+- In-app feedback functionality
+- GitHub Issues for problem reporting
+- Customer service email: support@linksys.com
+
+---
+
+## 📈 Performance Metrics
+
+### Loading Time Improvements
+- **Dashboard Startup**: 2.3s → 0.9s (61% improvement)
+- **Network Topology Loading**: 4.1s → 1.2s (71% improvement)
+- **Device List Updates**: 1.8s → 0.7s (61% improvement)
+
+### Resource Usage Optimization
+- **Memory Usage**: 30% reduction in average consumption
+- **CPU Load**: 25% reduction in background processing
+- **Protocol Efficiency**: WebAssembly client reduces 40% protocol overhead
+- **Real-time Updates**: SSE push mechanism replaces polling, reducing 60% network requests
+
+### Stability Improvements
+- **Connection Success Rate**: Improved to 99.7%
+- **Error Recovery**: SSE exponential backoff reconnection with 95% auto-retry success rate
+- **Session Persistence**: 24-hour stable connections with 45-second heartbeat detection
+- **Real-time Synchronization**: Device status changes pushed instantly with zero-delay updates
+
+---

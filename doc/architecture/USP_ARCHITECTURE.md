@@ -557,7 +557,7 @@ state = AsyncData(currentState.copyWith(
 │                 Code Generation                                 │
 │                                                                 │
 │  ./tools/usp-codegen                                            │
-│    --definitions-dir doc/usp/definitions/                      │
+│    --definitions-dir definitions/                              │
 │    --output-dir lib/generated/                                 │
 │    --language dart                                              │
 │    --client-import 'package:privacy_gui/usp/services/...'      │

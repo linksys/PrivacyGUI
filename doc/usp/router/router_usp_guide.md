@@ -1538,7 +1538,7 @@ python3 /tmp/probe_usp.py
 
 | 資源 | 位置 |
 |------|------|
-| Phase 1 驗證報告 | `doc/usp/integration/phase1_router_datamodel_validation.md` |
+| USP Milestone 1 規格 | `doc/USP_MILESTONE_1_SPECIFICATION.md` |
 | JNAP→TR-181 對應表 | `doc/jnap/jnap_tr181_mapping.md` |
 | JNAP 使用清單 (140 actions) | `doc/jnap/jnap_commands_used.md` |
 | TR-181 對應狀態 | `doc/usp/integration/tr181_mapping_status.md` |

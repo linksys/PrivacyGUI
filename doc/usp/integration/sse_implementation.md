@@ -384,7 +384,7 @@ Core subscriptions are auto-generated from YAML `subscribe:` blocks by `usp-code
 
 2. Run codegen — `subscriptions.g.dart` is auto-generated with the new entries:
    ```bash
-   ./tools/usp-codegen --definitions-dir doc/usp/definitions/ \
+   ./tools/usp-codegen --definitions-dir definitions/ \
      --output-dir lib/generated/ --language dart \
      --client-import 'package:privacy_gui/usp/services/usp_service.dart'
    ```

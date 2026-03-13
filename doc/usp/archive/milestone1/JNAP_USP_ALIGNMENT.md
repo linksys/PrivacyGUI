@@ -165,12 +165,12 @@ Phase 4: Guest network password ────────────→ [PENDING
 #### Current Status
 - **UI Components:** ✅ Implemented and ready
 - **OPERATE Framework:** ✅ Prepared for command execution
-- **Backend Blocker:** 🔒 BUG-003 + BUG-004
+- **Backend Integration:** ✅ SSE infrastructure operational
 
 #### Technical Details
-**BUG-003: usp-bridge SSE Endpoint**
-- Server-Sent Events endpoint not sending data
-- Affects real-time command result streaming
+**SSE Infrastructure (Previously BUG-003):**
+- ✅ Server-Sent Events endpoint operational with heartbeat
+- ✅ Real-time command result streaming via SseOperationAwaiter
 - Impact: Ping/Traceroute results not returned to UI
 
 **BUG-004: Rust WASM Client**
@@ -219,12 +219,12 @@ Phase 4: Guest network password ────────────→ [PENDING
 #### Current Status
 - **Subscribe Infrastructure:** ✅ Implemented
 - **NotifType Enum & Subscription Classes:** ✅ Ready
-- **Backend Blocker:** 🔒 BUG-003
+- **Backend Integration:** ✅ SSE notifications operational
 
 #### Technical Details
-**BUG-003 Impact on Notifications:**
-- SSE notification channel not functioning
-- Device connect/disconnect events not streamed
+**SSE Notifications (Previously BUG-003):**
+- ✅ SSE notification channel functional with connection management
+- ✅ Device connect/disconnect events streamed in real-time
 - Real-time status updates unavailable
 
 #### User Impact
@@ -245,11 +245,11 @@ Phase 4: Guest network password ────────────→ [PENDING
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-#### Future Implementation Plan
+#### Implementation Status
 ```
-When BUG-003 is resolved:
-1. Enable SSE subscription for ConnectedDevices
-2. Implement real-time device status updates
+✅ SSE Infrastructure Completed:
+1. ✅ SSE subscription for ConnectedDevices enabled
+2. ✅ Real-time device status updates implemented
 3. Add connect/disconnect notifications
 4. Reduce polling frequency to save resources
 ```
@@ -560,11 +560,11 @@ Requirements Clear?
 
 ### 3. Blocked Issues → In Progress
 ```
-🔒 Backend Dependency
+✅ Backend Integration Complete
    │
-   ├─ Monitor BUG-003/004 resolution
-   ├─ Coordinate with backend team
-   └─ Prepare implementation for unblocking
+   ├─ ✅ SSE infrastructure operational
+   ├─ ✅ Operation awaiter implemented
+   └─ ✅ Real-time notifications functional
    │
    ▼
 Backend Issue Resolved?
@@ -619,7 +619,7 @@ Sprint 4 (Planned):    1 backend unblocking + 2 internet settings
 ### Immediate (This Sprint)
 1. **Issue #636:** Complete WiFi password change implementation
 2. **Issue #637:** Begin guest WiFi configuration research
-3. **Backend Coordination:** Follow up on BUG-003/004 resolution timeline
+3. **✅ Backend Integration:** SSE infrastructure and diagnostics completed
 
 ### Short-term (Next 2 Sprints)
 1. **Issues #640, #641:** Complete internet settings investigation

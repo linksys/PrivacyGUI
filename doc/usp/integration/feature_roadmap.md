@@ -271,6 +271,34 @@
   - Statistical analysis algorithms
 - **Note:** Requires long-term data collection — no immediate USP source
 
+### F-026: Dashboard Performance Optimization (Prefetch Cache)
+
+**Priority:** P1 | **Effort:** Medium | **Status:** Not started
+
+- **Problem:** 17 parallel USP GET requests create network overhead vs single batch request
+- **Current State:** WASM concurrent requests work (v0.6.1+), but network latency still affects UX
+- **Solution:** Implement prefetch cache from `prefetch_cache_proposal.md` (Option 2)
+- **Benefits:**
+  - Reduce dashboard load time: 17 requests → 1 batch + 16 cache hits
+  - High-latency environment improvement: ~3.4s → ~200ms
+  - Transparent to existing codegen APIs
+- **Implementation:**
+  ```dart
+  // UspService additions:
+  Future<void> prefetch(List<String> paths) // Batch fetch + cache
+  void clearPrefetch()                      // Clear cache
+  // Modified get() with cache-first lookup
+  ```
+- **Dashboard Usage:**
+  ```dart
+  await usp.prefetch([...all 70+ TR-181 paths]);
+  // All subsequent .fetch() calls hit cache (0ms each)
+  final systemInfo = await SystemInfo.fetch(usp);
+  // ...16 more cache hits
+  usp.clearPrefetch();
+  ```
+- **Performance Target:** Dashboard load <500ms in high-latency networks
+
 ---
 
 ## Implementation Priority Matrix
@@ -290,6 +318,7 @@ Cost│                   │                   │Cost
     │  F-022 ✅ Done    │  F-023 ✅ Done   │
     │                   │  F-024 ✅ Done   │
     │                   │  F-025 Historical │
+    │                   │  F-026 Prefetch   │
     └───────────────────┼───────────────────┘
                         │
                     Low Impact
@@ -313,7 +342,7 @@ Cost│                   │                   │Cost
 | ~~**4D**~~ | ~~F-023 Firewall Configuration Overview~~ | ~~Done~~ ✅ 2026-03-11 (descoped from Activity Viz — no TR-181 event data) |
 | ~~**4D**~~ | ~~F-024 WiFi Performance Analytics~~ | ~~Done~~ ✅ 2026-03-11 (uses per-client AssociatedDevice, bypasses AP Stats fault) |
 | **4D** | F-007 Guest Network, F-011 Ping (SSE infra ✅, UI pending) | **✅ SSE Infra Complete** — F-011 only needs UI page; F-007 needs guest AP identification |
-| **4E** | F-025 Historical Trend Analysis | **⚠️ Client-side Only** — Requires data collection, no USP historical storage |
+| **4E** | F-025 Historical Trend Analysis, F-026 Dashboard Prefetch Cache | **Mixed Priority** — F-025 requires data collection; F-026 immediate performance win |
 
 ---
 
@@ -361,5 +390,6 @@ Cost│                   │                   │Cost
 6. ~~**F-023 Firewall Configuration Overview**~~ — ✅ Done (AppPieChart donut rules, AppBarChart protocol distribution)
 7. ~~**F-024 WiFi Performance Analytics**~~ — ✅ Done (AppBarChart signal/speed, AppPieChart band distribution)
 
-### **Phase 4E: Long-term Analytics** (Future — 2+ months)
-8. **F-025 Historical Trend Analysis** — Weekly/monthly trends, seasonal analysis
+### **Phase 4E: Performance & Long-term Analytics** (Future — 1-3 months)
+8. **F-026 Dashboard Prefetch Cache** — Single batch request optimization (1-2 weeks)
+9. **F-025 Historical Trend Analysis** — Weekly/monthly trends, seasonal analysis (2+ months)

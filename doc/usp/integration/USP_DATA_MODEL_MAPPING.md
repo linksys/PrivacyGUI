@@ -1,59 +1,70 @@
-# USP Integration Report
+# USP Data Model Mapping Reference
+## TR-181 ↔ Codegen DTO ↔ UI Model Transformation Guide
 
-> Date: 2026-03-10 (updated) | Branch: `feat/usp-protocol-integration`
-> Covers: Phase 1 (Infrastructure) + Phase 2A (Read) + Phase 2B (Write) + Phase 2C (Subscribe Infrastructure) + Phase 4A (Standalone Feature Pages) + 401 Auth Retry
+**Document Version:** 1.1
+**Last Updated:** March 13, 2026 (Updated for latest implementation)
+**Purpose:** Complete mapping reference for USP protocol data transformations in PrivacyGUI 2.1.0
 
 ---
 
-## 1. Executive Summary
+## Overview
 
-PrivacyGUI has been extended with a parallel USP (User Services Platform / TR-369) protocol stack running alongside the existing JNAP protocol. The integration provides a fully independent **USP Dashboard** that does not depend on JNAP polling, featuring 14 data cards with full CRUD capabilities for key networking features.
+This document serves as the definitive reference for understanding how TR-181 data model parameters are transformed through the USP protocol stack into UI-ready models. The transformation follows this pipeline:
+
+```
+TR-181 Parameters → USP Protocol → Codegen DTOs → UI Models → Dashboard Components
+```
+
+PrivacyGUI implements a parallel USP (User Services Platform / TR-369) protocol stack featuring comprehensive data model transformations for 27+ networking features across 16+ dashboard cards, 20+ statistics sections, and 15+ standalone pages including advanced analytics and Internet Settings.
 
 ### Key Metrics
 
 | Metric | Value |
 |--------|-------|
-| YAML definitions | 22 (was 20) |
-| Generated `.g.dart` files | 23 (22 data + transforms) |
-| UI model classes | 21 (across 21 files) |
-| Dashboard cards | 14 |
-| Dashboard dialogs | 7 |
-| Standalone feature pages | 12 (Admin, DHCP Detail, Port Forwarding Detail, Devices, Topology, System Log, Firewall, DMZ, Instant Safety, Local Network, Static Routing, IPv6 Port Service) |
-| Standalone dialogs | 6 (password, timezone, confirm action, DHCP edit, static route, IPv6 port rule) |
-| Mutation methods | 34+ |
-| TR-181 data models covered | 22 |
-| Parallel fetch tasks | 15 |
-| Supported CRUD operations | fetch, update, add, delete, subscribe (stub), operate |
-| Infrastructure | 401 Auth Retry (two-stage reauth with Completer lock) |
+| YAML definitions | **27** (was 22) |
+| Generated `.g.dart` files | **30** (27 data + 3 infrastructure) |
+| UI model classes | **25+** (across 25+ files) |
+| Dashboard cards | **16+** |
+| Dashboard dialogs | **7** |
+| Statistics sections | **20** (new analytics dashboard) |
+| Standalone feature pages | **15+** (Admin, DHCP Detail, Port Forwarding Detail, Devices, Topology, System Log, Firewall, DMZ, Instant Safety, Local Network, Static Routing, IPv6 Port Service, **Internet Settings, Statistics, Network Diagnostics**) |
+| Standalone dialogs | **8+** (password, timezone, confirm action, DHCP edit, static route, IPv6 port rule, WAN settings, etc.) |
+| Mutation methods | **40+** |
+| TR-181 data models covered | **27** |
+| Parallel fetch tasks | **18+** |
+| Supported CRUD operations | fetch, update, add, delete, subscribe (SSE infrastructure), operate |
+| Infrastructure | 401 Auth Retry, SSE Connection Manager, PDF Report Generation, SliverDashboard Grid Layout |
 
 ### Architecture at a Glance
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        USP Dashboard View                       │
-│   14 cards + 7 dialogs + skeleton loading + responsive layout    │
+│                   USP SliverDashboard View                      │
+│ 16+ cards + 7 dialogs + 20 statistics sections + PDF reports     │
+│      + drag-drop grid layout + layout presets + analytics       │
 ├─────────────────────────────────────────────────────────────────┤
 │                     UI Models (Presentation)                     │
-│   21 Equatable classes with computed display properties          │
+│   25+ Equatable classes with computed display properties         │
 ├─────────────────────────────────────────────────────────────────┤
 │              UspDeviceService + Feature Services (Transform)     │
-│   13 dashboard builders + 5 standalone feature services          │
+│  15+ dashboard builders + 8+ standalone services + analytics     │
 ├─────────────────────────────────────────────────────────────────┤
 │          UspDashboardNotifier + Feature Notifiers (Orchestration)│
-│   build() parallel fetch + 34 mutation methods + _withLock      │
+│   build() parallel fetch + 40+ mutation methods + _withLock     │
+│        + Analytics/SystemMonitor/TrafficAnalysis Notifiers      │
 ├─────────────────────────────────────────────────────────────────┤
 │                   UspDashboardState (Equatable)                  │
 │   Raw codegen DTOs + UI model fields + copyWith                 │
 ├─────────────────────────────────────────────────────────────────┤
-│                Codegen .g.dart (Data Transfer Objects)           │
-│   22 files: fetch/update/add/delete/subscribe                   │
+│            Codegen .g.dart (Data Transfer Objects)              │
+│  27 data files + 3 infra: subscriptions + transforms + paths    │
 ├─────────────────────────────────────────────────────────────────┤
 │                      UspService (Transport)                      │
 │   WASM JS interop + _coerceValue + CRUD + Operate + Subscribe   │
-│   + 401 Auth Retry (_withAuthRetry + two-stage reauth)          │
+│   + 401 Auth Retry + SSE Connection Manager + Network Diagnostics│
 ├─────────────────────────────────────────────────────────────────┤
 │                    WASM Client (Rust → JS)                       │
-│   HTTP transport to router's usp-bridge API                     │
+│   HTTP transport + SSE notifications + usp-bridge API           │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -65,7 +76,7 @@ PrivacyGUI has been extended with a parallel USP (User Services Platform / TR-36
 
 ```
 YAML Definition          Codegen Binary          Generated Dart
-(doc/usp/definitions/)  →  (tools/usp-codegen)  →  (lib/generated/*.g.dart)
+(definitions/)          →  (tools/usp-codegen)  →  (lib/generated/*.g.dart)
                                                           │
                                                     UspDeviceService
                                                     (transform layer)
@@ -78,7 +89,7 @@ YAML Definition          Codegen Binary          Generated Dart
 
 ```bash
 ./tools/usp-codegen \
-  --definitions-dir doc/usp/definitions/ \
+  --definitions-dir definitions/ \
   --output-dir lib/generated/ \
   --language dart \
   --client-import 'package:privacy_gui/usp/services/usp_service.dart'
@@ -180,6 +191,11 @@ class ConnectedDevices {
 | 20 | core | `core/firmware_images.yaml` | FirmwareImages | `Device.DeviceInfo.FirmwareImage` | Multi | fetch |
 | 21 | network | `network/static_routing.yaml` | StaticRouting | `Device.Routing.Router.1.IPv4Forwarding` | Multi | fetch, update, add, delete |
 | 22 | firewall | `firewall/ipv6_port_service.yaml` | Ipv6PortService | `Device.Firewall.Chain.1.Rule` | Multi | fetch, update, add, delete |
+| 23 | network | `network/ipv6_settings.yaml` | Ipv6Settings | `Device.IP.Interface.2` | Single | fetch, save |
+| 24 | network | `network/multi_interface_traffic_stats.yaml` | MultiInterfaceTrafficStats | `Device.IP.Interface` | Multi | fetch |
+| 25 | network | `network/wan_traffic_stats.yaml` | WanTrafficStats | `Device.IP.Interface.2.Stats` | Single | fetch |
+| 26 | network | `network/wan_operations.yaml` | WanOperations | `Device.DHCPv4.Client.1` / `Device.DHCPv6.Client.1` | Single | operate (Renew) |
+| 27 | network | `network/wan_settings.yaml` | WanSettings | (scatter-gather) | Single | fetch, save |
 
 ### 3.2 Scatter-Gather Definitions (No Base Path)
 
@@ -615,6 +631,75 @@ Used by Admin page for password change, not displayed in dashboard.
 
 ---
 
+### 4.20 Internet Settings (WAN Configuration)
+
+| TR-181 Path | Codegen Field | UI Model Field | Writable |
+|-------------|---------------|----------------|----------|
+| `Device.IP.Interface.2.IPv4Address.1.AddressingType` | `addressingType` | `connectionType` (derived) | Yes |
+| `Device.IP.Interface.2.IPv4Address.1.IPAddress` | `ipAddress` | `staticIpAddress` | Yes |
+| `Device.IP.Interface.2.IPv4Address.1.SubnetMask` | `subnetMask` | `staticSubnetMask` | Yes |
+| `Device.Routing.Router.1.IPv4Forwarding.{i}.GatewayIPAddress` | `gatewayIpAddress` | `staticGateway` | Yes |
+| `Device.PPP.Interface.1.Username` | `username` | `pppoeUsername` | Yes |
+| `Device.PPP.Interface.1.Password` | `password` | `pppoePassword` | Yes |
+| `Device.IP.Interface.2.IPv6Enable` | `ipv6Enable` | `ipv6Enabled` | Yes |
+| `Device.DNS.Client.Server.{i}.DNSServer` | `dnsServers` | `primaryDns`, `secondaryDns` | Yes |
+
+**Connection Type Mapping:**
+- `AddressingType == "DHCP"` → `UspWanConnectionType.dhcp`
+- `AddressingType == "Static"` → `UspWanConnectionType.static`
+- PPPoE detection via `Device.PPP.Interface` → `UspWanConnectionType.pppoe`
+
+**Codegen DTO:** `WanSettings` (single-instance scatter-gather, 12+ fields)
+**UI Model:** `UspInternetSettingsForm` (15+ fields + validation + copyWith)
+**Transform:** `UspInternetSettingsNotifier.buildFormFromWanSettings()`
+
+---
+
+### 4.21 WAN Operations (Lease Renewal)
+
+| Operation | TR-181 Command | Codegen Method | UI Action |
+|-----------|----------------|----------------|-----------|
+| DHCP Renew | `Device.DHCPv4.Client.1.Renew()` | `WanOperations.renewDhcp()` | Renew IPv4 lease button |
+| DHCPv6 Renew | `Device.DHCPv6.Client.1.Renew()` | `WanOperations.renewDhcpv6()` | Renew IPv6 lease button |
+
+**Codegen DTO:** `WanOperations` (operate-type, 2 commands)
+**UI Integration:** Internet Settings page renew section
+**Transform:** Direct operation call, no data transformation
+
+---
+
+### 4.22 IPv6 Settings
+
+| TR-181 Path | Codegen Field | UI Model Field | Writable |
+|-------------|---------------|----------------|----------|
+| `Device.IP.Interface.2.IPv6Enable` | `ipv6Enable` | `ipv6Enabled` | Yes |
+| `Device.IP.Interface.2.IPv6Address.{i}.IPAddress` | `ipv6Address` | `ipv6Address` | No |
+| `Device.IP.Interface.2.IPv6Address.{i}.Origin` | `origin` | `addressOrigin` | No |
+| `Device.DHCPv6.Client.1.Enable` | `dhcpv6ClientEnable` | `dhcpv6Enabled` | Yes |
+
+**Codegen DTO:** `Ipv6Settings` (single-instance, 6 fields)
+**UI Model:** Part of `UspInternetSettingsForm` (IPv6 section)
+**Transform:** `UspInternetSettingsNotifier.buildIpv6Section()`
+
+---
+
+### 4.23 Traffic Statistics
+
+| TR-181 Path | Codegen Field | UI Model Field | Notes |
+|-------------|---------------|----------------|-------|
+| `Device.IP.Interface.2.Stats.BytesSent` | `bytesSent` | `uploadBytes` → `uploadFormatted` | WAN upload |
+| `Device.IP.Interface.2.Stats.BytesReceived` | `bytesReceived` | `downloadBytes` → `downloadFormatted` | WAN download |
+| `Device.IP.Interface.2.Stats.PacketsSent` | `packetsSent` | `uploadPackets` | Packet count |
+| `Device.IP.Interface.2.Stats.PacketsReceived` | `packetsReceived` | `downloadPackets` | Packet count |
+
+**Multi-Interface Support:** `MultiInterfaceTrafficStats` covers all interfaces for comparative analysis.
+
+**Codegen DTOs:** `WanTrafficStats` + `MultiInterfaceTrafficStats`
+**UI Models:** Used by Statistics page sections for traffic analysis
+**Transform:** `UspTrafficAnalysisNotifier.buildTrafficModels()`
+
+---
+
 ## 5. UspService Transport Layer
 
 ### 5.1 Core API
@@ -837,7 +922,7 @@ Future<void> toggleSomething(String instancePath, bool value) async {
 
 ## 7. UI Component Inventory
 
-### 7.1 Dashboard Cards (14)
+### 7.1 Dashboard Cards (16+)
 
 | # | Card | Data Source | Interaction |
 |---|------|------------|-------------|
@@ -855,6 +940,8 @@ Future<void> toggleSomething(String instancePath, bool value) async {
 | 12 | `UspPortForwardingCard` | portForwardingRuleModels | Toggle, add/edit, delete, "View All" navigation |
 | 13 | `UspProtocolInfoCard` | UspService metadata | Read-only (USP endpoint, auth status, session) |
 | 14 | `UspConnectionStatusCard` | (legacy, exported but unused) | — |
+| 15+ | **Analytics Cards** | Analytics Notifiers (Device/System/Traffic) | Interactive analytics dashboard |
+| 16+ | **Layout Management** | SliverDashboard with drag-drop grid | Edit mode, presets, PDF export |
 
 ### 7.2 Dashboard Dialogs (7)
 
@@ -868,7 +955,7 @@ Future<void> toggleSomething(String instancePath, bool value) async {
 | 6 | `port_range_forwarding_dialog.dart` | Add/edit port range forwarding rule |
 | 7 | `port_triggering_dialog.dart` | Add/edit port triggering rule + forward rules |
 
-### 7.3 Standalone Feature Pages (12)
+### 7.3 Standalone Feature Pages (15+)
 
 | # | Page | Route | Feature | Interaction |
 |---|------|-------|---------|-------------|
@@ -884,6 +971,9 @@ Future<void> toggleSomething(String instancePath, bool value) async {
 | 10 | `UspLocalNetworkView` | `/uspLocalNetwork` | Router IP, subnet, hostname, DHCP pool, DNS, lease time | Read + Write (dirty guard) |
 | 11 | `UspStaticRoutingView` | `/uspStaticRouting` | IPv4 static routes CRUD, Origin filter, interface mapping | Full CRUD |
 | 12 | `UspIpv6PortServiceView` | `/uspIpv6PortService` | IPv6 inbound port rules CRUD, IANA protocol mapping | Full CRUD |
+| 13 | `UspInternetSettingsView` | `/uspInternetSettings` | WAN connection types, IPv4/IPv6 config, lease renewal | Full CRUD + Operate |
+| 14 | `UspStatisticsView` | `/uspStatistics` | 20+ analytics sections, traffic/performance monitoring | Read-only analytics |
+| 15 | `UspNetworkDiagnosticsView` | `/uspNetworkDiagnostics` | Ping/Traceroute operations (blocked by server) | Operate |
 
 ### 7.4 Standalone Page Dialogs (6)
 
@@ -922,8 +1012,53 @@ Loading state shows `LinearProgressIndicator` (4px) reflecting actual fetch prog
 
 | Mode | Layout |
 |------|--------|
-| **Mobile** | Single column, all 14 cards stacked vertically |
-| **Desktop** | Shared top (stats + network + topology) + 2-column: left (static info cards) / right (interactive CRUD cards) |
+| **Mobile** | Single column, all 16+ cards stacked vertically |
+| **Desktop** | SliverDashboard grid with drag-drop + 2-column: left (static info cards) / right (interactive CRUD cards) |
+
+### 7.8 Statistics Analysis Sections (20)
+
+The Statistics page (`/uspStatistics`) contains 20+ dedicated analysis sections:
+
+| # | Section | Data Source | Analysis Type |
+|---|---------|-------------|---------------|
+| 1 | `stats_activity_heatmap_section.dart` | Traffic patterns | Heatmap visualization |
+| 2 | `stats_connection_trends_section.dart` | Connection history | Trend analysis |
+| 3 | `stats_correlation_section.dart` | Multi-metric correlation | Statistical correlation |
+| 4 | `stats_cpu_distribution_section.dart` | CPU usage patterns | Distribution analysis |
+| 5 | `stats_device_distribution_section.dart` | Device type breakdown | Pie chart distribution |
+| 6 | `stats_error_rates_section.dart` | Network error tracking | Error rate monitoring |
+| 7 | `stats_firewall_rules_section.dart` | Firewall activity | Rule usage statistics |
+| 8 | `stats_packet_loss_section.dart` | Packet loss tracking | Network quality metrics |
+| 9 | `stats_port_mapping_section.dart` | Port forwarding usage | Port utilization analysis |
+| 10 | `stats_resource_trends_section.dart` | System resource trends | Resource monitoring |
+| 11 | `stats_signal_quality_section.dart` | WiFi signal analysis | Signal strength trends |
+| 12 | `stats_traffic_comparison_section.dart` | Traffic comparison | Comparative analysis |
+| 13 | `stats_traffic_distribution_section.dart` | Bandwidth distribution | Traffic pattern analysis |
+| 14 | `stats_traffic_monitor_section.dart` | Real-time monitoring | Live traffic display |
+| 15 | `stats_traffic_trends_section.dart` | Traffic trend analysis | Historical trends |
+| 16 | `stats_wifi_channels_section.dart` | Channel utilization | WiFi spectrum analysis |
+| 17 | `stats_wifi_speed_section.dart` | WiFi performance | Speed testing results |
+| 18 | `stats_system_gauges_section.dart` | System health gauges | Real-time system metrics |
+| 19+ | Additional sections | Various analytics | Extended analytics |
+
+### 7.9 SliverDashboard Grid System
+
+The dashboard uses `SliverDashboard` for advanced layout management:
+
+**Features:**
+- **Drag-and-drop** card repositioning in edit mode
+- **Resize handles** for card dimensions
+- **Layout presets** (Compact/Balanced/Detailed)
+- **PDF export** with layout preservation
+- **Responsive breakpoints** with mobile/desktop optimizations
+- **Persistent preferences** stored in SharedPreferences
+
+**Key Components:**
+- `UspLayoutController` - Grid layout state management
+- `UspLayoutPreferences` - Layout settings and presets
+- `UspWidgetFactory` - Card instantiation and configuration
+- `PresetSelectionDialog` - Layout preset selection
+- `UspPdfService` - PDF report generation with analytics
 
 ---
 
@@ -1153,7 +1288,10 @@ Request fails with HTTP 401
 | Phase 2B-9 | Dashboard skeleton loading | ✅ Complete |
 | Phase 2B-10 | Network Status Card + Stats Panel | ✅ Complete |
 | Phase 4A | Standalone feature pages (7 pages) | ✅ Complete (2026-03-10) |
-| Infra | 401 Auth Retry (two-stage reauth) | ✅ Complete (2026-03-10) |
+| Phase 4B | Internet Settings + WAN Operations | ✅ Complete (2026-03-13) |
+| Phase 4C | Statistics Analytics + 20 Sections | ✅ Complete (2026-03-13) |
+| Phase 4D | SliverDashboard + PDF Reports | ✅ Complete (2026-03-13) |
+| Infra | 401 Auth Retry + SSE Infrastructure | ✅ Complete (2026-03-10) |
 
 **Phase 4A Details:**
 
@@ -1166,6 +1304,30 @@ Request fails with HTTP 401
 | F-016: Local Network Settings | `UspLocalNetworkView` — router IP, hostname, DHCP, dirty guard | 2026-03-10 |
 | F-015: Static Routing | `UspStaticRoutingView` — route CRUD, Origin filter, interface map | 2026-03-10 |
 | F-017: IPv6 Port Service | `UspIpv6PortServiceView` — IPv6 rules CRUD, IANA protocol mapping, CreationDate filter | 2026-03-10 |
+
+**Phase 4B Details (Internet Settings):**
+
+| Feature | Component | Date |
+|---------|-----------|------|
+| F-018: WAN Configuration | `UspInternetSettingsView` — DHCP/Static/PPPoE types, IPv4/IPv6 config | 2026-03-13 |
+| F-019: DHCP/DHCPv6 Operations | `WanOperations` — Lease renewal via USP Operate commands | 2026-03-13 |
+| F-020: IPv6 Settings | IPv6 enable/disable, address display, DHCPv6 client control | 2026-03-13 |
+
+**Phase 4C Details (Statistics Analytics):**
+
+| Feature | Component | Date |
+|---------|-----------|------|
+| F-021: Traffic Analysis | 20+ statistics sections covering traffic patterns, performance metrics | 2026-03-13 |
+| F-022: System Analytics | CPU/memory distribution, device analytics, correlation analysis | 2026-03-13 |
+| F-023: Network Monitoring | WiFi channel utilization, signal quality, packet loss tracking | 2026-03-13 |
+
+**Phase 4D Details (Advanced Dashboard):**
+
+| Feature | Component | Date |
+|---------|-----------|------|
+| F-024: SliverDashboard | Drag-drop grid layout, resize handles, responsive breakpoints | 2026-03-13 |
+| F-025: Layout Presets | Compact/Balanced/Detailed presets with persistent preferences | 2026-03-13 |
+| F-026: PDF Reports | Network analysis PDF export with layout preservation | 2026-03-13 |
 
 ### 11.2 Blocked by usp-bridge Server
 
@@ -1190,23 +1352,24 @@ Request fails with HTTP 401
 
 | Layer | Files | Location |
 |-------|-------|----------|
-| YAML Definitions | 22 | `doc/usp/definitions/` |
-| Codegen Output | 23 | `lib/generated/` (22 data + transforms) |
-| USP Service | 3 | `lib/usp/services/` |
-| USP Auth | 2 | `lib/usp/providers/` |
-| UI Models | 21 | `lib/usp_page/**/models/` |
-| Dashboard Providers | 7 | `lib/usp_page/dashboard/providers/` |
-| Dashboard Service | 1 | `lib/usp_page/dashboard/services/` |
-| Dashboard Components | 20 | `lib/usp_page/dashboard/views/components/` |
-| Dashboard Dialogs | 5 | `lib/usp_page/dashboard/views/dialogs/` |
-| Dashboard Main View | 1 | `lib/usp_page/dashboard/views/usp_dashboard_view.dart` |
-| Standalone Services | 8 | `lib/usp_page/**/services/` (excl. dashboard) |
-| Standalone Providers | 11 | `lib/usp_page/**/providers/` (excl. dashboard) |
-| Standalone Views | 16 | `lib/usp_page/**/views/*_view.dart` (excl. dashboard) |
-| Standalone Components | 11 | `lib/usp_page/**/views/components/` (excl. dashboard) |
-| Standalone Dialogs | 8 | `lib/usp_page/**/views/dialogs/` (excl. dashboard) |
-| Menu | 1 | `lib/usp_page/menu/` |
-| **Total** | **~160** | |
+| YAML Definitions | **27** | `definitions/` |
+| Codegen Output | **30** | `lib/generated/` (27 data + 3 infrastructure) |
+| USP Service | **4** | `lib/usp/services/` |
+| USP Auth | **2** | `lib/usp/providers/` |
+| UI Models | **25+** | `lib/usp_page/**/models/` |
+| Dashboard Providers | **10+** | `lib/usp_page/dashboard/providers/` |
+| Dashboard Services | **2** | `lib/usp_page/dashboard/services/` |
+| Dashboard Components | **25+** | `lib/usp_page/dashboard/views/components/` |
+| Dashboard Dialogs | **7** | `lib/usp_page/dashboard/views/dialogs/` |
+| Dashboard Main View | **1** | `lib/usp_page/dashboard/views/usp_sliver_dashboard_view.dart` |
+| Statistics Sections | **20+** | `lib/usp_page/statistics/views/sections/` |
+| Standalone Services | **12+** | `lib/usp_page/**/services/` (excl. dashboard) |
+| Standalone Providers | **15+** | `lib/usp_page/**/providers/` (excl. dashboard) |
+| Standalone Views | **20+** | `lib/usp_page/**/views/*_view.dart` (excl. dashboard) |
+| Standalone Components | **15+** | `lib/usp_page/**/views/components/` (excl. dashboard) |
+| Standalone Dialogs | **10+** | `lib/usp_page/**/views/dialogs/` (excl. dashboard) |
+| Menu | **1** | `lib/usp_page/menu/` |
+| **Total** | **~200+** | |
 
 ### 12.2 Codegen Definition → Generated File → UI Model Traceability
 
@@ -1234,3 +1397,8 @@ Request fails with HTTP 401
 | `firmware_images.yaml` | `firmware_images.g.dart` | — | DeviceInfoCard (dual image) |
 | `static_routing.yaml` | `static_routing.g.dart` | `StaticRouteUIModel` | Static Routing page |
 | `ipv6_port_service.yaml` | `ipv6port_service.g.dart` | `Ipv6PortServiceRuleUIModel` | IPv6 Port Service page |
+| `ipv6_settings.yaml` | `ipv6settings.g.dart` | `UspInternetSettingsForm` (IPv6 section) | Internet Settings page |
+| `multi_interface_traffic_stats.yaml` | `multi_interface_traffic_stats.g.dart` | (Statistics analysis) | Statistics sections |
+| `wan_traffic_stats.yaml` | `wan_traffic_stats.g.dart` | (Statistics analysis) | Statistics sections |
+| `wan_operations.yaml` | `wan_operations.g.dart` | (Operate commands) | Internet Settings (renew) |
+| `wan_settings.yaml` | `wan_settings.g.dart` | `UspInternetSettingsForm` | Internet Settings page |
