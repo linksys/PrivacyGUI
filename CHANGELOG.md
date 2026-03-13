@@ -2,6 +2,18 @@
 
 All notable changes to PrivacyGUI after version 2.0.0 are documented in this file.
 
+## [2.1.0] - 2026-03-13
+
+#### WiFi Settings Page (USP)
+- Add WiFi Settings page: `UspWifiSettingsService` + `UspWifiSettingsProvider`, route and menu entry
+- Add `WifiNetworkUIModel` — cross-reference enrichment joining SSID + AccessPoint + Radio data
+- UI: WifiListTile-style cards with responsive grid, modal-based editing for SSID, password, security, channel, bandwidth, and WiFi Mode (OperatingStandards)
+- Add Advanced tab with DFS/IEEE-802.11h toggle; remove MAC Filtering tab (vendor extension, not standard TR-181)
+- Fix `SSIDAdvertisementEnabled` TR-181 path: `Device.WiFi.SSID` → `Device.WiFi.AccessPoint`
+- Integrate Dirty Guard: staged mutations buffered until Save, tab change guard, Dirty Guard route interception
+- Add Quick Setup mode: apply uniform settings across all bands with automatic 6 GHz WPA3 override
+- Add JNAP-to-TR181 field mapping reference doc (134 actions mapped)
+
 ## [2.1.0] - 2026-03-12
 
 ### USP Protocol Integration
