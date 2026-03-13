@@ -144,6 +144,7 @@ doc/tests/output/*
 .fvm/
 
 # AI Assistant Configuration & Tools
+.claude/settings.local.json
 .claude/commands/
 .gemini/commands/
 .specify/scripts/bash/
