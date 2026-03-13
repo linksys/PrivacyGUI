@@ -412,15 +412,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         ref.read(raSessionProvider.notifier).stopMonitorSession();
       }
 
-      // Sync USP logout before clearing credentials
-      await ref.read(uspAuthCoordinatorProvider).syncAfterLogout();
-
-      // Disconnect SSE and unregister subscriptions
+      // Disconnect SSE and unregister subscriptions BEFORE USP logout —
+      // subscription cleanup uses authenticated requests, so the token
+      // must still be valid. Logging out first would trigger 401 → reauth.
       final sseManager = ref.read(sseManagerProvider);
       if (sseManager != null) {
-        await sseManager.registry.unregisterAll();
         await sseManager.disconnect();
+        await sseManager.registry.unregisterAll();
       }
+
+      // Now safe to logout USP — no more authenticated requests pending
+      await ref.read(uspAuthCoordinatorProvider).syncAfterLogout();
 
       // Delegate credential cleanup to AuthService
       await _authService.clearAllCredentials();
