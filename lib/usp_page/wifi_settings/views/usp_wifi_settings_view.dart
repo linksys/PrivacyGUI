@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/views/tabs/wifi_advanced_tab.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/views/tabs/wifi_list_tab.dart';
-import 'package:privacy_gui/usp_page/wifi_settings/views/tabs/wifi_mac_filtering_tab.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspWifiSettingsView extends ConsumerStatefulWidget {
@@ -20,25 +20,51 @@ class UspWifiSettingsView extends ConsumerStatefulWidget {
 class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late int _previousTabIndex;
 
-  static const _tabs = ['WiFi', 'Advanced', 'MAC Filtering'];
+  static const _tabs = ['WiFi', 'Advanced'];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
+    _previousTabIndex = _tabController.index;
+    _tabController.addListener(_handleTabChange);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
   }
 
+  /// Guards against switching tabs with unsaved changes.
+  Future<void> _handleTabChange() async {
+    if (!_tabController.indexIsChanging) return;
+
+    final notifier = ref.read(uspWifiSettingsProvider.notifier);
+    if (!notifier.isDirty()) {
+      _previousTabIndex = _tabController.index;
+      return;
+    }
+
+    final confirmed = await showUnsavedAlert(context);
+    if (!mounted) return;
+
+    if (confirmed == true) {
+      // Discard changes and allow tab switch.
+      notifier.revert();
+    } else {
+      // Cancel — snap back to previous tab.
+      _tabController.index = _previousTabIndex;
+      return;
+    }
+    _previousTabIndex = _tabController.index;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final asyncState = ref.watch(uspWifiSettingsProvider);
-
     return Scaffold(
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,15 +74,13 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
           // ── Everything below uses the standard layout margin ──────────
           Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(
-                  horizontal: context.layoutMargin),
+              padding: EdgeInsets.symmetric(horizontal: context.layoutMargin),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Page header: back arrow + title ──────────────────
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                     child: _buildPageHeader(context),
                   ),
                   // ── Tab bar ───────────────────────────────────────────
@@ -68,43 +92,13 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
                   ),
                   // ── Tab content ───────────────────────────────────────
                   Expanded(
-                    child: asyncState.when(
-                      loading: () => const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(AppSpacing.xxxl),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                      error: (error, _) => Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.xl),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AppIcon.font(
-                                Icons.error_outline,
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                              AppGap.md(),
-                              AppText.bodyMedium(
-                                'Failed to load WiFi settings.\nPull to refresh.',
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      data: (_) => TabBarView(
-                        controller: _tabController,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: const [
-                          UspWifiListTab(),
-                          UspWifiAdvancedTab(),
-                          UspWifiMacFilteringTab(),
-                        ],
-                      ),
+                    child: TabBarView(
+                      controller: _tabController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: const [
+                        UspWifiListTab(),
+                        UspWifiAdvancedTab(),
+                      ],
                     ),
                   ),
                 ],

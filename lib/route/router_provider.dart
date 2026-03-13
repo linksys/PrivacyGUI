@@ -88,6 +88,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:privacy_gui/usp_page/test_console/views/usp_test_console_view.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/usp_internet_settings_view.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 

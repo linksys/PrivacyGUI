@@ -48,16 +48,6 @@ parameters:
     writable: true
     description: Whether the SSID is broadcast (visible to scanning clients)
 
-  - field_name: macAddressControlEnabled
-    path: .MACAddressControlEnabled
-    type: boolean
-    writable: true
-    description: Enable MAC address access control (allow-list mode)
-
-  # TODO(vendor-ext): Device.WiFi.AccessPoint.{i}.X_LINKSYS_COM_MACFilter.*
-  #   Required for: deny-list MAC filtering (current standard only supports allow-list)
-  #   Pending: firmware support confirmation
-
   - field_name: ssidReference
     path: .SSIDReference
     type: string

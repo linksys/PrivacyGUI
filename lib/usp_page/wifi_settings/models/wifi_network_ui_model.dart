@@ -4,7 +4,7 @@ import 'package:equatable/equatable.dart';
 ///
 /// Created by [UspWifiSettingsService] by cross-referencing:
 ///   - Device.WiFi.SSID.{i}          → ssid, enable, ssidAdvertisementEnabled
-///   - Device.WiFi.AccessPoint.{i}   → securityMode, keyPassphrase, macAddressControlEnabled
+///   - Device.WiFi.AccessPoint.{i}   → securityMode, keyPassphrase
 ///   - Device.WiFi.Radio.{i}         → band, channel, channelBandwidth, autoChannelEnable
 class WifiNetworkUIModel extends Equatable {
   /// SSID instance path (e.g. "Device.WiFi.SSID.1.") — used for mutations
@@ -29,9 +29,6 @@ class WifiNetworkUIModel extends Equatable {
 
   /// Passphrase — empty string if open security
   final String keyPassphrase;
-
-  /// Whether MAC address control (allow-list) is enabled on this AP
-  final bool macAddressControlEnabled;
 
   /// Whether this network is a guest network.
   ///
@@ -74,7 +71,6 @@ class WifiNetworkUIModel extends Equatable {
     required this.supportedSecurityModes,
     required this.securityMode,
     required this.keyPassphrase,
-    required this.macAddressControlEnabled,
     required this.isGuest,
     required this.band,
     required this.channel,
@@ -112,7 +108,6 @@ class WifiNetworkUIModel extends Equatable {
     List<String>? supportedSecurityModes,
     String? securityMode,
     String? keyPassphrase,
-    bool? macAddressControlEnabled,
     bool? isGuest,
     String? band,
     int? channel,
@@ -135,8 +130,6 @@ class WifiNetworkUIModel extends Equatable {
           supportedSecurityModes ?? this.supportedSecurityModes,
       securityMode: securityMode ?? this.securityMode,
       keyPassphrase: keyPassphrase ?? this.keyPassphrase,
-      macAddressControlEnabled:
-          macAddressControlEnabled ?? this.macAddressControlEnabled,
       isGuest: isGuest ?? this.isGuest,
       band: band ?? this.band,
       channel: channel ?? this.channel,
@@ -159,7 +152,6 @@ class WifiNetworkUIModel extends Equatable {
         supportedSecurityModes,
         securityMode,
         keyPassphrase,
-        macAddressControlEnabled,
         isGuest,
         band,
         channel,
@@ -180,7 +172,6 @@ class WifiNetworkUIModel extends Equatable {
         'supportedSecurityModes': supportedSecurityModes,
         'securityMode': securityMode,
         'keyPassphrase': keyPassphrase,
-        'macAddressControlEnabled': macAddressControlEnabled,
         'isGuest': isGuest,
         'band': band,
         'channel': channel,
@@ -207,8 +198,6 @@ class WifiNetworkUIModel extends Equatable {
             [],
         securityMode: map['securityMode'] as String? ?? '',
         keyPassphrase: map['keyPassphrase'] as String? ?? '',
-        macAddressControlEnabled:
-            map['macAddressControlEnabled'] as bool? ?? false,
         isGuest: map['isGuest'] as bool? ?? false,
         band: map['band'] as String? ?? '',
         channel: map['channel'] as int? ?? 0,

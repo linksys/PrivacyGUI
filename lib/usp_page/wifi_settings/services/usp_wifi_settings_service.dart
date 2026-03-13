@@ -4,6 +4,7 @@ import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_network_ui_model.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_quick_setup_network.dart';
 
 final uspWifiSettingsServiceProvider =
     Provider<UspWifiSettingsService>((_) => UspWifiSettingsService());
@@ -78,7 +79,6 @@ class UspWifiSettingsService {
         supportedSecurityModes: supportedModes,
         securityMode: ap?.securityModeEnabled ?? '',
         keyPassphrase: ap?.keyPassphrase ?? '',
-        macAddressControlEnabled: ap?.macAddressControlEnabled ?? false,
         isGuest: isGuest,
         band: _normalizeBand(radio?.operatingFrequencyBand ?? ''),
         channel: radio?.channel ?? 0,
@@ -91,6 +91,70 @@ class UspWifiSettingsService {
     }
 
     return networks;
+  }
+
+  /// Builds [WifiQuickSetupNetwork] aggregates from the network list.
+  ///
+  /// Returns a record of (main, guest, isQuickSetup):
+  ///   - `main`         — all non-guest networks combined; null if none exist.
+  ///   - `guest`        — all guest networks combined; null if none exist.
+  ///   - `isQuickSetup` — true when all main networks share the same `ssid`
+  ///                      and `enabled` state. Mirrors the old JNAP logic but
+  ///                      excludes `securityMode` since 6 GHz is forced to WPA3
+  ///                      and would almost always differ from 2.4/5 GHz.
+  ({WifiQuickSetupNetwork? main, WifiQuickSetupNetwork? guest, bool isQuickSetup})
+      buildQuickSetupNetworks(List<WifiNetworkUIModel> networks) {
+    final mainNetworks = networks.where((n) => !n.isGuest).toList();
+    final guestNetworks = networks.where((n) => n.isGuest).toList();
+
+    final bool isQuickSetup;
+    if (mainNetworks.isEmpty) {
+      isQuickSetup = true;
+    } else {
+      final first = mainNetworks.first;
+      isQuickSetup = mainNetworks.every(
+        (n) => n.enabled == first.enabled && n.ssid == first.ssid,
+      );
+    }
+
+    return (
+      main: mainNetworks.isEmpty
+          ? null
+          : _buildAggregate(mainNetworks, isGuest: false),
+      guest: guestNetworks.isEmpty
+          ? null
+          : _buildAggregate(guestNetworks, isGuest: true),
+      isQuickSetup: isQuickSetup,
+    );
+  }
+
+  WifiQuickSetupNetwork _buildAggregate(
+    List<WifiNetworkUIModel> networks, {
+    required bool isGuest,
+  }) {
+    final first = networks.first;
+
+    // Intersection of supported security modes, preserving first network's order.
+    var modesSet = first.supportedSecurityModes.toSet();
+    for (final n in networks.skip(1)) {
+      modesSet = modesSet.intersection(n.supportedSecurityModes.toSet());
+    }
+    final orderedModes = first.supportedSecurityModes
+        .where(modesSet.contains)
+        .toList();
+
+    return WifiQuickSetupNetwork(
+      isGuest: isGuest,
+      ssid: first.ssid,
+      securityMode: first.securityMode,
+      keyPassphrase: first.keyPassphrase,
+      supportedSecurityModes: orderedModes,
+      ssidInstancePaths: networks.map((n) => n.ssidInstancePath).toList(),
+      apInstancePaths: networks
+          .where((n) => n.accessPointInstancePath != null)
+          .map((n) => n.accessPointInstancePath!)
+          .toList(),
+    );
   }
 }
 
