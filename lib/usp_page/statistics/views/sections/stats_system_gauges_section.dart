@@ -13,8 +13,7 @@ class StatsSystemGaugesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final info =
-        ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
+    final info = ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
     final monitorState = ref.watch(uspSystemMonitorProvider);
 
     return StatsSectionCard(
@@ -32,8 +31,7 @@ class StatsSystemGaugesSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildChart(
-      BuildContext context, dynamic info, dynamic monitorState) {
+  Widget _buildChart(BuildContext context, dynamic info, dynamic monitorState) {
     final colorScheme = Theme.of(context).colorScheme;
     final latest = monitorState.latest;
     final cpuPercent = latest?.cpuPercent ?? info.cpuPercent;

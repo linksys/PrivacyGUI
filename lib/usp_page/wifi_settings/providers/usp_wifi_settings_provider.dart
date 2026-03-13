@@ -19,15 +19,15 @@ import 'package:privacy_gui/usp_page/wifi_settings/services/usp_wifi_settings_se
 // Providers
 // ---------------------------------------------------------------------------
 
-final uspWifiSettingsProvider = AutoDisposeNotifierProvider<
-    UspWifiSettingsNotifier, UspWifiSettingsState>(
+final uspWifiSettingsProvider =
+    AutoDisposeNotifierProvider<UspWifiSettingsNotifier, UspWifiSettingsState>(
   UspWifiSettingsNotifier.new,
 );
 
 /// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
 /// dirty-check integration.
-final preservableUspWifiSettingsProvider =
-    AutoDisposeProvider<PreservableContract<WifiSettingsSettings, WifiSettingsStatus>>(
+final preservableUspWifiSettingsProvider = AutoDisposeProvider<
+    PreservableContract<WifiSettingsSettings, WifiSettingsStatus>>(
   (ref) => ref.watch(uspWifiSettingsProvider.notifier),
 );
 
@@ -65,13 +65,19 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   }) async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      return (null, WifiSettingsStatus(errorMessage: 'USP service not available'));
+      return (
+        null,
+        WifiSettingsStatus(errorMessage: 'USP service not available')
+      );
     }
 
     if (!usp.isAuthenticated) {
       await ref.read(uspAuthCoordinatorProvider).restoreSession();
       if (!usp.isAuthenticated) {
-        return (null, WifiSettingsStatus(errorMessage: 'USP not authenticated'));
+        return (
+          null,
+          WifiSettingsStatus(errorMessage: 'USP not authenticated')
+        );
       }
     }
 
@@ -198,20 +204,18 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
         await WiFiAccessPoints.updateMany(
           _usp,
-          aggregate.apInstancePaths
-              .map((p) {
-                final band = bandByApPath[p] ?? '';
-                final securityMode = _securityModeFor6GHz(
-                  band: band,
-                  selectedMode: pending.securityMode,
-                );
-                return WiFiAccessPointUpdate(
-                  instancePath: p,
-                  keyPassphrase: pending.password,
-                  securityModeEnabled: securityMode,
-                );
-              })
-              .toList(),
+          aggregate.apInstancePaths.map((p) {
+            final band = bandByApPath[p] ?? '';
+            final securityMode = _securityModeFor6GHz(
+              band: band,
+              selectedMode: pending.securityMode,
+            );
+            return WiFiAccessPointUpdate(
+              instancePath: p,
+              keyPassphrase: pending.password,
+              securityModeEnabled: securityMode,
+            );
+          }).toList(),
         );
       }
     }
@@ -230,9 +234,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   }) {
     if (!band.contains('6')) return selectedMode;
     const openModes = {'None', 'Enhanced-Open', ''};
-    return openModes.contains(selectedMode)
-        ? 'Enhanced-Open'
-        : 'WPA3-Personal';
+    return openModes.contains(selectedMode) ? 'Enhanced-Open' : 'WPA3-Personal';
   }
 
   Future<void> _saveAdvanced(WifiSettingsSettings current) async {
@@ -270,12 +272,10 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
           _usp,
           WiFiAccessPointUpdate(
             instancePath: ap,
-            keyPassphrase: curr.keyPassphrase.isNotEmpty
-                ? curr.keyPassphrase
-                : null,
-            securityModeEnabled: curr.securityMode.isNotEmpty
-                ? curr.securityMode
-                : null,
+            keyPassphrase:
+                curr.keyPassphrase.isNotEmpty ? curr.keyPassphrase : null,
+            securityModeEnabled:
+                curr.securityMode.isNotEmpty ? curr.securityMode : null,
             ssidAdvertisementEnabled: curr.ssidAdvertisementEnabled,
           ),
         );
@@ -296,9 +296,8 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
             operatingStandards: curr.operatingStandards.isNotEmpty
                 ? curr.operatingStandards
                 : null,
-            operatingChannelBandwidth: curr.channelBandwidth.isNotEmpty
-                ? curr.channelBandwidth
-                : null,
+            operatingChannelBandwidth:
+                curr.channelBandwidth.isNotEmpty ? curr.channelBandwidth : null,
             autoChannelEnable: curr.autoChannelEnable,
             channel: curr.autoChannelEnable ? null : curr.channel,
           ),
@@ -401,8 +400,8 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       );
       if (updated != null) {
         state = state.copyWith(
-          settings: state.settings
-              .update(current.copyWith(quickSetupGuest: updated)),
+          settings:
+              state.settings.update(current.copyWith(quickSetupGuest: updated)),
         );
       }
     } else {
@@ -414,8 +413,8 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       );
       if (updated != null) {
         state = state.copyWith(
-          settings: state.settings
-              .update(current.copyWith(quickSetupMain: updated)),
+          settings:
+              state.settings.update(current.copyWith(quickSetupMain: updated)),
         );
       }
     }

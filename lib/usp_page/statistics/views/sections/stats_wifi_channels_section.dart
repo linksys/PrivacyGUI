@@ -48,7 +48,8 @@ class StatsWifiChannelsSection extends ConsumerWidget {
 
   List<_ClientInfo> _buildClientList(dynamic state) {
     final clients = <_ClientInfo>[];
-    for (final entry in (state.wifiClientMap as Map<String, WifiClient>).entries) {
+    for (final entry
+        in (state.wifiClientMap as Map<String, WifiClient>).entries) {
       final client = entry.value;
       if (!client.active) continue;
       final detail = state.connectionDetailMap[entry.key];
@@ -185,8 +186,7 @@ class _BandDistributionDonut extends StatelessWidget {
 
     if (sections.isEmpty) return const SizedBox.shrink();
 
-    final totalClients =
-        clientsPerRadio.values.fold(0, (a, b) => a + b);
+    final totalClients = clientsPerRadio.values.fold(0, (a, b) => a + b);
 
     return Center(
       child: InteractivePieChart(
@@ -195,12 +195,10 @@ class _BandDistributionDonut extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.titleMedium('$totalClients'),
-            AppText.labelSmall('clients',
-                color: colorScheme.onSurfaceVariant),
+            AppText.labelSmall('clients', color: colorScheme.onSurfaceVariant),
           ],
         ),
-        touchedCenterLabel: (section, _) =>
-            '${section.value.toInt()}',
+        touchedCenterLabel: (section, _) => '${section.value.toInt()}',
         size: 120,
       ),
     );

@@ -122,9 +122,8 @@ class WifiNetworkCard extends ConsumerWidget {
               const Divider(),
               _WifiTile(
                 title: 'Channel Width',
-                description: n.channelBandwidth.isNotEmpty
-                    ? n.channelBandwidth
-                    : 'Auto',
+                description:
+                    n.channelBandwidth.isNotEmpty ? n.channelBandwidth : 'Auto',
                 trailing: n.radioInstancePath != null
                     ? const AppIcon.font(AppFontIcons.edit)
                     : null,
@@ -254,15 +253,15 @@ class WifiNetworkCard extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   static const _wifiModeLabels = {
-    'b':      '802.11b Only',
-    'bg':     '802.11b/g Only',
-    'bgn':    '802.11b/g/n Only',
-    'bgnax':  '802.11b/g/n/ax Only',
-    'a':      '802.11a Only',
-    'an':     '802.11a/n Only',
-    'anac':   '802.11a/n/ac Only',
+    'b': '802.11b Only',
+    'bg': '802.11b/g Only',
+    'bgn': '802.11b/g/n Only',
+    'bgnax': '802.11b/g/n/ax Only',
+    'a': '802.11a Only',
+    'an': '802.11a/n Only',
+    'anac': '802.11a/n/ac Only',
     'anacax': '802.11a/n/ac/ax Only',
-    'mixed':  'Mixed',
+    'mixed': 'Mixed',
   };
 
   static const _standardsOrder = ['b', 'g', 'a', 'n', 'ac', 'ax', 'be'];
@@ -374,8 +373,8 @@ class WifiNetworkCard extends ConsumerWidget {
       BuildContext context, WidgetRef ref, WifiNetworkUIModel n) async {
     final options = switch (n.band) {
       '2.4GHz' => ['Auto', '20MHz', '40MHz'],
-      '6GHz'   => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
-      _        => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
+      '6GHz' => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
+      _ => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
     };
     final current = n.channelBandwidth.isNotEmpty ? n.channelBandwidth : 'Auto';
     String selected = options.contains(current) ? current : options.first;
@@ -422,8 +421,9 @@ class WifiNetworkCard extends ConsumerWidget {
       ),
     ];
 
-    String selected =
-        channelItems.any((e) => e.value == currentLabel) ? currentLabel : autoLabel;
+    String selected = channelItems.any((e) => e.value == currentLabel)
+        ? currentLabel
+        : autoLabel;
 
     final result = await showSimpleAppDialog<String>(
       context,

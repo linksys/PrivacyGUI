@@ -115,9 +115,8 @@ class UspTopologyBuilder {
         connectionType:
             isEthernet ? ConnectionType.ethernet : ConnectionType.wifi,
         rssi: device.signalStrength,
-        throughput: device.totalThroughput > 0
-            ? device.totalThroughput / 1000.0
-            : null,
+        throughput:
+            device.totalThroughput > 0 ? device.totalThroughput / 1000.0 : null,
         distanceFactor: _rssiToDistanceFactor(device.signalStrength),
       ));
     }

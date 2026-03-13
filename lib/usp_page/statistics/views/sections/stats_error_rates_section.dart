@@ -36,8 +36,8 @@ class StatsErrorRatesSection extends ConsumerWidget {
     final history = state.history;
 
     final errorData = history
-        .map((s) =>
-            s.interfaces[TrafficInterface.wan]?.totalErrorsPerSec ?? 0.0)
+        .map(
+            (s) => s.interfaces[TrafficInterface.wan]?.totalErrorsPerSec ?? 0.0)
         .toList();
     final discardData = history
         .map((s) =>
@@ -47,15 +47,13 @@ class StatsErrorRatesSection extends ConsumerWidget {
     final avgErr = errorData.isEmpty
         ? 0.0
         : errorData.reduce((a, b) => a + b) / errorData.length;
-    final peakErr =
-        errorData.isEmpty ? 0.0 : errorData.reduce(math.max);
+    final peakErr = errorData.isEmpty ? 0.0 : errorData.reduce(math.max);
     final avgDisc = discardData.isEmpty
         ? 0.0
         : discardData.reduce((a, b) => a + b) / discardData.length;
 
     final allValues = [...errorData, ...discardData];
-    final maxVal =
-        allValues.isEmpty ? 1.0 : allValues.reduce(math.max);
+    final maxVal = allValues.isEmpty ? 1.0 : allValues.reduce(math.max);
     final yMax = maxVal < 0.1 ? 1.0 : maxVal * 1.3;
 
     return Column(

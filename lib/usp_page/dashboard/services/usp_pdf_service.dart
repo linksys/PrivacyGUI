@@ -241,14 +241,14 @@ class UspPdfService {
     final score = NetworkHealthHelpers.computeHealthScore(wan);
     final tier = NetworkHealthHelpers.tierFromScore(score);
     final lossPercent = NetworkHealthHelpers.computeLossPercent(wan);
-    final faultRate = NetworkHealthHelpers.formatFaultRate(wan.totalFaultsPerSec);
+    final faultRate =
+        NetworkHealthHelpers.formatFaultRate(wan.totalFaultsPerSec);
 
     return [
       _sectionTitle('Network Health'),
       _keyValue('Health Score', '$score / 100'),
       _keyValue('Tier', NetworkHealthHelpers.tierLabel(tier)),
-      _keyValue(
-          'Packet Loss', '${lossPercent.toStringAsFixed(3)}%'),
+      _keyValue('Packet Loss', '${lossPercent.toStringAsFixed(3)}%'),
       _keyValue('Fault Rate', faultRate),
       pw.SizedBox(height: 12),
     ];
@@ -428,9 +428,7 @@ class UspPdfService {
                   c.mac,
                   c.ip,
                   c.active ? 'Yes' : 'No',
-                  c.leaseTimeFormatted.isNotEmpty
-                      ? c.leaseTimeFormatted
-                      : '—',
+                  c.leaseTimeFormatted.isNotEmpty ? c.leaseTimeFormatted : '—',
                 ])
             .toList(),
       ),
@@ -547,8 +545,8 @@ class UspPdfService {
             style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
         pw.SizedBox(height: 2),
         ...current.bandSignalQuality.entries.map(
-          (e) => _keyValue(
-              '  ${e.key}', '${(e.value * 100).toStringAsFixed(0)}%'),
+          (e) =>
+              _keyValue('  ${e.key}', '${(e.value * 100).toStringAsFixed(0)}%'),
         ),
       ]);
     }
@@ -698,7 +696,8 @@ class UspPdfService {
                   for (int i = 0; i < history.length; i++)
                     pw.PointChartValue(
                       i.toDouble(),
-                      safeD(history[i].interfaces[TrafficInterface.wan]
+                      safeD(history[i]
+                              .interfaces[TrafficInterface.wan]
                               ?.uploadBytesPerSec ??
                           0),
                     ),
@@ -717,7 +716,8 @@ class UspPdfService {
                   for (int i = 0; i < history.length; i++)
                     pw.PointChartValue(
                       i.toDouble(),
-                      safeD(history[i].interfaces[TrafficInterface.wan]
+                      safeD(history[i]
+                              .interfaces[TrafficInterface.wan]
                               ?.downloadBytesPerSec ??
                           0),
                     ),
@@ -751,8 +751,8 @@ class UspPdfService {
         final wanDown = safeVal(wan.downloadBytesPerSec);
         final lanUp = safeVal(lan.uploadBytesPerSec);
         final lanDown = safeVal(lan.downloadBytesPerSec);
-        final barMax = [wanUp, wanDown, lanUp, lanDown]
-            .reduce((a, b) => a > b ? a : b);
+        final barMax =
+            [wanUp, wanDown, lanUp, lanDown].reduce((a, b) => a > b ? a : b);
 
         // Skip chart when all values are zero — bar surface drawing
         // can produce NaN in coordinate transform.
@@ -760,8 +760,8 @@ class UspPdfService {
           final barYTicks = _niceYSteps(barMax);
           widgets.addAll([
             pw.Text('WAN vs LAN Throughput',
-                style: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                style:
+                    pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
             pw.SizedBox(height: 4),
             pw.SizedBox(
               height: 120,
@@ -823,21 +823,19 @@ class UspPdfService {
         pw.Text('$label Interface:',
             style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
         pw.SizedBox(height: 2),
-        _keyValue('  Upload',
-            Transforms.formatSpeed(snap.uploadBytesPerSec / 1024)),
+        _keyValue(
+            '  Upload', Transforms.formatSpeed(snap.uploadBytesPerSec / 1024)),
         _keyValue('  Download',
             Transforms.formatSpeed(snap.downloadBytesPerSec / 1024)),
-        _keyValue('  Packets/s',
-            snap.totalPacketsPerSec.toStringAsFixed(0)),
+        _keyValue('  Packets/s', snap.totalPacketsPerSec.toStringAsFixed(0)),
         _keyValue('  Total Sent', Transforms.formatBytes(snap.totalBytesSent)),
-        _keyValue(
-            '  Total Received', Transforms.formatBytes(snap.totalBytesReceived)),
+        _keyValue('  Total Received',
+            Transforms.formatBytes(snap.totalBytesReceived)),
         if (snap.totalErrorsPerSec > 0)
-          _keyValue('  Errors/s',
-              snap.totalErrorsPerSec.toStringAsFixed(2)),
+          _keyValue('  Errors/s', snap.totalErrorsPerSec.toStringAsFixed(2)),
         if (snap.totalDiscardsPerSec > 0)
-          _keyValue('  Discards/s',
-              snap.totalDiscardsPerSec.toStringAsFixed(2)),
+          _keyValue(
+              '  Discards/s', snap.totalDiscardsPerSec.toStringAsFixed(2)),
       ]);
     }
 
@@ -874,19 +872,15 @@ class UspPdfService {
   static List<pw.Widget> _buildFirewallSettings(FirewallUIModel fw) {
     return [
       _sectionTitle('Firewall Settings'),
-      _keyValue(
-          'IPv4 SPI Firewall', fw.isIPv4FirewallEnabled ? 'On' : 'Off'),
-      _keyValue(
-          'IPv6 SPI Firewall', fw.isIPv6FirewallEnabled ? 'On' : 'Off'),
+      _keyValue('IPv4 SPI Firewall', fw.isIPv4FirewallEnabled ? 'On' : 'Off'),
+      _keyValue('IPv6 SPI Firewall', fw.isIPv6FirewallEnabled ? 'On' : 'Off'),
       _keyValue('IPSec Passthrough', fw.blockIPSec ? 'Blocked' : 'Allowed'),
       _keyValue('PPTP Passthrough', fw.blockPPTP ? 'Blocked' : 'Allowed'),
       _keyValue('L2TP Passthrough', fw.blockL2TP ? 'Blocked' : 'Allowed'),
-      _keyValue('ICMP Ping (WAN)',
-          fw.blockAnonymousRequests ? 'Blocked' : 'Allowed'),
       _keyValue(
-          'Multicast (IGMP)', fw.blockMulticast ? 'Blocked' : 'Allowed'),
-      _keyValue(
-          'IDENT (TCP 113)', fw.blockIDENT ? 'Blocked' : 'Allowed'),
+          'ICMP Ping (WAN)', fw.blockAnonymousRequests ? 'Blocked' : 'Allowed'),
+      _keyValue('Multicast (IGMP)', fw.blockMulticast ? 'Blocked' : 'Allowed'),
+      _keyValue('IDENT (TCP 113)', fw.blockIDENT ? 'Blocked' : 'Allowed'),
       pw.SizedBox(height: 12),
     ];
   }

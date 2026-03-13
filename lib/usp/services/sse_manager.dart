@@ -51,7 +51,8 @@ class SseManager {
 
     // Wire reconnection to bridge-only re-registration
     connection.onConnected = () {
-      logger.d('[SseManager] Connected — re-registering subscriptions on bridge');
+      logger
+          .d('[SseManager] Connected — re-registering subscriptions on bridge');
       registry.resubscribeAll();
     };
 
@@ -140,14 +141,14 @@ class SseManager {
     final payload = notification.payload;
     switch (notification.type) {
       case 'ValueChange':
-        return (payload['value_change'] as Map<String, dynamic>?)
-            ?['param_path'] as String?;
+        return (payload['value_change'] as Map<String, dynamic>?)?['param_path']
+            as String?;
       case 'ObjectCreation':
-        return (payload['obj_creation'] as Map<String, dynamic>?)
-            ?['obj_path'] as String?;
+        return (payload['obj_creation'] as Map<String, dynamic>?)?['obj_path']
+            as String?;
       case 'ObjectDeletion':
-        return (payload['obj_deletion'] as Map<String, dynamic>?)
-            ?['obj_path'] as String?;
+        return (payload['obj_deletion'] as Map<String, dynamic>?)?['obj_path']
+            as String?;
       default:
         return null;
     }

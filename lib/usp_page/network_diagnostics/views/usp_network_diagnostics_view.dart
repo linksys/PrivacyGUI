@@ -64,8 +64,7 @@ class _UspNetworkDiagnosticsViewState
           AppGap.md(),
           AppButton(
             label: 'Retry',
-            onTap: () =>
-                ref.invalidate(uspNetworkDiagnosticsProvider),
+            onTap: () => ref.invalidate(uspNetworkDiagnosticsProvider),
           ),
         ],
       ),
@@ -156,8 +155,7 @@ class _UspNetworkDiagnosticsViewState
         ],
 
         // Results
-        if (state.pingResult != null &&
-            state.activeTab == DiagnosticType.ping)
+        if (state.pingResult != null && state.activeTab == DiagnosticType.ping)
           _buildPingResult(context, state.pingResult!),
         if (state.tracerouteResult != null &&
             state.activeTab == DiagnosticType.traceroute)
@@ -390,8 +388,7 @@ class _UspNetworkDiagnosticsViewState
   // Traceroute result
   // ---------------------------------------------------------------------------
 
-  Widget _buildTracerouteResult(
-      BuildContext context, TracerouteResult result) {
+  Widget _buildTracerouteResult(BuildContext context, TracerouteResult result) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppCard(
@@ -472,9 +469,7 @@ class _UspNetworkDiagnosticsViewState
                     SizedBox(
                       width: 64,
                       child: AppText.bodySmall(
-                        hop.rtTimes.isNotEmpty
-                            ? '${hop.avgRoundTrip}ms'
-                            : '*',
+                        hop.rtTimes.isNotEmpty ? '${hop.avgRoundTrip}ms' : '*',
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),

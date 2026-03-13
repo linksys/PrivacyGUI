@@ -106,8 +106,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
                   ),
                 AppIconButton(
                   icon: AppIcon.font(Icons.add, size: 20),
-                  onTap:
-                      isMutating ? null : () => _showAddDialog(context, ref),
+                  onTap: isMutating ? null : () => _showAddDialog(context, ref),
                 ),
               ],
             ),

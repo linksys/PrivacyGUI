@@ -47,9 +47,8 @@ class _UspDeviceAnalyticsCardState
             displayMode: TabDisplayMode.segmented,
             isScrollable: true,
             showBorder: false,
-            onTabChanged: (index) => ref
-                .read(cardTabIndexProvider(_cardId).notifier)
-                .state = index,
+            onTabChanged: (index) =>
+                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
           ),
           AppGap.md(),
           Expanded(
@@ -174,8 +173,7 @@ class _BandDistributionBars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final maxCount =
-        bandDistribution.values.fold(0, (a, b) => a > b ? a : b);
+    final maxCount = bandDistribution.values.fold(0, (a, b) => a > b ? a : b);
     final seriesColors = [
       colorScheme.primary,
       colorScheme.secondary,
@@ -279,8 +277,8 @@ class _TrendView extends StatelessWidget {
     final wifiData = slots.map((s) => s.wifi.toDouble()).toList();
     final wiredData = slots.map((s) => s.wired.toDouble()).toList();
     final xLabels = slots
-        .map((s) =>
-            s.hour.hour % 3 == 0 ? '${s.hour.hour}'.padLeft(2, '0') : '')
+        .map(
+            (s) => s.hour.hour % 3 == 0 ? '${s.hour.hour}'.padLeft(2, '0') : '')
         .toList();
 
     return Column(
@@ -351,8 +349,8 @@ class _ActivityView extends StatelessWidget {
     // Build 24-hour lookup
     final now = DateTime.now();
     final currentHour = DateTime(now.year, now.month, now.day, now.hour);
-    final hourSlots = List.generate(
-        24, (i) => currentHour.subtract(Duration(hours: 23 - i)));
+    final hourSlots =
+        List.generate(24, (i) => currentHour.subtract(Duration(hours: 23 - i)));
     final hourToAggregate = {for (final h in history) h.hour: h};
 
     // Build heatmap values
@@ -412,37 +410,33 @@ class _SignalView extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.only(top: 16),
             child: useRadar
-              ? AppRadarChart(
-                  series: [
-                    AppRadarSeries(
-                      label: 'Signal Quality',
-                      data: bands.values
-                          .map((v) => v * 100)
-                          .toList(),
-                      color: colorScheme.primary,
-                      filled: true,
-                    ),
-                  ],
-                  axisLabels: bands.keys.toList(),
-                  tickCount: 4,
-                )
-              : AppBarChart(
-                  series: [
-                    AppChartSeries(
-                      label: 'Signal',
-                      data: bands.values
-                          .map((v) => v * 100)
-                          .toList(),
-                      color: colorScheme.primary,
-                    ),
-                  ],
-                  xLabels: bands.keys.toList(),
-                  yAxis: AppChartAxis(min: 0, max: 100, interval: 25),
-                  yLabelFormatter: (v) => '${v.toInt()}%',
-                  showValueLabels: true,
-                  valueLabelFormatter: (v) => '${v.toInt()}%',
-                  showTooltip: false,
-                ),
+                ? AppRadarChart(
+                    series: [
+                      AppRadarSeries(
+                        label: 'Signal Quality',
+                        data: bands.values.map((v) => v * 100).toList(),
+                        color: colorScheme.primary,
+                        filled: true,
+                      ),
+                    ],
+                    axisLabels: bands.keys.toList(),
+                    tickCount: 4,
+                  )
+                : AppBarChart(
+                    series: [
+                      AppChartSeries(
+                        label: 'Signal',
+                        data: bands.values.map((v) => v * 100).toList(),
+                        color: colorScheme.primary,
+                      ),
+                    ],
+                    xLabels: bands.keys.toList(),
+                    yAxis: AppChartAxis(min: 0, max: 100, interval: 25),
+                    yLabelFormatter: (v) => '${v.toInt()}%',
+                    showValueLabels: true,
+                    valueLabelFormatter: (v) => '${v.toInt()}%',
+                    showTooltip: false,
+                  ),
           ),
         ),
         AppGap.sm(),
@@ -490,4 +484,3 @@ class _LegendDot extends StatelessWidget {
     );
   }
 }
-

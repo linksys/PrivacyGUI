@@ -107,12 +107,10 @@ class _InteractivePieChartState extends State<InteractivePieChart> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final total =
-        widget.sections.fold(0.0, (sum, s) => sum + s.value);
+    final total = widget.sections.fold(0.0, (sum, s) => sum + s.value);
 
     Widget? center;
-    if (_touchedIndex != null &&
-        _touchedIndex! < widget.sections.length) {
+    if (_touchedIndex != null && _touchedIndex! < widget.sections.length) {
       final section = widget.sections[_touchedIndex!];
       final pct = total > 0 ? (section.value / total * 100) : 0.0;
       final label = widget.touchedCenterLabel?.call(section, total) ??

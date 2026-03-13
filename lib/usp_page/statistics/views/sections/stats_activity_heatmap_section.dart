@@ -65,8 +65,8 @@ class _StatsActivityHeatmapSectionState
     // Build 24-hour lookup
     final now = DateTime.now();
     final currentHour = DateTime(now.year, now.month, now.day, now.hour);
-    final hourSlots = List.generate(
-        24, (i) => currentHour.subtract(Duration(hours: 23 - i)));
+    final hourSlots =
+        List.generate(24, (i) => currentHour.subtract(Duration(hours: 23 - i)));
     final hourToAggregate = {for (final h in history) h.hour: h};
 
     // Build heatmap values

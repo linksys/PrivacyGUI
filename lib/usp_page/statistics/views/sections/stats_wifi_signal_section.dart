@@ -46,7 +46,8 @@ class StatsWifiSignalSection extends ConsumerWidget {
 
   List<_ClientInfo> _buildClientList(dynamic state) {
     final clients = <_ClientInfo>[];
-    for (final entry in (state.wifiClientMap as Map<String, WifiClient>).entries) {
+    for (final entry
+        in (state.wifiClientMap as Map<String, WifiClient>).entries) {
       final client = entry.value;
       if (!client.active) continue;
       final device = (state.deviceModels as List)
@@ -74,18 +75,14 @@ class StatsWifiSignalSection extends ConsumerWidget {
               final c = clients[index];
               final rssi = c.client.signalStrength;
               final tier = WifiPerformanceHelpers.signalTier(rssi);
-              final color =
-                  WifiPerformanceHelpers.tierColor(tier, colorScheme);
+              final color = WifiPerformanceHelpers.tierColor(tier, colorScheme);
               final norm = ((rssi + 100) / 70).clamp(0.0, 1.0);
 
               return Row(
                 children: [
-                  SizedBox(
-                      width: 80,
-                      child: AppText.labelSmall(c.displayName)),
+                  SizedBox(width: 80, child: AppText.labelSmall(c.displayName)),
                   AppGap.sm(),
-                  Expanded(
-                      child: _ColoredLinearBar(value: norm, color: color)),
+                  Expanded(child: _ColoredLinearBar(value: norm, color: color)),
                   AppGap.sm(),
                   SizedBox(
                     width: 60,
@@ -111,8 +108,8 @@ class StatsWifiSignalSection extends ConsumerWidget {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: WifiPerformanceHelpers.tierColor(
-                      entry.$1, colorScheme),
+                  color:
+                      WifiPerformanceHelpers.tierColor(entry.$1, colorScheme),
                   shape: BoxShape.circle,
                 ),
               ),

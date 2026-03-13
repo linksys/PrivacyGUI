@@ -43,7 +43,9 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
     await _saveToPrefs();
 
     if (!enabled) {
-      await ref.read(uspSliverDashboardControllerProvider.notifier).resetLayout();
+      await ref
+          .read(uspSliverDashboardControllerProvider.notifier)
+          .resetLayout();
     }
   }
 

@@ -76,9 +76,11 @@ class StatsHealthScoreSection extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _TrafficLight(label: 'WAN', tier: wanTier, colorScheme: colorScheme),
+            _TrafficLight(
+                label: 'WAN', tier: wanTier, colorScheme: colorScheme),
             AppGap.xl(),
-            _TrafficLight(label: 'LAN', tier: lanTier, colorScheme: colorScheme),
+            _TrafficLight(
+                label: 'LAN', tier: lanTier, colorScheme: colorScheme),
           ],
         ),
         AppGap.md(),
@@ -92,8 +94,7 @@ class StatsHealthScoreSection extends ConsumerWidget {
                 label: 'Discards',
                 value: NetworkHealthHelpers.formatFaultRate(discardRate)),
             _MetricChip(
-                label: 'Loss',
-                value: '${lossPercent.toStringAsFixed(2)}%'),
+                label: 'Loss', value: '${lossPercent.toStringAsFixed(2)}%'),
           ],
         ),
       ],

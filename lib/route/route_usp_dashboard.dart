@@ -123,8 +123,7 @@ final uspDashboardRoute = ShellRoute(
         LinksysRoute(
           name: RouteNamed.uspNetworkDiagnostics,
           path: RouteNamed.uspNetworkDiagnostics,
-          builder: (context, state) =>
-              const UspNetworkDiagnosticsView(),
+          builder: (context, state) => const UspNetworkDiagnosticsView(),
         ),
       ],
     ),

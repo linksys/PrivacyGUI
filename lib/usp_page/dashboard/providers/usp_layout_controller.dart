@@ -68,8 +68,7 @@ class UspSliverDashboardControllerNotifier
       final unknownIds = savedIds.difference(knownIds);
 
       if (unknownIds.isNotEmpty) {
-        debugPrint(
-            'USP layout has unknown widgets: $unknownIds — resetting');
+        debugPrint('USP layout has unknown widgets: $unknownIds — resetting');
         await saveLayout();
         _preSeedBreakpoints();
         return;

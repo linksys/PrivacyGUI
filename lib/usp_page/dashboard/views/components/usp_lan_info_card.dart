@@ -12,8 +12,8 @@ class UspLanInfoCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final info = this.info ??
-        ref.watch(uspDashboardProvider).valueOrNull?.lanInfoModel;
+    final info =
+        this.info ?? ref.watch(uspDashboardProvider).valueOrNull?.lanInfoModel;
     if (info == null) return const SizedBox.shrink();
     return AppCard(
       child: Column(

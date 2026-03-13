@@ -24,8 +24,7 @@ class _PresetSelectionDialog extends StatefulWidget {
   final UspDashboardPreset? currentPreset;
 
   @override
-  State<_PresetSelectionDialog> createState() =>
-      _PresetSelectionDialogState();
+  State<_PresetSelectionDialog> createState() => _PresetSelectionDialogState();
 }
 
 class _PresetSelectionDialogState extends State<_PresetSelectionDialog> {
@@ -108,14 +107,12 @@ class _PresetCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant,
+              color:
+                  isSelected ? colorScheme.primary : colorScheme.outlineVariant,
               width: isSelected ? 2 : 1,
             ),
-            color: isSelected
-                ? colorScheme.primary.withValues(alpha: 0.08)
-                : null,
+            color:
+                isSelected ? colorScheme.primary.withValues(alpha: 0.08) : null,
           ),
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -123,8 +120,7 @@ class _PresetCard extends StatelessWidget {
               Icon(
                 preset.icon,
                 size: 28,
-                color:
-                    isSelected ? colorScheme.primary : colorScheme.onSurface,
+                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
               ),
               const SizedBox(width: 10),
               Expanded(

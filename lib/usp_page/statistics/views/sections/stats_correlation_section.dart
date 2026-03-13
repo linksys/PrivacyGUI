@@ -48,12 +48,10 @@ class StatsCorrelationSection extends ConsumerWidget {
 
     final sysHistory = monitorState.history;
     final cpuData = sysHistory.map((s) => s.cpuPercent.toDouble()).toList();
-    final trafficData =
-        _alignTrafficToSystem(sysHistory, trafficState.history);
+    final trafficData = _alignTrafficToSystem(sysHistory, trafficState.history);
 
-    final maxTraffic = trafficData.isEmpty
-        ? 1.0
-        : trafficData.reduce((a, b) => a > b ? a : b);
+    final maxTraffic =
+        trafficData.isEmpty ? 1.0 : trafficData.reduce((a, b) => a > b ? a : b);
     final trafficMax = maxTraffic < 1 ? 1.0 : maxTraffic * 1.2;
 
     return Column(

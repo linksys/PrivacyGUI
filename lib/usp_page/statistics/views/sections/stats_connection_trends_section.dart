@@ -46,8 +46,8 @@ class StatsConnectionTrendsSection extends ConsumerWidget {
     final wifiData = slots.map((s) => s.wifi.toDouble()).toList();
     final wiredData = slots.map((s) => s.wired.toDouble()).toList();
     final xLabels = slots
-        .map((s) =>
-            s.hour.hour % 3 == 0 ? '${s.hour.hour}'.padLeft(2, '0') : '')
+        .map(
+            (s) => s.hour.hour % 3 == 0 ? '${s.hour.hour}'.padLeft(2, '0') : '')
         .toList();
 
     return Column(

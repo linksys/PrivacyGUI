@@ -110,8 +110,7 @@ class UspWifiListTab extends ConsumerWidget {
                 AppGap.lg(),
                 // ── Quick Setup mode: Main + Guest cards ─────────────────
                 if (quickSetupEnabled)
-                  _buildQuickSetupGrid(
-                      context, columnCount, fixedWidth, gutter)
+                  _buildQuickSetupGrid(context, columnCount, fixedWidth, gutter)
                 // ── Normal mode: per-band grid ───────────────────────────
                 else
                   _buildAdvancedGrid(

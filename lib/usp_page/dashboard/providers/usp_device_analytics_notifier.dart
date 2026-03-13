@@ -62,10 +62,8 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     // 2. Update hourly aggregates
     final now = DateTime.now();
     final currentHour = DateTime(now.year, now.month, now.day, now.hour);
-    final onlineMacs = devices
-        .where((d) => d.isActive)
-        .map((d) => d.mac)
-        .toSet();
+    final onlineMacs =
+        devices.where((d) => d.isActive).map((d) => d.mac).toSet();
 
     // Build display name map from current devices
     final displayNames = Map<String, String>.from(state.macDisplayNames);
@@ -150,8 +148,7 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     }
     final bandSignalQuality = <String, double>{};
     for (final band in bandQualitySum.keys) {
-      bandSignalQuality[band] =
-          bandQualitySum[band]! / bandQualityCount[band]!;
+      bandSignalQuality[band] = bandQualitySum[band]! / bandQualityCount[band]!;
     }
 
     return DeviceDistribution(

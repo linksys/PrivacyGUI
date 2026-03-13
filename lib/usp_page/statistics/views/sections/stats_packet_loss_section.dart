@@ -43,11 +43,9 @@ class StatsPacketLossSection extends ConsumerWidget {
     final avgLoss = lossData.isEmpty
         ? 0.0
         : lossData.reduce((a, b) => a + b) / lossData.length;
-    final peakLoss =
-        lossData.isEmpty ? 0.0 : lossData.reduce(math.max);
+    final peakLoss = lossData.isEmpty ? 0.0 : lossData.reduce(math.max);
 
-    final maxVal =
-        lossData.isEmpty ? 1.0 : lossData.reduce(math.max);
+    final maxVal = lossData.isEmpty ? 1.0 : lossData.reduce(math.max);
     final yMax = maxVal < 0.1 ? 1.0 : maxVal * 1.3;
 
     return Column(

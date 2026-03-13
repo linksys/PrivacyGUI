@@ -232,29 +232,18 @@ class _UspSliverDashboardViewState
                   final dmzSvc = UspDmzService();
                   final reportData = PdfReportData(
                     dashboard: state,
-                    trafficAnalysis:
-                        ref.read(uspTrafficAnalysisProvider),
-                    deviceAnalytics:
-                        ref.read(uspDeviceAnalyticsProvider),
-                    systemMonitor:
-                        ref.read(uspSystemMonitorProvider),
+                    trafficAnalysis: ref.read(uspTrafficAnalysisProvider),
+                    deviceAnalytics: ref.read(uspDeviceAnalyticsProvider),
+                    systemMonitor: ref.read(uspSystemMonitorProvider),
                     firewallSettings: fwSvc.buildUIModel(
-                        rules: fwSvc
-                            .parseFirewallRules(state.firewallRules)),
-                    dmzSettings:
-                        dmzSvc.buildUIModel(state.dmzEntries),
-                    staticRoutes: ref
-                        .read(uspStaticRoutingProvider)
-                        .valueOrNull
-                        ?.routes,
-                    ipv6PortRules: ref
-                        .read(uspIpv6PortServiceProvider)
-                        .valueOrNull
-                        ?.rules,
-                    safeBrowsing: ref
-                        .read(uspInstantSafetyProvider)
-                        .valueOrNull
-                        ?.uiModel,
+                        rules: fwSvc.parseFirewallRules(state.firewallRules)),
+                    dmzSettings: dmzSvc.buildUIModel(state.dmzEntries),
+                    staticRoutes:
+                        ref.read(uspStaticRoutingProvider).valueOrNull?.routes,
+                    ipv6PortRules:
+                        ref.read(uspIpv6PortServiceProvider).valueOrNull?.rules,
+                    safeBrowsing:
+                        ref.read(uspInstantSafetyProvider).valueOrNull?.uiModel,
                   );
                   doSomethingWithSpinner(
                     context,
@@ -327,8 +316,7 @@ class _UspSliverDashboardViewState
               padding: EdgeInsets.symmetric(horizontal: pageMargin),
               sliver: SliverDashboard(
                 itemBuilder: (context, item) {
-                  return _buildItemWidget(
-                      context, item, _isEditMode, factory);
+                  return _buildItemWidget(context, item, _isEditMode, factory);
                 },
                 slotAspectRatio: ratio,
                 mainAxisSpacing: AppSpacing.lg,
@@ -412,7 +400,8 @@ class _UspSliverDashboardViewState
       ),
     );
 
-    if ((result == 'reset' || result == 'toggle_off' ||
+    if ((result == 'reset' ||
+            result == 'toggle_off' ||
             result == 'preset_changed') &&
         mounted) {
       setState(() {

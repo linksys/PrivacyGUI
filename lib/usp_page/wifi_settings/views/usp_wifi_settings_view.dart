@@ -80,7 +80,8 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
                 children: [
                   // ── Page header: back arrow + title ──────────────────
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.md),
                     child: _buildPageHeader(context),
                   ),
                   // ── Tab bar ───────────────────────────────────────────

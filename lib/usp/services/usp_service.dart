@@ -27,10 +27,12 @@ enum NotifType {
 
 /// SSE subscription delegate. Set by [SseManager] to enable SSE-backed
 /// subscriptions. When null, [UspService.subscribe] falls back to polling.
-typedef SseSubscribeDelegate = Future<({
-  void Function() removeHandler,
-  Future<void> Function() unregister,
-})> Function({
+typedef SseSubscribeDelegate = Future<
+        ({
+          void Function() removeHandler,
+          Future<void> Function() unregister,
+        })>
+    Function({
   required String subscriptionId,
   required String notifType,
   required String referenceList,
@@ -311,9 +313,9 @@ class UspService {
     final sw = Stopwatch()..start();
     await _withAuthRetry(() => _client.delete(path));
     sw.stop();
-    final shortPath =
-        path.startsWith('Device.') ? path.substring(7) : path;
-    logger.d('[UspService]:#$id DELETE $shortPath (${sw.elapsedMilliseconds}ms)');
+    final shortPath = path.startsWith('Device.') ? path.substring(7) : path;
+    logger
+        .d('[UspService]:#$id DELETE $shortPath (${sw.elapsedMilliseconds}ms)');
   }
 
   /// Deletes multiple object instances in a single operation.
@@ -386,7 +388,8 @@ class UspService {
     const objectPath = 'Device.LocalAgent.Subscription.';
 
     // Step 1: Snapshot existing instance IDs
-    final before = await _withAuthRetry(() => _client.getMultiple([objectPath]));
+    final before =
+        await _withAuthRetry(() => _client.getMultiple([objectPath]));
     final existingIds = before.keys
         .where((k) => k.endsWith('.Enable'))
         .map((k) {
@@ -456,8 +459,9 @@ class UspService {
     final sw = Stopwatch()..start();
     await _withAuthRetry(() => _client.delete(instancePath));
     sw.stop();
-    final shortPath =
-        instancePath.startsWith('Device.') ? instancePath.substring(7) : instancePath;
+    final shortPath = instancePath.startsWith('Device.')
+        ? instancePath.substring(7)
+        : instancePath;
     logger.d('[UspService]:#$id DELETE_SUBSCRIPTION $shortPath '
         '(${sw.elapsedMilliseconds}ms)');
   }

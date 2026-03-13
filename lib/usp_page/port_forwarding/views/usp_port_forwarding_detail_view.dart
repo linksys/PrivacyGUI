@@ -47,14 +47,12 @@ class _UspPortForwardingDetailViewState
     final asyncState = ref.watch(uspDashboardProvider);
     final state = asyncState.valueOrNull;
 
-    final singlePortRules = state?.portForwardingRuleModels
-            .where((r) => r.isSinglePort)
-            .toList() ??
-        [];
-    final portRangeRules = state?.portForwardingRuleModels
-            .where((r) => r.isPortRange)
-            .toList() ??
-        [];
+    final singlePortRules =
+        state?.portForwardingRuleModels.where((r) => r.isSinglePort).toList() ??
+            [];
+    final portRangeRules =
+        state?.portForwardingRuleModels.where((r) => r.isPortRange).toList() ??
+            [];
     final triggeringRules = state?.portTriggeringRuleModels ?? [];
 
     return LayoutBuilder(builder: (context, constraints) {

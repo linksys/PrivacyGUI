@@ -92,9 +92,8 @@ class _UspTrafficAnalysisCardState
             displayMode: TabDisplayMode.segmented,
             isScrollable: true,
             showBorder: false,
-            onTabChanged: (index) => ref
-                .read(cardTabIndexProvider(_cardId).notifier)
-                .state = index,
+            onTabChanged: (index) =>
+                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
           ),
           AppGap.md(),
           Expanded(
@@ -308,8 +307,10 @@ class _ComparisonView extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final latest = history.last;
-    final wanRate = latest.interfaces[TrafficInterface.wan]?.totalBytesPerSec ?? 0;
-    final lanRate = latest.interfaces[TrafficInterface.lan]?.totalBytesPerSec ?? 0;
+    final wanRate =
+        latest.interfaces[TrafficInterface.wan]?.totalBytesPerSec ?? 0;
+    final lanRate =
+        latest.interfaces[TrafficInterface.lan]?.totalBytesPerSec ?? 0;
 
     return Column(
       children: [
@@ -436,10 +437,20 @@ class _InterfaceBreakdownBars extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final entries = <(String, int, int, Color)>[];
     if (wan != null) {
-      entries.add(('WAN', wan!.totalBytesSent, wan!.totalBytesReceived, colorScheme.primary));
+      entries.add((
+        'WAN',
+        wan!.totalBytesSent,
+        wan!.totalBytesReceived,
+        colorScheme.primary
+      ));
     }
     if (lan != null) {
-      entries.add(('LAN', lan!.totalBytesSent, lan!.totalBytesReceived, colorScheme.secondary));
+      entries.add((
+        'LAN',
+        lan!.totalBytesSent,
+        lan!.totalBytesReceived,
+        colorScheme.secondary
+      ));
     }
 
     final maxBytes = entries.fold(0, (a, e) => math.max(a, e.$2 + e.$3));
@@ -630,15 +641,14 @@ class _DualAxisLinePainter extends CustomPainter {
         .map((s) => s.interfaces[TrafficInterface.wan]?.totalBytesPerSec ?? 0.0)
         .toList();
     final packetRates = history
-        .map(
-            (s) => s.interfaces[TrafficInterface.wan]?.totalPacketsPerSec ?? 0.0)
+        .map((s) =>
+            s.interfaces[TrafficInterface.wan]?.totalPacketsPerSec ?? 0.0)
         .toList();
 
     final bytesMax = _niceMaxBytes(
         byteRates.isEmpty ? 0 : byteRates.reduce((a, b) => math.max(a, b)));
-    final packetsMax = _niceMaxPackets(packetRates.isEmpty
-        ? 0
-        : packetRates.reduce((a, b) => math.max(a, b)));
+    final packetsMax = _niceMaxPackets(
+        packetRates.isEmpty ? 0 : packetRates.reduce((a, b) => math.max(a, b)));
 
     // Grid
     _drawDualGrid(canvas, chartRect, colorScheme, bytesMax, packetsMax);
@@ -768,8 +778,16 @@ class _DualAxisLinePainter extends CustomPainter {
   static double _niceMaxBytes(double rawMax) {
     if (rawMax <= 0) return 1024;
     const steps = [
-      1024.0, 10240.0, 102400.0, 524288.0, 1048576.0,
-      5242880.0, 10485760.0, 52428800.0, 104857600.0, 1073741824.0,
+      1024.0,
+      10240.0,
+      102400.0,
+      524288.0,
+      1048576.0,
+      5242880.0,
+      10485760.0,
+      52428800.0,
+      104857600.0,
+      1073741824.0,
     ];
     for (final step in steps) {
       if (rawMax <= step) return step;

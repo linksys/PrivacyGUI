@@ -63,8 +63,9 @@ class UspNetworkTopologyCard extends ConsumerWidget {
                 topology: topology,
                 viewMode: TopologyViewMode.graph,
                 layoutMode: LayoutRecommendation.auto,
-                clientVisibility:
-                    useRing ? ClientVisibility.onHover : ClientVisibility.always,
+                clientVisibility: useRing
+                    ? ClientVisibility.onHover
+                    : ClientVisibility.always,
                 nodeRendererRegistry: NodeRendererRegistry.unified,
                 enableAnimation: true,
                 interactive: false,

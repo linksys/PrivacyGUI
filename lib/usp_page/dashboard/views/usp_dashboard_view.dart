@@ -26,8 +26,7 @@ class UspDashboardView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncState = ref.watch(uspDashboardProvider);
-    final isRefreshing =
-        asyncState.isLoading && asyncState.valueOrNull != null;
+    final isRefreshing = asyncState.isLoading && asyncState.valueOrNull != null;
     final barsVisible = ref.watch(uspBarsVisibleProvider);
 
     return Stack(

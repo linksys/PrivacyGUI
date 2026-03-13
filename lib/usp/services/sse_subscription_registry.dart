@@ -103,7 +103,8 @@ class SseSubscriptionRegistry {
   Future<void> unregister(String subscriptionId) async {
     final record = _subscriptions.remove(subscriptionId);
     if (record == null) {
-      logger.d('[SSE Registry] Unregister $subscriptionId: not found, skipping');
+      logger
+          .d('[SSE Registry] Unregister $subscriptionId: not found, skipping');
       return;
     }
 
@@ -133,7 +134,8 @@ class SseSubscriptionRegistry {
   /// re-registration — this avoids the expensive 5-step OBUSPA workaround.
   Future<void> resubscribeAll() async {
     if (_subscriptions.isEmpty) {
-      logger.d('[SSE Registry] resubscribeAll: no subscriptions to re-register');
+      logger
+          .d('[SSE Registry] resubscribeAll: no subscriptions to re-register');
       return;
     }
 

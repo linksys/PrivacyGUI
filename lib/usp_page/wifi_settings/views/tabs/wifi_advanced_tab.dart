@@ -83,7 +83,6 @@ class UspWifiAdvancedTab extends ConsumerWidget {
             ),
             AppGap.lg(),
           ],
-
         ],
       ),
     );

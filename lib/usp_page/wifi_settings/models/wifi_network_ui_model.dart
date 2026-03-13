@@ -193,9 +193,8 @@ class WifiNetworkUIModel extends Equatable {
         enabled: map['enabled'] as bool? ?? false,
         ssidAdvertisementEnabled:
             map['ssidAdvertisementEnabled'] as bool? ?? true,
-        supportedSecurityModes: (map['supportedSecurityModes'] as List?)
-                ?.cast<String>() ??
-            [],
+        supportedSecurityModes:
+            (map['supportedSecurityModes'] as List?)?.cast<String>() ?? [],
         securityMode: map['securityMode'] as String? ?? '',
         keyPassphrase: map['keyPassphrase'] as String? ?? '',
         isGuest: map['isGuest'] as bool? ?? false,
@@ -203,8 +202,7 @@ class WifiNetworkUIModel extends Equatable {
         channel: map['channel'] as int? ?? 0,
         channelBandwidth: map['channelBandwidth'] as String? ?? '',
         autoChannelEnable: map['autoChannelEnable'] as bool? ?? true,
-        possibleChannels:
-            (map['possibleChannels'] as List?)?.cast<int>() ?? [],
+        possibleChannels: (map['possibleChannels'] as List?)?.cast<int>() ?? [],
         operatingStandards: map['operatingStandards'] as String? ?? '',
         supportedStandards: map['supportedStandards'] as String? ?? '',
       );

@@ -109,8 +109,7 @@ class UspLayoutPreferences extends Equatable {
 
   static GridWidgetConfig _defaultConfig(String widgetId) {
     final spec = UspWidgetSpecs.getById(widgetId);
-    final defaultOrder =
-        spec != null ? UspWidgetSpecs.all.indexOf(spec) : 0;
+    final defaultOrder = spec != null ? UspWidgetSpecs.all.indexOf(spec) : 0;
     return GridWidgetConfig(
       widgetId: widgetId,
       order: defaultOrder,
@@ -132,8 +131,7 @@ class UspLayoutPreferences extends Equatable {
 
   factory UspLayoutPreferences.fromJson(Map<String, dynamic> json) {
     final useCustomLayout = json['useCustomLayout'] as bool? ?? true;
-    final hasSeenPresetDialog =
-        json['hasSeenPresetDialog'] as bool? ?? false;
+    final hasSeenPresetDialog = json['hasSeenPresetDialog'] as bool? ?? false;
     final presetName = json['selectedPreset'] as String?;
     UspDashboardPreset? preset;
     if (presetName != null) {

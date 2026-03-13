@@ -102,8 +102,11 @@ class UspWifiSettingsService {
   ///                      and `enabled` state. Mirrors the old JNAP logic but
   ///                      excludes `securityMode` since 6 GHz is forced to WPA3
   ///                      and would almost always differ from 2.4/5 GHz.
-  ({WifiQuickSetupNetwork? main, WifiQuickSetupNetwork? guest, bool isQuickSetup})
-      buildQuickSetupNetworks(List<WifiNetworkUIModel> networks) {
+  ({
+    WifiQuickSetupNetwork? main,
+    WifiQuickSetupNetwork? guest,
+    bool isQuickSetup
+  }) buildQuickSetupNetworks(List<WifiNetworkUIModel> networks) {
     final mainNetworks = networks.where((n) => !n.isGuest).toList();
     final guestNetworks = networks.where((n) => n.isGuest).toList();
 
@@ -139,9 +142,8 @@ class UspWifiSettingsService {
     for (final n in networks.skip(1)) {
       modesSet = modesSet.intersection(n.supportedSecurityModes.toSet());
     }
-    final orderedModes = first.supportedSecurityModes
-        .where(modesSet.contains)
-        .toList();
+    final orderedModes =
+        first.supportedSecurityModes.where(modesSet.contains).toList();
 
     return WifiQuickSetupNetwork(
       isGuest: isGuest,
@@ -162,7 +164,11 @@ class UspWifiSettingsService {
 /// e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
 List<String> _parseModesSupported(String raw) {
   if (raw.isEmpty) return [];
-  return raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  return raw
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
 }
 
 /// Parses a TR-181 PossibleChannels string into a sorted list of channel numbers.

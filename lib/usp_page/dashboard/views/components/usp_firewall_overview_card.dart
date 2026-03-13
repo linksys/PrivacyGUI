@@ -36,9 +36,8 @@ class UspFirewallOverviewCard extends ConsumerWidget {
             initialIndex: selectedTab,
             displayMode: TabDisplayMode.segmented,
             showBorder: false,
-            onTabChanged: (index) => ref
-                .read(cardTabIndexProvider(_cardId).notifier)
-                .state = index,
+            onTabChanged: (index) =>
+                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
           ),
           AppGap.md(),
           Expanded(
@@ -123,7 +122,8 @@ class _RulesTab extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _StatChip(
-                label: 'FW Rules', value: '$activeCount/${firewallRules.length}'),
+                label: 'FW Rules',
+                value: '$activeCount/${firewallRules.length}'),
             _StatChip(label: 'Port Fwd', value: '$portForwardingCount'),
             _StatChip(label: 'DMZ', value: '$dmzCount'),
           ],
@@ -260,9 +260,7 @@ class _PortsTab extends StatelessWidget {
               series: [
                 AppChartSeries(
                   label: 'Rules',
-                  data: protocolCounts.values
-                      .map((v) => v.toDouble())
-                      .toList(),
+                  data: protocolCounts.values.map((v) => v.toDouble()).toList(),
                   color: colorScheme.primary,
                 ),
               ],

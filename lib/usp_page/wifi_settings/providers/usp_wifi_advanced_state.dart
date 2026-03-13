@@ -15,8 +15,7 @@ class UspWifiAdvancedState extends Equatable {
   /// True when ALL reporting radios have IEEE80211h enabled.
   /// False when any radio has it disabled, or when no radios report it.
   bool get isDfsEnabled =>
-      ieee80211hByRadio.isNotEmpty &&
-      ieee80211hByRadio.values.every((v) => v);
+      ieee80211hByRadio.isNotEmpty && ieee80211hByRadio.values.every((v) => v);
 
   UspWifiAdvancedState copyWith({
     Map<String, bool>? ieee80211hByRadio,

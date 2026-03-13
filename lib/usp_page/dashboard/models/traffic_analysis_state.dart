@@ -133,8 +133,7 @@ class TrafficAnalysisState extends Equatable {
     this.lastTimestamp,
   });
 
-  MultiInterfaceSnapshot? get latest =>
-      history.isEmpty ? null : history.last;
+  MultiInterfaceSnapshot? get latest => history.isEmpty ? null : history.last;
 
   TrafficAnalysisState copyWith({
     List<MultiInterfaceSnapshot>? history,

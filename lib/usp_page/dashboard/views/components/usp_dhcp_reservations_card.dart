@@ -18,8 +18,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = this.state ??
-        ref.watch(uspDashboardProvider).valueOrNull;
+    final state = this.state ?? ref.watch(uspDashboardProvider).valueOrNull;
     if (state == null) return const SizedBox.shrink();
     final reservations = state.dhcpReservationModels;
     final clients = state.dhcpClientModels;

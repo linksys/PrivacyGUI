@@ -64,9 +64,8 @@ class _UspNetworkHealthCardState extends ConsumerState<UspNetworkHealthCard> {
             displayMode: TabDisplayMode.segmented,
             isScrollable: true,
             showBorder: false,
-            onTabChanged: (index) => ref
-                .read(cardTabIndexProvider(_cardId).notifier)
-                .state = index,
+            onTabChanged: (index) =>
+                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
           ),
           AppGap.md(),
           Expanded(
@@ -114,12 +113,10 @@ class _HealthOverview extends StatelessWidget {
     final wan = state.latest?.interfaces[TrafficInterface.wan];
     final lan = state.latest?.interfaces[TrafficInterface.lan];
 
-    final wanScore = wan != null
-        ? NetworkHealthHelpers.computeHealthScore(wan)
-        : 100;
-    final lanScore = lan != null
-        ? NetworkHealthHelpers.computeHealthScore(lan)
-        : 100;
+    final wanScore =
+        wan != null ? NetworkHealthHelpers.computeHealthScore(wan) : 100;
+    final lanScore =
+        lan != null ? NetworkHealthHelpers.computeHealthScore(lan) : 100;
     // Overall score = min of WAN and LAN
     final overallScore = math.min(wanScore, lanScore);
     final tier = NetworkHealthHelpers.tierFromScore(overallScore);
@@ -128,9 +125,8 @@ class _HealthOverview extends StatelessWidget {
     final wanTier = NetworkHealthHelpers.tierFromScore(wanScore);
     final lanTier = NetworkHealthHelpers.tierFromScore(lanScore);
 
-    final lossPercent = wan != null
-        ? NetworkHealthHelpers.computeLossPercent(wan)
-        : 0.0;
+    final lossPercent =
+        wan != null ? NetworkHealthHelpers.computeLossPercent(wan) : 0.0;
     final errorRate = wan?.totalErrorsPerSec ?? 0;
     final discardRate = wan?.totalDiscardsPerSec ?? 0;
 
@@ -259,8 +255,8 @@ class _ErrorsChart extends StatelessWidget {
     final history = state.history;
 
     final errorData = history
-        .map((s) =>
-            s.interfaces[TrafficInterface.wan]?.totalErrorsPerSec ?? 0.0)
+        .map(
+            (s) => s.interfaces[TrafficInterface.wan]?.totalErrorsPerSec ?? 0.0)
         .toList();
     final discardData = history
         .map((s) =>
@@ -271,18 +267,14 @@ class _ErrorsChart extends StatelessWidget {
     final avgErr = errorData.isEmpty
         ? 0.0
         : errorData.reduce((a, b) => a + b) / errorData.length;
-    final peakErr = errorData.isEmpty
-        ? 0.0
-        : errorData.reduce(math.max);
+    final peakErr = errorData.isEmpty ? 0.0 : errorData.reduce(math.max);
     final avgDisc = discardData.isEmpty
         ? 0.0
         : discardData.reduce((a, b) => a + b) / discardData.length;
 
     // Auto Y-axis
     final allValues = [...errorData, ...discardData];
-    final maxVal = allValues.isEmpty
-        ? 1.0
-        : allValues.reduce(math.max);
+    final maxVal = allValues.isEmpty ? 1.0 : allValues.reduce(math.max);
     final yMax = maxVal < 0.1 ? 1.0 : maxVal * 1.3;
 
     return Column(
@@ -354,13 +346,9 @@ class _LossChart extends StatelessWidget {
     final avgLoss = lossData.isEmpty
         ? 0.0
         : lossData.reduce((a, b) => a + b) / lossData.length;
-    final peakLoss = lossData.isEmpty
-        ? 0.0
-        : lossData.reduce(math.max);
+    final peakLoss = lossData.isEmpty ? 0.0 : lossData.reduce(math.max);
 
-    final maxVal = lossData.isEmpty
-        ? 1.0
-        : lossData.reduce(math.max);
+    final maxVal = lossData.isEmpty ? 1.0 : lossData.reduce(math.max);
     final yMax = maxVal < 0.1 ? 1.0 : maxVal * 1.3;
 
     return Column(

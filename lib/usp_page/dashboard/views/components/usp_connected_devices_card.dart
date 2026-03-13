@@ -19,7 +19,8 @@ class UspConnectedDevicesCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final devices = this.devices ??
-        ref.watch(uspDashboardProvider).valueOrNull?.deviceModels ?? [];
+        ref.watch(uspDashboardProvider).valueOrNull?.deviceModels ??
+        [];
     final activeDevices = devices.where((d) => d.isActive).toList();
     final inactiveDevices = devices.where((d) => !d.isActive).toList();
 

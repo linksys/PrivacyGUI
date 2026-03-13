@@ -54,10 +54,8 @@ class UspNodeDetailView extends ConsumerWidget {
 
         final node = detail.node!;
         return AppResponsiveLayout(
-          mobile: (_) =>
-              _buildSingleColumn(context, node, detail),
-          desktop: (_) =>
-              _buildTwoColumn(context, node, detail),
+          mobile: (_) => _buildSingleColumn(context, node, detail),
+          desktop: (_) => _buildTwoColumn(context, node, detail),
         );
       },
     );

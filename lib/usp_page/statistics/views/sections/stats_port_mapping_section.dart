@@ -56,8 +56,7 @@ class StatsPortMappingSection extends ConsumerWidget {
       children: [
         // Port forwarding list (top 5)
         if (portForwardingRules.isNotEmpty) ...[
-          AppText.labelLarge(
-              'Port Forwarding (${portForwardingRules.length})'),
+          AppText.labelLarge('Port Forwarding (${portForwardingRules.length})'),
           AppGap.sm(),
           ...portForwardingRules.take(5).map((rule) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -97,9 +96,7 @@ class StatsPortMappingSection extends ConsumerWidget {
               series: [
                 AppChartSeries(
                   label: 'Rules',
-                  data: protocolCounts.values
-                      .map((v) => v.toDouble())
-                      .toList(),
+                  data: protocolCounts.values.map((v) => v.toDouble()).toList(),
                   color: colorScheme.primary,
                 ),
               ],

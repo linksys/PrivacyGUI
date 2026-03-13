@@ -169,16 +169,15 @@ class SseOperationAwaiter {
 
       try {
         final response = await _usp.get([getPath]);
-        final stateKey =
-            response.keys.firstWhere((k) => k.endsWith('DiagnosticsState'),
-                orElse: () => '');
+        final stateKey = response.keys.firstWhere(
+            (k) => k.endsWith('DiagnosticsState'),
+            orElse: () => '');
         if (stateKey.isNotEmpty) {
           final state = response[stateKey]?.toString() ?? '';
           if (state == 'Complete' || state == 'Error') {
             // Extract command name from path
-            final cmdName = operateCommand
-                .split('.')
-                .last; // "IPPing()" or "TraceRoute()"
+            final cmdName =
+                operateCommand.split('.').last; // "IPPing()" or "TraceRoute()"
 
             // Convert response to output args format
             final outputArgs = response.map(
@@ -217,8 +216,7 @@ class SseOperationAwaiter {
         notification.payload['oper_complete'] as Map<String, dynamic>?;
     if (operComplete == null) return null;
 
-    final outputArgs =
-        (operComplete['output_args'] as Map<String, dynamic>?)
+    final outputArgs = (operComplete['output_args'] as Map<String, dynamic>?)
             ?.map((k, v) => MapEntry(k, v.toString())) ??
         {};
 

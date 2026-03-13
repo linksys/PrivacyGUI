@@ -68,9 +68,8 @@ class UspWifiPerformanceCard extends ConsumerWidget {
             initialIndex: selectedTab,
             displayMode: TabDisplayMode.segmented,
             showBorder: false,
-            onTabChanged: (index) => ref
-                .read(cardTabIndexProvider(_cardId).notifier)
-                .state = index,
+            onTabChanged: (index) =>
+                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
           ),
           AppGap.md(),
           Expanded(
@@ -251,12 +250,10 @@ class _SpeedTab extends StatelessWidget {
     }
 
     // Convert kbps to Mbps for chart display
-    final dlData = clients
-        .map((c) => c.client.lastDataDownlinkRate / 1000)
-        .toList();
-    final ulData = clients
-        .map((c) => c.client.lastDataUplinkRate / 1000)
-        .toList();
+    final dlData =
+        clients.map((c) => c.client.lastDataDownlinkRate / 1000).toList();
+    final ulData =
+        clients.map((c) => c.client.lastDataUplinkRate / 1000).toList();
     final xLabels = clients.map((c) => c.displayName).toList();
 
     return Column(
@@ -457,8 +454,7 @@ class _BandDistributionDonut extends StatelessWidget {
 
     if (sections.isEmpty) return const SizedBox.shrink();
 
-    final totalClients =
-        clientsPerRadio.values.fold(0, (a, b) => a + b);
+    final totalClients = clientsPerRadio.values.fold(0, (a, b) => a + b);
 
     return Center(
       child: AppPieChart(
@@ -468,8 +464,7 @@ class _BandDistributionDonut extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppText.titleMedium('$totalClients'),
-            AppText.labelSmall('clients',
-                color: colorScheme.onSurfaceVariant),
+            AppText.labelSmall('clients', color: colorScheme.onSurfaceVariant),
           ],
         ),
         size: 120,

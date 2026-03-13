@@ -89,8 +89,7 @@ class _StatsSignalQualitySectionState
           ),
         ),
         AppGap.sm(),
-        if (_touchedAxisIndex != null &&
-            _touchedAxisIndex! < bands.length) ...[
+        if (_touchedAxisIndex != null && _touchedAxisIndex! < bands.length) ...[
           _RadarTooltipRow(
             band: bands.keys.elementAt(_touchedAxisIndex!),
             quality: bands.values.elementAt(_touchedAxisIndex!),

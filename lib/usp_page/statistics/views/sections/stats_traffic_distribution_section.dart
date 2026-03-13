@@ -99,12 +99,20 @@ class _InterfaceBreakdownBars extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final entries = <(String, int, int, Color)>[];
     if (wan != null) {
-      entries.add(
-          ('WAN', wan!.totalBytesSent, wan!.totalBytesReceived, colorScheme.primary));
+      entries.add((
+        'WAN',
+        wan!.totalBytesSent,
+        wan!.totalBytesReceived,
+        colorScheme.primary
+      ));
     }
     if (lan != null) {
-      entries.add(
-          ('LAN', lan!.totalBytesSent, lan!.totalBytesReceived, colorScheme.secondary));
+      entries.add((
+        'LAN',
+        lan!.totalBytesSent,
+        lan!.totalBytesReceived,
+        colorScheme.secondary
+      ));
     }
     final maxBytes = entries.fold(0, (a, e) => math.max(a, e.$2 + e.$3));
 
@@ -120,7 +128,12 @@ class _InterfaceBreakdownBars extends StatelessWidget {
                   child: AppText.labelSmall(label, textAlign: TextAlign.end),
                 ),
                 AppGap.sm(),
-                Expanded(child: _DualBar(sent: sent, recv: recv, maxValue: maxBytes, color: color)),
+                Expanded(
+                    child: _DualBar(
+                        sent: sent,
+                        recv: recv,
+                        maxValue: maxBytes,
+                        color: color)),
               ],
             ),
           ),
@@ -134,7 +147,11 @@ class _DualBar extends StatelessWidget {
   final int recv;
   final int maxValue;
   final Color color;
-  const _DualBar({required this.sent, required this.recv, required this.maxValue, required this.color});
+  const _DualBar(
+      {required this.sent,
+      required this.recv,
+      required this.maxValue,
+      required this.color});
 
   @override
   Widget build(BuildContext context) {

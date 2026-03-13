@@ -119,9 +119,8 @@ class WifiSettingsSettings extends Equatable {
     return WifiSettingsSettings(
       networks: networks ?? this.networks,
       quickSetupEnabled: quickSetupEnabled ?? this.quickSetupEnabled,
-      quickSetupMain: clearQuickSetupMain
-          ? null
-          : (quickSetupMain ?? this.quickSetupMain),
+      quickSetupMain:
+          clearQuickSetupMain ? null : (quickSetupMain ?? this.quickSetupMain),
       quickSetupGuest: clearQuickSetupGuest
           ? null
           : (quickSetupGuest ?? this.quickSetupGuest),

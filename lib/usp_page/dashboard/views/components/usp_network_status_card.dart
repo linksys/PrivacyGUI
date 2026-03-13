@@ -14,8 +14,8 @@ class UspNetworkStatusCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final wan = this.wan ??
-        ref.watch(uspDashboardProvider).valueOrNull?.wanStatusModel;
+    final wan =
+        this.wan ?? ref.watch(uspDashboardProvider).valueOrNull?.wanStatusModel;
     if (wan == null) return const SizedBox.shrink();
     final isRenewing = ref.watch(uspMutationLoadingProvider) == 'wanRenew';
 

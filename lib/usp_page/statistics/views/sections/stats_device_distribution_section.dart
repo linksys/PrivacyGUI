@@ -54,8 +54,7 @@ class StatsDeviceDistributionSection extends ConsumerWidget {
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
-              touchedCenterLabel: (section, _) =>
-                  '${section.value.toInt()}',
+              touchedCenterLabel: (section, _) => '${section.value.toInt()}',
               size: 180,
             ),
           ),
@@ -94,8 +93,7 @@ class _BandDistributionBars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final maxCount =
-        bandDistribution.values.fold(0, (a, b) => a > b ? a : b);
+    final maxCount = bandDistribution.values.fold(0, (a, b) => a > b ? a : b);
     final seriesColors = [
       colorScheme.primary,
       colorScheme.secondary,

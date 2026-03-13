@@ -13,7 +13,8 @@ class UspEthernetPortsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ports = this.ports ??
-        ref.watch(uspDashboardProvider).valueOrNull?.ethernetPortModels ?? [];
+        ref.watch(uspDashboardProvider).valueOrNull?.ethernetPortModels ??
+        [];
     return SizedBox(
       width: double.infinity,
       child: AppCard(

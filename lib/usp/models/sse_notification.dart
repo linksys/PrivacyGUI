@@ -1,7 +1,8 @@
 /// A parsed notification payload from an SSE "notification" event.
 class SseNotification {
   final String subscriptionId;
-  final String type; // "ValueChange", "ObjectCreation", "ObjectDeletion", "OperationComplete"
+  final String
+      type; // "ValueChange", "ObjectCreation", "ObjectDeletion", "OperationComplete"
   final Map<String, dynamic> payload; // Full decoded JSON
 
   const SseNotification({
@@ -11,8 +12,7 @@ class SseNotification {
   });
 
   @override
-  String toString() =>
-      'SseNotification(sub=$subscriptionId, type=$type)';
+  String toString() => 'SseNotification(sub=$subscriptionId, type=$type)';
 }
 
 /// Callback signature for notification handlers.

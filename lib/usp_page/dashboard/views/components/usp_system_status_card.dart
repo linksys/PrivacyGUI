@@ -44,8 +44,7 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
 
   @override
   Widget build(BuildContext context) {
-    final info =
-        ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
+    final info = ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
     if (info == null) return const SizedBox.shrink();
     final monitorState = ref.watch(uspSystemMonitorProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
@@ -95,9 +94,8 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
             displayMode: TabDisplayMode.segmented,
             isScrollable: true,
             showBorder: false,
-            onTabChanged: (index) => ref
-                .read(cardTabIndexProvider(_cardId).notifier)
-                .state = index,
+            onTabChanged: (index) =>
+                ref.read(cardTabIndexProvider(_cardId).notifier).state = index,
           ),
           AppGap.md(),
           Expanded(
@@ -174,10 +172,14 @@ class _MonitorView extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildGauge(context, value: cpuPercent.toDouble(),
-                  label: 'CPU', display: '$cpuPercent%'),
-              _buildGauge(context, value: memPercent.toDouble(),
-                  label: 'Memory', display: '$memPercent%'),
+              _buildGauge(context,
+                  value: cpuPercent.toDouble(),
+                  label: 'CPU',
+                  display: '$cpuPercent%'),
+              _buildGauge(context,
+                  value: memPercent.toDouble(),
+                  label: 'Memory',
+                  display: '$memPercent%'),
             ],
           ),
         ),
@@ -200,8 +202,8 @@ class _MonitorView extends StatelessWidget {
             AppText.labelSmall('Memory: ${latest?.memoryPercent ?? '--'}%'),
             const Spacer(),
             if (monitorState.refreshInterval != null) ...[
-              AppIcon.font(Icons.autorenew, size: 12,
-                  color: colorScheme.onSurfaceVariant),
+              AppIcon.font(Icons.autorenew,
+                  size: 12, color: colorScheme.onSurfaceVariant),
               AppText.labelSmall(intervalLabel,
                   color: colorScheme.onSurfaceVariant),
             ],
@@ -399,9 +401,8 @@ class _CorrelationView extends StatelessWidget {
     final trafficData = _alignTrafficToSystem(sysHistory, trafficHistory);
 
     // Auto-scale traffic Y-axis
-    final maxTraffic = trafficData.isEmpty
-        ? 1.0
-        : trafficData.reduce((a, b) => a > b ? a : b);
+    final maxTraffic =
+        trafficData.isEmpty ? 1.0 : trafficData.reduce((a, b) => a > b ? a : b);
     final trafficMax = maxTraffic < 1 ? 1.0 : maxTraffic * 1.2;
 
     return Column(

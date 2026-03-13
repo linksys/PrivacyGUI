@@ -207,7 +207,8 @@ class _SelectAutoCompleteState extends State<SelectAutoComplete> {
     );
   }
 
-  Widget _buildDefaultOptionTile(BuildContext context, AutoCompleteOption option) {
+  Widget _buildDefaultOptionTile(
+      BuildContext context, AutoCompleteOption option) {
     final colorScheme = Theme.of(context).extension<AppColorScheme>();
     final statusColor = option.isActive
         ? colorScheme?.semanticSuccess

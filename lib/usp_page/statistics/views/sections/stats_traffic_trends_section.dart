@@ -35,18 +35,17 @@ class StatsTrafficTrendsSection extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     final byteRates = history
-        .map(
-            (s) => s.interfaces[TrafficInterface.wan]?.totalBytesPerSec ?? 0.0)
+        .map((s) => s.interfaces[TrafficInterface.wan]?.totalBytesPerSec ?? 0.0)
         .toList();
     final packetRates = history
         .map((s) =>
             s.interfaces[TrafficInterface.wan]?.totalPacketsPerSec ?? 0.0)
         .toList();
 
-    final bytesMax = _niceMaxBytes(
-        byteRates.isEmpty ? 0 : byteRates.reduce(math.max));
-    final packetsMax = _niceMaxPackets(
-        packetRates.isEmpty ? 0 : packetRates.reduce(math.max));
+    final bytesMax =
+        _niceMaxBytes(byteRates.isEmpty ? 0 : byteRates.reduce(math.max));
+    final packetsMax =
+        _niceMaxPackets(packetRates.isEmpty ? 0 : packetRates.reduce(math.max));
 
     return Column(
       children: [
@@ -99,8 +98,16 @@ class StatsTrafficTrendsSection extends ConsumerWidget {
 double _niceMaxBytes(double rawMax) {
   if (rawMax <= 0) return 1024;
   const steps = [
-    1024.0, 10240.0, 102400.0, 524288.0, 1048576.0,
-    5242880.0, 10485760.0, 52428800.0, 104857600.0, 1073741824.0,
+    1024.0,
+    10240.0,
+    102400.0,
+    524288.0,
+    1048576.0,
+    5242880.0,
+    10485760.0,
+    52428800.0,
+    104857600.0,
+    1073741824.0,
   ];
   for (final step in steps) {
     if (rawMax <= step) return step;

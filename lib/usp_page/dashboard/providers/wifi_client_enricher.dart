@@ -27,7 +27,8 @@ Future<Map<String, WifiClient>> fetchWifiClients(UspService client) async {
 
   // Fallback: selective-get with nested wildcards may not be supported by
   // some USP agents. Try fetching the whole AssociatedDevice subtree instead.
-  logger.d('[USP] WifiClients selective-get empty, trying parent-path fallback');
+  logger
+      .d('[USP] WifiClients selective-get empty, trying parent-path fallback');
   try {
     final fallback = await _fetchWifiClientsFallback(client);
     if (fallback.isNotEmpty) {
@@ -86,11 +87,10 @@ Future<Map<String, WifiClient>> _fetchWifiClientsFallback(
         instancePath: cp,
         parentPath: '$basePath$apId.',
         macAddress: mac,
-        signalStrength: int.tryParse(
-                response['${cp}SignalStrength']?.toString() ?? '') ??
-            0,
-        noise:
-            int.tryParse(response['${cp}Noise']?.toString() ?? '') ?? 0,
+        signalStrength:
+            int.tryParse(response['${cp}SignalStrength']?.toString() ?? '') ??
+                0,
+        noise: int.tryParse(response['${cp}Noise']?.toString() ?? '') ?? 0,
         lastDataDownlinkRate: int.tryParse(
                 response['${cp}LastDataDownlinkRate']?.toString() ?? '') ??
             0,

@@ -347,8 +347,7 @@ abstract class UspWidgetSpecs {
       }
 
       final newMinW = (minW * toCols / fromCols).round().clamp(1, toCols);
-      final newMaxW =
-          (maxW * toCols / fromCols).round().clamp(newMinW, toCols);
+      final newMaxW = (maxW * toCols / fromCols).round().clamp(newMinW, toCols);
 
       return {
         ...map,
@@ -401,13 +400,11 @@ abstract class UspWidgetSpecs {
     }
 
     // Remaining cards in 6-col pairs
-    final remaining =
-        cardIds.where((id) => id != 'stats_panel').toList();
+    final remaining = cardIds.where((id) => id != 'stats_panel').toList();
     for (int i = 0; i < remaining.length; i += 2) {
       final leftSpec = getById(remaining[i]);
       if (leftSpec == null) continue;
-      final leftItem =
-          LayoutItemFactory.fromSpec(leftSpec, x: 0, y: y, w: 6);
+      final leftItem = LayoutItemFactory.fromSpec(leftSpec, x: 0, y: y, w: 6);
       items.add(leftItem);
 
       int rowHeight = leftItem.h;

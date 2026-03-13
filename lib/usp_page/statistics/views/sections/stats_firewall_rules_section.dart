@@ -47,8 +47,7 @@ class StatsFirewallRulesSection extends ConsumerWidget {
     final targetCounts = <String, int>{};
     int activeCount = 0;
     for (final rule in firewallRules) {
-      final target =
-          (rule.target as String).isNotEmpty ? rule.target : 'Other';
+      final target = (rule.target as String).isNotEmpty ? rule.target : 'Other';
       targetCounts[target] = (targetCounts[target] ?? 0) + 1;
       if (rule.enable) activeCount++;
     }
@@ -96,8 +95,7 @@ class StatsFirewallRulesSection extends ConsumerWidget {
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
-              touchedCenterLabel: (section, _) =>
-                  '${section.value.toInt()}',
+              touchedCenterLabel: (section, _) => '${section.value.toInt()}',
               size: 160,
             ),
           ),
@@ -112,8 +110,7 @@ class StatsFirewallRulesSection extends ConsumerWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  StatsLegendDot(
-                      color: seriesColors[i % seriesColors.length]),
+                  StatsLegendDot(color: seriesColors[i % seriesColors.length]),
                   AppGap.xs(),
                   AppText.labelSmall(
                     '${targetCounts.keys.elementAt(i)}: ${targetCounts.values.elementAt(i)}',

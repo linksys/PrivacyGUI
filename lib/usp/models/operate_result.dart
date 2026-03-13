@@ -27,8 +27,7 @@ class OperateResult {
   bool get isError => status == 'Error';
 
   @override
-  String toString() =>
-      'OperateResult($commandName, status=$status, '
+  String toString() => 'OperateResult($commandName, status=$status, '
       'args=${outputArgs.length} params)';
 }
 
@@ -85,10 +84,9 @@ class TracerouteHop {
     required this.rtTimes,
   });
 
-  int get avgRoundTrip =>
-      rtTimes.isNotEmpty
-          ? (rtTimes.reduce((a, b) => a + b) / rtTimes.length).round()
-          : 0;
+  int get avgRoundTrip => rtTimes.isNotEmpty
+      ? (rtTimes.reduce((a, b) => a + b) / rtTimes.length).round()
+      : 0;
 }
 
 /// Parsed Traceroute result from [OperateResult.outputArgs].

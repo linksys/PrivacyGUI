@@ -143,24 +143,17 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
     final deltaDiscRecv = current.discardsReceived - previous.discardsReceived;
 
     return InterfaceTrafficSnapshot(
-      uploadBytesPerSec:
-          deltaSent >= 0 ? (deltaSent / seconds) : 0,
-      downloadBytesPerSec:
-          deltaRecv >= 0 ? (deltaRecv / seconds) : 0,
-      uploadPacketsPerSec:
-          deltaPktSent >= 0 ? (deltaPktSent / seconds) : 0,
-      downloadPacketsPerSec:
-          deltaPktRecv >= 0 ? (deltaPktRecv / seconds) : 0,
+      uploadBytesPerSec: deltaSent >= 0 ? (deltaSent / seconds) : 0,
+      downloadBytesPerSec: deltaRecv >= 0 ? (deltaRecv / seconds) : 0,
+      uploadPacketsPerSec: deltaPktSent >= 0 ? (deltaPktSent / seconds) : 0,
+      downloadPacketsPerSec: deltaPktRecv >= 0 ? (deltaPktRecv / seconds) : 0,
       totalBytesSent: current.bytesSent,
       totalBytesReceived: current.bytesReceived,
       totalPacketsSent: current.packetsSent,
       totalPacketsReceived: current.packetsReceived,
-      errorsSentPerSec:
-          deltaErrSent >= 0 ? (deltaErrSent / seconds) : 0,
-      errorsReceivedPerSec:
-          deltaErrRecv >= 0 ? (deltaErrRecv / seconds) : 0,
-      discardsSentPerSec:
-          deltaDiscSent >= 0 ? (deltaDiscSent / seconds) : 0,
+      errorsSentPerSec: deltaErrSent >= 0 ? (deltaErrSent / seconds) : 0,
+      errorsReceivedPerSec: deltaErrRecv >= 0 ? (deltaErrRecv / seconds) : 0,
+      discardsSentPerSec: deltaDiscSent >= 0 ? (deltaDiscSent / seconds) : 0,
       discardsReceivedPerSec:
           deltaDiscRecv >= 0 ? (deltaDiscRecv / seconds) : 0,
       totalErrorsSent: current.errorsSent,

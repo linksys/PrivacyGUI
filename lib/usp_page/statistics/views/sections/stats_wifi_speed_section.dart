@@ -45,7 +45,8 @@ class StatsWifiSpeedSection extends ConsumerWidget {
 
   List<_ClientInfo> _buildClientList(dynamic state) {
     final clients = <_ClientInfo>[];
-    for (final entry in (state.wifiClientMap as Map<String, WifiClient>).entries) {
+    for (final entry
+        in (state.wifiClientMap as Map<String, WifiClient>).entries) {
       final client = entry.value;
       if (!client.active) continue;
       final device = (state.deviceModels as List)
@@ -54,8 +55,7 @@ class StatsWifiSpeedSection extends ConsumerWidget {
       final name = device?.hostName ?? entry.key;
       final displayName =
           name.length > 10 ? '${name.substring(0, 9)}\u2026' : name;
-      clients
-          .add(_ClientInfo(displayName: displayName, client: client));
+      clients.add(_ClientInfo(displayName: displayName, client: client));
     }
     return clients;
   }
@@ -89,8 +89,7 @@ class StatsWifiSpeedSection extends ConsumerWidget {
             yLabelFormatter: (v) => '${v.toInt()} Mbps',
             showValueLabels: clients.length <= 4,
             valueLabelFormatter: (v) => '${v.toInt()}',
-            tooltipFormatter: (label, v) =>
-                '$label: ${v.toInt()} Mbps',
+            tooltipFormatter: (label, v) => '$label: ${v.toInt()} Mbps',
           ),
         ),
         AppGap.sm(),

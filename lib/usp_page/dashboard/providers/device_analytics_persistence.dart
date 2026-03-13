@@ -23,9 +23,8 @@ Future<DeviceAnalyticsState> loadDeviceAnalytics() async {
 
   // Prune entries older than 24 hours
   final cutoff = DateTime.now().subtract(Duration(hours: 24));
-  final pruned = loaded.hourlyHistory
-      .where((h) => h.hour.isAfter(cutoff))
-      .toList();
+  final pruned =
+      loaded.hourlyHistory.where((h) => h.hour.isAfter(cutoff)).toList();
 
   // Rebuild allKnownMacs from pruned history only
   final activeMacs = <String>{};

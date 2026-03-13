@@ -65,8 +65,7 @@ class WifiQuickSetupCard extends ConsumerWidget {
             const Divider(),
             _QuickSetupTile(
               title: 'Name',
-              description:
-                  pending.ssid.isNotEmpty ? pending.ssid : '(No SSID)',
+              description: pending.ssid.isNotEmpty ? pending.ssid : '(No SSID)',
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editSsid(context, ref, pending.ssid),
             ),
@@ -75,9 +74,8 @@ class WifiQuickSetupCard extends ConsumerWidget {
             _QuickSetupTile(
               title: 'Password',
               description: passwordEntered ? '\u2022' * 12 : '(Required)',
-              descriptionColor: passwordEntered
-                  ? null
-                  : Theme.of(context).colorScheme.error,
+              descriptionColor:
+                  passwordEntered ? null : Theme.of(context).colorScheme.error,
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editPassword(context, ref, pending.password),
             ),
