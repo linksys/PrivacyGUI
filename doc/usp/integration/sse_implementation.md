@@ -366,7 +366,7 @@ Core subscriptions are auto-generated from YAML `subscribe:` blocks by `usp-code
 
 ### For Invalidation Signals (re-fetch on change)
 
-1. Add `subscribe:` block to the YAML definition (`doc/usp/definitions/`):
+1. Add `subscribe:` block to the YAML definition (`definitions/`):
    ```yaml
    # Single subscription:
    subscribe:
