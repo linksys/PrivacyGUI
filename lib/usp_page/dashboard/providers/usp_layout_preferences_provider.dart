@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/usp_dashboard_preset.dart';
 import '../models/usp_layout_preferences.dart';
 import 'usp_layout_controller.dart';
-
-const _uspPrefsKey = 'usp_layout_preferences';
 
 /// Provider for USP Dashboard layout preferences.
 final uspLayoutPreferencesProvider =
@@ -29,7 +28,7 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
 
   Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString(_uspPrefsKey);
+    final json = prefs.getString(pUspLayoutPreferences);
     if (json != null) {
       state = UspLayoutPreferences.fromJsonString(json);
     }
@@ -82,12 +81,12 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   Future<void> resetToDefaults() async {
     state = const UspLayoutPreferences();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_uspPrefsKey);
+    await prefs.remove(pUspLayoutPreferences);
     await ref.read(uspSliverDashboardControllerProvider.notifier).resetLayout();
   }
 
   Future<void> _saveToPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_uspPrefsKey, state.toJsonString());
+    await prefs.setString(pUspLayoutPreferences, state.toJsonString());
   }
 }

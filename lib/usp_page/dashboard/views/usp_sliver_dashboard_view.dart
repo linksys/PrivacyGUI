@@ -4,6 +4,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
 import 'package:privacy_gui/usp_page/dashboard/factories/usp_widget_factory.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/usp_widget_specs.dart';
@@ -56,20 +57,17 @@ class _UspSliverDashboardViewState
     if (_presetDialogShown) return;
     _presetDialogShown = true;
 
-    // Read persisted prefs directly to avoid race with async provider loading.
-    // The Notifier.build() returns defaults then loads async — by the time
-    // addPostFrameCallback fires the provider state may still be default.
     final sharedPrefs = await SharedPreferences.getInstance();
-    final prefsJson = sharedPrefs.getString('usp_layout_preferences');
-    if (prefsJson != null) {
-      final persisted = UspLayoutPreferences.fromJsonString(prefsJson);
-      if (persisted.hasSeenPresetDialog) return;
-    }
+    if (sharedPrefs.getBool(pUspPresetDialogSeen) == true) return;
 
     if (!mounted) return;
 
     final result = await showPresetSelectionDialog(context);
     if (!mounted) return;
+
+    // Persist the flag BEFORE calling selectPreset — even if applyPreset
+    // throws, the user won't be asked again on next navigation.
+    await sharedPrefs.setBool(pUspPresetDialogSeen, true);
 
     if (result != null) {
       await ref

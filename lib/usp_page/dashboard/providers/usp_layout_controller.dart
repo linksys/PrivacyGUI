@@ -5,13 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/layout_item_factory.dart';
+import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';
 
 import '../models/usp_dashboard_preset.dart';
 import '../models/usp_widget_specs.dart';
-
-const _uspLayoutKey = 'usp_sliver_dashboard_layout';
 
 /// Provider for the USP Sliver Dashboard Controller.
 final uspSliverDashboardControllerProvider = StateNotifierProvider<
@@ -48,7 +47,7 @@ class UspSliverDashboardControllerNotifier
   /// they come from presets or user customisation.
   Future<void> _initializeLayout() async {
     final prefs = await SharedPreferences.getInstance();
-    final layoutJson = prefs.getString(_uspLayoutKey);
+    final layoutJson = prefs.getString(pUspSliverDashboardLayout);
 
     if (layoutJson == null) {
       // No saved layout — persist the constructor's default for next time.
@@ -122,7 +121,7 @@ class UspSliverDashboardControllerNotifier
   Future<void> saveLayout() async {
     final prefs = await SharedPreferences.getInstance();
     final layoutData = state.exportLayout();
-    await prefs.setString(_uspLayoutKey, jsonEncode(layoutData));
+    await prefs.setString(pUspSliverDashboardLayout, jsonEncode(layoutData));
   }
 
   /// Reset to default layout and clear persisted data.
@@ -130,7 +129,7 @@ class UspSliverDashboardControllerNotifier
     state = _createDefaultController();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_uspLayoutKey);
+    await prefs.remove(pUspSliverDashboardLayout);
   }
 
   /// Force update an item's size (used after resize constraint enforcement).
