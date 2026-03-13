@@ -1,0 +1,22 @@
+name: diagnosticsOperate
+description: Download speed test diagnostics operations
+type: operate
+
+operations:
+  - name: start
+    path: Device.IP.Diagnostics.DownloadDiagnostics()
+    description: Start download speed test
+    inputs:
+      - path: DownloadURL
+        field: downloadUrl
+        type: string
+        required: true
+      - path: NumberOfConnections
+        field: connections
+        type: int
+        required: false
+        default: 4
+
+  - name: stop
+    path: Device.IP.Diagnostics.DownloadDiagnostics.Stop()
+    description: Stop speed test

@@ -35,6 +35,33 @@ enum ForceCommand {
   }
 }
 
+/// Protocol preference for dual-protocol (JNAP/USP) architecture.
+///
+/// Controls which protocol is used for router communication.
+/// Set at build time via `--dart-define=protocol=auto|usp_first|jnap_only|usp_only`.
+enum ProtocolPreference {
+  /// Force JNAP only (mobile/desktop, or explicit override)
+  jnapOnly,
+
+  /// Prefer USP, fallback to JNAP when unavailable
+  uspFirst,
+
+  /// Force USP only (testing/validation only)
+  uspOnly,
+
+  /// Auto-detect by platform: web → uspFirst, native → jnapOnly
+  auto;
+
+  static ProtocolPreference resolve(String type) {
+    return switch (type) {
+      'jnap_only' => ProtocolPreference.jnapOnly,
+      'usp_first' => ProtocolPreference.uspFirst,
+      'usp_only' => ProtocolPreference.uspOnly,
+      _ => ProtocolPreference.auto,
+    };
+  }
+}
+
 class BuildConfig {
   static const String cloudEnv =
       String.fromEnvironment('cloud_env', defaultValue: 'qa');
@@ -48,6 +75,9 @@ class BuildConfig {
   static const bool caLogin = bool.fromEnvironment('ca', defaultValue: false);
   static const bool customLayout =
       bool.fromEnvironment('custom_layout', defaultValue: false);
+
+  static ProtocolPreference protocolPreference = ProtocolPreference.resolve(
+      const String.fromEnvironment('protocol', defaultValue: 'auto'));
 
   static const int refreshTimeInterval =
       int.fromEnvironment('refresh_time', defaultValue: 60);

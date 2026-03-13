@@ -1,13 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/jnap/models/jnap_device_info_raw.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/generated/system_info.g.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 
 final sessionServiceProvider = Provider<SessionService>((ref) {
-  return SessionService(ref.watch(routerRepositoryProvider));
+  return SessionService(
+    ref.watch(routerRepositoryProvider),
+    ref.watch(uspServiceProvider),
+  );
 });
 
 /// Service for session management operations.
@@ -19,8 +27,9 @@ final sessionServiceProvider = Provider<SessionService>((ref) {
 /// This service is used by SessionProvider to manage the current router session.
 class SessionService {
   final RouterRepository _routerRepository;
+  final UspService? _usp;
 
-  SessionService(this._routerRepository);
+  SessionService(this._routerRepository, this._usp);
 
   // === Router Connectivity ===
 
@@ -118,7 +127,13 @@ class SessionService {
       );
       return JnapDeviceInfoRaw.fromJson(result.output).toUIModel();
     } on JNAPError catch (e) {
+      final uspResult = await _tryUspDeviceInfo();
+      if (uspResult != null) return uspResult;
       throw _mapJnapError(e);
+    } catch (e) {
+      final uspResult = await _tryUspDeviceInfo();
+      if (uspResult != null) return uspResult;
+      rethrow;
     }
   }
 
@@ -151,7 +166,43 @@ class SessionService {
 
       return rawInfo.toUIModel();
     } on JNAPError catch (e) {
+      // Try USP fallback before throwing
+      final uspResult = await _tryUspDeviceInfo();
+      if (uspResult != null) return uspResult;
       throw _mapJnapError(e);
+    } catch (e) {
+      // JNAP completely unavailable (e.g., disabled firmware) — try USP
+      final uspResult = await _tryUspDeviceInfo();
+      if (uspResult != null) return uspResult;
+      rethrow;
+    }
+  }
+
+  /// Attempts to fetch device info via USP as fallback.
+  ///
+  /// Returns null if USP is unavailable or not authenticated.
+  /// When USP succeeds, [buildBetterActions] is skipped since JNAP
+  /// action routing is irrelevant when JNAP is disabled.
+  Future<NodeDeviceInfo?> _tryUspDeviceInfo() async {
+    if (_usp == null) {
+      logger.d('[SessionService] USP fallback skipped: UspService is null');
+      return null;
+    }
+    if (!_usp.isAuthenticated) {
+      logger.d('[SessionService] USP fallback skipped: USP not authenticated');
+      return null;
+    }
+    if (BuildConfig.protocolPreference == ProtocolPreference.jnapOnly) {
+      logger.d('[SessionService] USP fallback skipped: protocol=jnapOnly');
+      return null;
+    }
+    try {
+      final systemInfo = await SystemInfo.fetch(_usp);
+      logger.d('[SessionService] USP fallback: DeviceInfo fetched via USP');
+      return NodeDeviceInfo.fromUsp(systemInfo);
+    } catch (e) {
+      logger.w('[SessionService] USP fallback failed: $e');
+      return null;
     }
   }
 }

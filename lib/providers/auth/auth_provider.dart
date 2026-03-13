@@ -13,11 +13,16 @@ import 'package:privacy_gui/core/data/providers/device_manager_provider.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
 import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
+import 'package:privacy_gui/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Re-export AuthState and LoginType for backward compatibility with existing code
@@ -48,6 +53,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         }
       } else if (error is JNAPError) {
         if (error.result == errorJNAPUnauthorized) {
+          // In USP-only mode, JNAP unauthorized is expected — the device
+          // doesn't support JNAP, so stray JNAP calls should NOT trigger logout.
+          final usp = ref.read(uspServiceProvider);
+          if (usp != null && usp.isAuthenticated) {
+            logger.d('[Auth]: Ignoring JNAP unauthorized — USP session active');
+            return;
+          }
           final sessionToken =
               await checkSessionToken().onError(handleSessionTokenError);
           if (sessionToken == null) {
@@ -95,6 +107,11 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
       logger.d(
           '[Auth]: Existence: cloud user name: ${creds?.username != null}, cloud pwd: ${creds?.password != null}, admin password: ${creds?.localPassword != null}. Login type = $loginType');
+
+      // Restore USP session on page reload / app restart (local login only)
+      if (loginType == LoginType.local) {
+        await ref.read(uspAuthCoordinatorProvider).restoreSession();
+      }
 
       return AuthState(
         localPasswordHint: state.value?.localPasswordHint,
@@ -258,24 +275,85 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     final previousState = state.value ?? AuthState.empty();
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      // Delegate to AuthService
-      final result = await _authService.localLogin(password, pnp: pnp);
+      // Try JNAP login first, then USP fallback if JNAP fails
+      try {
+        final result = await _authService.localLogin(password, pnp: pnp);
 
-      return result.when(
-        success: (loginInfo) {
-          // Convert LoginInfo to AuthState
-          return previousState.copyWith(
-            localPassword: loginInfo.localPassword,
-            loginType: loginInfo.loginType,
-          );
-        },
-        failure: (error) {
-          // Re-throw error to be caught by AsyncValue.guard
-          throw error;
-        },
-      );
+        return result.when(
+          success: (loginInfo) async {
+            // Sync USP auth before state is emitted (so polling sees USP ready)
+            await ref
+                .read(uspAuthCoordinatorProvider)
+                .syncAfterLocalLogin(password);
+            return previousState.copyWith(
+              localPassword: loginInfo.localPassword,
+              loginType: loginInfo.loginType,
+            );
+          },
+          failure: (error) async {
+            logger
+                .d('[Auth]: JNAP login returned failure, trying USP fallback');
+            return await _tryUspFallbackLogin(password, previousState, error);
+          },
+        );
+      } catch (e) {
+        // AuthService.localLogin() can throw (e.g., JNAPError rethrow)
+        logger.d('[Auth]: JNAP login threw exception: $e, trying USP fallback');
+        return await _tryUspFallbackLogin(password, previousState, e);
+      }
     }, (error) => guardError);
     logger.d('[Auth]: Local login done: Auth state = $state');
+  }
+
+  /// Attempts USP login as fallback when JNAP login fails.
+  ///
+  /// Only attempts USP when JNAP is **unavailable** (network/protocol error).
+  /// Password errors (wrong password, account locked, delayed) are NOT
+  /// retried via USP because both protocols share the same credential.
+  Future<AuthState> _tryUspFallbackLogin(
+      String password, AuthState previousState, Object error) async {
+    // Password errors → same password, same result on USP. Skip fallback.
+    if (_isPasswordError(error)) {
+      logger.d('[Auth]: USP fallback skipped — password error');
+      throw error;
+    }
+
+    final preference = BuildConfig.protocolPreference;
+    logger.d('[Auth]: USP fallback check: preference=$preference');
+    if (preference != ProtocolPreference.jnapOnly) {
+      final uspCoordinator = ref.read(uspAuthCoordinatorProvider);
+      final uspSuccess = await uspCoordinator.tryUspLogin(password);
+      if (uspSuccess) {
+        // USP login succeeded — store password for session restore
+        await const FlutterSecureStorage()
+            .write(key: pLocalPassword, value: password);
+        logger.d('[Auth]: USP fallback login succeeded (JNAP unavailable)');
+        return previousState.copyWith(
+          localPassword: password,
+          loginType: LoginType.local,
+        );
+      }
+    }
+    // Both failed — throw original error
+    throw error;
+  }
+
+  /// Returns true if the error indicates a credential / password problem.
+  ///
+  /// These errors will produce the same result on USP (same password),
+  /// so retrying via USP is pointless.
+  static bool _isPasswordError(Object error) {
+    final String? code;
+    if (error is JNAPError) {
+      code = error.result;
+    } else if (error is UnexpectedError) {
+      code = error.message;
+    } else {
+      return false;
+    }
+    return code == errorInvalidAdminPassword ||
+        code == errorPasswordCheckDelayed ||
+        code == errorAdminAccountLocked;
   }
 
   /// Retrieves password hint by delegating to AuthService.
@@ -333,6 +411,18 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
             .onError((error, stackTrace) => null);
         ref.read(raSessionProvider.notifier).stopMonitorSession();
       }
+
+      // Disconnect SSE and unregister subscriptions BEFORE USP logout —
+      // subscription cleanup uses authenticated requests, so the token
+      // must still be valid. Logging out first would trigger 401 → reauth.
+      final sseManager = ref.read(sseManagerProvider);
+      if (sseManager != null) {
+        await sseManager.disconnect();
+        await sseManager.registry.unregisterAll();
+      }
+
+      // Now safe to logout USP — no more authenticated requests pending
+      await ref.read(uspAuthCoordinatorProvider).syncAfterLogout();
 
       // Delegate credential cleanup to AuthService
       await _authService.clearAllCredentials();

@@ -26,6 +26,11 @@ const pRAMode = 'AppRaMode';
 
 const pFWUpdated = 'FwUpdated';
 
+// USP Dashboard
+const pUspLayoutPreferences = 'usp_layout_preferences';
+const pUspPresetDialogSeen = 'usp_preset_dialog_seen';
+const pUspSliverDashboardLayout = 'usp_sliver_dashboard_layout';
+
 // secured
 const pSessionToken = 'SessionToken';
 const pSessionTokenTs = 'SessionTokenTimeStamp';

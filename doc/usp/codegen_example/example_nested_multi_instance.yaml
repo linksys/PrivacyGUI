@@ -1,0 +1,23 @@
+name: accessPoints
+description: WiFi access points with associated devices
+multiInstance: true
+basePath: Device.WiFi.AccessPoint.
+singularName: accessPoint
+parameters:
+  - field_name: ssid
+    path: .SSID
+    type: string
+children:
+  - name: associatedDevices
+    singularName: associatedDevice
+    basePath: .AssociatedDevice.
+    parameters:
+      - field_name: macAddress
+        path: .MACAddress
+        type: string
+      - field_name: signalStrength
+        path: .SignalStrength
+        type: int
+      - field_name: active
+        path: .Active
+        type: boolean

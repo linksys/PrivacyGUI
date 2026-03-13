@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 
 /// A global instance of [GetIt] used as a service locator for dependency injection.
 ///
@@ -41,5 +44,17 @@ void dependencySetup() {
       config.createDarkTheme(),
       instanceName: 'darkThemeData',
     );
+  }
+
+  // Register UspService on Web platform only
+  if (kIsWeb && !getIt.isRegistered<UspService>()) {
+    try {
+      getIt.registerSingleton<UspService>(UspService(
+        Uri.base.origin,
+      ));
+      logger.d('[DI] UspService registered (Web)');
+    } catch (e) {
+      logger.w('[DI] UspService registration failed: $e');
+    }
   }
 }

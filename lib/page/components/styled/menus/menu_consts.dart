@@ -32,4 +32,10 @@ enum NaviType {
         NaviType.menu => RouteNamed.dashboardMenu,
         NaviType.support => RouteNamed.dashboardSupport,
       };
+
+  String resolveUspPath() => switch (this) {
+        NaviType.home => RouteNamed.uspDashboard,
+        NaviType.menu => RouteNamed.uspMenu,
+        NaviType.support => RouteNamed.uspSupport,
+      };
 }

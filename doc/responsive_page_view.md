@@ -418,13 +418,14 @@ final cols = context.currentMaxColumns; // Mobile:4, Tablet:8, Desktop:12
 
 ### Breakpoints (Default)
 
-| Type | Width |
-|------|-------|
-| Mobile | <= 744.0 |
-| Tablet | 744.0 - 1200.0 |
-| Desktop | > 1200.0 |
-| Desktop Large | > 1440.0 |
-| Desktop Extra Large | > 1680.0 |
+| Name            | Width         | `currentMaxColumns` | Default margin |
+|-----------------|---------------|---------------------|----------------|
+| Mobile          | < 600dp       | 4                   | 16dp           |
+| Tablet          | 600 – 905dp   | 8                   | 32dp           |
+| Desktop         | 905 – 1240dp  | 12                  | 24dp           |
+| Desktop Large   | 1240 – 1440dp | 12                  | 200dp          |
+| Desktop XL      | 1440 – 1680dp | 12                  | 256dp          |
+| Desktop XXL     | > 1680dp      | 12                  | 352dp          |
 
 ---
 

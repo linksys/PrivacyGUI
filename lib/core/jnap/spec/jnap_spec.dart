@@ -5,6 +5,22 @@ import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
 
 import 'command_spec.dart';
 
+/// Decodes a JSON string, converting FormatException to JNAPError.
+///
+/// When JNAP is disabled on the router, HTTP responses return HTML instead
+/// of JSON. This helper ensures the FormatException from json.decode flows
+/// through the normal JNAPError handling pipeline rather than being uncaught.
+Map<String, dynamic> _decodeJson(String raw) {
+  try {
+    return json.decode(raw) as Map<String, dynamic>;
+  } on FormatException {
+    throw const JNAPError(
+      result: '_ErrorJNAPUnavailable',
+      error: 'JNAP endpoint returned non-JSON response',
+    );
+  }
+}
+
 abstract class JNAPSpec<R> extends CommandSpec<R> {
   JNAPSpec({
     required this.action,
@@ -41,7 +57,7 @@ class HttpTransactionSpec extends JNAPSpec<JNAPResult> {
 
   @override
   JNAPResult response(String raw) {
-    return JNAPResult.fromJson(json.decode(raw));
+    return JNAPResult.fromJson(_decodeJson(raw));
   }
 }
 
@@ -50,7 +66,7 @@ class HttpJNAPSpec extends JNAPCommandSpec<JNAPResult> {
 
   @override
   JNAPResult response(String raw) {
-    return JNAPResult.fromJson(json.decode(raw));
+    return JNAPResult.fromJson(_decodeJson(raw));
   }
 
   @override

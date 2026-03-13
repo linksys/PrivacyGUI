@@ -1,0 +1,52 @@
+name: portForwardingRules
+description: NAT port forwarding rules
+multiInstance: true
+basePath: Device.NAT.PortMapping.
+singularName: PortForwardingRule
+type: add
+
+parameters:
+  - field_name: enabled
+    path: .Enable
+    type: boolean
+    writable: true
+    description: Enable or disable this port forwarding rule
+
+  - field_name: protocol
+    path: .Protocol
+    type: string
+    writable: true
+    required: true
+    description: Protocol (TCP, UDP, or Both)
+
+  - field_name: externalPort
+    path: .ExternalPort
+    type: int
+    writable: true
+    required: true
+    description: External port number
+
+  - field_name: internalPort
+    path: .InternalPort
+    type: int
+    writable: true
+    required: true
+    description: Internal port number
+
+  - field_name: internalClient
+    path: .InternalClient
+    type: string
+    writable: true
+    required: true
+    description: Internal client IP address
+
+  - field_name: description
+    path: .Description
+    type: string
+    writable: true
+    description: User-friendly description
+
+  - field_name: status
+    path: .Status
+    type: string
+    description: Current status of the rule (read-only)

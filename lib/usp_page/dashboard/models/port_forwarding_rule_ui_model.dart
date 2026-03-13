@@ -1,0 +1,60 @@
+import 'package:equatable/equatable.dart';
+
+/// Presentation Layer Model for a port forwarding rule.
+///
+/// Covers both single port and port range forwarding from
+/// `Device.NAT.PortMapping`. When [externalPortEndRange] is 0 or equal to
+/// [externalPort] the rule is a single-port forward; otherwise it is a
+/// port-range forward.
+class PortForwardingRuleUIModel extends Equatable {
+  final String instancePath; // For toggle/delete/update mutations
+  final String description;
+  final int externalPort;
+  final int externalPortEndRange; // 0 = single port
+  final int internalPort;
+  final String internalClient;
+  final String protocol;
+  final bool enabled;
+
+  const PortForwardingRuleUIModel({
+    required this.instancePath,
+    required this.description,
+    required this.externalPort,
+    this.externalPortEndRange = 0,
+    required this.internalPort,
+    required this.internalClient,
+    required this.protocol,
+    required this.enabled,
+  });
+
+  /// True when this is a single-port forward (no range).
+  bool get isSinglePort =>
+      externalPortEndRange == 0 || externalPortEndRange == externalPort;
+
+  /// True when this is a port-range forward.
+  bool get isPortRange => !isSinglePort;
+
+  /// Display name: description if available, otherwise "Unnamed rule".
+  String get displayName =>
+      description.isNotEmpty ? description : 'Unnamed rule';
+
+  /// External port display: "8080" or "3074-3080".
+  String get portRangeDisplay =>
+      isSinglePort ? '$externalPort' : '$externalPort-$externalPortEndRange';
+
+  /// Summary: "8080 → 192.168.1.100:80" or "3074-3080 → 192.168.1.50:3074".
+  String get portSummary =>
+      '$portRangeDisplay \u2192 $internalClient:$internalPort';
+
+  @override
+  List<Object?> get props => [
+        instancePath,
+        description,
+        externalPort,
+        externalPortEndRange,
+        internalPort,
+        internalClient,
+        protocol,
+        enabled,
+      ];
+}

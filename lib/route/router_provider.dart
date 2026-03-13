@@ -64,11 +64,40 @@ import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 
 import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
 import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/usp_dashboard_view.dart';
+import 'package:privacy_gui/usp_page/menu/views/usp_menu_view.dart';
+import 'package:privacy_gui/usp_page/support/views/usp_support_view.dart';
+import 'package:privacy_gui/usp_page/shell/usp_dashboard_shell.dart';
+import 'package:privacy_gui/usp_page/devices/views/usp_device_list_view.dart';
+import 'package:privacy_gui/usp_page/devices/views/usp_device_detail_view.dart';
+import 'package:privacy_gui/usp_page/topology/views/usp_topology_view.dart';
+import 'package:privacy_gui/usp_page/topology/views/usp_node_detail_view.dart';
+import 'package:privacy_gui/usp_page/instant_safety/views/instant_safety_view.dart';
+import 'package:privacy_gui/usp_page/admin/views/usp_admin_view.dart';
+import 'package:privacy_gui/usp_page/dhcp/views/usp_dhcp_detail_view.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
+import 'package:privacy_gui/usp_page/system_log/views/usp_system_log_view.dart';
+import 'package:privacy_gui/usp_page/advanced_settings/views/usp_advanced_settings_view.dart';
+import 'package:privacy_gui/usp_page/firewall/views/usp_firewall_view.dart';
+import 'package:privacy_gui/usp_page/dmz/views/usp_dmz_view.dart';
+import 'package:privacy_gui/usp_page/local_network/views/usp_local_network_view.dart';
+import 'package:privacy_gui/usp_page/static_routing/views/usp_static_routing_view.dart';
+import 'package:privacy_gui/usp_page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
+import 'package:privacy_gui/usp_page/network_diagnostics/views/usp_network_diagnostics_view.dart';
+import 'package:privacy_gui/usp_page/statistics/views/usp_statistics_view.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:privacy_gui/usp_page/test_console/views/usp_test_console_view.dart';
+import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
+import 'package:privacy_gui/usp_page/internet_settings/views/usp_internet_settings_view.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/providers/usp_wifi_settings_provider.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/views/usp_wifi_settings_view.dart';
+import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 
 part 'route_home.dart';
 part 'route_cloud_login.dart';
 part 'route_local_login.dart';
 part 'route_dashboard.dart';
+part 'route_usp_dashboard.dart';
 part 'route_settings.dart';
 part 'route_advanced_settings.dart';
 part 'route_pnp.dart';
@@ -107,6 +136,7 @@ final appRoutes = [
     builder: (context, state) => const SelectNetworkView(),
   ),
   dashboardRoute,
+  uspDashboardRoute,
   pnpRoute,
   pnpTroubleshootingRoute,
   addNodesRoute,
@@ -131,6 +161,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         return router.goPnpPath(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
+        return state.uri.toString();
+      } else if (state.matchedLocation.startsWith('/usp')) {
+        // USP routes bypass JNAP-dependent redirect logic but still
+        // check auth — redirect to login when logged out.
+        final loginType =
+            ref.watch(authProvider.select((value) => value.value?.loginType));
+        if (loginType == null || loginType == LoginType.none) {
+          return router._home();
+        }
         return state.uri.toString();
       }
       return router.redirectLogic(state);
@@ -320,8 +359,10 @@ class RouterNotifier extends ChangeNotifier {
       return switch (authState?.loginType ?? LoginType.none) {
         LoginType.remote => await _prepare(state, RoutePath.dashboardHome)
             .then((path) => path ?? RoutePath.dashboardHome),
-        LoginType.local => await _prepare(state, RoutePath.dashboardHome)
-            .then((path) => path ?? RoutePath.dashboardHome),
+        LoginType.local => _ref.read(protocolResolverProvider).isUspOnlyMode
+            ? RoutePath.uspDashboard
+            : await _prepare(state, RoutePath.dashboardHome)
+                .then((path) => path ?? RoutePath.dashboardHome),
         _ => _home(state.uri.query),
       };
     });
@@ -438,18 +479,22 @@ class RouterNotifier extends ChangeNotifier {
 
     // Use sessionProvider.forceFetchDeviceInfo() instead of direct RouterRepository access
     // This adheres to Clean Architecture: Route -> Provider -> Service -> Repository
-    final deviceInfo =
-        await _ref.read(sessionProvider.notifier).forceFetchDeviceInfo();
-    final newSerialNumber = deviceInfo.serialNumber;
+    try {
+      final deviceInfo =
+          await _ref.read(sessionProvider.notifier).forceFetchDeviceInfo();
+      final newSerialNumber = deviceInfo.serialNumber;
 
-    if (serialNumber == newSerialNumber) {
-      return null;
+      if (serialNumber == newSerialNumber) {
+        return null;
+      }
+
+      // Save serial number if serial number changed
+      await _ref
+          .read(sessionProvider.notifier)
+          .saveSelectedNetwork(newSerialNumber, '');
+    } catch (e) {
+      logger.w('[Prepare]: forceFetchDeviceInfo failed in _prepareLocal: $e');
     }
-
-    // Save serial number if serial number changed
-    await _ref
-        .read(sessionProvider.notifier)
-        .saveSelectedNetwork(newSerialNumber, '');
 
     return null;
   }

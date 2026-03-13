@@ -1,25 +1,93 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'dart:convert';
 
-// Since this POC is currently strictly Web, we're directly importing and using
-// the web implementation. In a full multi-platform app, this would use conditional
-// imports (e.g., `import '../web/usp_client_wasm.dart' if (dart.library.io) 'native/usp_client_ffi.dart';`).
-import '../web/usp_client_wasm.dart';
+import 'package:flutter/foundation.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/usp/models/usp_response.dart';
+
+// Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
+import '../stub/usp_client_stub.dart'
+    if (dart.library.js_interop) '../web/usp_client_wasm.dart';
 
 // Export response helpers so generated code only needs one import.
 export 'usp_response_helpers.dart';
 
+// ===========================================================================
+// USP Subscription types (used by codegen-generated subscribe methods)
+// ===========================================================================
+
+/// USP Notification types as defined in TR-369 §7.2
+enum NotifType {
+  valueChange,
+  objectCreation,
+  objectDeletion,
+  operationComplete,
+  onBoardRequest,
+  event,
+}
+
+/// SSE subscription delegate. Set by [SseManager] to enable SSE-backed
+/// subscriptions. When null, [UspService.subscribe] falls back to polling.
+typedef SseSubscribeDelegate = Future<
+        ({
+          void Function() removeHandler,
+          Future<void> Function() unregister,
+        })>
+    Function({
+  required String subscriptionId,
+  required String notifType,
+  required String referenceList,
+  required void Function() onNotification,
+});
+
+/// Represents an active USP subscription that delivers typed updates.
+///
+/// Wraps a [Stream] of parsed model objects, with the ability to cancel
+/// the subscription when it is no longer needed.
+class Subscription<T> {
+  final String id;
+  final NotifType notifType;
+  final Stream<T> stream;
+  final Future<void> Function() _cancel;
+
+  Subscription({
+    required this.id,
+    required this.notifType,
+    required this.stream,
+    required Future<void> Function() cancel,
+  }) : _cancel = cancel;
+
+  /// Cancel this subscription (sends USP Unsubscribe).
+  Future<void> cancel() => _cancel();
+}
+
 /// Platform-agnostic Service for interacting with the router via USP.
 class UspService {
   late final UspClientWeb _client;
+  final String _baseUrl;
 
-  UspService(String baseUrl) {
+  UspService(String baseUrl) : _baseUrl = baseUrl {
     if (!kIsWeb) {
       throw UnsupportedError('This POC only supports Web platforms currently.');
     }
     _client = UspClientWeb(baseUrl);
   }
 
+  static int _reqId = 0;
+
+  String get baseUrl => _baseUrl;
+
   bool get isAuthenticated => _client.isAuthenticated;
+
+  String? get sessionToken => _client.sessionToken;
+
+  /// Callback for full re-authentication when token refresh fails.
+  /// Set by [UspAuthCoordinator] to provide re-login via stored password.
+  Future<void> Function()? onReauthRequired;
+
+  /// SSE subscription delegate. Set by [SseManager] to route subscriptions
+  /// through SSE instead of polling. When null, falls back to polling.
+  SseSubscribeDelegate? onSseSubscribe;
 
   Future<void> login(String password) async {
     await _client.login(password);
@@ -33,25 +101,88 @@ class UspService {
     await _client.refreshToken();
   }
 
+  // ===========================================================================
+  // 401 Auth Retry
+  // ===========================================================================
+
+  Completer<void>? _reauthInProgress;
+
+  static bool _isAuthError(Object error) {
+    return error.toString().contains('HTTP 401');
+  }
+
+  /// Two-stage re-authentication: refreshToken first, then full re-login.
+  /// Uses a Completer lock to prevent concurrent reauth attempts.
+  Future<void> reauth() async {
+    if (_reauthInProgress != null) {
+      await _reauthInProgress!.future;
+      return;
+    }
+    _reauthInProgress = Completer<void>();
+    try {
+      // Stage 1: quick token refresh (no password needed)
+      try {
+        await refreshToken();
+        logger.d('[UspService]:Token refreshed successfully');
+        _reauthInProgress!.complete();
+        return;
+      } catch (e) {
+        logger.w('[UspService]:Token refresh failed: $e');
+      }
+      // Stage 2: full re-login via stored password
+      final reauth = onReauthRequired;
+      if (reauth != null) {
+        await reauth();
+        logger.d('[UspService]:Full re-login succeeded');
+      }
+      _reauthInProgress!.complete();
+    } catch (e) {
+      if (!_reauthInProgress!.isCompleted) {
+        _reauthInProgress!.completeError(e);
+      }
+      rethrow;
+    } finally {
+      _reauthInProgress = null;
+    }
+  }
+
+  /// Wraps an async operation with automatic 401 retry.
+  Future<T> _withAuthRetry<T>(Future<T> Function() action) async {
+    try {
+      return await action();
+    } catch (e) {
+      if (!_isAuthError(e)) rethrow;
+      logger.w('[UspService]:401 detected, attempting reauth...');
+      await reauth();
+      return await action();
+    }
+  }
+
   // Legacy single getters if needed
   Future<String?> getSingle(String path) async {
-    return await _client.get(path);
+    return _withAuthRetry(() => _client.get(path));
   }
 
   Future<void> setSingle(String path, String value) async {
-    await _client.set(path, value);
+    await _withAuthRetry(() => _client.set(path, value));
   }
 
-  // Codegen expected signatures
+  /// Fetches multiple USP paths in a single getMultiple call.
+  ///
+  /// Returns a coerced `Map<String, dynamic>` where booleans and nulls are
+  /// properly typed (not left as raw strings).
   Future<Map<String, dynamic>> get(List<String> paths) async {
-    final rawMap = await _client.getMultiple(paths);
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    final rawMap = await _withAuthRetry(() => _client.getMultiple(paths));
+    sw.stop();
 
-    // Debug: log raw response from JS client
-    debugPrint('[UspService.get] Requested paths: $paths');
-    debugPrint('[UspService.get] Raw response keys: ${rawMap.keys.toList()}');
-    for (final entry in rawMap.entries) {
-      debugPrint(
-          '[UspService.get]   rawMap["${entry.key}"] = "${entry.value}" (${entry.value.runtimeType})');
+    logger.d('[UspService]:#$id GET ${_pathSummary(paths)} '
+        '${paths.length} paths → ${rawMap.length} keys (${sw.elapsedMilliseconds}ms)');
+    if (rawMap.isEmpty) {
+      logger.w('[UspService]:#$id GET response EMPTY for paths: $paths');
+    } else {
+      logger.d('[UspService]:#$id ← ${_mapSummary(rawMap)}');
     }
 
     final Map<String, dynamic> result = {};
@@ -61,38 +192,43 @@ class UspService {
       result[entry.key] = _coerceValue(entry.key, entry.value);
     }
 
-    // Ensure all requested paths exist in the result to prevent Null Cast errors in Codegen
+    // Ensure all requested non-wildcard paths exist in the result to prevent
+    // Null Cast errors in codegen. Wildcard search paths (containing '*') are
+    // expanded by the router into concrete instance paths, so the original
+    // wildcard path won't appear in the response — skip those.
     for (final path in paths) {
+      if (path.contains('*')) continue;
       if (!result.containsKey(path)) {
-        debugPrint('[UspService.get] ⚠️ MISSING path in response: "$path"');
+        logger.w('[UspService]:GET missing path in response: "$path"');
       }
       result.putIfAbsent(path, () => null);
-    }
-
-    // Debug: log final coerced result
-    debugPrint('[UspService.get] Final result:');
-    for (final entry in result.entries) {
-      debugPrint(
-          '[UspService.get]   result["${entry.key}"] = ${entry.value} (${entry.value.runtimeType})');
     }
 
     return result;
   }
 
   /// Coerce a raw string value from USP into the appropriate Dart type.
-  /// - "true" / "false" / "1" / "0" (for Enable paths) → bool
-  /// - Empty or null → null
+  /// - "true" / "false" →bool (any path)
+  /// - "1" / "0" →bool (for known boolean suffixes: Enable, Active)
+  /// - null →null (key absent from response)
+  /// - Empty string →'' (preserve String type for generated code)
   /// - Everything else stays as String (generated code handles int parsing)
   dynamic _coerceValue(String path, String? raw) {
-    if (raw == null || raw.isEmpty) return null;
+    if (raw == null) return null;
+    if (raw.isEmpty) return '';
 
     // Boolean coercion
     final lower = raw.toLowerCase();
-    if (lower == 'true' || (raw == '1' && path.endsWith('Enable'))) {
-      return true;
-    }
-    if (lower == 'false' || (raw == '0' && path.endsWith('Enable'))) {
-      return false;
+    if (lower == 'true') return true;
+    if (lower == 'false') return false;
+
+    // "1"/"0" coercion for known boolean path suffixes
+    final isBoolPath = path.endsWith('Enable') ||
+        path.endsWith('Active') ||
+        path.endsWith('Upstream');
+    if (isBoolPath) {
+      if (raw == '1') return true;
+      if (raw == '0') return false;
     }
 
     return raw;
@@ -100,20 +236,27 @@ class UspService {
 
   Future<void> set(Map<String, dynamic> parameters,
       {bool allowPartial = false}) async {
-    // Convert Map<String, dynamic> to Map<String, String> as required by the lower-level UI client
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
     final Map<String, String> stringParams =
         parameters.map((key, value) => MapEntry(key, value.toString()));
-    await _client.setMultiple(stringParams, allowPartial: allowPartial);
+    await _withAuthRetry(
+        () => _client.setMultiple(stringParams, allowPartial: allowPartial));
+    sw.stop();
+    logger.d('[UspService]:#$id SET ${_paramSummary(parameters)} '
+        '${parameters.length} params'
+        '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
   }
 
   // Legacy multiple getters
   Future<Map<String, String>> getMultiple(List<String> paths) async {
-    return await _client.getMultiple(paths);
+    return _withAuthRetry(() => _client.getMultiple(paths));
   }
 
   Future<void> setMultiple(Map<String, String> parameters,
       {bool allowPartial = false}) async {
-    await _client.setMultiple(parameters, allowPartial: allowPartial);
+    await _withAuthRetry(
+        () => _client.setMultiple(parameters, allowPartial: allowPartial));
   }
 
   // ===========================================================================
@@ -125,8 +268,18 @@ class UspService {
   /// [objectPath] must end with "." (e.g., "Device.NAT.PortMapping.").
   /// [parameters] are the initial parameter values for the new instance.
   /// Returns the full path of the created instance (e.g., "Device.NAT.PortMapping.3.").
-  Future<String> add(String objectPath, Map<String, String> parameters) async {
-    return await _client.add(objectPath, parameters);
+  Future<String> add(String objectPath, Map<String, dynamic> parameters) async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    final stringParams = parameters.map((k, v) => MapEntry(k, v.toString()));
+    final result =
+        await _withAuthRetry(() => _client.add(objectPath, stringParams));
+    sw.stop();
+    final shortPath =
+        objectPath.startsWith('Device.') ? objectPath.substring(7) : objectPath;
+    logger.d('[UspService]:#$id ADD $shortPath — '
+        '${parameters.length} params → $result (${sw.elapsedMilliseconds}ms)');
+    return result;
   }
 
   /// Creates multiple object instances in a single operation.
@@ -138,7 +291,15 @@ class UspService {
   /// Returns a list of created instance paths.
   Future<List<String>> addMultiple(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
-    return await _client.addMultiple(objects, allowPartial: allowPartial);
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    final result = await _withAuthRetry(
+        () => _client.addMultiple(objects, allowPartial: allowPartial));
+    sw.stop();
+    logger.d('[UspService]:#$id ADD_MULTI ${objects.length} objects '
+        '→ ${result.length} created'
+        '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
+    return result;
   }
 
   // ===========================================================================
@@ -149,13 +310,26 @@ class UspService {
   ///
   /// [path] must be a specific instance path (e.g., "Device.NAT.PortMapping.3.").
   Future<void> delete(String path) async {
-    await _client.delete(path);
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    await _withAuthRetry(() => _client.delete(path));
+    sw.stop();
+    final shortPath = path.startsWith('Device.') ? path.substring(7) : path;
+    logger
+        .d('[UspService]:#$id DELETE $shortPath (${sw.elapsedMilliseconds}ms)');
   }
 
   /// Deletes multiple object instances in a single operation.
   Future<void> deleteMultiple(List<String> paths,
       {bool allowPartial = false}) async {
-    await _client.deleteMultiple(paths, allowPartial: allowPartial);
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    await _withAuthRetry(
+        () => _client.deleteMultiple(paths, allowPartial: allowPartial));
+    sw.stop();
+    logger.d('[UspService]:#$id DELETE_MULTI ${_pathSummary(paths)} '
+        '${paths.length} paths'
+        '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
   }
 
   // ===========================================================================
@@ -167,35 +341,404 @@ class UspService {
   /// [command] is the command path (e.g., "Device.Reboot()" or
   /// "Device.IP.Diagnostics.Ping()").
   /// [args] are the input arguments for the command.
-  /// Returns the output arguments from the operation, or an empty map.
-  Future<Map<String, String>> operate(String command,
+  /// Returns [UspResponse] with commandKey (for SSE correlation) and output arguments.
+  Future<UspResponse<Map<String, String>>> operate(String command,
       {Map<String, String> args = const {}}) async {
-    return await _client.operate(command, args: args);
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    final response =
+        await _withAuthRetry(() => _client.operate(command, args: args));
+    sw.stop();
+    logger.d('[UspService]:#$id OPERATE $command'
+        '${args.isNotEmpty ? ' — ${args.length} args' : ''}'
+        ' → key=${response.commandKey}, ${response.data.length} output keys'
+        ' (${sw.elapsedMilliseconds}ms)');
+    if (response.data.isNotEmpty) {
+      logger.d('[UspService]:#$id ← ${_mapSummary(response.data)}');
+    }
+    return response;
   }
 
   // ===========================================================================
-  // Subscribe — real-time parameter change notifications
+  // OBUSPA Subscription — Device.LocalAgent.Subscription management
   // ===========================================================================
 
-  /// Subscribes to parameter changes on the given paths.
+  /// Creates an OBUSPA subscription via USP Add + Set.
   ///
-  /// [paths] are the TR-181 paths to monitor (e.g., ["Device.Hosts.Host."]).
-  /// [notifType] is the USP notification type:
-  ///   - 1 = ValueChange
-  ///   - 2 = ObjectCreation
-  ///   - 3 = ObjectDeletion
+  /// This creates a `Device.LocalAgent.Subscription.{i}` instance in OBUSPA,
+  /// configures Enable/NotifType/ReferenceList, and returns the created
+  /// instance path with its Recipient (auto-assigned to the calling
+  /// Controller — typically Controller.2 or .3 for localui/UDS).
   ///
-  /// Returns a Stream that emits updated parameter maps when changes occur.
+  /// [notifType] is the USP notification type string:
+  /// "ValueChange", "ObjectCreation", "ObjectDeletion",
+  /// "OperationComplete", or "Event".
   ///
-  /// TODO: Implement when JS/WASM client adds subscribe support.
-  Stream<Map<String, dynamic>> subscribe(
-      List<String> paths, int notifType) {
-    // Stub: the JS/WASM client does not yet support USP Subscribe.
-    // Return an empty stream to allow generated code to compile.
-    debugPrint(
-        '[UspService.subscribe] ⚠️ STUB — subscribe not yet implemented in JS client. '
-        'paths=$paths, notifType=$notifType');
-    return const Stream.empty();
+  /// [referenceList] is the TR-181 path or command to monitor,
+  /// e.g., "Device.IP.Diagnostics.IPPing()" for OperationComplete.
+  ///
+  /// Returns a map with keys: `instancePath`, `recipient`, plus the
+  /// configured parameters.
+  ///
+  /// Throws if the Add or Set operations fail.
+  Future<Map<String, String>> createNotifySubscription({
+    required String notifType,
+    required String referenceList,
+  }) async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    const objectPath = 'Device.LocalAgent.Subscription.';
+
+    // Step 1: Snapshot existing instance IDs
+    final before =
+        await _withAuthRetry(() => _client.getMultiple([objectPath]));
+    final existingIds = before.keys
+        .where((k) => k.endsWith('.Enable'))
+        .map((k) {
+          final parts = k.split('.');
+          return parts.length >= 5 ? parts[parts.length - 2] : '';
+        })
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    // Step 2: Add subscription instance
+    final created = await _withAuthRetry(() => _client.add(objectPath, {}));
+
+    // Step 3: Resolve instance path (WASM add may return empty for LocalAgent)
+    String instancePath;
+    if (created.startsWith('Device.')) {
+      instancePath = created.endsWith('.') ? created : '$created.';
+    } else {
+      // Discover new instance via GET diff
+      final after =
+          await _withAuthRetry(() => _client.getMultiple([objectPath]));
+      final afterIds = after.keys
+          .where((k) => k.endsWith('.Enable'))
+          .map((k) {
+            final parts = k.split('.');
+            return parts.length >= 5 ? parts[parts.length - 2] : '';
+          })
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final newIds = afterIds.difference(existingIds);
+      if (newIds.isEmpty) {
+        throw StateError(
+            'USP Add succeeded but no new instance found in $objectPath');
+      }
+      instancePath = '$objectPath${newIds.first}.';
+    }
+
+    // Step 4: Set Enable, NotifType, ReferenceList
+    await _withAuthRetry(() => _client.setMultiple({
+          '${instancePath}Enable': 'true',
+          '${instancePath}NotifType': notifType,
+          '${instancePath}ReferenceList': referenceList,
+        }));
+
+    // Step 5: Read back to verify
+    final verify = await _withAuthRetry(() => _client.getMultiple([
+          '${instancePath}Recipient',
+          '${instancePath}Enable',
+          '${instancePath}NotifType',
+          '${instancePath}ReferenceList',
+        ]));
+
+    sw.stop();
+    final recipient = verify['${instancePath}Recipient'] ?? '';
+    logger.d('[UspService]:#$id CREATE_SUBSCRIPTION $instancePath '
+        'type=$notifType ref=$referenceList → Recipient=$recipient '
+        '(${sw.elapsedMilliseconds}ms)');
+
+    return {
+      'instancePath': instancePath,
+      ...verify,
+    };
+  }
+
+  /// Deletes an OBUSPA subscription instance.
+  Future<void> deleteNotifySubscription(String instancePath) async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    await _withAuthRetry(() => _client.delete(instancePath));
+    sw.stop();
+    final shortPath = instancePath.startsWith('Device.')
+        ? instancePath.substring(7)
+        : instancePath;
+    logger.d('[UspService]:#$id DELETE_SUBSCRIPTION $shortPath '
+        '(${sw.elapsedMilliseconds}ms)');
+  }
+
+  /// Lists all OBUSPA subscriptions via the WASM client.
+  ///
+  /// Returns raw subscription objects from the router. Each entry typically
+  /// contains fields like `instance_path`, `notif_type`, `reference_list`, etc.
+  Future<List<Map<String, dynamic>>> listSubscriptions() async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    final subs = await _withAuthRetry(() => _client.listSubscriptions());
+    sw.stop();
+    logger.d('[UspService]:#$id LIST_SUBSCRIPTIONS → ${subs.length} entries '
+        '(${sw.elapsedMilliseconds}ms)');
+    return subs;
+  }
+
+  /// Deletes all OBUSPA subscriptions on the router.
+  ///
+  /// Called at startup to purge stale subscriptions from previous sessions.
+  /// Browser refresh doesn't trigger dispose(), so subscriptions accumulate
+  /// on the router, causing duplicate SSE notifications.
+  ///
+  /// Uses GET-based enumeration (same proven approach as
+  /// [createNotifySubscription] Step 1) rather than relying on the WASM
+  /// `listSubscriptions()` output format.
+  ///
+  /// Returns the number of subscriptions deleted.
+  Future<int> purgeAllSubscriptions() async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    const objectPath = 'Device.LocalAgent.Subscription.';
+
+    // Enumerate all subscription instances via GET
+    final allParams =
+        await _withAuthRetry(() => _client.getMultiple([objectPath]));
+
+    // Extract unique instance IDs from keys like
+    // "Device.LocalAgent.Subscription.3.Enable"
+    final instanceIds = <String>{};
+    for (final key in allParams.keys) {
+      final match =
+          RegExp(r'Device\.LocalAgent\.Subscription\.(\d+)\.').firstMatch(key);
+      if (match != null) {
+        instanceIds.add(match.group(1)!);
+      }
+    }
+
+    if (instanceIds.isEmpty) {
+      sw.stop();
+      logger.d('[UspService]:#$id PURGE_SUBSCRIPTIONS → 0 (none found, '
+          '${sw.elapsedMilliseconds}ms)');
+      return 0;
+    }
+
+    // Log what we're about to delete
+    for (final instId in instanceIds) {
+      final prefix = '$objectPath$instId.';
+      final notifType = allParams['${prefix}NotifType'] ?? '?';
+      final refList = allParams['${prefix}ReferenceList'] ?? '?';
+      logger.d('[UspService]:#$id PURGE: $prefix '
+          '(type=$notifType, ref=$refList)');
+    }
+
+    int deleted = 0;
+    for (final instId in instanceIds) {
+      final instancePath = '$objectPath$instId.';
+      try {
+        await _withAuthRetry(() => _client.delete(instancePath));
+        deleted++;
+      } catch (e) {
+        logger.w('[UspService]:#$id PURGE failed to delete '
+            '$instancePath: $e');
+      }
+    }
+
+    sw.stop();
+    logger.d('[UspService]:#$id PURGE_SUBSCRIPTIONS → deleted $deleted/'
+        '${instanceIds.length} (${sw.elapsedMilliseconds}ms)');
+    return deleted;
+  }
+
+  // ===========================================================================
+  // Subscribe — SSE-backed with polling fallback
+  // ===========================================================================
+
+  /// Creates a typed subscription that delivers parsed model updates via a
+  /// [Stream].
+  ///
+  /// When [onSseSubscribe] is set (by [SseManager]), uses SSE notifications
+  /// as triggers to re-fetch and emit updated data. Otherwise, falls back to
+  /// periodic polling.
+  Future<Subscription<T>> subscribe<T>({
+    required String id,
+    required NotifType notifType,
+    required List<String> paths,
+    required T Function(Map<String, dynamic>) parser,
+    Duration interval = const Duration(seconds: 5),
+  }) async {
+    if (onSseSubscribe != null) {
+      return _sseSubscribe(
+          id: id, notifType: notifType, paths: paths, parser: parser);
+    }
+    return _pollingSubscribe(
+        id: id,
+        notifType: notifType,
+        paths: paths,
+        parser: parser,
+        interval: interval);
+  }
+
+  /// SSE-backed subscription: registers via delegate, re-fetches on notification.
+  Future<Subscription<T>> _sseSubscribe<T>({
+    required String id,
+    required NotifType notifType,
+    required List<String> paths,
+    required T Function(Map<String, dynamic>) parser,
+  }) async {
+    final controller = StreamController<T>.broadcast();
+    Timer? debounce;
+
+    final (:removeHandler, :unregister) = await onSseSubscribe!(
+      subscriptionId: id,
+      notifType: _notifTypeToString(notifType),
+      referenceList: paths.first,
+      onNotification: () {
+        // Debounce: re-fetch after 300ms of quiet
+        debounce?.cancel();
+        debounce = Timer(const Duration(milliseconds: 300), () async {
+          try {
+            final response = await get(paths);
+            final parsed = parser(response);
+            if (!controller.isClosed) {
+              controller.add(parsed);
+            }
+          } catch (e) {
+            logger.w('[UspService]:SSE subscribe re-fetch error for "$id": $e');
+          }
+        });
+      },
+    );
+
+    // Initial fetch
+    try {
+      final response = await get(paths);
+      final parsed = parser(response);
+      if (!controller.isClosed) {
+        controller.add(parsed);
+      }
+    } catch (e) {
+      logger.w('[UspService]:SSE subscribe initial fetch error for "$id": $e');
+    }
+
+    return Subscription<T>(
+      id: id,
+      notifType: notifType,
+      stream: controller.stream,
+      cancel: () async {
+        debounce?.cancel();
+        removeHandler();
+        await unregister();
+        await controller.close();
+      },
+    );
+  }
+
+  /// Polling fallback subscription.
+  Future<Subscription<T>> _pollingSubscribe<T>({
+    required String id,
+    required NotifType notifType,
+    required List<String> paths,
+    required T Function(Map<String, dynamic>) parser,
+    required Duration interval,
+  }) async {
+    late StreamController<T> controller;
+    Timer? timer;
+
+    controller = StreamController<T>(
+      onListen: () {
+        timer = Timer.periodic(interval, (_) async {
+          try {
+            final response = await get(paths);
+            final parsed = parser(response);
+            if (!controller.isClosed) {
+              controller.add(parsed);
+            }
+          } catch (e) {
+            logger.w('[UspService]:Subscribe poll error for "$id": $e');
+          }
+        });
+      },
+      onCancel: () {
+        timer?.cancel();
+      },
+    );
+
+    return Subscription<T>(
+      id: id,
+      notifType: notifType,
+      stream: controller.stream,
+      cancel: () async {
+        timer?.cancel();
+        await controller.close();
+      },
+    );
+  }
+
+  /// Converts [NotifType] enum to the USP string representation.
+  static String _notifTypeToString(NotifType type) {
+    switch (type) {
+      case NotifType.valueChange:
+        return 'ValueChange';
+      case NotifType.objectCreation:
+        return 'ObjectCreation';
+      case NotifType.objectDeletion:
+        return 'ObjectDeletion';
+      case NotifType.operationComplete:
+        return 'OperationComplete';
+      case NotifType.onBoardRequest:
+        return 'OnBoardRequest';
+      case NotifType.event:
+        return 'Event';
+    }
+  }
+
+  // ===========================================================================
+  // Log helpers
+  // ===========================================================================
+
+  /// Abbreviates a list of paths for concise logging.
+  ///
+  /// Shows up to [max] paths with the `Device.` prefix stripped, followed by
+  /// `+N more` if there are additional paths.
+  static String _pathSummary(List<String> paths, {int max = 2}) {
+    if (paths.isEmpty) return '[]';
+    final shown = paths
+        .take(max)
+        .map((p) => p.startsWith('Device.') ? p.substring(7) : p)
+        .toList();
+    final remaining = paths.length - shown.length;
+    final suffix = remaining > 0 ? ', +$remaining more' : '';
+    return '[${shown.join(', ')}$suffix]';
+  }
+
+  /// Abbreviates a map of param keys for concise logging.
+  static String _paramSummary(Map<String, dynamic> params, {int max = 2}) {
+    if (params.isEmpty) return '[]';
+    final shown = params.keys
+        .take(max)
+        .map((p) => p.startsWith('Device.') ? p.substring(7) : p)
+        .toList();
+    final remaining = params.length - shown.length;
+    final suffix = remaining > 0 ? ', +$remaining more' : '';
+    return '[${shown.join(', ')}$suffix]';
+  }
+
+  /// Converts a flat dot-path map into a nested JSON tree for logging.
+  ///
+  /// e.g. `{"Device.IP.Stats.BytesSent": "123"}` →
+  /// ```json
+  /// {"Device":{"IP":{"Stats":{"BytesSent":"123"}}}}
+  /// ```
+  static String _mapSummary(Map<String, dynamic> map) {
+    final nested = <String, dynamic>{};
+    for (final entry in map.entries) {
+      final segments = entry.key.split('.');
+      Map<String, dynamic> current = nested;
+      for (var i = 0; i < segments.length - 1; i++) {
+        current = current.putIfAbsent(segments[i], () => <String, dynamic>{})
+            as Map<String, dynamic>;
+      }
+      current[segments.last] = entry.value;
+    }
+    return const JsonEncoder.withIndent('  ').convert(nested);
   }
 
   void dispose() {

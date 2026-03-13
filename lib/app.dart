@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
+import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/layouts/root_container.dart';
@@ -14,6 +16,8 @@ import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
+import 'package:privacy_gui/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
@@ -113,6 +117,9 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     // Watch device-specific theme configuration (reactive to modelNumber)
     final themeConfigAsync = ref.watch(themeConfigProvider);
 
+    // Watch Theme Studio config for dynamic theme overrides
+    final demoConfig = ref.watch(demoThemeConfigProvider);
+
     // Always use MaterialApp.router to preserve navigation state
     // Use default theme during loading to prevent router swap
     return themeConfigAsync.when(
@@ -121,6 +128,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         appSettings: appSettings,
         systemLocale: systemLocale,
         themeConfig: themeConfig,
+        demoConfig: demoConfig,
         userThemeColor: userThemeColor,
       ),
       loading: () => _buildMaterialApp(
@@ -128,6 +136,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
         appSettings: appSettings,
         systemLocale: systemLocale,
         themeConfig: ThemeJsonConfig.defaultConfig(),
+        demoConfig: demoConfig,
         userThemeColor: userThemeColor,
       ),
       error: (error, stack) {
@@ -138,6 +147,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
           appSettings: appSettings,
           systemLocale: systemLocale,
           themeConfig: ThemeJsonConfig.defaultConfig(),
+          demoConfig: demoConfig,
           userThemeColor: userThemeColor,
         );
       },
@@ -152,10 +162,21 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
     required AppSettings appSettings,
     required Locale systemLocale,
     required ThemeJsonConfig themeConfig,
+    required DemoThemeConfig demoConfig,
     required Color? userThemeColor,
   }) {
-    final appLightTheme = themeConfig.createLightTheme(userThemeColor);
-    final appDarkTheme = themeConfig.createDarkTheme(userThemeColor);
+    final appLightTheme = buildDemoThemeData(
+      brightness: Brightness.light,
+      config: demoConfig,
+      themeConfig: themeConfig,
+      userThemeColor: userThemeColor,
+    );
+    final appDarkTheme = buildDemoThemeData(
+      brightness: Brightness.dark,
+      config: demoConfig,
+      themeConfig: themeConfig,
+      userThemeColor: userThemeColor,
+    );
 
     return MaterialApp.router(
       onGenerateTitle: (context) => loc(context).appTitle,
@@ -211,27 +232,22 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.i('didChangeAppLifecycleState: ${state.name}');
-    // if (state == AppLifecycleState.resumed) {
-    //   ref
-    //       .read(connectivityProvider.notifier)
-    //       .forceUpdate()
-    //       .then((_) => SharedPreferences.getInstance())
-    //       .then((prefs) {
-    //     final currentSN = prefs.getString(pCurrentSN);
-    //     if (currentSN != null &&
-    //         ref.read(sessionProvider).deviceInfo?.serialNumber !=
-    //             currentSN) {
-    //       // if (mounted) {
-    //       //   showRouterNotFoundAlert(context, ref);
-    //       // }
-    //     } else if (ref.read(authProvider).value?.loginType != LoginType.none &&
-    //         currentSN?.isNotEmpty == true) {
-    //       ref.read(pollingProvider.notifier).startPolling();
-    //     }
-    //   });
-    // } else if (state == AppLifecycleState.paused) {
-    //   ref.read(pollingProvider.notifier).stopPolling();
-    // }
+    if (state == AppLifecycleState.resumed) {
+      _tryResumeSse();
+    }
+  }
+
+  void _tryResumeSse() {
+    final loginType = ref.read(authProvider).value?.loginType;
+    if (loginType == null || loginType == LoginType.none) return;
+    final sseManager = ref.read(sseManagerProvider);
+    if (sseManager == null) return;
+    final sseState = sseManager.connection.connectionState.value;
+    if (sseState == SseConnectionState.suspended) {
+      logger
+          .d('[App] Lifecycle resume: attempting SSE reconnect from suspended');
+      sseManager.tryReconnect();
+    }
   }
 
   /// Initializes the authentication state.

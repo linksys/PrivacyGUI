@@ -1,0 +1,144 @@
+part of 'router_provider.dart';
+
+final uspShellNavigatorKey = GlobalKey<NavigatorState>();
+
+final uspDashboardRoute = ShellRoute(
+  navigatorKey: uspShellNavigatorKey,
+  builder: (BuildContext context, GoRouterState state, Widget child) =>
+      UspDashboardShell(child: child),
+  routes: [
+    LinksysRoute(
+      name: RouteNamed.uspDashboard,
+      path: RoutePath.uspDashboard,
+      builder: (context, state) => const UspDashboardView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspMenu,
+      path: RoutePath.uspMenu,
+      builder: (context, state) => const UspMenuView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspSupport,
+      path: RoutePath.uspSupport,
+      builder: (context, state) => const UspSupportView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspDeviceList,
+      path: RoutePath.uspDeviceList,
+      builder: (context, state) => const UspDeviceListView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.uspDeviceDetail,
+          path: RoutePath.uspDeviceDetail,
+          builder: (context, state) {
+            final mac = state.uri.queryParameters['mac'] ?? '';
+            return UspDeviceDetailView(mac: mac);
+          },
+        ),
+      ],
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspTopology,
+      path: RoutePath.uspTopology,
+      builder: (context, state) => const UspTopologyView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.uspNodeDetail,
+          path: RoutePath.uspNodeDetail,
+          builder: (context, state) {
+            final deviceId = state.uri.queryParameters['deviceId'] ?? '';
+            return UspNodeDetailView(deviceId: deviceId);
+          },
+        ),
+      ],
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspInstantSafety,
+      path: RoutePath.uspInstantSafety,
+      builder: (context, state) => const UspInstantSafetyView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspAdmin,
+      path: RoutePath.uspAdmin,
+      builder: (context, state) => const UspAdminView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspDhcpDetail,
+      path: RoutePath.uspDhcpDetail,
+      builder: (context, state) => const UspDhcpDetailView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspSystemLog,
+      path: RoutePath.uspSystemLog,
+      builder: (context, state) => const UspSystemLogView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspStatistics,
+      path: RoutePath.uspStatistics,
+      builder: (context, state) => const UspStatisticsView(),
+    ),
+    LinksysRoute(
+      name: RouteNamed.uspAdvancedSettings,
+      path: RoutePath.uspAdvancedSettings,
+      builder: (context, state) => const UspAdvancedSettingsView(),
+      routes: [
+        LinksysRoute(
+          name: RouteNamed.uspInternetSettings,
+          path: RoutePath.uspInternetSettings,
+          config: const LinksysRouteConfig(noNaviRail: true),
+          builder: (context, state) => const UspInternetSettingsView(),
+          enableDirtyCheck: true,
+          preservableProvider: preservableUspInternetSettingsProvider,
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspLocalNetwork,
+          path: RouteNamed.uspLocalNetwork,
+          builder: (context, state) => const UspLocalNetworkView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspFirewall,
+          path: RouteNamed.uspFirewall,
+          builder: (context, state) => const UspFirewallView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspDmz,
+          path: RouteNamed.uspDmz,
+          builder: (context, state) => const UspDmzView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspPortForwardingDetail,
+          path: RouteNamed.uspPortForwardingDetail,
+          builder: (context, state) => const UspPortForwardingDetailView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspStaticRouting,
+          path: RouteNamed.uspStaticRouting,
+          builder: (context, state) => const UspStaticRoutingView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspIpv6PortService,
+          path: RouteNamed.uspIpv6PortService,
+          builder: (context, state) => const UspIpv6PortServiceView(),
+        ),
+        LinksysRoute(
+          name: RouteNamed.uspNetworkDiagnostics,
+          path: RouteNamed.uspNetworkDiagnostics,
+          builder: (context, state) => const UspNetworkDiagnosticsView(),
+        ),
+      ],
+    ),
+    if (kDebugMode)
+      LinksysRoute(
+        name: RouteNamed.uspTestConsole,
+        path: RoutePath.uspTestConsole,
+        builder: (context, state) => const UspTestConsoleView(),
+      ),
+    LinksysRoute(
+      name: RouteNamed.uspWifiSettings,
+      path: RoutePath.uspWifiSettings,
+      preservableProvider: preservableUspWifiSettingsProvider,
+      enableDirtyCheck: true,
+      builder: (context, state) => const UspWifiSettingsView(),
+    ),
+  ],
+);

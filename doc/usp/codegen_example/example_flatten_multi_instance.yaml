@@ -1,0 +1,17 @@
+name: wifiClients
+description: WiFi clients across all access points (flattened view)
+multiInstance: true
+basePath: Device.WiFi.AccessPoint.
+singularName: wifiClient
+nestedPath: .AssociatedDevice.
+flatten: true
+parameters:
+  - field_name: macAddress
+    path: .MACAddress
+    type: string
+  - field_name: signalStrength
+    path: .SignalStrength
+    type: int
+  - field_name: active
+    path: .Active
+    type: boolean

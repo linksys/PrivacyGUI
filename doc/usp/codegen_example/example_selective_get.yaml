@@ -1,0 +1,24 @@
+# Selective Get (default behavior)
+#
+# Only the 3 declared parameters are fetched via USP wildcard search paths:
+#   Device.Firewall.Chain.1.Rule.*.Enable
+#   Device.Firewall.Chain.1.Rule.*.Description
+#   Device.Firewall.Chain.1.Rule.*.Target
+#
+# Instead of fetching all 20+ parameters per rule instance with a partial path.
+
+name: firewallRules
+description: Firewall chain rules — selective get fetches only declared parameters
+multiInstance: Device.Firewall.Chain.1.Rule.
+singularName: firewallRule
+
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+  - field_name: description
+    path: .Description
+    type: string
+  - field_name: target
+    path: .Target
+    type: string

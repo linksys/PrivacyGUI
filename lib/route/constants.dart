@@ -22,6 +22,31 @@ class RoutePath {
   static const dashboardSupport = '/dashboardSupport';
   static const dashboardAiAssistant = '/dashboardAiAssistant';
 
+  /// USP dashboard (standalone, no JNAP polling dependency)
+  static const uspDashboard = '/uspDashboard';
+  static const uspMenu = '/uspMenu';
+  static const uspSupport = '/uspSupport';
+  static const uspDeviceList = '/uspDeviceList';
+  static const uspDeviceDetail = 'uspDeviceDetail';
+  static const uspTopology = '/uspTopology';
+  static const uspNodeDetail = 'uspNodeDetail';
+  static const uspInstantSafety = '/uspInstantSafety';
+  static const uspAdmin = '/uspAdmin';
+  static const uspDhcpDetail = '/uspDhcpDetail';
+  static const uspPortForwardingDetail = '/uspPortForwardingDetail';
+  static const uspSystemLog = '/uspSystemLog';
+  static const uspFirewall = '/uspFirewall';
+  static const uspDmz = '/uspDmz';
+  static const uspLocalNetwork = '/uspLocalNetwork';
+  static const uspStaticRouting = '/uspStaticRouting';
+  static const uspAdvancedSettings = '/uspAdvancedSettings';
+  static const uspIpv6PortService = '/uspIpv6PortService';
+  static const uspStatistics = '/uspStatistics';
+  static const uspTestConsole = '/uspTestConsole';
+  static const uspInternetSettings = 'uspInternetSettings';
+  static const uspWifiSettings = '/uspWifiSettings';
+  static const uspNetworkDiagnostics = 'uspNetworkDiagnostics';
+
   /// menu
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';
@@ -155,6 +180,31 @@ class RouteNamed {
   static const dashboardHome = 'dashboardHome';
   static const dashboardSupport = 'dashboardSupport';
   static const dashboardAiAssistant = 'dashboardAiAssistant';
+
+  /// USP dashboard
+  static const uspDashboard = 'uspDashboard';
+  static const uspMenu = 'uspMenu';
+  static const uspSupport = 'uspSupport';
+  static const uspDeviceList = 'uspDeviceList';
+  static const uspDeviceDetail = 'uspDeviceDetail';
+  static const uspTopology = 'uspTopology';
+  static const uspNodeDetail = 'uspNodeDetail';
+  static const uspInstantSafety = 'uspInstantSafety';
+  static const uspAdmin = 'uspAdmin';
+  static const uspDhcpDetail = 'uspDhcpDetail';
+  static const uspPortForwardingDetail = 'uspPortForwardingDetail';
+  static const uspSystemLog = 'uspSystemLog';
+  static const uspFirewall = 'uspFirewall';
+  static const uspDmz = 'uspDmz';
+  static const uspLocalNetwork = 'uspLocalNetwork';
+  static const uspStaticRouting = 'uspStaticRouting';
+  static const uspAdvancedSettings = 'uspAdvancedSettings';
+  static const uspIpv6PortService = 'uspIpv6PortService';
+  static const uspStatistics = 'uspStatistics';
+  static const uspTestConsole = 'uspTestConsole';
+  static const uspInternetSettings = 'uspInternetSettings';
+  static const uspWifiSettings = 'uspWifiSettings';
+  static const uspNetworkDiagnostics = 'uspNetworkDiagnostics';
 
   static const menuInstantVerify = 'menuInstantVerify';
   static const menuInstantDevices = 'menuInstantDevices';

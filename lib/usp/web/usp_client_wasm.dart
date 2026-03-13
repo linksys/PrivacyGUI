@@ -3,6 +3,8 @@ library usp_client;
 
 import 'dart:js_interop';
 
+import 'package:privacy_gui/usp/models/usp_response.dart';
+
 // Bind to the UspClient class exported in usp_client.js
 @JS('UspClient')
 extension type UspClientJS._(JSObject _) implements JSObject {
@@ -14,6 +16,13 @@ extension type UspClientJS._(JSObject _) implements JSObject {
   external JSPromise<JSAny?> getMultiple(JSArray<JSString> paths);
 
   external bool isAuthenticated();
+
+  @JS('getToken')
+  external String? getToken();
+
+  external JSPromise<JSAny?> subscribe(String subscriptionId);
+
+  external JSPromise<JSAny?> unsubscribe(String subscriptionId);
 
   external JSPromise<JSAny?> login(String password);
 
@@ -43,6 +52,9 @@ extension type UspClientJS._(JSObject _) implements JSObject {
   // Operate: execute a USP command
   external JSPromise<JSAny?> operate(String command, JSAny args);
 
+  // List all active OBUSPA subscriptions
+  external JSPromise<JSAny?> listSubscriptions();
+
   external void free();
 }
 
@@ -55,6 +67,16 @@ class UspClientWeb {
   }
 
   bool get isAuthenticated => _client.isAuthenticated();
+
+  String? get sessionToken => _client.getToken();
+
+  Future<void> subscribe(String subscriptionId) async {
+    await _client.subscribe(subscriptionId).toDart;
+  }
+
+  Future<void> unsubscribe(String subscriptionId) async {
+    await _client.unsubscribe(subscriptionId).toDart;
+  }
 
   Future<void> login(String password) async {
     await _client.login(password).toDart;
@@ -79,7 +101,19 @@ class UspClientWeb {
     final map = resultJs.dartify() as Map?;
     if (map == null) return {};
 
-    return map.map((key, value) => MapEntry(key.toString(), value.toString()));
+    final result = <String, String>{};
+    for (final entry in map.entries) {
+      final key = entry.key?.toString() ?? '';
+      final value = entry.value;
+      if (value == null) {
+        // ignore: avoid_print
+        print('[WASM] null value for key: $key');
+        result[key] = '';
+      } else {
+        result[key] = value.toString();
+      }
+    }
+    return result;
   }
 
   Future<void> set(String path, String value) async {
@@ -94,8 +128,7 @@ class UspClientWeb {
   /// Creates a new object instance at the given path with initial parameters.
   /// Returns the created instance path (e.g., "Device.NAT.PortMapping.3.").
   Future<String> add(String objectPath, Map<String, String> parameters) async {
-    final result =
-        await _client.add(objectPath, parameters.jsify()!).toDart;
+    final result = await _client.add(objectPath, parameters.jsify()!).toDart;
     return result?.dartify()?.toString() ?? '';
   }
 
@@ -105,8 +138,7 @@ class UspClientWeb {
   Future<List<String>> addMultiple(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
     final jsObjects = objects.map((obj) => obj.jsify()!).toList().toJS;
-    final result =
-        await _client.addMultiple(jsObjects, allowPartial).toDart;
+    final result = await _client.addMultiple(jsObjects, allowPartial).toDart;
     final list = result.dartify() as List?;
     if (list == null) return [];
     return list.map((e) => e.toString()).toList();
@@ -125,15 +157,40 @@ class UspClientWeb {
   }
 
   /// Executes a USP Operate command.
-  /// Returns the output arguments as a map, or empty map if no output.
-  Future<Map<String, String>> operate(String command,
+  /// Returns [UspResponse] with commandKey and output arguments.
+  Future<UspResponse<Map<String, String>>> operate(String command,
       {Map<String, String> args = const {}}) async {
-    final result =
-        await _client.operate(command, args.jsify()!).toDart;
-    if (result == null || result.isUndefinedOrNull) return {};
+    final result = await _client.operate(command, args.jsify()!).toDart;
+    if (result == null || result.isUndefinedOrNull) {
+      return UspResponse(data: {});
+    }
     final map = result.dartify() as Map?;
-    if (map == null) return {};
-    return map.map((key, value) => MapEntry(key.toString(), value.toString()));
+    if (map == null) return UspResponse(data: {});
+
+    final commandKey = map['commandKey']?.toString();
+    final rawOutputArgs = map['outputArgs'];
+    final outputArgs = <String, String>{};
+    if (rawOutputArgs is Map) {
+      for (final entry in rawOutputArgs.entries) {
+        outputArgs[entry.key.toString()] = entry.value.toString();
+      }
+    }
+
+    return UspResponse(data: outputArgs, commandKey: commandKey);
+  }
+
+  /// Lists all active OBUSPA subscriptions on the router.
+  /// Returns a list of subscription objects (maps with subscription details).
+  Future<List<Map<String, dynamic>>> listSubscriptions() async {
+    final result = await _client.listSubscriptions().toDart;
+    if (result == null || result.isUndefinedOrNull) return [];
+    final list = result.dartify() as List?;
+    if (list == null) return [];
+    return list
+        .whereType<Map>()
+        .map((m) => m.map((k, v) => MapEntry(k.toString(), v)))
+        .toList()
+        .cast<Map<String, dynamic>>();
   }
 
   void dispose() {

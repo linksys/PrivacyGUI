@@ -63,11 +63,11 @@ dependencies:
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.12.4
+      ref: v2.15.2
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.12.4
+      ref: v2.15.2
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2
@@ -103,6 +103,7 @@ dev_dependencies:
   golden_toolkit: ^0.15.0
   flutter_svg_test: ^1.0.1
   fake_async: any
+  xml: ^6.5.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

@@ -1,0 +1,24 @@
+# fetchAll mode — forces partial path query
+#
+# Generated _paths uses partial path:
+#   Device.Firewall.Chain.1.Rule.
+#
+# This fetches ALL parameters for every rule instance (same as pre-v0.10.2).
+# Use this when you need the full response or want backward-compatible behavior.
+
+name: firewallRulesFull
+description: Firewall chain rules — fetchAll fetches all parameters per instance
+multiInstance: Device.Firewall.Chain.1.Rule.
+singularName: firewallRuleFull
+fetchAll: true
+
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+  - field_name: description
+    path: .Description
+    type: string
+  - field_name: target
+    path: .Target
+    type: string

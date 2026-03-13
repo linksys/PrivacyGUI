@@ -1,0 +1,58 @@
+# WiFi Client (Associated Device) definition
+#
+# Data source: Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}
+#
+# Uses the flatten nested multi-instance feature (codegen v0.9.0+).
+# - Level 1: AccessPoint {i} (which AP / radio)
+# - Level 2: AssociatedDevice {j} (which client on that AP)
+#
+# The generated WifiClients.fetch() returns a flat List<WifiClient>
+# with each item containing a `parentPath` pointing back to the AP instance.
+#
+# The provider layer should convert to Map<String, WifiClient> keyed by
+# uppercase MAC for efficient lookup by ConnectedDevices.
+
+name: wifi_clients
+version: 1.0.0
+multiInstance: Device.WiFi.AccessPoint.
+category: devices
+description: WiFi clients across all access points (flattened view)
+singularName: wifi_client
+nestedPath: .AssociatedDevice.
+flatten: true
+
+parameters:
+  - field_name: mac_address
+    path: .MACAddress
+    type: string
+    description: Client MAC address (join key with ConnectedDevices)
+
+  - field_name: signal_strength
+    path: .SignalStrength
+    type: int
+    description: RSSI in dBm (e.g. -45)
+
+  - field_name: noise
+    path: .Noise
+    type: int
+    description: Noise level in dBm
+
+  - field_name: last_data_downlink_rate
+    path: .LastDataDownlinkRate
+    type: int
+    description: Last downlink data rate in kbps
+
+  - field_name: last_data_uplink_rate
+    path: .LastDataUplinkRate
+    type: int
+    description: Last uplink data rate in kbps
+
+  - field_name: active
+    path: .Active
+    type: boolean
+    description: Whether this client is currently active
+
+subscribe:
+  enabled: true
+  notifType: ObjectCreation
+  id: wifi-clients-01

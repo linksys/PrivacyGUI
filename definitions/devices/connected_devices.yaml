@@ -1,0 +1,58 @@
+# Network connected devices
+# SSH-verified 2026-03-06
+
+name: ConnectedDevices
+singularName: ConnectedDevice
+version: 1.0.0
+multiInstance: Device.Hosts.Host.
+category: devices
+description: Network connected devices (multi-instance)
+
+parameters:
+  - field_name: macAddress
+    path: .PhysAddress
+    type: string
+    description: Device MAC address
+
+  - field_name: ipAddress
+    path: .IPAddress
+    type: string
+    description: Device IP address
+
+  - field_name: hostName
+    path: .HostName
+    type: string
+    description: Device hostname
+
+  - field_name: isActive
+    path: .Active
+    type: boolean
+    description: Whether device is currently connected
+
+  - field_name: interface
+    path: .Layer1Interface
+    type: string
+    description: Connection interface (WiFi/Ethernet)
+
+  - field_name: addressSource
+    path: .AddressSource
+    type: string
+    description: Address assignment method (DHCP, Static)
+
+children:
+  - name: ipv6Addresses
+    singularName: connectedDeviceIpv6
+    path: .IPv6Address.
+    parameters:
+      - field_name: address
+        path: .IPAddress
+        type: string
+        description: IPv6 address
+
+subscribe:
+  - notifType: ObjectCreation
+    id: connected-devices-objectcreation
+  - notifType: ObjectDeletion
+    id: connected-devices-objectdeletion
+  - notifType: ValueChange
+    id: connected-devices-valuechange

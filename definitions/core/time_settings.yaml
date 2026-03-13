@@ -1,0 +1,40 @@
+name: TimeSettings
+version: 1.0.0
+instance: Device.Time
+category: core
+description: NTP and time configuration
+
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+    writable: true
+    description: Whether time client is enabled
+
+  - field_name: status
+    path: .Status
+    type: string
+    description: Synchronization status (Disabled, Unsynchronized, Synchronized, Error)
+
+  - field_name: ntpServer1
+    path: .NTPServer1
+    type: string
+    writable: true
+    description: Primary NTP server address
+
+  - field_name: ntpServer2
+    path: .NTPServer2
+    type: string
+    writable: true
+    description: Secondary NTP server address
+
+  - field_name: localTimeZone
+    path: .LocalTimeZone
+    type: string
+    writable: true
+    description: POSIX timezone string
+
+  - field_name: currentLocalTime
+    path: .CurrentLocalTime
+    type: string
+    description: Current local time in ISO 8601 format

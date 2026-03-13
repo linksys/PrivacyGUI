@@ -1,0 +1,26 @@
+name: DhcpReservations
+singularName: DhcpReservation
+version: 1.0.0
+multiInstance: Device.DHCPv4.Server.Pool.1.StaticAddress.
+category: network
+description: DHCP static address reservations
+type: add
+
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+    writable: true
+    description: Whether this reservation is active
+
+  - field_name: chaddr
+    path: .Chaddr
+    type: string
+    writable: true
+    description: Client hardware (MAC) address
+
+  - field_name: yiaddr
+    path: .Yiaddr
+    type: string
+    writable: true
+    description: Reserved IP address

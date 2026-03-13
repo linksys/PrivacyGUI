@@ -12,10 +12,18 @@ This document describes the YAML format supported by `usp-codegen`, based on the
   - [1.3 Presets](#13-presets)
   - [1.4 Subscribe](#14-subscribe)
   - [1.5 Multi-Instance Definitions](#15-multi-instance-definitions)
+  - [1.6 Add/Delete Operations](#16-adddelete-operations)
+  - [1.7 Related Parameters](#17-related-parameters)
+  - [1.8 Operate Definitions](#18-operate-definitions)
+  - [1.9 Nested Multi-Instance (Children)](#19-nested-multi-instance-children)
+  - [1.10 Flatten Mode](#110-flatten-mode)
 - [2. Extension File](#2-extension-file)
   - [2.1 Top-Level Fields](#21-top-level-fields)
   - [2.2 Formula Transform](#22-formula-transform)
   - [2.3 Mapping Transform](#23-mapping-transform)
+  - [2.4 Converter Transform](#24-converter-transform)
+  - [2.5 Built-in Transforms Library](#25-built-in-transforms-library)
+  - [2.6 Subscription Registry](#26-subscription-registry)
 - [3. Type Mapping](#3-type-mapping)
 - [4. Path Conventions](#4-path-conventions)
 - [5. Naming Conventions](#5-naming-conventions)
@@ -36,14 +44,18 @@ A definition file describes a set of USP parameters and their properties. File n
 | `description` | string | **Yes** | Module description |
 | `parameters` | array | **Yes** | Array of parameter definitions |
 | `version` | string | No | Semantic version (e.g., `1.0.0`) |
-| `instance` | string | No | TR-181 single-instance path (e.g., `Device.WiFi.SSID.1`). Generates a data class with `fetch()` and `save()` methods |
-| `basePath` | string | No | TR-181 multi-instance base path (e.g., `Device.Hosts.Host.`). Used with `multiInstance: true` |
-| `multiInstance` | boolean | No | Set to `true` to generate a data class + collection class pattern (default: `false`). Alias: `multi_instance` |
+| `instance` | string | No | TR-181 single-instance path (e.g., `Device.WiFi.SSID.1`). Used as path prefix for parameters with relative paths. See [Path Modes](#path-modes) |
+| `multiInstance` | string | No | TR-181 multi-instance base path (e.g., `Device.Hosts.Host.`). When present, generates a data class + collection class pattern with `getInstances()`. Alias: `multi_instance`. See [Path Modes](#path-modes) |
 | `singularName` | string | No | Override the auto-derived singular name for multi-instance definitions. Alias: `singular_name` |
-| `type` | string | No | Definition type hint (e.g., `get`, `set`, `add`). Accepted by schema validator but not parsed into AST or used for code generation |
-| `category` | string | No | Category tag (e.g., `core`, `extensions`, `vendor`). Accepted by schema validator but not parsed into AST or used for code generation |
+| `type` | string | No | Controls add/delete code generation. `"add"` generates both `add()` and `delete()` methods. `"delete"` generates only `delete()`. See [1.6 Add/Delete Operations](#16-adddelete-operations) |
+| `category` | string | No | Category tag (`core`, `extensions`, `vendor`). When `--categorize` is enabled, files are output into matching subdirectories |
 | `presets` | array | No | Preset configuration groups |
 | `subscribe` | object | No | Subscription configuration |
+| `related` | array | No | Cross-instance related parameters. See [1.7 Related Parameters](#17-related-parameters) |
+| `children` | array | No | Nested child multi-instance definitions. See [1.9 Nested Multi-Instance (Children)](#19-nested-multi-instance-children) |
+| `nestedPath` | string | No | Relative path to nested sub-table for flatten mode (e.g., `.AssociatedDevice.`). Alias: `nested_path`. See [1.10 Flatten Mode](#110-flatten-mode) |
+| `flatten` | boolean | No | When `true` with `nestedPath`, generates a flat list with `parentPath` field instead of nested hierarchy |
+| `fetchAll` | boolean | No | When `true`, forces the generated `fetch()` to use a partial path (e.g., `Device.Hosts.Host.`) instead of selective search paths. Default: `false` (selective get). Alias: `fetch_all`. See [Selective Get](#selective-get) |
 
 ```yaml
 name: DNSSettings
@@ -57,6 +69,84 @@ presets: [...]
 subscribe: {...}
 ```
 
+#### Path Modes
+
+Definition files support three path modes that determine how a parameter's `path` is resolved into a full TR-181 path:
+
+**Mode A: `instance` — Single-instance, relative paths**
+
+Use `instance` to provide a path prefix. Parameters use relative paths (starting with `.`). Suitable for definitions that correspond to a single TR-181 object.
+
+```yaml
+name: DNSSettings
+instance: Device.DNS.Client        # path prefix
+parameters:
+  - path: .Server.1.DNSServer      # relative → Device.DNS.Client.Server.1.DNSServer
+  - path: .Server.2.DNSServer      # relative → Device.DNS.Client.Server.2.DNSServer
+```
+
+**Mode B: `multiInstance` — Multi-instance, relative paths**
+
+Use `multiInstance` with a TR-181 base path (trailing `.` or `.*` are normalized automatically). This generates a collection class with `getInstances()`.
+
+```yaml
+name: connectedDevices
+multiInstance: Device.Hosts.Host.  # base path (multi-instance table)
+parameters:
+  - path: .HostName                # relative → Device.Hosts.Host.{i}.HostName
+  - path: .IPAddress               # relative → Device.Hosts.Host.{i}.IPAddress
+```
+
+**Mode C: No `instance` / No `multiInstance` — Absolute path aggregation**
+
+No path prefix is specified; each parameter's `path` must be a full TR-181 absolute path. Suitable for "API service" scenarios that aggregate parameters from multiple different TR-181 objects.
+
+```yaml
+name: NetworkOverview
+description: Aggregated network status from multiple TR-181 objects
+parameters:
+  - path: Device.DeviceInfo.ModelName            # absolute path
+  - path: Device.IP.Interface.1.IPv4Address.1.IPAddress
+  - path: Device.Hosts.HostNumberOfEntries
+  - path: Device.WiFi.SSID.1.SSID
+    writable: true
+```
+
+> All three modes produce the same generated structure (data class + `fetch()` + `save()`); they only differ in how paths are assembled.
+
+#### `instance` vs `multiInstance` vs `related` Comparison
+
+| | `instance` | `multiInstance` | No prefix (absolute) | `related` |
+|---|---|---|---|---|
+| **Purpose** | Single TR-181 object | Multi-instance table (N entries) | Cross-object aggregation | Reference parameters from other objects within a single-instance definition |
+| **parameter `path`** | Relative (`.XXX`) | Relative (`.XXX`) | Absolute | Relative (prefixed by the related group's `instance`) |
+| **Generated output** | data class | data class + collection + `getInstances()` | data class | Parameters merged into main data class |
+| **Example** | `Device.WiFi.SSID.1` | `Device.Hosts.Host.` | `Device.DeviceInfo.ModelName` | WiFi SSID + AccessPoint Security |
+
+`related` is an extension of Mode A — when a single-instance definition needs parameters from **another** TR-181 object, use `related` to specify that object's `instance` path; its parameters also use relative paths. Functionally equivalent to the absolute path approach (Mode C), but semantically clearer and avoids repeating long path prefixes.
+
+```yaml
+# Using related (recommended: clear semantics, no path duplication)
+name: wifiSettings
+instance: Device.WiFi.SSID.1
+parameters:
+  - path: .SSID
+  - path: .Enable
+related:
+  - instance: Device.WiFi.AccessPoint.1.Security
+    parameters:
+      - path: .ModeEnabled
+      - path: .KeyPassphrase
+
+# Equivalent absolute path approach (same result)
+name: wifiSettings
+parameters:
+  - path: Device.WiFi.SSID.1.SSID
+  - path: Device.WiFi.SSID.1.Enable
+  - path: Device.WiFi.AccessPoint.1.Security.ModeEnabled
+  - path: Device.WiFi.AccessPoint.1.Security.KeyPassphrase
+```
+
 ### 1.2 Parameters
 
 Each parameter describes a single USP data model parameter.
@@ -68,6 +158,7 @@ Each parameter describes a single USP data model parameter.
 | `type` | string | No | Parameter type (default: `string`) |
 | `description` | string | No | Parameter description, generated as doc comment |
 | `writable` | boolean | No | Whether the parameter is writable (default: `false` = read-only) |
+| `required` | boolean | No | Whether the parameter is required for `add()` (default: `false`). Required params are non-nullable in `add()` signatures |
 | `sensitive` | boolean | No | Whether the parameter contains sensitive data (default: `false`) |
 | `default_value` | string \| number \| boolean | No | Default value |
 
@@ -78,12 +169,12 @@ Each parameter describes a single USP data model parameter.
 | `string` | String (default) | `String` | `string` | `String` |
 | `int` | Signed integer | `int` | `number` | `Int` |
 | `uint` | Unsigned integer | `int` | `number` | `UInt` |
-| `long` | Long integer | `int` | `number` | `Int64` |
-| `ulong` | Unsigned long integer | `int` | `number` | `UInt64` |
+| `long` | Long integer | `int` | `bigint` | `Int64` |
+| `ulong` | Unsigned long integer | `int` | `bigint` | `UInt64` |
 | `boolean` | Boolean | `bool` | `boolean` | `Bool` |
-| `datetime` | Date/time | `String` | `string` | `String` |
-| `base64` | Base64-encoded | `String` | `string` | `String` |
-| `hexbinary` | Hex binary | `String` | `string` | `String` |
+| `datetime` | Date/time | `DateTime` | `Date` | `Date` |
+| `base64` | Base64-encoded | `Uint8List` | `Uint8Array` | `Data` |
+| `hexbinary` | Hex binary | `Uint8List` | `Uint8Array` | `Data` |
 | `decimal` / `float` / `double` | Floating point | `double` | `number` | `Double` |
 
 #### Access Modes
@@ -183,7 +274,11 @@ presets:
 
 ### 1.4 Subscribe
 
-Subscription configuration. When `enabled: true`, the generator produces subscription methods.
+Subscription configuration. The generator produces **typed** subscription methods that return `Subscription<ClassName>` instead of untyped streams. Each subscription maps 1:1 to a `Device.LocalAgent.Subscription.{i}` in OBUSPA.
+
+Two formats are supported:
+
+#### Format A — Single Object (legacy, backward-compatible)
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -192,6 +287,34 @@ Subscription configuration. When `enabled: true`, the generator produces subscri
 | `notifType` | string | No | Notification type |
 | `paths` | array | No | Subscription path array (currently only the first element is used) |
 | `description` | string | No | Description |
+
+```yaml
+subscribe:
+  enabled: true
+  notifType: ValueChange
+  id: wifi-settings-01
+```
+
+#### Format B — Array (multiple subscriptions)
+
+Each element is an independent subscription. Presence in the array implies `enabled` — no `enabled` field required.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | No | Subscription identifier |
+| `notifType` | string | No | Notification type |
+| `paths` | array | No | Subscription path array |
+| `description` | string | No | Description |
+
+```yaml
+subscribe:
+  - notifType: ObjectCreation
+    id: connected-devices-objectcreation
+  - notifType: ObjectDeletion
+    id: connected-devices-objectdeletion
+  - notifType: ValueChange
+    id: connected-devices-valuechange
+```
 
 #### Supported `notifType` Values
 
@@ -203,16 +326,109 @@ Subscription configuration. When `enabled: true`, the generator produces subscri
 | `OperationComplete` | Operation completed |
 | `Event` | Event notification |
 
-```yaml
-subscribe:
-  enabled: true
-  notifType: ValueChange
-  id: wifi-settings-01
+#### Generated Output
+
+The subscribe feature generates:
+
+1. **`_paths` constant** — shared between `fetch()` and `subscribe()` (DRY)
+2. **`_fromResponse` / `parseXxx` / `fromResponse`** — shared parser for typed response parsing
+3. **Typed subscription methods** — returns `Subscription<ClassName>` with parser reference
+
+**Single subscription** — generates one `subscribe()` / `subscribeXxx()` function (backward-compatible naming).
+
+**Multiple subscriptions** — generates:
+- Individual functions suffixed with the `notifType` name (e.g., `subscribeObjectCreation`, `subscribeValueChange`)
+- A `subscribeAll()` convenience function that returns all subscriptions as an array
+
+**Dart — single subscription:**
+```dart
+static const _paths = ['Device.WiFi.SSID.1.SSID', ...];
+
+static Future<Subscription<WifiSettings>> subscribe(UspService client) async {
+  return client.subscribe<WifiSettings>(
+    id: 'wifi-settings-01',
+    notifType: NotifType.valueChange,
+    paths: _paths,
+    parser: WifiSettings._fromResponse,
+  );
+}
+```
+
+**Dart — multiple subscriptions:**
+```dart
+static Future<Subscription<ConnectedDevices>> subscribeObjectCreation(UspService client) async { ... }
+static Future<Subscription<ConnectedDevices>> subscribeObjectDeletion(UspService client) async { ... }
+static Future<Subscription<ConnectedDevices>> subscribeValueChange(UspService client) async { ... }
+
+static Future<List<Subscription<ConnectedDevices>>> subscribeAll(UspService client) async {
+  return [
+    await subscribeObjectCreation(client),
+    await subscribeObjectDeletion(client),
+    await subscribeValueChange(client),
+  ];
+}
+```
+
+**TypeScript — single subscription:**
+```typescript
+const PATHS = ['Device.WiFi.SSID.1.SSID', ...] as const;
+function parseWifiSettings(response: Record<string, any>): WifiSettings { ... }
+
+export function subscribeWifiSettings(client: UspClient): Subscription<WifiSettings> {
+  return client.subscribe({
+    id: 'wifi-settings-01',
+    notifType: 'ValueChange',
+    paths: [...PATHS],
+    parser: parseWifiSettings,
+  });
+}
+```
+
+**TypeScript — multiple subscriptions:**
+```typescript
+export function subscribeConnectedDevicesObjectCreation(client: UspClient): Subscription<ConnectedDevices> { ... }
+export function subscribeConnectedDevicesObjectDeletion(client: UspClient): Subscription<ConnectedDevices> { ... }
+export function subscribeConnectedDevicesValueChange(client: UspClient): Subscription<ConnectedDevices> { ... }
+
+export function subscribeAllConnectedDevices(client: UspClient): Subscription<ConnectedDevices>[] {
+  return [
+    subscribeConnectedDevicesObjectCreation(client),
+    subscribeConnectedDevicesObjectDeletion(client),
+    subscribeConnectedDevicesValueChange(client),
+  ];
+}
+```
+
+**Swift — single subscription:**
+```swift
+private static let paths = ["Device.WiFi.SSID.1.SSID", ...]
+
+public static func subscribe(client: UspClient) async throws -> Subscription<WifiSettings> {
+  return try await client.subscribe(
+    id: "wifi-settings-01",
+    notifType: .valueChange,
+    paths: paths,
+    parser: WifiSettings.fromResponse
+  )
+}
+```
+
+**Swift — multiple subscriptions:**
+```swift
+public static func subscribeObjectCreation(client: UspClient) async throws -> Subscription<ConnectedDevices> { ... }
+public static func subscribeObjectDeletion(client: UspClient) async throws -> Subscription<ConnectedDevices> { ... }
+
+public static func subscribeAll(client: UspClient) async throws -> [Subscription<ConnectedDevices>] {
+  return [
+    try await subscribeObjectCreation(client: client),
+    try await subscribeObjectDeletion(client: client),
+  ]
+}
 ```
 
 ### 1.5 Multi-Instance Definitions
 
-When `multiInstance: true` is set, the generator produces **two classes** instead of one:
+When `multiInstance` is set (with a TR-181 base path string), the generator produces **two classes** instead of one:
 
 1. **Singular data class** (immutable) — represents a single instance row with an `instancePath` field plus all parameter fields
 2. **Collection class** — holds a `List`/array of singular instances, with a `fetch()` method that uses `getInstances()` to enumerate all instances
@@ -223,20 +439,22 @@ When the definition also contains **writable parameters** (`writable: true`), th
 4. **`update()` method** — updates a single instance's writable fields in one USP Set call
 5. **`updateMany()` method** — updates multiple instances in a single atomic USP Set call, with `allowPartial` control
 
-The singular name is derived automatically by stripping the trailing `s` from `name`. Use `singularName` to override this when the auto-derivation is incorrect (e.g., plurals that don't end in `s`, or irregular plurals).
+The singular name is derived automatically by stripping the trailing `s` from `name`. Use `singularName` to override this when the auto-derivation is incorrect (e.g., plurals that don't end in `s`, or irregular plurals). If the derived singular name collides with the collection name (e.g., `PortForwarding` → singular `PortForwarding`), the generator will **error out** and prompt you to add `singularName` to the YAML definition.
 
 #### Path Resolution
 
-- Use `basePath` with `multiInstance: true` for dynamic collections (e.g., `Device.Hosts.Host.`)
-- Do **not** use `instance` with `multiInstance: true`; `instance` is reserved for single-instance data class generation
+- `multiInstance` takes a TR-181 base path string for dynamic collections. The parser normalizes all three trailing formats to the same canonical form:
+  - `Device.Hosts.Host.` — trailing dot (canonical)
+  - `Device.Hosts.Host.*` — trailing `.*` (strip `*`)
+  - `Device.Hosts.Host` — bare path (append `.`)
+- Do **not** use `instance` with `multiInstance`; `instance` is reserved for single-instance data class generation
 
 #### Example
 
 ```yaml
 name: connectedDevices
 description: Connected devices on the network
-multiInstance: true
-basePath: Device.Hosts.Host.
+multiInstance: Device.Hosts.Host.
 singularName: connectedDevice  # optional override
 
 parameters:
@@ -273,6 +491,16 @@ class ConnectedDevice {
     required this.ipAddress,
     required this.active,
   });
+
+  @override
+  String toString() {
+    return 'ConnectedDevice('
+      'instancePath: $instancePath, '
+      'hostName: $hostName, '
+      'ipAddress: $ipAddress, '
+      'active: $active'
+    ')';
+  }
 }
 
 /// Only writable fields (hostName, active); read-only fields (ipAddress) excluded
@@ -319,6 +547,8 @@ class ConnectedDevices {
   }
 }
 ```
+
+> **Dart-only**: All generated Dart data classes include an `@override String toString()` method listing all fields for debug output. TypeScript and Swift do not generate equivalent methods.
 
 #### Generated Output (TypeScript)
 
@@ -413,6 +643,619 @@ public class ConnectedDevices {
 }
 ```
 
+#### Selective Get
+
+By default, multi-instance definitions generate **selective search paths** using the USP wildcard `*` syntax. Only the declared parameters are fetched, reducing response size significantly.
+
+**Default behavior (selective get):**
+
+```yaml
+name: firewallRules
+multiInstance: Device.Firewall.Chain.1.Rule.
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+  - field_name: description
+    path: .Description
+    type: string
+  - field_name: target
+    path: .Target
+    type: string
+```
+
+Generated `_paths` (Dart):
+```dart
+static const _paths = [
+  'Device.Firewall.Chain.1.Rule.*.Enable',
+  'Device.Firewall.Chain.1.Rule.*.Description',
+  'Device.Firewall.Chain.1.Rule.*.Target',
+];
+```
+
+This queries only the 3 declared parameters instead of all 20+ parameters under each rule instance.
+
+**Opt-out with `fetchAll: true`:**
+
+```yaml
+name: firewallRules
+multiInstance: Device.Firewall.Chain.1.Rule.
+fetchAll: true   # use partial path — fetches all parameters
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+```
+
+Generated `_paths` (Dart):
+```dart
+static const _paths = ['Device.Firewall.Chain.1.Rule.'];
+```
+
+**Subscribe paths** are unaffected — they always use the partial path (e.g., `'Device.Firewall.Chain.1.Rule.'`) regardless of `fetchAll`, because `ObjectCreation`/`ObjectDeletion` events require monitoring the entire subtree.
+
+**Nested children** produce double-wildcard search paths:
+```dart
+// Parent: Device.WiFi.AccessPoint.*.SSID
+// Child:  Device.WiFi.AccessPoint.*.AssociatedDevice.*.MACAddress
+```
+
+### 1.6 Add/Delete Operations
+
+For multi-instance definitions that need to create or remove USP instances (e.g., Port Forwarding rules), use the `type` field.
+
+| `type` value | `add()` generated | `delete()` generated | Use case |
+|-------------|-------------------|---------------------|----------|
+| `"add"` | Yes | Yes | Create and remove instances (e.g., Port Forwarding) |
+| `"delete"` | No | Yes | Remove-only (e.g., clearing log entries) |
+| _(omitted)_ | No | No | Read/update only (default) |
+
+The `type` field is **additive** — it does not replace `fetch`/`update` generation. A definition with `type: "add"` will generate `fetch`, `update`, `add`, and `delete` methods.
+
+#### YAML Example
+
+```yaml
+name: portForwardingRules
+description: NAT port forwarding rules
+multiInstance: Device.NAT.PortMapping.
+singularName: PortForwardingRule
+type: add
+
+parameters:
+  - field_name: protocol
+    path: .Protocol
+    type: string
+    writable: true
+    required: true
+
+  - field_name: externalPort
+    path: .ExternalPort
+    type: int
+    writable: true
+    required: true
+
+  - field_name: enabled
+    path: .Enable
+    type: boolean
+    writable: true
+
+  - field_name: status
+    path: .Status
+    type: string
+```
+
+#### Generated `add()` Method
+
+Only **writable** parameters are included in the `add()` method signature. Read-only fields (e.g., `status`) are excluded. Parameters marked `required: true` are non-nullable and placed first in the signature; optional parameters are nullable.
+
+**Dart:**
+```dart
+static Future<String> add(UspService client, {
+  required String protocol,
+  required int externalPort,
+  bool? enabled,
+}) async {
+  final params = <String, dynamic>{};
+  params['Protocol'] = protocol;
+  params['ExternalPort'] = externalPort;
+  if (enabled != null) params['Enable'] = enabled;
+  return await client.add('Device.NAT.PortMapping.', params);
+}
+
+static Future<void> delete(UspService client, String instancePath) async {
+  await client.delete(instancePath);
+}
+```
+
+**TypeScript:**
+```typescript
+export async function addPortForwardingRule(client: UspClient, params: {
+  protocol: string;
+  externalPort: number;
+  enabled?: boolean;
+}): Promise<string> {
+  const setParams: Record<string, any> = {};
+  setParams['Protocol'] = params.protocol;
+  setParams['ExternalPort'] = params.externalPort;
+  if (params.enabled !== undefined) setParams['Enable'] = params.enabled;
+  return await client.add('Device.NAT.PortMapping.', setParams);
+}
+
+export async function deletePortForwardingRule(client: UspClient, instancePath: string): Promise<void> {
+  await client.delete(instancePath);
+}
+```
+
+**Swift:**
+```swift
+public static func add(client: UspClient, protocol: String, externalPort: Int, enabled: Bool? = nil) async throws -> String {
+    var params: [String: Any] = [:]
+    params["Protocol"] = `protocol`
+    params["ExternalPort"] = externalPort
+    if let enabled = enabled { params["Enable"] = enabled }
+    return try await client.add("Device.NAT.PortMapping.", params)
+}
+
+public static func delete(client: UspClient, instancePath: String) async throws {
+    try await client.delete(instancePath)
+}
+```
+
+### 1.7 Related Parameters
+
+For single-instance definitions that need parameters from **multiple TR-181 instance paths**, use the `related` array. This is common in WiFi settings where SSID and Security parameters live under different paths. `related` is an extension of [Path Mode A](#path-modes), functionally equivalent to using absolute paths (Path Mode C) but semantically clearer. See the [comparison table](#instance-vs-basepath-vs-related-comparison).
+
+**Constraints:**
+- Only supported for single-instance definitions (those using `instance:`)
+- Related parameters are appended to the main parameter list and treated identically in the generated code
+- Each related group specifies its own `instance` path, which overrides the definition's `instance` for path resolution
+
+#### YAML Example
+
+```yaml
+name: wifiSettings
+instance: Device.WiFi.SSID.1
+description: WiFi settings with security
+
+parameters:
+  - path: .SSID
+    field_name: ssid
+    type: string
+    writable: true
+  - path: .Enable
+    field_name: enabled
+    type: boolean
+    writable: true
+
+related:
+  - instance: Device.WiFi.AccessPoint.1.Security
+    parameters:
+      - path: .ModeEnabled
+        field_name: securityMode
+        type: string
+        writable: true
+      - path: .KeyPassphrase
+        field_name: passphrase
+        type: string
+        writable: true
+```
+
+#### Generated Output (Dart)
+
+```dart
+class WifiSettings {
+  final String ssid;
+  final bool enabled;
+  final String securityMode;
+  final String passphrase;
+
+  const WifiSettings({
+    required this.ssid,
+    required this.enabled,
+    required this.securityMode,
+    required this.passphrase,
+  });
+
+  static Future<WifiSettings> fetch(UspService client) async {
+    final response = await client.get([
+      'Device.WiFi.SSID.1.SSID',
+      'Device.WiFi.SSID.1.Enable',
+      'Device.WiFi.AccessPoint.1.Security.ModeEnabled',      // from related
+      'Device.WiFi.AccessPoint.1.Security.KeyPassphrase',    // from related
+    ]);
+    return WifiSettings._fromResponse(response);
+  }
+
+  static Future<void> save(UspService client, {
+    String? ssid,
+    bool? enabled,
+    String? securityMode,
+    String? passphrase,
+  }) async {
+    final params = <String, dynamic>{};
+    if (ssid != null) params['Device.WiFi.SSID.1.SSID'] = ssid;
+    if (enabled != null) params['Device.WiFi.SSID.1.Enable'] = enabled;
+    if (securityMode != null) params['Device.WiFi.AccessPoint.1.Security.ModeEnabled'] = securityMode;
+    if (passphrase != null) params['Device.WiFi.AccessPoint.1.Security.KeyPassphrase'] = passphrase;
+    if (params.isNotEmpty) await client.set(params);
+  }
+}
+```
+
+### 1.8 Operate Definitions
+
+Operate definitions generate wrapper methods for USP Operate commands. Instead of `parameters`, they use an `operations` array that maps to `client.operate()` calls.
+
+#### Top-Level Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **Yes** | Module name |
+| `description` | string | **Yes** | Module description |
+| `type` | string | **Yes** | Must be `"operate"` |
+| `operations` | array | **Yes** | Array of operation definitions |
+
+> **Note**: Operate definitions do not use `parameters`, `instance`, `multiInstance`, or `subscribe`.
+
+#### Operation
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **Yes** | Method name (camelCase) |
+| `path` | string | **Yes** | Full USP command path (e.g., `Device.IP.Diagnostics.DownloadDiagnostics()`) |
+| `description` | string | No | Operation description |
+| `inputs` | array | No | Array of input parameter definitions |
+
+#### Operation Input
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `path` | string | **Yes** | TR-181 input parameter name (e.g., `DownloadURL`) |
+| `field` | string | **Yes** | Generated field name (camelCase) |
+| `type` | string | No | Input type (default: `string`) |
+| `required` | boolean | No | Whether the input is required (default: `false`) |
+| `default` | string \| number \| boolean | No | Default value |
+
+#### YAML Example
+
+```yaml
+name: speedTest
+description: Download speed test diagnostics
+type: operate
+
+operations:
+  - name: start
+    path: Device.IP.Diagnostics.DownloadDiagnostics()
+    description: Start download speed test
+    inputs:
+      - path: DownloadURL
+        field: downloadUrl
+        type: string
+        required: true
+      - path: NumberOfConnections
+        field: connections
+        type: int
+        required: false
+        default: 4
+
+  - name: stop
+    path: Device.IP.Diagnostics.DownloadDiagnostics.Stop()
+    description: Stop speed test
+```
+
+#### Generated Output (Dart)
+
+```dart
+/// Download speed test diagnostics
+class DiagnosticsOperate {
+  /// Start download speed test
+  static Future<Map<String, dynamic>> start(UspService client, {
+    required String downloadUrl,
+    int? connections,
+  }) async {
+    final inputs = <String, String>{};
+    inputs['DownloadURL'] = downloadUrl;
+    if (connections != null) inputs['NumberOfConnections'] = connections.toString();
+    return await client.operate('Device.IP.Diagnostics.DownloadDiagnostics()', args: inputs);
+  }
+
+  /// Stop speed test
+  static Future<Map<String, dynamic>> stop(UspService client) async {
+    return await client.operate('Device.IP.Diagnostics.DownloadDiagnostics.Stop()');
+  }
+}
+```
+
+#### Generated Output (TypeScript)
+
+```typescript
+/** Start download speed test */
+export async function startSpeedTest(client: UspClient, params: {
+  downloadUrl: string;
+  connections?: number;
+}): Promise<Record<string, any>> {
+  const inputs: Record<string, any> = {};
+  inputs['DownloadURL'] = params.downloadUrl;
+  if (params.connections !== undefined) inputs['NumberOfConnections'] = params.connections;
+  return await client.operate('Device.IP.Diagnostics.DownloadDiagnostics()', inputs);
+}
+
+/** Stop speed test */
+export async function stopSpeedTest(client: UspClient): Promise<Record<string, any>> {
+  return await client.operate('Device.IP.Diagnostics.DownloadDiagnostics.Stop()', {});
+}
+```
+
+#### Generated Output (Swift)
+
+```swift
+/// Download speed test diagnostics
+public class SpeedTest {
+    /// Start download speed test
+    public static func start(client: UspClient, downloadUrl: String, connections: Int? = nil) async throws -> [String: Any] {
+        var inputs: [String: Any] = [:]
+        inputs["DownloadURL"] = downloadUrl
+        if let connections = connections { inputs["NumberOfConnections"] = connections }
+        return try await client.operate("Device.IP.Diagnostics.DownloadDiagnostics()", inputs)
+    }
+
+    /// Stop speed test
+    public static func stop(client: UspClient) async throws -> [String: Any] {
+        return try await client.operate("Device.IP.Diagnostics.DownloadDiagnostics.Stop()", [:])
+    }
+}
+```
+
+### 1.9 Nested Multi-Instance (Children)
+
+TR-181 data models often contain nested multi-instance tables, e.g., `Device.WiFi.AccessPoint.{i}.AssociatedDevice.{j}`. The `children` field lets you model this hierarchy directly — the parent singular class will contain a `List<Child>` / `[Child]` / `Child[]` field.
+
+**Key advantage**: TR-181 wildcard GET already returns all descendant data in a single response, so **no second query** is needed — the generator extracts child instances from the same response.
+
+#### Children Array Item Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **Yes** | Child collection name (camelCase, e.g., `associatedDevices`) |
+| `singularName` | string | No | Override auto-derived singular name |
+| `path` | string | **Yes** | Relative path to child table (e.g., `.AssociatedDevice.`). Trailing `.` auto-appended |
+| `type` | string | No | `"add"` or `"delete"` — generates child add/delete methods with `parentInstancePath` parameter |
+| `parameters` | array | No | Child parameter definitions (same format as top-level `parameters`) |
+| `children` | array | No | Recursive — grandchild definitions for deeper nesting |
+
+#### Example
+
+```yaml
+name: accessPoints
+description: WiFi access points with associated devices
+multiInstance: Device.WiFi.AccessPoint.
+singularName: accessPoint
+
+parameters:
+  - field_name: ssid
+    path: .SSID
+    type: string
+
+children:
+  - name: associatedDevices
+    singularName: associatedDevice
+    path: .AssociatedDevice.
+    parameters:
+      - field_name: macAddress
+        path: .MACAddress
+        type: string
+      - field_name: signalStrength
+        path: .SignalStrength
+        type: int
+      - field_name: active
+        path: .Active
+        type: boolean
+```
+
+#### Generated Output (Dart)
+
+```dart
+class AssociatedDevice {
+  final String instancePath;
+  final String macAddress;
+  final int signalStrength;
+  final bool active;
+
+  const AssociatedDevice({
+    required this.instancePath,
+    required this.macAddress,
+    required this.signalStrength,
+    required this.active,
+  });
+}
+
+class AccessPoint {
+  final String instancePath;
+  final String ssid;
+  final List<AssociatedDevice> associatedDevices;  // ← child list
+
+  const AccessPoint({
+    required this.instancePath,
+    required this.ssid,
+    required this.associatedDevices,
+  });
+}
+
+class AccessPoints {
+  final List<AccessPoint> items;
+  // fetch(), _fromResponse() — child extraction happens inside the parent loop
+}
+```
+
+#### Generated Output (TypeScript)
+
+```typescript
+export interface AssociatedDevice {
+  readonly instancePath: string;
+  readonly macAddress: string;
+  readonly signalStrength: number;
+  readonly active: boolean;
+}
+
+export interface AccessPoint {
+  readonly instancePath: string;
+  readonly ssid: string;
+  readonly associatedDevices: AssociatedDevice[];  // ← child array
+}
+```
+
+#### Generated Output (Swift)
+
+```swift
+public struct AssociatedDevice {
+    public let instancePath: String
+    public let macAddress: String
+    public let signalStrength: Int
+    public let active: Bool
+}
+
+public struct AccessPoint {
+    public let instancePath: String
+    public let ssid: String
+    public let associatedDevices: [AssociatedDevice]  // ← child array
+}
+```
+
+#### Child Add/Delete
+
+When a child definition has `type: "add"`, add/delete methods are generated with a `parentInstancePath` parameter:
+
+```yaml
+children:
+  - name: rules
+    singularName: rule
+    path: .Rule.
+    type: add
+    parameters:
+      - field_name: name
+        path: .Name
+        type: string
+        writable: true
+```
+
+Generated (Dart):
+```dart
+static Future<String> addRule(UspService client, String parentInstancePath, {String? name}) async { ... }
+static Future<void> deleteRule(UspService client, String instancePath) async { ... }
+```
+
+#### Multi-Level Nesting
+
+`children` supports recursive nesting. Each child can have its own `children` array for three or more levels of depth:
+
+```yaml
+children:
+  - name: accessPoints
+    path: .AccessPoint.
+    children:
+      - name: associatedDevices
+        path: .AssociatedDevice.
+        parameters: [...]
+```
+
+### 1.10 Flatten Mode
+
+Flatten mode provides an alternative to nested hierarchy — instead of `List<Child>` inside the parent, it generates a **flat list** where each item carries a `parentPath` field identifying which parent instance it belongs to.
+
+Use flatten mode when:
+- You need to iterate all child instances across all parents (e.g., display all WiFi clients in a single table)
+- You don't need the parent-child tree structure
+
+#### Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `nestedPath` | string | **Yes** | Relative path from parent to child table (e.g., `.AssociatedDevice.`). Trailing `.` auto-appended. Alias: `nested_path` |
+| `flatten` | boolean | **Yes** | Must be `true` |
+
+Both `nestedPath` and `flatten` are required together. `multiInstance` specifies the parent table; `nestedPath` specifies the child table within each parent.
+
+#### Example
+
+```yaml
+name: wifiClients
+description: WiFi clients across all access points (flattened view)
+multiInstance: Device.WiFi.AccessPoint.
+singularName: wifiClient
+nestedPath: .AssociatedDevice.
+flatten: true
+
+parameters:
+  - field_name: macAddress
+    path: .MACAddress
+    type: string
+  - field_name: signalStrength
+    path: .SignalStrength
+    type: int
+  - field_name: active
+    path: .Active
+    type: boolean
+```
+
+#### Generated Output (Dart)
+
+```dart
+class WifiClient {
+  final String instancePath;
+  final String parentPath;         // ← identifies the parent AP instance
+  final String macAddress;
+  final int signalStrength;
+  final bool active;
+
+  const WifiClient({
+    required this.instancePath,
+    required this.parentPath,
+    required this.macAddress,
+    required this.signalStrength,
+    required this.active,
+  });
+}
+
+class WifiClients {
+  final List<WifiClient> items;   // ← flat list across ALL parents
+  // ...
+}
+```
+
+#### Generated Output (TypeScript)
+
+```typescript
+export interface WifiClient {
+  readonly instancePath: string;
+  readonly parentPath: string;
+  readonly macAddress: string;
+  readonly signalStrength: number;
+  readonly active: boolean;
+}
+```
+
+#### Generated Output (Swift)
+
+```swift
+public struct WifiClient {
+    public let instancePath: String
+    public let parentPath: String
+    public let macAddress: String
+    public let signalStrength: Int
+    public let active: Bool
+}
+```
+
+#### Nested vs Flatten Comparison
+
+| | Nested (`children`) | Flatten (`nestedPath` + `flatten`) |
+|---|---|---|
+| **Structure** | Tree: parent contains `List<Child>` | Flat: all children in one list with `parentPath` |
+| **Use case** | Display per-parent (e.g., AP detail page) | Display all children (e.g., all WiFi clients table) |
+| **Parent data** | Available in parent fields | Only `parentPath` string |
+| **Query** | Same single wildcard GET | Same single wildcard GET |
+| **Depth** | Supports multi-level nesting | Single parent→child level only |
+
 ---
 
 ## 2. Extension File
@@ -445,6 +1288,9 @@ Computes a derived value from multiple parameters.
 | `formula` | string | **Yes** | Computation formula string |
 | `inputs` | array | **Yes** | Array of input parameter names (must match definition `path` values) |
 | `output_type` | string | No | Output type (e.g., `double`, `int`, `string`) |
+| `display` | object | No | Display formatter for human-readable output |
+| `display.formatter` | string | **Yes** (if `display`) | Formatter name: `bandwidth`, `duration`, `bytes`, `percent`, `number`, or `speed` |
+| `display.precision` | int | No | Precision parameter (formatter-specific) |
 | `description` | string | No | Description |
 
 ```yaml
@@ -457,18 +1303,61 @@ transforms:
       - TestBytesReceived
       - TestDuration
     output_type: double
+    display:
+      formatter: bandwidth
+      precision: 2
+```
+
+#### Display Formatter
+
+When `display` is specified, an additional `*Display` getter/function (returning `String`) is generated alongside the formula getter. It calls `Transforms.format*()` with the formula result.
+
+| `display.formatter` | Transforms function | Description |
+|---------------------|---------------------|-------------|
+| `bandwidth` | `formatBandwidth` | Human-readable bandwidth (e.g., "150.00 Mbps") |
+| `duration` | `formatDuration` | Human-readable duration (e.g., "1h 30m 45s") |
+| `bytes` | `formatBytes` | Human-readable file size (e.g., "1.5 GB") |
+| `percent` | `formatPercent` | Percentage with symbol (e.g., "85.6%") |
+| `number` | `formatNumber` | Thousand-separated number (e.g., "1,234,567") |
+| `speed` | `formatSpeed` | Auto-scaled speed in Kbps/Mbps/Gbps (SI 1000) |
+
+**Dart:**
+```dart
+double get throughputMbps { ... }
+
+String get throughputMbpsDisplay =>
+    Transforms.formatBandwidth(throughputMbps, precision: 2);
+```
+
+**TypeScript:**
+```typescript
+export function throughputMbps(data: SpeedTest): number { ... }
+
+export function throughputMbpsDisplay(data: SpeedTest): string {
+  return Transforms.formatBandwidth(throughputMbps(data), 2);
+}
+```
+
+**Swift:**
+```swift
+public var throughputMbps: Double { ... }
+
+public var throughputMbpsDisplay: String {
+    return Transforms.formatBandwidth(throughputMbps, precision: 2)
+}
 ```
 
 ### 2.3 Mapping Transform
 
-Maps a single parameter value to a display string.
+Maps a single parameter value to an i18n key, wrapped in `tr()` for localization.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `name` | string | **Yes** | Property name (camelCase) |
 | `type` | string | **Yes** | Must be `mapping` |
 | `input` | string | **Yes** | Input parameter name (must match definition `path`) |
-| `mappings` | object | **Yes** | Key-value mapping pairs |
+| `mappings` | object | **Yes** | Key-value pairs: TR-181 value → i18n key |
+| `default` | string | No | Default i18n key when no mapping matches. If omitted, falls back to `value.toString()` |
 | `description` | string | No | Description |
 
 ```yaml
@@ -477,18 +1366,165 @@ transforms:
     type: mapping
     description: Human-readable diagnostic state
     input: DiagnosticsState
+    default: speedtest_state_unknown
     mappings:
-      None: "Not started"
-      Requested: "Test in progress..."
-      Complete: "Test completed successfully"
-      Error_InitConnectionFailed: "Connection failed"
+      None: speedtest_state_none
+      Requested: speedtest_state_requested
+      Complete: speedtest_state_complete
+      Error_InitConnectionFailed: speedtest_state_conn_failed
 ```
 
 #### Generated Output
 
-- **Dart**: `extension {Name}Ext on {Name} { ... }` block with synchronous getters (e.g., `double get throughputMbps`)
-- **Swift**: `extension {Name} { ... }` block with computed properties (e.g., `public var throughputMbps: Double`)
-- **TypeScript**: standalone functions taking the data object (e.g., `export function throughputMbps(data: SpeedTest): number`)
+Mapping values are wrapped in `tr()` for i18n support. If `default` is specified, the `default:` branch uses `tr(default)` instead of a raw string fallback.
+
+**Dart:**
+```dart
+String get diagnosticsStateDisplay {
+    final value = diagnosticsState;
+    switch (value) {
+      case 'None': return tr('speedtest_state_none');
+      case 'Requested': return tr('speedtest_state_requested');
+      default: return tr('speedtest_state_unknown');
+    }
+}
+```
+
+**TypeScript:**
+```typescript
+export function diagnosticsStateDisplay(data: SpeedTest): string {
+  const value = data.diagnosticsState;
+  switch (value) {
+    case 'None': return tr('speedtest_state_none');
+    case 'Requested': return tr('speedtest_state_requested');
+    default: return tr('speedtest_state_unknown');
+  }
+}
+```
+
+**Swift:**
+```swift
+public var diagnosticsStateDisplay: String {
+    let value = diagnosticsState
+    switch value {
+    case "None": return tr("speedtest_state_none")
+    case "Requested": return tr("speedtest_state_requested")
+    default: return tr("speedtest_state_unknown")
+    }
+}
+```
+
+- **Dart**: `extension {Name}Ext on {Name} { ... }` block with synchronous getters
+- **Swift**: `extension {Name} { ... }` block with computed properties
+- **TypeScript**: standalone functions taking the data object
+
+### 2.4 Converter Transform
+
+Calls a named transform function on a single input parameter. Use this for reusable conversion utilities (e.g., CIDR to dotted notation, duration formatting).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | **Yes** | Property name (camelCase) |
+| `type` | string | **Yes** | Must be `converter` |
+| `input` | string | **Yes** | Input parameter name (must match definition `path`). Also accepts `inputs` array (first element used) |
+| `converter` | string | **Yes** | Function name to call (e.g., `cidrToNetmask`) |
+| `output_type` | string | No | Return type (`string`, `int`, `double`). Defaults to `string` |
+| `description` | string | No | Description |
+
+```yaml
+transforms:
+  - name: subnetMaskDotted
+    type: converter
+    description: Subnet mask in dotted notation
+    input: subnetMaskCidr
+    converter: cidrToNetmask
+    output_type: string
+
+  - name: uptimeFormatted
+    type: converter
+    description: Human-readable uptime
+    input: uptime
+    converter: formatDuration
+    output_type: string
+```
+
+#### Generated Output
+
+- **Dart**: `String get subnetMaskDotted => Transforms.cidrToNetmask(subnetMaskCidr);`
+- **TypeScript**: `export function subnetMaskDotted(data: WanStatus): string { return Transforms.cidrToNetmask(data.subnetMaskCidr); }`
+- **Swift**: `public var subnetMaskDotted: String { return Transforms.cidrToNetmask(subnetMaskCidr) }`
+
+> **Note**: The `Transforms` library is auto-generated by codegen alongside definition files (see §2.5).
+
+### 2.5 Built-in Transforms Library
+
+Codegen automatically generates a `Transforms` utility class/module containing 9 built-in functions used by converter and display formatter transforms.
+
+**Output files:**
+- Dart: `transforms.g.dart` — `class Transforms` with static methods
+- TypeScript: `Transforms.g.ts` — exported functions
+- Swift: `Transforms.g.swift` — `public enum Transforms` with static functions
+
+#### Built-in Functions
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `durationSeconds` | `(DateTime, DateTime) → double` | Time difference in seconds |
+| `durationMs` | `(DateTime, DateTime) → int` | Time difference in milliseconds |
+| `cidrToNetmask` | `(int) → String` | CIDR prefix to dotted decimal notation |
+| `formatBandwidth` | `(double, precision?) → String` | Human-readable bandwidth (Mbps/Gbps) |
+| `formatDuration` | `(int) → String` | Human-readable duration (e.g., "2h 30m 15s") |
+| `formatBytes` | `(int) → String` | Human-readable file size (e.g., "1.5 GB") |
+| `formatPercent` | `(double, precision?) → String` | Percentage with symbol (e.g., "85.6%") |
+| `formatNumber` | `(double, precision?) → String` | Thousand-separated number (e.g., "1,234,567") |
+| `formatSpeed` | `(double, precision?) → String` | Auto-scaled speed from Kbps (SI 1000: Kbps/Mbps/Gbps) |
+
+The Transforms library is generated once per codegen run, regardless of how many definition files exist.
+
+### 2.6 Subscription Registry
+
+Codegen automatically generates a centralized `subscriptions.g.*` aggregate file that collects **all** `subscribe:` entries across every YAML definition processed in a single run. The file has zero imports and zero dependencies — it is a pure data list suitable for bootstrap registration loops (e.g., registering `Device.LocalAgent.Subscription.{i}` entries in OBUSPA).
+
+**Output files:**
+- Dart: `subscriptions.g.dart`
+- TypeScript: `Subscriptions.g.ts`
+- Swift: `Subscriptions.g.swift`
+
+**Generated format:**
+
+Dart — Record tuples:
+```dart
+const coreSubscriptions = [
+  ('connected-devices-objectcreation', 'ObjectCreation', 'Device.Hosts.Host'),
+  ('event-state-01', 'ValueChange', 'Device.Event'),
+];
+```
+
+TypeScript — const object array:
+```typescript
+export const coreSubscriptions = [
+  { id: 'connected-devices-objectcreation', notifType: 'ObjectCreation', path: 'Device.Hosts.Host' },
+  { id: 'event-state-01', notifType: 'ValueChange', path: 'Device.Event' },
+] as const;
+```
+
+Swift — named-tuple array:
+```swift
+let coreSubscriptions: [(id: String, notifType: String, path: String)] = [
+  (id: "connected-devices-objectcreation", notifType: "ObjectCreation", path: "Device.Hosts.Host"),
+  (id: "event-state-01", notifType: "ValueChange", path: "Device.Event"),
+]
+```
+
+Each entry contains:
+
+| Field | Description |
+|-------|-------------|
+| `id` | Subscription identifier from `subscribe.id` |
+| `notifType` | Notification type string (e.g., `ValueChange`, `ObjectCreation`, `ObjectDeletion`) |
+| `path` | Base path from the definition's `base_path` field |
+
+The registry file is only generated when at least one definition contains a `subscribe:` block. It is included in the barrel export alongside other generated files.
 
 ---
 
@@ -501,12 +1537,12 @@ transforms:
 | `string` | `String` | `string` | `String` |
 | `int` | `int` | `number` | `Int` |
 | `uint` | `int` | `number` | `UInt` |
-| `long` | `int` | `number` | `Int64` |
-| `ulong` | `int` | `number` | `UInt64` |
+| `long` | `int` | `bigint` | `Int64` |
+| `ulong` | `int` | `bigint` | `UInt64` |
 | `boolean` | `bool` | `boolean` | `Bool` |
-| `datetime` | `String` | `string` | `String` |
-| `base64` | `String` | `string` | `String` |
-| `hexbinary` | `String` | `string` | `String` |
+| `datetime` | `DateTime` | `Date` | `Date` |
+| `base64` | `Uint8List` | `Uint8Array` | `Data` |
+| `hexbinary` | `Uint8List` | `Uint8Array` | `Data` |
 | `decimal` / `float` / `double` | `double` | `number` | `Double` |
 
 ### Transform Output Types
@@ -522,15 +1558,21 @@ transforms:
 
 ## 4. Path Conventions
 
-- When `instance` or `basePath` is defined, preset values/userInputs `path` fields use **relative paths** (starting with `.`)
-- The generator concatenates the full path: `{instance}{path}` -> `Device.DNS.Client.Server.1.DNSServer`
-- Concatenation only occurs when `path` starts with `.`; otherwise `path` is used as the full path
-- Parameter `path` fields do not include the instance/basePath prefix; the generator handles prefix concatenation
+Path resolution rules (see [Path Modes](#path-modes) for details):
+
+- **Relative paths** (starting with `.`): the generator automatically concatenates `{instance or multiInstance}{path}`
+- **Absolute paths** (not starting with `.`): used directly as the full TR-181 path
+- These rules apply to all `path` fields in `parameters`, `presets`, and `related`
 
 ```
+# Relative path concatenation
 instance:  Device.DNS.Client
 path:      .Server.1.DNSServer
 full path: Device.DNS.Client.Server.1.DNSServer
+
+# Absolute path used directly
+path:      Device.DeviceInfo.ModelName
+full path: Device.DeviceInfo.ModelName
 ```
 
 ---
@@ -579,17 +1621,24 @@ usp-codegen [OPTIONS]
 |--------|-------------|
 | `--client-import PATH` | Custom import path for the client library |
 | `--client-class CLASS` | Custom client class name |
+| `--dart-tr PATH` | Dart import path for `tr()` function used by mapping transforms. When specified, files containing mapping transforms will include this import. Example: `--dart-tr 'package:easy_localization/easy_localization.dart'` |
+| `--package NAME` | Package/module name for generated barrel exports (e.g., `--package my_usp_models`). Used as Dart `library` name and TS export prefix |
+| `--verbose` | Print processing details (file names, parameter/transform counts) to stderr |
+| `--categorize` | Output generated files into `core/`, `extensions/`, `vendor/` subdirectories based on definition `category` field. Default is flat output |
+| `--def-schema PATH` | External JSON schema file path for definition validation (overrides embedded schema) |
+| `--transform-schema PATH` | External JSON schema file path for transform validation (overrides embedded schema) |
 | `--validate-paths` | Enable TR-181 path validation |
 | `--json` | Output errors in JSON format (for tooling integration) |
+| `--version` | Display version number and exit |
 | `--help` | Show help message |
 
 ### Default Import Paths Per Language
 
-| Language | Default Import |
-|----------|---------------|
-| Dart | `package:usp_test/services/usp_service.dart` |
-| TypeScript | `@usp/client` |
-| Swift | `UspClient` |
+| Language | Default Import | Default Client Class |
+|----------|---------------|---------------------|
+| Dart | `package:usp_test/services/usp_service.dart` | `UspService` |
+| TypeScript | `usp-client` | `UspClient` |
+| Swift | `UspClient` | `UspClient` |
 
 ---
 
@@ -743,10 +1792,11 @@ transforms:
     type: mapping
     description: Human-readable diagnostic state
     input: DiagnosticsState
+    default: speedtest_state_unknown
     mappings:
-      None: "Not started"
-      Requested: "Test in progress..."
-      Complete: "Test completed successfully"
+      None: speedtest_state_none
+      Requested: speedtest_state_requested
+      Complete: speedtest_state_complete
 ```
 
 ### Multi-Instance Definition with Writable Fields
@@ -754,8 +1804,7 @@ transforms:
 ```yaml
 name: connectedDevices
 description: Connected devices on the network
-multiInstance: true
-basePath: Device.Hosts.Host.
+multiInstance: Device.Hosts.Host.
 
 parameters:
   - field_name: hostName
@@ -784,6 +1833,7 @@ The codegen validates definition file structure before parsing. Current required
 
 - `name` (string)
 - `description` (string)
-- `parameters` (array)
+
+For non-operate definitions, `parameters` (array) is expected. For operate definitions (`type: "operate"`), `operations` (array) is used instead.
 
 All other fields are optional. Type mismatches produce errors. Unknown fields produce warnings but do not block generation.

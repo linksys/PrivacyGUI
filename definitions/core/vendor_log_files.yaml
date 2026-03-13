@@ -1,0 +1,22 @@
+name: VendorLogFiles
+singularName: VendorLogFile
+version: 1.0.0
+multiInstance: Device.DeviceInfo.VendorLogFile.
+category: core
+description: Router vendor log files (multi-instance, read-only metadata)
+
+parameters:
+  - field_name: name
+    path: .Name
+    type: string
+    description: Log file name or path
+
+  - field_name: maximumSize
+    path: .MaximumSize
+    type: int
+    description: Maximum file size in bytes (0 if unknown)
+
+  - field_name: persistent
+    path: .Persistent
+    type: boolean
+    description: Whether log file survives reboot

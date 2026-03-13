@@ -1,0 +1,76 @@
+# WiFi radio status and configuration
+# SSH-verified 2026-03-06
+
+name: WiFiRadios
+singularName: WiFiRadio
+version: 1.0.0
+multiInstance: Device.WiFi.Radio.
+category: wifi
+description: WiFi radio status and configuration
+
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+    writable: true
+    description: Whether this radio is enabled
+
+  - field_name: status
+    path: .Status
+    type: string
+    description: Operational status (Up, Down, Error)
+
+  - field_name: channel
+    path: .Channel
+    type: int
+    writable: true
+    description: Current operating channel number
+
+  - field_name: operatingFrequencyBand
+    path: .OperatingFrequencyBand
+    type: string
+    description: Frequency band (2.4GHz, 5GHz, 6GHz)
+
+  - field_name: operatingChannelBandwidth
+    path: .OperatingChannelBandwidth
+    type: string
+    writable: true
+    description: Channel bandwidth (Auto, 20MHz, 40MHz, 80MHz, 160MHz)
+
+  - field_name: possibleChannels
+    path: .PossibleChannels
+    type: string
+    description: Comma-separated list of available channel numbers (may include ranges e.g. "1-13,36,40")
+
+  - field_name: operatingStandards
+    path: .OperatingStandards
+    type: string
+    writable: true
+    description: Currently active WiFi standards (subset of SupportedStandards, e.g. "a,n,ac,ax")
+
+  - field_name: supportedStandards
+    path: .SupportedStandards
+    type: string
+    description: Comma-separated supported WiFi standards (read-only, e.g. "a,n,ac,ax")
+
+  - field_name: transmitPower
+    path: .TransmitPower
+    type: int
+    description: Transmit power level (-1 = max)
+
+  - field_name: maxBitRate
+    path: .MaxBitRate
+    type: int
+    description: Maximum bit rate in Mbps
+
+  - field_name: autoChannelEnable
+    path: .AutoChannelEnable
+    type: boolean
+    writable: true
+    description: Whether automatic channel selection is enabled
+
+  - field_name: ieee80211hEnabled
+    path: .IEEE80211hEnabled
+    type: boolean
+    writable: true
+    description: Enables IEEE 802.11h on this radio, which activates both Dynamic Frequency Selection (DFS) and Transmit Power Control (TPC)

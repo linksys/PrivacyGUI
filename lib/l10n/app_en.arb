@@ -1130,5 +1130,39 @@
   "pwaMacInstallTitle": "Install Linksys Now",
   "pwaMacInstallDescription": "Add this app to your Dock for quick access.",
   "pwaMacStep1": "Click the Share button in the Safari toolbar.",
-  "pwaMacStep2": "Choose \"Add to Dock\"."
+  "pwaMacStep2": "Choose \"Add to Dock\".",
+  "ipv4Connection": "IPv4 Connection",
+  "ipv6Settings": "IPv6 Settings",
+  "optionalSettings": "Optional Settings",
+  "serviceName": "Service Name",
+  "vlanTagging": "VLAN Tagging",
+  "lcpEchoInterval": "LCP Echo Interval (seconds)",
+  "bridgeModeWarning": "Bridge mode will disable routing features. The device will act as a network bridge.",
+  "currentMac": "Current MAC",
+  "cloneMac": "Clone MAC",
+  "ipv4DhcpLease": "IPv4 DHCP Lease",
+  "ipv6DhcpLease": "IPv6 DHCP Lease",
+  "renew": "Renew",
+  "leaseRenewed": "{protocol} lease renewed",
+  "@leaseRenewed": {
+    "placeholders": {
+      "protocol": {
+        "type": "String",
+        "example": "IPv4"
+      }
+    }
+  },
+  "failedToRenew": "Failed to renew: {error}",
+  "@failedToRenew": {
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "timeout"
+      }
+    }
+  },
+  "failedToLoadSettings": "Failed to load settings",
+  "retry": "Retry",
+  "pppStatus": "PPP Status",
+  "dhcpv6": "DHCPv6"
 }

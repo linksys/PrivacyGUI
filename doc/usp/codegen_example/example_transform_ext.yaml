@@ -13,6 +13,9 @@ transforms:
       - TestDuration
     output_type: double
     unit: Mbps
+    display:
+      formatter: bandwidth
+      precision: 2
 
   - name: throughputKbps
     description: Download throughput in kilobits per second
@@ -23,16 +26,50 @@ transforms:
       - TestDuration
     output_type: double
     unit: Kbps
+    display:
+      formatter: speed
+      precision: 2
+
+  - name: completionPercent
+    description: Download completion percentage
+    type: formula
+    formula: "(TestBytesReceived * 100) / TotalBytesReceived"
+    inputs:
+      - TestBytesReceived
+      - TotalBytesReceived
+    output_type: double
+    display:
+      formatter: percent
+      precision: 1
+
+  - name: totalBytes
+    description: Total bytes transferred (received + sent)
+    type: formula
+    formula: "TotalBytesReceived + TotalBytesSent"
+    inputs:
+      - TotalBytesReceived
+      - TotalBytesSent
+    output_type: double
+    display:
+      formatter: number
 
   - name: diagnosticsStateDisplay
     description: Human-readable diagnostic state
     type: mapping
     input: DiagnosticsState
+    default: speedtest_state_unknown
     mappings:
-      None: "Not started"
-      Requested: "Test in progress..."
-      Complete: "Test completed successfully"
-      Error_InitConnectionFailed: "Connection failed"
-      Error_NoResponse: "No response from server"
-      Error_TransferFailed: "Transfer interrupted"
-      Error_Timeout: "Test timed out"
+      None: speedtest_state_none
+      Requested: speedtest_state_requested
+      Complete: speedtest_state_complete
+      Error_InitConnectionFailed: speedtest_state_conn_failed
+      Error_NoResponse: speedtest_state_no_response
+      Error_TransferFailed: speedtest_state_transfer_failed
+      Error_Timeout: speedtest_state_timeout
+
+  - name: durationFormatted
+    description: Human-readable test duration
+    type: converter
+    input: TestDuration
+    converter: formatDuration
+    output_type: string
