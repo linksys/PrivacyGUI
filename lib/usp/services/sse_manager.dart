@@ -160,6 +160,10 @@ class SseManager {
   /// Disconnects SSE (intentional, stops reconnection).
   Future<void> disconnect() => connection.disconnect();
 
+  /// Attempts to reconnect from suspended/disconnected state.
+  /// Returns `true` if a reconnect attempt was started.
+  Future<bool> tryReconnect() => connection.tryReconnect();
+
   /// Whether the SSE connection is currently active.
   bool get isConnected =>
       connection.connectionState.value == SseConnectionState.connected;

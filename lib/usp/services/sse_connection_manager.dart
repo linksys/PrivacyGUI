@@ -7,7 +7,16 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'usp_bridge_client.dart';
 
 /// SSE connection lifecycle states.
-enum SseConnectionState { disconnected, connecting, connected, reconnecting }
+enum SseConnectionState {
+  disconnected,
+  connecting,
+  connected,
+  reconnecting,
+
+  /// Reconnection gave up after [SseConnectionManager._maxRetries] consecutive
+  /// failures. Call [SseConnectionManager.tryReconnect] to retry.
+  suspended,
+}
 
 /// Manages a single SSE connection to the usp-bridge `/api/v1/notifications`
 /// endpoint.
@@ -32,6 +41,7 @@ class SseConnectionManager {
   static const Duration _heartbeatTimeout = Duration(seconds: 45);
   static const Duration _initialBackoff = Duration(seconds: 1);
   static const Duration _maxBackoff = Duration(seconds: 60);
+  static const int _maxRetries = 5;
 
   // ══════════════════════════════════════════════════════════════════════════
   // State
@@ -101,6 +111,24 @@ class SseConnectionManager {
     }
     connectionState.value = SseConnectionState.disconnected;
     logger.d('[SSE] Disconnected (intentional)');
+  }
+
+  /// Attempts to reconnect from [SseConnectionState.suspended] or
+  /// non-intentional [SseConnectionState.disconnected].
+  ///
+  /// Returns `true` if a reconnect attempt was started.
+  Future<bool> tryReconnect() async {
+    if (_disposed || _intentionalDisconnect) return false;
+    final state = connectionState.value;
+    if (state == SseConnectionState.connected ||
+        state == SseConnectionState.connecting ||
+        state == SseConnectionState.reconnecting) {
+      return false;
+    }
+    logger.d('[SSE] Manual reconnect requested (was: ${state.name})');
+    _reconnectAttempt = 0;
+    await connect();
+    return true;
   }
 
   /// Releases all resources. Call on app shutdown / logout.
@@ -196,12 +224,20 @@ class SseConnectionManager {
   void _scheduleReconnect() {
     if (_disposed || _intentionalDisconnect) return;
 
-    connectionState.value = SseConnectionState.reconnecting;
     _reconnectAttempt++;
+
+    if (_reconnectAttempt > _maxRetries) {
+      connectionState.value = SseConnectionState.suspended;
+      logger.w('[SSE] Max retries ($_maxRetries) reached — suspended. '
+          'Call tryReconnect() or wait for lifecycle resume.');
+      return;
+    }
+
+    connectionState.value = SseConnectionState.reconnecting;
 
     final delay = _nextBackoff;
     logger.d('[SSE] Reconnecting in ${delay.inSeconds}s '
-        '(attempt #$_reconnectAttempt)');
+        '(attempt #$_reconnectAttempt/$_maxRetries)');
 
     Timer(delay, () {
       if (!_disposed && !_intentionalDisconnect) {

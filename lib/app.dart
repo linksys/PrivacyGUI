@@ -16,6 +16,8 @@ import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
+import 'package:privacy_gui/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
@@ -230,27 +232,22 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     logger.i('didChangeAppLifecycleState: ${state.name}');
-    // if (state == AppLifecycleState.resumed) {
-    //   ref
-    //       .read(connectivityProvider.notifier)
-    //       .forceUpdate()
-    //       .then((_) => SharedPreferences.getInstance())
-    //       .then((prefs) {
-    //     final currentSN = prefs.getString(pCurrentSN);
-    //     if (currentSN != null &&
-    //         ref.read(sessionProvider).deviceInfo?.serialNumber !=
-    //             currentSN) {
-    //       // if (mounted) {
-    //       //   showRouterNotFoundAlert(context, ref);
-    //       // }
-    //     } else if (ref.read(authProvider).value?.loginType != LoginType.none &&
-    //         currentSN?.isNotEmpty == true) {
-    //       ref.read(pollingProvider.notifier).startPolling();
-    //     }
-    //   });
-    // } else if (state == AppLifecycleState.paused) {
-    //   ref.read(pollingProvider.notifier).stopPolling();
-    // }
+    if (state == AppLifecycleState.resumed) {
+      _tryResumeSse();
+    }
+  }
+
+  void _tryResumeSse() {
+    final loginType = ref.read(authProvider).value?.loginType;
+    if (loginType == null || loginType == LoginType.none) return;
+    final sseManager = ref.read(sseManagerProvider);
+    if (sseManager == null) return;
+    final sseState = sseManager.connection.connectionState.value;
+    if (sseState == SseConnectionState.suspended) {
+      logger
+          .d('[App] Lifecycle resume: attempting SSE reconnect from suspended');
+      sseManager.tryReconnect();
+    }
   }
 
   /// Initializes the authentication state.
