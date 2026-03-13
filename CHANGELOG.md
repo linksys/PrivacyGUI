@@ -63,6 +63,20 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Add `onRefresh` to Topology page (previously missing)
 - Skipped: Sliver Dashboard (custom layout), Test Console (special purpose)
 
+#### Internet Settings Page (baeb9b2c, a0aec135)
+- Add USP YAML definitions: `wan_settings` (19 fields incl. connection type, DHCP/Static/PPPoE/PPTP/L2TP/Bridge), `ipv6_settings` (automatic/6rd/pass-through), `wan_operations` (Renew/Release)
+- Add `UspInternetSettingsView` — sectioned form layout (IPv4, IPv6, Optional Settings, Renew/Release)
+- Add `UspInternetSettingsFormModel` with `UspWanConnectionType` enum and per-type field validation
+- Add `UspInternetSettingsFormValidator` — connection-type-aware required field validation
+- Add `UspInternetSettingsNotifier` / `UspInternetSettingsState` — form state management with dirty tracking
+- Add `UspInternetSettingsService` — fetch + save via codegen `WanSettings` / `Ipv6Settings`
+- Add `UspConnectionStatusBanner`, `UspSectionCard`, `UspRenewActionCard` view components
+- Add SSH-validated set-path analysis docs — JNAP vs USP field mapping comparison, fix design, Linksys vendor extension parameters (`X_LINKSYS_DefaultGateway`, `X_LINKSYS_DNSServers`)
+- Update codegen output for all generated files (improved fetch/save signatures)
+- Refine USP Dashboard components (WiFi card, time settings, topology, device list)
+- Improve auth provider token refresh retry and protocol error handling
+- Add unit tests for form validator and service layer
+
 #### USP Feature Pages (947a3dba, 8eecf073)
 - Add DMZ settings page — View/Provider/Service with enable toggle, host IP configuration
 - Add IPv6 Port Service page — full CRUD for IPv6 inbound port rules (add/edit/delete/toggle)
