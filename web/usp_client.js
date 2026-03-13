@@ -1,3 +1,4 @@
+
 /* @ts-self-types="./usp_client.d.ts" */
 
 /**
@@ -394,20 +395,23 @@ export class UspClient {
      * * `args` - JavaScript object with input argument name-value pairs (optional, pass {} for no args)
      *
      * # Returns
-     * * Promise that resolves to a JavaScript object with output arguments,
-     *   or undefined if no output
+     * * Promise that resolves to `{ commandKey: string, outputArgs: Record<string, string> | undefined }`
+     *   - `commandKey` — UUID for correlating with OperationComplete notifications
+     *   - `outputArgs` — output arguments from the command (undefined if none)
      *
      * # Example (JavaScript)
      * ```javascript
      * // Simple command with no arguments
-     * await client.operate("Device.Reboot()", {});
+     * const { commandKey } = await client.operate("Device.Reboot()", {});
+     * console.log("Track async result with:", commandKey);
      *
      * // Command with input arguments
      * const result = await client.operate("Device.IP.Diagnostics.Ping()", {
      *     "Host": "8.8.8.8",
      *     "NumberOfRepetitions": "4"
      * });
-     * console.log(result); // { "SuccessCount": "4", "AverageResponseTime": "12" }
+     * console.log(result.commandKey);   // "a1b2c3d4-..."
+     * console.log(result.outputArgs);   // { "SuccessCount": "4", "AverageResponseTime": "12" }
      * ```
      * @param {string} command
      * @param {any} args

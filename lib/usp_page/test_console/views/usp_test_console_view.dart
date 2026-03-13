@@ -268,11 +268,12 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     _log('OPERATE $command args=$argsJson');
     try {
       final args = Map<String, String>.from(jsonDecode(argsJson) as Map? ?? {});
-      final result = await _service!.operate(command, args: args);
-      if (result.isEmpty) {
+      final response = await _service!.operate(command, args: args);
+      _log('  commandKey = ${response.commandKey}');
+      if (response.data.isEmpty) {
         _log('OPERATE OK (no output)');
       } else {
-        for (final entry in result.entries) {
+        for (final entry in response.data.entries) {
           _log('  ${entry.key} = ${entry.value}');
         }
       }

@@ -69,21 +69,11 @@ class SseOperationAwaiter {
     Map<String, String> args,
     Duration timeout,
   ) async {
-    // Extract expected command name: "Device.IP.Diagnostics.IPPing()" → "IPPing()"
     final expectedCmd = operateCommand.split('.').last;
     final opId = _uuid.v4().substring(0, 8);
     final subscriptionId = _operateSubId(operateCommand, opId);
     final completer = Completer<OperateResult>();
 
-    logger.d('[SSE Operate] Starting $operateCommand '
-        '(sub=$subscriptionId, matching command_name=$expectedCmd)');
-
-    // Two-part strategy:
-    // 1. Create OBUSPA subscription — tells the router to send OperationComplete
-    //    notifications for this path.
-    // 2. Use a wildcard handler for event matching — the CPE delivers the event
-    //    using its own internal subscription_id (e.g., "cpe-5"), NOT the one we
-    //    registered. Matching by command_name is the reliable approach.
     VoidCallback? removeHandler;
     Future<void> Function()? cleanupSubscription;
     try {
@@ -95,21 +85,34 @@ class SseOperationAwaiter {
         onNotification: (_) {}, // No-op: actual matching via wildcard below
       );
 
-      // Step 2: Wildcard handler matches by command_name
+      // Step 2: Fire the operate command and capture commandKey for correlation
+      final operateResponse =
+          await _usp.operate(operateCommand, args: args);
+      final expectedKey = operateResponse.commandKey;
+
+      logger.d('[SSE Operate] Starting $operateCommand '
+          '(sub=$subscriptionId, commandKey=$expectedKey)');
+
+      // Step 3: Wildcard handler matches by commandKey (primary) or
+      // falls back to command_name if commandKey is unavailable.
       removeHandler = _manager.addWildcardHandler((notification) {
         if (notification.type == 'OperationComplete' &&
             !completer.isCompleted) {
           final result = _parseOperateResult(notification);
-          if (result != null && result.commandName == expectedCmd) {
+          if (result == null) return;
+
+          final matched = (expectedKey != null && expectedKey.isNotEmpty)
+              ? result.commandKey == expectedKey
+              : result.commandName == expectedCmd;
+
+          if (matched) {
             logger.d('[SSE Operate] Matched OperationComplete for $expectedCmd '
-                '(from sub=${notification.subscriptionId})');
+                '(commandKey=${result.commandKey}, '
+                'sub=${notification.subscriptionId})');
             completer.complete(result);
           }
         }
       });
-
-      // Fire the operate command
-      await _usp.operate(operateCommand, args: args);
 
       // Await SSE OperationComplete or timeout
       final result = await completer.future.timeout(
