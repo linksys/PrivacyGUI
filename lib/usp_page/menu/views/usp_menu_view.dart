@@ -70,6 +70,12 @@ class UspMenuView extends StatelessWidget {
         onTap: () => context.goNamed(RouteNamed.uspInstantSafety),
       ),
       AppSectionItemData(
+        title: 'Instant Privacy',
+        description: 'Lock network to currently connected devices',
+        iconData: Icons.lock_outlined,
+        onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
+      ),
+      AppSectionItemData(
         title: 'Administration',
         description: 'Password, timezone, reboot',
         iconData: Icons.admin_panel_settings,
