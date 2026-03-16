@@ -1,6 +1,6 @@
 # USP Issues & Documentation Index
 
-**Last Updated:** 2026-03-13
+**Last Updated:** 2026-03-16
 **Scope:** USP Protocol Integration - Issues, Bugs, and Technical Analyses
 
 ---
@@ -12,8 +12,10 @@
 | **Router Firmware Bugs** | 6 | 6 | 0 | 0 | [router-firmware-bugs.md](router-firmware-bugs.md) |
 | **SSE/Notification Pipeline** | 2 | 2 | 0 | 0 | [subscription-notify-blocked.md](subscription-notify-blocked.md) |
 | **Internet Settings** | 3 | 0 | 3 | 0 | Multiple files |
+| **WiFi Settings** | 4 | 1 | 0 | 3 | [wifi-settings-tr181-limitations.md](wifi-settings-tr181-limitations.md) |
+| **FW Team Requests** | 26 | 0 | 0 | 26 | [fw-team-request.md](fw-team-request.md) |
 | **Performance Issues** | 1 | 1 | 0 | 0 | [usp-add-latency.md](usp-add-latency.md) |
-| **Total** | **12** | **9** | **3** | **0** | **6 documents** |
+| **Total** | **42** | **9** | **3** | **29** | **8 documents** |
 
 ---
 
@@ -49,13 +51,33 @@ Detailed analysis of SSE notification pipeline with end-to-end validation.
 
 | Issue | Description | Status | Date |
 |-------|-------------|--------|------|
-| **Issue 1** | Bridge HTTP API does not create OBUSPA Subscription | 🟡 **WORKAROUND** | 2026-03-09 |
+| **Issue 1** | Bridge HTTP API does not create OBUSPA Subscription | ✅ **FIXED** | 2026-03-16 |
 | **Issue 2** | usp-bridge does not forward OBUSPA Notify → SSE | ✅ **FIXED** | 2026-03-12 |
 
 **Verification Results:**
 - ✅ End-to-end TraceRoute → OperationComplete via SSE
 - ✅ Complete notification payload with hop-by-hop results
-- 🟡 Enhancement request: auto-register bridge subscriptions
+- ✅ Bridge auto-creates OBUSPA subscriptions with new API fields (`NotifType`/`ReferenceList`)
+
+---
+
+### 🏭 **Firmware Team Requests**
+
+#### [fw-team-request.md](fw-team-request.md)
+**Firmware Team Request — USP/TR-181 Support Issues**
+
+Consolidated list of all issues requiring firmware team action, organized by priority tier.
+
+| Tier | Type | Items | Description |
+|------|------|-------|-------------|
+| **Tier 1** | Bug Fix | 6 | Existing TR-181 paths with broken Set behavior |
+| **Tier 2** | bbfdm Plugin / Extension | 5 | Missing bbfdm plugins or multi-instance support |
+| **Tier 3** | Vendor Extension | 15 | JNAP features needing `X_LINKSYS_*` TR-181 mapping |
+
+**Key Blockers:**
+- 🔴 FW-001: AddressingType Set no-op (P0 — blocks all WAN type switching)
+- 🔴 FW-010: DDNS bbfdm plugin missing (P1)
+- 🔴 FW-007: MAC Filtering completely broken (P2)
 
 ---
 
@@ -134,6 +156,7 @@ Analysis of configuration commit performance bottleneck affecting USP Set operat
 | **2026-03-09** | BUG-001, BUG-003 documented | WiFi + SSE infrastructure |
 | **2026-03-12** | BUG-005 verified fixed | Complete notification pipeline |
 | **2026-03-13** | All router bugs status confirmed | 100% functionality achieved |
+| **2026-03-16** | Issue 1 fixed — bridge auto-creates OBUSPA subs | Full SSE pipeline operational, client simplified |
 
 ### **Ongoing Work (Internet Settings)**
 
@@ -160,7 +183,7 @@ Analysis of configuration commit performance bottleneck affecting USP Set operat
 - ✅ USP Add latency (documented, mitigated)
 
 ### **Low (P3) - Enhancement Requests**
-- 🟡 Bridge subscription auto-registration
+- ✅ Bridge subscription auto-registration — **FIXED** (2026-03-16)
 - 🟡 Internet Settings feature parity gaps
 
 ---

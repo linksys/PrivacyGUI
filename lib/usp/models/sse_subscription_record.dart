@@ -1,10 +1,10 @@
-/// A registered subscription record tracking both OBUSPA and bridge layers.
+/// A registered subscription record managed by the bridge.
+///
+/// The bridge handles the full OBUSPA `Device.LocalAgent.Subscription.{i}`
+/// lifecycle automatically — the client only tracks logical state.
 class SseSubscriptionRecord {
   /// Client-assigned ID (e.g., "connected-devices-objectcreation").
   final String subscriptionId;
-
-  /// OBUSPA instance path (e.g., "Device.LocalAgent.Subscription.3.").
-  final String obuspaInstancePath;
 
   /// Notification type: "ValueChange", "ObjectCreation", "ObjectDeletion",
   /// "OperationComplete", "Event".
@@ -18,7 +18,6 @@ class SseSubscriptionRecord {
 
   const SseSubscriptionRecord({
     required this.subscriptionId,
-    required this.obuspaInstancePath,
     required this.notifType,
     required this.referenceList,
     required this.createdAt,

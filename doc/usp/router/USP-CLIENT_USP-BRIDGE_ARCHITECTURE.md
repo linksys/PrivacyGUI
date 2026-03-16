@@ -117,7 +117,7 @@ The bridge is structured around a central `bridge_context_t` that owns all sub-s
 | **UDS Client** | `uds_client.h` | Maintains persistent connection to OBUSPA's UDS socket |
 | **Session Manager** | `session_manager.h` | Tracks active sessions by session ID (from JWT) |
 | **Router** | `router.h` | Correlates outbound USP requests with inbound responses by request ID |
-| **Subscription Manager** | `subscription.h` | Maps SSE subscriptions to data model paths for targeted notification delivery |
+| **Subscription Manager** | `subscription.h` | Maps SSE subscriptions to data model paths; auto-creates OBUSPA `Device.LocalAgent.Subscription.{i}` instances |
 | **Channel Manager** | `channel.h` | Manages exclusive streaming channel (for firmware upgrade, speed test, etc.) |
 | **JWT Util** | `jwt_util.h` | Validates incoming JWTs using the shared signing key |
 
@@ -128,7 +128,7 @@ The bridge is structured around a central `bridge_context_t` that owns all sub-s
 | `GET` | `/api/v1/health` | No | Health check + performance metrics |
 | `POST` | `/api/v1/usp` | Yes | Forward a USP protobuf message to OBUSPA and return the response |
 | `GET` | `/api/v1/notifications` | Yes | SSE stream — real-time notifications from OBUSPA |
-| `POST` | `/api/v1/subscription` | Yes | Register/unregister notification subscriptions |
+| `POST` | `/api/v1/subscription` | Yes | Register/unregister notification subscriptions (auto-creates OBUSPA `Subscription.{i}`). Fields: `NotifType` (string), `ReferenceList` (string) |
 | `POST` | `/api/v1/turbo/start` | Yes | Acquire the exclusive streaming channel |
 | `POST` | `/api/v1/turbo/heartbeat` | Yes | Keep the streaming channel alive |
 | `POST` | `/api/v1/turbo/release` | Yes | Release the streaming channel |
@@ -385,7 +385,8 @@ sequenceDiagram
     Note over Bridge: Create subscription
     Bridge-->>Client: SSE stream opened
 
-    Client->>Bridge: POST /api/v1/subscription { action: "register", subscription_id: "..." }
+    Client->>Bridge: POST /api/v1/subscription { action: "register", subscription_id: "...", NotifType: "ValueChange", ReferenceList: "Device.Hosts.Host." }
+    Note over Bridge: Auto-create OBUSPA Subscription.{i}
     Bridge-->>Client: 200 { status: "success" }
 
     Note over Client, Agent: ...time passes...

@@ -49,7 +49,7 @@
 |---------|-------------|--------|
 | 401 Auth Retry | Auto reauth on token expiry — two-stage (refreshToken → re-login), Completer lock, transparent to notifiers | Active |
 | SSE Connection Manager | Exponential backoff reconnection (1s → 60s), heartbeat watchdog (45s timeout), auto-reconnect | Active |
-| SSE Subscription Registry | Two-layer subscription (OBUSPA + bridge), `resubscribeAll()` on reconnect, lifecycle tracking | Active |
+| SSE Subscription Registry | Bridge-only subscription tracking (bridge auto-creates OBUSPA subs), `resubscribeAll()` on reconnect, idempotent | Active |
 | SSE Event Router | Demux by subscription_id, wildcard handlers for cross-cutting concerns, JSON parse + route | Active |
 | SSE Invalidation Provider | Path-based domain mapping, `.Stats.` noise filter, 11 invalidation domains for selective re-fetch | Active |
 | SSE Operation Awaiter | Async Operate commands (Ping/Traceroute) via OperationComplete, wildcard command_name matching, polling fallback | Active |
@@ -89,7 +89,7 @@
 | F-024: WiFi Performance Analytics | 3-tab card (Signal: per-client RSSI `AppBarChart` with tier coloring, Speed: DL/UL grouped `AppBarChart` per client, Channels: per-radio info + band distribution `AppPieChart` donut). Uses `WifiClient` signal/noise/speed + `connectionDetailMap` for AP→Radio band mapping. Files: `wifi_performance_helpers.dart` + `usp_wifi_performance_card.dart` | 2026-03-11 |
 | Bugfix: SliverDashboard crash | Fixed "Unexpected null value" at `sliver_dashboard.dart:621` — removed `optimizeLayout()` calls that mutated DashboardController after widget tree was built. Added stale layout validation (saved 15-item layout vs new 17-item spec). Files: `usp_layout_controller.dart` | 2026-03-11 |
 | F-021: System Performance Dashboard | 4-tab dashboard card (Monitor: CPU/Memory gauges + uptime, Trends: dual-line `AppLineChart` CPU+Memory, Distribution: 4-bucket CPU histogram `AppBarChart`, Correlation: dual-axis CPU vs WAN traffic). Statistics page with 4 sections (Gauges, Resource Trends, CPU Distribution, CPU-Traffic Correlation). 60-point ring buffer, configurable auto-refresh (Off/10s/30s/60s). Files: `usp_system_status_card.dart` + `system_monitor_state.dart` + `usp_system_monitor_notifier.dart` + `stats_*_section.dart` | 2026-03-13 (confirmed) |
-| SSE Infrastructure (Phases 1-4) | Full SSE pipeline: `SseConnectionManager` (backoff + heartbeat watchdog), `SseSubscriptionRegistry` (OBUSPA + bridge two-layer), `SseEventRouter` (demux + wildcard handlers), `SseInvalidationProvider` (path-based domain mapping, `.Stats.` filter), `SseOperationAwaiter` (OperationComplete for Ping/Traceroute, polling fallback), bootstrap purge for stale subscriptions. See `doc/usp/integration/sse_implementation.md` | 2026-03-13 |
+| SSE Infrastructure (Phases 1-4) | Full SSE pipeline: `SseConnectionManager` (backoff + heartbeat watchdog), `SseSubscriptionRegistry` (bridge-only, auto-creates OBUSPA subs), `SseEventRouter` (demux + wildcard handlers), `SseInvalidationProvider` (path-based domain mapping, `.Stats.` filter), `SseOperationAwaiter` (OperationComplete for Ping/Traceroute, polling fallback), bootstrap purge for stale subscriptions. See `doc/usp/integration/sse_implementation.md` | 2026-03-13 (updated 2026-03-16) |
 | SSE × Codegen Subscribe Alignment | YAML `subscribe:` array format (codegen v0.10.5), auto-generated `subscriptions.g.dart` replaces manual `subscription_config.dart`. 5 bootstrap subscriptions: Hosts (OC+OD+VC), DHCP Clients (OC), WiFi AP (OC). `UspService.subscribe<T>()` SSE delegate pattern, 11 invalidation domains | 2026-03-13 |
 | Bugfix: SSE Stats flooding | Removed WiFi SSID/Radio ValueChange from bootstrap subscriptions — `.Stats.*` counters fire every second. Path-based `_mapToDomain` replaces broken subscription_id matching | 2026-03-13 |
 | Bugfix: Stale OBUSPA subscriptions | `purgeAllSubscriptions()` via GET-based enumeration of `Device.LocalAgent.Subscription.` — clears subscriptions from previous sessions on browser refresh | 2026-03-13 |
@@ -110,11 +110,11 @@
 | Issue | Detail |
 |-------|--------|
 | VendorLogFile not supported | Router's USP agent (obuspa) does not implement `Device.DeviceInfo.VendorLogFile.{i}.` — syslog available via SSH (`logread`) but no HTTP/USP access |
-| WASM `add` returns empty for LocalAgent | `UspClientWeb.add('Device.LocalAgent.Subscription.')` returns empty — Rust WASM client bug. Workaround: GET-diff in `UspService.createNotifySubscription()` |
+| WASM `add` returns empty for LocalAgent | `UspClientWeb.add('Device.LocalAgent.Subscription.')` returns empty — Rust WASM client bug. No longer relevant: bridge handles OBUSPA subscription lifecycle. Legacy `createNotifySubscription()` retained for debug |
 | CPE subscription_id mismatch | CPE uses internal IDs (`cpe-3`, `cpe-15`) not client-assigned IDs. Affects both OperationComplete matching and invalidation routing. Workaround: wildcard handler + `command_name` / `param_path` matching |
 | WiFi Stats noise | `Device.WiFi.SSID.*.Stats.*` and `Device.WiFi.Radio.*.Stats.*` fire every second via ValueChange. Must NOT subscribe to broad WiFi ValueChange |
 | BUG-006: Operate results not in data model | `GET Device.IP.Diagnostics.IPPing.` returns empty after Operate — results only available via SSE OperationComplete |
-| Bridge subscribe doesn't create OBUSPA sub | `POST /api/v1/subscription` only registers bridge session mapping, does NOT create `Device.LocalAgent.Subscription.{i}`. Client must create OBUSPA subscriptions directly |
+| ~~Bridge subscribe doesn't create OBUSPA sub~~ | ~~`POST /api/v1/subscription` only registers bridge session mapping~~ — ✅ **FIXED** (2026-03-16): Bridge now auto-creates OBUSPA subscriptions with new API fields (`NotifType`/`ReferenceList`). Client simplified to bridge-only |
 
 ---
 
