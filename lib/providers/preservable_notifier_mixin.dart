@@ -36,6 +36,10 @@ mixin PreservableNotifierMixin<
           settings: Preservable(original: newSettings, current: newSettings),
           status: newStatus ?? state.status,
         ) as TState;
+      } else if (newStatus != null) {
+        // Settings unavailable but status returned (e.g. error) — apply status
+        // so the UI can exit the loading state and display the error.
+        state = state.copyWith(status: newStatus) as TState;
       }
     }
     return state;
@@ -104,6 +108,10 @@ mixin PreservableAutoDisposeNotifierMixin<
           settings: Preservable(original: newSettings, current: newSettings),
           status: newStatus ?? state.status,
         ) as TState;
+      } else if (newStatus != null) {
+        // Settings unavailable but status returned (e.g. error) — apply status
+        // so the UI can exit the loading state and display the error.
+        state = state.copyWith(status: newStatus) as TState;
       }
     }
     return state;

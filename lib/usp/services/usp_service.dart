@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/usp/models/usp_response.dart';
 
 // Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
 import '../stub/usp_client_stub.dart'
@@ -341,8 +340,9 @@ class UspService {
   /// [command] is the command path (e.g., "Device.Reboot()" or
   /// "Device.IP.Diagnostics.Ping()").
   /// [args] are the input arguments for the command.
-  /// Returns [UspResponse] with commandKey (for SSE correlation) and output arguments.
-  Future<UspResponse<Map<String, String>>> operate(String command,
+  /// Returns a flat map containing `commandKey` (for SSE correlation) and
+  /// all output arguments from the Operate response.
+  Future<Map<String, dynamic>> operate(String command,
       {Map<String, String> args = const {}}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
@@ -351,10 +351,10 @@ class UspService {
     sw.stop();
     logger.d('[UspService]:#$id OPERATE $command'
         '${args.isNotEmpty ? ' — ${args.length} args' : ''}'
-        ' → key=${response.commandKey}, ${response.data.length} output keys'
+        ' → key=${response['commandKey']}, ${response.length} output keys'
         ' (${sw.elapsedMilliseconds}ms)');
-    if (response.data.isNotEmpty) {
-      logger.d('[UspService]:#$id ← ${_mapSummary(response.data)}');
+    if (response.isNotEmpty) {
+      logger.d('[UspService]:#$id ← ${_mapSummary(response)}');
     }
     return response;
   }

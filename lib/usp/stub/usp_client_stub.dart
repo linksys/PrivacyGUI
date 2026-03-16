@@ -1,5 +1,3 @@
-import 'package:privacy_gui/usp/models/usp_response.dart';
-
 /// Stub implementation of UspClientWeb for non-Web platforms (Dart VM / tests).
 ///
 /// This file is selected by conditional import when dart.library.js_interop
@@ -54,7 +52,7 @@ class UspClientWeb {
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<UspResponse<Map<String, String>>> operate(String command,
+  Future<Map<String, dynamic>> operate(String command,
           {Map<String, String> args = const {}}) =>
       throw UnsupportedError('USP is only available on Web');
 

@@ -193,11 +193,11 @@ class _UspTestPageState extends State<UspTestPage> {
     try {
       final args = Map<String, String>.from(jsonDecode(argsJson) as Map? ?? {});
       final response = await _service!.operate(command, args: args);
-      _log('  commandKey = ${response.commandKey}');
-      if (response.data.isEmpty) {
+      _log('  commandKey = ${response['commandKey']}');
+      if (response.isEmpty) {
         _log('OPERATE OK (no output)');
       } else {
-        for (final entry in response.data.entries) {
+        for (final entry in response.entries) {
           _log('  ${entry.key} = ${entry.value}');
         }
       }

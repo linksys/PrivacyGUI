@@ -371,11 +371,13 @@ class WifiNetworkCard extends ConsumerWidget {
 
   Future<void> _editChannelWidth(
       BuildContext context, WidgetRef ref, WifiNetworkUIModel n) async {
-    final options = switch (n.band) {
-      '2.4GHz' => ['Auto', '20MHz', '40MHz'],
-      '6GHz' => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
-      _ => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
-    };
+    final options = n.supportedBandwidths.isNotEmpty
+        ? n.supportedBandwidths
+        : switch (n.band) {
+            '2.4GHz' => ['Auto', '20MHz', '40MHz'],
+            '6GHz' => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
+            _ => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
+          };
     final current = n.channelBandwidth.isNotEmpty ? n.channelBandwidth : 'Auto';
     String selected = options.contains(current) ? current : options.first;
 
@@ -411,9 +413,17 @@ class WifiNetworkCard extends ConsumerWidget {
     const autoLabel = 'Auto';
     final currentLabel = n.autoChannelEnable ? autoLabel : n.channel.toString();
 
+    // Use per-bandwidth filtered channels when available; fall back to all.
+    final channelsForCurrentBw =
+        n.availableChannelsPerBandwidth[n.channelBandwidth];
+    final effectiveChannels =
+        (channelsForCurrentBw != null && channelsForCurrentBw.isNotEmpty)
+            ? channelsForCurrentBw
+            : n.possibleChannels;
+
     final channelItems = [
       AppRadioListItem<String>(title: autoLabel, value: autoLabel),
-      ...n.possibleChannels.map(
+      ...effectiveChannels.map(
         (ch) => AppRadioListItem<String>(
           title: ch.toString(),
           value: ch.toString(),

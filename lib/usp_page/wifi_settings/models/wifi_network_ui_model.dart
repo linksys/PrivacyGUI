@@ -61,6 +61,17 @@ class WifiNetworkUIModel extends Equatable {
   /// e.g. "a,n,ac,ax" — read-only, used to derive available options.
   final String supportedStandards;
 
+  /// Supported channel bandwidths from Device.WiFi.Radio.{i}.SupportedOperatingChannelBandwidths.
+  /// e.g. ['Auto', '20MHz', '40MHz', '80MHz']. Empty list = firmware didn't provide data.
+  final List<String> supportedBandwidths;
+
+  /// Channels available for each bandwidth, computed from possibleChannels
+  /// using IEEE 802.11 bonding rules.
+  /// Key = bandwidth string ("Auto", "20MHz", "40MHz", etc.)
+  /// Value = sorted list of valid primary channel numbers.
+  /// Empty map = bonding data not computed (fallback to possibleChannels).
+  final Map<String, List<int>> availableChannelsPerBandwidth;
+
   const WifiNetworkUIModel({
     required this.ssidInstancePath,
     this.accessPointInstancePath,
@@ -79,6 +90,8 @@ class WifiNetworkUIModel extends Equatable {
     required this.possibleChannels,
     required this.operatingStandards,
     required this.supportedStandards,
+    this.supportedBandwidths = const [],
+    this.availableChannelsPerBandwidth = const {},
   });
 
   /// Display name for the band tab/header
@@ -116,6 +129,8 @@ class WifiNetworkUIModel extends Equatable {
     List<int>? possibleChannels,
     String? operatingStandards,
     String? supportedStandards,
+    List<String>? supportedBandwidths,
+    Map<String, List<int>>? availableChannelsPerBandwidth,
   }) {
     return WifiNetworkUIModel(
       ssidInstancePath: ssidInstancePath ?? this.ssidInstancePath,
@@ -138,6 +153,9 @@ class WifiNetworkUIModel extends Equatable {
       possibleChannels: possibleChannels ?? this.possibleChannels,
       operatingStandards: operatingStandards ?? this.operatingStandards,
       supportedStandards: supportedStandards ?? this.supportedStandards,
+      supportedBandwidths: supportedBandwidths ?? this.supportedBandwidths,
+      availableChannelsPerBandwidth:
+          availableChannelsPerBandwidth ?? this.availableChannelsPerBandwidth,
     );
   }
 
@@ -160,6 +178,8 @@ class WifiNetworkUIModel extends Equatable {
         possibleChannels,
         operatingStandards,
         supportedStandards,
+        supportedBandwidths,
+        availableChannelsPerBandwidth,
       ];
 
   Map<String, dynamic> toMap() => {
@@ -180,6 +200,8 @@ class WifiNetworkUIModel extends Equatable {
         'possibleChannels': possibleChannels,
         'operatingStandards': operatingStandards,
         'supportedStandards': supportedStandards,
+        'supportedBandwidths': supportedBandwidths,
+        'availableChannelsPerBandwidth': availableChannelsPerBandwidth,
       };
 
   Map<String, dynamic> toJson() => toMap();
@@ -205,6 +227,13 @@ class WifiNetworkUIModel extends Equatable {
         possibleChannels: (map['possibleChannels'] as List?)?.cast<int>() ?? [],
         operatingStandards: map['operatingStandards'] as String? ?? '',
         supportedStandards: map['supportedStandards'] as String? ?? '',
+        supportedBandwidths:
+            (map['supportedBandwidths'] as List?)?.cast<String>() ?? [],
+        availableChannelsPerBandwidth:
+            (map['availableChannelsPerBandwidth'] as Map?)?.map(
+                  (k, v) => MapEntry(k as String, (v as List).cast<int>()),
+                ) ??
+                {},
       );
 
   factory WifiNetworkUIModel.fromJson(Map<String, dynamic> json) =>

@@ -74,3 +74,8 @@ parameters:
     type: boolean
     writable: true
     description: Enables IEEE 802.11h on this radio, which activates both Dynamic Frequency Selection (DFS) and Transmit Power Control (TPC)
+
+  - field_name: supportedOperatingChannelBandwidths
+    path: .SupportedOperatingChannelBandwidths
+    type: string
+    description: Comma-separated list of supported channel bandwidths (e.g. "Auto,20MHz,40MHz,80MHz")

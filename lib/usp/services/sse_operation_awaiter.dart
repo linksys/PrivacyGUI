@@ -87,7 +87,7 @@ class SseOperationAwaiter {
 
       // Step 2: Fire the operate command and capture commandKey for correlation
       final operateResponse = await _usp.operate(operateCommand, args: args);
-      final expectedKey = operateResponse.commandKey;
+      final expectedKey = operateResponse['commandKey'] as String?;
 
       logger.d('[SSE Operate] Starting $operateCommand '
           '(sub=$subscriptionId, commandKey=$expectedKey)');
