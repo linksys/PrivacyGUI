@@ -18,8 +18,8 @@
 This document tracks known bugs and limitations in the router firmware's USP/TR-181 implementation. Most critical bugs affecting functionality have been resolved through workarounds or firmware fixes.
 
 **Status Overview:**
-- ✅ **2 bugs fixed** (BUG-001, BUG-003)
-- ✅ **2 bugs with complete workarounds** (BUG-002, BUG-005)
+- ✅ **3 bugs fixed** (BUG-001, BUG-003, BUG-005)
+- ✅ **1 bug with complete workaround** (BUG-002)
 - 🟢 **1 behavior change** (BUG-004)
 - ✅ **1 design feature, not a bug** (BUG-006)
 

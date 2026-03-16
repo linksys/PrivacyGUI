@@ -260,12 +260,23 @@ class UspBridgeClient {
 
   /// Registers a subscription for parameter change notifications.
   ///
-  /// [notifType]: 1=ValueChange, 2=ObjectCreation, 3=ObjectDeletion
+  /// The bridge creates an OBUSPA `Device.LocalAgent.Subscription.{i}`
+  /// instance automatically and routes notifications to the SSE stream.
+  ///
+  /// [notifType]: 1=ValueChange, 2=ObjectCreation, 3=ObjectDeletion,
+  ///              4=OperationComplete, 5=Event
   Future<Map<String, dynamic>> subscribe({
     required String subscriptionId,
     required String path,
     required int notifType,
   }) async {
+    const notifTypeNames = {
+      1: 'ValueChange',
+      2: 'ObjectCreation',
+      3: 'ObjectDeletion',
+      4: 'OperationComplete',
+      5: 'Event',
+    };
     return _withAuthRetry(
       () => http.post(
         Uri.parse('$_baseUrl/api/v1/subscription'),
@@ -273,8 +284,8 @@ class UspBridgeClient {
         body: jsonEncode({
           'action': 'register',
           'subscription_id': subscriptionId,
-          'path': path,
-          'type': notifType,
+          'NotifType': notifTypeNames[notifType] ?? 'ValueChange',
+          'ReferenceList': path,
         }),
       ),
       (r) => jsonDecode(r.body) as Map<String, dynamic>,

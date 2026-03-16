@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
@@ -49,8 +50,8 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   bool _showManualOverride = false;
   final List<String> _logs = [];
 
-  // SSE state
-  StreamSubscription<SseEvent>? _sseSub;
+  // SSE state — taps into SseManager's wildcard handler
+  VoidCallback? _sseRemoveHandler;
   bool _sseConnected = false;
 
   // Subscription notif type
@@ -157,8 +158,8 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     }
     _log('Logout...');
     try {
-      await _sseSub?.cancel();
-      _sseSub = null;
+      _sseRemoveHandler?.call();
+      _sseRemoveHandler = null;
       setState(() => _sseConnected = false);
       await _service!.logout();
       setState(() => _isConnected = false);
@@ -302,43 +303,30 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   // ════════════════════════════════════════════════════════════════════════════
 
   void _sseConnect() {
-    if (_bridgeClient == null) return;
     if (_sseConnected) {
-      _log('SSE already connected');
+      _log('SSE already listening');
       return;
     }
-    _log('SSE connecting...');
-    try {
-      final stream = _bridgeClient!.notifications();
-      _sseSub = stream.listen(
-        (event) {
-          if (event.event == '_debug') {
-            _log('SSE [debug] ${event.data}');
-          } else {
-            _log('SSE [${event.event}] ${event.data}');
-          }
-        },
-        onError: (e) {
-          _log('SSE ERROR: $e');
-          setState(() => _sseConnected = false);
-        },
-        onDone: () {
-          _log('SSE stream closed');
-          setState(() => _sseConnected = false);
-        },
-      );
-      setState(() => _sseConnected = true);
-      _log('SSE listener attached');
-    } catch (e) {
-      _log('ERROR SSE connect: $e');
+    final manager = ref.read(sseManagerProvider);
+    if (manager == null) {
+      _log('SSE ERROR: SseManager not available');
+      return;
     }
+    _log('SSE attaching wildcard handler to SseManager...');
+    _sseRemoveHandler = manager.addWildcardHandler((notification) {
+      _log('SSE [${notification.type}] sub=${notification.subscriptionId} '
+          '${jsonEncode(notification.payload)}');
+    });
+    final state = manager.connection.connectionState.value;
+    setState(() => _sseConnected = true);
+    _log('SSE listener attached (connection: ${state.name})');
   }
 
   Future<void> _sseDisconnect() async {
     if (!_sseConnected) return;
-    _log('SSE disconnecting...');
-    await _sseSub?.cancel();
-    _sseSub = null;
+    _log('SSE removing wildcard handler...');
+    _sseRemoveHandler?.call();
+    _sseRemoveHandler = null;
     setState(() => _sseConnected = false);
     _log('SSE disconnected');
   }
@@ -497,7 +485,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
 
   @override
   void dispose() {
-    _sseSub?.cancel();
+    _sseRemoveHandler?.call();
     // Only dispose self-created services, NOT the shared singleton.
     if (!_usingSharedSession) {
       _service?.dispose();

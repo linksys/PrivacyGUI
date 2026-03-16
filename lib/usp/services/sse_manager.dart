@@ -44,7 +44,7 @@ class SseManager {
     required UspBridgeClient bridge,
   })  : _usp = usp,
         connection = SseConnectionManager(bridge),
-        registry = SseSubscriptionRegistry(usp, bridge),
+        registry = SseSubscriptionRegistry(bridge),
         router = SseEventRouter() {
     // Wire connection events to router
     connection.onEvent = router.routeEvent;

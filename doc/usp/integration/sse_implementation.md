@@ -1,6 +1,6 @@
 # SSE (Server-Sent Events) Implementation Guide
 
-**Date:** 2026-03-13 | **Branch:** `feat/usp-protocol-integration`
+**Date:** 2026-03-13 (updated 2026-03-16) | **Branch:** `feat/usp-protocol-integration`
 **Firmware:** 1.0.16.26013014 | **usp-bridge:** v0.1.1
 
 ---
@@ -12,45 +12,41 @@ SSE provides real-time push notifications from the router to the Flutter web app
 ```
 Flutter App (WASM)
     │
-    ├── UspService ──→ OBUSPA (via usp-bridge proxy)
-    │     │                │
-    │     │    USP Add/Delete Device.LocalAgent.Subscription.{i}
-    │     │                │
-    │     │                ▼
+    ├── UspBridgeClient ──→ usp-bridge HTTP API
+    │     │                      │
+    │     │    POST /api/v1/subscription
+    │     │      → Bridge auto-creates OBUSPA Subscription.{i}
+    │     │      → Bridge registers SSE session mapping
+    │     │                      │
+    │     │    GET /api/v1/notifications (SSE stream)
+    │     │                      │
     │     │         OBUSPA monitors TR-181 data model
     │     │                │
     │     │         Change detected → USP Notify (protobuf)
     │     │                │
-    │     │                ▼
-    │     │         UDS socket → usp-bridge
-    │     │
-    ├── UspBridgeClient ──→ usp-bridge HTTP API
-    │     │                      │
-    │     │    POST /api/v1/subscription (register SSE session)
-    │     │                      │
-    │     │    GET /api/v1/notifications (SSE stream)
-    │     │                      │
-    │     │                      ▼
-    │     │              Bridge routes Notify → SSE event
+    │     │         UDS socket → bridge → SSE event
     │     │
     └── SseManager (facade)
           ├── SseConnectionManager   — SSE stream lifecycle
-          ├── SseSubscriptionRegistry — OBUSPA + bridge subscription tracking
+          ├── SseSubscriptionRegistry — bridge-only subscription tracking
           └── SseEventRouter          — event demux by subscription_id + wildcard
 ```
 
-### Two-Layer Subscription Architecture
+### Bridge-Managed Subscription Architecture
 
-Two independent subscription systems exist:
+The bridge `POST /api/v1/subscription` handles the full OBUSPA lifecycle automatically:
 
-| Layer | Purpose | Persistence | Creation |
-|-------|---------|-------------|----------|
-| **OBUSPA** | Tells router to generate USP Notify messages | Survives SSE disconnect, browser refresh | `UspService.createNotifySubscription()` (5-step workaround) |
-| **Bridge** | Routes notifications to the correct SSE session | Destroyed on SSE disconnect | `UspBridgeClient.subscribe()` HTTP POST |
+| Action | Bridge Behavior | OBUSPA Effect |
+|--------|----------------|---------------|
+| **register** | Creates OBUSPA `Subscription.{i}` + SSE session mapping | Router generates Notify for matching events |
+| **unregister** | Deletes OBUSPA `Subscription.{i}` + SSE session mapping | Router stops generating Notify |
+| **re-register** (same ID) | Idempotent — reuses existing OBUSPA subscription | No duplicate subscriptions |
 
-Key insight: OBUSPA subscriptions persist on the router even after the browser disconnects. Bridge subscriptions are ephemeral — they only exist while the SSE connection is active.
+Key insight: OBUSPA subscriptions persist on the router even after the browser disconnects. Bridge session mappings are ephemeral.
 
-On SSE reconnect, only bridge subscriptions need re-registration (`SseSubscriptionRegistry.resubscribeAll()`).
+On SSE reconnect, `SseSubscriptionRegistry.resubscribeAll()` re-registers all subscriptions on the bridge. Since the bridge is idempotent by `subscription_id`, this safely handles both scenarios (OBUSPA subs survived or were cleaned up).
+
+**Session expiry caveat:** Bridge session timeout does NOT clean up OBUSPA subscriptions — they become orphans. Bootstrap `purgeAllSubscriptions()` cleans these up on app startup.
 
 ---
 
@@ -61,7 +57,7 @@ On SSE reconnect, only bridge subscriptions need re-registration (`SseSubscripti
 | File | Class | Responsibility |
 |------|-------|----------------|
 | `sse_connection_manager.dart` | `SseConnectionManager` | SSE stream lifecycle, exponential backoff (1s → 60s), heartbeat watchdog (45s = 30s heartbeat + 15s grace) |
-| `sse_subscription_registry.dart` | `SseSubscriptionRegistry` | Two-layer subscription tracking, `register()` / `unregister()` / `resubscribeAll()` |
+| `sse_subscription_registry.dart` | `SseSubscriptionRegistry` | Bridge-only subscription tracking, `register()` / `unregister()` / `resubscribeAll()` |
 | `sse_event_router.dart` | `SseEventRouter` | JSON parse → route by `subscription_id`, wildcard handlers for cross-cutting concerns |
 | `sse_manager.dart` | `SseManager` | Facade composing the above three. Primary API for Riverpod providers |
 | `sse_operation_awaiter.dart` | `SseOperationAwaiter` | Async Operate commands (Ping/Traceroute) via OperationComplete, polling fallback |
@@ -135,8 +131,8 @@ Used for async Operate commands where the SSE notification IS the result.
 ```
 SseOperationAwaiter.execute()
     │
-    ├── Create OBUSPA subscription (OperationComplete)
-    ├── Add wildcard handler (match by command_name)
+    ├── Register subscription via bridge (OperationComplete)
+    ├── Add wildcard handler (match by commandKey or command_name)
     ├── Fire operate command
     │
     ▼
@@ -282,37 +278,37 @@ Sent every 30s by the bridge. Watchdog timeout: 45s.
 
 ---
 
-## 6. OBUSPA Subscription Creation (5-Step Workaround)
+## 6. Subscription Creation — Bridge API
 
-`UspService.createNotifySubscription()` performs the full OBUSPA subscription lifecycle:
+The bridge handles OBUSPA subscription lifecycle automatically via `POST /api/v1/subscription`:
 
 ```dart
-// Step 1: GET Device.LocalAgent.Subscription. — snapshot existing IDs
-final before = await get(['Device.LocalAgent.Subscription.']);
-final idsBefore = _extractInstanceIds(before);
-
-// Step 2: USP Add Device.LocalAgent.Subscription. — create instance
-await add('Device.LocalAgent.Subscription.', {});
-
-// Step 3: GET again — diff to find new instance ID
-final after = await get(['Device.LocalAgent.Subscription.']);
-final idsAfter = _extractInstanceIds(after);
-final newId = idsAfter.difference(idsBefore).first;
-
-// Step 4: USP SetMultiple — configure the subscription
-await setMultiple({
-  'Device.LocalAgent.Subscription.$newId.Enable': 'true',
-  'Device.LocalAgent.Subscription.$newId.NotifType': notifType,
-  'Device.LocalAgent.Subscription.$newId.ReferenceList': referenceList,
-});
-
-// Step 5: Verify Recipient points to UDS controller
-final recipient = await get([
-  'Device.LocalAgent.Subscription.$newId.Recipient'
-]);
+// SseSubscriptionRegistry.register() — single bridge call
+await _bridge.subscribe(
+  subscriptionId: 'connected-devices-objectcreation',
+  path: 'Device.Hosts.Host.',
+  notifType: 2, // ObjectCreation — converted to string internally
+);
+// Bridge internally: creates OBUSPA Subscription.{i} + SSE session mapping
 ```
 
-**Why 5 steps?** WASM `add('Device.LocalAgent.Subscription.')` returns empty (Rust bug — `wasm/mod.rs:435-441` doesn't parse `AddResp.updated_inst_results`). The GET-diff workaround finds the new instance ID.
+### Bridge API Format
+
+```http
+POST /api/v1/subscription
+{
+  "action": "register",
+  "subscription_id": "connected-devices-objectcreation",
+  "NotifType": "ObjectCreation",
+  "ReferenceList": "Device.Hosts.Host."
+}
+```
+
+> **Note:** The bridge API uses `NotifType` (string) and `ReferenceList` — not the old `type` (int) and `path` fields. `UspBridgeClient.subscribe()` handles the int→string conversion internally.
+
+### Legacy: 5-Step OBUSPA Workaround (deprecated)
+
+`UspService.createNotifySubscription()` previously performed direct OBUSPA manipulation (Add + GET-diff + SetMultiple). This is retained for debug/legacy use only — bridge now handles this automatically.
 
 ---
 
@@ -341,11 +337,11 @@ Core subscriptions are auto-generated from YAML `subscribe:` blocks by `usp-code
 
 | Event | Connection Manager | Registry | Router |
 |-------|-------------------|----------|--------|
-| SSE stream error | Auto-reconnect (exp backoff) | `resubscribeAll()` on reconnect | OBUSPA subscriptions survive |
+| SSE stream error | Auto-reconnect (exp backoff) | `resubscribeAll()` on reconnect (bridge is idempotent) | OBUSPA subscriptions survive |
 | Heartbeat timeout (45s) | Close stream → reconnect | Same as above | Same as above |
-| Browser refresh | New session starts | Bootstrap purges old OBUSPA subs, creates new | Old subscriptions purged |
+| Browser refresh | New session starts | Bootstrap purges stale OBUSPA subs, creates new via bridge | Old subscriptions purged |
 | Intentional disconnect | No reconnect | Subscriptions retained in memory | OBUSPA subscriptions survive |
-| Logout / dispose | Stop and clean | `unregisterAll()` deletes OBUSPA + bridge | Subscriptions deleted |
+| Logout / dispose | Stop and clean | `unregisterAll()` calls bridge unsubscribe for each | Bridge deletes OBUSPA subs |
 
 ---
 
@@ -354,8 +350,8 @@ Core subscriptions are auto-generated from YAML `subscribe:` blocks by `usp-code
 | Issue | Impact | Workaround | Status |
 |-------|--------|------------|--------|
 | **CPE subscription_id mismatch** | Per-subscription handlers never fire | Wildcard handlers + path/command_name matching | Permanent workaround |
-| **WASM `add` returns empty for LocalAgent** | Can't get new subscription instance path | GET-diff in `createNotifySubscription()` | Permanent workaround (Rust bug) |
-| **Bridge subscribe doesn't create OBUSPA** | Client must manage OBUSPA subscriptions | 5-step workaround in `UspService` | Enhancement request filed (`subscription-notify-blocked.md`) |
+| **WASM `add` returns empty for LocalAgent** | Can't get new subscription instance path | N/A — bridge handles OBUSPA lifecycle (legacy `createNotifySubscription()` retained for debug) | Bypassed by bridge auto-creation |
+| ~~**Bridge subscribe doesn't create OBUSPA**~~ | ~~Client must manage OBUSPA subscriptions~~ | ~~5-step workaround~~ | ✅ **FIXED** (2026-03-16) — bridge auto-creates OBUSPA subs with new API fields (`NotifType`/`ReferenceList`) |
 | **WiFi Stats noise** | 50+ events/s from `.Stats.*` counters | Removed WiFi ValueChange from bootstrap + `.Stats.` filter | Fixed |
 | **Stale subscriptions on refresh** | Duplicate notifications | Bootstrap purge via `purgeAllSubscriptions()` | Fixed |
 | **BUG-006: Operate results not in data model** | Polling fallback returns empty | SSE OperationComplete is primary delivery (Direct Data Delivery pattern) | By design |
@@ -450,7 +446,7 @@ All SSE components use structured logging with `[SSE]` prefix:
 [SSE] Connected (event: heartbeat)
 [SSE Router] Routing: SseNotification(sub=cpe-3, type=OperationComplete)
 [SSE Operate] Matched OperationComplete for IPPing() (from sub=cpe-3)
-[SSE Registry] Registered connected-devices-objectcreation → Device.LocalAgent.Subscription.5.
+[SSE Registry] Registered connected-devices-objectcreation (type=ObjectCreation, ref=Device.Hosts.Host.)
 [SSE Bootstrap] Purged 2 stale OBUSPA subscriptions
 [SSE Bootstrap] Complete — 5 core subscriptions registered
 ```
