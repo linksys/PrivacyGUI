@@ -201,3 +201,88 @@ List<int> _filterByGroups(Set<int> possible, List<List<int>> groups) {
   final sorted = result.toList()..sort();
   return sorted;
 }
+
+// ---------------------------------------------------------------------------
+// Wireless mode ↔ bandwidth constraints
+// ---------------------------------------------------------------------------
+
+/// Ordered bandwidth values from narrowest to widest.
+const bandwidthOrder = ['20MHz', '40MHz', '80MHz', '160MHz', '320MHz'];
+
+/// Returns the numeric index of a bandwidth string in [bandwidthOrder].
+/// "Auto" returns the highest index (no filtering). Unknown values return -1.
+int bandwidthIndex(String bw) {
+  if (bw == 'Auto') return bandwidthOrder.length; // Auto = no constraint
+  return bandwidthOrder.indexOf(bw);
+}
+
+/// Maximum bandwidth supported by each IEEE 802.11 standard amendment.
+const _maxBandwidthByStandard = {
+  'b': '20MHz',
+  'g': '20MHz',
+  'a': '20MHz',
+  'n': '40MHz',
+  'ac': '160MHz',
+  'ax': '160MHz',
+  'be': '320MHz',
+};
+
+/// Returns the maximum bandwidth the given operating standards can support.
+///
+/// [operatingStandards] can be comma-separated ("a,n,ac,ax") or concatenated
+/// ("anacax"). Returns "20MHz" for empty/unknown input.
+String maxBandwidthForStandards(String operatingStandards) {
+  if (operatingStandards.isEmpty) return '320MHz'; // "mixed" = no limit
+
+  final standards = _parseStandardsSet(operatingStandards);
+  var maxIdx = 0;
+  for (final std in standards) {
+    final bw = _maxBandwidthByStandard[std];
+    if (bw != null) {
+      final idx = bandwidthOrder.indexOf(bw);
+      if (idx > maxIdx) maxIdx = idx;
+    }
+  }
+  return bandwidthOrder[maxIdx];
+}
+
+/// Returns the minimum WiFi standard needed to support the given [bandwidth].
+///
+/// Used for bidirectional filtering: selecting 80MHz requires at least 802.11ac.
+/// Returns null for "Auto" or "20MHz" (any standard works).
+String? minStandardForBandwidth(String bandwidth) {
+  if (bandwidth == 'Auto' || bandwidth.isEmpty) return null;
+  final idx = bandwidthOrder.indexOf(bandwidth);
+  if (idx <= 0) return null; // 20MHz or unknown
+  if (idx == 1) return 'n'; // 40MHz
+  if (idx <= 3) return 'ac'; // 80MHz, 160MHz
+  return 'be'; // 320MHz
+}
+
+/// Parses a wireless standards string into a normalized Set.
+///
+/// Handles comma-separated ("a,n,ac,ax") and concatenated ("anacax").
+Set<String> _parseStandardsSet(String raw) {
+  final lower = raw.toLowerCase().trim();
+  if (lower == 'mixed') return _maxBandwidthByStandard.keys.toSet();
+
+  if (lower.contains(',')) {
+    return lower
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet();
+  }
+
+  // Concatenated form: try to parse known standard names
+  const known = ['be', 'ax', 'ac', 'n', 'g', 'b', 'a'];
+  final found = <String>{};
+  var remaining = lower;
+  for (final std in known) {
+    while (remaining.contains(std)) {
+      found.add(std);
+      remaining = remaining.replaceFirst(std, '');
+    }
+  }
+  return found;
+}

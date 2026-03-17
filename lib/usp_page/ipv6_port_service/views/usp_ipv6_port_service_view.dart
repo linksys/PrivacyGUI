@@ -6,7 +6,6 @@ import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
-import 'package:privacy_gui/usp_page/components/select_auto_complete.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
@@ -195,11 +194,11 @@ class UspIpv6PortServiceView extends ConsumerWidget {
     }
   }
 
-  List<AutoCompleteOption> _buildIpv6DeviceOptions(WidgetRef ref) {
+  List<AppAutoCompleteOption> _buildIpv6DeviceOptions(WidgetRef ref) {
     final devices =
         ref.read(uspDashboardProvider).valueOrNull?.deviceModels ?? [];
     return devices
-        .expand((d) => d.ipv6Addresses.map((addr) => AutoCompleteOption(
+        .expand((d) => d.ipv6Addresses.map((addr) => AppAutoCompleteOption(
               label: d.displayName,
               value: addr,
               subtitle: d.mac,
