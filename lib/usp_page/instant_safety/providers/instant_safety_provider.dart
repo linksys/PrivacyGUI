@@ -74,7 +74,7 @@ class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
     final svc = ref.read(uspInstantSafetyServiceProvider);
     final uiModel = svc.buildUIModel(data);
 
-    logger.d('[USP] Instant Safety fetched — '
+    logger.d('[USP][Safety]Instant Safety fetched — '
         'dns: ${data.dnsServers}, type: ${uiModel.type}');
 
     return UspInstantSafetyState(
@@ -104,7 +104,7 @@ class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
       final dnsValue = svc.dnsValueForType(s.pendingType);
 
       await LanNetworkInfo.save(usp, dnsServers: dnsValue);
-      logger.d('[USP] Instant Safety saved — dns: $dnsValue');
+      logger.d('[USP][Safety]Instant Safety saved — dns: $dnsValue');
 
       // Re-fetch to confirm the change took effect.
       ref.invalidateSelf();

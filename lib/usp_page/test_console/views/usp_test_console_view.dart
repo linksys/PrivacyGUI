@@ -682,7 +682,10 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
 
     final (String label, Color color) = switch (state) {
       SseConnectionState.connected => ('SSE Connected', Colors.green),
-      SseConnectionState.connecting => ('SSE Connecting...', colorScheme.primary),
+      SseConnectionState.connecting => (
+          'SSE Connecting...',
+          colorScheme.primary
+        ),
       SseConnectionState.reconnecting => ('SSE Reconnecting', Colors.orange),
       SseConnectionState.suspended => ('SSE Suspended', colorScheme.error),
       SseConnectionState.disconnected => ('SSE Off', colorScheme.outline),

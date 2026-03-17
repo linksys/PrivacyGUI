@@ -84,7 +84,7 @@ class UspInternetSettingsNotifier
     final (wan, ipv6) = await service.fetchSettings();
     final form = UspInternetSettingsForm.fromGenerated(wan, ipv6);
 
-    logger.d('[USP InternetSettings] Fetched — '
+    logger.d('[USP][Network][WAN]Fetched — '
         'raw addressingType: "${wan.addressingType}", '
         'bridgeEnabled: ${wan.bridgeEnabled}, '
         'detected type: ${UspWanConnectionType.fromWanSettings(wan).name}, '
@@ -151,14 +151,14 @@ class UspInternetSettingsNotifier
       final s = state.requireValue;
       final service = ref.read(uspInternetSettingsServiceProvider);
 
-      logger.d('[USP InternetSettings] Saving changes...');
+      logger.d('[USP][Network][WAN]Saving changes...');
       await service.saveAll(s.original, s.edited);
 
       // Re-fetch to get server-confirmed values
       final (wan, ipv6) = await service.fetchSettings();
       final form = UspInternetSettingsForm.fromGenerated(wan, ipv6);
 
-      logger.d('[USP InternetSettings] Save complete, re-fetched');
+      logger.d('[USP][Network][WAN]Save complete, re-fetched');
       state = AsyncData(UspInternetSettingsState(
         wanSettings: wan,
         ipv6Settings: ipv6,
@@ -176,7 +176,7 @@ class UspInternetSettingsNotifier
   Future<void> renewDhcpLease() async {
     await _withLock(() async {
       final service = ref.read(uspInternetSettingsServiceProvider);
-      logger.d('[USP InternetSettings] Renewing DHCPv4 lease...');
+      logger.d('[USP][Network][WAN]Renewing DHCPv4 lease...');
       await service.renewDhcpLease();
     });
   }
@@ -184,7 +184,7 @@ class UspInternetSettingsNotifier
   Future<void> renewDhcpv6Lease() async {
     await _withLock(() async {
       final service = ref.read(uspInternetSettingsServiceProvider);
-      logger.d('[USP InternetSettings] Renewing DHCPv6 lease...');
+      logger.d('[USP][Network][WAN]Renewing DHCPv6 lease...');
       await service.renewDhcpv6Lease();
     });
   }

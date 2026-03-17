@@ -31,11 +31,11 @@ class UspAuthCoordinator {
     if (_usp == null) return;
     try {
       await _usp.login(password);
-      logger.d('[UspAuth] USP login synced successfully');
+      logger.d('[USP][Auth]USP login synced successfully');
     } catch (e) {
       // USP login failure does not affect JNAP — ProtocolResolver
       // will fall back to JNAP when isAuthenticated=false
-      logger.w('[UspAuth] USP login failed after JNAP login: $e');
+      logger.w('[USP][Auth]USP login failed after JNAP login: $e');
     }
   }
 
@@ -44,9 +44,9 @@ class UspAuthCoordinator {
     if (_usp == null || !_usp.isAuthenticated) return;
     try {
       await _usp.logout();
-      logger.d('[UspAuth] USP logout synced successfully');
+      logger.d('[USP][Auth]USP logout synced successfully');
     } catch (e) {
-      logger.w('[UspAuth] USP logout failed: $e');
+      logger.w('[USP][Auth]USP logout failed: $e');
     }
   }
 
@@ -56,24 +56,24 @@ class UspAuthCoordinator {
   /// stored password from FlutterSecureStorage and re-authenticates USP.
   Future<void> restoreSession() async {
     if (_usp == null) {
-      logger.w('[UspAuth] restoreSession skipped: UspService is null');
+      logger.w('[USP][Auth]restoreSession skipped: UspService is null');
       return;
     }
     if (_usp.isAuthenticated) {
-      logger.d('[UspAuth] restoreSession skipped: already authenticated');
+      logger.d('[USP][Auth]restoreSession skipped: already authenticated');
       return;
     }
     final password = await _storage.read(key: pLocalPassword);
     if (password == null || password.isEmpty) {
-      logger.w('[UspAuth] restoreSession skipped: no stored password');
+      logger.w('[USP][Auth]restoreSession skipped: no stored password');
       return;
     }
     try {
       await _usp.login(password);
       logger.d(
-          '[UspAuth] restoreSession login done, isAuthenticated=${_usp.isAuthenticated}');
+          '[USP][Auth]restoreSession login done, isAuthenticated=${_usp.isAuthenticated}');
     } catch (e) {
-      logger.w('[UspAuth] restoreSession login failed: $e');
+      logger.w('[USP][Auth]restoreSession login failed: $e');
     }
   }
 
@@ -83,18 +83,18 @@ class UspAuthCoordinator {
   /// Returns true if USP login succeeds and is authenticated.
   Future<bool> tryUspLogin(String password) async {
     if (_usp == null) {
-      logger.w('[UspAuth] tryUspLogin skipped: UspService is null');
+      logger.w('[USP][Auth]tryUspLogin skipped: UspService is null');
       return false;
     }
     try {
       await _usp.login(password);
       final authenticated = _usp.isAuthenticated;
       if (authenticated) {
-        logger.d('[UspAuth] USP standalone login succeeded');
+        logger.d('[USP][Auth]USP standalone login succeeded');
       }
       return authenticated;
     } catch (e) {
-      logger.w('[UspAuth] USP standalone login failed: $e');
+      logger.w('[USP][Auth]USP standalone login failed: $e');
       return false;
     }
   }
@@ -105,7 +105,7 @@ class UspAuthCoordinator {
     try {
       await _usp.refreshToken();
     } catch (e) {
-      logger.w('[UspAuth] USP token refresh failed, attempting restore: $e');
+      logger.w('[USP][Auth]USP token refresh failed, attempting restore: $e');
       await restoreSession();
     }
   }

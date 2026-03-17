@@ -81,7 +81,7 @@ class UspLocalNetworkNotifier
     final svc = ref.read(uspLocalNetworkServiceProvider);
     final uiModel = svc.buildUIModel(data);
 
-    logger.d('[USP] LocalNetwork fetched — '
+    logger.d('[USP][Network][LAN]LocalNetwork fetched — '
         'ip: ${uiModel.ipAddress}, '
         'dhcp: ${uiModel.dhcpEnabled}, '
         'pool: ${uiModel.minAddress}-${uiModel.maxAddress}');
@@ -167,7 +167,7 @@ class UspLocalNetworkNotifier
             : null,
       );
 
-      logger.d('[USP] LocalNetwork saved');
+      logger.d('[USP][Network][LAN]LocalNetwork saved');
 
       // Re-fetch to confirm changes took effect.
       ref.invalidateSelf();

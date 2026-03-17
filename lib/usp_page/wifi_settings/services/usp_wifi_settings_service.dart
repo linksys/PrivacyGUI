@@ -41,7 +41,7 @@ class UspWifiSettingsService {
       radioByPath[_ensureTrailingDot(r.instancePath)] = r;
     }
 
-    logger.d('[WiFiSettings] Building networks: '
+    logger.d('[USP][WiFi]Building networks: '
         '${ssids.items.length} SSIDs, '
         '${accessPoints.items.length} APs, '
         '${radios.items.length} radios');
@@ -57,7 +57,7 @@ class UspWifiSettingsService {
       final radioPath = _ensureTrailingDot(ssid.lowerLayers);
       final radio = radioByPath[radioPath];
 
-      logger.d('[WiFiSettings] SSID ${ssid.ssid}: '
+      logger.d('[USP][WiFi]SSID ${ssid.ssid}: '
           'AP=${ap?.instancePath ?? "none"}, '
           'radio=${radio?.operatingFrequencyBand ?? "none"}');
 

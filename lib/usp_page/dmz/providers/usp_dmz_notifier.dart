@@ -93,7 +93,7 @@ class UspDmzNotifier extends AutoDisposeAsyncNotifier<UspDmzState> {
     final instancePath =
         dmzData.items.isNotEmpty ? dmzData.items.first.instancePath : null;
 
-    logger.d('[USP] DMZ fetched — '
+    logger.d('[USP][Firewall][DMZ]DMZ fetched — '
         'entries: ${dmzData.items.length}, '
         'enabled: ${uiModel.isEnabled}, '
         'instancePath: $instancePath');
@@ -139,7 +139,8 @@ class UspDmzNotifier extends AutoDisposeAsyncNotifier<UspDmzState> {
           sourcePrefix: sourcePrefix,
           description: 'DMZ',
         );
-        logger.d('[USP] DMZ entry added — destIp: ${pending.destIp}');
+        logger.d(
+            '[USP][Firewall][DMZ]DMZ entry added — destIp: ${pending.destIp}');
       } else if (!s.isNewEntry) {
         // UPDATE existing entry
         final sourcePrefix = pending.sourceType == DmzSourceType.any
@@ -154,7 +155,7 @@ class UspDmzNotifier extends AutoDisposeAsyncNotifier<UspDmzState> {
             sourcePrefix: sourcePrefix,
           ),
         );
-        logger.d('[USP] DMZ entry updated — '
+        logger.d('[USP][Firewall][DMZ]DMZ entry updated — '
             'enabled: ${pending.isEnabled}, destIp: ${pending.destIp}');
       }
 

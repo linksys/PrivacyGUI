@@ -82,7 +82,7 @@ class SseConnectionManager {
 
     // Lock: if connect is already in progress, await it and return.
     if (_connectInProgress != null) {
-      logger.d('[SSE] connect() already in progress — awaiting');
+      logger.d('[USP][SSE]connect() already in progress — awaiting');
       await _connectInProgress!.future;
       return;
     }
@@ -93,7 +93,7 @@ class SseConnectionManager {
       _intentionalDisconnect = false;
       connectionState.value = SseConnectionState.connecting;
 
-      logger.d('[SSE] Connecting...');
+      logger.d('[USP][SSE]Connecting...');
 
       final stream = _bridge.notifications();
       _sseSubscription = stream.listen(
@@ -103,7 +103,7 @@ class SseConnectionManager {
       );
       _connectInProgress!.complete();
     } catch (e) {
-      logger.w('[SSE] Failed to open stream: $e');
+      logger.w('[USP][SSE]Failed to open stream: $e');
       if (!_connectInProgress!.isCompleted) {
         _connectInProgress!.completeError(e);
       }
@@ -125,7 +125,7 @@ class SseConnectionManager {
       onDisconnected?.call();
     }
     connectionState.value = SseConnectionState.disconnected;
-    logger.d('[SSE] Disconnected (intentional)');
+    logger.d('[USP][SSE]Disconnected (intentional)');
   }
 
   /// Attempts to reconnect from [SseConnectionState.suspended] or
@@ -140,7 +140,7 @@ class SseConnectionManager {
         state == SseConnectionState.reconnecting) {
       return false;
     }
-    logger.d('[SSE] Manual reconnect requested (was: ${state.name})');
+    logger.d('[USP][SSE]Manual reconnect requested (was: ${state.name})');
     _reconnectAttempt = 0;
     await connect();
     return true;
@@ -171,7 +171,7 @@ class SseConnectionManager {
           connectionState.value != SseConnectionState.connected;
       connectionState.value = SseConnectionState.connected;
       _reconnectAttempt = 0;
-      logger.d('[SSE] Connected (event: ${event.event})');
+      logger.d('[USP][SSE]Connected (event: ${event.event})');
       if (wasDisconnected) {
         onConnected?.call();
       }
@@ -179,7 +179,7 @@ class SseConnectionManager {
 
     // Skip debug events from UspBridgeClient internal diagnostics
     if (event.event == '_debug') {
-      logger.d('[SSE] debug: ${event.data}');
+      logger.d('[USP][SSE]debug: ${event.data}');
       return;
     }
 
@@ -188,12 +188,12 @@ class SseConnectionManager {
   }
 
   void _onError(Object error) {
-    logger.w('[SSE] Stream error: $error');
+    logger.w('[USP][SSE]Stream error: $error');
     _handleStreamEnd();
   }
 
   void _onDone() {
-    logger.d('[SSE] Stream done (server closed connection)');
+    logger.d('[USP][SSE]Stream done (server closed connection)');
     _handleStreamEnd();
   }
 
@@ -219,7 +219,7 @@ class SseConnectionManager {
   void _resetHeartbeatWatchdog() {
     _heartbeatWatchdog?.cancel();
     _heartbeatWatchdog = Timer(_heartbeatTimeout, () {
-      logger.w('[SSE] Heartbeat timeout (${_heartbeatTimeout.inSeconds}s) '
+      logger.w('[USP][SSE]Heartbeat timeout (${_heartbeatTimeout.inSeconds}s) '
           '— connection may be stale');
       _sseSubscription?.cancel();
       _handleStreamEnd();
@@ -243,7 +243,7 @@ class SseConnectionManager {
 
     if (_reconnectAttempt > _maxRetries) {
       connectionState.value = SseConnectionState.suspended;
-      logger.w('[SSE] Max retries ($_maxRetries) reached — suspended. '
+      logger.w('[USP][SSE]Max retries ($_maxRetries) reached — suspended. '
           'Call tryReconnect() or wait for lifecycle resume.');
       return;
     }
@@ -251,7 +251,7 @@ class SseConnectionManager {
     connectionState.value = SseConnectionState.reconnecting;
 
     final delay = _nextBackoff;
-    logger.d('[SSE] Reconnecting in ${delay.inSeconds}s '
+    logger.d('[USP][SSE]Reconnecting in ${delay.inSeconds}s '
         '(attempt #$_reconnectAttempt/$_maxRetries)');
 
     Timer(delay, () {

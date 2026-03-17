@@ -36,17 +36,20 @@ import 'usp_service.dart';
 /// ```
 class SseManager {
   final UspService _usp;
+  final UspBridgeClient _bridge;
   final SseConnectionManager connection;
   final SseSubscriptionRegistry registry;
   final SseEventRouter router;
   final SseUnloadHandler _unloadHandler = SseUnloadHandler();
-  List<(String id, String notifType, String referenceList)>
-      _coreSubscriptions = [];
+  List<(String id, String notifType, String referenceList)> _coreSubscriptions =
+      [];
+  bool _coreSubsDeferred = false;
 
   SseManager({
     required UspService usp,
     required UspBridgeClient bridge,
   })  : _usp = usp,
+        _bridge = bridge,
         connection = SseConnectionManager(bridge),
         registry = SseSubscriptionRegistry(bridge),
         router = SseEventRouter() {
@@ -57,22 +60,24 @@ class SseManager {
     // First connect: registers core subscriptions set via setCoreSubscriptions().
     // Reconnect: re-registers existing subscriptions on the bridge.
     connection.onConnected = () {
-      logger.d('[SseManager] Connected — registering/re-registering '
+      logger.d('[USP][SSE]Connected — registering/re-registering '
           'subscriptions on bridge');
       _registerOrResubscribe();
     };
 
     connection.onDisconnected = () {
-      logger.d('[SseManager] Disconnected');
+      logger.d('[USP][SSE]Disconnected');
     };
 
     // Inject SSE delegate so codegen subscribe() routes through SSE
     _usp.onSseSubscribe = _handleSseSubscribe;
 
     // Register browser unload handler to abort SSE on page refresh/close.
-    // This ensures the bridge's TCP socket is freed immediately.
+    // abortSse() is synchronous — critical because `beforeunload` does NOT
+    // wait for async operations. disconnect() is best-effort async cleanup.
     _unloadHandler.onUnload = () {
-      logger.d('[SseManager] Page unload — disconnecting SSE');
+      logger.d('[USP][SSE]Page unload — aborting SSE');
+      _bridge.abortSse();
       connection.disconnect();
     };
     _unloadHandler.register();
@@ -173,37 +178,55 @@ class SseManager {
   /// Called once from [sseBootstrapProvider]. Subscriptions are registered
   /// from the [onConnected] callback after the first heartbeat, rather than
   /// during bootstrap, to reduce the HTTP request burst on the bridge.
-  void setCoreSubscriptions(
-      List<(String, String, String)> subscriptions) {
+  void setCoreSubscriptions(List<(String, String, String)> subscriptions) {
     _coreSubscriptions = subscriptions;
   }
 
-  /// Registers or re-registers subscriptions on the bridge after SSE connects.
+  /// Handles subscription registration on SSE connect/reconnect.
   ///
-  /// - First connect (registry empty): registers [_coreSubscriptions]
-  /// - Reconnect (registry has entries): re-registers existing subscriptions
+  /// - Reconnect (registry has entries): re-registers immediately
+  /// - First connect (registry empty): **defers** registration to avoid
+  ///   competing with dashboard HTTP requests for the browser's 6-connection
+  ///   HTTP/1.1 pool. Call [registerDeferredSubscriptions] after dashboard
+  ///   initial load completes.
   Future<void> _registerOrResubscribe() async {
     if (registry.activeIds.isNotEmpty) {
       // Reconnect path: re-register existing subscriptions on bridge
       await registry.resubscribeAll();
     } else if (_coreSubscriptions.isNotEmpty) {
-      // First connect path: register core subscriptions
-      for (final (id, notifType, referenceList) in _coreSubscriptions) {
-        try {
-          await registry.register(
-            subscriptionId: id,
-            notifType: notifType,
-            referenceList: referenceList,
-          );
-          // Small breathing room for embedded router between requests
-          await Future.delayed(const Duration(milliseconds: 50));
-        } catch (e) {
-          logger.w('[SseManager] Failed to register core sub $id: $e');
-        }
-      }
-      logger.d('[SseManager] Registered ${registry.activeIds.length} '
-          'core subscriptions');
+      // First connect: defer to avoid HTTP/1.1 connection contention
+      _coreSubsDeferred = true;
+      logger.d('[USP][SSE]Core subscriptions deferred — '
+          'waiting for dashboard load to complete');
     }
+  }
+
+  /// Registers deferred core subscriptions.
+  ///
+  /// Call after dashboard initial load completes to avoid HTTP/1.1
+  /// connection pool contention (browser limits 6 connections per host).
+  ///
+  /// Pass [force] = true to skip the deferral check and register immediately.
+  /// Used for the post-reload bootstrap where SSE onConnected hasn't fired yet.
+  Future<void> registerDeferredSubscriptions({bool force = false}) async {
+    if (!force && !_coreSubsDeferred) return;
+    _coreSubsDeferred = false;
+
+    for (final (id, notifType, referenceList) in _coreSubscriptions) {
+      try {
+        await registry.register(
+          subscriptionId: id,
+          notifType: notifType,
+          referenceList: referenceList,
+        );
+        // Small breathing room for embedded router between requests
+        await Future.delayed(const Duration(milliseconds: 50));
+      } catch (e) {
+        logger.w('[USP][SSE]Failed to register core sub $id: $e');
+      }
+    }
+    logger.d('[USP][SSE]Registered ${registry.activeIds.length} '
+        'core subscriptions (deferred)');
   }
 
   /// Starts the SSE connection.

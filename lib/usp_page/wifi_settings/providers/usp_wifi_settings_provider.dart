@@ -81,7 +81,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       }
     }
 
-    logger.d('[WiFiSettings] Fetching WiFi data...');
+    logger.d('[USP][WiFi]Fetching WiFi data...');
 
     final results = await Future.wait([
       WiFiSsids.fetch(usp),
@@ -101,7 +101,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
     final quickSetup = _svc.buildQuickSetupNetworks(networks);
 
-    logger.d('[WiFiSettings] Loaded ${networks.length} networks, '
+    logger.d('[USP][WiFi]Loaded ${networks.length} networks, '
         'isQuickSetup=${quickSetup.isQuickSetup}');
 
     // Preserve the current quickSetupEnabled flag across re-fetches so the

@@ -20,6 +20,10 @@ class UspBridgeClient {
 
   UspBridgeClient(this._usp);
 
+  /// Active SSE AbortController — stored so [abortSse] can cancel
+  /// synchronously from a `beforeunload` handler.
+  web.AbortController? _sseAbortController;
+
   String get _baseUrl => _usp.baseUrl;
 
   String get _token {
@@ -72,21 +76,31 @@ class UspBridgeClient {
   // SSE Notifications
   // ══════════════════════════════════════════════════════════════════════════
 
+  /// Synchronously abort the active SSE Fetch stream.
+  ///
+  /// Called from `beforeunload` / `pagehide` handlers where only synchronous
+  /// code is guaranteed to execute. This ensures the browser's TCP socket to
+  /// lighttpd is released immediately on page refresh/close.
+  void abortSse() {
+    _sseAbortController?.abort();
+    _sseAbortController = null;
+  }
+
   /// Opens an SSE connection to GET /api/v1/notifications.
   ///
   /// Browser-native EventSource does not support custom headers, so we use
   /// the Fetch API with ReadableStream to parse the text/event-stream.
   Stream<SseEvent> notifications() {
     final controller = StreamController<SseEvent>();
-    web.AbortController? abortController;
 
     controller.onListen = () {
-      abortController = web.AbortController();
-      _startSseStream(controller, abortController!);
+      _sseAbortController = web.AbortController();
+      _startSseStream(controller, _sseAbortController!);
     };
 
     controller.onCancel = () {
-      abortController?.abort();
+      _sseAbortController?.abort();
+      _sseAbortController = null;
     };
 
     return controller.stream;

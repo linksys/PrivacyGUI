@@ -83,7 +83,7 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
         isFetching: false,
       );
     } catch (e) {
-      logger.w('[SystemMonitor] Fetch failed: $e');
+      logger.w('[USP][Monitor][System]Fetch failed: $e');
       state = state.copyWith(isFetching: false);
     }
   }
