@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/usp/models/usp_response.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_wan_connection_type.dart';
@@ -114,7 +113,7 @@ void main() {
   group('renewDhcpLease', () {
     test('calls WanOperations.renewDhcpLease', () async {
       when(() => mockUsp.operate(any()))
-          .thenAnswer((_) async => UspResponse(data: <String, String>{}));
+          .thenAnswer((_) async => <String, dynamic>{});
 
       await service.renewDhcpLease();
 
@@ -125,7 +124,7 @@ void main() {
   group('renewDhcpv6Lease', () {
     test('calls WanOperations.renewDhcpv6Lease', () async {
       when(() => mockUsp.operate(any()))
-          .thenAnswer((_) async => UspResponse(data: <String, String>{}));
+          .thenAnswer((_) async => <String, dynamic>{});
 
       await service.renewDhcpv6Lease();
 
