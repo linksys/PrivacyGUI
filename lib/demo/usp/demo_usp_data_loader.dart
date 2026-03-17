@@ -13,8 +13,7 @@ class DemoUspDataLoader {
   DemoUspDataLoader._();
 
   static DemoUspDataLoader? _instance;
-  static DemoUspDataLoader get instance =>
-      _instance ??= DemoUspDataLoader._();
+  static DemoUspDataLoader get instance => _instance ??= DemoUspDataLoader._();
 
   /// In-memory TR-181 data: path → string value.
   /// Mutable — `set`, `add`, `delete` operations modify this map.

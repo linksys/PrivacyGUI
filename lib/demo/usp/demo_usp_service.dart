@@ -89,12 +89,10 @@ class DemoUspService extends UspService {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<String> add(String objectPath,
-      Map<String, dynamic> parameters) async {
+  Future<String> add(String objectPath, Map<String, dynamic> parameters) async {
     await Future.delayed(const Duration(milliseconds: 20));
     final nextId = _loader.nextInstanceId(objectPath);
-    final normalized =
-        objectPath.endsWith('.') ? objectPath : '$objectPath.';
+    final normalized = objectPath.endsWith('.') ? objectPath : '$objectPath.';
     final instancePath = '$normalized$nextId.';
     for (final entry in parameters.entries) {
       _loader.setValue('$instancePath${entry.key}', entry.value.toString());
@@ -178,7 +176,8 @@ class DemoUspService extends UspService {
   Future<Map<String, String>> createNotifySubscription({
     required String notifType,
     required String referenceList,
-  }) async => {'instancePath': 'Device.LocalAgent.Subscription.demo.'};
+  }) async =>
+      {'instancePath': 'Device.LocalAgent.Subscription.demo.'};
 
   @override
   Future<void> deleteNotifySubscription(String instancePath) async {}
@@ -254,8 +253,7 @@ class _DynamicSimulator {
     for (final key in data.keys.toList()) {
       // --- Traffic byte/packet counters ---
       if (_isTrafficCounter(key)) {
-        _counters.putIfAbsent(
-            key, () => int.tryParse(data[key] ?? '0') ?? 0);
+        _counters.putIfAbsent(key, () => int.tryParse(data[key] ?? '0') ?? 0);
         // Bytes: 50-500 KB/s per 5-second poll ≈ 250-2500 KB increment
         // Packets: 100-1000 per poll
         final isByte = key.contains('Bytes');
@@ -269,8 +267,7 @@ class _DynamicSimulator {
 
       // --- Error/Discard counters (low frequency) ---
       if (_isErrorCounter(key)) {
-        _counters.putIfAbsent(
-            key, () => int.tryParse(data[key] ?? '0') ?? 0);
+        _counters.putIfAbsent(key, () => int.tryParse(data[key] ?? '0') ?? 0);
         // ~5% chance to increment by 1 each poll
         if (_rng.nextDouble() < 0.05) {
           _counters[key] = _counters[key]! + 1;

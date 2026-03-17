@@ -54,8 +54,7 @@ class DemoProviders {
       connectivityProvider.overrideWith(() => _DemoConnectivityNotifier()),
 
       // 3. Router Repository: Intercept JNAP traffic
-      routerRepositoryProvider
-          .overrideWith((ref) => DemoRouterRepository(ref)),
+      routerRepositoryProvider.overrideWith((ref) => DemoRouterRepository(ref)),
 
       // 4. Polling: Auto-start
       pollingProvider.overrideWith(() => _DemoPollingNotifier()),
@@ -84,12 +83,12 @@ class DemoProviders {
       uspBridgeClientProvider.overrideWith((ref) => null),
 
       // 12. Protocol Resolver: Force USP-only mode → routes to /uspDashboard
-      protocolResolverProvider.overrideWith((ref) =>
-          ProtocolResolver(demoUsp, ProtocolPreference.uspOnly)),
+      protocolResolverProvider.overrideWith(
+          (ref) => ProtocolResolver(demoUsp, ProtocolPreference.uspOnly)),
 
       // 13. USP Auth Coordinator: Uses DemoUspService (always authenticated)
-      uspAuthCoordinatorProvider.overrideWith((ref) =>
-          UspAuthCoordinator(demoUsp, const FlutterSecureStorage())),
+      uspAuthCoordinatorProvider.overrideWith(
+          (ref) => UspAuthCoordinator(demoUsp, const FlutterSecureStorage())),
     ];
   }
 }
