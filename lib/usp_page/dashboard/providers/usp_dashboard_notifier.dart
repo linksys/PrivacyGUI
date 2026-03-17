@@ -10,6 +10,7 @@ import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
@@ -399,7 +400,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         'Device.Routing.Router.1.IPv4Forwarding.*.DestIPAddress',
         'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress',
         'Device.Routing.Router.1.IPv4Forwarding.*.Interface',
-      ]);
+      ]).timeout(const Duration(seconds: 10));
 
       // Extract instance IDs from response keys
       const basePath = 'Device.Routing.Router.1.IPv4Forwarding.';
@@ -449,7 +450,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         'Device.IP.Interface.2.IPv6Enable',
         'Device.IP.Interface.1.IPv6Address.',
         'Device.IP.Interface.2.IPv6Address.',
-      ]);
+      ]).timeout(const Duration(seconds: 10));
 
       final lanEnabled = resp['Device.IP.Interface.1.IPv6Enable'] == true;
       final wanEnabled = resp['Device.IP.Interface.2.IPv6Enable'] == true;
@@ -506,7 +507,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
           'Device.DeviceInfo.ActiveFirmwareImage',
           'Device.DeviceInfo.BootFirmwareImage',
         ]),
-      ]);
+      ]).timeout(const Duration(seconds: 10));
       final images = results[0] as FirmwareImages;
       final refs = results[1] as Map<String, dynamic>;
       final activeRef =
@@ -540,7 +541,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     try {
       final resp = await usp.get([
         'Device.Bridging.Bridge.*.Port.*.LowerLayers',
-      ]);
+      ]).timeout(const Duration(seconds: 10));
       final map = <String, String>{};
       for (final entry in resp.entries) {
         if (!entry.key.endsWith('.LowerLayers')) continue;
@@ -769,7 +770,10 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
 
   Future<void> renewWanLease() async {
     await _withLock(() async {
-      await _usp.operate('Device.DHCPv4.Client.1.Renew()');
+      // DHCP Renew is fire-and-forget — firmware does NOT send
+      // OperationComplete for this operation (unlike Ping/Traceroute).
+      await WanOperations.renewDhcpLease(_usp);
+      await Future.delayed(const Duration(seconds: 2));
       final wan = await WanStatus.fetch(_usp);
       final s = state.requireValue;
       state = AsyncData(s.copyWith(

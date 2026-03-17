@@ -5,6 +5,7 @@ import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_quick_setup_network.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/services/wifi_channel_bonding.dart';
 
 final uspWifiSettingsServiceProvider =
     Provider<UspWifiSettingsService>((_) => UspWifiSettingsService());
@@ -69,6 +70,18 @@ class UspWifiSettingsService {
       // e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
       final supportedModes = _parseModesSupported(ap?.modesSupported ?? '');
 
+      final band = _normalizeBand(radio?.operatingFrequencyBand ?? '');
+      final possibleChannels =
+          _parsePossibleChannels(radio?.possibleChannels ?? '');
+      final supportedBandwidths = _parseSupportedBandwidths(
+          radio?.supportedOperatingChannelBandwidths ?? '');
+
+      final channelsPerBw = computeChannelsPerBandwidth(
+        band: band,
+        possibleChannels: possibleChannels,
+        supportedBandwidths: supportedBandwidths,
+      );
+
       networks.add(WifiNetworkUIModel(
         ssidInstancePath: ssid.instancePath,
         accessPointInstancePath: ap?.instancePath,
@@ -80,13 +93,15 @@ class UspWifiSettingsService {
         securityMode: ap?.securityModeEnabled ?? '',
         keyPassphrase: ap?.keyPassphrase ?? '',
         isGuest: isGuest,
-        band: _normalizeBand(radio?.operatingFrequencyBand ?? ''),
+        band: band,
         channel: radio?.channel ?? 0,
         channelBandwidth: radio?.operatingChannelBandwidth ?? '',
         autoChannelEnable: radio?.autoChannelEnable ?? true,
-        possibleChannels: _parsePossibleChannels(radio?.possibleChannels ?? ''),
+        possibleChannels: possibleChannels,
         operatingStandards: radio?.operatingStandards ?? '',
         supportedStandards: radio?.supportedStandards ?? '',
+        supportedBandwidths: supportedBandwidths,
+        availableChannelsPerBandwidth: channelsPerBw,
       ));
     }
 
@@ -201,6 +216,17 @@ List<int> _parsePossibleChannels(String raw) {
 String _ensureTrailingDot(String path) {
   if (path.isEmpty) return path;
   return path.endsWith('.') ? path : '$path.';
+}
+
+/// Parses a TR-181 SupportedOperatingChannelBandwidths string.
+/// e.g. "Auto,20MHz,40MHz,80MHz" → ['Auto', '20MHz', '40MHz', '80MHz']
+List<String> _parseSupportedBandwidths(String raw) {
+  if (raw.isEmpty) return [];
+  return raw
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
 }
 
 /// Normalizes TR-181 OperatingFrequencyBand to display string.

@@ -13,7 +13,6 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
-import 'package:privacy_gui/usp/models/usp_response.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
 
 class DemoUspService extends UspService {
@@ -139,40 +138,36 @@ class DemoUspService extends UspService {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<UspResponse<Map<String, String>>> operate(String command,
+  Future<Map<String, dynamic>> operate(String command,
       {Map<String, String> args = const {}}) async {
     await Future.delayed(const Duration(milliseconds: 150));
     final ts = DateTime.now().millisecondsSinceEpoch;
 
     if (command.contains('IPPing')) {
-      return UspResponse(
-        commandKey: 'demo-ping-$ts',
-        data: {
-          'Status': 'Complete',
-          'SuccessCount': args['NumberOfRepetitions'] ?? '4',
-          'FailureCount': '0',
-          'AverageResponseTime': '${8 + Random().nextInt(20)}',
-          'MinimumResponseTime': '${5 + Random().nextInt(5)}',
-          'MaximumResponseTime': '${20 + Random().nextInt(30)}',
-        },
-      );
+      return {
+        'commandKey': 'demo-ping-$ts',
+        'Status': 'Complete',
+        'SuccessCount': args['NumberOfRepetitions'] ?? '4',
+        'FailureCount': '0',
+        'AverageResponseTime': '${8 + Random().nextInt(20)}',
+        'MinimumResponseTime': '${5 + Random().nextInt(5)}',
+        'MaximumResponseTime': '${20 + Random().nextInt(30)}',
+      };
     }
     if (command.contains('TraceRoute')) {
-      return UspResponse(
-        commandKey: 'demo-trace-$ts',
-        data: {
-          'Status': 'Complete',
-          'ResponseTime': '${10 + Random().nextInt(15)}',
-          'NumberOfRouteHops': '${2 + Random().nextInt(4)}',
-        },
-      );
+      return {
+        'commandKey': 'demo-trace-$ts',
+        'Status': 'Complete',
+        'ResponseTime': '${10 + Random().nextInt(15)}',
+        'NumberOfRouteHops': '${2 + Random().nextInt(4)}',
+      };
     }
     if (command.contains('Renew') || command.contains('Reboot')) {
-      return UspResponse(commandKey: 'demo-op-$ts', data: {});
+      return {'commandKey': 'demo-op-$ts'};
     }
 
     debugPrint('[DemoUsp] OPERATE $command (unhandled)');
-    return UspResponse(data: {});
+    return {};
   }
 
   // ---------------------------------------------------------------------------

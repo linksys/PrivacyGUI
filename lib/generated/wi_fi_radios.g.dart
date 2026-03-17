@@ -19,6 +19,7 @@ class WiFiRadio {
   final int maxBitRate;
   final bool autoChannelEnable;
   final bool ieee80211hEnabled;
+  final String supportedOperatingChannelBandwidths;
 
   const WiFiRadio({
     required this.instancePath,
@@ -34,6 +35,7 @@ class WiFiRadio {
     required this.maxBitRate,
     required this.autoChannelEnable,
     required this.ieee80211hEnabled,
+    required this.supportedOperatingChannelBandwidths,
   });
 }
 
@@ -77,6 +79,7 @@ class WiFiRadios {
     'Device.WiFi.Radio.*.MaxBitRate',
     'Device.WiFi.Radio.*.AutoChannelEnable',
     'Device.WiFi.Radio.*.IEEE80211hEnabled',
+    'Device.WiFi.Radio.*.SupportedOperatingChannelBandwidths',
   ];
 
   /// Fetch all instances via USP Get message
@@ -112,7 +115,8 @@ class WiFiRadios {
         response['${p}TransmitPower'],
         response['${p}MaxBitRate'],
         response['${p}AutoChannelEnable'],
-        response['${p}IEEE80211hEnabled']
+        response['${p}IEEE80211hEnabled'],
+        response['${p}SupportedOperatingChannelBandwidths']
       ].every((v) =>
           v == null ||
           v == '' ||
@@ -146,6 +150,9 @@ class WiFiRadios {
         ieee80211hEnabled: response['${p}IEEE80211hEnabled'] == true ||
             response['${p}IEEE80211hEnabled'] == 'true' ||
             response['${p}IEEE80211hEnabled'] == '1',
+        supportedOperatingChannelBandwidths:
+            (response['${p}SupportedOperatingChannelBandwidths'] ?? '')
+                as String,
       ));
     }
     return WiFiRadios(items: items);

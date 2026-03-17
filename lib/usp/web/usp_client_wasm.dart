@@ -3,8 +3,6 @@ library usp_client;
 
 import 'dart:js_interop';
 
-import 'package:privacy_gui/usp/models/usp_response.dart';
-
 // Bind to the UspClient class exported in usp_client.js
 @JS('UspClient')
 extension type UspClientJS._(JSObject _) implements JSObject {
@@ -157,26 +155,29 @@ class UspClientWeb {
   }
 
   /// Executes a USP Operate command.
-  /// Returns [UspResponse] with commandKey and output arguments.
-  Future<UspResponse<Map<String, String>>> operate(String command,
+  ///
+  /// Returns a flat map containing:
+  ///   - `commandKey`: UUID correlator from the USP agent (may be absent)
+  ///   - all output arguments from the Operate response
+  Future<Map<String, dynamic>> operate(String command,
       {Map<String, String> args = const {}}) async {
     final result = await _client.operate(command, args.jsify()!).toDart;
-    if (result == null || result.isUndefinedOrNull) {
-      return UspResponse(data: {});
-    }
+    if (result == null || result.isUndefinedOrNull) return {};
     final map = result.dartify() as Map?;
-    if (map == null) return UspResponse(data: {});
+    if (map == null) return {};
 
+    final output = <String, dynamic>{};
     final commandKey = map['commandKey']?.toString();
+    if (commandKey != null && commandKey.isNotEmpty) {
+      output['commandKey'] = commandKey;
+    }
     final rawOutputArgs = map['outputArgs'];
-    final outputArgs = <String, String>{};
     if (rawOutputArgs is Map) {
       for (final entry in rawOutputArgs.entries) {
-        outputArgs[entry.key.toString()] = entry.value.toString();
+        output[entry.key.toString()] = entry.value.toString();
       }
     }
-
-    return UspResponse(data: outputArgs, commandKey: commandKey);
+    return output;
   }
 
   /// Lists all active OBUSPA subscriptions on the router.

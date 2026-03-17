@@ -326,7 +326,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     final current = state.settings.current;
     final updatedNetworks = current.networks.map((n) {
       if (n.ssidInstancePath != ssidInstancePath) return n;
-      return n.copyWith(
+      var updated = n.copyWith(
         enabled: enabled,
         ssid: ssid,
         keyPassphrase: password,
@@ -337,6 +337,20 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         channel: autoChannel == true ? n.channel : (channel ?? n.channel),
         autoChannelEnable: autoChannel,
       );
+
+      // Auto-reset channel to Auto when bandwidth changes and the current
+      // manual channel is no longer valid for the new bandwidth.
+      if (channelBandwidth != null && !updated.autoChannelEnable) {
+        final validChannels =
+            updated.availableChannelsPerBandwidth[channelBandwidth];
+        if (validChannels != null &&
+            validChannels.isNotEmpty &&
+            !validChannels.contains(updated.channel)) {
+          updated = updated.copyWith(autoChannelEnable: true);
+        }
+      }
+
+      return updated;
     }).toList();
 
     state = state.copyWith(
