@@ -58,6 +58,12 @@ final uspDashboardRoute = ShellRoute(
       builder: (context, state) => const UspInstantSafetyView(),
     ),
     LinksysRoute(
+      name: RouteNamed.uspInstantPrivacy,
+      path: RoutePath.uspInstantPrivacy,
+      builder: (context, state) =>
+          const usp_instant_privacy.InstantPrivacyView(),
+    ),
+    LinksysRoute(
       name: RouteNamed.uspAdmin,
       path: RoutePath.uspAdmin,
       builder: (context, state) => const UspAdminView(),

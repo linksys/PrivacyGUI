@@ -1,0 +1,69 @@
+import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
+import 'package:privacy_gui/usp_page/instant_privacy/models/instant_privacy_device_ui_model.dart';
+
+/// State for the Instant Privacy feature page.
+///
+/// Implements [Equatable] per Constitution Article XI.
+/// NOTE: [rawMacFilterAps] is excluded from [props] because
+/// [MacFilterAccessPoints] is a generated codegen class that does not
+/// implement [Equatable]. Equality is determined by the derived UI fields only.
+class UspInstantPrivacyState extends Equatable {
+  /// Whether MAC address filtering is currently active on the router.
+  /// Derived: true if any AP has macAddressControlEnabled = true.
+  final bool isEnabled;
+
+  /// Devices currently connected to the router (isActive = true).
+  /// Displayed when the feature is OFF.
+  final List<InstantPrivacyDeviceUIModel> connectedDevices;
+
+  /// Devices currently on the MAC whitelist.
+  /// Displayed when the feature is ON.
+  final List<InstantPrivacyDeviceUIModel> allowedDevices;
+
+  /// Whether the toggle is locked during a save operation (FR-016).
+  final bool isToggleLocked;
+
+  /// Raw codegen data retained for updateMany() operations.
+  /// Contains AP instance paths needed to build update descriptors.
+  /// Excluded from [props] — not Equatable.
+  final MacFilterAccessPoints rawMacFilterAps;
+
+  const UspInstantPrivacyState({
+    required this.isEnabled,
+    required this.connectedDevices,
+    required this.allowedDevices,
+    required this.rawMacFilterAps,
+    this.isToggleLocked = false,
+  });
+
+  /// Whether the toggle should be disabled in the UI.
+  /// True during save operations OR when no devices are connected and feature is OFF (FR-013).
+  bool get isToggleDisabled =>
+      isToggleLocked || (!isEnabled && connectedDevices.isEmpty);
+
+  UspInstantPrivacyState copyWith({
+    bool? isEnabled,
+    List<InstantPrivacyDeviceUIModel>? connectedDevices,
+    List<InstantPrivacyDeviceUIModel>? allowedDevices,
+    bool? isToggleLocked,
+    MacFilterAccessPoints? rawMacFilterAps,
+  }) {
+    return UspInstantPrivacyState(
+      isEnabled: isEnabled ?? this.isEnabled,
+      connectedDevices: connectedDevices ?? this.connectedDevices,
+      allowedDevices: allowedDevices ?? this.allowedDevices,
+      isToggleLocked: isToggleLocked ?? this.isToggleLocked,
+      rawMacFilterAps: rawMacFilterAps ?? this.rawMacFilterAps,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        isEnabled,
+        connectedDevices,
+        allowedDevices,
+        isToggleLocked,
+        // rawMacFilterAps intentionally excluded — not Equatable
+      ];
+}

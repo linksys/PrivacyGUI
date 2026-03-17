@@ -6,6 +6,7 @@ export 'wi_fi_radios.g.dart';
 export 'wi_fi_access_points.g.dart';
 export 'wi_fi_ssids.g.dart';
 export 'data_elements_network.g.dart';
+export 'mac_filter_access_points.g.dart';
 export 'system_info.g.dart';
 export 'vendor_log_files.g.dart';
 export 'firmware_images.g.dart';
