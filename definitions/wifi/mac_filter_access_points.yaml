@@ -1,0 +1,28 @@
+# WiFi access point MAC address filtering (Instant Privacy)
+# TR-181: Device.WiFi.AccessPoint.*.MACAddressControlEnabled
+#          Device.WiFi.AccessPoint.*.AllowedMACAddress
+
+name: MacFilterAccessPoints
+singularName: MacFilterAccessPoint
+version: 1.0.0
+multiInstance: Device.WiFi.AccessPoint.
+category: wifi
+description: WiFi access point MAC address filtering control
+
+parameters:
+  - field_name: ssidReference
+    path: .SSIDReference
+    type: string
+    description: Reference to the SSID object — always non-empty, used to ensure the AP row is never filtered out by codegen's all-null check
+
+  - field_name: macAddressControlEnabled
+    path: .MACAddressControlEnabled
+    type: boolean
+    writable: true
+    description: Whether MAC address filtering (whitelist mode) is enabled for this access point
+
+  - field_name: allowedMACAddress
+    path: .AllowedMACAddress
+    type: string
+    writable: true
+    description: Comma-separated list of MAC addresses allowed to connect to this access point
