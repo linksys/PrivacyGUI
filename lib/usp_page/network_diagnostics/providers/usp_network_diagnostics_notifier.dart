@@ -90,7 +90,7 @@ class UspNetworkDiagnosticsNotifier
 
       final pingResult = PingResult.fromOperateResult(result, s.host);
 
-      logger.d('[Diagnostics] Ping complete — '
+      logger.d('[USP][Diagnostics]Ping complete — '
           'avg=${pingResult.avgResponseTime}ms, '
           '${pingResult.successCount}/${pingResult.totalCount} success');
 
@@ -99,13 +99,13 @@ class UspNetworkDiagnosticsNotifier
         pingResult: pingResult,
       ));
     } on TimeoutException catch (e) {
-      logger.w('[Diagnostics] Ping timeout: $e');
+      logger.w('[USP][Diagnostics]Ping timeout: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
         errorMessage: 'Ping timed out — no response from ${s.host}',
       ));
     } catch (e) {
-      logger.w('[Diagnostics] Ping failed: $e');
+      logger.w('[USP][Diagnostics]Ping failed: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
         errorMessage: 'Ping failed: $e',
@@ -140,7 +140,7 @@ class UspNetworkDiagnosticsNotifier
 
       final traceResult = TracerouteResult.fromOperateResult(result, s.host);
 
-      logger.d('[Diagnostics] Traceroute complete — '
+      logger.d('[USP][Diagnostics]Traceroute complete — '
           '${traceResult.hops.length} hops');
 
       state = AsyncData(state.requireValue.copyWith(
@@ -148,13 +148,13 @@ class UspNetworkDiagnosticsNotifier
         tracerouteResult: traceResult,
       ));
     } on TimeoutException catch (e) {
-      logger.w('[Diagnostics] Traceroute timeout: $e');
+      logger.w('[USP][Diagnostics]Traceroute timeout: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
         errorMessage: 'Traceroute timed out — route to ${s.host} incomplete',
       ));
     } catch (e) {
-      logger.w('[Diagnostics] Traceroute failed: $e');
+      logger.w('[USP][Diagnostics]Traceroute failed: $e');
       state = AsyncData(state.requireValue.copyWith(
         status: DiagnosticStatus.error,
         errorMessage: 'Traceroute failed: $e',

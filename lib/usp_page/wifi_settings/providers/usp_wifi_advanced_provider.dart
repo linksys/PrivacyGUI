@@ -30,7 +30,7 @@ class UspWifiAdvancedNotifier
       if (!usp.isAuthenticated) throw StateError('USP not authenticated');
     }
 
-    logger.d('[WiFiAdvanced] Fetching advanced settings...');
+    logger.d('[USP][WiFi][Advanced]Fetching advanced settings...');
 
     final response = await usp.get([_ieee80211hPath]);
 
@@ -46,7 +46,7 @@ class UspWifiAdvancedNotifier
       }
     }
 
-    logger.d('[WiFiAdvanced] radios=${ieee80211h.length}');
+    logger.d('[USP][WiFi][Advanced]radios=${ieee80211h.length}');
 
     return UspWifiAdvancedState(ieee80211hByRadio: ieee80211h);
   }

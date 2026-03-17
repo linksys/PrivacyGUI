@@ -40,6 +40,9 @@ class UspBridgeClient {
 
   Future<Map<String, dynamic>> turboRelease() =>
       throw UnsupportedError('UspBridgeClient is only available on Web');
+
+  /// Synchronously abort the active SSE stream. No-op on non-Web platforms.
+  void abortSse() {}
 }
 
 /// A parsed Server-Sent Event.

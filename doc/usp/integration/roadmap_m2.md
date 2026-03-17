@@ -28,17 +28,17 @@ All features still dependent on JNAP are considered **Migration Gaps**, requirin
 
 ## Status Overview
 
-| Category | Total | ✅ USP Ready | 🔧 Needs Code Fix | 🏭 Needs FW Team | 🔴 USP Gap (JNAP dependency) |
-|----------|-------|-------------|-------------------|-----------------|-------------------------------|
-| M1 Pending Features | 8 | 6 | — | — | — |
-| Internet Settings | 10 | — | 5 | 4 | 1 |
-| WiFi Settings | 4 | — | 2 | 2 | — |
-| WiFi Advanced / Security | 3 | 1 | 1 | — | 1 |
-| DDNS | 1 | — | — | 1 | — |
-| QoS | 4 | — | — | 1 | 3 |
-| Parental Control | 3 | — | — | — | 2 |
-| Remaining JNAP Dependencies | 7 | — | — | — | 7 |
-| **Total** | **40** | **7** | **8** | **8** | **14** |
+| Category | Total | ✅ M2 Done | ✅ USP Ready | 🔧 Needs Code Fix | 🏭 Needs FW Team | 🔴 USP Gap (JNAP dependency) |
+|----------|-------|-----------|-------------|-------------------|-----------------|-------------------------------|
+| M1 Pending Features | 8 | 3 | 4 | — | — | 1 |
+| Internet Settings | 10 | — | — | 5 | 4 | 1 |
+| WiFi Settings | 4 | 2 | — | — | 2 | — |
+| WiFi Advanced / Security | 3 | — | 1 | 1 | — | 1 |
+| DDNS | 1 | — | — | — | 1 | — |
+| QoS | 4 | — | — | — | 1 | 3 |
+| Parental Control | 3 | — | — | — | — | 2 |
+| Remaining JNAP Dependencies | 7 | — | — | — | — | 7 |
+| **Total** | **40** | **5** | **5** | **6** | **8** | **15** |
 
 > 🔴 **USP Gap** = Feature currently only supported by JNAP, no corresponding USP path. Requires firmware team to provide vendor extension or bbfdm plugin to complete migration.
 
@@ -50,24 +50,21 @@ These features have verified TR-181 support and are ready for implementation.
 
 ### F-001: WiFi SSID / Password / Security Management
 
-**Priority:** P0 | **Effort:** Small | **Feasibility:** ✅ USP Ready (SSH-verified 2026-03-16)
+**Priority:** P0 | **Effort:** Small | **Status:** ✅ **Implemented (M2-A)**
 
-- `Device.WiFi.AccessPoint.{i}.Security.KeyPassphrase` — validated SET-able
-- `Device.WiFi.AccessPoint.{i}.Security.SAEPassphrase` — WPA3 password (writable)
-- `Device.WiFi.AccessPoint.{i}.Security.ModeEnabled` — writable, supports: `None, WPA2-Personal, WPA3-Personal, WPA3-Personal-Transition, Enhanced-Open`
-- `Device.WiFi.AccessPoint.{i}.Security.MFPConfig` — Management Frame Protection (writable)
-- `Device.WiFi.AccessPoint.{i}.Security.Reset()` — Operate command
-- Add `writable: true` to `wi_fi_access_points.yaml`, re-run codegen
-- New dialog: WiFi password edit per AP/SSID + security mode selector
+- Password edit per AP/SSID, security mode selector (WPA2/WPA3/Enhanced-Open)
+- 6GHz auto-override: forces WPA3-Personal + SAEPassphrase when band is 6GHz
+- `wi_fi_access_points.yaml` updated with `writable: true`, codegen re-run
+- `KeyPassphrase`, `SAEPassphrase`, `ModeEnabled`, `MFPConfig` — all SET-able
 - **JNAP `setWPSServerSessionStatus` can be fully migrated to USP**
 
 ### F-004: WiFi Channel Width Edit
 
-**Priority:** P1 | **Effort:** Small | **Feasibility:** ✅ USP Ready
+**Priority:** P1 | **Effort:** Small | **Status:** ✅ **Implemented (M2-A)**
 
-- `Device.WiFi.Radio.{i}.OperatingChannelBandwidth` — available in codegen
-- Mark as `writable` in `wi_fi_radios.yaml`
-- Expand `wifi_channel_dialog.dart` with bandwidth selector
+- Channel Width selector in WiFi network card, reads `SupportedOperatingChannelBandwidths` dynamically
+- `wi_fi_radios.yaml` updated with `writable: true` for `OperatingChannelBandwidth`
+- Fallback to hardcoded band-based options when firmware doesn't return supported bandwidths
 
 ### F-007: Guest Network Management
 
@@ -79,11 +76,12 @@ These features have verified TR-181 support and are ready for implementation.
 
 ### F-011: Network Diagnostics (Ping / Traceroute)
 
-**Priority:** P1 | **Effort:** Medium | **Feasibility:** ✅ SSE Infrastructure Ready
+**Priority:** P1 | **Effort:** Medium | **Status:** ✅ **Implemented (M2-A)**
 
-- Backend complete: `SseOperationAwaiter`, `PingResult`, `TracerouteResult`
-- Remaining: UI page only (models, notifier, view, routing)
-- Plan file: `noble-tickling-pumpkin.md`
+- Full UI: `UspNetworkDiagnosticsView` with Ping + Traceroute tabs
+- `SseOperationAwaiter` for async Operate + OperationComplete via SSE
+- Route: `/uspAdvancedSettings/uspNetworkDiagnostics`
+- YAML definitions: `network_diagnostics.yaml` + `wan_operations.yaml` (codegen)
 
 ### F-025: Historical Trend Analysis
 
@@ -110,28 +108,22 @@ These features have verified TR-181 support and are ready for implementation.
 - Verified: AP.1 ✅ AP.2 ✅ AP.3 (guest, disabled) ✅ AP.4 ✅
 - **JNAP `setWPSServerSessionStatus` can be fully migrated to USP**
 
-### F-028: WiFi Advanced Radio Settings
+### F-028: WiFi Advanced Settings
 
-**Priority:** P2 | **Effort:** Medium | **Feasibility:** ✅ USP Ready (SSH-verified 2026-03-16)
+**Priority:** P2 | **Effort:** Small | **Feasibility:** ⚠️ Mostly USP Gap (1/4 USP Ready)
 
-All 12 Radio parameters below are writable (schema `data:"1"`), partially replacing JNAP `setAdvancedRadioSettings`:
+**Scope correction (2026-03-16):** The original assessment listed 12 low-level Radio parameters (TransmitPower, GuardInterval, BeaconPeriod, etc.) as F-028 scope. These TR-181 paths are writable but were **never part of the JNAP Advanced WiFi UI**. The actual JNAP implementation (`wifi_advanced_settings_view.dart`) has 4 toggles (IPTV excluded — not needed):
 
-| Parameter | Path | Current Value | Notes |
-|-----------|------|--------------|-------|
-| Transmit Power | `Radio.{i}.TransmitPower` | (supported: -1,25,50,75,100) | % or auto(-1) |
-| Guard Interval | `Radio.{i}.GuardInterval` | `"Auto"` | Auto/Short/Long |
-| Beacon Period | `Radio.{i}.BeaconPeriod` | 100 | ms |
-| DTIM Period | `Radio.{i}.DTIMPeriod` | 2 | beacon count |
-| RTS Threshold | `Radio.{i}.RTSThreshold` | 2347 | bytes |
-| Fragmentation | `Radio.{i}.FragmentationThreshold` | 2346 | bytes |
-| Preamble Type | `Radio.{i}.PreambleType` | `"long"` | long/short |
-| MCS Index | `Radio.{i}.MCS` | 0 | modulation scheme |
-| 802.11h (DFS) | `Radio.{i}.IEEE80211hEnabled` | | radar detection |
-| Extension Channel | `Radio.{i}.ExtensionChannel` | | HT40 secondary |
-| Operating Standards | `Radio.{i}.OperatingStandards` | | 802.11 a/b/g/n/ac/ax |
-| Auto Channel Refresh | `Radio.{i}.AutoChannelRefreshPeriod` | | seconds |
+| Toggle | JNAP Action | USP Path | Status |
+|--------|-------------|----------|--------|
+| DFS (802.11h) | `setAdvancedRadioSettings` | `Radio.{i}.IEEE80211hEnabled` | ✅ USP Ready — writable, SSH verified |
+| Client Steering | `setSmartConnectSettings` | — | 🔴 USP Gap — = Smart Connect, requires `X_LINKSYS_SmartConnect.*` (§7) |
+| Node Steering | `setSmartConnectSettings` | — | 🔴 USP Gap — Mesh node steering, requires `X_LINKSYS_SmartConnect.*` (§7) |
+| MLO | `setMLOSettings` | — | 🔴 USP Gap — = WiFi 6E/7 MLO, requires `X_LINKSYS_MLO.*` (§7) |
 
-**Most of JNAP `setAdvancedRadioSettings` can be migrated to USP.** Remaining JNAP-only items in §7.
+**Only DFS can be migrated immediately.** Client Steering, Node Steering, and MLO depend on firmware team vendor extensions already tracked in §7 (Smart Connect, MLO).
+
+> **Note:** The 12 low-level Radio parameters (TransmitPower, GuardInterval, etc.) are available as writable TR-181 paths for future use, but are NOT in the current JNAP migration scope since they were never exposed in the JNAP UI.
 
 ---
 
@@ -204,10 +196,11 @@ Phase 3 — Re-test:
 **Reference:** [wifi-settings-tr181-limitations.md](../issues/wifi-settings-tr181-limitations.md)
 **SSH Re-verified:** 2026-03-16
 
-### 🔧 ISS-2: Channel Width — ✅ Standard Path Exists (Code Fix Only)
+### ✅ ISS-2: Channel Width — Implemented (M2-A)
 
 **Original Assessment:** Vendor extension needed (`X_LINKSYS_PossibleChannelBandwidths`)
 **SSH Verification:** `Device.WiFi.Radio.{i}.SupportedOperatingChannelBandwidths` path exists and returns correct data
+**Implementation:** Completed — dynamic bandwidth from `SupportedOperatingChannelBandwidths` with hardcoded fallback
 
 ```
 Radio.1 (2.4 GHz): "Auto,20MHz"
@@ -216,35 +209,51 @@ Radio.2 (5 GHz):   "Auto,20MHz,40MHz,80MHz"    ← SupportedBandwidths max 80MHz
 
 > ⚠️ **Data Inconsistency (2026-03-16):** Radio.2's `CurrentOperatingChannelBandwidth` reports `160MHz`, but `SupportedOperatingChannelBandwidths` only lists up to `80MHz`. This contradiction needs FW team clarification — `SupportedOperatingChannelBandwidths` return value may be incomplete, or `CurrentOperatingChannelBandwidth` is reporting incorrectly.
 
-**Fix:** Remove UI hardcoded values, read `SupportedOperatingChannelBandwidths` for dynamic rendering. Update `wifi-settings-tr181-limitations.md` accordingly.
+**Changes:**
+- YAML: Added `supportedOperatingChannelBandwidths` field to `wi_fi_radios.yaml`, re-ran codegen
+- Model: `WifiNetworkUIModel.supportedBandwidths` field populated from TR-181
+- UI: `wifi_network_card.dart` `_editChannelWidth()` reads `supportedBandwidths` dynamically, falls back to band-based hardcoded list if empty
 
-### 🔧 ISS-1: Channel-per-Width — Client-Side Computable (Code Fix)
+### ✅ ISS-1: Channel-per-Width — Implemented (M2-A)
 
 **Original Assessment:** Vendor extension needed (`X_LINKSYS_AvailableChannels`)
-**Revised Assessment:** **Client-side computable** — downgraded from FW Team dependency to Code Fix
+**Revised Assessment:** Client-side computable using IEEE 802.11 bonding rules
+**Implementation:** Completed — bonding utility + UI channel filtering + auto-reset
 
-IEEE 802.11 channel bonding rules are spec-defined constants. The app can derive `Map<WifiChannelWidth, List<int>>` by combining:
-1. `Device.WiFi.Radio.{i}.PossibleChannels` — regulatory-filtered flat channel list from TR-181
-2. `Device.WiFi.Radio.{i}.SupportedOperatingChannelBandwidths` — supported widths per radio
-3. IEEE 802.11 bonding rules — deterministic primary channel selection per width
-
-**Existing App Code:**
-
-| Component | Location | Description |
-|-----------|----------|-------------|
-| Channel/frequency/DFS/UNII data | `lib/page/wifi_settings/models/channel_constants.dart` | 1302-line static table: 2.4GHz (14 ch), 5GHz (~60 ch), 6GHz (~90 ch) |
-| Mode → max width mapping | `lib/page/wifi_settings/models/wifi_enums.dart` `WifiWirelessMode.maxSupportedWidth` | e.g., ac→80MHz, ax→160MHz, be→320MHz |
-| JNAP channel-per-width mapping | `lib/page/wifi_settings/services/wifi_settings_mapper.dart:32-39` | Maps `supportedChannelsForChannelWidths` → `Map<WifiChannelWidth, List<int>>` |
-| Target data structure | `lib/page/wifi_settings/providers/wifi_item.dart:22` | `Map<WifiChannelWidth, List<int>> availableChannels` |
-| Channel selection by width | `lib/page/wifi_settings/providers/wifi_bundle_provider.dart:262` | `setChannelWidth` uses `availableChannels[channelWidth]` |
-
-**USP Migration Fix:** Implement a utility that parses `PossibleChannels` string → applies IEEE 802.11 bonding rules per width → produces `Map<WifiChannelWidth, List<int>>` to populate `WiFiItem.availableChannels`. This replaces the JNAP `supportedChannelsForChannelWidths` without FW dependency.
+**Changes:**
+- New utility: `lib/usp_page/wifi_settings/services/wifi_channel_bonding.dart` — `computeChannelsPerBandwidth()` pure function implementing IEEE 802.11 bonding rules for 2.4GHz/5GHz/6GHz
+- Model: `WifiNetworkUIModel.availableChannelsPerBandwidth` (`Map<String, List<int>>`) computed at fetch time
+- Service: `usp_wifi_settings_service.dart` calls bonding utility with `PossibleChannels` + `SupportedOperatingChannelBandwidths`
+- UI: `wifi_network_card.dart` `_editChannel()` filters channel list by current bandwidth
+- Provider: `updateNetworkField()` auto-resets to `autoChannelEnable: true` when bandwidth change invalidates current channel
+- Tests: `wifi_channel_bonding_test.dart` covers 2.4G/5G/6G bonding groups, empty input, edge cases
+- Regional filtering: Firmware handles via `PossibleChannels` (SSH verified: EU Radio.2 only returns ch 36-140, no ch 149-165)
 
 ### 🏭 Needs FW Team (1 item)
 
 | ID | Issue | Impact | Needed Extension |
 |----|-------|--------|-----------------|
 | ISS-4 | Guest network detection — no field distinguishes Guest/Primary | SSH verified 4 APs: SSIDReference/IsolationEnable/MultiAPMode identical across all, only Enable and Security.ModeEnabled differ (AP.3/4 disabled + None) | `X_LINKSYS_NetworkType` on `Device.WiFi.AccessPoint.{i}` |
+
+**ISS-4 Additional SSH Findings (2026-03-16):**
+
+**Bridge/VLAN approach NOT viable through TR-181:**
+
+| Layer | Linux Reality | TR-181 Exposure |
+|-------|-------------|-----------------|
+| WiFi → Bridge | `ath0` → `br-lan` (main), guest → `br-guest` | SSID.LowerLayers only points to **Radio**, not Bridge |
+| Bridge Ports | br-lan contains ath0, ath10, eth1 | Bridge.{i}.Port only lists **Ethernet**, WiFi not included |
+| AccessPoint | — | No bridge-related field (no LowerLayers to Bridge) |
+
+Bridge structure exists at the OS level (`brctl show`), but bbfdm does not map WiFi interfaces as Bridge Ports in TR-181. This means Guest detection via bridge membership is impossible through USP.
+
+**Dynamic SSID Add NOT functional:**
+- `Device.WiFi.SSID.` Add succeeds but creates dmmap stub only (no `__section_name__`, no real UCI wireless config)
+- Set on the new instance is silently ignored (no backend to write to)
+- No new WiFi interface appears at the OS level
+- Conclusion: Cannot dynamically create/delete SSIDs through TR-181 on current firmware
+
+**Current mitigation:** Case-insensitive `"guest"` substring match on SSID name. Reliable detection requires `X_LINKSYS_IsGuest` or `X_LINKSYS_NetworkType` vendor extension from FW team.
 
 ### 🏭 ISS-3: MAC Filtering — Issue More Severe Than Documented
 
@@ -261,10 +270,10 @@ IEEE 802.11 channel bonding rules are spec-defined constants. The app can derive
 **Revised Assessment:** Not only is the deny-list missing, but the allow-list multi-instance table is also not implemented. The entire MAC address list mechanism is broken at the bbfdm level. FW team needs to fix `AllowedMACAddress.{i}` multi-instance support **and** add deny-list vendor extension.
 
 **Current Mitigations:**
-- ISS-1: ~~Hardcoded channel lists~~ → **Client-side computable** using `PossibleChannels` + `SupportedOperatingChannelBandwidths` + IEEE 802.11 bonding rules (see ISS-1 section above)
-- ISS-2: ~~Hardcoded width lists~~ → **Can use `SupportedOperatingChannelBandwidths` instead**
+- ISS-1: ✅ **Implemented** — Client-side bonding computation using `PossibleChannels` + `SupportedOperatingChannelBandwidths` + IEEE 802.11 bonding rules
+- ISS-2: ✅ **Implemented** — Dynamic bandwidth from `SupportedOperatingChannelBandwidths` with hardcoded fallback
 - ISS-3: MAC Filtering tab removed from WiFi Settings page
-- ISS-4: Case-insensitive `"guest"` substring match on SSID name
+- ISS-4: Case-insensitive `"guest"` substring match on SSID name (Bridge/VLAN approach confirmed NOT viable via TR-181)
 
 ---
 
@@ -277,7 +286,7 @@ IEEE 802.11 channel bonding rules are spec-defined constants. The app can derive
 | Feature | JNAP Action | USP Path | Status |
 |---------|-------------|----------|--------|
 | **WPS** | `setWPSServerSessionStatus` | `AP.{i}.WPS.Enable` + `InitiateWPSPBC()` | ✅ Full support (see §1 F-027) |
-| **Advanced Radio (partial)** | `setAdvancedRadioSettings` | 12 writable Radio parameters | ✅ Mostly migratable (see §1 F-028) |
+| **Advanced Radio** | `setAdvancedRadioSettings` | DFS toggle only (`IEEE80211hEnabled`) | ⚠️ DFS only USP Ready — 3/4 toggles are USP Gap (see §1 F-028) |
 | **Security Mode** | `setWirelessNetworkSettings` | `AP.{i}.Security.ModeEnabled` + WPA3 | ✅ Includes WPA3 + MFP (see §1 F-001) |
 
 ### 🔧 Code Fix (YAML/codegen update needed)
@@ -432,7 +441,7 @@ QoS is implemented via Qualcomm hardware layer (SAL) + ebtables bridging rules. 
 The following features currently only have JNAP implementations, with no standard TR-181 paths. **Each requires firmware team vendor extension to complete migration.**
 
 > ~~WPS~~ — ✅ Confirmed USP Ready (2026-03-16), moved to §1 F-027
-> ~~WiFi Advanced Settings~~ — ✅ Mostly confirmed USP Ready, moved to §1 F-028 / §3b
+> ~~WiFi Advanced Settings~~ — ⚠️ Reclassified: only DFS is USP Ready (§1 F-028); Client Steering/Node Steering (= Smart Connect) and MLO remain in §7
 
 | Feature | JNAP Action | Category | Required Vendor Extension | Priority |
 |---------|-------------|----------|--------------------------|----------|
@@ -467,7 +476,7 @@ The following features currently only have JNAP implementations, with no standar
 │                                                          │
 │  F-001 WiFi PW/Security  F-004 Channel Width             │
 │  F-011 Ping UI           F-026 Prefetch Cache            │
-│  F-027 WPS               F-028 Advanced Radio            │
+│  F-027 WPS               F-028 DFS toggle                 │
 │  WiFi ISS-1 (channel-per-width client computation)       │
 │  WiFi ISS-2 (use SupportedBandwidths)                    │
 │  Internet ISS-3/4 Vendor Ext  ISS-6 YAML Fix            │
@@ -524,19 +533,19 @@ The following features currently only have JNAP implementations, with no standar
 
 ### Phase M2-A: Immediate (no external dependency)
 
-| # | Feature | Effort | Rationale |
-|---|---------|--------|-----------|
-| 1 | F-001 WiFi Password/Security | Small | P0 daily WiFi management + WPA3 security modes |
-| 2 | F-004 Channel Width | Small | P1 paired with WiFi, switch to `SupportedOperatingChannelBandwidths` |
-| 3 | WiFi ISS-1 fix | Medium | Channel-per-width client-side computation (IEEE 802.11 bonding rules + `PossibleChannels`) |
-| 4 | WiFi ISS-2 fix | Trivial | Remove hardcoded bandwidth, read from TR-181 |
-| 5 | F-027 WPS | Small | P2 ✅ SSH verified full support |
-| 6 | F-028 Advanced Radio | Medium | P2 12 writable parameters, partially replaces JNAP |
-| 7 | F-011 Ping/Traceroute UI | Medium | SSE infrastructure ready, UI only |
-| 8 | Internet ISS-3/4 | Small | Vendor extension path swap |
-| 9 | Internet ISS-6 | Trivial | YAML writable flag removal |
-| 10 | Internet ISS-2/8 | Medium | PPP/VLAN Add/Delete lifecycle |
-| 11 | F-026 Prefetch Cache | Medium | Dashboard performance optimization |
+| # | Feature | Effort | Status | Rationale |
+|---|---------|--------|--------|-----------|
+| 1 | F-001 WiFi Password/Security | Small | ✅ Done | P0 daily WiFi management + WPA3 security modes |
+| 2 | F-004 Channel Width | Small | ✅ Done | P1 paired with WiFi, switch to `SupportedOperatingChannelBandwidths` |
+| 3 | WiFi ISS-1 fix | Medium | ✅ Done | Channel-per-width client-side computation (IEEE 802.11 bonding rules + `PossibleChannels`) |
+| 4 | WiFi ISS-2 fix | Trivial | ✅ Done | Remove hardcoded bandwidth, read from TR-181 |
+| 5 | F-011 Ping/Traceroute UI | Medium | ✅ Done | SSE infrastructure ready, UI + notifier + routing |
+| 6 | F-027 WPS | Small | Pending | P2 ✅ SSH verified full support |
+| 7 | F-028 DFS Toggle | Small | Pending | P2 only DFS (`IEEE80211hEnabled`) is USP Ready; Client Steering/Node Steering/MLO need vendor ext (§7) |
+| 8 | Internet ISS-3/4 | Small | Pending | Vendor extension path swap |
+| 9 | Internet ISS-6 | Trivial | Pending | YAML writable flag removal |
+| 10 | Internet ISS-2/8 | Medium | Pending | PPP/VLAN Add/Delete lifecycle |
+| 11 | F-026 Prefetch Cache | Medium | Pending | Dashboard performance optimization |
 
 ### Phase M2-B: FW Team Coordination
 
@@ -583,9 +592,10 @@ Based on USP Features Matrix (72 features total):
 
 | Status | Count | Percentage | Description |
 |--------|-------|-----------|-------------|
-| ✅ USP Complete | 45 | 63% | M1 migration completed |
-| ✅ USP Ready (verified) | 3 | 4% | SSH verified available: WPS, Advanced Radio, Security Mode |
-| 🔧 Code Fix Only | 8 | 11% | Vendor extension path swap, YAML fix, bandwidth fix, channel-per-width computation, scheduling workaround |
+| ✅ USP Complete (M1) | 45 | 63% | M1 migration completed |
+| ✅ USP Complete (M2-A) | 5 | 7% | F-001, F-004, F-011, WiFi ISS-1, WiFi ISS-2 |
+| ✅ USP Ready (verified) | 2 | 3% | SSH verified available: WPS, Security Mode (F-028 reclassified: only DFS toggle is USP Ready) |
+| 🔧 Code Fix Only | 3 | 4% | Vendor extension path swap (ISS-3/4), YAML fix (ISS-6), scheduling workaround |
 | 🏭 FW Bug Fix | 5 | 7% | Existing TR-181 paths need repair (ISS-1/5/7/9/10) |
 | 🏭 FW bbfdm Plugin | 2 | 3% | New bbfdm plugins needed (DDNS, QoS Basic) |
 | 🔴 FW Vendor Extension | 9 | 13% | FW team must provide new vendor extensions (JNAP migration blockers) |
@@ -595,7 +605,8 @@ Based on USP Features Matrix (72 features total):
 | Milestone | Scope | USP Coverage | JNAP Dependencies |
 |-----------|-------|-------------|-------------------|
 | **M1 Done** | 45 features implemented | 45/72 (63%) | 27 remaining |
-| **M2-A** (code fix) | F-001/004/011/026/027/028 + WiFi ISS-1/2 + Internet ISS-3/4/6/2/8 | 56/72 (78%) | 16 remaining |
+| **M2-A partial** ✅ | F-001, F-004, F-011, WiFi ISS-1, WiFi ISS-2 | **50/72 (69%)** | 22 remaining |
+| **M2-A full** (remaining code fix) | F-026/027 + F-028 DFS + Internet ISS-3/4/6/2/8 | 55/72 (76%) | 17 remaining |
 | **M2-B** (FW bug fix) | ISS-1/5/7/9/10 + F-007 | 61/72 (85%) | 11 remaining |
 | **M2-C** (bbfdm plugins) | DDNS, QoS Basic | 63/72 (88%) | 9 remaining |
 | **M2-D** (vendor extensions) | Smart Connect, Parental Control, PPTP/L2TP, FW Update, etc. | **72/72 (100%)** | **0 — JNAP migration complete** |
@@ -628,5 +639,5 @@ Completing 100% migration requires the firmware team to provide:
 
 ---
 
-**Last Updated:** 2026-03-16
+**Last Updated:** 2026-03-16 (M2-A partial: 5/11 items completed)
 **Next Review:** After FW team response on ISS-1 / bbfdm plugin feasibility

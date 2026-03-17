@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/providers/usp_wifi_settings_provider.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/services/wifi_channel_bonding.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Card for a single WiFi network in Advanced mode.
@@ -333,7 +334,20 @@ class WifiNetworkCard extends ConsumerWidget {
 
   Future<void> _editWifiMode(
       BuildContext context, WidgetRef ref, WifiNetworkUIModel n) async {
-    final options = _wifiModeOptions(n.supportedStandards);
+    final allOptions = _wifiModeOptions(n.supportedStandards);
+    if (allOptions.isEmpty) return;
+
+    // Filter by current channel width: e.g. 80MHz requires at least ac.
+    // "Auto" imposes no constraint (minStandardForBandwidth returns null).
+    final minStd = minStandardForBandwidth(n.channelBandwidth);
+    final bwIdx = bandwidthOrder.indexOf(n.channelBandwidth); // -1 for Auto
+    final options = minStd != null && bwIdx > 0
+        ? allOptions.where((mode) {
+            final maxBw = maxBandwidthForStandards(mode);
+            return bandwidthOrder.indexOf(maxBw) >= bwIdx;
+          }).toList()
+        : allOptions;
+
     if (options.isEmpty) return;
 
     final current = _toFirmwareMode(n.operatingStandards);
@@ -371,11 +385,29 @@ class WifiNetworkCard extends ConsumerWidget {
 
   Future<void> _editChannelWidth(
       BuildContext context, WidgetRef ref, WifiNetworkUIModel n) async {
-    final options = switch (n.band) {
-      '2.4GHz' => ['Auto', '20MHz', '40MHz'],
-      '6GHz' => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
-      _ => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
-    };
+    var allOptions = n.supportedBandwidths.isNotEmpty
+        ? n.supportedBandwidths
+        : switch (n.band) {
+            '2.4GHz' => ['Auto', '20MHz', '40MHz'],
+            '6GHz' => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
+            _ => ['Auto', '20MHz', '40MHz', '80MHz', '160MHz'],
+          };
+
+    // Ensure "Auto" is always available (router may omit it from
+    // SupportedOperatingChannelBandwidths).
+    if (!allOptions.contains('Auto')) {
+      allOptions = ['Auto', ...allOptions];
+    }
+
+    // Filter by current WiFi mode's maximum supported bandwidth.
+    final maxBw = maxBandwidthForStandards(n.operatingStandards);
+    final maxIdx = bandwidthIndex(maxBw);
+    final options = allOptions.where((bw) {
+      if (bw == 'Auto') return true; // Auto is always valid
+      final idx = bandwidthOrder.indexOf(bw);
+      return idx >= 0 && idx <= maxIdx;
+    }).toList();
+
     final current = n.channelBandwidth.isNotEmpty ? n.channelBandwidth : 'Auto';
     String selected = options.contains(current) ? current : options.first;
 
@@ -385,9 +417,16 @@ class WifiNetworkCard extends ConsumerWidget {
       content: StatefulBuilder(
         builder: (ctx, setState) => AppRadioList<String>(
           selected: selected,
-          items: options
-              .map((e) => AppRadioListItem<String>(title: e, value: e))
-              .toList(),
+          items: options.map((bw) {
+            final chCount = n.availableChannelsPerBandwidth[bw]?.length;
+            return AppRadioListItem<String>(
+              title: bw,
+              value: bw,
+              descriptionWidget: chCount != null
+                  ? AppText.bodySmall('$chCount channels available')
+                  : null,
+            );
+          }).toList(),
           onChanged: (_, value) {
             if (value != null) setState(() => selected = value);
           },
@@ -411,9 +450,17 @@ class WifiNetworkCard extends ConsumerWidget {
     const autoLabel = 'Auto';
     final currentLabel = n.autoChannelEnable ? autoLabel : n.channel.toString();
 
+    // Use per-bandwidth filtered channels when available; fall back to all.
+    final channelsForCurrentBw =
+        n.availableChannelsPerBandwidth[n.channelBandwidth];
+    final effectiveChannels =
+        (channelsForCurrentBw != null && channelsForCurrentBw.isNotEmpty)
+            ? channelsForCurrentBw
+            : n.possibleChannels;
+
     final channelItems = [
       AppRadioListItem<String>(title: autoLabel, value: autoLabel),
-      ...n.possibleChannels.map(
+      ...effectiveChannels.map(
         (ch) => AppRadioListItem<String>(
           title: ch.toString(),
           value: ch.toString(),

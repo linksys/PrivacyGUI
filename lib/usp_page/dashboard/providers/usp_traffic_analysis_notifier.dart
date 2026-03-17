@@ -118,7 +118,7 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
         lastTimestamp: () => now,
       );
     } catch (e) {
-      logger.w('[TrafficAnalysis] Fetch failed: $e');
+      logger.w('[USP][Monitor][Traffic]Fetch failed: $e');
       state = state.copyWith(isFetching: false);
     }
   }

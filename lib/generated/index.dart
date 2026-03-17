@@ -19,6 +19,7 @@ export 'lan_network_info.g.dart';
 export 'ipv6settings.g.dart';
 export 'dhcp_clients.g.dart';
 export 'wan_traffic_stats.g.dart';
+export 'network_diagnostics.g.dart';
 export 'dhcp_reservations.g.dart';
 export 'wan_operations.g.dart';
 export 'multi_interface_traffic_stats.g.dart';

@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/usp/models/usp_response.dart';
 
 // Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
 import '../stub/usp_client_stub.dart'
@@ -123,17 +122,17 @@ class UspService {
       // Stage 1: quick token refresh (no password needed)
       try {
         await refreshToken();
-        logger.d('[UspService]:Token refreshed successfully');
+        logger.d('[USP][Service]Token refreshed successfully');
         _reauthInProgress!.complete();
         return;
       } catch (e) {
-        logger.w('[UspService]:Token refresh failed: $e');
+        logger.w('[USP][Service]Token refresh failed: $e');
       }
       // Stage 2: full re-login via stored password
       final reauth = onReauthRequired;
       if (reauth != null) {
         await reauth();
-        logger.d('[UspService]:Full re-login succeeded');
+        logger.d('[USP][Service]Full re-login succeeded');
       }
       _reauthInProgress!.complete();
     } catch (e) {
@@ -152,7 +151,7 @@ class UspService {
       return await action();
     } catch (e) {
       if (!_isAuthError(e)) rethrow;
-      logger.w('[UspService]:401 detected, attempting reauth...');
+      logger.w('[USP][Service]401 detected, attempting reauth...');
       await reauth();
       return await action();
     }
@@ -177,12 +176,12 @@ class UspService {
     final rawMap = await _withAuthRetry(() => _client.getMultiple(paths));
     sw.stop();
 
-    logger.d('[UspService]:#$id GET ${_pathSummary(paths)} '
+    logger.d('[USP][Service]#$id GET ${_pathSummary(paths)} '
         '${paths.length} paths → ${rawMap.length} keys (${sw.elapsedMilliseconds}ms)');
     if (rawMap.isEmpty) {
-      logger.w('[UspService]:#$id GET response EMPTY for paths: $paths');
+      logger.w('[USP][Service]#$id GET response EMPTY for paths: $paths');
     } else {
-      logger.d('[UspService]:#$id ← ${_mapSummary(rawMap)}');
+      logger.d('[USP][Service]#$id ← ${_mapSummary(rawMap)}');
     }
 
     final Map<String, dynamic> result = {};
@@ -199,7 +198,7 @@ class UspService {
     for (final path in paths) {
       if (path.contains('*')) continue;
       if (!result.containsKey(path)) {
-        logger.w('[UspService]:GET missing path in response: "$path"');
+        logger.w('[USP][Service]GET missing path in response: "$path"');
       }
       result.putIfAbsent(path, () => null);
     }
@@ -243,7 +242,7 @@ class UspService {
     await _withAuthRetry(
         () => _client.setMultiple(stringParams, allowPartial: allowPartial));
     sw.stop();
-    logger.d('[UspService]:#$id SET ${_paramSummary(parameters)} '
+    logger.d('[USP][Service]#$id SET ${_paramSummary(parameters)} '
         '${parameters.length} params'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
   }
@@ -277,7 +276,7 @@ class UspService {
     sw.stop();
     final shortPath =
         objectPath.startsWith('Device.') ? objectPath.substring(7) : objectPath;
-    logger.d('[UspService]:#$id ADD $shortPath — '
+    logger.d('[USP][Service]#$id ADD $shortPath — '
         '${parameters.length} params → $result (${sw.elapsedMilliseconds}ms)');
     return result;
   }
@@ -296,7 +295,7 @@ class UspService {
     final result = await _withAuthRetry(
         () => _client.addMultiple(objects, allowPartial: allowPartial));
     sw.stop();
-    logger.d('[UspService]:#$id ADD_MULTI ${objects.length} objects '
+    logger.d('[USP][Service]#$id ADD_MULTI ${objects.length} objects '
         '→ ${result.length} created'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
     return result;
@@ -315,8 +314,8 @@ class UspService {
     await _withAuthRetry(() => _client.delete(path));
     sw.stop();
     final shortPath = path.startsWith('Device.') ? path.substring(7) : path;
-    logger
-        .d('[UspService]:#$id DELETE $shortPath (${sw.elapsedMilliseconds}ms)');
+    logger.d(
+        '[USP][Service]#$id DELETE $shortPath (${sw.elapsedMilliseconds}ms)');
   }
 
   /// Deletes multiple object instances in a single operation.
@@ -327,7 +326,7 @@ class UspService {
     await _withAuthRetry(
         () => _client.deleteMultiple(paths, allowPartial: allowPartial));
     sw.stop();
-    logger.d('[UspService]:#$id DELETE_MULTI ${_pathSummary(paths)} '
+    logger.d('[USP][Service]#$id DELETE_MULTI ${_pathSummary(paths)} '
         '${paths.length} paths'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
   }
@@ -341,20 +340,21 @@ class UspService {
   /// [command] is the command path (e.g., "Device.Reboot()" or
   /// "Device.IP.Diagnostics.Ping()").
   /// [args] are the input arguments for the command.
-  /// Returns [UspResponse] with commandKey (for SSE correlation) and output arguments.
-  Future<UspResponse<Map<String, String>>> operate(String command,
+  /// Returns a flat map containing `commandKey` (for SSE correlation) and
+  /// all output arguments from the Operate response.
+  Future<Map<String, dynamic>> operate(String command,
       {Map<String, String> args = const {}}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final response =
         await _withAuthRetry(() => _client.operate(command, args: args));
     sw.stop();
-    logger.d('[UspService]:#$id OPERATE $command'
+    logger.d('[USP][Service]#$id OPERATE $command'
         '${args.isNotEmpty ? ' — ${args.length} args' : ''}'
-        ' → key=${response.commandKey}, ${response.data.length} output keys'
+        ' → key=${response['commandKey']}, ${response.length} output keys'
         ' (${sw.elapsedMilliseconds}ms)');
-    if (response.data.isNotEmpty) {
-      logger.d('[UspService]:#$id ← ${_mapSummary(response.data)}');
+    if (response.isNotEmpty) {
+      logger.d('[USP][Service]#$id ← ${_mapSummary(response)}');
     }
     return response;
   }
@@ -445,7 +445,7 @@ class UspService {
 
     sw.stop();
     final recipient = verify['${instancePath}Recipient'] ?? '';
-    logger.d('[UspService]:#$id CREATE_SUBSCRIPTION $instancePath '
+    logger.d('[USP][Service]#$id CREATE_SUBSCRIPTION $instancePath '
         'type=$notifType ref=$referenceList → Recipient=$recipient '
         '(${sw.elapsedMilliseconds}ms)');
 
@@ -464,7 +464,7 @@ class UspService {
     final shortPath = instancePath.startsWith('Device.')
         ? instancePath.substring(7)
         : instancePath;
-    logger.d('[UspService]:#$id DELETE_SUBSCRIPTION $shortPath '
+    logger.d('[USP][Service]#$id DELETE_SUBSCRIPTION $shortPath '
         '(${sw.elapsedMilliseconds}ms)');
   }
 
@@ -477,7 +477,7 @@ class UspService {
     final sw = Stopwatch()..start();
     final subs = await _withAuthRetry(() => _client.listSubscriptions());
     sw.stop();
-    logger.d('[UspService]:#$id LIST_SUBSCRIPTIONS → ${subs.length} entries '
+    logger.d('[USP][Service]#$id LIST_SUBSCRIPTIONS → ${subs.length} entries '
         '(${sw.elapsedMilliseconds}ms)');
     return subs;
   }
@@ -515,7 +515,7 @@ class UspService {
 
     if (instanceIds.isEmpty) {
       sw.stop();
-      logger.d('[UspService]:#$id PURGE_SUBSCRIPTIONS → 0 (none found, '
+      logger.d('[USP][Service]#$id PURGE_SUBSCRIPTIONS → 0 (none found, '
           '${sw.elapsedMilliseconds}ms)');
       return 0;
     }
@@ -525,7 +525,7 @@ class UspService {
       final prefix = '$objectPath$instId.';
       final notifType = allParams['${prefix}NotifType'] ?? '?';
       final refList = allParams['${prefix}ReferenceList'] ?? '?';
-      logger.d('[UspService]:#$id PURGE: $prefix '
+      logger.d('[USP][Service]#$id PURGE: $prefix '
           '(type=$notifType, ref=$refList)');
     }
 
@@ -536,13 +536,13 @@ class UspService {
         await _withAuthRetry(() => _client.delete(instancePath));
         deleted++;
       } catch (e) {
-        logger.w('[UspService]:#$id PURGE failed to delete '
+        logger.w('[USP][Service]#$id PURGE failed to delete '
             '$instancePath: $e');
       }
     }
 
     sw.stop();
-    logger.d('[UspService]:#$id PURGE_SUBSCRIPTIONS → deleted $deleted/'
+    logger.d('[USP][Service]#$id PURGE_SUBSCRIPTIONS → deleted $deleted/'
         '${instanceIds.length} (${sw.elapsedMilliseconds}ms)');
     return deleted;
   }
@@ -601,7 +601,8 @@ class UspService {
               controller.add(parsed);
             }
           } catch (e) {
-            logger.w('[UspService]:SSE subscribe re-fetch error for "$id": $e');
+            logger
+                .w('[USP][Service]SSE subscribe re-fetch error for "$id": $e');
           }
         });
       },
@@ -615,7 +616,7 @@ class UspService {
         controller.add(parsed);
       }
     } catch (e) {
-      logger.w('[UspService]:SSE subscribe initial fetch error for "$id": $e');
+      logger.w('[USP][Service]SSE subscribe initial fetch error for "$id": $e');
     }
 
     return Subscription<T>(
@@ -652,7 +653,7 @@ class UspService {
               controller.add(parsed);
             }
           } catch (e) {
-            logger.w('[UspService]:Subscribe poll error for "$id": $e');
+            logger.w('[USP][Service]Subscribe poll error for "$id": $e');
           }
         });
       },

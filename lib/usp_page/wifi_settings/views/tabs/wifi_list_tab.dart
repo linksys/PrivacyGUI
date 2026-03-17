@@ -21,31 +21,35 @@ class UspWifiListTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(uspWifiSettingsProvider);
 
-    // Loading / error states
-    if (state.status.isLoading || state.settings.current.networks.isEmpty) {
-      if (state.status.errorMessage != null) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppIcon.font(Icons.error_outline,
-                    color: Theme.of(context).colorScheme.error),
-                AppGap.md(),
-                AppText.bodyMedium(
-                  'Failed to load WiFi settings.',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        );
-      }
+    // Loading state
+    if (state.status.isLoading) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(AppSpacing.xxxl),
           child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Error or empty state
+    if (state.status.errorMessage != null ||
+        state.settings.current.networks.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppIcon.font(Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error),
+              AppGap.md(),
+              AppText.bodyMedium(
+                state.status.errorMessage ??
+                    'No WiFi networks found. Check router connection.',
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
         ),
       );
     }

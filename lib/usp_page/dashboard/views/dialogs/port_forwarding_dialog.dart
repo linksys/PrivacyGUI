@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/components/select_auto_complete.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -28,7 +27,7 @@ class PortForwardingDialogResult {
 /// Pass [rule] to pre-fill for editing; omit for adding.
 class PortForwardingDialog extends StatefulWidget {
   final PortForwardingRuleUIModel? rule;
-  final List<AutoCompleteOption> deviceOptions;
+  final List<AppAutoCompleteOption> deviceOptions;
 
   const PortForwardingDialog({
     super.key,
@@ -170,7 +169,7 @@ class _PortForwardingDialogState extends State<PortForwardingDialog> {
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
-            SelectAutoComplete(
+            AppSelectAutoComplete(
               options: widget.deviceOptions,
               controller: _intClientController,
               onSelected: (_) => _validate(),

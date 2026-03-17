@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/usp_page/components/select_auto_complete.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
@@ -96,12 +95,12 @@ class UspSinglePortTab extends ConsumerWidget {
     );
   }
 
-  List<AutoCompleteOption> _buildIpv4DeviceOptions(WidgetRef ref) {
+  List<AppAutoCompleteOption> _buildIpv4DeviceOptions(WidgetRef ref) {
     final devices =
         ref.read(uspDashboardProvider).valueOrNull?.deviceModels ?? [];
     return devices
         .where((d) => d.ip.isNotEmpty)
-        .map((d) => AutoCompleteOption(
+        .map((d) => AppAutoCompleteOption(
               label: d.displayName,
               value: d.ip,
               subtitle: d.mac,

@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'demo/data/demo_cache_data.dart';
 import 'demo/demo_app.dart';
 import 'demo/providers/demo_overrides.dart';
+import 'demo/usp/demo_usp_data_loader.dart';
 
 /// Demo mode entry point.
 ///
@@ -42,8 +43,9 @@ void main() async {
     debugPrint('No .env file found, using defaults');
   }
 
-  // Load demo cache data
+  // Load demo cache data (JNAP + USP)
   await DemoCacheDataLoader.instance.load();
+  await DemoUspDataLoader.instance.load();
 
   // Load theme configuration handled by themeConfigProvider
 

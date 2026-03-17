@@ -16,7 +16,7 @@ export 'package:privacy_gui/generated/wifi_clients.g.dart' show WifiClient;
 /// limitation), falls back to a broader parent-path fetch and manual parse.
 Future<Map<String, WifiClient>> fetchWifiClients(UspService client) async {
   final result = await WifiClients.fetch(client);
-  logger.d('[USP] WifiClients raw: ${result.items.length} items');
+  logger.d('[USP][Dashboard]WifiClients raw: ${result.items.length} items');
 
   if (result.items.isNotEmpty) {
     return {
@@ -27,16 +27,17 @@ Future<Map<String, WifiClient>> fetchWifiClients(UspService client) async {
 
   // Fallback: selective-get with nested wildcards may not be supported by
   // some USP agents. Try fetching the whole AssociatedDevice subtree instead.
-  logger
-      .d('[USP] WifiClients selective-get empty, trying parent-path fallback');
+  logger.d(
+      '[USP][Dashboard]WifiClients selective-get empty, trying parent-path fallback');
   try {
     final fallback = await _fetchWifiClientsFallback(client);
     if (fallback.isNotEmpty) {
-      logger.d('[USP] WifiClients fallback: ${fallback.length} clients');
+      logger.d(
+          '[USP][Dashboard]WifiClients fallback: ${fallback.length} clients');
     }
     return fallback;
   } catch (e) {
-    logger.d('[USP] WifiClients fallback failed: $e');
+    logger.d('[USP][Dashboard]WifiClients fallback failed: $e');
     return {};
   }
 }
@@ -51,7 +52,8 @@ Future<Map<String, WifiClient>> _fetchWifiClientsFallback(
   final response = await client.get([
     'Device.WiFi.AccessPoint.*.AssociatedDevice.',
   ]);
-  logger.d('[USP] WifiClients fallback response: ${response.length} keys');
+  logger.d(
+      '[USP][Dashboard]WifiClients fallback response: ${response.length} keys');
   if (response.isEmpty) return {};
 
   // Parse response keys to find AP and AssociatedDevice instance IDs.
@@ -143,7 +145,7 @@ Map<String, ClientConnectionDetail> buildConnectionDetailMap({
           _normalizeBand(r.operatingFrequencyBand),
   };
 
-  logger.d('[USP] Connection detail: '
+  logger.d('[USP][Dashboard]Connection detail: '
       '${apByPath.length} APs, ${ssidByPath.length} SSIDs, ${bandByRadioPath.length} radios');
 
   final result = <String, ClientConnectionDetail>{};
@@ -155,7 +157,7 @@ Map<String, ClientConnectionDetail> buildConnectionDetailMap({
     final ap = apByPath[_ensureTrailingDot(client.parentPath)];
     if (ap == null) {
       logger.d(
-          '[USP] Connection detail: no AP for parentPath=${client.parentPath}');
+          '[USP][Dashboard]Connection detail: no AP for parentPath=${client.parentPath}');
       continue;
     }
 
@@ -168,7 +170,7 @@ Map<String, ClientConnectionDetail> buildConnectionDetailMap({
         ? (bandByRadioPath[_ensureTrailingDot(ssid.lowerLayers)] ?? '')
         : '';
 
-    logger.d('[USP] Connection detail: $mac → '
+    logger.d('[USP][Dashboard]Connection detail: $mac → '
         'AP=${ap.instancePath}, ssidRef=${ap.ssidReference}, '
         'ssid=$ssidName, lowerLayers=${ssid?.lowerLayers}, band=$band');
 

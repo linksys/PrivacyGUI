@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/components/select_auto_complete.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -28,7 +27,7 @@ class Ipv6PortServiceRuleDialogResult {
 /// Pass [rule] to pre-fill for editing; omit for adding.
 class Ipv6PortServiceRuleDialog extends StatefulWidget {
   final Ipv6PortServiceRuleUIModel? rule;
-  final List<AutoCompleteOption> deviceOptions;
+  final List<AppAutoCompleteOption> deviceOptions;
 
   const Ipv6PortServiceRuleDialog({
     super.key,
@@ -115,7 +114,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
               onChanged: (_) => _validate(),
             ),
             AppGap.lg(),
-            SelectAutoComplete(
+            AppSelectAutoComplete(
               options: widget.deviceOptions,
               controller: _ipv6Controller,
               onSelected: (_) => _validate(),

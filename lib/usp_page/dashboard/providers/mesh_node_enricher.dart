@@ -57,12 +57,13 @@ Future<MeshTopologyInfo> fetchMeshNodes(UspService client) async {
   try {
     final network = await DataElementsNetwork.fetch(client);
     if (network.items.isEmpty) {
-      logger.d('[USP] DataElements empty — not a mesh or unsupported');
+      logger
+          .d('[USP][Dashboard]DataElements empty — not a mesh or unsupported');
       return MeshTopologyInfo.empty;
     }
     return _buildTopologyInfo(network);
   } catch (e) {
-    logger.d('[USP] DataElements not supported or fetch failed: $e');
+    logger.d('[USP][Dashboard]DataElements not supported or fetch failed: $e');
     return MeshTopologyInfo.empty;
   }
 }
@@ -103,7 +104,7 @@ MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
     ));
   }
 
-  logger.d('[USP] Mesh nodes: ${nodes.length}, '
+  logger.d('[USP][Dashboard]Mesh nodes: ${nodes.length}, '
       'client→node mappings: ${clientToNodeMap.length}');
   return MeshTopologyInfo(nodes: nodes, clientToNodeMap: clientToNodeMap);
 }

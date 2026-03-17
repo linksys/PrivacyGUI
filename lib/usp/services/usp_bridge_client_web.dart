@@ -20,6 +20,10 @@ class UspBridgeClient {
 
   UspBridgeClient(this._usp);
 
+  /// Active SSE AbortController — stored so [abortSse] can cancel
+  /// synchronously from a `beforeunload` handler.
+  web.AbortController? _sseAbortController;
+
   String get _baseUrl => _usp.baseUrl;
 
   String get _token {
@@ -72,21 +76,31 @@ class UspBridgeClient {
   // SSE Notifications
   // ══════════════════════════════════════════════════════════════════════════
 
+  /// Synchronously abort the active SSE Fetch stream.
+  ///
+  /// Called from `beforeunload` / `pagehide` handlers where only synchronous
+  /// code is guaranteed to execute. This ensures the browser's TCP socket to
+  /// lighttpd is released immediately on page refresh/close.
+  void abortSse() {
+    _sseAbortController?.abort();
+    _sseAbortController = null;
+  }
+
   /// Opens an SSE connection to GET /api/v1/notifications.
   ///
   /// Browser-native EventSource does not support custom headers, so we use
   /// the Fetch API with ReadableStream to parse the text/event-stream.
   Stream<SseEvent> notifications() {
     final controller = StreamController<SseEvent>();
-    web.AbortController? abortController;
 
     controller.onListen = () {
-      abortController = web.AbortController();
-      _startSseStream(controller, abortController!);
+      _sseAbortController = web.AbortController();
+      _startSseStream(controller, _sseAbortController!);
     };
 
     controller.onCancel = () {
-      abortController?.abort();
+      _sseAbortController?.abort();
+      _sseAbortController = null;
     };
 
     return controller.stream;
@@ -115,8 +129,9 @@ class UspBridgeClient {
 
   Future<void> _startSseStream(
     StreamController<SseEvent> controller,
-    web.AbortController abortController,
-  ) async {
+    web.AbortController abortController, {
+    int authRetryCount = 0,
+  }) async {
     void debug(String msg) {
       if (!controller.isClosed) {
         controller.add(SseEvent(event: '_debug', data: msg));
@@ -147,11 +162,18 @@ class UspBridgeClient {
 
       if (!response.ok) {
         if (response.status == 401) {
+          if (authRetryCount >= 1) {
+            debug('401 retry limit reached (max 1 retry)');
+            controller.addError('SSE 401 after reauth retry');
+            await controller.close();
+            return;
+          }
           debug('401 detected, attempting reauth and reconnect...');
           try {
             await _usp.reauth();
             debug('Reauth succeeded, reconnecting SSE...');
-            await _startSseStream(controller, abortController);
+            await _startSseStream(controller, abortController,
+                authRetryCount: authRetryCount + 1);
           } catch (e) {
             debug('Reauth failed: $e');
             controller.addError('SSE 401 reauth failed: $e');

@@ -10,6 +10,7 @@ import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
@@ -17,6 +18,7 @@ import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
+import 'package:privacy_gui/generated/subscriptions.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_monitor_state.dart';
@@ -25,6 +27,7 @@ import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_noti
 import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
 import 'package:privacy_gui/usp_page/dashboard/services/usp_device_service.dart';
 import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
@@ -79,16 +82,27 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
 
   @override
   Future<UspDashboardState> build() async {
+    try {
+      return await _buildImpl();
+    } catch (e, st) {
+      logger.e('[USP Dashboard] build() failed: $e\n$st');
+      rethrow;
+    }
+  }
+
+  Future<UspDashboardState> _buildImpl() async {
     final usp = ref.watch(uspServiceProvider);
     if (usp == null) {
       throw StateError('USP service not available');
     }
     // On page reload WASM state is lost — attempt session restore before giving up
+    bool authWasRestored = false;
     if (!usp.isAuthenticated) {
       await ref.read(uspAuthCoordinatorProvider).restoreSession();
       if (!usp.isAuthenticated) {
         throw StateError('USP not authenticated after restore attempt');
       }
+      authWasRestored = true;
     }
     // SSE invalidation: listen for domain-specific change signals.
     // When SSE delivers a notification (e.g., device connected, WiFi changed),
@@ -127,97 +141,91 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       );
     }
 
-    // Parallel fetch — WASM client v0.6.1+ supports concurrent HTTP requests.
+    // Batched fetch — 3 requests per batch to stay within the browser's
+    // HTTP/1.1 connection pool limit (6 per host). With SSE occupying 1
+    // persistent connection, 3 concurrent fetches use 4 total — safe margin.
     // Each fetch reports progress on completion for the loading indicator.
-    final results = await Future.wait([
-      SystemInfo.fetch(usp).then((v) {
-        tick('System Info');
-        return v;
-      }),
-      ConnectedDevices.fetch(usp).then((v) {
-        tick('Devices');
-        return v;
-      }),
-      WiFiRadios.fetch(usp).then((v) {
-        tick('WiFi Radios');
-        return v;
-      }),
-      WiFiSsids.fetch(usp).then((v) {
-        tick('WiFi SSIDs');
-        return v;
-      }),
-      WiFiAccessPoints.fetch(usp).then((v) {
-        tick('Access Points');
-        return v;
-      }),
-      TimeSettings.fetch(usp).then((v) {
-        tick('Time Settings');
-        return v;
-      }),
-      DhcpClients.fetch(usp).then((v) {
-        tick('DHCP Clients');
-        return v;
-      }),
-      DhcpReservations.fetch(usp).then((v) {
-        tick('DHCP Reservations');
-        return v;
-      }),
-      PortForwarding.fetch(usp).then((v) {
-        tick('Port Forwarding');
-        return v;
-      }),
-      PortTriggering.fetch(usp).then((v) {
-        tick('Port Triggering');
-        return v;
-      }),
-      fetchWifiClients(usp).then((v) {
-        tick('WiFi Clients');
-        return v;
-      }),
-      fetchMeshNodes(usp).then((v) {
-        tick('Mesh Nodes');
-        return v;
-      }),
-      LanNetworkInfo.fetch(usp).then((v) {
-        tick('LAN Info');
-        return v;
-      }),
-      EthernetInterfaces.fetch(usp).then((v) {
-        tick('Ethernet Ports');
-        return v;
-      }),
-      WanStatus.fetch(usp).then((v) {
-        tick('WAN Status');
-        return v;
-      }),
-      FirewallChainRules.fetch(usp).then((v) {
-        tick('Firewall Rules');
-        return v;
-      }),
-      Dmz.fetch(usp).then((v) {
-        tick('DMZ');
-        return v;
-      }),
-    ]);
+    final totalSw = Stopwatch()..start();
 
-    final systemInfo = results[0] as SystemInfo;
-    final connectedDevices = results[1] as ConnectedDevices;
-    final wifiRadios = results[2] as WiFiRadios;
-    final wifiSsids = results[3] as WiFiSsids;
-    final wifiAccessPoints = results[4] as WiFiAccessPoints;
-    final timeSettings = results[5] as TimeSettings;
-    final dhcpClients = results[6] as DhcpClients;
-    final dhcpReservations = results[7] as DhcpReservations;
-    final portForwarding = results[8] as PortForwarding;
-    final portTriggering = results[9] as PortTriggering;
-    final wifiClientMap = results[10] as Map<String, WifiClient>;
-    final meshTopology = results[11] as MeshTopologyInfo;
-    final lanNetworkInfo = results[12] as LanNetworkInfo;
-    final ethernetInterfaces = results[13] as EthernetInterfaces;
-    final wanStatus = results[14] as WanStatus;
-    final firewallRules = results[15] as FirewallChainRules;
-    final dmzEntries = results[16] as Dmz;
-    logger.d('[USP] Dashboard fetch complete — '
+    Future<T> timed<T>(String label, Future<T> Function() fn) async {
+      final sw = Stopwatch()..start();
+      final result = await fn().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException(
+            '$label timed out', const Duration(seconds: 30)),
+      );
+      sw.stop();
+      logger.d('[USP][Dashboard]$label — ${sw.elapsedMilliseconds}ms');
+      tick(label);
+      return result;
+    }
+
+    // Batch 1: Core system info
+    final b1 = await Future.wait([
+      timed('System Info', () => SystemInfo.fetch(usp)),
+      timed('Devices', () => ConnectedDevices.fetch(usp)),
+      timed('WAN Status', () => WanStatus.fetch(usp)),
+    ]);
+    final systemInfo = b1[0] as SystemInfo;
+    final connectedDevices = b1[1] as ConnectedDevices;
+    final wanStatus = b1[2] as WanStatus;
+    logger.d('[USP][Dashboard]Batch 1 done — ${totalSw.elapsedMilliseconds}ms');
+
+    // Batch 2: Network + WiFi radios
+    final b2 = await Future.wait([
+      timed('LAN Info', () => LanNetworkInfo.fetch(usp)),
+      timed('WiFi Radios', () => WiFiRadios.fetch(usp)),
+      timed('WiFi SSIDs', () => WiFiSsids.fetch(usp)),
+    ]);
+    final lanNetworkInfo = b2[0] as LanNetworkInfo;
+    final wifiRadios = b2[1] as WiFiRadios;
+    final wifiSsids = b2[2] as WiFiSsids;
+    logger.d('[USP][Dashboard]Batch 2 done — ${totalSw.elapsedMilliseconds}ms');
+
+    // Batch 3: WiFi clients + access points
+    final b3 = await Future.wait([
+      timed('Access Points', () => WiFiAccessPoints.fetch(usp)),
+      timed('WiFi Clients', () => fetchWifiClients(usp)),
+      timed('Ethernet Ports', () => EthernetInterfaces.fetch(usp)),
+    ]);
+    final wifiAccessPoints = b3[0] as WiFiAccessPoints;
+    final wifiClientMap = b3[1] as Map<String, WifiClient>;
+    final ethernetInterfaces = b3[2] as EthernetInterfaces;
+    logger.d('[USP][Dashboard]Batch 3 done — ${totalSw.elapsedMilliseconds}ms');
+
+    // Batch 4: DHCP + time
+    final b4 = await Future.wait([
+      timed('DHCP Clients', () => DhcpClients.fetch(usp)),
+      timed('DHCP Reservations', () => DhcpReservations.fetch(usp)),
+      timed('Time Settings', () => TimeSettings.fetch(usp)),
+    ]);
+    final dhcpClients = b4[0] as DhcpClients;
+    final dhcpReservations = b4[1] as DhcpReservations;
+    final timeSettings = b4[2] as TimeSettings;
+    logger.d('[USP][Dashboard]Batch 4 done — ${totalSw.elapsedMilliseconds}ms');
+
+    // Batch 5: Mesh + port rules
+    final b5 = await Future.wait([
+      timed('Mesh Nodes', () => fetchMeshNodes(usp)),
+      timed('Port Forwarding', () => PortForwarding.fetch(usp)),
+      timed('Port Triggering', () => PortTriggering.fetch(usp)),
+    ]);
+    final meshTopology = b5[0] as MeshTopologyInfo;
+    final portForwarding = b5[1] as PortForwarding;
+    final portTriggering = b5[2] as PortTriggering;
+    logger.d('[USP][Dashboard]Batch 5 done — ${totalSw.elapsedMilliseconds}ms');
+
+    // Batch 6: Firewall
+    final b6 = await Future.wait([
+      timed('Firewall Rules', () => FirewallChainRules.fetch(usp)),
+      timed('DMZ', () => Dmz.fetch(usp)),
+    ]);
+    final firewallRules = b6[0] as FirewallChainRules;
+    final dmzEntries = b6[1] as Dmz;
+    totalSw.stop();
+    logger.d(
+        '[USP][Dashboard]Batch 6 done — total ${totalSw.elapsedMilliseconds}ms');
+    logger.d('[USP][Dashboard]Dashboard fetch complete — '
         'devices: ${connectedDevices.items.length}, '
         'ethIfaces: ${ethernetInterfaces.items.length}, '
         'wifiClients: ${wifiClientMap.length}, '
@@ -236,7 +244,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       _fetchIpv6Info(usp),
       _fetchFirmwareImages(usp),
       _fetchBridgePortMap(usp),
-    ]);
+    ]).timeout(const Duration(seconds: 30));
     final wanGateway = extraResults[0] as String;
     final ipv6Info = extraResults[1] as ({
       bool lanEnabled,
@@ -250,6 +258,30 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       String bootRef
     });
     final bridgePortMap = extraResults[3] as Map<String, String>;
+
+    // All dashboard HTTP requests are done. OBUSPA pipeline is now free.
+    //
+    // No purge needed: bridge subscription API is idempotent by subscription_id.
+    // Re-registering the same codegen'd IDs overwrites existing entries without
+    // creating orphans. This saves 1+N serialized UDS requests per page load.
+    //
+    // SSE subscription setup
+    if (authWasRestored) {
+      // F5 reload: bootstrap connected SSE but deferred core subs.
+      // Also need to set core subs if bootstrap skipped them.
+      final manager = ref.read(sseManagerProvider);
+      if (manager != null) {
+        manager.setCoreSubscriptions(coreSubscriptions);
+        if (!manager.isConnected) {
+          await manager.connect();
+        }
+        await manager.registerDeferredSubscriptions(force: true);
+        logger.d('[USP][Dashboard]Post-reload SSE setup complete');
+      }
+    } else {
+      // Normal: SSE already connected via bootstrap, register deferred subs.
+      ref.read(sseManagerProvider)?.registerDeferredSubscriptions();
+    }
 
     // Data → UI Model transformation (constitution Section 5.3)
     final svc = _svc;
@@ -368,7 +400,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         'Device.Routing.Router.1.IPv4Forwarding.*.DestIPAddress',
         'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress',
         'Device.Routing.Router.1.IPv4Forwarding.*.Interface',
-      ]);
+      ]).timeout(const Duration(seconds: 10));
 
       // Extract instance IDs from response keys
       const basePath = 'Device.Routing.Router.1.IPv4Forwarding.';
@@ -393,7 +425,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       }
       return '';
     } catch (e) {
-      logger.w('[USP] Failed to fetch default gateway: $e');
+      logger.w('[USP][Dashboard]Failed to fetch default gateway: $e');
       return '';
     }
   }
@@ -418,7 +450,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         'Device.IP.Interface.2.IPv6Enable',
         'Device.IP.Interface.1.IPv6Address.',
         'Device.IP.Interface.2.IPv6Address.',
-      ]);
+      ]).timeout(const Duration(seconds: 10));
 
       final lanEnabled = resp['Device.IP.Interface.1.IPv6Enable'] == true;
       final wanEnabled = resp['Device.IP.Interface.2.IPv6Enable'] == true;
@@ -437,9 +469,9 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
           .where((ip) => ip.isNotEmpty)
           .toList();
 
-      logger.d('[USP] IPv6 LAN: enabled=$lanEnabled, '
+      logger.d('[USP][Dashboard]IPv6 LAN: enabled=$lanEnabled, '
           'addresses=${lanAddresses.length}');
-      logger.d('[USP] IPv6 WAN: enabled=$wanEnabled, '
+      logger.d('[USP][Dashboard]IPv6 WAN: enabled=$wanEnabled, '
           'addresses=${wanAddresses.length}');
 
       return (
@@ -449,7 +481,8 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         wanAddresses: wanAddresses,
       );
     } catch (e) {
-      logger.w('[USP] IPv6 fetch failed (router may not support IPv6): $e');
+      logger.w(
+          '[USP][Dashboard]IPv6 fetch failed (router may not support IPv6): $e');
       return (
         lanEnabled: false,
         lanAddresses: <String>[],
@@ -474,18 +507,18 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
           'Device.DeviceInfo.ActiveFirmwareImage',
           'Device.DeviceInfo.BootFirmwareImage',
         ]),
-      ]);
+      ]).timeout(const Duration(seconds: 10));
       final images = results[0] as FirmwareImages;
       final refs = results[1] as Map<String, dynamic>;
       final activeRef =
           refs['Device.DeviceInfo.ActiveFirmwareImage']?.toString() ?? '';
       final bootRef =
           refs['Device.DeviceInfo.BootFirmwareImage']?.toString() ?? '';
-      logger.d('[USP] Firmware images: ${images.items.length}, '
+      logger.d('[USP][Dashboard]Firmware images: ${images.items.length}, '
           'active=$activeRef, boot=$bootRef');
       return (images: images, activeRef: activeRef, bootRef: bootRef);
     } catch (e) {
-      logger.w('[USP] Firmware images fetch failed: $e');
+      logger.w('[USP][Dashboard]Firmware images fetch failed: $e');
       return (
         images: FirmwareImages(items: const []),
         activeRef: '',
@@ -508,7 +541,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     try {
       final resp = await usp.get([
         'Device.Bridging.Bridge.*.Port.*.LowerLayers',
-      ]);
+      ]).timeout(const Duration(seconds: 10));
       final map = <String, String>{};
       for (final entry in resp.entries) {
         if (!entry.key.endsWith('.LowerLayers')) continue;
@@ -532,7 +565,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
       }
       return map;
     } catch (e) {
-      logger.w('[USP] Bridge port map fetch failed: $e');
+      logger.w('[USP][Dashboard]Bridge port map fetch failed: $e');
       return {};
     }
   }
@@ -547,7 +580,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
     final s = state.valueOrNull;
     if (s == null || _mutating) return;
 
-    logger.d('[USP] SSE invalidation: $domains');
+    logger.d('[USP][Dashboard]SSE invalidation: $domains');
 
     try {
       for (final domain in domains) {
@@ -712,7 +745,7 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
         }
       }
     } catch (e) {
-      logger.w('[USP] SSE-triggered re-fetch failed: $e');
+      logger.w('[USP][Dashboard]SSE-triggered re-fetch failed: $e');
       // Non-fatal: data remains stale until next manual refresh
     }
   }
@@ -737,7 +770,10 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
 
   Future<void> renewWanLease() async {
     await _withLock(() async {
-      await _usp.operate('Device.DHCPv4.Client.1.Renew()');
+      // DHCP Renew is fire-and-forget — firmware does NOT send
+      // OperationComplete for this operation (unlike Ping/Traceroute).
+      await WanOperations.renewDhcpLease(_usp);
+      await Future.delayed(const Duration(seconds: 2));
       final wan = await WanStatus.fetch(_usp);
       final s = state.requireValue;
       state = AsyncData(s.copyWith(

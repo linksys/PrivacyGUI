@@ -89,7 +89,7 @@ class UspFirewallNotifier extends AutoDisposeAsyncNotifier<UspFirewallState> {
     final ruleMap = svc.parseFirewallRules(chainRules);
     final uiModel = svc.buildUIModel(rules: ruleMap);
 
-    logger.d('[USP] Firewall fetched — '
+    logger.d('[USP][Firewall]Firewall fetched — '
         'rules: ${ruleMap.length}, '
         'spiV4: ${uiModel.isIPv4FirewallEnabled}, '
         'spiV6: ${uiModel.isIPv6FirewallEnabled}');
@@ -129,7 +129,8 @@ class UspFirewallNotifier extends AutoDisposeAsyncNotifier<UspFirewallState> {
 
       await FirewallChainRules.updateMany(usp, updates);
 
-      logger.d('[USP] Firewall saved — ${updates.length} rules updated');
+      logger
+          .d('[USP][Firewall]Firewall saved — ${updates.length} rules updated');
 
       // Re-fetch to confirm changes took effect.
       ref.invalidateSelf();

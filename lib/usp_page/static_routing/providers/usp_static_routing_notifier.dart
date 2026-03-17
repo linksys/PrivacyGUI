@@ -68,7 +68,7 @@ class UspStaticRoutingNotifier
     final svc = ref.read(uspStaticRoutingServiceProvider);
     final routes = svc.buildRouteUIModels(data);
 
-    logger.d('[USP] StaticRouting fetched — '
+    logger.d('[USP][Network][Routing]StaticRouting fetched — '
         'total: ${data.items.length}, static: ${routes.length}');
 
     return UspStaticRoutingState(routes: routes);
@@ -105,7 +105,7 @@ class UspStaticRoutingNotifier
         interface_: interfacePath,
         alias: name,
       );
-      logger.d('[USP] StaticRoute added — name: $name');
+      logger.d('[USP][Network][Routing]StaticRoute added — name: $name');
       await _refreshRoutes();
     } catch (e) {
       state = AsyncData(s.copyWith(isMutating: false));
@@ -140,7 +140,7 @@ class UspStaticRoutingNotifier
           alias: name,
         ),
       );
-      logger.d('[USP] StaticRoute updated — $instancePath');
+      logger.d('[USP][Network][Routing]StaticRoute updated — $instancePath');
       await _refreshRoutes();
     } catch (e) {
       state = AsyncData(s.copyWith(isMutating: false));
@@ -159,7 +159,8 @@ class UspStaticRoutingNotifier
         usp,
         StaticRouteUpdate(instancePath: instancePath, enable: enabled),
       );
-      logger.d('[USP] StaticRoute toggled — $instancePath → $enabled');
+      logger.d(
+          '[USP][Network][Routing]StaticRoute toggled — $instancePath → $enabled');
       await _refreshRoutes();
     } catch (e) {
       state = AsyncData(s.copyWith(isMutating: false));
@@ -175,7 +176,7 @@ class UspStaticRoutingNotifier
     try {
       final usp = ref.read(uspServiceProvider)!;
       await StaticRouting.delete(usp, instancePath);
-      logger.d('[USP] StaticRoute deleted — $instancePath');
+      logger.d('[USP][Network][Routing]StaticRoute deleted — $instancePath');
       await _refreshRoutes();
     } catch (e) {
       state = AsyncData(s.copyWith(isMutating: false));

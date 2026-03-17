@@ -57,7 +57,7 @@ class UspIpv6PortServiceNotifier
     final svc = ref.read(uspIpv6PortServiceServiceProvider);
     final rules = svc.buildRuleUIModels(data);
 
-    logger.d('[USP] Ipv6PortService fetched — '
+    logger.d('[USP][Firewall][IPv6Port]Ipv6PortService fetched — '
         'total: ${data.items.length}, ipv6: ${rules.length}');
 
     return UspIpv6PortServiceState(rules: rules);
@@ -96,7 +96,8 @@ class UspIpv6PortServiceNotifier
         protocol: protocol,
         target: 'Accept',
       );
-      logger.d('[USP] Ipv6PortServiceRule added — $description');
+      logger.d(
+          '[USP][Firewall][IPv6Port]Ipv6PortServiceRule added — $description');
       await _refreshRules();
     } catch (e) {
       state = AsyncData(s.copyWith(isMutating: false));
@@ -132,7 +133,8 @@ class UspIpv6PortServiceNotifier
           target: 'Accept',
         ),
       );
-      logger.d('[USP] Ipv6PortServiceRule updated — $instancePath');
+      logger.d(
+          '[USP][Firewall][IPv6Port]Ipv6PortServiceRule updated — $instancePath');
       await _refreshRules();
     } catch (e) {
       state = AsyncData(s.copyWith(isMutating: false));
@@ -151,7 +153,8 @@ class UspIpv6PortServiceNotifier
         usp,
         Ipv6PortServiceRuleUpdate(instancePath: instancePath, enable: enabled),
       );
-      logger.d('[USP] Ipv6PortServiceRule toggled — $instancePath → $enabled');
+      logger.d(
+          '[USP][Firewall][IPv6Port]Ipv6PortServiceRule toggled — $instancePath → $enabled');
       await _refreshRules();
     } catch (e) {
       state = AsyncData(s.copyWith(isMutating: false));
@@ -167,7 +170,8 @@ class UspIpv6PortServiceNotifier
     try {
       final usp = ref.read(uspServiceProvider)!;
       await Ipv6PortService.delete(usp, instancePath);
-      logger.d('[USP] Ipv6PortServiceRule deleted — $instancePath');
+      logger.d(
+          '[USP][Firewall][IPv6Port]Ipv6PortServiceRule deleted — $instancePath');
       await _refreshRules();
     } catch (e) {
       state = AsyncData(s.copyWith(isMutating: false));
