@@ -77,6 +77,8 @@ final demoRouterProvider = Provider<GoRouter>((ref) {
         return router.goPnpPath(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         return state.uri.toString();
+      } else if (state.matchedLocation.startsWith('/usp')) {
+        return state.uri.toString();
       }
       return router.redirectLogic(state);
     },

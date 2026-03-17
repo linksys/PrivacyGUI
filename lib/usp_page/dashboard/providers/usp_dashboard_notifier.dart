@@ -81,6 +81,15 @@ class UspDashboardNotifier extends AsyncNotifier<UspDashboardState> {
 
   @override
   Future<UspDashboardState> build() async {
+    try {
+      return await _buildImpl();
+    } catch (e, st) {
+      logger.e('[USP Dashboard] build() failed: $e\n$st');
+      rethrow;
+    }
+  }
+
+  Future<UspDashboardState> _buildImpl() async {
     final usp = ref.watch(uspServiceProvider);
     if (usp == null) {
       throw StateError('USP service not available');

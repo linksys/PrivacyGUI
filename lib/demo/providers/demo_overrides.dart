@@ -8,10 +8,15 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
+import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/demo/jnap/demo_router_repository.dart';
+import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
+import 'package:privacy_gui/demo/usp/demo_usp_service.dart';
 import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
@@ -20,6 +25,9 @@ import 'package:privacy_gui/providers/connectivity/connectivity_info.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/providers/connectivity/connectivity_state.dart';
 import 'package:privacy_gui/route/router_provider.dart';
+import 'package:privacy_gui/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'demo_router_provider.dart';
 
 /// Demo provider overrides for the Demo application.
@@ -36,29 +44,54 @@ import 'demo_router_provider.dart';
 /// pipeline.
 class DemoProviders {
   /// Returns all provider overrides needed for demo mode.
-  static List<Override> get allOverrides => [
-        // 1. Auth: Always logged in
-        authProvider.overrideWith(() => _DemoAuthNotifier()),
+  static List<Override> get allOverrides {
+    final demoUsp = DemoUspService(DemoUspDataLoader.instance);
+    return [
+      // 1. Auth: Always logged in
+      authProvider.overrideWith(() => _DemoAuthNotifier()),
 
-        // 2. Connectivity: Always online
-        connectivityProvider.overrideWith(() => _DemoConnectivityNotifier()),
+      // 2. Connectivity: Always online
+      connectivityProvider.overrideWith(() => _DemoConnectivityNotifier()),
 
-        // 3. Router Repository: Intercept JNAP traffic
-        routerRepositoryProvider
-            .overrideWith((ref) => DemoRouterRepository(ref)),
+      // 3. Router Repository: Intercept JNAP traffic
+      routerRepositoryProvider
+          .overrideWith((ref) => DemoRouterRepository(ref)),
 
-        // 4. Polling: Auto-start
-        pollingProvider.overrideWith(() => _DemoPollingNotifier()),
+      // 4. Polling: Auto-start
+      pollingProvider.overrideWith(() => _DemoPollingNotifier()),
 
-        // 5. Router: Wrap with ShellRoute for Theme Panel Overlay
-        routerProvider.overrideWithProvider(demoRouterProvider),
+      // 5. Router: Wrap with ShellRoute for Theme Panel Overlay
+      routerProvider.overrideWithProvider(demoRouterProvider),
 
-        // 5. Geolocation: Bypass cloud service call
-        geolocationProvider.overrideWith(() => _DemoGeolocationNotifier()),
+      // 6. Geolocation: Bypass cloud service call
+      geolocationProvider.overrideWith(() => _DemoGeolocationNotifier()),
 
-        // 6. PnP: Bypass setup wizard
-        pnpProvider.overrideWith(() => _DemoPnpNotifier()),
-      ];
+      // 7. PnP: Bypass setup wizard
+      pnpProvider.overrideWith(() => _DemoPnpNotifier()),
+
+      // --- USP Provider overrides ---
+
+      // 8. USP Service: Mock data from demo_usp_data.json
+      uspServiceProvider.overrideWith((ref) => demoUsp),
+
+      // 9. SSE Bootstrap: No-op (no SSE in demo)
+      sseBootstrapProvider.overrideWith((ref) async {}),
+
+      // 10. SSE Manager: Null (no SSE in demo)
+      sseManagerProvider.overrideWith((ref) => null),
+
+      // 11. USP Bridge Client: Null (no bridge in demo)
+      uspBridgeClientProvider.overrideWith((ref) => null),
+
+      // 12. Protocol Resolver: Force USP-only mode → routes to /uspDashboard
+      protocolResolverProvider.overrideWith((ref) =>
+          ProtocolResolver(demoUsp, ProtocolPreference.uspOnly)),
+
+      // 13. USP Auth Coordinator: Uses DemoUspService (always authenticated)
+      uspAuthCoordinatorProvider.overrideWith((ref) =>
+          UspAuthCoordinator(demoUsp, const FlutterSecureStorage())),
+    ];
+  }
 }
 
 class _DemoGeolocationNotifier extends GeolocationNotifier {
