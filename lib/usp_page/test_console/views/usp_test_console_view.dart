@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp/web/usp_wasm_init.dart';
@@ -656,15 +657,8 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
             ),
           ),
           // Status badges
-          if (_sseConnected)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _buildStatusBadge(
-                context,
-                label: 'SSE',
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
+          _buildSseStateBadge(context),
+          const SizedBox(width: 8),
           _buildStatusBadge(
             context,
             label: _usingSharedSession
@@ -679,6 +673,22 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
         ],
       ),
     );
+  }
+
+  Widget _buildSseStateBadge(BuildContext context) {
+    final sseState = ref.watch(sseConnectionStateProvider);
+    final state = sseState.valueOrNull ?? SseConnectionState.disconnected;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final (String label, Color color) = switch (state) {
+      SseConnectionState.connected => ('SSE Connected', Colors.green),
+      SseConnectionState.connecting => ('SSE Connecting...', colorScheme.primary),
+      SseConnectionState.reconnecting => ('SSE Reconnecting', Colors.orange),
+      SseConnectionState.suspended => ('SSE Suspended', colorScheme.error),
+      SseConnectionState.disconnected => ('SSE Off', colorScheme.outline),
+    };
+
+    return _buildStatusBadge(context, label: label, color: color);
   }
 
   Widget _buildStatusBadge(

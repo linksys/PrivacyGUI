@@ -115,8 +115,9 @@ class UspBridgeClient {
 
   Future<void> _startSseStream(
     StreamController<SseEvent> controller,
-    web.AbortController abortController,
-  ) async {
+    web.AbortController abortController, {
+    int authRetryCount = 0,
+  }) async {
     void debug(String msg) {
       if (!controller.isClosed) {
         controller.add(SseEvent(event: '_debug', data: msg));
@@ -147,11 +148,18 @@ class UspBridgeClient {
 
       if (!response.ok) {
         if (response.status == 401) {
+          if (authRetryCount >= 1) {
+            debug('401 retry limit reached (max 1 retry)');
+            controller.addError('SSE 401 after reauth retry');
+            await controller.close();
+            return;
+          }
           debug('401 detected, attempting reauth and reconnect...');
           try {
             await _usp.reauth();
             debug('Reauth succeeded, reconnecting SSE...');
-            await _startSseStream(controller, abortController);
+            await _startSseStream(controller, abortController,
+                authRetryCount: authRetryCount + 1);
           } catch (e) {
             debug('Reauth failed: $e');
             controller.addError('SSE 401 reauth failed: $e');

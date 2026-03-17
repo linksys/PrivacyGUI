@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'sse_connection_manager.dart';
 import 'sse_event_router.dart';
 import 'sse_subscription_registry.dart';
+import 'sse_unload_handler.dart';
 import 'usp_bridge_client.dart';
 import 'usp_service.dart';
 
@@ -38,6 +39,9 @@ class SseManager {
   final SseConnectionManager connection;
   final SseSubscriptionRegistry registry;
   final SseEventRouter router;
+  final SseUnloadHandler _unloadHandler = SseUnloadHandler();
+  List<(String id, String notifType, String referenceList)>
+      _coreSubscriptions = [];
 
   SseManager({
     required UspService usp,
@@ -49,11 +53,13 @@ class SseManager {
     // Wire connection events to router
     connection.onEvent = router.routeEvent;
 
-    // Wire reconnection to bridge-only re-registration
+    // On connect (first or reconnect): register/re-register subscriptions.
+    // First connect: registers core subscriptions set via setCoreSubscriptions().
+    // Reconnect: re-registers existing subscriptions on the bridge.
     connection.onConnected = () {
-      logger
-          .d('[SseManager] Connected — re-registering subscriptions on bridge');
-      registry.resubscribeAll();
+      logger.d('[SseManager] Connected — registering/re-registering '
+          'subscriptions on bridge');
+      _registerOrResubscribe();
     };
 
     connection.onDisconnected = () {
@@ -62,6 +68,14 @@ class SseManager {
 
     // Inject SSE delegate so codegen subscribe() routes through SSE
     _usp.onSseSubscribe = _handleSseSubscribe;
+
+    // Register browser unload handler to abort SSE on page refresh/close.
+    // This ensures the bridge's TCP socket is freed immediately.
+    _unloadHandler.onUnload = () {
+      logger.d('[SseManager] Page unload — disconnecting SSE');
+      connection.disconnect();
+    };
+    _unloadHandler.register();
   }
 
   /// Registers a subscription and adds a notification handler in one call.
@@ -154,6 +168,44 @@ class SseManager {
     }
   }
 
+  /// Sets the core subscriptions to register when SSE first connects.
+  ///
+  /// Called once from [sseBootstrapProvider]. Subscriptions are registered
+  /// from the [onConnected] callback after the first heartbeat, rather than
+  /// during bootstrap, to reduce the HTTP request burst on the bridge.
+  void setCoreSubscriptions(
+      List<(String, String, String)> subscriptions) {
+    _coreSubscriptions = subscriptions;
+  }
+
+  /// Registers or re-registers subscriptions on the bridge after SSE connects.
+  ///
+  /// - First connect (registry empty): registers [_coreSubscriptions]
+  /// - Reconnect (registry has entries): re-registers existing subscriptions
+  Future<void> _registerOrResubscribe() async {
+    if (registry.activeIds.isNotEmpty) {
+      // Reconnect path: re-register existing subscriptions on bridge
+      await registry.resubscribeAll();
+    } else if (_coreSubscriptions.isNotEmpty) {
+      // First connect path: register core subscriptions
+      for (final (id, notifType, referenceList) in _coreSubscriptions) {
+        try {
+          await registry.register(
+            subscriptionId: id,
+            notifType: notifType,
+            referenceList: referenceList,
+          );
+          // Small breathing room for embedded router between requests
+          await Future.delayed(const Duration(milliseconds: 50));
+        } catch (e) {
+          logger.w('[SseManager] Failed to register core sub $id: $e');
+        }
+      }
+      logger.d('[SseManager] Registered ${registry.activeIds.length} '
+          'core subscriptions');
+    }
+  }
+
   /// Starts the SSE connection.
   Future<void> connect() => connection.connect();
 
@@ -170,6 +222,7 @@ class SseManager {
 
   /// Clean shutdown: disconnect SSE, unregister all subscriptions, dispose.
   Future<void> dispose() async {
+    _unloadHandler.unregister();
     _usp.onSseSubscribe = null;
     await connection.disconnect();
     await registry.unregisterAll();

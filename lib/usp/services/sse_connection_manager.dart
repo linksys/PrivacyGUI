@@ -52,6 +52,7 @@ class SseConnectionManager {
 
   StreamSubscription<SseEvent>? _sseSubscription;
   Timer? _heartbeatWatchdog;
+  Completer<void>? _connectInProgress;
   int _reconnectAttempt = 0;
   bool _disposed = false;
   bool _intentionalDisconnect = false;
@@ -74,27 +75,41 @@ class SseConnectionManager {
   // Connect / Disconnect
   // ══════════════════════════════════════════════════════════════════════════
 
-  /// Opens the SSE connection. Safe to call multiple times — disconnects
-  /// any existing connection first.
+  /// Opens the SSE connection. Safe to call multiple times — if a connect
+  /// is already in progress, subsequent calls await the existing attempt.
   Future<void> connect() async {
     if (_disposed) return;
 
-    await _cancelExistingStream();
-    _intentionalDisconnect = false;
-    connectionState.value = SseConnectionState.connecting;
+    // Lock: if connect is already in progress, await it and return.
+    if (_connectInProgress != null) {
+      logger.d('[SSE] connect() already in progress — awaiting');
+      await _connectInProgress!.future;
+      return;
+    }
 
-    logger.d('[SSE] Connecting...');
-
+    _connectInProgress = Completer<void>();
     try {
+      await _cancelExistingStream();
+      _intentionalDisconnect = false;
+      connectionState.value = SseConnectionState.connecting;
+
+      logger.d('[SSE] Connecting...');
+
       final stream = _bridge.notifications();
       _sseSubscription = stream.listen(
         _onEvent,
         onError: _onError,
         onDone: _onDone,
       );
+      _connectInProgress!.complete();
     } catch (e) {
       logger.w('[SSE] Failed to open stream: $e');
+      if (!_connectInProgress!.isCompleted) {
+        _connectInProgress!.completeError(e);
+      }
       _scheduleReconnect();
+    } finally {
+      _connectInProgress = null;
     }
   }
 
@@ -240,7 +255,7 @@ class SseConnectionManager {
         '(attempt #$_reconnectAttempt/$_maxRetries)');
 
     Timer(delay, () {
-      if (!_disposed && !_intentionalDisconnect) {
+      if (!_disposed && !_intentionalDisconnect && _connectInProgress == null) {
         connect();
       }
     });
