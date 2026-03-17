@@ -41,8 +41,9 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
     final hostnameByMac = {
       for (final d in devices.items)
         if (d.macAddress.isNotEmpty)
-          svc.normalizeMac(d.macAddress):
-              d.hostName.isNotEmpty ? d.hostName : svc.normalizeMac(d.macAddress),
+          svc.normalizeMac(d.macAddress): d.hostName.isNotEmpty
+              ? d.hostName
+              : svc.normalizeMac(d.macAddress),
     };
 
     final allowed = svc.allowedDevices(macAps).map((d) {
