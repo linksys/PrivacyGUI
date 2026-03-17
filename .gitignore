@@ -147,8 +147,7 @@ doc/tests/output/*
 .claude/settings.local.json
 .claude/commands/
 .gemini/commands/
-.specify/scripts/bash/
-.specify/templates/
+.specify/
 .metadata
 
 # Integration Test Data
@@ -165,7 +164,7 @@ macos/
 
 # AI Project Documentation
 # Keep .claude/CLAUDE.md tracked as project documentation
-# Keep .specify/memory/ tracked for project constitution
+
 # Untrack auto-generated CLAUDE.md in project root
 CLAUDE.md
 .mcp.json
