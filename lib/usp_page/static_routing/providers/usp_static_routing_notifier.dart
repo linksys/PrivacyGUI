@@ -35,8 +35,7 @@ class UspStaticRoutingNotifier
     with
         PreservableAutoDisposeNotifierMixin<StaticRouteList,
             StaticRoutingStatus, StaticRoutingFeatureState> {
-  UspStaticRoutingService get _svc =>
-      ref.read(uspStaticRoutingServiceProvider);
+  UspStaticRoutingService get _svc => ref.read(uspStaticRoutingServiceProvider);
 
   @override
   StaticRoutingFeatureState build() {

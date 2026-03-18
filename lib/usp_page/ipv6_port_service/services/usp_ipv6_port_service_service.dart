@@ -36,8 +36,7 @@ class UspIpv6PortServiceService {
     };
     final toDelete = original
         .where((r) =>
-            r.instancePath != null &&
-            !currentPaths.contains(r.instancePath))
+            r.instancePath != null && !currentPaths.contains(r.instancePath))
         .toList();
 
     for (var i = 0; i < toDelete.length; i++) {

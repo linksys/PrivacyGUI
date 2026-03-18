@@ -15,8 +15,7 @@ class UspNetworkStatusCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final wan =
-        this.wan ?? ref.watch(wanDataProvider).valueOrNull?.model;
+    final wan = this.wan ?? ref.watch(wanDataProvider).valueOrNull?.model;
     if (wan == null) return const CardSkeleton.info(rows: 4);
     final isRenewing = ref.watch(uspMutationLoadingProvider) == 'wanRenew';
 
@@ -63,9 +62,8 @@ class UspNetworkStatusCard extends ConsumerWidget {
                           context,
                           ref,
                           loadingKey: 'wanRenew',
-                          mutation: () => ref
-                              .read(wanDataProvider.notifier)
-                              .renewLease(),
+                          mutation: () =>
+                              ref.read(wanDataProvider.notifier).renewLease(),
                           successMessage: 'DHCP lease renewed',
                         ),
               ),

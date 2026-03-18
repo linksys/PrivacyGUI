@@ -96,12 +96,11 @@ class UspTimeSettingsCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'time',
-      mutation: () =>
-          ref.read(timeDataProvider.notifier).updateTimeSettings(
-                enable: result.enable,
-                ntpServer1: result.ntpServer1,
-                ntpServer2: result.ntpServer2,
-              ),
+      mutation: () => ref.read(timeDataProvider.notifier).updateTimeSettings(
+            enable: result.enable,
+            ntpServer1: result.ntpServer1,
+            ntpServer2: result.ntpServer2,
+          ),
       successMessage: 'Time settings saved',
     );
   }

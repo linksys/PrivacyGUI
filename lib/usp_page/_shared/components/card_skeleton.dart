@@ -133,8 +133,7 @@ class CardSkeleton extends StatelessWidget {
                   children: [
                     AppSkeleton.capsule(width: 36, height: 20),
                     AppGap.md(),
-                    Expanded(
-                        child: AppSkeleton.text(width: double.infinity)),
+                    Expanded(child: AppSkeleton.text(width: double.infinity)),
                     AppGap.md(),
                     AppSkeleton.text(width: 80),
                   ],

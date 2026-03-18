@@ -148,8 +148,7 @@ class UspInternetSettingsNotifier
   void exitEditMode() {
     // Revert form to original + exit edit mode
     state = state.copyWith(
-      settings:
-          state.settings.copyWith(current: state.settings.original),
+      settings: state.settings.copyWith(current: state.settings.original),
       status: state.status.copyWith(isEditing: false),
     );
   }

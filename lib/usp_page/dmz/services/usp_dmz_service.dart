@@ -98,8 +98,7 @@ class UspDmzService {
     } else if (!NetworkUtils.isValidIpAddress(model.destIp)) {
       errors['destIp'] = 'Invalid IP address';
     }
-    if (model.sourceType == DmzSourceType.cidr &&
-        model.sourcePrefix.isEmpty) {
+    if (model.sourceType == DmzSourceType.cidr && model.sourcePrefix.isEmpty) {
       errors['sourcePrefix'] = 'CIDR range is required';
     }
     return errors;

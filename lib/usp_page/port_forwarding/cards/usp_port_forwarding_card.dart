@@ -18,7 +18,8 @@ class UspPortForwardingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pfData = ref.watch(portForwardingDataProvider).valueOrNull;
     final ptData = ref.watch(portTriggeringDataProvider).valueOrNull;
-    if (pfData == null && ptData == null) return const CardSkeleton.list(rows: 3);
+    if (pfData == null && ptData == null)
+      return const CardSkeleton.list(rows: 3);
     final rules = pfData?.ruleModels ?? [];
     final triggers = ptData?.ruleModels ?? [];
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';
@@ -171,15 +172,14 @@ class UspPortForwardingCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'portForwarding',
-      mutation: () =>
-          ref.read(portForwardingDataProvider.notifier).addRule(
-                externalPort: result.externalPort,
-                internalPort: result.internalPort,
-                internalClient: result.internalClient,
-                protocol: result.protocol,
-                description: result.description,
-                enabled: result.enabled,
-              ),
+      mutation: () => ref.read(portForwardingDataProvider.notifier).addRule(
+            externalPort: result.externalPort,
+            internalPort: result.internalPort,
+            internalClient: result.internalClient,
+            protocol: result.protocol,
+            description: result.description,
+            enabled: result.enabled,
+          ),
       successMessage: 'Rule added',
     );
   }

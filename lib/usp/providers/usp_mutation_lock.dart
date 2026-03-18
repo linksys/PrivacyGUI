@@ -34,8 +34,9 @@ class UspMutationLock {
       await _completer!.future.timeout(
         timeout,
         onTimeout: () {
-          logger.w('[USP][MutationLock] Wait timeout after ${timeout.inSeconds}s '
-              '— force releasing stale lock');
+          logger
+              .w('[USP][MutationLock] Wait timeout after ${timeout.inSeconds}s '
+                  '— force releasing stale lock');
           if (!_completer!.isCompleted) _completer!.complete();
         },
       );

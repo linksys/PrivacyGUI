@@ -363,7 +363,8 @@ class _AddMacDialogState extends State<_AddMacDialog> {
   Future<void> _confirm() async {
     if (!_canConfirm) return;
     setState(() => _isConfirming = true);
-    await widget.onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
+    await widget
+        .onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
   }
 
   @override

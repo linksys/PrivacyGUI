@@ -30,7 +30,8 @@ class UspNetworkTopologyCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final devicesData = ref.watch(devicesDataProvider).valueOrNull;
-    final info = this.info ?? ref.watch(systemInfoDataProvider).valueOrNull?.model;
+    final info =
+        this.info ?? ref.watch(systemInfoDataProvider).valueOrNull?.model;
     if (info == null) return const CardSkeleton.topology();
     final devices = this.devices ?? devicesData?.deviceModels ?? [];
     final meshNodes = this.meshNodes ?? devicesData?.meshTopology.nodes ?? [];

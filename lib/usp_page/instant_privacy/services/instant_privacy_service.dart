@@ -176,9 +176,8 @@ class UspInstantPrivacyService {
     final hostnameByMac = {
       for (final d in devices.items)
         if (d.macAddress.isNotEmpty)
-          normalizeMac(d.macAddress): d.hostName.isNotEmpty
-              ? d.hostName
-              : normalizeMac(d.macAddress),
+          normalizeMac(d.macAddress):
+              d.hostName.isNotEmpty ? d.hostName : normalizeMac(d.macAddress),
     };
 
     final allowed = allowedDevices(macAps).map((d) {

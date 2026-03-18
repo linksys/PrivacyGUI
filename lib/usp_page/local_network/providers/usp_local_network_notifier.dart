@@ -35,8 +35,7 @@ class UspLocalNetworkNotifier
     with
         PreservableAutoDisposeNotifierMixin<LocalNetworkSettings,
             LocalNetworkStatus, LocalNetworkFeatureState> {
-  UspLocalNetworkService get _svc =>
-      ref.read(uspLocalNetworkServiceProvider);
+  UspLocalNetworkService get _svc => ref.read(uspLocalNetworkServiceProvider);
 
   @override
   LocalNetworkFeatureState build() {
@@ -116,8 +115,7 @@ class UspLocalNetworkNotifier
   @override
   void revert() {
     state = state.copyWith(
-      settings:
-          state.settings.copyWith(current: state.settings.original),
+      settings: state.settings.copyWith(current: state.settings.original),
       status: state.status.copyWith(validationErrors: const {}),
     );
   }
@@ -141,10 +139,10 @@ class UspLocalNetworkNotifier
       final locked = _svc.lockedOctetCount(newModel.subnetMask);
       if (locked > 0) {
         newModel = newModel.copyWith(
-          minAddress: _svc.syncPrefix(
-              newModel.minAddress, newModel.ipAddress, locked),
-          maxAddress: _svc.syncPrefix(
-              newModel.maxAddress, newModel.ipAddress, locked),
+          minAddress:
+              _svc.syncPrefix(newModel.minAddress, newModel.ipAddress, locked),
+          maxAddress:
+              _svc.syncPrefix(newModel.maxAddress, newModel.ipAddress, locked),
         );
       }
     }
@@ -158,5 +156,4 @@ class UspLocalNetworkNotifier
       status: state.status.copyWith(validationErrors: errors),
     );
   }
-
 }

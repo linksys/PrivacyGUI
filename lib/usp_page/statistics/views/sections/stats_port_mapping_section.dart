@@ -30,7 +30,8 @@ class StatsPortMappingSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildChart(BuildContext context, PortForwardingData? pfData, FirewallData? fwData) {
+  Widget _buildChart(
+      BuildContext context, PortForwardingData? pfData, FirewallData? fwData) {
     final colorScheme = Theme.of(context).colorScheme;
     final portForwardingRules = pfData?.ruleModels ?? [];
     final dmzEntries = fwData?.dmzEntries.items ?? [];

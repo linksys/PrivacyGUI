@@ -49,13 +49,12 @@ class DashboardOrchestratorState extends Equatable {
 /// 2. Fire-and-forget domain provider triggers (cards show per-card skeletons)
 /// 3. SSE bootstrap + deferred subscription registration
 /// 4. Pull-to-refresh (invalidate all domain providers)
-final dashboardOrchestratorProvider = AsyncNotifierProvider<
-    DashboardOrchestrator, DashboardOrchestratorState>(
+final dashboardOrchestratorProvider =
+    AsyncNotifierProvider<DashboardOrchestrator, DashboardOrchestratorState>(
   DashboardOrchestrator.new,
 );
 
-class DashboardOrchestrator
-    extends AsyncNotifier<DashboardOrchestratorState> {
+class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   @override
   Future<DashboardOrchestratorState> build() async {
     try {

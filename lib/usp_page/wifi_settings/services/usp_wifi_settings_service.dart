@@ -329,9 +329,7 @@ class UspWifiSettingsService {
   }) {
     if (!band.contains('6')) return selectedMode;
     const openModes = {'None', 'Enhanced-Open', ''};
-    return openModes.contains(selectedMode)
-        ? 'Enhanced-Open'
-        : 'WPA3-Personal';
+    return openModes.contains(selectedMode) ? 'Enhanced-Open' : 'WPA3-Personal';
   }
 }
 

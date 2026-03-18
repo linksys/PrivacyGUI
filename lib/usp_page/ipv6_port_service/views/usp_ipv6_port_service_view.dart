@@ -30,8 +30,9 @@ class UspIpv6PortServiceView extends ConsumerWidget {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspMenu),
-      onRefresh: () =>
-          ref.read(uspIpv6PortServiceProvider.notifier).fetch(forceRemote: true),
+      onRefresh: () => ref
+          .read(uspIpv6PortServiceProvider.notifier)
+          .fetch(forceRemote: true),
       bottomBar: _buildBottomBar(context, ref, state),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {

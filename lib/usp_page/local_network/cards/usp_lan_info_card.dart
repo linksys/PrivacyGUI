@@ -13,8 +13,7 @@ class UspLanInfoCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final info =
-        this.info ?? ref.watch(lanDataProvider).valueOrNull?.model;
+    final info = this.info ?? ref.watch(lanDataProvider).valueOrNull?.model;
     if (info == null) return const CardSkeleton.info(rows: 4);
     return AppCard(
       child: Column(

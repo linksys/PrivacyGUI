@@ -91,7 +91,8 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     if (!state.isDirty) return null;
     return UiKitBottomBarConfig(
       positiveLabel: 'Save',
-      isPositiveEnabled: !state.status.isSaving && state.status.fieldErrors.isEmpty,
+      isPositiveEnabled:
+          !state.status.isSaving && state.status.fieldErrors.isEmpty,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspDmzProvider.notifier).revert(),
     );

@@ -61,8 +61,7 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
     ]);
 
     final lanInfo = results[0] as LanNetworkInfo;
-    final ipv6 =
-        results[1] as ({bool enabled, List<String> addresses});
+    final ipv6 = results[1] as ({bool enabled, List<String> addresses});
 
     final model = LanInfoUIModel(
       ipAddress: lanInfo.ipAddress,
@@ -90,8 +89,7 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
       ]).timeout(const Duration(seconds: 10));
 
       final enabled = resp['Device.IP.Interface.1.IPv6Enable'] == true;
-      final instances =
-          resp.getInstances('Device.IP.Interface.1.IPv6Address.');
+      final instances = resp.getInstances('Device.IP.Interface.1.IPv6Address.');
       final List<String> addresses = instances
           .map((i) => i.getString('IPAddress'))
           .where((ip) => ip.isNotEmpty)
@@ -99,8 +97,7 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
 
       return (enabled: enabled, addresses: addresses);
     } catch (e) {
-      logger
-          .w('[USP][LanData] IPv6 fetch failed (may not be supported): $e');
+      logger.w('[USP][LanData] IPv6 fetch failed (may not be supported): $e');
       return (enabled: false, addresses: const <String>[]);
     }
   }

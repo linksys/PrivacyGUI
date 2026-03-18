@@ -79,10 +79,14 @@ class _UspPortForwardingDetailViewState
           Tab(text: 'Triggering (${triggeringRules.length})'),
         ],
         tabContentViews: [
-          _buildTabContent(status,
-              UspSinglePortTab(rules: singlePortRules, isSaving: status.isSaving)),
-          _buildTabContent(status,
-              UspPortRangeTab(rules: portRangeRules, isSaving: status.isSaving)),
+          _buildTabContent(
+              status,
+              UspSinglePortTab(
+                  rules: singlePortRules, isSaving: status.isSaving)),
+          _buildTabContent(
+              status,
+              UspPortRangeTab(
+                  rules: portRangeRules, isSaving: status.isSaving)),
           _buildTabContent(
               status,
               UspPortTriggeringTab(

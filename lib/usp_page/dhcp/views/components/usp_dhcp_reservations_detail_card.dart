@@ -34,8 +34,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
                   AppGap.sm(),
                   AppIconButton(
                     icon: AppIcon.font(Icons.add, size: 20),
-                    onTap:
-                        isSaving ? null : () => _showAddDialog(context, ref),
+                    onTap: isSaving ? null : () => _showAddDialog(context, ref),
                   ),
                 ],
               ),
@@ -45,8 +44,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
           if (reservations.isEmpty)
             AppText.bodyMedium('No DHCP reservations configured')
           else
-            ...reservations
-                .map((r) => _buildReservationRow(context, ref, r)),
+            ...reservations.map((r) => _buildReservationRow(context, ref, r)),
         ],
       ),
     );

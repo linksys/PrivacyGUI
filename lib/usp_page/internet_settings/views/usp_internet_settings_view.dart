@@ -61,8 +61,7 @@ class UspInternetSettingsView extends ConsumerWidget {
           AppGap.xl(),
           AppButton.primary(
             label: loc(context).retry,
-            onTap: () =>
-                ref.read(uspInternetSettingsProvider.notifier).fetch(),
+            onTap: () => ref.read(uspInternetSettingsProvider.notifier).fetch(),
           ),
         ],
       ),

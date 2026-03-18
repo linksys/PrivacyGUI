@@ -21,8 +21,8 @@ final uspFirewallProvider =
 
 /// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
 /// dirty-check integration.
-final preservableUspFirewallProvider = AutoDisposeProvider<
-    PreservableContract<FirewallSettings, FirewallStatus>>(
+final preservableUspFirewallProvider =
+    AutoDisposeProvider<PreservableContract<FirewallSettings, FirewallStatus>>(
   (ref) => ref.watch(uspFirewallProvider.notifier),
 );
 
@@ -62,8 +62,7 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
       // Clone data from the shared data provider (read, not watch).
       final data = await ref.read(firewallDataProvider.future);
 
-      final (uiModel, ruleContext) =
-          _svc.buildFromChainRules(data.chainRules);
+      final (uiModel, ruleContext) = _svc.buildFromChainRules(data.chainRules);
 
       logger.d('[USP][Firewall] Fetched — '
           'spiV4: ${uiModel.isIPv4FirewallEnabled}, '

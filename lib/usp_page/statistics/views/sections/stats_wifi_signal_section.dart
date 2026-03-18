@@ -46,7 +46,8 @@ class StatsWifiSignalSection extends ConsumerWidget {
     );
   }
 
-  List<_ClientInfo> _buildClientList(WifiData wifiData, DevicesData? devicesData) {
+  List<_ClientInfo> _buildClientList(
+      WifiData wifiData, DevicesData? devicesData) {
     final clients = <_ClientInfo>[];
     for (final entry in wifiData.wifiClientMap.entries) {
       final client = entry.value;

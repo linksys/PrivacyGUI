@@ -87,9 +87,9 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       final cur = state.valueOrNull;
       if (wd == null || cur == null) return;
       final svc = ref.read(uspDeviceServiceProvider);
-      final gatewayName = ref.read(systemInfoDataProvider).valueOrNull
-              ?.model.gatewayName ??
-          'Router';
+      final gatewayName =
+          ref.read(systemInfoDataProvider).valueOrNull?.model.gatewayName ??
+              'Router';
       final rebuiltDevices = svc.buildDeviceUIModels(
         connectedDevices: cur.connectedDevices,
         wifiClientMap: wd.wifiClientMap,

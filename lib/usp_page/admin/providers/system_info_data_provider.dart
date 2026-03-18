@@ -48,8 +48,11 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
     ]);
 
     final systemInfo = results[0] as SystemInfo;
-    final fwData = results[1]
-        as ({FirmwareImages images, String activeRef, String bootRef});
+    final fwData = results[1] as ({
+      FirmwareImages images,
+      String activeRef,
+      String bootRef
+    });
 
     final svc = UspDeviceService();
     final fwModels = svc.buildFirmwareImageUIModels(

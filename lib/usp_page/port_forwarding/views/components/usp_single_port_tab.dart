@@ -43,8 +43,8 @@ class UspSinglePortTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildRuleRow(BuildContext context, WidgetRef ref,
-      PortForwardingRuleUIModel rule) {
+  Widget _buildRuleRow(
+      BuildContext context, WidgetRef ref, PortForwardingRuleUIModel rule) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
@@ -84,8 +84,7 @@ class UspSinglePortTab extends ConsumerWidget {
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
-              onTap:
-                  isSaving ? null : () => _confirmDelete(context, ref, rule),
+              onTap: isSaving ? null : () => _confirmDelete(context, ref, rule),
             ),
           ],
         ),
@@ -166,8 +165,6 @@ class UspSinglePortTab extends ConsumerWidget {
       ],
     );
     if (confirmed != true || !context.mounted) return;
-    ref
-        .read(uspPortForwardingPageProvider.notifier)
-        .deleteForwardingRule(rule);
+    ref.read(uspPortForwardingPageProvider.notifier).deleteForwardingRule(rule);
   }
 }

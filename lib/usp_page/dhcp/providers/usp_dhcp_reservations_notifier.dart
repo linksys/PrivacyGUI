@@ -131,14 +131,14 @@ class UspDhcpReservationsNotifier
 
   void editReservation(
       DhcpReservationUIModel oldReservation, DhcpReservationUIModel updated) {
-    final reservations = List<DhcpReservationUIModel>.from(
-        state.settings.current.reservations);
+    final reservations =
+        List<DhcpReservationUIModel>.from(state.settings.current.reservations);
     final index = reservations.indexOf(oldReservation);
     if (index == -1) return;
     reservations[index] = updated;
     state = state.copyWith(
-      settings:
-          state.settings.update(DhcpReservationList(reservations: reservations)),
+      settings: state.settings
+          .update(DhcpReservationList(reservations: reservations)),
     );
   }
 
@@ -147,12 +147,12 @@ class UspDhcpReservationsNotifier
   }
 
   void deleteReservation(DhcpReservationUIModel reservation) {
-    final reservations = List<DhcpReservationUIModel>.from(
-        state.settings.current.reservations);
+    final reservations =
+        List<DhcpReservationUIModel>.from(state.settings.current.reservations);
     reservations.remove(reservation);
     state = state.copyWith(
-      settings:
-          state.settings.update(DhcpReservationList(reservations: reservations)),
+      settings: state.settings
+          .update(DhcpReservationList(reservations: reservations)),
     );
   }
 }

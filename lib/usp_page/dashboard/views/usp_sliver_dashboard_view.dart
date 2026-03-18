@@ -239,7 +239,8 @@ class _UspSliverDashboardViewState
               AppIconButton(
                 icon: AppIcon.font(Icons.print),
                 onTap: () async {
-                  final orchState = ref.read(dashboardOrchestratorProvider).valueOrNull;
+                  final orchState =
+                      ref.read(dashboardOrchestratorProvider).valueOrNull;
                   if (orchState == null) return;
 
                   // Ensure polling providers have data before generating PDF.
@@ -250,38 +251,50 @@ class _UspSliverDashboardViewState
                   final dmzSvc = ref.read(uspDmzServiceProvider);
                   final fwData = ref.read(firewallDataProvider).valueOrNull;
                   final reportData = PdfReportData(
-                    ethernetPortModels:
-                        ref.read(ethernetDataProvider).valueOrNull?.ethernetPortModels,
+                    ethernetPortModels: ref
+                        .read(ethernetDataProvider)
+                        .valueOrNull
+                        ?.ethernetPortModels,
                     trafficAnalysis: ref.read(uspTrafficAnalysisProvider),
                     deviceAnalytics: ref.read(uspDeviceAnalyticsProvider),
                     systemMonitor: ref.read(uspSystemMonitorProvider),
                     firewallSettings: fwData != null
                         ? UspFirewallService.buildUIModel(
-                            rules: UspFirewallService.parseFirewallRules(fwData.chainRules))
+                            rules: UspFirewallService.parseFirewallRules(
+                                fwData.chainRules))
                         : const FirewallUIModel(),
                     dmzSettings: fwData != null
                         ? dmzSvc.buildUIModel(fwData.dmzEntries)
                         : const DmzUIModel.disabled(),
-                    staticRoutes:
-                        ref.read(uspStaticRoutingProvider).settings.current.routes,
-                    ipv6PortRules:
-                        ref.read(uspIpv6PortServiceProvider).settings.current.rules,
+                    staticRoutes: ref
+                        .read(uspStaticRoutingProvider)
+                        .settings
+                        .current
+                        .routes,
+                    ipv6PortRules: ref
+                        .read(uspIpv6PortServiceProvider)
+                        .settings
+                        .current
+                        .rules,
                     safeBrowsing:
                         ref.read(uspInstantSafetyProvider).valueOrNull?.uiModel,
-                    lanInfo:
-                        ref.read(lanDataProvider).valueOrNull?.model,
-                    timeSettings:
-                        ref.read(timeDataProvider).valueOrNull?.model,
+                    lanInfo: ref.read(lanDataProvider).valueOrNull?.model,
+                    timeSettings: ref.read(timeDataProvider).valueOrNull?.model,
                     dhcpClients:
                         ref.read(dhcpDataProvider).valueOrNull?.clientModels,
-                    dhcpReservations:
-                        ref.read(dhcpDataProvider).valueOrNull?.reservationModels,
-                    portForwardingRules:
-                        ref.read(portForwardingDataProvider).valueOrNull?.ruleModels,
-                    portTriggeringRules:
-                        ref.read(portTriggeringDataProvider).valueOrNull?.ruleModels,
-                    wanStatus:
-                        ref.read(wanDataProvider).valueOrNull?.model,
+                    dhcpReservations: ref
+                        .read(dhcpDataProvider)
+                        .valueOrNull
+                        ?.reservationModels,
+                    portForwardingRules: ref
+                        .read(portForwardingDataProvider)
+                        .valueOrNull
+                        ?.ruleModels,
+                    portTriggeringRules: ref
+                        .read(portTriggeringDataProvider)
+                        .valueOrNull
+                        ?.ruleModels,
+                    wanStatus: ref.read(wanDataProvider).valueOrNull?.model,
                     systemInfo:
                         ref.read(systemInfoDataProvider).valueOrNull?.model,
                     radioModels:
@@ -300,7 +313,9 @@ class _UspSliverDashboardViewState
               AppGap.sm(),
               AppIconButton(
                 icon: AppIcon.font(Icons.refresh),
-                onTap: () => ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
+                onTap: () => ref
+                    .read(dashboardOrchestratorProvider.notifier)
+                    .refreshAll(),
               ),
               AppGap.sm(),
               AppIconButton(

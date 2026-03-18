@@ -25,8 +25,7 @@ final uspPortForwardingPageProvider = AutoDisposeNotifierProvider<
 /// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
 /// dirty-check integration.
 final preservableUspPortForwardingPageProvider = AutoDisposeProvider<
-    PreservableContract<PortForwardingPageSettings,
-        PortForwardingPageStatus>>(
+    PreservableContract<PortForwardingPageSettings, PortForwardingPageStatus>>(
   (ref) => ref.watch(uspPortForwardingPageProvider.notifier),
 );
 

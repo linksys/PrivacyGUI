@@ -94,8 +94,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
                       loadingKey: 'dhcp',
                       mutation: () => ref
                           .read(dhcpDataProvider.notifier)
-                          .toggleReservation(
-                              reservation.instancePath!, value),
+                          .toggleReservation(reservation.instancePath!, value),
                     ),
           ),
           AppGap.sm(),
@@ -175,12 +174,11 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'dhcp',
-      mutation: () =>
-          ref.read(dhcpDataProvider.notifier).addReservation(
-                mac: result.mac,
-                ip: result.ip,
-                enable: result.enable,
-              ),
+      mutation: () => ref.read(dhcpDataProvider.notifier).addReservation(
+            mac: result.mac,
+            ip: result.ip,
+            enable: result.enable,
+          ),
       successMessage: 'Reservation added',
     );
   }

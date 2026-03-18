@@ -19,8 +19,7 @@ class LocalNetworkStatus extends Equatable {
     this.validationErrors = const {},
   });
 
-  bool get hasValidationErrors =>
-      validationErrors.values.any((e) => e != null);
+  bool get hasValidationErrors => validationErrors.values.any((e) => e != null);
 
   LocalNetworkStatus copyWith({
     bool? isLoading,

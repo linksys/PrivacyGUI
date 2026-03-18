@@ -73,13 +73,16 @@ class SystemInfoUIModel extends Equatable {
       totalMemory > 0 ? (memoryUsedKb / totalMemory * 100).round() : 0;
 
   /// Human-readable total memory (e.g. "512 MB").
-  String get formattedTotalMemory => UspFormatters.formatBytes(totalMemory * 1024);
+  String get formattedTotalMemory =>
+      UspFormatters.formatBytes(totalMemory * 1024);
 
   /// Human-readable free memory (e.g. "256 MB").
-  String get formattedFreeMemory => UspFormatters.formatBytes(freeMemory * 1024);
+  String get formattedFreeMemory =>
+      UspFormatters.formatBytes(freeMemory * 1024);
 
   /// Human-readable used memory (e.g. "256 MB").
-  String get formattedUsedMemory => UspFormatters.formatBytes(memoryUsedKb * 1024);
+  String get formattedUsedMemory =>
+      UspFormatters.formatBytes(memoryUsedKb * 1024);
 
   /// Formatted uptime string (e.g. "2d 5h 30m").
   String get formattedUptime {

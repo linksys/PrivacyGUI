@@ -33,8 +33,7 @@ class UspLocalNetworkService {
           original.ipAddress != pending.ipAddress ? pending.ipAddress : null,
       subnetMask:
           original.subnetMask != pending.subnetMask ? pending.subnetMask : null,
-      hostName:
-          original.hostName != pending.hostName ? pending.hostName : null,
+      hostName: original.hostName != pending.hostName ? pending.hostName : null,
       dhcpEnabled: original.dhcpEnabled != pending.dhcpEnabled
           ? pending.dhcpEnabled
           : null,

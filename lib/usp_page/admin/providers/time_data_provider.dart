@@ -24,8 +24,7 @@ class TimeData extends Equatable {
 // Provider
 // ---------------------------------------------------------------------------
 
-final timeDataProvider =
-    AsyncNotifierProvider<TimeDataNotifier, TimeData>(
+final timeDataProvider = AsyncNotifierProvider<TimeDataNotifier, TimeData>(
   TimeDataNotifier.new,
 );
 

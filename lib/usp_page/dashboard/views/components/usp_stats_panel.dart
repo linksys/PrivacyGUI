@@ -30,9 +30,11 @@ class UspStatsPanel extends ConsumerWidget {
     final lanConnected = lanPorts.where((p) => p.isUp).length;
     final lanTotal = lanPorts.length;
     final pfCount =
-        ref.watch(portForwardingDataProvider).valueOrNull?.ruleModels.length ?? 0;
+        ref.watch(portForwardingDataProvider).valueOrNull?.ruleModels.length ??
+            0;
     final ptCount =
-        ref.watch(portTriggeringDataProvider).valueOrNull?.ruleModels.length ?? 0;
+        ref.watch(portTriggeringDataProvider).valueOrNull?.ruleModels.length ??
+            0;
     final forwardCount = pfCount + ptCount;
 
     return Row(

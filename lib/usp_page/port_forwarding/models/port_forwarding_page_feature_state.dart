@@ -4,8 +4,8 @@ import 'package:privacy_gui/usp_page/port_forwarding/models/port_forwarding_page
 import 'package:privacy_gui/usp_page/port_forwarding/models/port_forwarding_page_status.dart';
 
 /// Composed FeatureState for the port forwarding detail page.
-class PortForwardingPageFeatureState extends FeatureState<
-    PortForwardingPageSettings, PortForwardingPageStatus> {
+class PortForwardingPageFeatureState
+    extends FeatureState<PortForwardingPageSettings, PortForwardingPageStatus> {
   const PortForwardingPageFeatureState({
     required super.settings,
     required super.status,

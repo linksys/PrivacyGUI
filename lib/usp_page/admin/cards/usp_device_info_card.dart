@@ -15,8 +15,8 @@ class UspDeviceInfoCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final info = this.info ??
-        ref.watch(systemInfoDataProvider).valueOrNull?.model;
+    final info =
+        this.info ?? ref.watch(systemInfoDataProvider).valueOrNull?.model;
     if (info == null) return const CardSkeleton.info(rows: 5);
     final iconName = routerIconTestByModel(
       modelNumber: info.modelName,

@@ -139,8 +139,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
       ]).timeout(const Duration(seconds: 10));
 
       final enabled = resp['Device.IP.Interface.2.IPv6Enable'] == true;
-      final instances =
-          resp.getInstances('Device.IP.Interface.2.IPv6Address.');
+      final instances = resp.getInstances('Device.IP.Interface.2.IPv6Address.');
       final List<String> addresses = instances
           .map((i) => i.getString('IPAddress'))
           .where((ip) => ip.isNotEmpty)

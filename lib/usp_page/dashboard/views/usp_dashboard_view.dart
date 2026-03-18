@@ -109,7 +109,8 @@ class UspDashboardView extends ConsumerWidget {
           AppGap.xxl(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
+            onTap: () =>
+                ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
           ),
           AppGap.md(),
           AppButton.text(

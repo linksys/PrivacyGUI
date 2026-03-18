@@ -49,15 +49,13 @@ class UspFirewallOverviewCard extends ConsumerWidget {
             child: switch (selectedTab) {
               0 => _RulesTab(
                   firewallRules: firewallData.chainRules.items,
-                  portForwardingCount:
-                      pfData?.ruleModels.length ?? 0,
+                  portForwardingCount: pfData?.ruleModels.length ?? 0,
                   dmzCount: firewallData.dmzEntries.items
                       .where((d) => d.enable)
                       .length,
                 ),
               1 => _PortsTab(
-                  portForwardingRules:
-                      pfData?.ruleModels ?? [],
+                  portForwardingRules: pfData?.ruleModels ?? [],
                   dmzEntries: firewallData.dmzEntries.items,
                 ),
               _ => const SizedBox.shrink(),
