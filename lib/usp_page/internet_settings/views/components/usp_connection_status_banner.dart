@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_wan_connection_type.dart';
-import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_state.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// A prominent banner at the top of the Internet Settings page.
@@ -10,7 +10,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Displays current connection type, WAN IP address, status indicator,
 /// and an edit icon button for entering/exiting edit mode.
 class UspConnectionStatusBanner extends StatelessWidget {
-  final UspInternetSettingsState state;
+  final InternetSettingsFeatureState state;
   final bool isEditing;
   final VoidCallback? onEditToggle;
 

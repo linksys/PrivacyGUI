@@ -100,6 +100,8 @@ final uspDashboardRoute = ShellRoute(
           name: RouteNamed.uspLocalNetwork,
           path: RouteNamed.uspLocalNetwork,
           builder: (context, state) => const UspLocalNetworkView(),
+          enableDirtyCheck: true,
+          preservableProvider: preservableUspLocalNetworkProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspFirewall,
@@ -112,6 +114,8 @@ final uspDashboardRoute = ShellRoute(
           name: RouteNamed.uspDmz,
           path: RouteNamed.uspDmz,
           builder: (context, state) => const UspDmzView(),
+          enableDirtyCheck: true,
+          preservableProvider: preservableUspDmzProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspPortForwardingDetail,

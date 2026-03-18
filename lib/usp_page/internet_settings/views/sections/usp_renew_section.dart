@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
-import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_state.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/components/usp_renew_action_card.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/components/usp_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Release & Renew DHCP lease section.
 class UspRenewSection extends ConsumerWidget {
-  final UspInternetSettingsState state;
+  final InternetSettingsFeatureState state;
 
   const UspRenewSection({
     super.key,
@@ -19,7 +19,7 @@ class UspRenewSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final loadingKey = ref.watch(uspInternetMutationLoadingProvider);
+    final activeMutation = state.status.activeMutation;
     final isBridge = state.isBridgeMode;
     final l = loc(context);
     final wanIp = state.wanSettings.staticIpAddress;
@@ -33,7 +33,7 @@ class UspRenewSection extends ConsumerWidget {
           UspRenewActionCard(
             protocolLabel: l.ipv4,
             ipAddress: wanIp,
-            isLoading: loadingKey == 'renewIpv4',
+            isLoading: activeMutation == 'renewIpv4',
             onRenew:
                 isBridge ? null : () => _renewDhcp(context, ref, isIpv6: false),
           ),
@@ -43,7 +43,7 @@ class UspRenewSection extends ConsumerWidget {
           // IPv6 DHCP Renew
           UspRenewActionCard(
             protocolLabel: l.ipv6,
-            isLoading: loadingKey == 'renewIpv6',
+            isLoading: activeMutation == 'renewIpv6',
             onRenew:
                 isBridge ? null : () => _renewDhcp(context, ref, isIpv6: true),
           ),
@@ -57,8 +57,6 @@ class UspRenewSection extends ConsumerWidget {
     WidgetRef ref, {
     required bool isIpv6,
   }) async {
-    final key = isIpv6 ? 'renewIpv6' : 'renewIpv4';
-    ref.read(uspInternetMutationLoadingProvider.notifier).state = key;
     try {
       final notifier = ref.read(uspInternetSettingsProvider.notifier);
       if (isIpv6) {
@@ -74,8 +72,6 @@ class UspRenewSection extends ConsumerWidget {
       if (context.mounted) {
         showFailedSnackBar(context, loc(context).failedToRenew('$e'));
       }
-    } finally {
-      ref.read(uspInternetMutationLoadingProvider.notifier).state = null;
     }
   }
 }

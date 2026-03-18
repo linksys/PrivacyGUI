@@ -5,7 +5,7 @@ import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dar
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
-import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_state.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/components/usp_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -17,7 +17,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// - PPPoE: username, password, service name, connection mode, VLAN
 /// - Bridge: warning message
 class UspIpv4Section extends ConsumerStatefulWidget {
-  final UspInternetSettingsState state;
+  final InternetSettingsFeatureState state;
   final bool isEditing;
 
   const UspIpv4Section({

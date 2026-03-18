@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/usp_page/dmz/models/dmz_feature_state.dart';
 import 'package:privacy_gui/usp_page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/usp_page/dmz/providers/usp_dmz_notifier.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
@@ -38,8 +39,8 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
   }
 
   /// Sync controllers when state data arrives or changes.
-  void _syncControllers(UspDmzState state) {
-    final pending = state.pending;
+  void _syncControllers(DmzFeatureState state) {
+    final pending = state.settings.current.model;
     if (_destIpController.text != pending.destIp) {
       _destIpController.text = pending.destIp;
     }
@@ -50,7 +51,8 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
 
   @override
   Widget build(BuildContext context) {
-    final asyncState = ref.watch(uspDmzProvider);
+    final state = ref.watch(uspDmzProvider);
+    final status = state.status;
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -62,18 +64,39 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspMenu),
-      onRefresh: () => ref.refresh(uspDmzProvider.future),
+      onRefresh: () =>
+          ref.read(uspDmzProvider.notifier).fetch(forceRemote: true),
+      bottomBar: _buildBottomBar(context, ref, state),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncState.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildError(context, ref),
-          data: (state) {
-            _syncControllers(state);
-            return _buildContent(context, ref, state);
-          },
-        );
+        if (status.isLoading) {
+          return const Center(child: AppLoader());
+        }
+        if (status.errorMessage != null) {
+          return _buildError(context, ref);
+        }
+        _syncControllers(state);
+        return _buildContent(context, ref, state);
       },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bottom Bar
+  // ---------------------------------------------------------------------------
+
+  UiKitBottomBarConfig? _buildBottomBar(
+    BuildContext context,
+    WidgetRef ref,
+    DmzFeatureState state,
+  ) {
+    if (!state.isDirty) return null;
+    final pending = state.settings.current.model;
+    return UiKitBottomBarConfig(
+      positiveLabel: 'Save',
+      isPositiveEnabled: !state.status.isSaving && _isFormValid(pending),
+      onPositiveTap: () => _onSave(context, ref),
+      onNegativeTap: () => ref.read(uspDmzProvider.notifier).revert(),
     );
   }
 
@@ -93,7 +116,8 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
           AppGap.md(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.invalidate(uspDmzProvider),
+            onTap: () =>
+                ref.read(uspDmzProvider.notifier).fetch(forceRemote: true),
           ),
         ],
       ),
@@ -107,11 +131,11 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    UspDmzState state,
+    DmzFeatureState state,
   ) {
     final notifier = ref.read(uspDmzProvider.notifier);
-    final pending = state.pending;
-    final disabled = state.isSaving;
+    final pending = state.settings.current.model;
+    final disabled = state.status.isSaving;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,18 +151,6 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
           _buildDestinationCard(context, pending, notifier, disabled),
           AppGap.md(),
           _buildSourceCard(context, pending, notifier, disabled),
-        ],
-        if (state.isDirty) ...[
-          AppGap.xl(),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton.primary(
-              label: 'Save',
-              onTap: disabled || !_isFormValid(pending)
-                  ? null
-                  : () => _onSave(context, ref),
-            ),
-          ),
         ],
       ],
     );

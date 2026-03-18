@@ -8,12 +8,10 @@ import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_se
 /// Derived from the notifier state — automatically recomputes when
 /// the edited form changes.
 final uspInternetFormValidProvider = Provider.autoDispose<bool>((ref) {
-  final asyncState = ref.watch(uspInternetSettingsProvider);
-  return asyncState.whenOrNull(data: (state) {
-        if (!state.isEditing) return true;
-        return validateForm(state.edited);
-      }) ??
-      false;
+  final state = ref.watch(uspInternetSettingsProvider);
+  if (state.status.isLoading) return false;
+  if (!state.isEditing) return true;
+  return validateForm(state.edited);
 });
 
 /// Validate the entire form based on connection type and field values.

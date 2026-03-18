@@ -4,13 +4,13 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
-import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_state.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/components/usp_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Optional settings section: MTU and MAC address clone.
 class UspOptionalSection extends ConsumerStatefulWidget {
-  final UspInternetSettingsState state;
+  final InternetSettingsFeatureState state;
   final bool isEditing;
 
   const UspOptionalSection({
