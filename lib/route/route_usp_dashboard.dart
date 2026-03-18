@@ -72,6 +72,8 @@ final uspDashboardRoute = ShellRoute(
       name: RouteNamed.uspDhcpDetail,
       path: RoutePath.uspDhcpDetail,
       builder: (context, state) => const UspDhcpDetailView(),
+      enableDirtyCheck: true,
+      preservableProvider: preservableUspDhcpReservationsProvider,
     ),
     LinksysRoute(
       name: RouteNamed.uspSystemLog,
@@ -121,16 +123,22 @@ final uspDashboardRoute = ShellRoute(
           name: RouteNamed.uspPortForwardingDetail,
           path: RouteNamed.uspPortForwardingDetail,
           builder: (context, state) => const UspPortForwardingDetailView(),
+          enableDirtyCheck: true,
+          preservableProvider: preservableUspPortForwardingPageProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspStaticRouting,
           path: RouteNamed.uspStaticRouting,
           builder: (context, state) => const UspStaticRoutingView(),
+          enableDirtyCheck: true,
+          preservableProvider: preservableUspStaticRoutingProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspIpv6PortService,
           path: RouteNamed.uspIpv6PortService,
           builder: (context, state) => const UspIpv6PortServiceView(),
+          enableDirtyCheck: true,
+          preservableProvider: preservableUspIpv6PortServiceProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspNetworkDiagnostics,

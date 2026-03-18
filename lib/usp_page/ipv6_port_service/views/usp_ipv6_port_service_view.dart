@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_feature_state.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
-import 'package:privacy_gui/usp_page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/views/dialogs/ipv6_port_service_rule_dialog.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
@@ -18,7 +17,8 @@ class UspIpv6PortServiceView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(uspIpv6PortServiceProvider);
+    final state = ref.watch(uspIpv6PortServiceProvider);
+    final status = state.status;
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -30,15 +30,38 @@ class UspIpv6PortServiceView extends ConsumerWidget {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspMenu),
-      onRefresh: () => ref.refresh(uspIpv6PortServiceProvider.future),
+      onRefresh: () =>
+          ref.read(uspIpv6PortServiceProvider.notifier).fetch(forceRemote: true),
+      bottomBar: _buildBottomBar(context, ref, state),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncState.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildError(context, ref),
-          data: (state) => _buildContent(context, ref, state),
-        );
+        if (status.isLoading) {
+          return const Center(child: AppLoader());
+        }
+        if (status.errorMessage != null) {
+          return _buildError(context, ref);
+        }
+        return _buildContent(context, ref, state);
       },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bottom Bar
+  // ---------------------------------------------------------------------------
+
+  UiKitBottomBarConfig? _buildBottomBar(
+    BuildContext context,
+    WidgetRef ref,
+    Ipv6PortServiceFeatureState state,
+  ) {
+    if (!state.isDirty) return null;
+    return UiKitBottomBarConfig(
+      positiveLabel: 'Save',
+      isPositiveEnabled: !state.status.isSaving,
+      onPositiveTap: () => _onSave(context, ref),
+      onNegativeTap: () =>
+          ref.read(uspIpv6PortServiceProvider.notifier).revert(),
     );
   }
 
@@ -58,7 +81,9 @@ class UspIpv6PortServiceView extends ConsumerWidget {
           AppGap.md(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.invalidate(uspIpv6PortServiceProvider),
+            onTap: () => ref
+                .read(uspIpv6PortServiceProvider.notifier)
+                .fetch(forceRemote: true),
           ),
         ],
       ),
@@ -72,10 +97,10 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    UspIpv6PortServiceState state,
+    Ipv6PortServiceFeatureState state,
   ) {
-    final isMutating = state.isMutating;
-    final rules = state.rules;
+    final rules = state.settings.current.rules;
+    final isSaving = state.status.isSaving;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,25 +114,9 @@ class UspIpv6PortServiceView extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             AppText.titleMedium('Rules'),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isMutating)
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  AppIconButton(
-                    icon: AppIcon.font(Icons.refresh, size: 20),
-                    onTap: () => ref.invalidate(uspIpv6PortServiceProvider),
-                  ),
-                AppIconButton(
-                  icon: AppIcon.font(Icons.add, size: 20),
-                  onTap: isMutating ? null : () => _showAddDialog(context, ref),
-                ),
-              ],
+            AppIconButton(
+              icon: AppIcon.font(Icons.add, size: 20),
+              onTap: isSaving ? null : () => _showAddDialog(context, ref),
             ),
           ],
         ),
@@ -115,7 +124,8 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         if (rules.isEmpty)
           AppText.bodyMedium('No IPv6 port service rules configured')
         else
-          ...rules.map((r) => _buildRuleCard(context, ref, r, isMutating)),
+          ...rules.asMap().entries.map((entry) =>
+              _buildRuleCard(context, ref, entry.key, entry.value, isSaving)),
       ],
     );
   }
@@ -127,8 +137,9 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   Widget _buildRuleCard(
     BuildContext context,
     WidgetRef ref,
+    int index,
     Ipv6PortServiceRuleUIModel rule,
-    bool isMutating,
+    bool isSaving,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -138,9 +149,11 @@ class UspIpv6PortServiceView extends ConsumerWidget {
             AppSwitch(
               value: rule.enabled,
               scale: 0.8,
-              onChanged: isMutating
+              onChanged: isSaving
                   ? null
-                  : (value) => _toggleRule(context, ref, rule, value),
+                  : (value) => ref
+                      .read(uspIpv6PortServiceProvider.notifier)
+                      .toggleRule(index, value),
             ),
             AppGap.sm(),
             Expanded(
@@ -165,13 +178,17 @@ class UspIpv6PortServiceView extends ConsumerWidget {
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.edit, size: 18),
-              onTap:
-                  isMutating ? null : () => _showEditDialog(context, ref, rule),
+              onTap: isSaving
+                  ? null
+                  : () => _showEditDialog(context, ref, index, rule),
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
-              onTap:
-                  isMutating ? null : () => _confirmDelete(context, ref, rule),
+              onTap: isSaving
+                  ? null
+                  : () => ref
+                      .read(uspIpv6PortServiceProvider.notifier)
+                      .deleteRule(index),
             ),
           ],
         ),
@@ -182,17 +199,6 @@ class UspIpv6PortServiceView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
-
-  Future<void> _toggleRule(BuildContext context, WidgetRef ref,
-      Ipv6PortServiceRuleUIModel rule, bool value) async {
-    try {
-      await ref
-          .read(uspIpv6PortServiceProvider.notifier)
-          .toggleRule(rule.instancePath, value);
-    } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Error: $e');
-    }
-  }
 
   List<AppAutoCompleteOption> _buildIpv6DeviceOptions(WidgetRef ref) {
     final devices =
@@ -214,23 +220,19 @@ class UspIpv6PortServiceView extends ConsumerWidget {
       builder: (_) => Ipv6PortServiceRuleDialog(deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
-    final svc = ref.read(uspIpv6PortServiceServiceProvider);
-    try {
-      await ref.read(uspIpv6PortServiceProvider.notifier).addRule(
+    ref.read(uspIpv6PortServiceProvider.notifier).addRule(
+          Ipv6PortServiceRuleUIModel(
+            enabled: result.enabled,
             description: result.description,
             ipv6Address: result.ipv6Address,
-            protocol: svc.mapDisplayToIana(result.protocol),
+            protocol: result.protocol,
             startPort: result.startPort,
             endPort: result.endPort,
-            enabled: result.enabled,
-          );
-      if (context.mounted) showSuccessSnackBar(context, 'Rule added');
-    } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Error: $e');
-    }
+          ),
+        );
   }
 
-  Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
+  Future<void> _showEditDialog(BuildContext context, WidgetRef ref, int index,
       Ipv6PortServiceRuleUIModel rule) async {
     final deviceOptions = _buildIpv6DeviceOptions(ref);
     final result = await showDialog<Ipv6PortServiceRuleDialogResult>(
@@ -239,49 +241,33 @@ class UspIpv6PortServiceView extends ConsumerWidget {
           Ipv6PortServiceRuleDialog(rule: rule, deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
-    final svc = ref.read(uspIpv6PortServiceServiceProvider);
-    try {
-      await ref.read(uspIpv6PortServiceProvider.notifier).updateRule(
-            instancePath: rule.instancePath,
+    ref.read(uspIpv6PortServiceProvider.notifier).editRule(
+          index,
+          rule.copyWith(
+            enabled: result.enabled,
             description: result.description,
             ipv6Address: result.ipv6Address,
-            protocol: svc.mapDisplayToIana(result.protocol),
+            protocol: result.protocol,
             startPort: result.startPort,
             endPort: result.endPort,
-            enabled: result.enabled,
-          );
-      if (context.mounted) showSuccessSnackBar(context, 'Rule updated');
-    } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Error: $e');
-    }
+          ),
+        );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref,
-      Ipv6PortServiceRuleUIModel rule) async {
-    final confirmed = await showSimpleAppDialog<bool>(
-      context,
-      title: 'Delete Rule',
-      content: AppText.bodyMedium(
-          'Delete "${rule.description.isNotEmpty ? rule.description : 'this rule'}"?'),
-      actions: [
-        AppButton.text(
-          label: 'Cancel',
-          onTap: () => context.pop(),
-        ),
-        AppButton.dangerText(
-          label: 'Delete',
-          onTap: () => context.pop(true),
-        ),
-      ],
-    );
-    if (confirmed != true || !context.mounted) return;
+  // ---------------------------------------------------------------------------
+  // Save
+  // ---------------------------------------------------------------------------
+
+  Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref
-          .read(uspIpv6PortServiceProvider.notifier)
-          .deleteRule(rule.instancePath);
-      if (context.mounted) showSuccessSnackBar(context, 'Rule deleted');
+      await ref.read(uspIpv6PortServiceProvider.notifier).save();
+      if (context.mounted) {
+        showSuccessSnackBar(context, 'IPv6 port rules saved');
+      }
     } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Error: $e');
+      if (context.mounted) {
+        showFailedSnackBar(context, 'Failed to save: $e');
+      }
     }
   }
 }

@@ -5,9 +5,13 @@ import 'package:equatable/equatable.dart';
 /// Unlike the JNAP model which groups multiple port ranges under one rule,
 /// the TR-181 model is flat: 1 rule = 1 port entry. Each [Ipv6PortServiceRule]
 /// codegen instance maps to one [Ipv6PortServiceRuleUIModel].
+///
+/// [instancePath] is `null` for newly created (local-only) rules
+/// that have not yet been saved to the device.
 class Ipv6PortServiceRuleUIModel extends Equatable {
   /// TR-181 instance path, e.g. "Device.Firewall.Chain.1.Rule.26."
-  final String instancePath;
+  /// Null for locally-created rules not yet saved.
+  final String? instancePath;
 
   /// Whether the rule is active.
   final bool enabled;
@@ -28,7 +32,7 @@ class Ipv6PortServiceRuleUIModel extends Equatable {
   final int endPort;
 
   const Ipv6PortServiceRuleUIModel({
-    required this.instancePath,
+    this.instancePath,
     required this.enabled,
     required this.description,
     required this.ipv6Address,
@@ -36,6 +40,26 @@ class Ipv6PortServiceRuleUIModel extends Equatable {
     required this.startPort,
     required this.endPort,
   });
+
+  Ipv6PortServiceRuleUIModel copyWith({
+    String? instancePath,
+    bool? enabled,
+    String? description,
+    String? ipv6Address,
+    String? protocol,
+    int? startPort,
+    int? endPort,
+  }) {
+    return Ipv6PortServiceRuleUIModel(
+      instancePath: instancePath ?? this.instancePath,
+      enabled: enabled ?? this.enabled,
+      description: description ?? this.description,
+      ipv6Address: ipv6Address ?? this.ipv6Address,
+      protocol: protocol ?? this.protocol,
+      startPort: startPort ?? this.startPort,
+      endPort: endPort ?? this.endPort,
+    );
+  }
 
   /// Human-readable port display.
   String get portDisplay {

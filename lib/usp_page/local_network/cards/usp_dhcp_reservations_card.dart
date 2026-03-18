@@ -95,7 +95,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
                       mutation: () => ref
                           .read(dhcpDataProvider.notifier)
                           .toggleReservation(
-                              reservation.instancePath, value),
+                              reservation.instancePath!, value),
                     ),
           ),
           AppGap.sm(),
@@ -209,7 +209,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       loadingKey: 'dhcp',
       mutation: () => ref
           .read(dhcpDataProvider.notifier)
-          .deleteReservation(reservation.instancePath),
+          .deleteReservation(reservation.instancePath!),
       successMessage: 'Reservation deleted',
     );
   }

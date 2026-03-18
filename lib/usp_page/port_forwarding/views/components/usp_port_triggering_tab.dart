@@ -3,21 +3,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
-import 'package:privacy_gui/usp_page/port_forwarding/providers/port_triggering_data_provider.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/dialogs/port_triggering_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Tab 3: Port Triggering — independent data source from PortTriggering.
+/// Tab 3: Port Triggering.
 class UspPortTriggeringTab extends ConsumerWidget {
   final List<PortTriggeringRuleUIModel> rules;
+  final bool isSaving;
 
-  const UspPortTriggeringTab({super.key, required this.rules});
+  const UspPortTriggeringTab({
+    super.key,
+    required this.rules,
+    this.isSaving = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoading = ref.watch(uspMutationLoadingProvider) == 'portTriggering';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -27,7 +29,7 @@ class UspPortTriggeringTab extends ConsumerWidget {
             AppText.titleMedium('Port Triggering'),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
-              onTap: isLoading ? null : () => _showAddDialog(context, ref),
+              onTap: isSaving ? null : () => _showAddDialog(context, ref),
             ),
           ],
         ),
@@ -35,13 +37,13 @@ class UspPortTriggeringTab extends ConsumerWidget {
         if (rules.isEmpty)
           AppText.bodyMedium('No port triggering rules configured')
         else
-          ...rules.map((r) => _buildRuleRow(context, ref, r, isLoading)),
+          ...rules.map((r) => _buildRuleRow(context, ref, r)),
       ],
     );
   }
 
   Widget _buildRuleRow(BuildContext context, WidgetRef ref,
-      PortTriggeringRuleUIModel rule, bool isLoading) {
+      PortTriggeringRuleUIModel rule) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
@@ -50,16 +52,11 @@ class UspPortTriggeringTab extends ConsumerWidget {
             AppSwitch(
               value: rule.enabled,
               scale: 0.8,
-              onChanged: isLoading
+              onChanged: isSaving
                   ? null
-                  : (value) => performUspMutation(
-                        context,
-                        ref,
-                        loadingKey: 'portTriggering',
-                        mutation: () => ref
-                            .read(portTriggeringDataProvider.notifier)
-                            .toggleRule(rule.instancePath, value),
-                      ),
+                  : (value) => ref
+                      .read(uspPortForwardingPageProvider.notifier)
+                      .toggleTriggeringRule(rule, value),
             ),
             AppGap.sm(),
             Expanded(
@@ -78,12 +75,12 @@ class UspPortTriggeringTab extends ConsumerWidget {
             AppIconButton(
               icon: AppIcon.font(Icons.edit, size: 18),
               onTap:
-                  isLoading ? null : () => _showEditDialog(context, ref, rule),
+                  isSaving ? null : () => _showEditDialog(context, ref, rule),
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
               onTap:
-                  isLoading ? null : () => _confirmDelete(context, ref, rule),
+                  isSaving ? null : () => _confirmDelete(context, ref, rule),
             ),
           ],
         ),
@@ -97,23 +94,22 @@ class UspPortTriggeringTab extends ConsumerWidget {
       builder: (_) => const PortTriggeringDialog(),
     );
     if (result == null || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'portTriggering',
-      mutation: () =>
-          ref.read(portTriggeringDataProvider.notifier).addRule(
-                triggerPort: result.triggerPort,
-                triggerPortEndRange: result.triggerPortEndRange,
-                triggerProtocol: result.triggerProtocol,
-                description: result.description,
-                enabled: result.enabled,
+    ref.read(uspPortForwardingPageProvider.notifier).addTriggeringRule(
+          PortTriggeringRuleUIModel(
+            enabled: result.enabled,
+            description: result.description,
+            triggerPort: result.triggerPort,
+            triggerPortEndRange: result.triggerPortEndRange,
+            triggerProtocol: result.triggerProtocol,
+            forwardRules: [
+              PortTriggerForwardRuleUIModel(
                 forwardPort: result.forwardPort,
                 forwardPortEndRange: result.forwardPortEndRange,
                 forwardProtocol: result.forwardProtocol,
               ),
-      successMessage: 'Rule added',
-    );
+            ],
+          ),
+        );
   }
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
@@ -123,21 +119,16 @@ class UspPortTriggeringTab extends ConsumerWidget {
       builder: (_) => PortTriggeringDialog(rule: rule),
     );
     if (result == null || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'portTriggering',
-      mutation: () =>
-          ref.read(portTriggeringDataProvider.notifier).updateRule(
-                instancePath: rule.instancePath,
-                enabled: result.enabled,
-                triggerPort: result.triggerPort,
-                triggerPortEndRange: result.triggerPortEndRange,
-                triggerProtocol: result.triggerProtocol,
-                description: result.description,
-              ),
-      successMessage: 'Rule updated',
-    );
+    ref.read(uspPortForwardingPageProvider.notifier).editTriggeringRule(
+          rule,
+          rule.copyWith(
+            enabled: result.enabled,
+            description: result.description,
+            triggerPort: result.triggerPort,
+            triggerPortEndRange: result.triggerPortEndRange,
+            triggerProtocol: result.triggerProtocol,
+          ),
+        );
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref,
@@ -158,14 +149,8 @@ class UspPortTriggeringTab extends ConsumerWidget {
       ],
     );
     if (confirmed != true || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'portTriggering',
-      mutation: () => ref
-          .read(portTriggeringDataProvider.notifier)
-          .deleteRule(rule.instancePath),
-      successMessage: 'Rule deleted',
-    );
+    ref
+        .read(uspPortForwardingPageProvider.notifier)
+        .deleteTriggeringRule(rule);
   }
 }

@@ -258,9 +258,9 @@ class _UspSliverDashboardViewState
                         ? dmzSvc.buildUIModel(fwData.dmzEntries)
                         : const DmzUIModel.disabled(),
                     staticRoutes:
-                        ref.read(uspStaticRoutingProvider).valueOrNull?.routes,
+                        ref.read(uspStaticRoutingProvider).settings.current.routes,
                     ipv6PortRules:
-                        ref.read(uspIpv6PortServiceProvider).valueOrNull?.rules,
+                        ref.read(uspIpv6PortServiceProvider).settings.current.rules,
                     safeBrowsing:
                         ref.read(uspInstantSafetyProvider).valueOrNull?.uiModel,
                     lanInfo:

@@ -1,18 +1,35 @@
 import 'package:equatable/equatable.dart';
 
 /// Presentation Layer Model for a DHCP reservation.
+///
+/// [instancePath] is `null` for newly created (local-only) reservations
+/// that have not yet been saved to the device.
 class DhcpReservationUIModel extends Equatable {
-  final String instancePath; // For toggle/delete mutations
+  final String? instancePath;
   final String mac;
   final String ip;
   final bool enable;
 
   const DhcpReservationUIModel({
-    required this.instancePath,
+    this.instancePath,
     required this.mac,
     required this.ip,
     required this.enable,
   });
+
+  DhcpReservationUIModel copyWith({
+    String? instancePath,
+    String? mac,
+    String? ip,
+    bool? enable,
+  }) {
+    return DhcpReservationUIModel(
+      instancePath: instancePath ?? this.instancePath,
+      mac: mac ?? this.mac,
+      ip: ip ?? this.ip,
+      enable: enable ?? this.enable,
+    );
+  }
 
   @override
   List<Object?> get props => [instancePath, mac, ip, enable];

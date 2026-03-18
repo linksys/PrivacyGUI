@@ -1,45 +1,30 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
+import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_contract.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_feature_state.dart';
+import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_rule_list.dart';
+import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_status.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 
 // ---------------------------------------------------------------------------
-// State
+// Providers
 // ---------------------------------------------------------------------------
 
-class UspIpv6PortServiceState extends Equatable {
-  final List<Ipv6PortServiceRuleUIModel> rules;
-  final bool isMutating;
-
-  const UspIpv6PortServiceState({
-    required this.rules,
-    this.isMutating = false,
-  });
-
-  UspIpv6PortServiceState copyWith({
-    List<Ipv6PortServiceRuleUIModel>? rules,
-    bool? isMutating,
-  }) {
-    return UspIpv6PortServiceState(
-      rules: rules ?? this.rules,
-      isMutating: isMutating ?? this.isMutating,
-    );
-  }
-
-  @override
-  List<Object?> get props => [rules, isMutating];
-}
-
-// ---------------------------------------------------------------------------
-// Provider
-// ---------------------------------------------------------------------------
-
-final uspIpv6PortServiceProvider = AsyncNotifierProvider.autoDispose<
-    UspIpv6PortServiceNotifier, UspIpv6PortServiceState>(
+final uspIpv6PortServiceProvider = AutoDisposeNotifierProvider<
+    UspIpv6PortServiceNotifier, Ipv6PortServiceFeatureState>(
   UspIpv6PortServiceNotifier.new,
+);
+
+/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
+/// dirty-check integration.
+final preservableUspIpv6PortServiceProvider = AutoDisposeProvider<
+    PreservableContract<Ipv6PortServiceRuleList, Ipv6PortServiceStatus>>(
+  (ref) => ref.watch(uspIpv6PortServiceProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------
@@ -47,135 +32,185 @@ final uspIpv6PortServiceProvider = AsyncNotifierProvider.autoDispose<
 // ---------------------------------------------------------------------------
 
 class UspIpv6PortServiceNotifier
-    extends AutoDisposeAsyncNotifier<UspIpv6PortServiceState> {
+    extends AutoDisposeNotifier<Ipv6PortServiceFeatureState>
+    with
+        PreservableAutoDisposeNotifierMixin<Ipv6PortServiceRuleList,
+            Ipv6PortServiceStatus, Ipv6PortServiceFeatureState> {
+  UspIpv6PortServiceService get _svc =>
+      ref.read(uspIpv6PortServiceServiceProvider);
+
   @override
-  Future<UspIpv6PortServiceState> build() async {
-    final usp = ref.watch(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-
-    final data = await Ipv6PortService.fetch(usp);
-    final svc = ref.read(uspIpv6PortServiceServiceProvider);
-    final rules = svc.buildRuleUIModels(data);
-
-    logger.d('[USP][Firewall][IPv6Port]Ipv6PortService fetched — '
-        'total: ${data.items.length}, ipv6: ${rules.length}');
-
-    return UspIpv6PortServiceState(rules: rules);
+  Ipv6PortServiceFeatureState build() {
+    // No SSE invalidation domain for IPv6 port service currently.
+    // Synchronous build with loading state; async fetch follows immediately.
+    Future.microtask(() => fetch());
+    return Ipv6PortServiceFeatureState.initial();
   }
 
-  Future<void> _refreshRules() async {
-    final usp = ref.read(uspServiceProvider)!;
-    final data = await Ipv6PortService.fetch(usp);
-    final svc = ref.read(uspIpv6PortServiceServiceProvider);
-    final rules = svc.buildRuleUIModels(data);
-    state = AsyncData(UspIpv6PortServiceState(rules: rules));
-  }
+  // ---------------------------------------------------------------------------
+  // performFetch
+  // ---------------------------------------------------------------------------
 
-  /// Add a new IPv6 port service rule.
-  Future<void> addRule({
-    required String description,
-    required String ipv6Address,
-    required int protocol,
-    required int startPort,
-    required int endPort,
-    bool enabled = true,
+  @override
+  Future<(Ipv6PortServiceRuleList?, Ipv6PortServiceStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
   }) async {
-    final s = state.valueOrNull;
-    if (s == null) return;
-    state = AsyncData(s.copyWith(isMutating: true));
     try {
       final usp = ref.read(uspServiceProvider)!;
-      await Ipv6PortService.add(
-        usp,
-        enable: enabled,
-        description: description,
-        ipVersion: 6,
-        destIp: ipv6Address,
-        destPort: startPort,
-        destPortRangeMax: endPort,
-        protocol: protocol,
-        target: 'Accept',
+      final data = await Ipv6PortService.fetch(usp);
+      final rules = _svc.buildRuleUIModels(data);
+
+      logger.d('[USP][Firewall][IPv6Port] Fetched — '
+          'total: ${data.items.length}, ipv6: ${rules.length}');
+
+      return (
+        Ipv6PortServiceRuleList(rules: rules),
+        const Ipv6PortServiceStatus(),
       );
-      logger.d(
-          '[USP][Firewall][IPv6Port]Ipv6PortServiceRule added — $description');
-      await _refreshRules();
     } catch (e) {
-      state = AsyncData(s.copyWith(isMutating: false));
+      logger.e('[USP][Firewall][IPv6Port] Fetch failed', error: e);
+      return (
+        null,
+        Ipv6PortServiceStatus(errorMessage: '$e'),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // performSave — diff original vs current, batch API calls
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> performSave() async {
+    state = state.copyWith(
+      status: state.status.copyWith(isSaving: true),
+    );
+
+    try {
+      final usp = ref.read(uspServiceProvider)!;
+      final original = state.settings.original.rules;
+      final current = state.settings.current.rules;
+
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        // 1. Delete: in original, not in current
+        final currentPaths = <String>{
+          for (final r in current)
+            if (r.instancePath != null) r.instancePath!,
+        };
+        final toDelete = original
+            .where((r) =>
+                r.instancePath != null &&
+                !currentPaths.contains(r.instancePath))
+            .toList();
+
+        for (var i = 0; i < toDelete.length; i++) {
+          if (i > 0) {
+            await Future.delayed(const Duration(milliseconds: 300));
+          }
+          await Ipv6PortService.delete(usp, toDelete[i].instancePath!);
+        }
+
+        // 2. Add: instancePath == null (new) — sequential with delay
+        final toAdd = current.where((r) => r.instancePath == null).toList();
+
+        for (var i = 0; i < toAdd.length; i++) {
+          if (i > 0) {
+            await Future.delayed(const Duration(milliseconds: 300));
+          }
+          final r = toAdd[i];
+          await Ipv6PortService.add(
+            usp,
+            enable: r.enabled,
+            description: r.description,
+            ipVersion: 6,
+            destIp: r.ipv6Address,
+            destPort: r.startPort,
+            destPortRangeMax: r.endPort,
+            protocol: _svc.mapDisplayToIana(r.protocol),
+            target: 'Accept',
+          );
+        }
+
+        // 3. Update: same instancePath, different content
+        final originalByPath = <String, Ipv6PortServiceRuleUIModel>{
+          for (final r in original)
+            if (r.instancePath != null) r.instancePath!: r,
+        };
+
+        final toUpdate = <Ipv6PortServiceRuleUpdate>[];
+        for (final cur in current) {
+          if (cur.instancePath == null) continue;
+          final orig = originalByPath[cur.instancePath!];
+          if (orig == null) continue;
+          if (cur != orig) {
+            toUpdate.add(Ipv6PortServiceRuleUpdate(
+              instancePath: cur.instancePath!,
+              enable: cur.enabled,
+              description: cur.description,
+              destIp: cur.ipv6Address,
+              destPort: cur.startPort,
+              destPortRangeMax: cur.endPort,
+              protocol: _svc.mapDisplayToIana(cur.protocol),
+              target: 'Accept',
+            ));
+          }
+        }
+
+        if (toUpdate.isNotEmpty) {
+          await Ipv6PortService.updateMany(usp, toUpdate);
+        }
+
+        logger.d('[USP][Firewall][IPv6Port] Batch save — '
+            'added: ${toAdd.length}, updated: ${toUpdate.length}, '
+            'deleted: ${toDelete.length}');
+      });
+    } catch (e) {
+      logger.e('[USP][Firewall][IPv6Port] Save failed', error: e);
+      state = state.copyWith(
+        status: state.status.copyWith(isSaving: false),
+      );
       rethrow;
     }
   }
 
-  /// Update an existing rule.
-  Future<void> updateRule({
-    required String instancePath,
-    required String description,
-    required String ipv6Address,
-    required int protocol,
-    required int startPort,
-    required int endPort,
-    bool? enabled,
-  }) async {
-    final s = state.valueOrNull;
-    if (s == null) return;
-    state = AsyncData(s.copyWith(isMutating: true));
-    try {
-      final usp = ref.read(uspServiceProvider)!;
-      await Ipv6PortService.update(
-        usp,
-        Ipv6PortServiceRuleUpdate(
-          instancePath: instancePath,
-          enable: enabled,
-          description: description,
-          destIp: ipv6Address,
-          destPort: startPort,
-          destPortRangeMax: endPort,
-          protocol: protocol,
-          target: 'Accept',
-        ),
-      );
-      logger.d(
-          '[USP][Firewall][IPv6Port]Ipv6PortServiceRule updated — $instancePath');
-      await _refreshRules();
-    } catch (e) {
-      state = AsyncData(s.copyWith(isMutating: false));
-      rethrow;
-    }
+  // ---------------------------------------------------------------------------
+  // Local Mutations (synchronous — no network calls)
+  // ---------------------------------------------------------------------------
+
+  void addRule(Ipv6PortServiceRuleUIModel rule) {
+    final current = state.settings.current;
+    state = state.copyWith(
+      settings: state.settings.update(
+        Ipv6PortServiceRuleList(rules: [...current.rules, rule]),
+      ),
+    );
   }
 
-  /// Toggle enable/disable on a single rule.
-  Future<void> toggleRule(String instancePath, bool enabled) async {
-    final s = state.valueOrNull;
-    if (s == null) return;
-    state = AsyncData(s.copyWith(isMutating: true));
-    try {
-      final usp = ref.read(uspServiceProvider)!;
-      await Ipv6PortService.update(
-        usp,
-        Ipv6PortServiceRuleUpdate(instancePath: instancePath, enable: enabled),
-      );
-      logger.d(
-          '[USP][Firewall][IPv6Port]Ipv6PortServiceRule toggled — $instancePath → $enabled');
-      await _refreshRules();
-    } catch (e) {
-      state = AsyncData(s.copyWith(isMutating: false));
-      rethrow;
-    }
+  void editRule(int index, Ipv6PortServiceRuleUIModel rule) {
+    final rules =
+        List<Ipv6PortServiceRuleUIModel>.from(state.settings.current.rules);
+    rules[index] = rule;
+    state = state.copyWith(
+      settings: state.settings.update(Ipv6PortServiceRuleList(rules: rules)),
+    );
   }
 
-  /// Delete a rule.
-  Future<void> deleteRule(String instancePath) async {
-    final s = state.valueOrNull;
-    if (s == null) return;
-    state = AsyncData(s.copyWith(isMutating: true));
-    try {
-      final usp = ref.read(uspServiceProvider)!;
-      await Ipv6PortService.delete(usp, instancePath);
-      logger.d(
-          '[USP][Firewall][IPv6Port]Ipv6PortServiceRule deleted — $instancePath');
-      await _refreshRules();
-    } catch (e) {
-      state = AsyncData(s.copyWith(isMutating: false));
-      rethrow;
-    }
+  void toggleRule(int index, bool enabled) {
+    final rules =
+        List<Ipv6PortServiceRuleUIModel>.from(state.settings.current.rules);
+    rules[index] = rules[index].copyWith(enabled: enabled);
+    state = state.copyWith(
+      settings: state.settings.update(Ipv6PortServiceRuleList(rules: rules)),
+    );
+  }
+
+  void deleteRule(int index) {
+    final rules =
+        List<Ipv6PortServiceRuleUIModel>.from(state.settings.current.rules);
+    rules.removeAt(index);
+    state = state.copyWith(
+      settings: state.settings.update(Ipv6PortServiceRuleList(rules: rules)),
+    );
   }
 }

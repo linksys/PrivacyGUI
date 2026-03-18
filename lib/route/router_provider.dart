@@ -94,6 +94,10 @@ import 'package:privacy_gui/usp_page/firewall/providers/usp_firewall_notifier.da
 import 'package:privacy_gui/usp_page/local_network/providers/usp_local_network_notifier.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/usp_internet_settings_view.dart';
+import 'package:privacy_gui/usp_page/static_routing/providers/usp_static_routing_notifier.dart';
+import 'package:privacy_gui/usp_page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
+import 'package:privacy_gui/usp_page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/views/usp_wifi_settings_view.dart';
 import 'package:privacy_gui/core/protocol/protocol_resolver.dart';

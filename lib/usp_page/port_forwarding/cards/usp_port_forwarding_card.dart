@@ -91,7 +91,7 @@ class UspPortForwardingCard extends ConsumerWidget {
                       loadingKey: 'portForwarding',
                       mutation: () => ref
                           .read(portForwardingDataProvider.notifier)
-                          .toggleRule(rule.instancePath, value),
+                          .toggleRule(rule.instancePath!, value),
                     ),
           ),
           AppGap.sm(),
@@ -134,7 +134,7 @@ class UspPortForwardingCard extends ConsumerWidget {
                       loadingKey: 'portForwarding',
                       mutation: () => ref
                           .read(portTriggeringDataProvider.notifier)
-                          .toggleRule(trigger.instancePath, value),
+                          .toggleRule(trigger.instancePath!, value),
                     ),
           ),
           AppGap.sm(),

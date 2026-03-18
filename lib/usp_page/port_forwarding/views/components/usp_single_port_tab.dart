@@ -4,21 +4,23 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
-import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/port_forwarding_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Tab 1: Single Port Forwarding — shows rules where isSinglePort == true.
 class UspSinglePortTab extends ConsumerWidget {
   final List<PortForwardingRuleUIModel> rules;
+  final bool isSaving;
 
-  const UspSinglePortTab({super.key, required this.rules});
+  const UspSinglePortTab({
+    super.key,
+    required this.rules,
+    this.isSaving = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -28,7 +30,7 @@ class UspSinglePortTab extends ConsumerWidget {
             AppText.titleMedium('Single Port Forwarding'),
             AppIconButton(
               icon: AppIcon.font(Icons.add, size: 20),
-              onTap: isLoading ? null : () => _showAddDialog(context, ref),
+              onTap: isSaving ? null : () => _showAddDialog(context, ref),
             ),
           ],
         ),
@@ -36,13 +38,13 @@ class UspSinglePortTab extends ConsumerWidget {
         if (rules.isEmpty)
           AppText.bodyMedium('No single port forwarding rules configured')
         else
-          ...rules.map((r) => _buildRuleRow(context, ref, r, isLoading)),
+          ...rules.map((r) => _buildRuleRow(context, ref, r)),
       ],
     );
   }
 
   Widget _buildRuleRow(BuildContext context, WidgetRef ref,
-      PortForwardingRuleUIModel rule, bool isLoading) {
+      PortForwardingRuleUIModel rule) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
@@ -51,16 +53,11 @@ class UspSinglePortTab extends ConsumerWidget {
             AppSwitch(
               value: rule.enabled,
               scale: 0.8,
-              onChanged: isLoading
+              onChanged: isSaving
                   ? null
-                  : (value) => performUspMutation(
-                        context,
-                        ref,
-                        loadingKey: 'portForwarding',
-                        mutation: () => ref
-                            .read(portForwardingDataProvider.notifier)
-                            .toggleRule(rule.instancePath, value),
-                      ),
+                  : (value) => ref
+                      .read(uspPortForwardingPageProvider.notifier)
+                      .toggleForwardingRule(rule, value),
             ),
             AppGap.sm(),
             Expanded(
@@ -83,12 +80,12 @@ class UspSinglePortTab extends ConsumerWidget {
             AppIconButton(
               icon: AppIcon.font(Icons.edit, size: 18),
               onTap:
-                  isLoading ? null : () => _showEditDialog(context, ref, rule),
+                  isSaving ? null : () => _showEditDialog(context, ref, rule),
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
               onTap:
-                  isLoading ? null : () => _confirmDelete(context, ref, rule),
+                  isSaving ? null : () => _confirmDelete(context, ref, rule),
             ),
           ],
         ),
@@ -117,21 +114,16 @@ class UspSinglePortTab extends ConsumerWidget {
       builder: (_) => PortForwardingDialog(deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'portForwarding',
-      mutation: () =>
-          ref.read(portForwardingDataProvider.notifier).addRule(
-                externalPort: result.externalPort,
-                internalPort: result.internalPort,
-                internalClient: result.internalClient,
-                protocol: result.protocol,
-                description: result.description,
-                enabled: result.enabled,
-              ),
-      successMessage: 'Rule added',
-    );
+    ref.read(uspPortForwardingPageProvider.notifier).addForwardingRule(
+          PortForwardingRuleUIModel(
+            description: result.description,
+            externalPort: result.externalPort,
+            internalPort: result.internalPort,
+            internalClient: result.internalClient,
+            protocol: result.protocol,
+            enabled: result.enabled,
+          ),
+        );
   }
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref,
@@ -143,22 +135,17 @@ class UspSinglePortTab extends ConsumerWidget {
           PortForwardingDialog(rule: rule, deviceOptions: deviceOptions),
     );
     if (result == null || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'portForwarding',
-      mutation: () =>
-          ref.read(portForwardingDataProvider.notifier).updateRule(
-                instancePath: rule.instancePath,
-                enabled: result.enabled,
-                externalPort: result.externalPort,
-                internalPort: result.internalPort,
-                internalClient: result.internalClient,
-                protocol: result.protocol,
-                description: result.description,
-              ),
-      successMessage: 'Rule updated',
-    );
+    ref.read(uspPortForwardingPageProvider.notifier).editForwardingRule(
+          rule,
+          rule.copyWith(
+            enabled: result.enabled,
+            description: result.description,
+            externalPort: result.externalPort,
+            internalPort: result.internalPort,
+            internalClient: result.internalClient,
+            protocol: result.protocol,
+          ),
+        );
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref,
@@ -179,14 +166,8 @@ class UspSinglePortTab extends ConsumerWidget {
       ],
     );
     if (confirmed != true || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'portForwarding',
-      mutation: () => ref
-          .read(portForwardingDataProvider.notifier)
-          .deleteRule(rule.instancePath),
-      successMessage: 'Rule deleted',
-    );
+    ref
+        .read(uspPortForwardingPageProvider.notifier)
+        .deleteForwardingRule(rule);
   }
 }

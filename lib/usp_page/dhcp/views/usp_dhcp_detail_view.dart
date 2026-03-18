@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/dhcp_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/usp_page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/usp_page/local_network/providers/lan_data_provider.dart';
+import 'package:privacy_gui/usp_page/dhcp/models/dhcp_reservations_feature_state.dart';
+import 'package:privacy_gui/usp_page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/usp_page/dhcp/views/components/usp_dhcp_active_leases_card.dart';
 import 'package:privacy_gui/usp_page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
 import 'package:privacy_gui/usp_page/dhcp/views/components/usp_dhcp_server_info_card.dart';
@@ -13,13 +18,16 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// DHCP detail page — shows server info, active leases, and reservations.
 ///
-/// Reads from [dhcpDataProvider] and [lanDataProvider].
+/// Server info from [lanDataProvider], active leases from [dhcpDataProvider],
+/// reservations from [uspDhcpReservationsProvider] (page-level Preservable).
 class UspDhcpDetailView extends ConsumerWidget {
   const UspDhcpDetailView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncDhcp = ref.watch(dhcpDataProvider);
+    final reservationState = ref.watch(uspDhcpReservationsProvider);
+    final reservationStatus = reservationState.status;
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -31,22 +39,60 @@ class UspDhcpDetailView extends ConsumerWidget {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspMenu),
-      onRefresh: () async => ref.invalidate(dhcpDataProvider),
+      onRefresh: () async {
+        ref.invalidate(dhcpDataProvider);
+        ref.read(uspDhcpReservationsProvider.notifier).fetch(forceRemote: true);
+      },
+      bottomBar: _buildBottomBar(context, ref, reservationState),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncDhcp.when(
-          loading: () => const Center(
+        // Show loading if either source is still loading
+        if (reservationStatus.isLoading ||
+            (asyncDhcp.isLoading && asyncDhcp.valueOrNull == null)) {
+          return const Center(
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.xxxl),
               child: AppLoader(),
             ),
-          ),
-          error: (error, stack) => _buildError(childContext, ref, error),
-          data: (dhcpData) => _buildContent(childContext, ref, dhcpData),
-        );
+          );
+        }
+
+        if (reservationStatus.errorMessage != null) {
+          return _buildError(
+              childContext, ref, reservationStatus.errorMessage!);
+        }
+
+        if (asyncDhcp.hasError && asyncDhcp.valueOrNull == null) {
+          return _buildError(childContext, ref, asyncDhcp.error.toString());
+        }
+
+        return _buildContent(childContext, ref);
       },
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Bottom Bar
+  // ---------------------------------------------------------------------------
+
+  UiKitBottomBarConfig? _buildBottomBar(
+    BuildContext context,
+    WidgetRef ref,
+    DhcpReservationsFeatureState reservationState,
+  ) {
+    if (!reservationState.isDirty) return null;
+    return UiKitBottomBarConfig(
+      positiveLabel: 'Save',
+      isPositiveEnabled: !reservationState.status.isSaving,
+      onPositiveTap: () => _onSave(context, ref),
+      onNegativeTap: () =>
+          ref.read(uspDhcpReservationsProvider.notifier).revert(),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Error
+  // ---------------------------------------------------------------------------
 
   Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
     return Center(
@@ -62,19 +108,35 @@ class UspDhcpDetailView extends ConsumerWidget {
           AppGap.xxl(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.invalidate(dhcpDataProvider),
+            onTap: () {
+              ref.invalidate(dhcpDataProvider);
+              ref
+                  .read(uspDhcpReservationsProvider.notifier)
+                  .fetch(forceRemote: true);
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContent(
-      BuildContext context, WidgetRef ref, DhcpData dhcpData) {
+  // ---------------------------------------------------------------------------
+  // Content
+  // ---------------------------------------------------------------------------
+
+  Widget _buildContent(BuildContext context, WidgetRef ref) {
+    final dhcpData = ref.watch(dhcpDataProvider).valueOrNull;
     final lanInfo = ref.watch(lanDataProvider).valueOrNull?.model;
+    final reservationState = ref.watch(uspDhcpReservationsProvider);
+    final reservations = reservationState.settings.current.reservations;
+    final isSaving = reservationState.status.isSaving;
+    final clients = dhcpData?.clientModels ?? [];
+
     return AppResponsiveLayout(
-      mobile: (ctx) => _buildMobileLayout(ctx, dhcpData, lanInfo),
-      desktop: (ctx) => _buildDesktopLayout(ctx, dhcpData, lanInfo),
+      mobile: (ctx) =>
+          _buildMobileLayout(ctx, lanInfo, clients, reservations, isSaving),
+      desktop: (ctx) =>
+          _buildDesktopLayout(ctx, lanInfo, clients, reservations, isSaving),
     );
   }
 
@@ -83,16 +145,23 @@ class UspDhcpDetailView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Widget _buildMobileLayout(
-      BuildContext context, DhcpData dhcpData, dynamic lanInfo) {
+    BuildContext context,
+    dynamic lanInfo,
+    List<DhcpClientUIModel> clients,
+    List<DhcpReservationUIModel> reservations,
+    bool isSaving,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (lanInfo != null) UspDhcpServerInfoCard(info: lanInfo),
         AppGap.xl(),
-        UspDhcpActiveLeasesCard(clients: dhcpData.clientModels),
+        UspDhcpActiveLeasesCard(clients: clients),
         AppGap.xl(),
         UspDhcpReservationsDetailCard(
-            reservations: dhcpData.reservationModels),
+          reservations: reservations,
+          isSaving: isSaving,
+        ),
       ],
     );
   }
@@ -102,7 +171,12 @@ class UspDhcpDetailView extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Widget _buildDesktopLayout(
-      BuildContext context, DhcpData dhcpData, dynamic lanInfo) {
+    BuildContext context,
+    dynamic lanInfo,
+    List<DhcpClientUIModel> clients,
+    List<DhcpReservationUIModel> reservations,
+    bool isSaving,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -113,17 +187,36 @@ class UspDhcpDetailView extends ConsumerWidget {
           children: [
             SizedBox(
               width: context.colWidth(6),
-              child: UspDhcpActiveLeasesCard(clients: dhcpData.clientModels),
+              child: UspDhcpActiveLeasesCard(clients: clients),
             ),
             AppGap.gutter(),
             SizedBox(
               width: context.colWidth(6),
               child: UspDhcpReservationsDetailCard(
-                  reservations: dhcpData.reservationModels),
+                reservations: reservations,
+                isSaving: isSaving,
+              ),
             ),
           ],
         ),
       ],
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Save
+  // ---------------------------------------------------------------------------
+
+  Future<void> _onSave(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(uspDhcpReservationsProvider.notifier).save();
+      if (context.mounted) {
+        showSuccessSnackBar(context, 'DHCP reservations saved');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, 'Failed to save: $e');
+      }
+    }
   }
 }

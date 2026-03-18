@@ -318,24 +318,56 @@ Dashboard notifier：4 batches、8 `timed()` calls、`this.total = 8`。
 
 ---
 
-## Phase 6：其餘 USP Page 遷移 ⬜ 待執行
+## Phase 6：其餘 USP Page 遷移 ✅ 已完成
 
 > 依 [Playbook](domain-split-playbook.md) 判斷 Type 後執行。
 
-| 頁面 | Type | 說明 |
-|------|------|------|
-| `usp_page/local_network/` | A (Form) | 已有 ad-hoc original/pending → FeatureState |
-| `usp_page/internet_settings/` | A (Form) | 已有部分 `_UspPreservableAdapter` → 完成遷移 |
-| `usp_page/dmz/` | A (Form) | 已有 ad-hoc original/pending → FeatureState |
-| `usp_page/port_forwarding/` | B (CRUD List) | 累積 add/edit/delete → batch save（`addMultiple`），已有 Layer 1 |
-| `usp_page/ipv6_port_service/` | B (CRUD List) | 同上，JNAP 版已有 Preservable 參考實作 |
-| `usp_page/static_routing/` | B (CRUD List) | 累積 add/edit/delete → batch save |
-| `usp_page/dhcp/` | B (CRUD List) | DHCP reservations 累積 → batch save，已有 Layer 1 |
-| `usp_page/admin/` | C | atomic 操作（密碼、重開機），唯讀顯示 |
-| `usp_page/system_log/` | C | 唯讀 |
-| `usp_page/network_diagnostics/` | C | 使用者觸發操作，無編輯狀態 |
-| `usp_page/instant_privacy/` | C | toggle 模式 |
-| `usp_page/instant_safety/` | C | toggle 模式 |
+### 6.1 Type A (Form) ✅ 已完成
+
+| 頁面 | 狀態 |
+|------|------|
+| `usp_page/dmz/` | ✅ FeatureState + Preservable |
+| `usp_page/local_network/` | ✅ FeatureState + Preservable |
+| `usp_page/internet_settings/` | ✅ FeatureState + Preservable |
+
+### 6.2 Type B (CRUD List) ✅ 已完成
+
+| 頁面 | 狀態 |
+|------|------|
+| `usp_page/static_routing/` | ✅ FeatureState + diff-based batch save |
+| `usp_page/ipv6_port_service/` | ✅ FeatureState + diff-based batch save |
+| `usp_page/port_forwarding/` | ✅ Combined notifier (PF + PT), diff-based batch save |
+| `usp_page/dhcp/` | ✅ Reservations-only notifier, diff-based batch save |
+
+#### Type B 設計決策
+
+- **Port Forwarding**：單一 combined notifier 管理 forwarding + triggering rules，避免 composite PreservableContract 複雜度
+- **DHCP**：page notifier 只管 reservations；clients/server info 仍來自 Layer 1 `dhcpDataProvider`
+- **Rule 識別**：Tab 內用 Equatable 物件身份（`indexOf`/`remove`），非 index（因 filtered list index ≠ full list index）
+- **Save 後**：invalidate Layer 1 providers 重新 fetch → 更新 dashboard cards
+
+#### Type B 已知問題：Bridge 批次操作
+
+- **BUG-007**：批次 USP Add 操作有兩個獨立問題
+  - **Sequential `add()`**：只有第一筆會寫入，後續筆數靜默遺失（即使加 300ms delay）
+  - **`addMultiple()`**：資料正確寫入（router 端確認全部建立），但 JS WASM client Promise 永不 resolve（bridge req timeout 128s → UI 卡死）
+  - 影響：所有 Type B CRUD 頁面的「一次新增多筆」場景
+  - **正確修復方向**：修復 WASM client 的 `addMultiple` response handling — `addMultiple` 是資料正確的路徑
+  - **Status**: Open — 300ms delay 已套用至全部 4 個 notifier，但只是防禦性措施（僅第一筆有效）
+- **TODO**：調查 WASM client `addMultiple` response 為何不 resolve（可能是 response 格式解析問題）
+- **TODO**：codegen 目前只生成單筆 `add()`/`delete()`，未來考慮加入 `addMany()`/`deleteMany()` wrapper
+
+### 6.3 Type C ✅ 已完成（無需遷移）
+
+這 5 個頁面從建立時就是獨立模式，不依賴 God Notifier，各自有獨立 provider 直接消費 codegen。確認符合 Type C 定義（不需要 FeatureState），無需額外遷移。
+
+| 頁面 | Type | 說明 | 狀態 |
+|------|------|------|------|
+| `usp_page/admin/` | C | atomic 操作（密碼、重開機），唯讀顯示 | ✅ 已獨立 |
+| `usp_page/system_log/` | C | 唯讀 | ✅ 已獨立 |
+| `usp_page/network_diagnostics/` | C | 使用者觸發操作（Ping/Traceroute via SSE），無編輯狀態 | ✅ 已獨立 |
+| `usp_page/instant_privacy/` | C | toggle 模式（MAC filter） | ✅ 已獨立 |
+| `usp_page/instant_safety/` | C | toggle 模式（DNS safe browsing） | ✅ 已獨立 |
 
 ---
 
@@ -386,4 +418,4 @@ Dashboard notifier：4 batches、8 `timed()` calls、`this.total = 8`。
 | 3 — 交叉依賴 Domain | ✅ 已完成 | WiFi / Devices / Ethernet（Topology 併入 Devices） |
 | 4 — Orchestrator | ✅ 已完成 | 替換 God Notifier，已刪除 |
 | 5 — 檔案結構 | ✅ 已完成 | Card 搬到 feature 旁邊（12 cards → 8 feature dirs） |
-| 6 — 其餘 USP Page | ⬜ 待執行 | Type A×3 + Type B×4 + Type C×5 頁面遷移 |
+| 6 — 其餘 USP Page | ✅ 已完成 | Type A×3 ✅ + Type B×4 ✅（帶 BUG-007）+ Type C×5 ✅（無需遷移） |

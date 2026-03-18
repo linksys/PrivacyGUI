@@ -246,7 +246,7 @@ class UspDeviceDetailView extends ConsumerWidget {
       loadingKey: 'dhcp',
       mutation: () => ref
           .read(dhcpDataProvider.notifier)
-          .deleteReservation(detail.reservation!.instancePath),
+          .deleteReservation(detail.reservation!.instancePath!),
       successMessage: 'Reservation released',
     );
   }

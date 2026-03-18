@@ -6,8 +6,11 @@ import 'package:equatable/equatable.dart';
 /// `Device.NAT.PortMapping`. When [externalPortEndRange] is 0 or equal to
 /// [externalPort] the rule is a single-port forward; otherwise it is a
 /// port-range forward.
+///
+/// [instancePath] is `null` for newly created (local-only) rules
+/// that have not yet been saved to the device.
 class PortForwardingRuleUIModel extends Equatable {
-  final String instancePath; // For toggle/delete/update mutations
+  final String? instancePath;
   final String description;
   final int externalPort;
   final int externalPortEndRange; // 0 = single port
@@ -17,7 +20,7 @@ class PortForwardingRuleUIModel extends Equatable {
   final bool enabled;
 
   const PortForwardingRuleUIModel({
-    required this.instancePath,
+    this.instancePath,
     required this.description,
     required this.externalPort,
     this.externalPortEndRange = 0,
@@ -26,6 +29,28 @@ class PortForwardingRuleUIModel extends Equatable {
     required this.protocol,
     required this.enabled,
   });
+
+  PortForwardingRuleUIModel copyWith({
+    String? instancePath,
+    String? description,
+    int? externalPort,
+    int? externalPortEndRange,
+    int? internalPort,
+    String? internalClient,
+    String? protocol,
+    bool? enabled,
+  }) {
+    return PortForwardingRuleUIModel(
+      instancePath: instancePath ?? this.instancePath,
+      description: description ?? this.description,
+      externalPort: externalPort ?? this.externalPort,
+      externalPortEndRange: externalPortEndRange ?? this.externalPortEndRange,
+      internalPort: internalPort ?? this.internalPort,
+      internalClient: internalClient ?? this.internalClient,
+      protocol: protocol ?? this.protocol,
+      enabled: enabled ?? this.enabled,
+    );
+  }
 
   /// True when this is a single-port forward (no range).
   bool get isSinglePort =>
