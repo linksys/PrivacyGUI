@@ -119,11 +119,17 @@ class _UspSliverDashboardViewState
     }
   }
 
-  void _enterEditMode() {
+  void _enterEditMode() async {
+    // Ensure preferences have been loaded from SharedPreferences before
+    // capturing the snapshot. Without this, the snapshot may capture the
+    // default state (preset = null) if _loadFromPrefs hasn't completed yet.
+    await ref.read(uspLayoutPreferencesProvider.notifier).initialized;
+
     final controller = ref.read(uspSliverDashboardControllerProvider);
     _initialLayoutSnapshot = controller.exportLayout();
     _initialPrefsSnapshot = ref.read(uspLayoutPreferencesProvider);
 
+    if (!mounted) return;
     setState(() {
       _isEditMode = true;
     });

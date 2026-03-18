@@ -181,9 +181,15 @@ class UspBridgeClient {
           }
           return;
         }
+        // Use addError only (not close) — the error listener in
+        // SseConnectionManager._onError will handle cleanup and reconnect.
+        // Calling both addError + close fires both _onError and _onDone,
+        // which causes double _handleStreamEnd and timer multiplication.
         controller.addError(
             'SSE connection failed: ${response.status} ${response.statusText}');
-        await controller.close();
+        if (!controller.isClosed) {
+          await controller.close();
+        }
         return;
       }
 
