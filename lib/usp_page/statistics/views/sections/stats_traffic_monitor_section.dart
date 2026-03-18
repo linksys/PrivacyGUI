@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/transforms.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/usp_page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -98,12 +98,12 @@ class StatsTrafficMonitorSection extends ConsumerWidget {
             const Spacer(),
             if (wan != null) ...[
               AppText.labelSmall(
-                '\u2191 ${Transforms.formatBytes(wan.totalBytesSent)}',
+                '\u2191 ${UspFormatters.formatBytes(wan.totalBytesSent)}',
                 color: colorScheme.onSurfaceVariant,
               ),
               AppGap.md(),
               AppText.labelSmall(
-                '\u2193 ${Transforms.formatBytes(wan.totalBytesReceived)}',
+                '\u2193 ${UspFormatters.formatBytes(wan.totalBytesReceived)}',
                 color: colorScheme.onSurfaceVariant,
               ),
             ],

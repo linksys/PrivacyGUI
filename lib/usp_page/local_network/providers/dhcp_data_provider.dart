@@ -8,8 +8,8 @@ import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_client_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 
 // ── Data Model ──

@@ -7,7 +7,6 @@ import 'package:privacy_gui/usp_page/dmz/models/dmz_feature_state.dart';
 import 'package:privacy_gui/usp_page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/usp_page/dmz/providers/usp_dmz_notifier.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
-import 'package:privacy_gui/utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// USP DMZ settings page — enable/disable DMZ, set destination IP,
@@ -22,7 +21,6 @@ class UspDmzView extends ConsumerStatefulWidget {
 class _UspDmzViewState extends ConsumerState<UspDmzView> {
   late TextEditingController _destIpController;
   late TextEditingController _cidrController;
-  String? _destIpError;
 
   @override
   void initState() {
@@ -91,10 +89,9 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
     DmzFeatureState state,
   ) {
     if (!state.isDirty) return null;
-    final pending = state.settings.current.model;
     return UiKitBottomBarConfig(
       positiveLabel: 'Save',
-      isPositiveEnabled: !state.status.isSaving && _isFormValid(pending),
+      isPositiveEnabled: !state.status.isSaving && state.status.fieldErrors.isEmpty,
       onPositiveTap: () => _onSave(context, ref),
       onNegativeTap: () => ref.read(uspDmzProvider.notifier).revert(),
     );
@@ -216,9 +213,8 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
             controller: _destIpController,
             onChanged: (value) {
               notifier.updateSetting((m) => m.copyWith(destIp: value));
-              _validateDestIp(value);
             },
-            errorText: _destIpError,
+            errorText: ref.watch(uspDmzProvider).status.fieldErrors['destIp'],
           ),
         ],
       ),
@@ -275,32 +271,6 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         ],
       ),
     );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Validation
-  // ---------------------------------------------------------------------------
-
-  void _validateDestIp(String value) {
-    setState(() {
-      if (value.isEmpty) {
-        _destIpError = null;
-      } else {
-        _destIpError =
-            NetworkUtils.isValidIpAddress(value) ? null : 'Invalid IP address';
-      }
-    });
-  }
-
-  bool _isFormValid(DmzUIModel pending) {
-    if (!pending.isEnabled) return true;
-    if (pending.destIp.isEmpty) return false;
-    if (_destIpError != null) return false;
-    if (pending.sourceType == DmzSourceType.cidr &&
-        pending.sourcePrefix.isEmpty) {
-      return false;
-    }
-    return true;
   }
 
   // ---------------------------------------------------------------------------

@@ -3,9 +3,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/transforms.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/network_health_helpers.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/pdf_report_data.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/usp_page/_shared/models/network_health_helpers.dart';
+import 'package:privacy_gui/usp_page/_shared/models/pdf_report_data.dart';
+import 'package:privacy_gui/usp_page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/usp_page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/usp_page/firewall/models/firewall_ui_model.dart';
 

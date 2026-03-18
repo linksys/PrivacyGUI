@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp_page/_framework/preservable_contract.dart';
 import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/usp_page/local_network/models/local_network_feature_state.dart';
@@ -93,28 +91,11 @@ class UspLocalNetworkNotifier
     );
 
     try {
-      final usp = ref.read(uspServiceProvider)!;
       final o = state.settings.original.model;
       final p = state.settings.current.model;
 
       await ref.read(uspMutationLockProvider).withLock(() async {
-        await LanNetworkInfo.save(
-          usp,
-          ipAddress: o.ipAddress != p.ipAddress ? p.ipAddress : null,
-          subnetMask: o.subnetMask != p.subnetMask ? p.subnetMask : null,
-          hostName: o.hostName != p.hostName ? p.hostName : null,
-          dhcpEnabled:
-              o.dhcpEnabled != p.dhcpEnabled ? p.dhcpEnabled : null,
-          minAddress: o.minAddress != p.minAddress ? p.minAddress : null,
-          maxAddress: o.maxAddress != p.maxAddress ? p.maxAddress : null,
-          leaseTime: o.leaseTimeMinutes != p.leaseTimeMinutes
-              ? p.leaseTimeMinutes * 60
-              : null,
-          dnsServers: _dnsChanged(o, p)
-              ? _svc.joinDnsServers(
-                  p.dnsServer1, p.dnsServer2, p.dnsServer3)
-              : null,
-        );
+        await _svc.save(original: o, pending: p);
         logger.d('[USP][Network][LAN] Saved');
       });
 
@@ -178,14 +159,4 @@ class UspLocalNetworkNotifier
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  static bool _dnsChanged(
-      LocalNetworkUIModel o, LocalNetworkUIModel p) {
-    return o.dnsServer1 != p.dnsServer1 ||
-        o.dnsServer2 != p.dnsServer2 ||
-        o.dnsServer3 != p.dnsServer3;
-  }
 }

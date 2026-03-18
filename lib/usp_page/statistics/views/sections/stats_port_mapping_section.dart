@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/usp_page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';

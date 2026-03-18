@@ -5,7 +5,7 @@ import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
 
-export 'package:privacy_gui/generated/wifi_clients.g.dart' show WifiClient;
+import 'package:privacy_gui/usp_page/_shared/models/wifi_client_ui_model.dart';
 
 /// Fetches WiFi clients and returns a map keyed by uppercase MAC → [WifiClient].
 ///
@@ -195,4 +195,23 @@ String _normalizeBand(String rawBand) {
   if (lower.contains('5g') || lower.contains('5 g')) return '5GHz';
   if (lower.contains('2.4') || lower.contains('2_4')) return '2.4GHz';
   return rawBand;
+}
+
+/// Converts a raw codegen [WifiClient] map to [WifiClientUIModel] map.
+///
+/// Call this after [buildConnectionDetailMap] (which needs raw parentPath)
+/// to produce the UI-safe type for storage in [WifiData].
+Map<String, WifiClientUIModel> toWifiClientUIModels(
+    Map<String, WifiClient> raw) {
+  return raw.map((mac, c) => MapEntry(
+        mac,
+        WifiClientUIModel(
+          macAddress: c.macAddress,
+          signalStrength: c.signalStrength,
+          noise: c.noise,
+          lastDataDownlinkRate: c.lastDataDownlinkRate,
+          lastDataUplinkRate: c.lastDataUplinkRate,
+          active: c.active,
+        ),
+      ));
 }

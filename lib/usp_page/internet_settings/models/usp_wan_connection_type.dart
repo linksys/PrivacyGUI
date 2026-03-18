@@ -1,5 +1,3 @@
-import 'package:privacy_gui/generated/wan_settings.g.dart';
-
 /// WAN connection types supported via USP TR-181.
 enum UspWanConnectionType {
   dhcp,
@@ -7,16 +5,19 @@ enum UspWanConnectionType {
   pppoe,
   bridge;
 
-  /// Derive the connection type from raw [WanSettings] fields.
+  /// Derive the connection type from raw WAN field values.
   ///
-  /// `addressingType` is the primary signal; `bridgeEnabled` alone is NOT
+  /// [addressingType] is the primary signal; [bridgeEnabled] alone is NOT
   /// sufficient because `Device.Bridging.Bridge.1.Enable` is typically `true`
   /// on most routers (it controls the LAN-side L2 bridge, not WAN bridge mode).
   /// Bridge mode is only active when both `bridgeEnabled` is true AND
   /// `addressingType` is `DHCP` (or empty/unknown) — i.e. the router has
   /// explicitly been placed into bridge mode rather than a standard DHCP config.
-  static UspWanConnectionType fromWanSettings(WanSettings wan) {
-    switch (wan.addressingType) {
+  static UspWanConnectionType fromRawFields({
+    required String addressingType,
+    required bool bridgeEnabled,
+  }) {
+    switch (addressingType) {
       case 'Static':
         return staticIp;
       case 'IPCP':
@@ -26,7 +27,7 @@ enum UspWanConnectionType {
       default:
         // Only treat as bridge when addressingType is absent/unknown AND
         // bridgeEnabled is explicitly true.
-        if (wan.bridgeEnabled && wan.addressingType.isEmpty) return bridge;
+        if (bridgeEnabled && addressingType.isEmpty) return bridge;
         return dhcp;
     }
   }

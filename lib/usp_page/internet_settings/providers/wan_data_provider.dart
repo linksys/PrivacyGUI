@@ -6,8 +6,8 @@ import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wan_status_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/services/usp_device_service.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wan_status_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/services/usp_device_service.dart';
 
 // ── Data Model ──
 

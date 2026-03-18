@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_client_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/usp_page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/usp_page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/dhcp_reservation_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

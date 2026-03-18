@@ -7,9 +7,9 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp_page/admin/providers/system_info_data_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
-import 'package:privacy_gui/usp_page/dashboard/services/usp_device_service.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/usp_page/_shared/services/usp_device_service.dart';
 import 'package:privacy_gui/usp_page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 

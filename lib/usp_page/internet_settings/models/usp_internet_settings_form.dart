@@ -1,13 +1,11 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/generated/ipv6settings.g.dart';
-import 'package:privacy_gui/generated/wan_settings.g.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_wan_connection_type.dart';
 
 /// Unified editable form model that merges WAN IPv4 + IPv6 settings.
 ///
-/// Created from generated USP models via [fromGenerated] and supports
-/// immutable updates via [copyWith]. Dirty checking is performed by
-/// comparing two instances (Equatable).
+/// Supports immutable updates via [copyWith]. Dirty checking is performed by
+/// comparing two instances (Equatable). Constructed by the service layer via
+/// [UspInternetSettingsService.buildForm].
 class UspInternetSettingsForm extends Equatable {
   // === Core ===
   final UspWanConnectionType connectionType;
@@ -71,38 +69,6 @@ class UspInternetSettingsForm extends Equatable {
     this.ipv6rdIpv4MaskLength = 0,
     this.ipv6rdBorderRelay = '',
   });
-
-  /// Create form from fetched USP generated models.
-  factory UspInternetSettingsForm.fromGenerated(
-    WanSettings wan,
-    Ipv6Settings ipv6,
-  ) {
-    return UspInternetSettingsForm(
-      connectionType: UspWanConnectionType.fromWanSettings(wan),
-      staticIpAddress: wan.staticIpAddress,
-      subnetMask: wan.subnetMask,
-      defaultGateway: wan.defaultGateway,
-      dnsServer1: wan.dnsServer1,
-      dnsServer2: wan.dnsServer2,
-      dnsServer3: wan.dnsServer3,
-      pppUsername: wan.pppUsername,
-      pppPassword: wan.pppPassword,
-      pppoeServiceName: wan.pppoeServiceName,
-      connectionTrigger: wan.connectionTrigger,
-      idleDisconnectTime: wan.idleDisconnectTime,
-      lcpEchoInterval: wan.lcpEchoInterval,
-      vlanEnabled: wan.vlanEnabled,
-      vlanId: wan.vlanId,
-      mtu: wan.mtu,
-      wanMacAddress: wan.wanMacAddress,
-      ipv6Enabled: ipv6.ipv6Enabled,
-      dhcpv6Enabled: ipv6.dhcpv6Enabled,
-      ipv6rdEnabled: ipv6.ipv6rdEnabled,
-      ipv6rdPrefix: ipv6.ipv6rdPrefix,
-      ipv6rdIpv4MaskLength: ipv6.ipv6rdIpv4MaskLength,
-      ipv6rdBorderRelay: ipv6.ipv6rdBorderRelay,
-    );
-  }
 
   UspInternetSettingsForm copyWith({
     UspWanConnectionType? connectionType,

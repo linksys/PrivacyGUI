@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -24,7 +24,7 @@ class UspConnectionStatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final connectionType = state.connectionType;
-    final wanIp = state.wanSettings.staticIpAddress;
+    final wanIp = state.readOnlyInfo.staticIpAddress;
     final isConnected = wanIp.isNotEmpty;
 
     return AppCard(

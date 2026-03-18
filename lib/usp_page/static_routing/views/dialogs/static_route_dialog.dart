@@ -42,7 +42,6 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
   late String _interfaceName;
   late bool _enabled;
 
-  final _service = UspStaticRoutingService();
   Map<String, String> _errors = {};
 
   bool get _isEdit => widget.route != null;
@@ -71,7 +70,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
 
   void _validate() {
     setState(() {
-      _errors = _service.validateRoute(
+      _errors = UspStaticRoutingService.validateRoute(
         name: _nameController.text.trim(),
         destIp: _destIpController.text.trim(),
         subnetMask: _subnetMaskController.text.trim(),
@@ -81,7 +80,7 @@ class _StaticRouteDialogState extends State<StaticRouteDialog> {
   }
 
   bool get _isFormValid {
-    final errors = _service.validateRoute(
+    final errors = UspStaticRoutingService.validateRoute(
       name: _nameController.text.trim(),
       destIp: _destIpController.text.trim(),
       subnetMask: _subnetMaskController.text.trim(),

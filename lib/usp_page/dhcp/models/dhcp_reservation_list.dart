@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_reservation_ui_model.dart';
 
 /// Equatable wrapper for the list of DHCP reservations.
 class DhcpReservationList extends Equatable {

@@ -6,12 +6,14 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
-import 'package:privacy_gui/usp_page/dashboard/services/usp_device_service.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_radio_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/wifi_client_enricher.dart';
+import 'package:privacy_gui/usp_page/_shared/services/usp_device_service.dart';
 
 // ---------------------------------------------------------------------------
 // Data Model (Layer 1 — raw codegen + enrichment + UI models)
@@ -23,8 +25,8 @@ class WifiData extends Equatable {
   final WiFiSsids ssids;
   final WiFiAccessPoints accessPoints;
 
-  // Enrichment
-  final Map<String, WifiClient> wifiClientMap;
+  // Enrichment (UI-safe types — codegen converted at boundary)
+  final Map<String, WifiClientUIModel> wifiClientMap;
   final Map<String, ClientConnectionDetail> connectionDetailMap;
 
   // UI models (computed from raw, cached here to avoid repeated computation)
@@ -105,15 +107,19 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
     final radios = results[0] as WiFiRadios;
     final ssids = results[1] as WiFiSsids;
     final accessPoints = results[2] as WiFiAccessPoints;
-    final wifiClientMap = results[3] as Map<String, WifiClient>;
+    final rawWifiClientMap = results[3] as Map<String, WifiClient>;
 
     // Cross-reference AP → SSID → Radio to get band + SSID name per client
+    // (uses raw codegen WifiClient which has parentPath for AP lookup)
     final connectionDetailMap = buildConnectionDetailMap(
-      wifiClientMap: wifiClientMap,
+      wifiClientMap: rawWifiClientMap,
       accessPoints: accessPoints,
       ssids: ssids,
       radios: radios,
     );
+
+    // Convert raw codegen → UI model at the Layer 1 boundary
+    final wifiClientMap = toWifiClientUIModels(rawWifiClientMap);
 
     // Build UI models
     final svc = ref.read(uspDeviceServiceProvider);

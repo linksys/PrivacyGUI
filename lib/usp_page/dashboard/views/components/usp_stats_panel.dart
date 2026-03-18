@@ -4,7 +4,7 @@ import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dar
 import 'package:privacy_gui/usp_page/local_network/providers/ethernet_data_provider.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/providers/port_triggering_data_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

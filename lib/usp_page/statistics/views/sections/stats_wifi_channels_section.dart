@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/wifi_clients.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wifi_performance_helpers.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_performance_helpers.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -153,7 +153,7 @@ class StatsWifiChannelsSection extends ConsumerWidget {
 }
 
 class _ClientInfo {
-  final WifiClient client;
+  final WifiClientUIModel client;
   final String band;
   const _ClientInfo({required this.client, this.band = ''});
 }

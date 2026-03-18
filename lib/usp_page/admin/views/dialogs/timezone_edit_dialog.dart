@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/time_settings_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shows a dialog to edit timezone settings (timezone string, NTP servers).

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/usp_page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

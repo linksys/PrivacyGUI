@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_fab.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_bars_visible_provider.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_bars_visible_provider.dart';
 import 'package:privacy_gui/usp_page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';

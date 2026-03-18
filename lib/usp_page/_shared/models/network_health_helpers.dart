@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/usp_page/_shared/models/traffic_analysis_state.dart';
 
 /// Health quality tiers derived from packet loss percentage.
 enum HealthTier { excellent, good, fair, poor, critical }

@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/instant_safety/models/safe_browsing_ui_model.dart';
 
-/// Service provider — stateless, per Article VI.
+/// Service provider — per Article VI.
 final uspInstantSafetyServiceProvider = Provider<UspInstantSafetyService>(
-  (ref) => UspInstantSafetyService(),
+  (ref) => UspInstantSafetyService(ref.read(uspServiceProvider)!),
 );
 
 /// Transforms codegen [LanNetworkInfo] into [SafeBrowsingUIModel] and provides
@@ -12,9 +14,29 @@ final uspInstantSafetyServiceProvider = Provider<UspInstantSafetyService>(
 ///
 /// OpenDNS Family Shield IPs are identical to the JNAP version (NOW-713).
 class UspInstantSafetyService {
+  final UspService _usp;
+
+  UspInstantSafetyService(this._usp);
+
   static const _openDnsDns1 = '208.67.222.222';
   static const _openDnsDns2 = '208.67.220.220';
   static const _openDnsValue = '$_openDnsDns1,$_openDnsDns2';
+
+  // ─── CRUD ──────────────────────────────────────────────────
+
+  /// Fetch LAN network info and transform to safe browsing UI model.
+  Future<SafeBrowsingUIModel> fetch() async {
+    final data = await LanNetworkInfo.fetch(_usp);
+    return buildUIModel(data);
+  }
+
+  /// Save safe browsing DNS setting.
+  Future<void> save(SafeBrowsingType type) async {
+    final dnsValue = dnsValueForType(type);
+    await LanNetworkInfo.save(_usp, dnsServers: dnsValue);
+  }
+
+  // ─── Transform ─────────────────────────────────────────────
 
   /// Codegen LanNetworkInfo → SafeBrowsingUIModel.
   SafeBrowsingUIModel buildUIModel(LanNetworkInfo data) {

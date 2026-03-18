@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wan_status_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wan_status_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_info_row.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_status_dot.dart';
+import 'package:privacy_gui/usp_page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/wan_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

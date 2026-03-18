@@ -1,13 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
-import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
-import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
 import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_settings_settings.dart';
@@ -40,12 +36,6 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     with
         PreservableAutoDisposeNotifierMixin<WifiSettingsSettings,
             WifiSettingsStatus, UspWifiSettingsState> {
-  UspService get _usp {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-    return usp;
-  }
-
   UspWifiSettingsService get _svc => ref.read(uspWifiSettingsServiceProvider);
 
   @override
@@ -166,144 +156,12 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   Future<void> performSave() async {
     final current = state.settings.current;
     if (current.quickSetupEnabled) {
-      await _saveQuickSetup(current);
+      await _svc.saveQuickSetup(current: current, status: state.status);
     } else {
-      await _saveAdvanced(current);
-    }
-  }
-
-  Future<void> _saveQuickSetup(WifiSettingsSettings current) async {
-    for (final pending in [current.quickSetupMain, current.quickSetupGuest]) {
-      if (pending == null || !pending.isValid) continue;
-
-      final aggregate = pending.isGuest
-          ? state.status.quickSetupGuestAggregate
-          : state.status.quickSetupMainAggregate;
-      if (aggregate == null) continue;
-
-      if (aggregate.ssidInstancePaths.isNotEmpty) {
-        await WiFiSsids.updateMany(
-          _usp,
-          aggregate.ssidInstancePaths
-              .map((p) => WiFiSsidUpdate(
-                    instancePath: p,
-                    ssid: pending.ssid,
-                    enable: pending.enabled,
-                  ))
-              .toList(),
-        );
-      }
-      if (aggregate.apInstancePaths.isNotEmpty) {
-        // Build a band lookup: AP instance path → band string.
-        // Used to apply the 6 GHz security override (Wi-Fi 6E mandates WPA3).
-        final bandByApPath = <String, String>{};
-        for (final n in state.settings.current.networks) {
-          if (n.accessPointInstancePath != null) {
-            bandByApPath[n.accessPointInstancePath!] = n.band;
-          }
-        }
-
-        await WiFiAccessPoints.updateMany(
-          _usp,
-          aggregate.apInstancePaths.map((p) {
-            final band = bandByApPath[p] ?? '';
-            final securityMode = _securityModeFor6GHz(
-              band: band,
-              selectedMode: pending.securityMode,
-            );
-            return WiFiAccessPointUpdate(
-              instancePath: p,
-              keyPassphrase: pending.password,
-              securityModeEnabled: securityMode,
-            );
-          }).toList(),
-        );
-      }
-    }
-  }
-
-  /// Returns the effective security mode to apply to a given band.
-  ///
-  /// 6 GHz (Wi-Fi 6E) mandates WPA3 — mirrors the old JNAP mapper logic:
-  ///   - Open / Enhanced-Open selected → send "Enhanced-Open"
-  ///   - Any other mode               → send "WPA3-Personal"
-  ///
-  /// All other bands: return [selectedMode] unchanged.
-  String _securityModeFor6GHz({
-    required String band,
-    required String selectedMode,
-  }) {
-    if (!band.contains('6')) return selectedMode;
-    const openModes = {'None', 'Enhanced-Open', ''};
-    return openModes.contains(selectedMode) ? 'Enhanced-Open' : 'WPA3-Personal';
-  }
-
-  Future<void> _saveAdvanced(WifiSettingsSettings current) async {
-    final originalNetworks = state.settings.original.networks;
-
-    for (var i = 0; i < current.networks.length; i++) {
-      final curr = current.networks[i];
-      final orig = originalNetworks.length > i ? originalNetworks[i] : null;
-
-      // Skip unchanged networks.
-      if (orig != null && orig == curr) continue;
-
-      // ── SSID layer ─────────────────────────────────────────────────────
-      if (orig == null ||
-          orig.enabled != curr.enabled ||
-          orig.ssid != curr.ssid) {
-        await WiFiSsids.update(
-          _usp,
-          WiFiSsidUpdate(
-            instancePath: curr.ssidInstancePath,
-            enable: curr.enabled,
-            ssid: curr.ssid,
-          ),
-        );
-      }
-
-      // ── AccessPoint layer ───────────────────────────────────────────────
-      final ap = curr.accessPointInstancePath;
-      if (ap != null &&
-          (orig == null ||
-              orig.keyPassphrase != curr.keyPassphrase ||
-              orig.securityMode != curr.securityMode ||
-              orig.ssidAdvertisementEnabled != curr.ssidAdvertisementEnabled)) {
-        await WiFiAccessPoints.update(
-          _usp,
-          WiFiAccessPointUpdate(
-            instancePath: ap,
-            keyPassphrase:
-                curr.keyPassphrase.isNotEmpty ? curr.keyPassphrase : null,
-            securityModeEnabled:
-                curr.securityMode.isNotEmpty ? curr.securityMode : null,
-            ssidAdvertisementEnabled: curr.ssidAdvertisementEnabled,
-          ),
-        );
-      }
-
-      // ── Radio layer ─────────────────────────────────────────────────────
-      final radio = curr.radioInstancePath;
-      if (radio != null &&
-          (orig == null ||
-              orig.operatingStandards != curr.operatingStandards ||
-              orig.channelBandwidth != curr.channelBandwidth ||
-              orig.channel != curr.channel ||
-              orig.autoChannelEnable != curr.autoChannelEnable)) {
-        await WiFiRadios.update(
-          _usp,
-          WiFiRadioUpdate(
-            instancePath: radio,
-            operatingStandards: curr.operatingStandards.isNotEmpty
-                ? curr.operatingStandards
-                : null,
-            operatingChannelBandwidth:
-                curr.channelBandwidth.isNotEmpty ? curr.channelBandwidth : null,
-            autoChannelEnable: curr.autoChannelEnable,
-            channel: curr.autoChannelEnable ? null : curr.channel,
-          ),
-        );
-      }
+      await _svc.saveAdvanced(
+        original: state.settings.original.networks,
+        current: current.networks,
+      );
     }
   }
 

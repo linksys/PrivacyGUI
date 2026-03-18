@@ -3,10 +3,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/transforms.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/card_tab_state_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/usp_page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/card_tab_state_provider.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Unified traffic monitor card — real-time WAN speed + multi-interface
@@ -236,12 +236,12 @@ class _MonitorView extends StatelessWidget {
             const Spacer(),
             if (wan != null) ...[
               AppText.labelSmall(
-                '\u2191 ${Transforms.formatBytes(wan.totalBytesSent)}',
+                '\u2191 ${UspFormatters.formatBytes(wan.totalBytesSent)}',
                 color: colorScheme.onSurfaceVariant,
               ),
               AppGap.md(),
               AppText.labelSmall(
-                '\u2193 ${Transforms.formatBytes(wan.totalBytesReceived)}',
+                '\u2193 ${UspFormatters.formatBytes(wan.totalBytesReceived)}',
                 color: colorScheme.onSurfaceVariant,
               ),
               AppGap.md(),
@@ -395,7 +395,7 @@ class _DistributionView extends StatelessWidget {
               centerWidget: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppText.titleSmall(Transforms.formatBytes(grandTotal)),
+                  AppText.titleSmall(UspFormatters.formatBytes(grandTotal)),
                   AppText.labelSmall('total',
                       color: colorScheme.onSurfaceVariant),
                 ],
@@ -414,11 +414,11 @@ class _DistributionView extends StatelessWidget {
           children: [
             _LegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('WAN: ${Transforms.formatBytes(wanTotal)}'),
+            AppText.labelSmall('WAN: ${UspFormatters.formatBytes(wanTotal)}'),
             AppGap.lg(),
             _LegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('LAN: ${Transforms.formatBytes(lanTotal)}'),
+            AppText.labelSmall('LAN: ${UspFormatters.formatBytes(lanTotal)}'),
           ],
         ),
       ],

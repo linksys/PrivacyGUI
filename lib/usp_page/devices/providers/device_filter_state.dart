@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/mesh_node_enricher.dart';
 
 enum DeviceStatusFilter { all, online, offline }
 

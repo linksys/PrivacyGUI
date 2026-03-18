@@ -22,7 +22,7 @@ class UspRenewSection extends ConsumerWidget {
     final activeMutation = state.status.activeMutation;
     final isBridge = state.isBridgeMode;
     final l = loc(context);
-    final wanIp = state.wanSettings.staticIpAddress;
+    final wanIp = state.readOnlyInfo.staticIpAddress;
 
     return UspSectionCard(
       title: l.releaseAndRenew,

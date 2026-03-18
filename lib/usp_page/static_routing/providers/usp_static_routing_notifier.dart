@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp_page/_framework/preservable_contract.dart';
 import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/usp_page/static_routing/models/static_route_list.dart';
@@ -65,12 +63,10 @@ class UspStaticRoutingNotifier
     bool updateStatusOnly = false,
   }) async {
     try {
-      final usp = ref.read(uspServiceProvider)!;
-      final data = await StaticRouting.fetch(usp);
-      final routes = _svc.buildRouteUIModels(data);
+      final routes = await _svc.fetch();
 
       logger.d('[USP][Network][Routing] Fetched — '
-          'total: ${data.items.length}, static: ${routes.length}');
+          'static: ${routes.length}');
 
       return (
         StaticRouteList(routes: routes),
@@ -96,79 +92,18 @@ class UspStaticRoutingNotifier
     );
 
     try {
-      final usp = ref.read(uspServiceProvider)!;
       final original = state.settings.original.routes;
       final current = state.settings.current.routes;
 
       await ref.read(uspMutationLockProvider).withLock(() async {
-        // 1. Determine items to delete (in original, not in current)
-        final currentPaths = <String>{
-          for (final r in current)
-            if (r.instancePath != null) r.instancePath!,
-        };
-        final toDelete = original
-            .where((r) =>
-                r.instancePath != null &&
-                !currentPaths.contains(r.instancePath))
-            .toList();
-
-        for (var i = 0; i < toDelete.length; i++) {
-          if (i > 0) {
-            await Future.delayed(const Duration(milliseconds: 300));
-          }
-          await StaticRouting.delete(usp, toDelete[i].instancePath!);
-        }
-
-        // 2. Determine items to add (instancePath == null → new)
-        final toAdd = current.where((r) => r.instancePath == null).toList();
-
-        for (var i = 0; i < toAdd.length; i++) {
-          if (i > 0) {
-            await Future.delayed(const Duration(milliseconds: 300));
-          }
-          final r = toAdd[i];
-          await StaticRouting.add(
-            usp,
-            enable: r.enabled,
-            destIpAddress: r.destIpAddress,
-            destSubnetMask: r.destSubnetMask,
-            gatewayIpAddress: r.gatewayIpAddress,
-            interface_: _svc.mapDisplayToInterface(r.interfaceName),
-            alias: r.name,
-          );
-        }
-
-        // 3. Determine items to update (same path, different content)
-        final originalByPath = <String, StaticRouteUIModel>{
-          for (final r in original)
-            if (r.instancePath != null) r.instancePath!: r,
-        };
-
-        final toUpdate = <StaticRouteUpdate>[];
-        for (final cur in current) {
-          if (cur.instancePath == null) continue;
-          final orig = originalByPath[cur.instancePath!];
-          if (orig == null) continue;
-          if (cur != orig) {
-            toUpdate.add(StaticRouteUpdate(
-              instancePath: cur.instancePath!,
-              enable: cur.enabled,
-              destIpAddress: cur.destIpAddress,
-              destSubnetMask: cur.destSubnetMask,
-              gatewayIpAddress: cur.gatewayIpAddress,
-              interface_: _svc.mapDisplayToInterface(cur.interfaceName),
-              alias: cur.name,
-            ));
-          }
-        }
-
-        if (toUpdate.isNotEmpty) {
-          await StaticRouting.updateMany(usp, toUpdate);
-        }
+        final result = await _svc.saveBatch(
+          original: original,
+          current: current,
+        );
 
         logger.d('[USP][Network][Routing] Batch save — '
-            'added: ${toAdd.length}, updated: ${toUpdate.length}, '
-            'deleted: ${toDelete.length}');
+            'added: ${result.added}, updated: ${result.updated}, '
+            'deleted: ${result.deleted}');
       });
     } catch (e) {
       logger.e('[USP][Network][Routing] Save failed', error: e);

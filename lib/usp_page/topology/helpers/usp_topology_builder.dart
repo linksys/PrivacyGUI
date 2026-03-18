@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/mesh_node_enricher.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Builds a [MeshTopology] from USP dashboard state for [AppTopology] widget.

@@ -1,19 +1,69 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/firewall/models/firewall_ui_model.dart';
 
 final uspFirewallServiceProvider = Provider<UspFirewallService>(
-  (ref) => UspFirewallService(),
+  (ref) => UspFirewallService(ref.read(uspServiceProvider)!),
 );
 
-/// Transforms codegen [FirewallChainRules] into [FirewallUIModel]
-/// and provides reverse mapping for save operations.
+/// Opaque wrapper around parsed firewall rule data.
+///
+/// Notifiers and models hold this without knowing the inner codegen type.
+/// Only [UspFirewallService] can create and consume it.
+class FirewallRuleContext extends Equatable {
+  final Map<String, FirewallChainRule> _ruleMap;
+  const FirewallRuleContext._(this._ruleMap);
+
+  /// Empty context for initial/loading state.
+  static const empty = FirewallRuleContext._({});
+
+  @override
+  List<Object?> get props => [_ruleMap];
+}
+
+/// Service layer for Firewall — encapsulates codegen CRUD + transform.
 ///
 /// Rule identification uses Description field matching against known
 /// Linksys firewall rule names. Toggle logic varies by rule Target:
 /// - Accept rules: feature ON = rule disabled (bypass rule inactive)
 /// - Drop rules: block ON = rule enabled (drop rule active)
 class UspFirewallService {
+  final UspService _usp;
+
+  UspFirewallService(this._usp);
+  // -------------------------------------------------------------------------
+  // High-level API (for Notifier consumption)
+  // -------------------------------------------------------------------------
+
+  /// Parse chain rules and build UI model + opaque context.
+  (FirewallUIModel, FirewallRuleContext) buildFromChainRules(
+    FirewallChainRules rules,
+  ) {
+    final ruleMap = parseFirewallRules(rules);
+    final model = buildUIModel(rules: ruleMap);
+    return (model, FirewallRuleContext._(ruleMap));
+  }
+
+  /// Save changed firewall toggles. Returns the number of rules updated.
+  Future<int> save({
+    required FirewallUIModel original,
+    required FirewallUIModel pending,
+    required FirewallRuleContext context,
+  }) async {
+    final updates = buildSetPayload(
+      original: original,
+      pending: pending,
+      rules: context._ruleMap,
+    );
+    if (updates.isNotEmpty) {
+      await FirewallChainRules.updateMany(_usp, updates);
+    }
+    return updates.length;
+  }
+
   // -------------------------------------------------------------------------
   // Rule Description → feature key mapping
   // -------------------------------------------------------------------------
@@ -40,7 +90,7 @@ class UspFirewallService {
   /// Parse [FirewallChainRules] into a map of feature key → [FirewallChainRule].
   ///
   /// Matches each rule's Description against [_descToFeature].
-  Map<String, FirewallChainRule> parseFirewallRules(
+  static Map<String, FirewallChainRule> parseFirewallRules(
     FirewallChainRules rules,
   ) {
     final map = <String, FirewallChainRule>{};
@@ -61,7 +111,7 @@ class UspFirewallService {
   /// Toggle logic:
   /// - Accept rules (SPI, Ping, IDENT, Multicast): feature ON = !enable
   /// - Drop rules (IPSec, PPTP, L2TP): block = enable
-  FirewallUIModel buildUIModel({
+  static FirewallUIModel buildUIModel({
     required Map<String, FirewallChainRule> rules,
   }) {
     // Accept rules: feature ON when rule is disabled

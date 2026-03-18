@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/wifi_clients.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wifi_performance_helpers.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/card_tab_state_provider.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_performance_helpers.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_radio_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/card_tab_state_provider.dart';
 import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -99,7 +99,7 @@ class UspWifiPerformanceCard extends ConsumerWidget {
 class _ClientInfo {
   final String mac;
   final String displayName;
-  final WifiClient client;
+  final WifiClientUIModel client;
   final String band; // "2.4GHz", "5GHz", "6GHz", or ""
 
   const _ClientInfo({

@@ -75,21 +75,19 @@ class UspInternetSettingsNotifier
       }
 
       final service = ref.read(uspInternetSettingsServiceProvider);
-      final (wan, ipv6) = await service.fetchSettings();
-      final form = UspInternetSettingsForm.fromGenerated(wan, ipv6);
+      final result = await service.fetchSettings();
 
       logger.d('[USP][Network][WAN] Fetched — '
-          'raw addressingType: "${wan.addressingType}", '
-          'bridgeEnabled: ${wan.bridgeEnabled}, '
-          'detected type: ${UspWanConnectionType.fromWanSettings(wan).name}, '
-          'mtu: ${wan.mtu}, ipv6: ${ipv6.ipv6Enabled}');
+          'raw addressingType: "${result.debugAddressingType}", '
+          'bridgeEnabled: ${result.debugBridgeEnabled}, '
+          'detected type: ${result.form.connectionType.name}, '
+          'mtu: ${result.debugMtu}, ipv6: ${result.debugIpv6Enabled}');
 
       return (
-        InternetSettingsSettings(form: form),
+        InternetSettingsSettings(form: result.form),
         InternetSettingsStatus(
           isLoading: false,
-          rawWan: wan,
-          rawIpv6: ipv6,
+          readOnlyInfo: result.readOnlyInfo,
         ),
       );
     } catch (e) {

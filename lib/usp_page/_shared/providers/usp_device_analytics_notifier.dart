@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_analytics_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/device_analytics_persistence.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_analytics_state.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/device_analytics_persistence.dart';
 import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 
 /// Device connection analytics provider — computes distributions, hourly

@@ -4,7 +4,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/time_settings_ui_model.dart';
 
 // ---------------------------------------------------------------------------
 // Data Model (Layer 1 — raw codegen data + UI model)

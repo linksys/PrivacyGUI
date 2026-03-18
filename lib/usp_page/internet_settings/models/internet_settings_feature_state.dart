@@ -1,7 +1,6 @@
-import 'package:privacy_gui/generated/ipv6settings.g.dart';
-import 'package:privacy_gui/generated/wan_settings.g.dart';
 import 'package:privacy_gui/usp_page/_framework/feature_state.dart';
 import 'package:privacy_gui/usp_page/_framework/preservable.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_settings.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_status.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_internet_settings_form.dart';
@@ -33,11 +32,8 @@ class InternetSettingsFeatureState
   // Compatibility getters — match old UspInternetSettingsState interface
   // ---------------------------------------------------------------------------
 
-  /// Raw fetched WAN settings for read-only display.
-  WanSettings get wanSettings => status.rawWan!;
-
-  /// Raw fetched IPv6 settings for read-only display.
-  Ipv6Settings get ipv6Settings => status.rawIpv6!;
+  /// Read-only info (current MAC, PPP status, DHCPv6 DUID, etc.).
+  InternetSettingsReadOnlyInfo get readOnlyInfo => status.readOnlyInfo;
 
   /// Form snapshot captured after fetch (baseline for dirty checking).
   UspInternetSettingsForm get original => settings.original.form;
@@ -55,9 +51,9 @@ class InternetSettingsFeatureState
   bool get isBridgeMode => connectionType == UspWanConnectionType.bridge;
 
   // --- Read-only convenience getters ---
-  String get currentMacAddress => wanSettings.currentMacAddress;
-  String get pppConnectionStatus => wanSettings.pppConnectionStatus;
-  String get dhcpv6Duid => ipv6Settings.dhcpv6Duid;
+  String get currentMacAddress => readOnlyInfo.currentMacAddress;
+  String get pppConnectionStatus => readOnlyInfo.pppConnectionStatus;
+  String get dhcpv6Duid => readOnlyInfo.dhcpv6Duid;
 
   @override
   InternetSettingsFeatureState copyWith({

@@ -11,11 +11,11 @@ import 'package:privacy_gui/usp_page/dashboard/models/usp_widget_specs.dart';
 import 'package:privacy_gui/usp_page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_preferences_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/pdf_report_data.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_device_analytics_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_traffic_analysis_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/services/usp_pdf_service.dart';
+import 'package:privacy_gui/usp_page/_shared/models/pdf_report_data.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_device_analytics_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_system_monitor_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/services/usp_pdf_service.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/preset_selection_dialog.dart';
 import 'package:privacy_gui/usp_page/dmz/models/dmz_ui_model.dart';
@@ -247,8 +247,7 @@ class _UspSliverDashboardViewState
 
                   if (!context.mounted) return;
 
-                  final fwSvc = UspFirewallService();
-                  final dmzSvc = UspDmzService();
+                  final dmzSvc = ref.read(uspDmzServiceProvider);
                   final fwData = ref.read(firewallDataProvider).valueOrNull;
                   final reportData = PdfReportData(
                     ethernetPortModels:
@@ -257,8 +256,8 @@ class _UspSliverDashboardViewState
                     deviceAnalytics: ref.read(uspDeviceAnalyticsProvider),
                     systemMonitor: ref.read(uspSystemMonitorProvider),
                     firewallSettings: fwData != null
-                        ? fwSvc.buildUIModel(
-                            rules: fwSvc.parseFirewallRules(fwData.chainRules))
+                        ? UspFirewallService.buildUIModel(
+                            rules: UspFirewallService.parseFirewallRules(fwData.chainRules))
                         : const FirewallUIModel(),
                     dmzSettings: fwData != null
                         ? dmzSvc.buildUIModel(fwData.dmzEntries)

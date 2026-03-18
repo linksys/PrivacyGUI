@@ -13,19 +13,20 @@ import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_client_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/ethernet_port_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/ethernet_port_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/lan_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wan_status_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/wifi_client_enricher.dart';
+import 'package:privacy_gui/usp_page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wan_status_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_radio_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/wifi_client_enricher.dart';
 import 'package:privacy_gui/usp_page/topology/models/node_ui_model.dart';
 
 /// Service provider — stateless, per Article VI.
@@ -96,7 +97,7 @@ class UspDeviceService {
 
   List<DeviceUIModel> buildDeviceUIModels({
     required ConnectedDevices connectedDevices,
-    required Map<String, WifiClient> wifiClientMap,
+    required Map<String, WifiClientUIModel> wifiClientMap,
     required Map<String, ClientConnectionDetail> connectionDetailMap,
     required MeshTopologyInfo meshTopology,
     required String gatewayName,
@@ -432,7 +433,7 @@ class UspDeviceService {
 
   DeviceUIModel _toDeviceUIModel(
     ConnectedDevice device,
-    Map<String, WifiClient> wifiClientMap,
+    Map<String, WifiClientUIModel> wifiClientMap,
     Map<String, ClientConnectionDetail> connectionDetailMap,
     MeshTopologyInfo meshTopology,
     String gatewayName,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/ethernet_port_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/usp_page/local_network/providers/ethernet_data_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/ethernet_port_detail_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

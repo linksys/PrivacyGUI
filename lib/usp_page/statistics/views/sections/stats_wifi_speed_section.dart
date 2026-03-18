@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/wifi_clients.g.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
@@ -113,6 +113,6 @@ class StatsWifiSpeedSection extends ConsumerWidget {
 
 class _ClientInfo {
   final String displayName;
-  final WifiClient client;
+  final WifiClientUIModel client;
   const _ClientInfo({required this.displayName, required this.client});
 }

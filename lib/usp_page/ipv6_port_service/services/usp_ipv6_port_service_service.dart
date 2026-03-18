@@ -1,20 +1,109 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 
 final uspIpv6PortServiceServiceProvider = Provider<UspIpv6PortServiceService>(
-  (ref) => UspIpv6PortServiceService(),
+  (ref) => UspIpv6PortServiceService(ref.read(uspServiceProvider)!),
 );
 
-/// Transforms codegen [Ipv6PortService] data into [Ipv6PortServiceRuleUIModel]
-/// list.
-///
-/// Responsibilities:
-/// - Filter by IPVersion == 6 (exclude IPv4 and system rules)
-/// - Map IANA protocol numbers to display names
-/// - Validate rule fields
+/// Service layer for IPv6 Port Service — encapsulates codegen CRUD + transform + validation.
 class UspIpv6PortServiceService {
+  final UspService _usp;
+
+  UspIpv6PortServiceService(this._usp);
+  // ---------------------------------------------------------------------------
+  // CRUD
+  // ---------------------------------------------------------------------------
+
+  /// Fetch IPv6 port service rules and transform to UI models.
+  Future<List<Ipv6PortServiceRuleUIModel>> fetch() async {
+    final data = await Ipv6PortService.fetch(_usp);
+    return buildRuleUIModels(data);
+  }
+
+  /// Batch save: diff original vs current, execute delete/add/update.
+  Future<({int added, int updated, int deleted})> saveBatch({
+    required List<Ipv6PortServiceRuleUIModel> original,
+    required List<Ipv6PortServiceRuleUIModel> current,
+  }) async {
+    // 1. Delete (in original, not in current)
+    final currentPaths = <String>{
+      for (final r in current)
+        if (r.instancePath != null) r.instancePath!,
+    };
+    final toDelete = original
+        .where((r) =>
+            r.instancePath != null &&
+            !currentPaths.contains(r.instancePath))
+        .toList();
+
+    for (var i = 0; i < toDelete.length; i++) {
+      if (i > 0) {
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+      await Ipv6PortService.delete(_usp, toDelete[i].instancePath!);
+    }
+
+    // 2. Add (instancePath == null → new)
+    final toAdd = current.where((r) => r.instancePath == null).toList();
+
+    for (var i = 0; i < toAdd.length; i++) {
+      if (i > 0) {
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+      final r = toAdd[i];
+      await Ipv6PortService.add(
+        _usp,
+        enable: r.enabled,
+        description: r.description,
+        ipVersion: 6,
+        destIp: r.ipv6Address,
+        destPort: r.startPort,
+        destPortRangeMax: r.endPort,
+        protocol: mapDisplayToIana(r.protocol),
+        target: 'Accept',
+      );
+    }
+
+    // 3. Update (same path, different content)
+    final originalByPath = <String, Ipv6PortServiceRuleUIModel>{
+      for (final r in original)
+        if (r.instancePath != null) r.instancePath!: r,
+    };
+
+    final toUpdate = <Ipv6PortServiceRuleUpdate>[];
+    for (final cur in current) {
+      if (cur.instancePath == null) continue;
+      final orig = originalByPath[cur.instancePath!];
+      if (orig == null) continue;
+      if (cur != orig) {
+        toUpdate.add(Ipv6PortServiceRuleUpdate(
+          instancePath: cur.instancePath!,
+          enable: cur.enabled,
+          description: cur.description,
+          destIp: cur.ipv6Address,
+          destPort: cur.startPort,
+          destPortRangeMax: cur.endPort,
+          protocol: mapDisplayToIana(cur.protocol),
+          target: 'Accept',
+        ));
+      }
+    }
+
+    if (toUpdate.isNotEmpty) {
+      await Ipv6PortService.updateMany(_usp, toUpdate);
+    }
+
+    return (
+      added: toAdd.length,
+      updated: toUpdate.length,
+      deleted: toDelete.length,
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Protocol IANA <-> display mapping
   // ---------------------------------------------------------------------------
@@ -76,7 +165,7 @@ class UspIpv6PortServiceService {
   // ---------------------------------------------------------------------------
 
   /// Validate rule fields. Returns a map of field key -> error message.
-  Map<String, String> validateRule({
+  static Map<String, String> validateRule({
     required String description,
     required String ipv6Address,
     required String startPort,

@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp_page/_framework/preservable_contract.dart';
 import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/usp_page/firewall/models/firewall_feature_state.dart';
@@ -64,16 +62,15 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
       // Clone data from the shared data provider (read, not watch).
       final data = await ref.read(firewallDataProvider.future);
 
-      final ruleMap = _svc.parseFirewallRules(data.chainRules);
-      final uiModel = _svc.buildUIModel(rules: ruleMap);
+      final (uiModel, ruleContext) =
+          _svc.buildFromChainRules(data.chainRules);
 
       logger.d('[USP][Firewall] Fetched — '
-          'rules: ${ruleMap.length}, '
           'spiV4: ${uiModel.isIPv4FirewallEnabled}, '
           'spiV6: ${uiModel.isIPv6FirewallEnabled}');
 
       return (
-        FirewallSettings(model: uiModel, ruleMap: ruleMap),
+        FirewallSettings(model: uiModel, ruleContext: ruleContext),
         const FirewallStatus(isLoading: false),
       );
     } catch (e) {
@@ -96,20 +93,16 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
     );
 
     try {
-      final usp = ref.read(uspServiceProvider)!;
       final settings = state.settings.current;
 
       await ref.read(uspMutationLockProvider).withLock(() async {
-        final updates = _svc.buildSetPayload(
+        final count = await _svc.save(
           original: state.settings.original.model,
           pending: settings.model,
-          rules: settings.ruleMap,
+          context: settings.ruleContext,
         );
 
-        await FirewallChainRules.updateMany(usp, updates);
-
-        logger.d(
-            '[USP][Firewall] Saved — ${updates.length} rules updated');
+        logger.d('[USP][Firewall] Saved — $count rules updated');
       });
 
       // Force data provider to re-fetch so dashboard card updates too.

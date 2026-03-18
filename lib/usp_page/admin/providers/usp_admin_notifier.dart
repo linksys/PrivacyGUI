@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/admin_users.g.dart';
 import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/usp_page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/usp_page/admin/services/usp_admin_service.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
 
 final uspAdminProvider =
     AsyncNotifierProvider.autoDispose<UspAdminNotifier, UspAdminState>(
@@ -23,16 +22,13 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
 
   @override
   Future<UspAdminState> build() async {
-    final usp = ref.watch(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-
     // Time settings from shared data provider.
     final timeData = await ref.watch(timeDataProvider.future);
 
-    final adminUsers = await AdminUsers.fetch(usp);
+    final adminUser = await _svc.fetchAdmin();
 
     return UspAdminState(
-      adminUser: _svc.buildAdminUserUIModel(adminUsers),
+      adminUser: adminUser,
       timeSettings: timeData.model,
     );
   }
@@ -43,10 +39,9 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
 
   Future<void> setAdminPassword(String newPassword) async {
     await ref.read(uspMutationLockProvider).withLock(() async {
-      final adminPath = state.requireValue.adminUser.instancePath;
-      await AdminUsers.update(
-        _usp,
-        AdminUserUpdate(instancePath: adminPath, password: newPassword),
+      await _svc.updatePassword(
+        instancePath: state.requireValue.adminUser.instancePath,
+        newPassword: newPassword,
       );
     });
   }
@@ -70,7 +65,7 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   }
 
   // ---------------------------------------------------------------------------
-  // Reboot / Factory Reset
+  // Reboot / Factory Reset (direct USP operate — not codegen)
   // ---------------------------------------------------------------------------
 
   Future<void> reboot() async {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
+import 'package:privacy_gui/usp_page/_shared/models/lan_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_info_row.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Read-only card showing DHCP server configuration from LanNetworkInfo.

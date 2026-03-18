@@ -1,11 +1,9 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/generated/ipv6settings.g.dart';
-import 'package:privacy_gui/generated/wan_settings.g.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_read_only_info.dart';
 
 /// Transient (non-editable) status for the internet settings feature page.
 ///
-/// Holds raw codegen data for read-only display, edit mode flag,
-/// and loading/mutation states.
+/// Holds read-only display info, edit mode flag, and loading/mutation states.
 class InternetSettingsStatus extends Equatable {
   final bool isLoading;
   final bool isSaving;
@@ -15,11 +13,8 @@ class InternetSettingsStatus extends Equatable {
   /// Tracks active mutation: null (idle), 'save', 'renewIpv4', 'renewIpv6'.
   final String? activeMutation;
 
-  /// Raw WAN settings for read-only display fields.
-  final WanSettings? rawWan;
-
-  /// Raw IPv6 settings for read-only display fields.
-  final Ipv6Settings? rawIpv6;
+  /// Read-only fields from WAN/IPv6 for display purposes.
+  final InternetSettingsReadOnlyInfo readOnlyInfo;
 
   const InternetSettingsStatus({
     this.isLoading = true,
@@ -27,8 +22,7 @@ class InternetSettingsStatus extends Equatable {
     this.isEditing = false,
     this.errorMessage,
     this.activeMutation,
-    this.rawWan,
-    this.rawIpv6,
+    this.readOnlyInfo = const InternetSettingsReadOnlyInfo(),
   });
 
   InternetSettingsStatus copyWith({
@@ -38,8 +32,7 @@ class InternetSettingsStatus extends Equatable {
     String? errorMessage,
     String? activeMutation,
     bool clearActiveMutation = false,
-    WanSettings? rawWan,
-    Ipv6Settings? rawIpv6,
+    InternetSettingsReadOnlyInfo? readOnlyInfo,
   }) {
     return InternetSettingsStatus(
       isLoading: isLoading ?? this.isLoading,
@@ -48,8 +41,7 @@ class InternetSettingsStatus extends Equatable {
       errorMessage: errorMessage,
       activeMutation:
           clearActiveMutation ? null : (activeMutation ?? this.activeMutation),
-      rawWan: rawWan ?? this.rawWan,
-      rawIpv6: rawIpv6 ?? this.rawIpv6,
+      readOnlyInfo: readOnlyInfo ?? this.readOnlyInfo,
     );
   }
 
@@ -60,7 +52,6 @@ class InternetSettingsStatus extends Equatable {
         isEditing,
         errorMessage,
         activeMutation,
-        rawWan?.toString(),
-        rawIpv6?.toString(),
+        readOnlyInfo,
       ];
 }

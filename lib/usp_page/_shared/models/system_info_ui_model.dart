@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/generated/transforms.g.dart';
+import 'package:privacy_gui/usp_page/_shared/utils/usp_formatters.dart';
 
 /// Presentation Layer Model for a firmware image partition.
 class FirmwareImageUIModel extends Equatable {
@@ -73,13 +73,13 @@ class SystemInfoUIModel extends Equatable {
       totalMemory > 0 ? (memoryUsedKb / totalMemory * 100).round() : 0;
 
   /// Human-readable total memory (e.g. "512 MB").
-  String get formattedTotalMemory => Transforms.formatBytes(totalMemory * 1024);
+  String get formattedTotalMemory => UspFormatters.formatBytes(totalMemory * 1024);
 
   /// Human-readable free memory (e.g. "256 MB").
-  String get formattedFreeMemory => Transforms.formatBytes(freeMemory * 1024);
+  String get formattedFreeMemory => UspFormatters.formatBytes(freeMemory * 1024);
 
   /// Human-readable used memory (e.g. "256 MB").
-  String get formattedUsedMemory => Transforms.formatBytes(memoryUsedKb * 1024);
+  String get formattedUsedMemory => UspFormatters.formatBytes(memoryUsedKb * 1024);
 
   /// Formatted uptime string (e.g. "2d 5h 30m").
   String get formattedUptime {
