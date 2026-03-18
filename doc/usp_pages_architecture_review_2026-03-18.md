@@ -5,13 +5,13 @@
 **Scope**: `lib/usp_page/` (245 files), `lib/usp/` (19 files), `test/usp_page/` (4 files)
 **Version**: v2.2.0 (Post Codegen Layer Isolation)
 **Cross-Analysis Documents**:
-- `doc/usp/usp_pages_architecture_v2.1.0.md`
-- `doc/architecture_analysis_2026-01-16.md`
+- `doc/_archived/usp_pages_architecture_v2.1.0.md` (archived)
+- `doc/_archived/architecture_analysis_2026-01-16.md` (archived)
 - `doc/usp/constitution.md`
 - `doc/architecture/USP_ARCHITECTURE.md`
-- `doc/refactoring/dashboard-domain-split.md`
+- `doc/_archived/dashboard-domain-split.md` (archived)
 - `doc/dirty_guard/dirty_guard_framework_guide.md`
-- `doc/audit/architecture-violations-detail.md`
+- `doc/_archived/architecture-violations-detail.md` (archived)
 
 ---
 
