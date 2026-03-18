@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/dialogs/port_triggering_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -57,8 +57,8 @@ class UspPortTriggeringTab extends ConsumerWidget {
                         ref,
                         loadingKey: 'portTriggering',
                         mutation: () => ref
-                            .read(uspDashboardProvider.notifier)
-                            .togglePortTriggerRule(rule.instancePath, value),
+                            .read(portTriggeringDataProvider.notifier)
+                            .toggleRule(rule.instancePath, value),
                       ),
             ),
             AppGap.sm(),
@@ -102,7 +102,7 @@ class UspPortTriggeringTab extends ConsumerWidget {
       ref,
       loadingKey: 'portTriggering',
       mutation: () =>
-          ref.read(uspDashboardProvider.notifier).addPortTriggerRule(
+          ref.read(portTriggeringDataProvider.notifier).addRule(
                 triggerPort: result.triggerPort,
                 triggerPortEndRange: result.triggerPortEndRange,
                 triggerProtocol: result.triggerProtocol,
@@ -128,7 +128,7 @@ class UspPortTriggeringTab extends ConsumerWidget {
       ref,
       loadingKey: 'portTriggering',
       mutation: () =>
-          ref.read(uspDashboardProvider.notifier).updatePortTriggerRule(
+          ref.read(portTriggeringDataProvider.notifier).updateRule(
                 instancePath: rule.instancePath,
                 enabled: result.enabled,
                 triggerPort: result.triggerPort,
@@ -163,8 +163,8 @@ class UspPortTriggeringTab extends ConsumerWidget {
       ref,
       loadingKey: 'portTriggering',
       mutation: () => ref
-          .read(uspDashboardProvider.notifier)
-          .deletePortTriggerRule(rule.instancePath),
+          .read(portTriggeringDataProvider.notifier)
+          .deleteRule(rule.instancePath),
       successMessage: 'Rule deleted',
     );
   }

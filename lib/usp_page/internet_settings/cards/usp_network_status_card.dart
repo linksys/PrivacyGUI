@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wan_status_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/internet_settings/providers/wan_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspNetworkStatusCard extends ConsumerWidget {
@@ -15,8 +16,8 @@ class UspNetworkStatusCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wan =
-        this.wan ?? ref.watch(uspDashboardProvider).valueOrNull?.wanStatusModel;
-    if (wan == null) return const SizedBox.shrink();
+        this.wan ?? ref.watch(wanDataProvider).valueOrNull?.model;
+    if (wan == null) return const CardSkeleton.info(rows: 4);
     final isRenewing = ref.watch(uspMutationLoadingProvider) == 'wanRenew';
 
     return AppCard(
@@ -63,8 +64,8 @@ class UspNetworkStatusCard extends ConsumerWidget {
                           ref,
                           loadingKey: 'wanRenew',
                           mutation: () => ref
-                              .read(uspDashboardProvider.notifier)
-                              .renewWanLease(),
+                              .read(wanDataProvider.notifier)
+                              .renewLease(),
                           successMessage: 'DHCP lease renewed',
                         ),
               ),

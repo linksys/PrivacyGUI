@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/card_tab_state_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
+import 'package:privacy_gui/usp_page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Firewall Configuration Overview card — 2-tab security overview.
@@ -21,8 +23,11 @@ class UspFirewallOverviewCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(uspDashboardProvider).valueOrNull;
-    if (state == null) return const SizedBox.shrink();
+    // Firewall rules + DMZ from domain data provider (Layer 1).
+    final firewallData = ref.watch(firewallDataProvider).valueOrNull;
+    // Port forwarding from domain data provider (Layer 1).
+    final pfData = ref.watch(portForwardingDataProvider).valueOrNull;
+    if (firewallData == null) return const CardSkeleton.chart();
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
     return AppCard(
@@ -43,14 +48,17 @@ class UspFirewallOverviewCard extends ConsumerWidget {
           Expanded(
             child: switch (selectedTab) {
               0 => _RulesTab(
-                  firewallRules: state.firewallRules.items,
-                  portForwardingCount: state.portForwardingRuleModels.length,
-                  dmzCount:
-                      state.dmzEntries.items.where((d) => d.enable).length,
+                  firewallRules: firewallData.chainRules.items,
+                  portForwardingCount:
+                      pfData?.ruleModels.length ?? 0,
+                  dmzCount: firewallData.dmzEntries.items
+                      .where((d) => d.enable)
+                      .length,
                 ),
               1 => _PortsTab(
-                  portForwardingRules: state.portForwardingRuleModels,
-                  dmzEntries: state.dmzEntries.items,
+                  portForwardingRules:
+                      pfData?.ruleModels ?? [],
+                  dmzEntries: firewallData.dmzEntries.items,
                 ),
               _ => const SizedBox.shrink(),
             },

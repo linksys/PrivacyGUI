@@ -4,24 +4,22 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/dhcp_reservation_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspDhcpReservationsCard extends ConsumerWidget {
-  final UspDashboardState? state;
-
-  const UspDhcpReservationsCard({super.key, this.state});
+  const UspDhcpReservationsCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = this.state ?? ref.watch(uspDashboardProvider).valueOrNull;
-    if (state == null) return const SizedBox.shrink();
-    final reservations = state.dhcpReservationModels;
-    final clients = state.dhcpClientModels;
+    final dhcpData = ref.watch(dhcpDataProvider).valueOrNull;
+    if (dhcpData == null) return const CardSkeleton.list(rows: 3);
+    final reservations = dhcpData.reservationModels;
+    final clients = dhcpData.clientModels;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
 
     return AppCard(
@@ -95,8 +93,8 @@ class UspDhcpReservationsCard extends ConsumerWidget {
                       ref,
                       loadingKey: 'dhcp',
                       mutation: () => ref
-                          .read(uspDashboardProvider.notifier)
-                          .toggleDhcpReservation(
+                          .read(dhcpDataProvider.notifier)
+                          .toggleReservation(
                               reservation.instancePath, value),
                     ),
           ),
@@ -178,7 +176,7 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       ref,
       loadingKey: 'dhcp',
       mutation: () =>
-          ref.read(uspDashboardProvider.notifier).addDhcpReservation(
+          ref.read(dhcpDataProvider.notifier).addReservation(
                 mac: result.mac,
                 ip: result.ip,
                 enable: result.enable,
@@ -210,8 +208,8 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       ref,
       loadingKey: 'dhcp',
       mutation: () => ref
-          .read(uspDashboardProvider.notifier)
-          .deleteDhcpReservation(reservation.instancePath),
+          .read(dhcpDataProvider.notifier)
+          .deleteReservation(reservation.instancePath),
       successMessage: 'Reservation deleted',
     );
   }

@@ -6,7 +6,6 @@ import 'package:privacy_gui/generated/transforms.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/network_health_helpers.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/pdf_report_data.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/usp_page/firewall/models/firewall_ui_model.dart';
 
@@ -32,47 +31,45 @@ class UspPdfService {
           fontFallback: [symbolFont],
         ),
       );
-      final state = data.dashboard;
-
       // Page 1: Device Info + System + Network Health + WAN + LAN
       doc.addPage(_createPage([
-        ..._buildDeviceInfo(state),
-        ..._buildSystemStatus(state, data),
+        ..._buildDeviceInfo(data),
+        ..._buildSystemStatus(data),
         ..._buildNetworkHealth(data),
-        ..._buildWanStatus(state),
-        ..._buildLanNetwork(state),
+        ..._buildWanStatus(data),
+        ..._buildLanNetwork(data),
       ]));
 
       // Page 2: WiFi
-      doc.addPage(_createPage(_buildWifi(state)));
+      doc.addPage(_createPage(_buildWifi(data)));
 
       // Page 3: Devices + DHCP Leases + Device Analytics
       doc.addPage(_createPage([
-        ..._buildDevices(state),
-        ..._buildDhcpClients(state),
+        ..._buildDevices(data),
+        ..._buildDhcpClients(data),
         ..._buildDeviceAnalytics(data),
       ]));
 
       // Page 4: Services + Safe Browsing
       doc.addPage(_createPage([
-        ..._buildTimeSettings(state),
-        ..._buildEthernetPorts(state),
-        ..._buildDhcpReservations(state),
+        ..._buildTimeSettings(data),
+        ..._buildEthernetPorts(data),
+        ..._buildDhcpReservations(data),
         ..._buildSafeBrowsing(data),
       ]));
 
       // Page 5: Traffic + Mesh + Firewall + DMZ
       doc.addPage(_createPage([
         ..._buildTrafficSnapshot(data),
-        ..._buildMeshTopology(state),
+        ..._buildMeshTopology(data),
         ..._buildFirewallSettings(data.firewallSettings),
         ..._buildDmzSettings(data.dmzSettings),
       ]));
 
       // Page 6: Port Rules + Routing
       doc.addPage(_createPage([
-        ..._buildPortForwarding(state),
-        ..._buildPortTriggering(state),
+        ..._buildPortForwarding(data),
+        ..._buildPortTriggering(data),
         ..._buildIpv6PortService(data),
         ..._buildStaticRouting(data),
       ]));
@@ -123,8 +120,9 @@ class UspPdfService {
   // Page 1: Device Info + System + Health + WAN + LAN
   // ===========================================================================
 
-  static List<pw.Widget> _buildDeviceInfo(UspDashboardState state) {
-    final info = state.systemInfoModel;
+  static List<pw.Widget> _buildDeviceInfo(PdfReportData data) {
+    final info = data.systemInfo;
+    if (info == null) return [];
     return [
       _sectionTitle('Device Information'),
       _keyValue('Manufacturer', info.manufacturer),
@@ -150,9 +148,9 @@ class UspPdfService {
     ];
   }
 
-  static List<pw.Widget> _buildSystemStatus(
-      UspDashboardState state, PdfReportData data) {
-    final info = state.systemInfoModel;
+  static List<pw.Widget> _buildSystemStatus(PdfReportData data) {
+    final info = data.systemInfo;
+    if (info == null) return [];
     final latest = data.systemMonitor.latest;
     final history = data.systemMonitor.history;
     return [
@@ -254,8 +252,9 @@ class UspPdfService {
     ];
   }
 
-  static List<pw.Widget> _buildWanStatus(UspDashboardState state) {
-    final wan = state.wanStatusModel;
+  static List<pw.Widget> _buildWanStatus(PdfReportData data) {
+    final wan = data.wanStatus;
+    if (wan == null) return [];
     return [
       _sectionTitle('WAN Status'),
       _keyValue('Status', wan.isUp ? 'Up' : 'Down'),
@@ -273,8 +272,9 @@ class UspPdfService {
     ];
   }
 
-  static List<pw.Widget> _buildLanNetwork(UspDashboardState state) {
-    final lan = state.lanInfoModel;
+  static List<pw.Widget> _buildLanNetwork(PdfReportData data) {
+    final lan = data.lanInfo;
+    if (lan == null) return [];
     return [
       _sectionTitle('LAN Network'),
       _keyValue('IP Address', lan.ipAddress),
@@ -295,8 +295,8 @@ class UspPdfService {
   // Page 2: WiFi
   // ===========================================================================
 
-  static List<pw.Widget> _buildWifi(UspDashboardState state) {
-    final radios = state.wifiRadioModels;
+  static List<pw.Widget> _buildWifi(PdfReportData data) {
+    final radios = data.radioModels ?? [];
     final widgets = <pw.Widget>[_sectionTitle('WiFi Configuration')];
 
     for (final radio in radios) {
@@ -351,8 +351,8 @@ class UspPdfService {
   // Page 3: Devices + DHCP Leases + Analytics
   // ===========================================================================
 
-  static List<pw.Widget> _buildDevices(UspDashboardState state) {
-    final devices = state.deviceModels;
+  static List<pw.Widget> _buildDevices(PdfReportData data) {
+    final devices = data.deviceModels ?? [];
     final online = devices.where((d) => d.isActive).toList();
     final offline = devices.where((d) => !d.isActive).toList();
 
@@ -409,8 +409,8 @@ class UspPdfService {
     );
   }
 
-  static List<pw.Widget> _buildDhcpClients(UspDashboardState state) {
-    final clients = state.dhcpClientModels;
+  static List<pw.Widget> _buildDhcpClients(PdfReportData data) {
+    final clients = data.dhcpClients ?? [];
     if (clients.isEmpty) return [];
     return [
       pw.SizedBox(height: 12),
@@ -563,8 +563,9 @@ class UspPdfService {
   // Page 4: Services + Safe Browsing
   // ===========================================================================
 
-  static List<pw.Widget> _buildTimeSettings(UspDashboardState state) {
-    final time = state.timeSettingsModel;
+  static List<pw.Widget> _buildTimeSettings(PdfReportData data) {
+    final time = data.timeSettings;
+    if (time == null) return [];
     return [
       _sectionTitle('Time Settings'),
       _keyValue('NTP', time.enable ? 'Enabled' : 'Disabled'),
@@ -579,8 +580,8 @@ class UspPdfService {
     ];
   }
 
-  static List<pw.Widget> _buildEthernetPorts(UspDashboardState state) {
-    final ports = state.ethernetPortModels;
+  static List<pw.Widget> _buildEthernetPorts(PdfReportData data) {
+    final ports = data.ethernetPortModels ?? [];
     if (ports.isEmpty) return [];
     return [
       _sectionTitle('Ethernet Ports'),
@@ -604,8 +605,8 @@ class UspPdfService {
     ];
   }
 
-  static List<pw.Widget> _buildDhcpReservations(UspDashboardState state) {
-    final reservations = state.dhcpReservationModels;
+  static List<pw.Widget> _buildDhcpReservations(PdfReportData data) {
+    final reservations = data.dhcpReservations ?? [];
     if (reservations.isEmpty) return [];
     return [
       _sectionTitle('DHCP Reservations'),
@@ -843,8 +844,8 @@ class UspPdfService {
     return widgets;
   }
 
-  static List<pw.Widget> _buildMeshTopology(UspDashboardState state) {
-    final nodes = state.nodeModels;
+  static List<pw.Widget> _buildMeshTopology(PdfReportData data) {
+    final nodes = data.nodeModels ?? [];
     if (nodes.isEmpty) return [];
     return [
       _sectionTitle('Mesh Topology (${nodes.length} nodes)'),
@@ -902,8 +903,8 @@ class UspPdfService {
   // Page 6: Port Rules + Routing
   // ===========================================================================
 
-  static List<pw.Widget> _buildPortForwarding(UspDashboardState state) {
-    final rules = state.portForwardingRuleModels;
+  static List<pw.Widget> _buildPortForwarding(PdfReportData data) {
+    final rules = data.portForwardingRules ?? [];
     if (rules.isEmpty) return [];
     return [
       _sectionTitle('Port Forwarding Rules (${rules.length})'),
@@ -929,8 +930,8 @@ class UspPdfService {
     ];
   }
 
-  static List<pw.Widget> _buildPortTriggering(UspDashboardState state) {
-    final rules = state.portTriggeringRuleModels;
+  static List<pw.Widget> _buildPortTriggering(PdfReportData data) {
+    final rules = data.portTriggeringRules ?? [];
     if (rules.isEmpty) return [];
     return [
       _sectionTitle('Port Triggering Rules (${rules.length})'),

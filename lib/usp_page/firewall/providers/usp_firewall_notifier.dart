@@ -1,142 +1,138 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
-import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_contract.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/usp_page/firewall/models/firewall_feature_state.dart';
+import 'package:privacy_gui/usp_page/firewall/models/firewall_settings.dart';
+import 'package:privacy_gui/usp_page/firewall/models/firewall_status.dart';
 import 'package:privacy_gui/usp_page/firewall/models/firewall_ui_model.dart';
+import 'package:privacy_gui/usp_page/firewall/providers/firewall_data_provider.dart';
 import 'package:privacy_gui/usp_page/firewall/services/usp_firewall_service.dart';
 
 // ---------------------------------------------------------------------------
-// State
-// ---------------------------------------------------------------------------
-
-class UspFirewallState extends Equatable {
-  /// Original UI model (from last fetch).
-  final FirewallUIModel original;
-
-  /// User's pending changes — may differ from [original] before save.
-  final FirewallUIModel pending;
-
-  /// Parsed rule map (feature key → codegen rule instance).
-  /// Retained for building SET payloads on save.
-  final Map<String, FirewallChainRule> ruleMap;
-
-  /// Whether a save operation is in progress.
-  final bool isSaving;
-
-  const UspFirewallState({
-    required this.original,
-    required this.pending,
-    required this.ruleMap,
-    this.isSaving = false,
-  });
-
-  bool get isDirty => original != pending;
-
-  UspFirewallState copyWith({
-    FirewallUIModel? original,
-    FirewallUIModel? pending,
-    Map<String, FirewallChainRule>? ruleMap,
-    bool? isSaving,
-  }) {
-    return UspFirewallState(
-      original: original ?? this.original,
-      pending: pending ?? this.pending,
-      ruleMap: ruleMap ?? this.ruleMap,
-      isSaving: isSaving ?? this.isSaving,
-    );
-  }
-
-  @override
-  List<Object?> get props => [original, pending, isSaving];
-}
-
-// ---------------------------------------------------------------------------
-// Provider
+// Providers
 // ---------------------------------------------------------------------------
 
 final uspFirewallProvider =
-    AsyncNotifierProvider.autoDispose<UspFirewallNotifier, UspFirewallState>(
+    AutoDisposeNotifierProvider<UspFirewallNotifier, FirewallFeatureState>(
   UspFirewallNotifier.new,
+);
+
+/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
+/// dirty-check integration.
+final preservableUspFirewallProvider = AutoDisposeProvider<
+    PreservableContract<FirewallSettings, FirewallStatus>>(
+  (ref) => ref.watch(uspFirewallProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------
 // Notifier
 // ---------------------------------------------------------------------------
 
-class UspFirewallNotifier extends AutoDisposeAsyncNotifier<UspFirewallState> {
-  @override
-  Future<UspFirewallState> build() async {
-    final usp = ref.watch(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
+    with
+        PreservableAutoDisposeNotifierMixin<FirewallSettings, FirewallStatus,
+            FirewallFeatureState> {
+  UspFirewallService get _svc => ref.read(uspFirewallServiceProvider);
 
-    // SSE invalidation: re-fetch when firewall rules change externally.
-    // Only invalidate if user has no unsaved edits.
-    ref.listen(sseInvalidationProvider, (prev, next) {
-      if (next.valueOrNull == InvalidationDomain.firewallRules) {
-        final s = state.valueOrNull;
-        if (s != null && !s.isDirty && !s.isSaving) {
-          ref.invalidateSelf();
-        }
-      }
+  @override
+  FirewallFeatureState build() {
+    // Listen to data provider for SSE-driven changes.
+    // Uses the framework's onSseInvalidation() — skips if dirty.
+    ref.listen(firewallDataProvider, (_, next) {
+      if (next.hasValue) onSseInvalidation();
     });
 
-    // Use codegen fetch — queries Device.Firewall.Chain.1.Rule.*
-    final chainRules = await FirewallChainRules.fetch(usp);
+    // Synchronous build with loading state; async fetch follows immediately.
+    Future.microtask(() => fetch());
+    return FirewallFeatureState.initial();
+  }
 
-    final svc = ref.read(uspFirewallServiceProvider);
-    final ruleMap = svc.parseFirewallRules(chainRules);
-    final uiModel = svc.buildUIModel(rules: ruleMap);
+  // ---------------------------------------------------------------------------
+  // performFetch — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
 
-    logger.d('[USP][Firewall]Firewall fetched — '
-        'rules: ${ruleMap.length}, '
-        'spiV4: ${uiModel.isIPv4FirewallEnabled}, '
-        'spiV6: ${uiModel.isIPv6FirewallEnabled}');
+  @override
+  Future<(FirewallSettings?, FirewallStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) async {
+    try {
+      // Clone data from the shared data provider (read, not watch).
+      final data = await ref.read(firewallDataProvider.future);
 
-    return UspFirewallState(
-      original: uiModel,
-      pending: uiModel,
-      ruleMap: ruleMap,
+      final ruleMap = _svc.parseFirewallRules(data.chainRules);
+      final uiModel = _svc.buildUIModel(rules: ruleMap);
+
+      logger.d('[USP][Firewall] Fetched — '
+          'rules: ${ruleMap.length}, '
+          'spiV4: ${uiModel.isIPv4FirewallEnabled}, '
+          'spiV6: ${uiModel.isIPv6FirewallEnabled}');
+
+      return (
+        FirewallSettings(model: uiModel, ruleMap: ruleMap),
+        const FirewallStatus(isLoading: false),
+      );
+    } catch (e) {
+      logger.e('[USP][Firewall] Fetch failed', error: e);
+      return (
+        null,
+        FirewallStatus(isLoading: false, errorMessage: '$e'),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // performSave — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> performSave() async {
+    state = state.copyWith(
+      status: state.status.copyWith(isSaving: true),
     );
-  }
 
-  /// Update a single setting synchronously (no network call).
-  void updateSetting(FirewallUIModel Function(FirewallUIModel) updater) {
-    final s = state.valueOrNull;
-    if (s == null) return;
-    state = AsyncData(s.copyWith(pending: updater(s.pending)));
-  }
-
-  /// Save all pending changes to the router.
-  ///
-  /// Computes diff between [original] and [pending], then issues
-  /// a batch SET via codegen [FirewallChainRules.updateMany].
-  /// Re-fetches after save to confirm changes.
-  Future<void> save() async {
-    final s = state.requireValue;
-    if (!s.isDirty) return;
-
-    state = AsyncData(s.copyWith(isSaving: true));
     try {
       final usp = ref.read(uspServiceProvider)!;
-      final svc = ref.read(uspFirewallServiceProvider);
-      final updates = svc.buildSetPayload(
-        original: s.original,
-        pending: s.pending,
-        rules: s.ruleMap,
-      );
+      final settings = state.settings.current;
 
-      await FirewallChainRules.updateMany(usp, updates);
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        final updates = _svc.buildSetPayload(
+          original: state.settings.original.model,
+          pending: settings.model,
+          rules: settings.ruleMap,
+        );
 
-      logger
-          .d('[USP][Firewall]Firewall saved — ${updates.length} rules updated');
+        await FirewallChainRules.updateMany(usp, updates);
 
-      // Re-fetch to confirm changes took effect.
-      ref.invalidateSelf();
+        logger.d(
+            '[USP][Firewall] Saved — ${updates.length} rules updated');
+      });
+
+      // Force data provider to re-fetch so dashboard card updates too.
+      ref.invalidate(firewallDataProvider);
     } catch (e) {
-      state = AsyncData(s.copyWith(isSaving: false));
+      state = state.copyWith(
+        status: state.status.copyWith(isSaving: false),
+      );
       rethrow;
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI Mutation (synchronous — no network call)
+  // ---------------------------------------------------------------------------
+
+  /// Update a single firewall toggle.
+  void updateSetting(FirewallUIModel Function(FirewallUIModel) updater) {
+    final current = state.settings.current;
+    state = state.copyWith(
+      settings: state.settings.update(
+        current.copyWith(model: updater(current.model)),
+      ),
+    );
   }
 }

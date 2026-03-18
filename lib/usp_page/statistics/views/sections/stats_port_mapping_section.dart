@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
+import 'package:privacy_gui/usp_page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -11,27 +12,28 @@ class StatsPortMappingSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(uspDashboardProvider).valueOrNull;
+    final pfData = ref.watch(portForwardingDataProvider).valueOrNull;
+    final fwData = ref.watch(firewallDataProvider).valueOrNull;
 
     return StatsSectionCard(
       title: 'Port Mapping',
       subtitle: 'Port forwarding rules and DMZ configuration',
       chartHeight: 360,
-      child: state == null
+      child: (pfData == null && fwData == null)
           ? Center(
               child: AppText.bodyMedium(
                 'Loading...',
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
-          : _buildChart(context, state),
+          : _buildChart(context, pfData, fwData),
     );
   }
 
-  Widget _buildChart(BuildContext context, dynamic state) {
+  Widget _buildChart(BuildContext context, PortForwardingData? pfData, FirewallData? fwData) {
     final colorScheme = Theme.of(context).colorScheme;
-    final portForwardingRules = state.portForwardingRuleModels as List;
-    final dmzEntries = state.dmzEntries.items as List;
+    final portForwardingRules = pfData?.ruleModels ?? [];
+    final dmzEntries = fwData?.dmzEntries.items ?? [];
 
     if (portForwardingRules.isEmpty && dmzEntries.isEmpty) {
       return Center(
@@ -45,7 +47,7 @@ class StatsPortMappingSection extends ConsumerWidget {
     // Protocol distribution
     final protocolCounts = <String, int>{};
     for (final rule in portForwardingRules) {
-      final proto = rule.protocol as String;
+      final proto = rule.protocol;
       protocolCounts[proto] = (protocolCounts[proto] ?? 0) + 1;
     }
 

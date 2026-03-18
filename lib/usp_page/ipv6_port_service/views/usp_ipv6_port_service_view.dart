@@ -8,7 +8,7 @@ import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/usp_page/ipv6_port_service/views/dialogs/ipv6_port_service_rule_dialog.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -196,7 +196,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
 
   List<AppAutoCompleteOption> _buildIpv6DeviceOptions(WidgetRef ref) {
     final devices =
-        ref.read(uspDashboardProvider).valueOrNull?.deviceModels ?? [];
+        ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
     return devices
         .expand((d) => d.ipv6Addresses.map((addr) => AppAutoCompleteOption(
               label: d.displayName,

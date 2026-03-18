@@ -1,7 +1,18 @@
 import 'package:privacy_gui/usp_page/dashboard/models/device_analytics_state.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_monitor_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
+import 'package:privacy_gui/usp_page/topology/models/node_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/dhcp_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/dashboard/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/usp_page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/usp_page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/usp_page/instant_safety/models/safe_browsing_ui_model.dart';
@@ -13,8 +24,8 @@ import 'package:privacy_gui/usp_page/static_routing/models/static_routing_ui_mod
 /// Built at the call site by reading from Riverpod providers. The PDF service
 /// receives this as a pure data object — no dependency on Riverpod.
 class PdfReportData {
-  /// Dashboard state — device info, WAN/LAN, WiFi, devices, ports, etc.
-  final UspDashboardState dashboard;
+  /// Ethernet port UI models (from ethernetDataProvider).
+  final List<EthernetPortUIModel>? ethernetPortModels;
 
   /// Real-time traffic rates and error/discard metrics (polling provider).
   final TrafficAnalysisState trafficAnalysis;
@@ -37,11 +48,44 @@ class PdfReportData {
   /// IPv6 port service rules (null if feature page not visited).
   final List<Ipv6PortServiceRuleUIModel>? ipv6PortRules;
 
+  /// LAN info with IPv6 (null if not loaded).
+  final LanInfoUIModel? lanInfo;
+
   /// Safe browsing DNS override settings (null if not loaded).
   final SafeBrowsingUIModel? safeBrowsing;
 
+  /// Time settings (from shared timeDataProvider).
+  final TimeSettingsUIModel? timeSettings;
+
+  /// DHCP clients (from dhcpDataProvider).
+  final List<DhcpClientUIModel>? dhcpClients;
+
+  /// DHCP reservations (from dhcpDataProvider).
+  final List<DhcpReservationUIModel>? dhcpReservations;
+
+  /// Port forwarding rules (from portForwardingDataProvider).
+  final List<PortForwardingRuleUIModel>? portForwardingRules;
+
+  /// Port triggering rules (from portTriggeringDataProvider).
+  final List<PortTriggeringRuleUIModel>? portTriggeringRules;
+
+  /// WAN status (from wanDataProvider).
+  final WanStatusUIModel? wanStatus;
+
+  /// System info (from systemInfoDataProvider).
+  final SystemInfoUIModel? systemInfo;
+
+  /// WiFi radio models (from wifiDataProvider).
+  final List<WifiRadioUIModel>? radioModels;
+
+  /// Device UI models (from devicesDataProvider).
+  final List<DeviceUIModel>? deviceModels;
+
+  /// Node UI models (from devicesDataProvider).
+  final List<NodeUIModel>? nodeModels;
+
   const PdfReportData({
-    required this.dashboard,
+    this.ethernetPortModels,
     required this.trafficAnalysis,
     required this.deviceAnalytics,
     required this.systemMonitor,
@@ -49,6 +93,17 @@ class PdfReportData {
     required this.dmzSettings,
     this.staticRoutes,
     this.ipv6PortRules,
+    this.lanInfo,
     this.safeBrowsing,
+    this.timeSettings,
+    this.dhcpClients,
+    this.dhcpReservations,
+    this.portForwardingRules,
+    this.portTriggeringRules,
+    this.wanStatus,
+    this.systemInfo,
+    this.radioModels,
+    this.deviceModels,
+    this.nodeModels,
   });
 }

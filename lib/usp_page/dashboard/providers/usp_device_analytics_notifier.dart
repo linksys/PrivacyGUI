@@ -3,13 +3,13 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_analytics_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/device_analytics_persistence.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 
 /// Device connection analytics provider — computes distributions, hourly
 /// aggregates, and signal quality data from the existing dashboard state.
 ///
 /// NOT autoDispose — hourly history persists across tab switches.
-/// Watches [uspDashboardProvider] for updates; no extra USP requests.
+/// Watches [devicesDataProvider] for updates; no extra USP requests.
 final uspDeviceAnalyticsProvider =
     NotifierProvider<UspDeviceAnalyticsNotifier, DeviceAnalyticsState>(
   UspDeviceAnalyticsNotifier.new,
@@ -21,17 +21,17 @@ class UspDeviceAnalyticsNotifier extends Notifier<DeviceAnalyticsState> {
     // Load persisted history on init
     _loadPersistedHistory();
 
-    // Listen to dashboard state changes for future updates
-    ref.listen(uspDashboardProvider, (previous, next) {
+    // Listen to device data changes for future updates
+    ref.listen(devicesDataProvider, (previous, next) {
       final data = next.valueOrNull;
       if (data == null) return;
       _onDashboardUpdated(data.deviceModels);
     });
 
-    // Process current dashboard data after build() completes
+    // Process current device data after build() completes
     // (same pattern as UspTrafficMonitorNotifier)
     Future.microtask(() {
-      final data = ref.read(uspDashboardProvider).valueOrNull;
+      final data = ref.read(devicesDataProvider).valueOrNull;
       if (data != null) {
         _onDashboardUpdated(data.deviceModels);
       }

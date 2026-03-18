@@ -4,23 +4,23 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/models/port_triggering_rule_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/port_forwarding_dialog.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspPortForwardingCard extends ConsumerWidget {
-  final UspDashboardState? state;
-
-  const UspPortForwardingCard({super.key, this.state});
+  const UspPortForwardingCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = this.state ?? ref.watch(uspDashboardProvider).valueOrNull;
-    if (state == null) return const SizedBox.shrink();
-    final rules = state.portForwardingRuleModels;
-    final triggers = state.portTriggeringRuleModels;
+    final pfData = ref.watch(portForwardingDataProvider).valueOrNull;
+    final ptData = ref.watch(portTriggeringDataProvider).valueOrNull;
+    if (pfData == null && ptData == null) return const CardSkeleton.list(rows: 3);
+    final rules = pfData?.ruleModels ?? [];
+    final triggers = ptData?.ruleModels ?? [];
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';
 
     return AppCard(
@@ -90,8 +90,8 @@ class UspPortForwardingCard extends ConsumerWidget {
                       ref,
                       loadingKey: 'portForwarding',
                       mutation: () => ref
-                          .read(uspDashboardProvider.notifier)
-                          .togglePortForwardingRule(rule.instancePath, value),
+                          .read(portForwardingDataProvider.notifier)
+                          .toggleRule(rule.instancePath, value),
                     ),
           ),
           AppGap.sm(),
@@ -133,8 +133,8 @@ class UspPortForwardingCard extends ConsumerWidget {
                       ref,
                       loadingKey: 'portForwarding',
                       mutation: () => ref
-                          .read(uspDashboardProvider.notifier)
-                          .togglePortTriggerRule(trigger.instancePath, value),
+                          .read(portTriggeringDataProvider.notifier)
+                          .toggleRule(trigger.instancePath, value),
                     ),
           ),
           AppGap.sm(),
@@ -172,7 +172,7 @@ class UspPortForwardingCard extends ConsumerWidget {
       ref,
       loadingKey: 'portForwarding',
       mutation: () =>
-          ref.read(uspDashboardProvider.notifier).addPortForwardingRule(
+          ref.read(portForwardingDataProvider.notifier).addRule(
                 externalPort: result.externalPort,
                 internalPort: result.internalPort,
                 internalClient: result.internalClient,

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+
+/// Tracks which card is currently being mutated (for loading overlay).
+/// Values: null (idle), 'wifi', 'time', 'portForwarding', 'portTriggering', etc.
+final uspMutationLoadingProvider = StateProvider<String?>((ref) => null);
 
 /// Executes a USP mutation with loading state management and error handling.
 ///

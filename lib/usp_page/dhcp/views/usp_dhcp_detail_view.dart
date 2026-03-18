@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/dhcp_data_provider.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/usp_page/dhcp/views/components/usp_dhcp_active_leases_card.dart';
 import 'package:privacy_gui/usp_page/dhcp/views/components/usp_dhcp_reservations_detail_card.dart';
 import 'package:privacy_gui/usp_page/dhcp/views/components/usp_dhcp_server_info_card.dart';
@@ -13,14 +13,13 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// DHCP detail page — shows server info, active leases, and reservations.
 ///
-/// Reads from [uspDashboardProvider] (shared state). All mutations delegate
-/// to [UspDashboardNotifier] to keep state in sync with the dashboard.
+/// Reads from [dhcpDataProvider] and [lanDataProvider].
 class UspDhcpDetailView extends ConsumerWidget {
   const UspDhcpDetailView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(uspDashboardProvider);
+    final asyncDhcp = ref.watch(dhcpDataProvider);
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -32,10 +31,10 @@ class UspDhcpDetailView extends ConsumerWidget {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspMenu),
-      onRefresh: () => ref.refresh(uspDashboardProvider.future),
+      onRefresh: () async => ref.invalidate(dhcpDataProvider),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncState.when(
+        return asyncDhcp.when(
           loading: () => const Center(
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.xxxl),
@@ -43,7 +42,7 @@ class UspDhcpDetailView extends ConsumerWidget {
             ),
           ),
           error: (error, stack) => _buildError(childContext, ref, error),
-          data: (state) => _buildContent(childContext, ref, state),
+          data: (dhcpData) => _buildContent(childContext, ref, dhcpData),
         );
       },
     );
@@ -63,7 +62,7 @@ class UspDhcpDetailView extends ConsumerWidget {
           AppGap.xxl(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.invalidate(uspDashboardProvider),
+            onTap: () => ref.invalidate(dhcpDataProvider),
           ),
         ],
       ),
@@ -71,10 +70,11 @@ class UspDhcpDetailView extends ConsumerWidget {
   }
 
   Widget _buildContent(
-      BuildContext context, WidgetRef ref, UspDashboardState state) {
+      BuildContext context, WidgetRef ref, DhcpData dhcpData) {
+    final lanInfo = ref.watch(lanDataProvider).valueOrNull?.model;
     return AppResponsiveLayout(
-      mobile: (ctx) => _buildMobileLayout(ctx, state),
-      desktop: (ctx) => _buildDesktopLayout(ctx, state),
+      mobile: (ctx) => _buildMobileLayout(ctx, dhcpData, lanInfo),
+      desktop: (ctx) => _buildDesktopLayout(ctx, dhcpData, lanInfo),
     );
   }
 
@@ -82,16 +82,17 @@ class UspDhcpDetailView extends ConsumerWidget {
   // Mobile: single column
   // ---------------------------------------------------------------------------
 
-  Widget _buildMobileLayout(BuildContext context, UspDashboardState state) {
+  Widget _buildMobileLayout(
+      BuildContext context, DhcpData dhcpData, dynamic lanInfo) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        UspDhcpServerInfoCard(info: state.lanInfoModel),
+        if (lanInfo != null) UspDhcpServerInfoCard(info: lanInfo),
         AppGap.xl(),
-        UspDhcpActiveLeasesCard(clients: state.dhcpClientModels),
+        UspDhcpActiveLeasesCard(clients: dhcpData.clientModels),
         AppGap.xl(),
         UspDhcpReservationsDetailCard(
-            reservations: state.dhcpReservationModels),
+            reservations: dhcpData.reservationModels),
       ],
     );
   }
@@ -100,24 +101,25 @@ class UspDhcpDetailView extends ConsumerWidget {
   // Desktop: server info full-width, then two columns
   // ---------------------------------------------------------------------------
 
-  Widget _buildDesktopLayout(BuildContext context, UspDashboardState state) {
+  Widget _buildDesktopLayout(
+      BuildContext context, DhcpData dhcpData, dynamic lanInfo) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        UspDhcpServerInfoCard(info: state.lanInfoModel),
+        if (lanInfo != null) UspDhcpServerInfoCard(info: lanInfo),
         AppGap.xl(),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
               width: context.colWidth(6),
-              child: UspDhcpActiveLeasesCard(clients: state.dhcpClientModels),
+              child: UspDhcpActiveLeasesCard(clients: dhcpData.clientModels),
             ),
             AppGap.gutter(),
             SizedBox(
               width: context.colWidth(6),
               child: UspDhcpReservationsDetailCard(
-                  reservations: state.dhcpReservationModels),
+                  reservations: dhcpData.reservationModels),
             ),
           ],
         ),

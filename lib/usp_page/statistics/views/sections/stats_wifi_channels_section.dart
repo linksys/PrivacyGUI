@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_performance_helpers.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Radio channel info + per-band client distribution donut.
@@ -13,8 +13,8 @@ class StatsWifiChannelsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(uspDashboardProvider).valueOrNull;
-    if (state == null) {
+    final wifiData = ref.watch(wifiDataProvider).valueOrNull;
+    if (wifiData == null) {
       return StatsSectionCard(
         title: 'WiFi Channels',
         subtitle: 'Radio channel allocation and client distribution',
@@ -28,8 +28,8 @@ class StatsWifiChannelsSection extends ConsumerWidget {
       );
     }
 
-    final radios = state.wifiRadioModels;
-    final activeClients = _buildClientList(state);
+    final radios = wifiData.radioModels;
+    final activeClients = _buildClientList(wifiData);
 
     return StatsSectionCard(
       title: 'WiFi Channels',
@@ -46,13 +46,12 @@ class StatsWifiChannelsSection extends ConsumerWidget {
     );
   }
 
-  List<_ClientInfo> _buildClientList(dynamic state) {
+  List<_ClientInfo> _buildClientList(WifiData wifiData) {
     final clients = <_ClientInfo>[];
-    for (final entry
-        in (state.wifiClientMap as Map<String, WifiClient>).entries) {
+    for (final entry in wifiData.wifiClientMap.entries) {
       final client = entry.value;
       if (!client.active) continue;
-      final detail = state.connectionDetailMap[entry.key];
+      final detail = wifiData.connectionDetailMap[entry.key];
       clients.add(_ClientInfo(client: client, band: detail?.band ?? ''));
     }
     return clients;

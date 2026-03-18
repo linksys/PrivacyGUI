@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/lan_info_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/lan_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspLanInfoCard extends ConsumerWidget {
@@ -13,8 +14,8 @@ class UspLanInfoCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final info =
-        this.info ?? ref.watch(uspDashboardProvider).valueOrNull?.lanInfoModel;
-    if (info == null) return const SizedBox.shrink();
+        this.info ?? ref.watch(lanDataProvider).valueOrNull?.model;
+    if (info == null) return const CardSkeleton.info(rows: 4);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_triggering_data_provider.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/components/usp_single_port_tab.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/components/usp_port_range_tab.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/components/usp_port_triggering_tab.dart';
@@ -15,8 +16,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///   Tab 2: Port Range Forwarding (filter isPortRange)
 ///   Tab 3: Port Triggering (independent data source)
 ///
-/// Reads from [uspDashboardProvider] (shared state). All mutations delegate
-/// to [UspDashboardNotifier] to keep state in sync with the dashboard.
+/// Reads from [portForwardingDataProvider] and [portTriggeringDataProvider].
 class UspPortForwardingDetailView extends ConsumerStatefulWidget {
   const UspPortForwardingDetailView({super.key});
 
@@ -44,16 +44,18 @@ class _UspPortForwardingDetailViewState
 
   @override
   Widget build(BuildContext context) {
-    final asyncState = ref.watch(uspDashboardProvider);
-    final state = asyncState.valueOrNull;
+    final asyncPf = ref.watch(portForwardingDataProvider);
+    final asyncPt = ref.watch(portTriggeringDataProvider);
+    final pfData = asyncPf.valueOrNull;
+    final ptData = asyncPt.valueOrNull;
 
     final singlePortRules =
-        state?.portForwardingRuleModels.where((r) => r.isSinglePort).toList() ??
-            [];
+        pfData?.ruleModels.where((r) => r.isSinglePort).toList() ?? [];
     final portRangeRules =
-        state?.portForwardingRuleModels.where((r) => r.isPortRange).toList() ??
-            [];
-    final triggeringRules = state?.portTriggeringRuleModels ?? [];
+        pfData?.ruleModels.where((r) => r.isPortRange).toList() ?? [];
+    final triggeringRules = ptData?.ruleModels ?? [];
+    // Combine async states for loading/error display
+    final asyncState = asyncPf;
 
     return LayoutBuilder(builder: (context, constraints) {
       return UiKitPageView.withSliver(
@@ -68,7 +70,10 @@ class _UspPortForwardingDetailViewState
         onBackTap: () => context.canPop()
             ? context.pop()
             : context.goNamed(RouteNamed.uspMenu),
-        onRefresh: () => ref.refresh(uspDashboardProvider.future),
+        onRefresh: () async {
+          ref.invalidate(portForwardingDataProvider);
+          ref.invalidate(portTriggeringDataProvider);
+        },
         tabs: [
           Tab(text: 'Single Port (${singlePortRules.length})'),
           Tab(text: 'Port Range (${portRangeRules.length})'),
@@ -103,7 +108,10 @@ class _UspPortForwardingDetailViewState
             AppGap.md(),
             AppButton(
               label: 'Retry',
-              onTap: () => ref.invalidate(uspDashboardProvider),
+              onTap: () {
+                ref.invalidate(portForwardingDataProvider);
+                ref.invalidate(portTriggeringDataProvider);
+              },
             ),
           ],
         ),

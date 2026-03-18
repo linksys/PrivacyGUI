@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/transforms.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
@@ -13,7 +13,7 @@ class StatsSystemGaugesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final info = ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
+    final info = ref.watch(systemInfoDataProvider).valueOrNull?.model;
     final monitorState = ref.watch(uspSystemMonitorProvider);
 
     return StatsSectionCard(

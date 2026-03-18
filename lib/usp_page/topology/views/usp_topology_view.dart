@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/usp_page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -18,7 +19,7 @@ class UspTopologyView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(uspDashboardProvider);
+    final asyncDevices = ref.watch(devicesDataProvider);
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -30,10 +31,10 @@ class UspTopologyView extends ConsumerWidget {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspDashboard),
-      onRefresh: () => ref.refresh(uspDashboardProvider.future),
+      onRefresh: () => ref.refresh(devicesDataProvider.future),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncState.when(
+        return asyncDevices.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(
             child: Column(
@@ -43,16 +44,18 @@ class UspTopologyView extends ConsumerWidget {
                 AppGap.md(),
                 AppButton.text(
                   label: 'Retry',
-                  onTap: () => ref.invalidate(uspDashboardProvider),
+                  onTap: () => ref.invalidate(devicesDataProvider),
                 ),
               ],
             ),
           ),
-          data: (state) {
+          data: (data) {
+            final sysInfo = ref.read(systemInfoDataProvider).valueOrNull?.model;
+            if (sysInfo == null) return const SizedBox.shrink();
             final topology = UspTopologyBuilder.build(
-              info: state.systemInfoModel,
-              devices: state.deviceModels,
-              meshNodes: state.meshTopology.nodes,
+              info: sysInfo,
+              devices: data.deviceModels,
+              meshNodes: data.meshTopology.nodes,
               coverageColor: Theme.of(context).colorScheme.primary,
             );
 

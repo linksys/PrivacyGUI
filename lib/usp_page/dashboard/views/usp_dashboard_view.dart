@@ -4,8 +4,7 @@ import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_fab.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_bars_visible_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/_components.dart';
+import 'package:privacy_gui/usp_page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/usp_sliver_dashboard_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -25,7 +24,7 @@ class UspDashboardView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(uspDashboardProvider);
+    final asyncState = ref.watch(dashboardOrchestratorProvider);
     final isRefreshing = asyncState.isLoading && asyncState.valueOrNull != null;
     final barsVisible = ref.watch(uspBarsVisibleProvider);
 
@@ -56,7 +55,9 @@ class UspDashboardView extends ConsumerWidget {
                 ),
               Expanded(
                 child: asyncState.when(
-                  loading: () => _buildSkeleton(context, ref),
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
                   error: (error, stack) => _buildError(context, ref, error),
                   data: (_) => const UspSliverDashboardView(),
                 ),
@@ -94,33 +95,6 @@ class UspDashboardView extends ConsumerWidget {
     );
   }
 
-  Widget _buildSkeleton(BuildContext context, WidgetRef ref) {
-    final progress = ref.watch(uspLoadingProgressProvider);
-    return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: context.pageMargin),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.md),
-              child: LinearProgressIndicator(
-                value: progress.fraction,
-                minHeight: 4,
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.1),
-              ),
-            ),
-            AppGap.md(),
-            const UspDashboardSkeleton(),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
     return Center(
       child: Column(
@@ -135,7 +109,7 @@ class UspDashboardView extends ConsumerWidget {
           AppGap.xxl(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.invalidate(uspDashboardProvider),
+            onTap: () => ref.read(dashboardOrchestratorProvider.notifier).refreshAll(),
           ),
           AppGap.md(),
           AppButton.text(

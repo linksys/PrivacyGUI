@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/dialogs/port_range_forwarding_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -57,8 +57,8 @@ class UspPortRangeTab extends ConsumerWidget {
                         ref,
                         loadingKey: 'portForwarding',
                         mutation: () => ref
-                            .read(uspDashboardProvider.notifier)
-                            .togglePortForwardingRule(rule.instancePath, value),
+                            .read(portForwardingDataProvider.notifier)
+                            .toggleRule(rule.instancePath, value),
                       ),
             ),
             AppGap.sm(),
@@ -106,7 +106,7 @@ class UspPortRangeTab extends ConsumerWidget {
       ref,
       loadingKey: 'portForwarding',
       mutation: () =>
-          ref.read(uspDashboardProvider.notifier).addPortForwardingRule(
+          ref.read(portForwardingDataProvider.notifier).addRule(
                 externalPort: result.externalPortStart,
                 externalPortEndRange: result.externalPortEnd,
                 internalPort: result.internalPort,
@@ -131,7 +131,7 @@ class UspPortRangeTab extends ConsumerWidget {
       ref,
       loadingKey: 'portForwarding',
       mutation: () =>
-          ref.read(uspDashboardProvider.notifier).updatePortForwardingRule(
+          ref.read(portForwardingDataProvider.notifier).updateRule(
                 instancePath: rule.instancePath,
                 enabled: result.enabled,
                 externalPort: result.externalPortStart,
@@ -168,8 +168,8 @@ class UspPortRangeTab extends ConsumerWidget {
       ref,
       loadingKey: 'portForwarding',
       mutation: () => ref
-          .read(uspDashboardProvider.notifier)
-          .deletePortForwardingRule(rule.instancePath),
+          .read(portForwardingDataProvider.notifier)
+          .deleteRule(rule.instancePath),
       successMessage: 'Rule deleted',
     );
   }

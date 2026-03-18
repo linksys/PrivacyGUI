@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/usp_page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/time_settings_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspTimeSettingsCard extends ConsumerWidget {
-  final UspDashboardState? state;
-
-  const UspTimeSettingsCard({super.key, this.state});
+  const UspTimeSettingsCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = this.state ?? ref.watch(uspDashboardProvider).valueOrNull;
-    if (state == null) return const SizedBox.shrink();
-    final time = state.timeSettingsModel;
+    final timeData = ref.watch(timeDataProvider).valueOrNull;
+    if (timeData == null) return const CardSkeleton.info(rows: 3);
+    final time = timeData.model;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'time';
 
     return AppCard(
@@ -76,7 +74,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
                           ref,
                           loadingKey: 'time',
                           mutation: () => ref
-                              .read(uspDashboardProvider.notifier)
+                              .read(timeDataProvider.notifier)
                               .updateTimeSettings(enable: value),
                         ),
               ),
@@ -99,7 +97,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
       ref,
       loadingKey: 'time',
       mutation: () =>
-          ref.read(uspDashboardProvider.notifier).updateTimeSettings(
+          ref.read(timeDataProvider.notifier).updateTimeSettings(
                 enable: result.enable,
                 ntpServer1: result.ntpServer1,
                 ntpServer2: result.ntpServer2,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/ethernet_port_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/ethernet_data_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/ethernet_port_detail_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -13,8 +14,8 @@ class UspEthernetPortsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ports = this.ports ??
-        ref.watch(uspDashboardProvider).valueOrNull?.ethernetPortModels ??
-        [];
+        ref.watch(ethernetDataProvider).valueOrNull?.ethernetPortModels;
+    if (ports == null) return const CardSkeleton.info(rows: 3);
     return SizedBox(
       width: double.infinity,
       child: AppCard(

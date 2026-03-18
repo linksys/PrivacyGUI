@@ -105,6 +105,8 @@ final uspDashboardRoute = ShellRoute(
           name: RouteNamed.uspFirewall,
           path: RouteNamed.uspFirewall,
           builder: (context, state) => const UspFirewallView(),
+          enableDirtyCheck: true,
+          preservableProvider: preservableUspFirewallProvider,
         ),
         LinksysRoute(
           name: RouteNamed.uspDmz,

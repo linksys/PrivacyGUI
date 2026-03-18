@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/wifi_channel_dialog.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspWifiStatusCard extends ConsumerWidget {
-  final UspDashboardState? state;
+  final WifiData? wifiData;
 
-  const UspWifiStatusCard({super.key, this.state});
+  const UspWifiStatusCard({super.key, this.wifiData});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = this.state ?? ref.watch(uspDashboardProvider).valueOrNull;
-    if (state == null) return const SizedBox.shrink();
-    final radios = state.wifiRadioModels;
+    final data = wifiData ?? ref.watch(wifiDataProvider).valueOrNull;
+    if (data == null) return const CardSkeleton.list(rows: 4);
+    final radios = data.radioModels;
     final enabledRadios = radios.where((r) => r.enable).length;
 
     return AppCard(
@@ -66,7 +66,7 @@ class UspWifiStatusCard extends ConsumerWidget {
                           ref,
                           loadingKey: 'wifi',
                           mutation: () => ref
-                              .read(uspDashboardProvider.notifier)
+                              .read(wifiDataProvider.notifier)
                               .toggleWifiRadio(radio.instancePath, value),
                         ),
               ),
@@ -157,7 +157,7 @@ class UspWifiStatusCard extends ConsumerWidget {
       ref,
       loadingKey: 'wifi',
       mutation: () =>
-          ref.read(uspDashboardProvider.notifier).updateWifiRadioChannel(
+          ref.read(wifiDataProvider.notifier).updateWifiRadioChannel(
                 radio.instancePath,
                 result.channel,
                 result.autoChannel,

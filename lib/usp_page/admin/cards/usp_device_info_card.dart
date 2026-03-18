@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 
@@ -15,8 +16,8 @@ class UspDeviceInfoCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final info = this.info ??
-        ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
-    if (info == null) return const SizedBox.shrink();
+        ref.watch(systemInfoDataProvider).valueOrNull?.model;
+    if (info == null) return const CardSkeleton.info(rows: 5);
     final iconName = routerIconTestByModel(
       modelNumber: info.modelName,
       hardwareVersion: info.hardwareVersion,

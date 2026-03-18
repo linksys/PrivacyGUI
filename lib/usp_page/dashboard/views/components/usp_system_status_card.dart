@@ -5,9 +5,10 @@ import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart'
 import 'package:privacy_gui/usp_page/dashboard/models/system_monitor_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/card_tab_state_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -44,8 +45,8 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
 
   @override
   Widget build(BuildContext context) {
-    final info = ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
-    if (info == null) return const SizedBox.shrink();
+    final info = ref.watch(systemInfoDataProvider).valueOrNull?.model;
+    if (info == null) return const CardSkeleton.chart();
     final monitorState = ref.watch(uspSystemMonitorProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
     final colorScheme = Theme.of(context).colorScheme;

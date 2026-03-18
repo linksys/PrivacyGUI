@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/devices/views/components/usp_signal_strength_indicator.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/usp_status_dot.dart';
@@ -19,8 +20,8 @@ class UspConnectedDevicesCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final devices = this.devices ??
-        ref.watch(uspDashboardProvider).valueOrNull?.deviceModels ??
-        [];
+        ref.watch(devicesDataProvider).valueOrNull?.deviceModels;
+    if (devices == null) return const CardSkeleton.list(rows: 3);
     final activeDevices = devices.where((d) => d.isActive).toList();
     final inactiveDevices = devices.where((d) => !d.isActive).toList();
 

@@ -4,7 +4,9 @@ import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_performance_helpers.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/card_tab_state_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// WiFi Performance Analytics card — 3-tab view.
@@ -25,24 +27,25 @@ class UspWifiPerformanceCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(uspDashboardProvider).valueOrNull;
-    if (state == null) return const SizedBox.shrink();
+    final wifiData = ref.watch(wifiDataProvider).valueOrNull;
+    if (wifiData == null) return const CardSkeleton.chart();
+    final devicesData = ref.watch(devicesDataProvider).valueOrNull;
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
 
     // Collect active WiFi clients with their device names and band info
     final activeClients = <_ClientInfo>[];
-    for (final entry in state.wifiClientMap.entries) {
+    for (final entry in wifiData.wifiClientMap.entries) {
       final client = entry.value;
       if (!client.active) continue;
       // Resolve display name from deviceModels
-      final device = state.deviceModels
+      final device = devicesData?.deviceModels
           .where((d) => d.mac.toUpperCase() == entry.key.toUpperCase())
           .firstOrNull;
       final name = device?.hostName ?? entry.key;
       final displayName =
           name.length > 10 ? '${name.substring(0, 9)}\u2026' : name;
       // Resolve band from connectionDetailMap (AP → SSID → Radio chain)
-      final detail = state.connectionDetailMap[entry.key];
+      final detail = wifiData.connectionDetailMap[entry.key];
       activeClients.add(_ClientInfo(
         mac: entry.key,
         displayName: displayName,
@@ -77,7 +80,7 @@ class UspWifiPerformanceCard extends ConsumerWidget {
               0 => _SignalTab(clients: activeClients),
               1 => _SpeedTab(clients: activeClients),
               2 => _ChannelsTab(
-                  radios: state.wifiRadioModels,
+                  radios: wifiData.radioModels,
                   clients: activeClients,
                 ),
               _ => const SizedBox.shrink(),

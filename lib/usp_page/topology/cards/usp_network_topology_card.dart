@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/mesh_node_enricher.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/usp_page/dashboard/views/components/card_skeleton.dart';
 import 'package:privacy_gui/usp_page/topology/helpers/usp_topology_builder.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -27,11 +29,11 @@ class UspNetworkTopologyCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dashState = ref.watch(uspDashboardProvider).valueOrNull;
-    final info = this.info ?? dashState?.systemInfoModel;
-    if (info == null) return const SizedBox.shrink();
-    final devices = this.devices ?? dashState?.deviceModels ?? [];
-    final meshNodes = this.meshNodes ?? dashState?.meshTopology.nodes ?? [];
+    final devicesData = ref.watch(devicesDataProvider).valueOrNull;
+    final info = this.info ?? ref.watch(systemInfoDataProvider).valueOrNull?.model;
+    if (info == null) return const CardSkeleton.topology();
+    final devices = this.devices ?? devicesData?.deviceModels ?? [];
+    final meshNodes = this.meshNodes ?? devicesData?.meshTopology.nodes ?? [];
     final topology = UspTopologyBuilder.build(
       info: info,
       devices: devices,

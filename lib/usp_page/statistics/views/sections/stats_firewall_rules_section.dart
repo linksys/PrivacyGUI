@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -10,29 +11,30 @@ class StatsFirewallRulesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(uspDashboardProvider).valueOrNull;
+    final fwData = ref.watch(firewallDataProvider).valueOrNull;
+    final pfCount =
+        ref.watch(portForwardingDataProvider).valueOrNull?.ruleModels.length ?? 0;
 
     return StatsSectionCard(
       title: 'Firewall Rules',
       subtitle: 'Rule target distribution and security overview',
       chartHeight: 320,
-      child: state == null
+      child: fwData == null
           ? Center(
               child: AppText.bodyMedium(
                 'Loading...',
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             )
-          : _buildChart(context, state),
+          : _buildChart(context, fwData, pfCount),
     );
   }
 
-  Widget _buildChart(BuildContext context, dynamic state) {
+  Widget _buildChart(BuildContext context, FirewallData fwData, int portForwardingCount) {
     final colorScheme = Theme.of(context).colorScheme;
-    final firewallRules = state.firewallRules.items as List;
-    final portForwardingCount = state.portForwardingRuleModels.length as int;
+    final firewallRules = fwData.chainRules.items;
     final dmzCount =
-        (state.dmzEntries.items as List).where((d) => d.enable).length;
+        fwData.dmzEntries.items.where((d) => d.enable).length;
 
     if (firewallRules.isEmpty) {
       return Center(
@@ -47,7 +49,7 @@ class StatsFirewallRulesSection extends ConsumerWidget {
     final targetCounts = <String, int>{};
     int activeCount = 0;
     for (final rule in firewallRules) {
-      final target = (rule.target as String).isNotEmpty ? rule.target : 'Other';
+      final target = rule.target.isNotEmpty ? rule.target : 'Other';
       targetCounts[target] = (targetCounts[target] ?? 0) + 1;
       if (rule.enable) activeCount++;
     }

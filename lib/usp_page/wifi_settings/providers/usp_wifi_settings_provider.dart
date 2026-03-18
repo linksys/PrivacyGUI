@@ -4,7 +4,7 @@ import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
-import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
@@ -13,6 +13,7 @@ import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_quick_setup_netwo
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/providers/usp_wifi_settings_state.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -49,6 +50,10 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
   @override
   UspWifiSettingsState build() {
+    // SSE: when WiFi data provider updates, trigger dirty guard
+    ref.listen(wifiDataProvider, (_, next) {
+      if (next.hasValue) onSseInvalidation();
+    });
     // Synchronous build with loading state; async fetch follows immediately.
     Future.microtask(() => fetch());
     return UspWifiSettingsState.initial();
@@ -83,15 +88,11 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
     logger.d('[USP][WiFi]Fetching WiFi data...');
 
-    final results = await Future.wait([
-      WiFiSsids.fetch(usp),
-      WiFiAccessPoints.fetch(usp),
-      WiFiRadios.fetch(usp),
-    ]);
-
-    final ssids = results[0] as WiFiSsids;
-    final accessPoints = results[1] as WiFiAccessPoints;
-    final radios = results[2] as WiFiRadios;
+    // Read from WiFi Data Provider (Layer 1) to avoid duplicate fetch
+    final wifiData = await ref.read(wifiDataProvider.future);
+    final ssids = wifiData.ssids;
+    final accessPoints = wifiData.accessPoints;
+    final radios = wifiData.radios;
 
     final networks = _svc.buildWifiNetworks(
       ssids: ssids,

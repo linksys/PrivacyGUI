@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/usp_page/firewall/models/firewall_feature_state.dart';
 import 'package:privacy_gui/usp_page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/usp_page/firewall/providers/usp_firewall_notifier.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
@@ -14,7 +15,8 @@ class UspFirewallView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(uspFirewallProvider);
+    final state = ref.watch(uspFirewallProvider);
+    final status = state.status;
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -26,15 +28,37 @@ class UspFirewallView extends ConsumerWidget {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspMenu),
-      onRefresh: () => ref.refresh(uspFirewallProvider.future),
+      onRefresh: () =>
+          ref.read(uspFirewallProvider.notifier).fetch(forceRemote: true),
+      bottomBar: _buildBottomBar(context, ref, state),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncState.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildError(context, ref),
-          data: (state) => _buildContent(context, ref, state),
-        );
+        if (status.isLoading) {
+          return const Center(child: AppLoader());
+        }
+        if (status.errorMessage != null) {
+          return _buildError(context, ref);
+        }
+        return _buildContent(context, ref, state);
       },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bottom Bar
+  // ---------------------------------------------------------------------------
+
+  UiKitBottomBarConfig? _buildBottomBar(
+    BuildContext context,
+    WidgetRef ref,
+    FirewallFeatureState state,
+  ) {
+    if (!state.isDirty) return null;
+    return UiKitBottomBarConfig(
+      positiveLabel: 'Save',
+      isPositiveEnabled: !state.status.isSaving,
+      onPositiveTap: () => _onSave(context, ref),
+      onNegativeTap: () => ref.read(uspFirewallProvider.notifier).revert(),
     );
   }
 
@@ -54,7 +78,8 @@ class UspFirewallView extends ConsumerWidget {
           AppGap.md(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.invalidate(uspFirewallProvider),
+            onTap: () =>
+                ref.read(uspFirewallProvider.notifier).fetch(forceRemote: true),
           ),
         ],
       ),
@@ -68,11 +93,11 @@ class UspFirewallView extends ConsumerWidget {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    UspFirewallState state,
+    FirewallFeatureState state,
   ) {
     final notifier = ref.read(uspFirewallProvider.notifier);
-    final fw = state.pending;
-    final disabled = state.isSaving;
+    final fw = state.current.model;
+    final disabled = state.status.isSaving;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,16 +114,6 @@ class UspFirewallView extends ConsumerWidget {
         _buildFiltersSection(context, fw, notifier, disabled),
         AppGap.md(),
         _buildIpv6PortServiceLink(context),
-        if (state.isDirty) ...[
-          AppGap.xl(),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton.primary(
-              label: 'Save',
-              onTap: disabled ? null : () => _onSave(context, ref),
-            ),
-          ),
-        ],
       ],
     );
   }
