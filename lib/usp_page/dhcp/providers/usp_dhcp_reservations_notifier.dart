@@ -108,10 +108,11 @@ class UspDhcpReservationsNotifier
       ref.invalidate(dhcpDataProvider);
     } catch (e) {
       logger.e('[USP][DHCP][Reservations] Save failed', error: e);
+      rethrow;
+    } finally {
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
-      rethrow;
     }
   }
 

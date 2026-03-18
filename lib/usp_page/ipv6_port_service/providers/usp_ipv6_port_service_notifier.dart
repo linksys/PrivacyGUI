@@ -98,10 +98,11 @@ class UspIpv6PortServiceNotifier
       });
     } catch (e) {
       logger.e('[USP][Firewall][IPv6Port] Save failed', error: e);
+      rethrow;
+    } finally {
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
-      rethrow;
     }
   }
 

@@ -125,13 +125,15 @@ class UspInternetSettingsNotifier
         ),
       );
     } catch (e) {
+      logger.e('[USP][Network][WAN] Save failed', error: e);
+      rethrow;
+    } finally {
       state = state.copyWith(
         status: state.status.copyWith(
           isSaving: false,
           clearActiveMutation: true,
         ),
       );
-      rethrow;
     }
   }
 

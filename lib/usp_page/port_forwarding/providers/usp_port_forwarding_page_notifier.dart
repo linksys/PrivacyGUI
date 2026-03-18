@@ -132,10 +132,11 @@ class UspPortForwardingPageNotifier
       ref.invalidate(portTriggeringDataProvider);
     } catch (e) {
       logger.e('[USP][Firewall][PortForwarding] Save failed', error: e);
+      rethrow;
+    } finally {
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
-      rethrow;
     }
   }
 

@@ -106,10 +106,12 @@ class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
         }
       });
     } catch (e) {
+      logger.e('[USP][Firewall][DMZ] Save failed', error: e);
+      rethrow;
+    } finally {
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
-      rethrow;
     }
   }
 

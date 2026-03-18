@@ -106,10 +106,11 @@ class UspStaticRoutingNotifier
       });
     } catch (e) {
       logger.e('[USP][Network][Routing] Save failed', error: e);
+      rethrow;
+    } finally {
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
-      rethrow;
     }
   }
 

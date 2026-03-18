@@ -101,10 +101,12 @@ class UspLocalNetworkNotifier
       // Force data provider to re-fetch so dashboard card updates too.
       ref.invalidate(lanDataProvider);
     } catch (e) {
+      logger.e('[USP][Network][LAN] Save failed', error: e);
+      rethrow;
+    } finally {
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
-      rethrow;
     }
   }
 

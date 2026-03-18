@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -76,20 +78,13 @@ class _PreservableDelegate<
   }
 
   /// Saves the current settings, marks the state as clean, and then re-fetches from source.
+  ///
+  /// If the post-save re-fetch fails, the error is logged and rethrown so
+  /// callers can reliably clear transient UI flags (e.g. `isSaving`).
   Future<TState> save() async {
     await _performSave();
     markAsSaved();
-    try {
-      return await fetch(forceRemote: true);
-    } catch (e) {
-      // The save was successful, but the subsequent fetch failed.
-      // The state is clean locally, but may be out of sync.
-      // The next fetch will resolve this. For now, we can log this
-      // error but we should not rethrow it, as the primary save
-      // operation was successful.
-      logger.e('Post-save fetch failed', error: e);
-      return _getState();
-    }
+    return await fetch(forceRemote: true);
   }
 
   // --- SSE Invalidation Guard ---
@@ -99,7 +94,10 @@ class _PreservableDelegate<
   /// to avoid clobbering their work. Otherwise, re-fetches fresh data.
   void onSseInvalidation() {
     if (!isDirty()) {
-      fetch(forceRemote: true);
+      unawaited(fetch(forceRemote: true).catchError((Object e, StackTrace st) {
+        logger.e('SSE invalidation fetch failed', error: e);
+        return _getState();
+      }));
     }
   }
 

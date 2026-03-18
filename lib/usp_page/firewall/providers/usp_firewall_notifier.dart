@@ -107,10 +107,12 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
       // Force data provider to re-fetch so dashboard card updates too.
       ref.invalidate(firewallDataProvider);
     } catch (e) {
+      logger.e('[USP][Firewall] Save failed', error: e);
+      rethrow;
+    } finally {
       state = state.copyWith(
         status: state.status.copyWith(isSaving: false),
       );
-      rethrow;
     }
   }
 
