@@ -36,7 +36,7 @@ class SpeedTestView extends ArgumentsConsumerStatefulView {
 }
 
 class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
-  // bool _loading = false; // Removed unused
+  bool _loadingServers = false;
 
   @override
   void initState() {
@@ -49,14 +49,15 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
   Future<void> _fetchServers() async {
     final serviceHelper = getIt<ServiceHelper>();
     if (serviceHelper.isSupportHealthCheckManager2()) {
+      setState(() {
+        _loadingServers = true;
+      });
       final notifier = ref.read(healthCheckProvider.notifier);
       await notifier.updateServers();
-      // State is updated in provider, use ref.read to check
       if (mounted) {
-        // final state = ref.read(healthCheckProvider);
-        // if (state.servers.isNotEmpty && state.selectedServer == null) {
-        //   notifier.setSelectedServer(state.servers.first);
-        // }
+        setState(() {
+          _loadingServers = false;
+        });
       }
     }
   }
@@ -177,7 +178,8 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
     // If servers list is present, selection is mandatory for running test
     final bool isSelectionRequired =
         isSupportHealthCheckManager2 && state.servers.isNotEmpty;
-    final bool isGoEnabled = !isSelectionRequired || selectedServer != null;
+    final bool isGoEnabled =
+        !_loadingServers && (!isSelectionRequired || selectedServer != null);
 
     return Stack(
       children: [
@@ -213,7 +215,33 @@ class _SpeedTestViewState extends ConsumerState<SpeedTestView> {
                   ),
                 ),
               ),
-              if (isSelectionRequired) ...[
+              if (_loadingServers) ...[
+                const AppGap.medium(),
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ] else if (state.serversError) ...[
+                const AppGap.medium(),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppText.bodySmall(
+                      loc(context).speedTestFailedToLoadServers,
+                    ),
+                    const AppGap.small2(),
+                    InkWell(
+                      onTap: _fetchServers,
+                      child: Icon(
+                        LinksysIcons.refresh,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (isSelectionRequired) ...[
                 const AppGap.medium(),
                 SizedBox(
                   width: 300,

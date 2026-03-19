@@ -245,12 +245,10 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
   Future<List<HealthCheckServer>> updateServers() async {
     final repo = ref.read(routerRepositoryProvider);
     try {
-      // Fetch from repository (which uses polling cache)
       final result = await repo.send(
         JNAPAction.getCloseHealthCheckServers,
         auth: true,
-        fetchRemote: false, // Rely on polling/cache
-        cacheLevel: CacheLevel.localCached,
+        fetchRemote: true,
       );
 
       // ignore: unnecessary_type_check
@@ -260,15 +258,16 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
             .map((e) => HealthCheckServer.fromJson(e as Map<String, dynamic>))
             .toList();
 
-        // Update state with cached servers
-        state = state.copyWith(servers: servers);
+        state = state.copyWith(servers: servers, serversError: false);
         return servers;
       }
     } catch (e) {
-      logger.d('Failed to update health check servers from cache: $e');
+      logger.d('Failed to fetch health check servers: $e');
+      state = state.copyWith(servers: [], serversError: true);
+      return [];
     }
-    // If fail or empty, ensure state reflects that (or keep old? keeping empty for now)
-    state = state.copyWith(servers: []);
+    // JNAP returned non-success (e.g. error result) — treat as error
+    state = state.copyWith(servers: [], serversError: true);
     return [];
   }
 
