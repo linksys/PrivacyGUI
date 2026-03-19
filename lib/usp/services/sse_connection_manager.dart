@@ -52,10 +52,15 @@ class SseConnectionManager {
 
   StreamSubscription<SseEvent>? _sseSubscription;
   Timer? _heartbeatWatchdog;
+  Timer? _reconnectTimer;
   Completer<void>? _connectInProgress;
   int _reconnectAttempt = 0;
   bool _disposed = false;
   bool _intentionalDisconnect = false;
+
+  /// Guards [_handleStreamEnd] against double-fire when both _onError and
+  /// _onDone trigger for the same stream failure. Reset in [connect].
+  bool _streamEndHandled = false;
 
   // ══════════════════════════════════════════════════════════════════════════
   // Callbacks (wired by SseManager)
@@ -87,10 +92,13 @@ class SseConnectionManager {
       return;
     }
 
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _connectInProgress = Completer<void>();
     try {
       await _cancelExistingStream();
       _intentionalDisconnect = false;
+      _streamEndHandled = false;
       connectionState.value = SseConnectionState.connecting;
 
       logger.d('[USP][SSE]Connecting...');
@@ -116,6 +124,8 @@ class SseConnectionManager {
   /// Intentionally disconnects and stops reconnection attempts.
   Future<void> disconnect() async {
     _intentionalDisconnect = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     await _cancelExistingStream();
     _heartbeatWatchdog?.cancel();
     _heartbeatWatchdog = null;
@@ -150,6 +160,8 @@ class SseConnectionManager {
   void dispose() {
     _disposed = true;
     _intentionalDisconnect = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _sseSubscription?.cancel();
     _sseSubscription = null;
     _heartbeatWatchdog?.cancel();
@@ -162,25 +174,23 @@ class SseConnectionManager {
   // ══════════════════════════════════════════════════════════════════════════
 
   void _onEvent(SseEvent event) {
-    // Reset heartbeat watchdog on ANY event (heartbeat, notification, etc.)
-    _resetHeartbeatWatchdog();
-
-    // Transition to connected on first real event
-    if (connectionState.value != SseConnectionState.connected) {
-      final wasDisconnected =
-          connectionState.value != SseConnectionState.connected;
-      connectionState.value = SseConnectionState.connected;
-      _reconnectAttempt = 0;
-      logger.d('[USP][SSE]Connected (event: ${event.event})');
-      if (wasDisconnected) {
-        onConnected?.call();
-      }
-    }
-
-    // Skip debug events from UspBridgeClient internal diagnostics
+    // Skip debug events from UspBridgeClient internal diagnostics FIRST —
+    // these are synthetic events emitted before the Fetch returns and must
+    // NOT trigger a connected transition or subscription re-registration.
     if (event.event == '_debug') {
       logger.d('[USP][SSE]debug: ${event.data}');
       return;
+    }
+
+    // Reset heartbeat watchdog on real events only
+    _resetHeartbeatWatchdog();
+
+    // Transition to connected on first real event (heartbeat, notification)
+    if (connectionState.value != SseConnectionState.connected) {
+      connectionState.value = SseConnectionState.connected;
+      _reconnectAttempt = 0;
+      logger.d('[USP][SSE]Connected (event: ${event.event})');
+      onConnected?.call();
     }
 
     // Forward to SseEventRouter via callback
@@ -198,6 +208,12 @@ class SseConnectionManager {
   }
 
   void _handleStreamEnd() {
+    // Guard: _onError and _onDone can both fire for the same stream failure
+    // (e.g. controller.addError() + controller.close() on 429). Only handle
+    // the first call; subsequent calls for the same connection are no-ops.
+    if (_streamEndHandled) return;
+    _streamEndHandled = true;
+
     _heartbeatWatchdog?.cancel();
     _heartbeatWatchdog = null;
 
@@ -239,6 +255,10 @@ class SseConnectionManager {
   void _scheduleReconnect() {
     if (_disposed || _intentionalDisconnect) return;
 
+    // Cancel any existing reconnect timer to prevent timer accumulation.
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+
     _reconnectAttempt++;
 
     if (_reconnectAttempt > _maxRetries) {
@@ -254,7 +274,8 @@ class SseConnectionManager {
     logger.d('[USP][SSE]Reconnecting in ${delay.inSeconds}s '
         '(attempt #$_reconnectAttempt/$_maxRetries)');
 
-    Timer(delay, () {
+    _reconnectTimer = Timer(delay, () {
+      _reconnectTimer = null;
       if (!_disposed && !_intentionalDisconnect && _connectInProgress == null) {
         connect();
       }

@@ -3,12 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 
 import '../models/usp_widget_specs.dart';
+import 'package:privacy_gui/usp_page/admin/cards/usp_device_info_card.dart';
+import 'package:privacy_gui/usp_page/admin/cards/usp_time_settings_card.dart';
+import 'package:privacy_gui/usp_page/devices/cards/usp_connected_devices_card.dart';
+import 'package:privacy_gui/usp_page/firewall/cards/usp_firewall_overview_card.dart';
+import 'package:privacy_gui/usp_page/internet_settings/cards/usp_network_status_card.dart';
+import 'package:privacy_gui/usp_page/local_network/cards/usp_dhcp_reservations_card.dart';
+import 'package:privacy_gui/usp_page/local_network/cards/usp_ethernet_ports_card.dart';
+import 'package:privacy_gui/usp_page/local_network/cards/usp_lan_info_card.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/cards/usp_port_forwarding_card.dart';
+import 'package:privacy_gui/usp_page/topology/cards/usp_network_topology_card.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/cards/usp_wifi_performance_card.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/cards/usp_wifi_status_card.dart';
+
 import '../views/components/_components.dart';
 
 /// Unified USP Dashboard Widget Factory.
 ///
 /// Maps widget IDs to card widgets. All cards are constructed with no
-/// arguments — they read data from [uspDashboardProvider] internally.
+/// arguments — they read data from domain-specific data providers internally.
 class UspWidgetFactory {
   /// Build a card widget by its spec ID.
   Widget? buildWidget(String id) {

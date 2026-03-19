@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_analytics_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/card_tab_state_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_device_analytics_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_analytics_state.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/card_tab_state_provider.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Device Connection Analytics card — 4 chart views via tab selector.

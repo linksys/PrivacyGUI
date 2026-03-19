@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/usp_page/devices/providers/device_filter_state.dart';
 
 /// User-selected filter configuration (UI directly mutates this).
@@ -8,13 +8,13 @@ final deviceFilterConfigProvider = StateProvider<DeviceFilterConfig>(
   (ref) => const DeviceFilterConfig(),
 );
 
-/// Available filter options derived from current dashboard device data.
+/// Available filter options derived from current device data.
 final deviceFilterOptionsProvider = Provider<DeviceFilterOptions>((ref) {
-  final state = ref.watch(uspDashboardProvider).valueOrNull;
-  if (state == null) return const DeviceFilterOptions();
-  final devices = state.deviceModels;
+  final data = ref.watch(devicesDataProvider).valueOrNull;
+  if (data == null) return const DeviceFilterOptions();
+  final devices = data.deviceModels;
   return DeviceFilterOptions(
-    nodes: state.meshTopology.nodes,
+    nodes: data.meshTopology.nodes,
     ssids: devices
         .map((d) => d.ssidName)
         .whereType<String>()
@@ -34,10 +34,10 @@ final deviceFilterOptionsProvider = Provider<DeviceFilterOptions>((ref) {
 
 /// Filtered device list — applies all 4 filter dimensions + search.
 final filteredDeviceListProvider = Provider<List<DeviceUIModel>>((ref) {
-  final state = ref.watch(uspDashboardProvider).valueOrNull;
-  if (state == null) return [];
+  final data = ref.watch(devicesDataProvider).valueOrNull;
+  if (data == null) return [];
   final filter = ref.watch(deviceFilterConfigProvider);
-  return state.deviceModels.where((d) => _matches(d, filter)).toList();
+  return data.deviceModels.where((d) => _matches(d, filter)).toList();
 });
 
 bool _matches(DeviceUIModel device, DeviceFilterConfig filter) {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/usp_page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/usp_page/local_network/providers/usp_local_network_notifier.dart';
 import 'package:privacy_gui/usp_page/local_network/services/usp_local_network_service.dart';
 import 'package:privacy_gui/usp_page/shell/usp_top_bar.dart';
@@ -60,8 +61,8 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
   }
 
   /// Sync controllers when state data arrives or changes.
-  void _syncControllers(UspLocalNetworkState state) {
-    final p = state.pending;
+  void _syncControllers(LocalNetworkFeatureState state) {
+    final p = state.settings.current.model;
     _syncOne(_hostNameController, p.hostName);
     _syncOne(_ipAddressController, p.ipAddress);
     _syncOne(_subnetMaskController, p.subnetMask);
@@ -80,7 +81,8 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
 
   @override
   Widget build(BuildContext context) {
-    final asyncState = ref.watch(uspLocalNetworkProvider);
+    final state = ref.watch(uspLocalNetworkProvider);
+    final status = state.status;
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -92,18 +94,39 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspMenu),
-      onRefresh: () => ref.refresh(uspLocalNetworkProvider.future),
+      onRefresh: () =>
+          ref.read(uspLocalNetworkProvider.notifier).fetch(forceRemote: true),
+      bottomBar: _buildBottomBar(context, ref, state),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncState.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildError(context, ref),
-          data: (state) {
-            _syncControllers(state);
-            return _buildContent(context, ref, state);
-          },
-        );
+        if (status.isLoading) {
+          return const Center(child: AppLoader());
+        }
+        if (status.errorMessage != null) {
+          return _buildError(context, ref);
+        }
+        _syncControllers(state);
+        return _buildContent(context, ref, state);
       },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bottom Bar
+  // ---------------------------------------------------------------------------
+
+  UiKitBottomBarConfig? _buildBottomBar(
+    BuildContext context,
+    WidgetRef ref,
+    LocalNetworkFeatureState state,
+  ) {
+    if (!state.isDirty) return null;
+    return UiKitBottomBarConfig(
+      positiveLabel: 'Save',
+      isPositiveEnabled:
+          !state.status.isSaving && !state.status.hasValidationErrors,
+      onPositiveTap: () => _onSave(context, ref, state),
+      onNegativeTap: () => ref.read(uspLocalNetworkProvider.notifier).revert(),
     );
   }
 
@@ -123,7 +146,9 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
           AppGap.md(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.invalidate(uspLocalNetworkProvider),
+            onTap: () => ref
+                .read(uspLocalNetworkProvider.notifier)
+                .fetch(forceRemote: true),
           ),
         ],
       ),
@@ -137,9 +162,9 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    UspLocalNetworkState state,
+    LocalNetworkFeatureState state,
   ) {
-    final disabled = state.isSaving;
+    final disabled = state.status.isSaving;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,18 +172,6 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         _buildRouterCard(context, state, disabled),
         AppGap.md(),
         _buildDhcpCard(context, state, disabled),
-        if (state.isDirty) ...[
-          AppGap.xl(),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton.primary(
-              label: 'Save',
-              onTap: disabled || state.hasErrors
-                  ? null
-                  : () => _onSave(context, ref, state),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -169,11 +182,11 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
 
   Widget _buildRouterCard(
     BuildContext context,
-    UspLocalNetworkState state,
+    LocalNetworkFeatureState state,
     bool disabled,
   ) {
     final notifier = ref.read(uspLocalNetworkProvider.notifier);
-    final errors = state.errors;
+    final errors = state.status.validationErrors;
 
     return AppCard(
       child: Column(
@@ -218,13 +231,13 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
 
   Widget _buildDhcpCard(
     BuildContext context,
-    UspLocalNetworkState state,
+    LocalNetworkFeatureState state,
     bool disabled,
   ) {
     final notifier = ref.read(uspLocalNetworkProvider.notifier);
     final svc = ref.read(uspLocalNetworkServiceProvider);
-    final pending = state.pending;
-    final errors = state.errors;
+    final pending = state.settings.current.model;
+    final errors = state.status.validationErrors;
 
     // Lock prefix octets based on subnet mask (e.g. /24 → lock first 3)
     final lockedOctets = svc.lockedOctetCount(pending.subnetMask);
@@ -331,7 +344,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
   Future<void> _onSave(
     BuildContext context,
     WidgetRef ref,
-    UspLocalNetworkState state,
+    LocalNetworkFeatureState state,
   ) async {
     // Warn if router IP or subnet changed (may cause disconnection)
     if (state.hasNetworkChange) {

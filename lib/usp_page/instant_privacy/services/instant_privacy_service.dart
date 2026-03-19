@@ -1,19 +1,50 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 
-/// Service provider — stateless, per Constitution Article VI.
 final uspInstantPrivacyServiceProvider = Provider<UspInstantPrivacyService>(
-  (ref) => UspInstantPrivacyService(),
+  (ref) => UspInstantPrivacyService(ref.read(uspServiceProvider)!),
 );
 
-/// Stateless transformation service for Instant Privacy.
+/// Opaque wrapper around MAC filter AP data.
 ///
-/// Converts codegen data models to UI models and builds update descriptors
-/// for MAC filter operations. Contains zero network calls — all USP I/O
-/// is performed by [UspInstantPrivacyNotifier].
+/// Notifiers and state hold this without knowing the inner codegen type.
+/// Only [UspInstantPrivacyService] can create and consume it.
+class MacFilterContext extends Equatable {
+  final MacFilterAccessPoints _data;
+  const MacFilterContext._(this._data);
+
+  /// Empty context for initial state.
+  static const empty = MacFilterContext._(MacFilterAccessPoints(items: []));
+
+  @override
+  List<Object?> get props => [_data.items.length];
+}
+
+/// Fetch result returned by [UspInstantPrivacyService.fetchAll].
+class InstantPrivacyFetchResult {
+  final bool isEnabled;
+  final List<InstantPrivacyDeviceUIModel> connectedDevices;
+  final List<InstantPrivacyDeviceUIModel> allowedDevices;
+  final MacFilterContext macFilterContext;
+
+  const InstantPrivacyFetchResult({
+    required this.isEnabled,
+    required this.connectedDevices,
+    required this.allowedDevices,
+    required this.macFilterContext,
+  });
+}
+
+/// Service layer for Instant Privacy — encapsulates codegen CRUD + transform.
 class UspInstantPrivacyService {
+  final UspService _usp;
+
+  UspInstantPrivacyService(this._usp);
   static final _macRegExp = RegExp(
     r'^([0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}$',
   );
@@ -126,14 +157,74 @@ class UspInstantPrivacyService {
   }
 
   // ---------------------------------------------------------------------------
+  // High-level CRUD (for Notifier consumption)
+  // ---------------------------------------------------------------------------
+
+  /// Fetch all data needed for Instant Privacy and return UI-safe result.
+  Future<InstantPrivacyFetchResult> fetchAll() async {
+    final results = await Future.wait([
+      ConnectedDevices.fetch(_usp),
+      MacFilterAccessPoints.fetch(_usp),
+    ]);
+
+    final devices = results[0] as ConnectedDevices;
+    final macAps = results[1] as MacFilterAccessPoints;
+
+    final active = activeDevices(devices);
+
+    // Build a MAC → hostname lookup from all known hosts (active + inactive)
+    final hostnameByMac = {
+      for (final d in devices.items)
+        if (d.macAddress.isNotEmpty)
+          normalizeMac(d.macAddress):
+              d.hostName.isNotEmpty ? d.hostName : normalizeMac(d.macAddress),
+    };
+
+    final allowed = allowedDevices(macAps).map((d) {
+      final name = hostnameByMac[d.mac] ?? 'Unknown Device';
+      return name == d.displayName
+          ? d
+          : InstantPrivacyDeviceUIModel(mac: d.mac, displayName: name);
+    }).toList();
+
+    return InstantPrivacyFetchResult(
+      isEnabled: isEnabled(macAps),
+      connectedDevices: active,
+      allowedDevices: allowed,
+      macFilterContext: MacFilterContext._(macAps),
+    );
+  }
+
+  /// Enable MAC filtering on all APs with the given MAC whitelist.
+  Future<void> enable(List<String> macs, MacFilterContext ctx) async {
+    final updates = buildEnableUpdates(macs, ctx._data);
+    await MacFilterAccessPoints.updateMany(_usp, updates);
+  }
+
+  /// Disable MAC filtering on all APs.
+  Future<void> disable(MacFilterContext ctx) async {
+    final updates = buildDisableUpdates(ctx._data);
+    await MacFilterAccessPoints.updateMany(_usp, updates);
+  }
+
+  /// Add a MAC address to the allowed list across all APs.
+  /// Returns true if the MAC was added, false if already present.
+  Future<bool> addMac(String mac, MacFilterContext ctx) async {
+    final updates = buildAddMacUpdates(mac, ctx._data);
+    if (updates.isEmpty) return false;
+    await MacFilterAccessPoints.updateMany(_usp, updates);
+    return true;
+  }
+
+  // ---------------------------------------------------------------------------
   // MAC address utilities
   // ---------------------------------------------------------------------------
 
   /// Returns true if [mac] matches colon-separated or hyphen-separated hex format.
-  bool validateMac(String mac) => _macRegExp.hasMatch(mac.trim());
+  static bool validateMac(String mac) => _macRegExp.hasMatch(mac.trim());
 
   /// Converts [mac] to uppercase colon-separated canonical form.
   /// Precondition: [mac] passes [validateMac].
-  String normalizeMac(String mac) =>
+  static String normalizeMac(String mac) =>
       mac.trim().toUpperCase().replaceAll('-', ':');
 }

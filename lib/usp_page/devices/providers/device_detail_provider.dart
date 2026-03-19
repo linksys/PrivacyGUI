@@ -1,19 +1,21 @@
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/dhcp_data_provider.dart';
 
 /// Looks up a single device + its DHCP reservation by MAC address.
 final uspDeviceDetailProvider =
     Provider.family<DeviceDetailState, String>((ref, mac) {
-  final state = ref.watch(uspDashboardProvider).valueOrNull;
-  if (state == null) return DeviceDetailState.empty();
-  final device = state.deviceModels.firstWhereOrNull(
+  final data = ref.watch(devicesDataProvider).valueOrNull;
+  if (data == null) return DeviceDetailState.empty();
+  final device = data.deviceModels.firstWhereOrNull(
     (d) => d.mac.toUpperCase() == mac.toUpperCase(),
   );
-  final reservation = state.dhcpReservationModels.firstWhereOrNull(
+  final dhcpData = ref.watch(dhcpDataProvider).valueOrNull;
+  final reservation = dhcpData?.reservationModels.firstWhereOrNull(
     (r) => r.mac.toUpperCase() == mac.toUpperCase(),
   );
   return DeviceDetailState(device: device, reservation: reservation);

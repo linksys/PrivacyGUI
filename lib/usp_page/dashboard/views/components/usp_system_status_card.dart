@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/transforms.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/system_info_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/system_monitor_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/card_tab_state_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_traffic_analysis_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
+import 'package:privacy_gui/usp_page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/usp_page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/system_monitor_state.dart';
+import 'package:privacy_gui/usp_page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/card_tab_state_provider.dart';
+import 'package:privacy_gui/usp_page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_system_monitor_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_info_row.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// System Performance Dashboard — 4-tab card (F-021).
@@ -44,8 +45,8 @@ class _UspSystemStatusCardState extends ConsumerState<UspSystemStatusCard> {
 
   @override
   Widget build(BuildContext context) {
-    final info = ref.watch(uspDashboardProvider).valueOrNull?.systemInfoModel;
-    if (info == null) return const SizedBox.shrink();
+    final info = ref.watch(systemInfoDataProvider).valueOrNull?.model;
+    if (info == null) return const CardSkeleton.chart();
     final monitorState = ref.watch(uspSystemMonitorProvider);
     final selectedTab = ref.watch(cardTabIndexProvider(_cardId));
     final colorScheme = Theme.of(context).colorScheme;
@@ -152,10 +153,10 @@ class _MonitorView extends StatelessWidget {
     final cpuPercent = latest?.cpuPercent ?? info.cpuPercent;
     final memPercent = latest?.memoryPercent ?? info.memoryPercent;
     final memUsedStr = latest != null
-        ? Transforms.formatBytes(latest.usedMemoryKb * 1024)
+        ? UspFormatters.formatBytes(latest.usedMemoryKb * 1024)
         : info.formattedUsedMemory;
     final memTotalStr = latest != null
-        ? Transforms.formatBytes(latest.totalMemoryKb * 1024)
+        ? UspFormatters.formatBytes(latest.totalMemoryKb * 1024)
         : info.formattedTotalMemory;
 
     final intervalLabel = _UspSystemStatusCardState._intervalOptions

@@ -1,5 +1,5 @@
-import 'package:privacy_gui/providers/feature_state.dart';
-import 'package:privacy_gui/providers/preservable.dart';
+import 'package:privacy_gui/usp_page/_framework/feature_state.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_settings_status.dart';
 

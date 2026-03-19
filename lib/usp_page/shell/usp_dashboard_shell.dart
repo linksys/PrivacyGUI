@@ -9,7 +9,7 @@ import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_bars_visible_provider.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_bars_visible_provider.dart';
 
 /// Riverpod provider for the USP-specific [MenuController].
 ///

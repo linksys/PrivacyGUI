@@ -1,8 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/lan_network_info.g.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/usp_page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/usp_page/instant_safety/services/instant_safety_service.dart';
 
@@ -11,9 +9,6 @@ import 'package:privacy_gui/usp_page/instant_safety/services/instant_safety_serv
 // ---------------------------------------------------------------------------
 
 class UspInstantSafetyState extends Equatable {
-  /// Raw codegen data (for save operations).
-  final LanNetworkInfo raw;
-
   /// Presentation Layer UI Model (for views).
   final SafeBrowsingUIModel uiModel;
 
@@ -24,7 +19,6 @@ class UspInstantSafetyState extends Equatable {
   final bool isSaving;
 
   const UspInstantSafetyState({
-    required this.raw,
     required this.uiModel,
     required this.pendingType,
     this.isSaving = false,
@@ -34,13 +28,11 @@ class UspInstantSafetyState extends Equatable {
   bool get isEnabled => pendingType != SafeBrowsingType.off;
 
   UspInstantSafetyState copyWith({
-    LanNetworkInfo? raw,
     SafeBrowsingUIModel? uiModel,
     SafeBrowsingType? pendingType,
     bool? isSaving,
   }) {
     return UspInstantSafetyState(
-      raw: raw ?? this.raw,
       uiModel: uiModel ?? this.uiModel,
       pendingType: pendingType ?? this.pendingType,
       isSaving: isSaving ?? this.isSaving,
@@ -67,18 +59,12 @@ final uspInstantSafetyProvider =
 class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
   @override
   Future<UspInstantSafetyState> build() async {
-    final usp = ref.watch(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-
-    final data = await LanNetworkInfo.fetch(usp);
     final svc = ref.read(uspInstantSafetyServiceProvider);
-    final uiModel = svc.buildUIModel(data);
+    final uiModel = await svc.fetch();
 
-    logger.d('[USP][Safety]Instant Safety fetched — '
-        'dns: ${data.dnsServers}, type: ${uiModel.type}');
+    logger.d('[USP][Safety]Instant Safety fetched — type: ${uiModel.type}');
 
     return UspInstantSafetyState(
-      raw: data,
       uiModel: uiModel,
       pendingType: uiModel.type,
     );
@@ -99,12 +85,9 @@ class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
 
     state = AsyncData(s.copyWith(isSaving: true));
     try {
-      final usp = ref.read(uspServiceProvider)!;
       final svc = ref.read(uspInstantSafetyServiceProvider);
-      final dnsValue = svc.dnsValueForType(s.pendingType);
-
-      await LanNetworkInfo.save(usp, dnsServers: dnsValue);
-      logger.d('[USP][Safety]Instant Safety saved — dns: $dnsValue');
+      await svc.save(s.pendingType);
+      logger.d('[USP][Safety]Instant Safety saved — type: ${s.pendingType}');
 
       // Re-fetch to confirm the change took effect.
       ref.invalidateSelf();

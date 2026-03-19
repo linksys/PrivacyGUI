@@ -1,18 +1,61 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/local_network/models/local_network_ui_model.dart';
 import 'package:privacy_gui/utils.dart';
 
 final uspLocalNetworkServiceProvider = Provider<UspLocalNetworkService>(
-  (ref) => UspLocalNetworkService(),
+  (ref) => UspLocalNetworkService(ref.read(uspServiceProvider)!),
 );
 
-/// Stateless service: codegen ↔ UI model transform + cascade validation.
+/// Service layer for Local Network — encapsulates codegen CRUD + transform + validation.
 ///
 /// Uses [NetworkUtils] from `lib/utils.dart` for IP calculations.
 class UspLocalNetworkService {
+  final UspService _usp;
+
+  UspLocalNetworkService(this._usp);
+
   static final _hostNameRegex =
       RegExp(r'^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$');
+
+  // ─── CRUD ──────────────────────────────────────────────────
+
+  /// Save changed LAN settings. Only sends fields that differ from original.
+  Future<void> save({
+    required LocalNetworkUIModel original,
+    required LocalNetworkUIModel pending,
+  }) async {
+    await LanNetworkInfo.save(
+      _usp,
+      ipAddress:
+          original.ipAddress != pending.ipAddress ? pending.ipAddress : null,
+      subnetMask:
+          original.subnetMask != pending.subnetMask ? pending.subnetMask : null,
+      hostName: original.hostName != pending.hostName ? pending.hostName : null,
+      dhcpEnabled: original.dhcpEnabled != pending.dhcpEnabled
+          ? pending.dhcpEnabled
+          : null,
+      minAddress:
+          original.minAddress != pending.minAddress ? pending.minAddress : null,
+      maxAddress:
+          original.maxAddress != pending.maxAddress ? pending.maxAddress : null,
+      leaseTime: original.leaseTimeMinutes != pending.leaseTimeMinutes
+          ? pending.leaseTimeMinutes * 60
+          : null,
+      dnsServers: _dnsChanged(original, pending)
+          ? joinDnsServers(
+              pending.dnsServer1, pending.dnsServer2, pending.dnsServer3)
+          : null,
+    );
+  }
+
+  static bool _dnsChanged(LocalNetworkUIModel o, LocalNetworkUIModel p) {
+    return o.dnsServer1 != p.dnsServer1 ||
+        o.dnsServer2 != p.dnsServer2 ||
+        o.dnsServer3 != p.dnsServer3;
+  }
 
   // ─── Transform ──────────────────────────────────────────────
 

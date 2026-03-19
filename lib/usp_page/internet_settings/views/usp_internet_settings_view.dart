@@ -4,9 +4,9 @@ import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_form_validator.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
-import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_state.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/components/usp_connection_status_banner.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/sections/usp_ipv4_section.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/sections/usp_ipv6_section.dart';
@@ -31,35 +31,37 @@ class UspInternetSettingsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(uspInternetSettingsProvider);
+    final state = ref.watch(uspInternetSettingsProvider);
 
     return UiKitPageView.withSliver(
       scrollable: true,
       title: loc(context).internetSettings,
-      onRefresh: () => ref.refresh(uspInternetSettingsProvider.future),
-      bottomBar: _buildBottomBar(context, ref, asyncState),
+      onRefresh: () => ref.read(uspInternetSettingsProvider.notifier).fetch(),
+      bottomBar: _buildBottomBar(context, ref, state),
       child: (childContext, constraints) {
-        return asyncState.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (error, stack) => _buildError(childContext, ref, error),
-          data: (state) => _buildContent(childContext, ref, state),
-        );
+        if (state.status.isLoading) {
+          return const Center(child: AppLoader());
+        }
+        if (state.status.errorMessage != null) {
+          return _buildError(childContext, ref, state.status.errorMessage!);
+        }
+        return _buildContent(childContext, ref, state);
       },
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
+  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AppText.bodyLarge(loc(context).failedToLoadSettings),
           AppGap.md(),
-          AppText.bodyMedium(error.toString()),
+          AppText.bodyMedium(error),
           AppGap.xl(),
           AppButton.primary(
             label: loc(context).retry,
-            onTap: () => ref.invalidate(uspInternetSettingsProvider),
+            onTap: () => ref.read(uspInternetSettingsProvider.notifier).fetch(),
           ),
         ],
       ),
@@ -69,7 +71,7 @@ class UspInternetSettingsView extends ConsumerWidget {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    UspInternetSettingsState state,
+    InternetSettingsFeatureState state,
   ) {
     final isEditing = state.isEditing;
     final notifier = ref.read(uspInternetSettingsProvider.notifier);
@@ -82,7 +84,7 @@ class UspInternetSettingsView extends ConsumerWidget {
 
   Widget _buildMobileLayout(
     BuildContext context,
-    UspInternetSettingsState state,
+    InternetSettingsFeatureState state,
     bool isEditing,
     dynamic notifier,
   ) {
@@ -122,7 +124,7 @@ class UspInternetSettingsView extends ConsumerWidget {
 
   Widget _buildDesktopLayout(
     BuildContext context,
-    UspInternetSettingsState state,
+    InternetSettingsFeatureState state,
     bool isEditing,
     dynamic notifier,
   ) {
@@ -176,17 +178,16 @@ class UspInternetSettingsView extends ConsumerWidget {
   UiKitBottomBarConfig? _buildBottomBar(
     BuildContext context,
     WidgetRef ref,
-    AsyncValue<UspInternetSettingsState> asyncState,
+    InternetSettingsFeatureState state,
   ) {
-    final state = asyncState.valueOrNull;
-    if (state == null || !state.isEditing) return null;
+    if (state.status.isLoading || !state.isEditing) return null;
 
     final isValid = ref.watch(uspInternetFormValidProvider);
-    final isLoading = ref.watch(uspInternetMutationLoadingProvider) == 'save';
+    final isSaving = state.status.activeMutation == 'save';
 
     return UiKitBottomBarConfig(
       positiveLabel: loc(context).save,
-      isPositiveEnabled: state.isDirty && isValid && !isLoading,
+      isPositiveEnabled: state.isDirty && isValid && !isSaving,
       onPositiveTap: () => _save(context, ref),
       onNegativeTap: () =>
           ref.read(uspInternetSettingsProvider.notifier).exitEditMode(),
@@ -194,7 +195,6 @@ class UspInternetSettingsView extends ConsumerWidget {
   }
 
   Future<void> _save(BuildContext context, WidgetRef ref) async {
-    ref.read(uspInternetMutationLoadingProvider.notifier).state = 'save';
     try {
       await doSomethingWithSpinner(
         context,
@@ -207,8 +207,6 @@ class UspInternetSettingsView extends ConsumerWidget {
       if (context.mounted) {
         showFailedSnackBar(context, '$e');
       }
-    } finally {
-      ref.read(uspInternetMutationLoadingProvider.notifier).state = null;
     }
   }
 }

@@ -3,12 +3,17 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_quick_setup_network.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_settings_settings.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/usp_page/wifi_settings/services/wifi_channel_bonding.dart';
 
-final uspWifiSettingsServiceProvider =
-    Provider<UspWifiSettingsService>((_) => UspWifiSettingsService());
+final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
+  (ref) => UspWifiSettingsService(ref.read(uspServiceProvider)!),
+);
 
 /// Stateless service for transforming raw USP WiFi data into [WifiNetworkUIModel] list.
 ///
@@ -21,6 +26,10 @@ final uspWifiSettingsServiceProvider =
 ///   SSID.lowerLayers  → Radio instance path
 ///   AccessPoint.ssidReference → SSID instance path
 class UspWifiSettingsService {
+  final UspService _usp;
+
+  UspWifiSettingsService(this._usp);
+
   /// Builds a list of [WifiNetworkUIModel], one per SSID instance.
   ///
   /// Ordering follows the SSID instance ID sort (numeric), which matches
@@ -172,6 +181,155 @@ class UspWifiSettingsService {
           .map((n) => n.accessPointInstancePath!)
           .toList(),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Save — Quick Setup
+  // ---------------------------------------------------------------------------
+
+  /// Saves WiFi settings in Quick Setup mode.
+  Future<void> saveQuickSetup({
+    required WifiSettingsSettings current,
+    required WifiSettingsStatus status,
+  }) async {
+    for (final pending in [current.quickSetupMain, current.quickSetupGuest]) {
+      if (pending == null || !pending.isValid) continue;
+
+      final aggregate = pending.isGuest
+          ? status.quickSetupGuestAggregate
+          : status.quickSetupMainAggregate;
+      if (aggregate == null) continue;
+
+      if (aggregate.ssidInstancePaths.isNotEmpty) {
+        await WiFiSsids.updateMany(
+          _usp,
+          aggregate.ssidInstancePaths
+              .map((p) => WiFiSsidUpdate(
+                    instancePath: p,
+                    ssid: pending.ssid,
+                    enable: pending.enabled,
+                  ))
+              .toList(),
+        );
+      }
+      if (aggregate.apInstancePaths.isNotEmpty) {
+        // Build a band lookup: AP instance path → band string.
+        // Used to apply the 6 GHz security override (Wi-Fi 6E mandates WPA3).
+        final bandByApPath = <String, String>{};
+        for (final n in current.networks) {
+          if (n.accessPointInstancePath != null) {
+            bandByApPath[n.accessPointInstancePath!] = n.band;
+          }
+        }
+
+        await WiFiAccessPoints.updateMany(
+          _usp,
+          aggregate.apInstancePaths.map((p) {
+            final band = bandByApPath[p] ?? '';
+            final securityMode = _securityModeFor6GHz(
+              band: band,
+              selectedMode: pending.securityMode,
+            );
+            return WiFiAccessPointUpdate(
+              instancePath: p,
+              keyPassphrase: pending.password,
+              securityModeEnabled: securityMode,
+            );
+          }).toList(),
+        );
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Save — Advanced
+  // ---------------------------------------------------------------------------
+
+  /// Saves WiFi settings in Advanced mode (per-network).
+  Future<void> saveAdvanced({
+    required List<WifiNetworkUIModel> original,
+    required List<WifiNetworkUIModel> current,
+  }) async {
+    for (var i = 0; i < current.length; i++) {
+      final curr = current[i];
+      final orig = original.length > i ? original[i] : null;
+
+      // Skip unchanged networks.
+      if (orig != null && orig == curr) continue;
+
+      // ── SSID layer ─────────────────────────────────────────────────────
+      if (orig == null ||
+          orig.enabled != curr.enabled ||
+          orig.ssid != curr.ssid) {
+        await WiFiSsids.update(
+          _usp,
+          WiFiSsidUpdate(
+            instancePath: curr.ssidInstancePath,
+            enable: curr.enabled,
+            ssid: curr.ssid,
+          ),
+        );
+      }
+
+      // ── AccessPoint layer ───────────────────────────────────────────────
+      final ap = curr.accessPointInstancePath;
+      if (ap != null &&
+          (orig == null ||
+              orig.keyPassphrase != curr.keyPassphrase ||
+              orig.securityMode != curr.securityMode ||
+              orig.ssidAdvertisementEnabled != curr.ssidAdvertisementEnabled)) {
+        await WiFiAccessPoints.update(
+          _usp,
+          WiFiAccessPointUpdate(
+            instancePath: ap,
+            keyPassphrase:
+                curr.keyPassphrase.isNotEmpty ? curr.keyPassphrase : null,
+            securityModeEnabled:
+                curr.securityMode.isNotEmpty ? curr.securityMode : null,
+            ssidAdvertisementEnabled: curr.ssidAdvertisementEnabled,
+          ),
+        );
+      }
+
+      // ── Radio layer ─────────────────────────────────────────────────────
+      final radio = curr.radioInstancePath;
+      if (radio != null &&
+          (orig == null ||
+              orig.operatingStandards != curr.operatingStandards ||
+              orig.channelBandwidth != curr.channelBandwidth ||
+              orig.channel != curr.channel ||
+              orig.autoChannelEnable != curr.autoChannelEnable)) {
+        await WiFiRadios.update(
+          _usp,
+          WiFiRadioUpdate(
+            instancePath: radio,
+            operatingStandards: curr.operatingStandards.isNotEmpty
+                ? curr.operatingStandards
+                : null,
+            operatingChannelBandwidth:
+                curr.channelBandwidth.isNotEmpty ? curr.channelBandwidth : null,
+            autoChannelEnable: curr.autoChannelEnable,
+            channel: curr.autoChannelEnable ? null : curr.channel,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Returns the effective security mode to apply to a given band.
+  ///
+  /// 6 GHz (Wi-Fi 6E) mandates WPA3:
+  ///   - Open / Enhanced-Open selected → send "Enhanced-Open"
+  ///   - Any other mode               → send "WPA3-Personal"
+  ///
+  /// All other bands: return [selectedMode] unchanged.
+  String _securityModeFor6GHz({
+    required String band,
+    required String selectedMode,
+  }) {
+    if (!band.contains('6')) return selectedMode;
+    const openModes = {'None', 'Enhanced-Open', ''};
+    return openModes.contains(selectedMode) ? 'Enhanced-Open' : 'WPA3-Personal';
   }
 }
 

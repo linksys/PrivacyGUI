@@ -8,17 +8,30 @@ import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/usp_page/dashboard/models/usp_widget_specs.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/usp_page/dashboard/providers/usp_layout_preferences_provider.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/pdf_report_data.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_device_analytics_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_system_monitor_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_traffic_analysis_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/services/usp_pdf_service.dart';
+import 'package:privacy_gui/usp_page/_shared/models/pdf_report_data.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_device_analytics_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_system_monitor_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/services/usp_pdf_service.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/components/settings/usp_layout_settings_panel.dart';
 import 'package:privacy_gui/usp_page/dashboard/views/dialogs/preset_selection_dialog.dart';
+import 'package:privacy_gui/usp_page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/usp_page/dmz/services/usp_dmz_service.dart';
+import 'package:privacy_gui/usp_page/admin/providers/time_data_provider.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/dhcp_data_provider.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/lan_data_provider.dart';
+import 'package:privacy_gui/usp_page/firewall/models/firewall_ui_model.dart';
+import 'package:privacy_gui/usp_page/firewall/providers/firewall_data_provider.dart';
+import 'package:privacy_gui/usp_page/admin/providers/system_info_data_provider.dart';
+import 'package:privacy_gui/usp_page/internet_settings/providers/wan_data_provider.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_forwarding_data_provider.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/port_triggering_data_provider.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/ethernet_data_provider.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:privacy_gui/usp_page/firewall/services/usp_firewall_service.dart';
 import 'package:privacy_gui/usp_page/instant_safety/providers/instant_safety_provider.dart';
@@ -106,11 +119,17 @@ class _UspSliverDashboardViewState
     }
   }
 
-  void _enterEditMode() {
+  void _enterEditMode() async {
+    // Ensure preferences have been loaded from SharedPreferences before
+    // capturing the snapshot. Without this, the snapshot may capture the
+    // default state (preset = null) if _loadFromPrefs hasn't completed yet.
+    await ref.read(uspLayoutPreferencesProvider.notifier).initialized;
+
     final controller = ref.read(uspSliverDashboardControllerProvider);
     _initialLayoutSnapshot = controller.exportLayout();
     _initialPrefsSnapshot = ref.read(uspLayoutPreferencesProvider);
 
+    if (!mounted) return;
     setState(() {
       _isEditMode = true;
     });
@@ -220,30 +239,70 @@ class _UspSliverDashboardViewState
               AppIconButton(
                 icon: AppIcon.font(Icons.print),
                 onTap: () async {
-                  final state = ref.read(uspDashboardProvider).valueOrNull;
-                  if (state == null) return;
+                  final orchState =
+                      ref.read(dashboardOrchestratorProvider).valueOrNull;
+                  if (orchState == null) return;
 
                   // Ensure polling providers have data before generating PDF.
                   await _ensurePollingData();
 
                   if (!context.mounted) return;
 
-                  final fwSvc = UspFirewallService();
-                  final dmzSvc = UspDmzService();
+                  final dmzSvc = ref.read(uspDmzServiceProvider);
+                  final fwData = ref.read(firewallDataProvider).valueOrNull;
                   final reportData = PdfReportData(
-                    dashboard: state,
+                    ethernetPortModels: ref
+                        .read(ethernetDataProvider)
+                        .valueOrNull
+                        ?.ethernetPortModels,
                     trafficAnalysis: ref.read(uspTrafficAnalysisProvider),
                     deviceAnalytics: ref.read(uspDeviceAnalyticsProvider),
                     systemMonitor: ref.read(uspSystemMonitorProvider),
-                    firewallSettings: fwSvc.buildUIModel(
-                        rules: fwSvc.parseFirewallRules(state.firewallRules)),
-                    dmzSettings: dmzSvc.buildUIModel(state.dmzEntries),
-                    staticRoutes:
-                        ref.read(uspStaticRoutingProvider).valueOrNull?.routes,
-                    ipv6PortRules:
-                        ref.read(uspIpv6PortServiceProvider).valueOrNull?.rules,
+                    firewallSettings: fwData != null
+                        ? UspFirewallService.buildUIModel(
+                            rules: UspFirewallService.parseFirewallRules(
+                                fwData.chainRules))
+                        : const FirewallUIModel(),
+                    dmzSettings: fwData != null
+                        ? dmzSvc.buildUIModel(fwData.dmzEntries)
+                        : const DmzUIModel.disabled(),
+                    staticRoutes: ref
+                        .read(uspStaticRoutingProvider)
+                        .settings
+                        .current
+                        .routes,
+                    ipv6PortRules: ref
+                        .read(uspIpv6PortServiceProvider)
+                        .settings
+                        .current
+                        .rules,
                     safeBrowsing:
                         ref.read(uspInstantSafetyProvider).valueOrNull?.uiModel,
+                    lanInfo: ref.read(lanDataProvider).valueOrNull?.model,
+                    timeSettings: ref.read(timeDataProvider).valueOrNull?.model,
+                    dhcpClients:
+                        ref.read(dhcpDataProvider).valueOrNull?.clientModels,
+                    dhcpReservations: ref
+                        .read(dhcpDataProvider)
+                        .valueOrNull
+                        ?.reservationModels,
+                    portForwardingRules: ref
+                        .read(portForwardingDataProvider)
+                        .valueOrNull
+                        ?.ruleModels,
+                    portTriggeringRules: ref
+                        .read(portTriggeringDataProvider)
+                        .valueOrNull
+                        ?.ruleModels,
+                    wanStatus: ref.read(wanDataProvider).valueOrNull?.model,
+                    systemInfo:
+                        ref.read(systemInfoDataProvider).valueOrNull?.model,
+                    radioModels:
+                        ref.read(wifiDataProvider).valueOrNull?.radioModels,
+                    deviceModels:
+                        ref.read(devicesDataProvider).valueOrNull?.deviceModels,
+                    nodeModels:
+                        ref.read(devicesDataProvider).valueOrNull?.nodeModels,
                   );
                   doSomethingWithSpinner(
                     context,
@@ -254,7 +313,9 @@ class _UspSliverDashboardViewState
               AppGap.sm(),
               AppIconButton(
                 icon: AppIcon.font(Icons.refresh),
-                onTap: () => ref.invalidate(uspDashboardProvider),
+                onTap: () => ref
+                    .read(dashboardOrchestratorProvider.notifier)
+                    .refreshAll(),
               ),
               AppGap.sm(),
               AppIconButton(

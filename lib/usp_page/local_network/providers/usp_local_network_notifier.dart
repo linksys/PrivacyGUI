@@ -1,69 +1,29 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/lan_network_info.g.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_contract.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/usp_page/local_network/models/local_network_feature_state.dart';
+import 'package:privacy_gui/usp_page/local_network/models/local_network_settings.dart';
+import 'package:privacy_gui/usp_page/local_network/models/local_network_status.dart';
 import 'package:privacy_gui/usp_page/local_network/models/local_network_ui_model.dart';
+import 'package:privacy_gui/usp_page/local_network/providers/lan_data_provider.dart';
 import 'package:privacy_gui/usp_page/local_network/services/usp_local_network_service.dart';
 
 // ---------------------------------------------------------------------------
-// State
+// Providers
 // ---------------------------------------------------------------------------
 
-class UspLocalNetworkState extends Equatable {
-  /// Original UI model (from last fetch).
-  final LocalNetworkUIModel original;
-
-  /// User's pending changes — may differ from [original] before save.
-  final LocalNetworkUIModel pending;
-
-  /// Whether a save operation is in progress.
-  final bool isSaving;
-
-  /// Per-field validation errors (field key → error message).
-  /// null value = no error for that field.
-  final Map<String, String?> errors;
-
-  const UspLocalNetworkState({
-    required this.original,
-    required this.pending,
-    this.isSaving = false,
-    this.errors = const {},
-  });
-
-  bool get isDirty => original != pending;
-  bool get hasErrors => errors.values.any((e) => e != null);
-
-  /// True when router IP or subnet mask changed — save needs confirmation.
-  bool get hasNetworkChange =>
-      original.ipAddress != pending.ipAddress ||
-      original.subnetMask != pending.subnetMask;
-
-  UspLocalNetworkState copyWith({
-    LocalNetworkUIModel? original,
-    LocalNetworkUIModel? pending,
-    bool? isSaving,
-    Map<String, String?>? errors,
-  }) {
-    return UspLocalNetworkState(
-      original: original ?? this.original,
-      pending: pending ?? this.pending,
-      isSaving: isSaving ?? this.isSaving,
-      errors: errors ?? this.errors,
-    );
-  }
-
-  @override
-  List<Object?> get props => [original, pending, isSaving, errors];
-}
-
-// ---------------------------------------------------------------------------
-// Provider
-// ---------------------------------------------------------------------------
-
-final uspLocalNetworkProvider = AsyncNotifierProvider.autoDispose<
-    UspLocalNetworkNotifier, UspLocalNetworkState>(
+final uspLocalNetworkProvider = AutoDisposeNotifierProvider<
+    UspLocalNetworkNotifier, LocalNetworkFeatureState>(
   UspLocalNetworkNotifier.new,
+);
+
+/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
+/// dirty-check integration.
+final preservableUspLocalNetworkProvider = AutoDisposeProvider<
+    PreservableContract<LocalNetworkSettings, LocalNetworkStatus>>(
+  (ref) => ref.watch(uspLocalNetworkProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------
@@ -71,116 +31,131 @@ final uspLocalNetworkProvider = AsyncNotifierProvider.autoDispose<
 // ---------------------------------------------------------------------------
 
 class UspLocalNetworkNotifier
-    extends AutoDisposeAsyncNotifier<UspLocalNetworkState> {
+    extends AutoDisposeNotifier<LocalNetworkFeatureState>
+    with
+        PreservableAutoDisposeNotifierMixin<LocalNetworkSettings,
+            LocalNetworkStatus, LocalNetworkFeatureState> {
+  UspLocalNetworkService get _svc => ref.read(uspLocalNetworkServiceProvider);
+
   @override
-  Future<UspLocalNetworkState> build() async {
-    final usp = ref.watch(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+  LocalNetworkFeatureState build() {
+    // LAN data provider has no SSE invalidation domain,
+    // so no SSE listener needed here.
 
-    final data = await LanNetworkInfo.fetch(usp);
-    final svc = ref.read(uspLocalNetworkServiceProvider);
-    final uiModel = svc.buildUIModel(data);
+    // Synchronous build with loading state; async fetch follows immediately.
+    Future.microtask(() => fetch());
+    return LocalNetworkFeatureState.initial();
+  }
 
-    logger.d('[USP][Network][LAN]LocalNetwork fetched — '
-        'ip: ${uiModel.ipAddress}, '
-        'dhcp: ${uiModel.dhcpEnabled}, '
-        'pool: ${uiModel.minAddress}-${uiModel.maxAddress}');
+  // ---------------------------------------------------------------------------
+  // performFetch — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
 
-    return UspLocalNetworkState(
-      original: uiModel,
-      pending: uiModel,
+  @override
+  Future<(LocalNetworkSettings?, LocalNetworkStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) async {
+    try {
+      // Clone data from the shared data provider (read, not watch).
+      final data = await ref.read(lanDataProvider.future);
+      final uiModel = _svc.buildUIModel(data.raw);
+
+      logger.d('[USP][Network][LAN] Fetched — '
+          'ip: ${uiModel.ipAddress}, '
+          'dhcp: ${uiModel.dhcpEnabled}, '
+          'pool: ${uiModel.minAddress}-${uiModel.maxAddress}');
+
+      return (
+        LocalNetworkSettings(model: uiModel),
+        const LocalNetworkStatus(isLoading: false),
+      );
+    } catch (e) {
+      logger.e('[USP][Network][LAN] Fetch failed', error: e);
+      return (
+        null,
+        LocalNetworkStatus(isLoading: false, errorMessage: '$e'),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // performSave — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> performSave() async {
+    state = state.copyWith(
+      status: state.status.copyWith(isSaving: true),
+    );
+
+    try {
+      final o = state.settings.original.model;
+      final p = state.settings.current.model;
+
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.save(original: o, pending: p);
+        logger.d('[USP][Network][LAN] Saved');
+      });
+
+      // Force data provider to re-fetch so dashboard card updates too.
+      ref.invalidate(lanDataProvider);
+    } catch (e) {
+      logger.e('[USP][Network][LAN] Save failed', error: e);
+      rethrow;
+    } finally {
+      state = state.copyWith(
+        status: state.status.copyWith(isSaving: false),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // revert — override to also clear validation errors
+  // ---------------------------------------------------------------------------
+
+  @override
+  void revert() {
+    state = state.copyWith(
+      settings: state.settings.copyWith(current: state.settings.original),
+      status: state.status.copyWith(validationErrors: const {}),
     );
   }
 
-  /// Update a single setting synchronously + trigger cascade validation.
+  // ---------------------------------------------------------------------------
+  // UI Mutation (synchronous — no network call)
+  // ---------------------------------------------------------------------------
+
+  /// Update a single setting + trigger cascade validation.
   ///
   /// When router IP changes, locked-prefix octets of pool IPs are
   /// automatically synced so the user doesn't have to retype them.
   void updateSetting(
       LocalNetworkUIModel Function(LocalNetworkUIModel) updater) {
-    final s = state.valueOrNull;
-    if (s == null) return;
-
-    var newPending = updater(s.pending);
-    final svc = ref.read(uspLocalNetworkServiceProvider);
+    final current = state.settings.current;
+    var newModel = updater(current.model);
 
     // Auto-sync pool prefix when router IP changes
-    if (newPending.ipAddress != s.pending.ipAddress &&
-        newPending.subnetMask.isNotEmpty) {
-      final locked = svc.lockedOctetCount(newPending.subnetMask);
+    if (newModel.ipAddress != current.model.ipAddress &&
+        newModel.subnetMask.isNotEmpty) {
+      final locked = _svc.lockedOctetCount(newModel.subnetMask);
       if (locked > 0) {
-        newPending = newPending.copyWith(
-          minAddress: svc.syncPrefix(
-              newPending.minAddress, newPending.ipAddress, locked),
-          maxAddress: svc.syncPrefix(
-              newPending.maxAddress, newPending.ipAddress, locked),
+        newModel = newModel.copyWith(
+          minAddress:
+              _svc.syncPrefix(newModel.minAddress, newModel.ipAddress, locked),
+          maxAddress:
+              _svc.syncPrefix(newModel.maxAddress, newModel.ipAddress, locked),
         );
       }
     }
 
-    final errors = svc.validateAll(newPending);
+    final errors = _svc.validateAll(newModel);
 
-    state = AsyncData(s.copyWith(
-      pending: newPending,
-      errors: errors,
-    ));
-  }
-
-  /// Revert all pending changes to original (Dirty Guard revert).
-  void revert() {
-    final s = state.valueOrNull;
-    if (s == null) return;
-    state = AsyncData(s.copyWith(
-      pending: s.original,
-      errors: const {},
-    ));
-  }
-
-  /// Save pending changes to the router.
-  ///
-  /// Only sends fields that actually changed (dirty diff).
-  /// Converts UI minutes → codegen seconds for leaseTime.
-  Future<void> save() async {
-    final s = state.requireValue;
-    if (!s.isDirty || s.hasErrors) return;
-
-    state = AsyncData(s.copyWith(isSaving: true));
-    try {
-      final usp = ref.read(uspServiceProvider)!;
-      final svc = ref.read(uspLocalNetworkServiceProvider);
-      final o = s.original;
-      final p = s.pending;
-
-      await LanNetworkInfo.save(
-        usp,
-        ipAddress: o.ipAddress != p.ipAddress ? p.ipAddress : null,
-        subnetMask: o.subnetMask != p.subnetMask ? p.subnetMask : null,
-        hostName: o.hostName != p.hostName ? p.hostName : null,
-        dhcpEnabled: o.dhcpEnabled != p.dhcpEnabled ? p.dhcpEnabled : null,
-        minAddress: o.minAddress != p.minAddress ? p.minAddress : null,
-        maxAddress: o.maxAddress != p.maxAddress ? p.maxAddress : null,
-        leaseTime: o.leaseTimeMinutes != p.leaseTimeMinutes
-            ? p.leaseTimeMinutes * 60
-            : null,
-        dnsServers: _dnsChanged(o, p)
-            ? svc.joinDnsServers(p.dnsServer1, p.dnsServer2, p.dnsServer3)
-            : null,
-      );
-
-      logger.d('[USP][Network][LAN]LocalNetwork saved');
-
-      // Re-fetch to confirm changes took effect.
-      ref.invalidateSelf();
-    } catch (e) {
-      state = AsyncData(s.copyWith(isSaving: false));
-      rethrow;
-    }
-  }
-
-  /// Check if any DNS field changed.
-  static bool _dnsChanged(LocalNetworkUIModel o, LocalNetworkUIModel p) {
-    return o.dnsServer1 != p.dnsServer1 ||
-        o.dnsServer2 != p.dnsServer2 ||
-        o.dnsServer3 != p.dnsServer3;
+    state = state.copyWith(
+      settings: state.settings.update(
+        current.copyWith(model: newModel),
+      ),
+      status: state.status.copyWith(validationErrors: errors),
+    );
   }
 }

@@ -328,7 +328,6 @@ class _AddMacDialog extends StatefulWidget {
 
 class _AddMacDialogState extends State<_AddMacDialog> {
   final _controller = TextEditingController();
-  final _svc = UspInstantPrivacyService();
   String? _errorText;
   bool _isConfirming = false;
 
@@ -344,11 +343,11 @@ class _AddMacDialogState extends State<_AddMacDialog> {
         _errorText = null;
         return;
       }
-      if (!_svc.validateMac(value)) {
+      if (!UspInstantPrivacyService.validateMac(value)) {
         _errorText = 'Invalid MAC address format (e.g. AA:BB:CC:DD:EE:FF)';
         return;
       }
-      final normalized = _svc.normalizeMac(value);
+      final normalized = UspInstantPrivacyService.normalizeMac(value);
       final isDuplicate =
           widget.existingDevices.any((d) => d.mac == normalized);
       _errorText =
@@ -359,12 +358,13 @@ class _AddMacDialogState extends State<_AddMacDialog> {
   bool get _canConfirm =>
       _controller.text.isNotEmpty &&
       _errorText == null &&
-      _svc.validateMac(_controller.text);
+      UspInstantPrivacyService.validateMac(_controller.text);
 
   Future<void> _confirm() async {
     if (!_canConfirm) return;
     setState(() => _isConfirming = true);
-    await widget.onConfirm(_svc.normalizeMac(_controller.text));
+    await widget
+        .onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
   }
 
   @override

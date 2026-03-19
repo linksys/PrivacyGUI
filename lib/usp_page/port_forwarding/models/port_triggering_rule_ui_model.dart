@@ -2,14 +2,16 @@ import 'package:equatable/equatable.dart';
 
 /// Presentation Layer Model for a single forwarded-port rule
 /// within a port trigger entry (child of `Device.NAT.PortTrigger.{i}.Rule.{i}`).
+///
+/// [instancePath] is `null` for locally-created forward rules not yet saved.
 class PortTriggerForwardRuleUIModel extends Equatable {
-  final String instancePath;
+  final String? instancePath;
   final int forwardPort;
   final int forwardPortEndRange;
   final String forwardProtocol;
 
   const PortTriggerForwardRuleUIModel({
-    required this.instancePath,
+    this.instancePath,
     required this.forwardPort,
     this.forwardPortEndRange = 0,
     required this.forwardProtocol,
@@ -34,8 +36,10 @@ class PortTriggerForwardRuleUIModel extends Equatable {
 ///
 /// Maps to `Device.NAT.PortTrigger.{i}` (parent) with nested
 /// `Rule.{i}` sub-table (children).
+///
+/// [instancePath] is `null` for newly created (local-only) rules.
 class PortTriggeringRuleUIModel extends Equatable {
-  final String instancePath;
+  final String? instancePath;
   final bool enabled;
   final String description;
   final int triggerPort;
@@ -44,7 +48,7 @@ class PortTriggeringRuleUIModel extends Equatable {
   final List<PortTriggerForwardRuleUIModel> forwardRules;
 
   const PortTriggeringRuleUIModel({
-    required this.instancePath,
+    this.instancePath,
     required this.enabled,
     required this.description,
     required this.triggerPort,
@@ -52,6 +56,26 @@ class PortTriggeringRuleUIModel extends Equatable {
     required this.triggerProtocol,
     this.forwardRules = const [],
   });
+
+  PortTriggeringRuleUIModel copyWith({
+    String? instancePath,
+    bool? enabled,
+    String? description,
+    int? triggerPort,
+    int? triggerPortEndRange,
+    String? triggerProtocol,
+    List<PortTriggerForwardRuleUIModel>? forwardRules,
+  }) {
+    return PortTriggeringRuleUIModel(
+      instancePath: instancePath ?? this.instancePath,
+      enabled: enabled ?? this.enabled,
+      description: description ?? this.description,
+      triggerPort: triggerPort ?? this.triggerPort,
+      triggerPortEndRange: triggerPortEndRange ?? this.triggerPortEndRange,
+      triggerProtocol: triggerProtocol ?? this.triggerProtocol,
+      forwardRules: forwardRules ?? this.forwardRules,
+    );
+  }
 
   /// Display name: description if available, otherwise "Unnamed trigger".
   String get displayName =>

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/models/port_forwarding_page_feature_state.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/models/port_forwarding_page_status.dart';
+import 'package:privacy_gui/usp_page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/components/usp_single_port_tab.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/components/usp_port_range_tab.dart';
 import 'package:privacy_gui/usp_page/port_forwarding/views/components/usp_port_triggering_tab.dart';
@@ -13,10 +16,9 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Port Forwarding detail page — three-tab layout:
 ///   Tab 1: Single Port Forwarding (filter isSinglePort)
 ///   Tab 2: Port Range Forwarding (filter isPortRange)
-///   Tab 3: Port Triggering (independent data source)
+///   Tab 3: Port Triggering
 ///
-/// Reads from [uspDashboardProvider] (shared state). All mutations delegate
-/// to [UspDashboardNotifier] to keep state in sync with the dashboard.
+/// Reads from [uspPortForwardingPageProvider] (combined page notifier).
 class UspPortForwardingDetailView extends ConsumerStatefulWidget {
   const UspPortForwardingDetailView({super.key});
 
@@ -44,16 +46,15 @@ class _UspPortForwardingDetailViewState
 
   @override
   Widget build(BuildContext context) {
-    final asyncState = ref.watch(uspDashboardProvider);
-    final state = asyncState.valueOrNull;
+    final pageState = ref.watch(uspPortForwardingPageProvider);
+    final status = pageState.status;
+    final settings = pageState.settings.current;
 
     final singlePortRules =
-        state?.portForwardingRuleModels.where((r) => r.isSinglePort).toList() ??
-            [];
+        settings.forwardingRules.where((r) => r.isSinglePort).toList();
     final portRangeRules =
-        state?.portForwardingRuleModels.where((r) => r.isPortRange).toList() ??
-            [];
-    final triggeringRules = state?.portTriggeringRuleModels ?? [];
+        settings.forwardingRules.where((r) => r.isPortRange).toList();
+    final triggeringRules = settings.triggeringRules;
 
     return LayoutBuilder(builder: (context, constraints) {
       return UiKitPageView.withSliver(
@@ -68,7 +69,10 @@ class _UspPortForwardingDetailViewState
         onBackTap: () => context.canPop()
             ? context.pop()
             : context.goNamed(RouteNamed.uspMenu),
-        onRefresh: () => ref.refresh(uspDashboardProvider.future),
+        onRefresh: () => ref
+            .read(uspPortForwardingPageProvider.notifier)
+            .fetch(forceRemote: true),
+        bottomBar: _buildBottomBar(context, ref, pageState),
         tabs: [
           Tab(text: 'Single Port (${singlePortRules.length})'),
           Tab(text: 'Port Range (${portRangeRules.length})'),
@@ -76,10 +80,17 @@ class _UspPortForwardingDetailViewState
         ],
         tabContentViews: [
           _buildTabContent(
-              asyncState, UspSinglePortTab(rules: singlePortRules)),
-          _buildTabContent(asyncState, UspPortRangeTab(rules: portRangeRules)),
+              status,
+              UspSinglePortTab(
+                  rules: singlePortRules, isSaving: status.isSaving)),
           _buildTabContent(
-              asyncState, UspPortTriggeringTab(rules: triggeringRules)),
+              status,
+              UspPortRangeTab(
+                  rules: portRangeRules, isSaving: status.isSaving)),
+          _buildTabContent(
+              status,
+              UspPortTriggeringTab(
+                  rules: triggeringRules, isSaving: status.isSaving)),
         ],
         tabController: _tabController,
         unboundedFallbackHeight: constraints.maxHeight,
@@ -87,11 +98,34 @@ class _UspPortForwardingDetailViewState
     });
   }
 
-  Widget _buildTabContent(AsyncValue asyncState, Widget tabContent) {
-    if (asyncState.isLoading && asyncState.valueOrNull == null) {
+  // ---------------------------------------------------------------------------
+  // Bottom Bar
+  // ---------------------------------------------------------------------------
+
+  UiKitBottomBarConfig? _buildBottomBar(
+    BuildContext context,
+    WidgetRef ref,
+    PortForwardingPageFeatureState pageState,
+  ) {
+    if (!pageState.isDirty) return null;
+    return UiKitBottomBarConfig(
+      positiveLabel: 'Save',
+      isPositiveEnabled: !pageState.status.isSaving,
+      onPositiveTap: () => _onSave(context, ref),
+      onNegativeTap: () =>
+          ref.read(uspPortForwardingPageProvider.notifier).revert(),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tab Content
+  // ---------------------------------------------------------------------------
+
+  Widget _buildTabContent(PortForwardingPageStatus status, Widget tabContent) {
+    if (status.isLoading) {
       return const Center(child: AppLoader());
     }
-    if (asyncState.hasError && asyncState.valueOrNull == null) {
+    if (status.errorMessage != null) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -103,7 +137,9 @@ class _UspPortForwardingDetailViewState
             AppGap.md(),
             AppButton(
               label: 'Retry',
-              onTap: () => ref.invalidate(uspDashboardProvider),
+              onTap: () => ref
+                  .read(uspPortForwardingPageProvider.notifier)
+                  .fetch(forceRemote: true),
             ),
           ],
         ),
@@ -119,5 +155,22 @@ class _UspPortForwardingDetailViewState
         ),
       ],
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Save
+  // ---------------------------------------------------------------------------
+
+  Future<void> _onSave(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(uspPortForwardingPageProvider.notifier).save();
+      if (context.mounted) {
+        showSuccessSnackBar(context, 'Port forwarding settings saved');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, 'Failed to save: $e');
+      }
+    }
   }
 }

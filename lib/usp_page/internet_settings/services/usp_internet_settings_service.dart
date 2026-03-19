@@ -2,6 +2,7 @@ import 'package:privacy_gui/generated/ipv6settings.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_settings.g.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_wan_connection_type.dart';
 
@@ -13,13 +14,68 @@ class UspInternetSettingsService {
 
   UspInternetSettingsService(this._usp);
 
-  /// Fetch both WAN and IPv6 settings in parallel.
-  Future<(WanSettings, Ipv6Settings)> fetchSettings() async {
+  /// Fetch both WAN and IPv6 settings in parallel, returning the form
+  /// and read-only info needed by the notifier.
+  Future<InternetSettingsFetchResult> fetchSettings() async {
     final results = await Future.wait([
       WanSettings.fetch(_usp),
       Ipv6Settings.fetch(_usp),
     ]);
-    return (results[0] as WanSettings, results[1] as Ipv6Settings);
+    final wan = results[0] as WanSettings;
+    final ipv6 = results[1] as Ipv6Settings;
+    return InternetSettingsFetchResult(
+      form: _buildForm(wan, ipv6),
+      readOnlyInfo: _buildReadOnlyInfo(wan, ipv6),
+      debugAddressingType: wan.addressingType,
+      debugBridgeEnabled: wan.bridgeEnabled,
+      debugMtu: wan.mtu,
+      debugIpv6Enabled: ipv6.ipv6Enabled,
+    );
+  }
+
+  /// Build a [UspInternetSettingsForm] from raw codegen models.
+  UspInternetSettingsForm _buildForm(WanSettings wan, Ipv6Settings ipv6) {
+    return UspInternetSettingsForm(
+      connectionType: UspWanConnectionType.fromRawFields(
+        addressingType: wan.addressingType,
+        bridgeEnabled: wan.bridgeEnabled,
+      ),
+      staticIpAddress: wan.staticIpAddress,
+      subnetMask: wan.subnetMask,
+      defaultGateway: wan.defaultGateway,
+      dnsServer1: wan.dnsServer1,
+      dnsServer2: wan.dnsServer2,
+      dnsServer3: wan.dnsServer3,
+      pppUsername: wan.pppUsername,
+      pppPassword: wan.pppPassword,
+      pppoeServiceName: wan.pppoeServiceName,
+      connectionTrigger: wan.connectionTrigger,
+      idleDisconnectTime: wan.idleDisconnectTime,
+      lcpEchoInterval: wan.lcpEchoInterval,
+      vlanEnabled: wan.vlanEnabled,
+      vlanId: wan.vlanId,
+      mtu: wan.mtu,
+      wanMacAddress: wan.wanMacAddress,
+      ipv6Enabled: ipv6.ipv6Enabled,
+      dhcpv6Enabled: ipv6.dhcpv6Enabled,
+      ipv6rdEnabled: ipv6.ipv6rdEnabled,
+      ipv6rdPrefix: ipv6.ipv6rdPrefix,
+      ipv6rdIpv4MaskLength: ipv6.ipv6rdIpv4MaskLength,
+      ipv6rdBorderRelay: ipv6.ipv6rdBorderRelay,
+    );
+  }
+
+  /// Build read-only display info from raw codegen models.
+  InternetSettingsReadOnlyInfo _buildReadOnlyInfo(
+    WanSettings wan,
+    Ipv6Settings ipv6,
+  ) {
+    return InternetSettingsReadOnlyInfo(
+      currentMacAddress: wan.currentMacAddress,
+      pppConnectionStatus: wan.pppConnectionStatus,
+      dhcpv6Duid: ipv6.dhcpv6Duid,
+      staticIpAddress: wan.staticIpAddress,
+    );
   }
 
   /// Save all changed fields by comparing [original] vs [edited].
@@ -95,4 +151,25 @@ class UspInternetSettingsService {
   /// Returns [edited] if it differs from [original], otherwise null.
   /// This ensures only changed values are sent in the USP Set message.
   T? _diff<T>(T original, T edited) => original != edited ? edited : null;
+}
+
+/// Result of [UspInternetSettingsService.fetchSettings].
+class InternetSettingsFetchResult {
+  final UspInternetSettingsForm form;
+  final InternetSettingsReadOnlyInfo readOnlyInfo;
+
+  /// Debug fields for logging — not exposed to UI.
+  final String debugAddressingType;
+  final bool debugBridgeEnabled;
+  final int debugMtu;
+  final bool debugIpv6Enabled;
+
+  const InternetSettingsFetchResult({
+    required this.form,
+    required this.readOnlyInfo,
+    this.debugAddressingType = '',
+    this.debugBridgeEnabled = false,
+    this.debugMtu = 0,
+    this.debugIpv6Enabled = false,
+  });
 }

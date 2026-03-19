@@ -1,19 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
 import 'package:privacy_gui/usp_page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/utils.dart';
 
 final uspStaticRoutingServiceProvider = Provider<UspStaticRoutingService>(
-  (ref) => UspStaticRoutingService(),
+  (ref) => UspStaticRoutingService(ref.read(uspServiceProvider)!),
 );
 
-/// Transforms codegen [StaticRouting] data into [StaticRouteUIModel] list.
-///
-/// Responsibilities:
-/// - Filter by Origin == "Static" (exclude kernel/DHCP routes)
-/// - Map TR-181 interface paths to display names
-/// - Validate route fields
+/// Service layer for Static Routing — encapsulates codegen CRUD + transform + validation.
 class UspStaticRoutingService {
+  final UspService _usp;
+
+  UspStaticRoutingService(this._usp);
+
   static const _interfaceMap = {
     'Device.IP.Interface.1': 'LAN',
     'Device.IP.Interface.2': 'Internet',
@@ -25,6 +26,96 @@ class UspStaticRoutingService {
   };
 
   static const interfaceOptions = ['LAN', 'Internet'];
+
+  // ---------------------------------------------------------------------------
+  // CRUD
+  // ---------------------------------------------------------------------------
+
+  /// Fetch static routes and transform to UI models.
+  Future<List<StaticRouteUIModel>> fetch() async {
+    final data = await StaticRouting.fetch(_usp);
+    return buildRouteUIModels(data);
+  }
+
+  /// Batch save: diff original vs current, execute delete/add/update.
+  Future<({int added, int updated, int deleted})> saveBatch({
+    required List<StaticRouteUIModel> original,
+    required List<StaticRouteUIModel> current,
+  }) async {
+    // 1. Delete (in original, not in current)
+    final currentPaths = <String>{
+      for (final r in current)
+        if (r.instancePath != null) r.instancePath!,
+    };
+    final toDelete = original
+        .where((r) =>
+            r.instancePath != null && !currentPaths.contains(r.instancePath))
+        .toList();
+
+    for (var i = 0; i < toDelete.length; i++) {
+      if (i > 0) {
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+      await StaticRouting.delete(_usp, toDelete[i].instancePath!);
+    }
+
+    // 2. Add (instancePath == null → new)
+    final toAdd = current.where((r) => r.instancePath == null).toList();
+
+    for (var i = 0; i < toAdd.length; i++) {
+      if (i > 0) {
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+      final r = toAdd[i];
+      await StaticRouting.add(
+        _usp,
+        enable: r.enabled,
+        destIpAddress: r.destIpAddress,
+        destSubnetMask: r.destSubnetMask,
+        gatewayIpAddress: r.gatewayIpAddress,
+        interface_: mapDisplayToInterface(r.interfaceName),
+        alias: r.name,
+      );
+    }
+
+    // 3. Update (same path, different content)
+    final originalByPath = <String, StaticRouteUIModel>{
+      for (final r in original)
+        if (r.instancePath != null) r.instancePath!: r,
+    };
+
+    final toUpdate = <StaticRouteUpdate>[];
+    for (final cur in current) {
+      if (cur.instancePath == null) continue;
+      final orig = originalByPath[cur.instancePath!];
+      if (orig == null) continue;
+      if (cur != orig) {
+        toUpdate.add(StaticRouteUpdate(
+          instancePath: cur.instancePath!,
+          enable: cur.enabled,
+          destIpAddress: cur.destIpAddress,
+          destSubnetMask: cur.destSubnetMask,
+          gatewayIpAddress: cur.gatewayIpAddress,
+          interface_: mapDisplayToInterface(cur.interfaceName),
+          alias: cur.name,
+        ));
+      }
+    }
+
+    if (toUpdate.isNotEmpty) {
+      await StaticRouting.updateMany(_usp, toUpdate);
+    }
+
+    return (
+      added: toAdd.length,
+      updated: toUpdate.length,
+      deleted: toDelete.length,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Transform
+  // ---------------------------------------------------------------------------
 
   /// Build UI models from codegen data, filtering to static routes only.
   List<StaticRouteUIModel> buildRouteUIModels(StaticRouting data) {
@@ -48,8 +139,12 @@ class UspStaticRoutingService {
     return _reverseInterfaceMap[displayName] ?? displayName;
   }
 
+  // ---------------------------------------------------------------------------
+  // Validation
+  // ---------------------------------------------------------------------------
+
   /// Validate a route entry. Returns a map of field → error message.
-  Map<String, String> validateRoute({
+  static Map<String, String> validateRoute({
     required String name,
     required String destIp,
     required String subnetMask,

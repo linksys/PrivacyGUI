@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/usp_page/devices/providers/device_filter_provider.dart';
 import 'package:privacy_gui/usp_page/devices/providers/device_filter_state.dart';
 import 'package:privacy_gui/usp_page/devices/views/components/usp_device_filter_panel.dart';
@@ -29,10 +29,10 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
 
   @override
   Widget build(BuildContext context) {
-    final asyncDashboard = ref.watch(uspDashboardProvider);
+    final asyncDevices = ref.watch(devicesDataProvider);
     final devices = ref.watch(filteredDeviceListProvider);
     final filter = ref.watch(deviceFilterConfigProvider);
-    final totalCount = asyncDashboard.valueOrNull?.deviceModels.length ?? 0;
+    final totalCount = asyncDevices.valueOrNull?.deviceModels.length ?? 0;
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -44,10 +44,10 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspDashboard),
-      onRefresh: () => ref.refresh(uspDashboardProvider.future),
+      onRefresh: () => ref.refresh(devicesDataProvider.future),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncDashboard.when(
+        return asyncDevices.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: AppText.bodyMedium('Error: $e')),
           data: (state) {

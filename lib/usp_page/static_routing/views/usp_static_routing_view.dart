@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/usp_page/static_routing/models/static_routing_feature_state.dart';
 import 'package:privacy_gui/usp_page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/usp_page/static_routing/providers/usp_static_routing_notifier.dart';
 import 'package:privacy_gui/usp_page/static_routing/services/usp_static_routing_service.dart';
@@ -17,7 +17,8 @@ class UspStaticRoutingView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(uspStaticRoutingProvider);
+    final state = ref.watch(uspStaticRoutingProvider);
+    final status = state.status;
 
     return UiKitPageView.withSliver(
       scrollable: true,
@@ -29,15 +30,37 @@ class UspStaticRoutingView extends ConsumerWidget {
       onBackTap: () => context.canPop()
           ? context.pop()
           : context.goNamed(RouteNamed.uspMenu),
-      onRefresh: () => ref.refresh(uspStaticRoutingProvider.future),
+      onRefresh: () =>
+          ref.read(uspStaticRoutingProvider.notifier).fetch(forceRemote: true),
+      bottomBar: _buildBottomBar(context, ref, state),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
-        return asyncState.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildError(context, ref),
-          data: (state) => _buildContent(context, ref, state),
-        );
+        if (status.isLoading) {
+          return const Center(child: AppLoader());
+        }
+        if (status.errorMessage != null) {
+          return _buildError(context, ref);
+        }
+        return _buildContent(context, ref, state);
       },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bottom Bar
+  // ---------------------------------------------------------------------------
+
+  UiKitBottomBarConfig? _buildBottomBar(
+    BuildContext context,
+    WidgetRef ref,
+    StaticRoutingFeatureState state,
+  ) {
+    if (!state.isDirty) return null;
+    return UiKitBottomBarConfig(
+      positiveLabel: 'Save',
+      isPositiveEnabled: !state.status.isSaving,
+      onPositiveTap: () => _onSave(context, ref),
+      onNegativeTap: () => ref.read(uspStaticRoutingProvider.notifier).revert(),
     );
   }
 
@@ -57,7 +80,9 @@ class UspStaticRoutingView extends ConsumerWidget {
           AppGap.md(),
           AppButton(
             label: 'Retry',
-            onTap: () => ref.invalidate(uspStaticRoutingProvider),
+            onTap: () => ref
+                .read(uspStaticRoutingProvider.notifier)
+                .fetch(forceRemote: true),
           ),
         ],
       ),
@@ -71,10 +96,10 @@ class UspStaticRoutingView extends ConsumerWidget {
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
-    UspStaticRoutingState state,
+    StaticRoutingFeatureState state,
   ) {
-    final isMutating = state.isMutating;
-    final routes = state.routes;
+    final routes = state.settings.current.routes;
+    final isSaving = state.status.isSaving;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,25 +113,9 @@ class UspStaticRoutingView extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             AppText.titleMedium('Static Routes'),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isMutating)
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  AppIconButton(
-                    icon: AppIcon.font(Icons.refresh, size: 20),
-                    onTap: () => ref.invalidate(uspStaticRoutingProvider),
-                  ),
-                AppIconButton(
-                  icon: AppIcon.font(Icons.add, size: 20),
-                  onTap: isMutating ? null : () => _showAddDialog(context, ref),
-                ),
-              ],
+            AppIconButton(
+              icon: AppIcon.font(Icons.add, size: 20),
+              onTap: isSaving ? null : () => _showAddDialog(context, ref),
             ),
           ],
         ),
@@ -114,7 +123,8 @@ class UspStaticRoutingView extends ConsumerWidget {
         if (routes.isEmpty)
           AppText.bodyMedium('No static routes configured')
         else
-          ...routes.map((r) => _buildRouteCard(context, ref, r, isMutating)),
+          ...routes.asMap().entries.map((entry) =>
+              _buildRouteCard(context, ref, entry.key, entry.value, isSaving)),
       ],
     );
   }
@@ -126,8 +136,9 @@ class UspStaticRoutingView extends ConsumerWidget {
   Widget _buildRouteCard(
     BuildContext context,
     WidgetRef ref,
+    int index,
     StaticRouteUIModel route,
-    bool isMutating,
+    bool isSaving,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -137,9 +148,11 @@ class UspStaticRoutingView extends ConsumerWidget {
             AppSwitch(
               value: route.enabled,
               scale: 0.8,
-              onChanged: isMutating
+              onChanged: isSaving
                   ? null
-                  : (value) => _toggleRoute(context, ref, route, value),
+                  : (value) => ref
+                      .read(uspStaticRoutingProvider.notifier)
+                      .toggleRoute(index, value),
             ),
             AppGap.sm(),
             Expanded(
@@ -162,14 +175,17 @@ class UspStaticRoutingView extends ConsumerWidget {
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.edit, size: 18),
-              onTap: isMutating
+              onTap: isSaving
                   ? null
-                  : () => _showEditDialog(context, ref, route),
+                  : () => _showEditDialog(context, ref, index, route),
             ),
             AppIconButton(
               icon: AppIcon.font(Icons.delete_outline, size: 18),
-              onTap:
-                  isMutating ? null : () => _confirmDelete(context, ref, route),
+              onTap: isSaving
+                  ? null
+                  : () => ref
+                      .read(uspStaticRoutingProvider.notifier)
+                      .deleteRoute(index),
             ),
           ],
         ),
@@ -181,17 +197,6 @@ class UspStaticRoutingView extends ConsumerWidget {
   // Actions
   // ---------------------------------------------------------------------------
 
-  Future<void> _toggleRoute(BuildContext context, WidgetRef ref,
-      StaticRouteUIModel route, bool value) async {
-    try {
-      await ref
-          .read(uspStaticRoutingProvider.notifier)
-          .toggleRoute(route.instancePath, value);
-    } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Error: $e');
-    }
-  }
-
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
     final result = await showDialog<StaticRouteDialogResult>(
       context: context,
@@ -199,71 +204,55 @@ class UspStaticRoutingView extends ConsumerWidget {
     );
     if (result == null || !context.mounted) return;
     final svc = ref.read(uspStaticRoutingServiceProvider);
-    try {
-      await ref.read(uspStaticRoutingProvider.notifier).addRoute(
+    ref.read(uspStaticRoutingProvider.notifier).addRoute(
+          StaticRouteUIModel(
+            enabled: result.enabled,
             name: result.name,
             destIpAddress: result.destIpAddress,
             destSubnetMask: result.destSubnetMask,
             gatewayIpAddress: result.gatewayIpAddress,
+            interfaceName: result.interfaceName,
             interfacePath: svc.mapDisplayToInterface(result.interfaceName),
-            enabled: result.enabled,
-          );
-      if (context.mounted) showSuccessSnackBar(context, 'Route added');
-    } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Error: $e');
-    }
+          ),
+        );
   }
 
-  Future<void> _showEditDialog(
-      BuildContext context, WidgetRef ref, StaticRouteUIModel route) async {
+  Future<void> _showEditDialog(BuildContext context, WidgetRef ref, int index,
+      StaticRouteUIModel route) async {
     final result = await showDialog<StaticRouteDialogResult>(
       context: context,
       builder: (_) => StaticRouteDialog(route: route),
     );
     if (result == null || !context.mounted) return;
     final svc = ref.read(uspStaticRoutingServiceProvider);
-    try {
-      await ref.read(uspStaticRoutingProvider.notifier).updateRoute(
-            instancePath: route.instancePath,
+    ref.read(uspStaticRoutingProvider.notifier).editRoute(
+          index,
+          route.copyWith(
+            enabled: result.enabled,
             name: result.name,
             destIpAddress: result.destIpAddress,
             destSubnetMask: result.destSubnetMask,
             gatewayIpAddress: result.gatewayIpAddress,
+            interfaceName: result.interfaceName,
             interfacePath: svc.mapDisplayToInterface(result.interfaceName),
-            enabled: result.enabled,
-          );
-      if (context.mounted) showSuccessSnackBar(context, 'Route updated');
-    } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Error: $e');
-    }
+          ),
+        );
   }
 
-  Future<void> _confirmDelete(
-      BuildContext context, WidgetRef ref, StaticRouteUIModel route) async {
-    final confirmed = await showSimpleAppDialog<bool>(
-      context,
-      title: 'Delete Route',
-      content: AppText.bodyMedium(
-          'Delete "${route.name.isNotEmpty ? route.name : 'this route'}"?'),
-      actions: [
-        AppButton.text(
-          label: 'Cancel',
-          onTap: () => context.pop(),
-        ),
-        AppButton.dangerText(
-          label: 'Delete',
-          onTap: () => context.pop(true),
-        ),
-      ],
-    );
-    if (confirmed != true || !context.mounted) return;
+  // ---------------------------------------------------------------------------
+  // Save
+  // ---------------------------------------------------------------------------
+
+  Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref
-          .read(uspStaticRoutingProvider.notifier)
-          .deleteRoute(route.instancePath);
-      if (context.mounted) showSuccessSnackBar(context, 'Route deleted');
+      await ref.read(uspStaticRoutingProvider.notifier).save();
+      if (context.mounted) {
+        showSuccessSnackBar(context, 'Static routes saved');
+      }
     } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Error: $e');
+      if (context.mounted) {
+        showFailedSnackBar(context, 'Failed to save: $e');
+      }
     }
   }
 }

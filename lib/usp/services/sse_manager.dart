@@ -184,30 +184,28 @@ class SseManager {
 
   /// Handles subscription registration on SSE connect/reconnect.
   ///
-  /// - Reconnect (registry has entries): re-registers immediately
-  /// - First connect (registry empty): **defers** registration to avoid
-  ///   competing with dashboard HTTP requests for the browser's 6-connection
-  ///   HTTP/1.1 pool. Call [registerDeferredSubscriptions] after dashboard
-  ///   initial load completes.
+  /// - Reconnect (registry has entries): re-registers immediately via bridge
+  /// - First connect (registry empty): registers core subscriptions directly.
+  ///   [onConnected] fires on the first real heartbeat (~30s after stream
+  ///   opens), by which time dashboard HTTP requests have already completed —
+  ///   no HTTP/1.1 connection pool contention.
   Future<void> _registerOrResubscribe() async {
     if (registry.activeIds.isNotEmpty) {
       // Reconnect path: re-register existing subscriptions on bridge
       await registry.resubscribeAll();
     } else if (_coreSubscriptions.isNotEmpty) {
-      // First connect: defer to avoid HTTP/1.1 connection contention
-      _coreSubsDeferred = true;
-      logger.d('[USP][SSE]Core subscriptions deferred — '
-          'waiting for dashboard load to complete');
+      // First connect: register directly (no contention at heartbeat time)
+      await registerDeferredSubscriptions(force: true);
     }
   }
 
-  /// Registers deferred core subscriptions.
+  /// Registers core subscriptions on the bridge.
   ///
-  /// Call after dashboard initial load completes to avoid HTTP/1.1
-  /// connection pool contention (browser limits 6 connections per host).
+  /// In normal flow, called from [_registerOrResubscribe] when SSE first
+  /// connects (on heartbeat). In the post-reload path, the orchestrator
+  /// calls this with [force] = true to register before onConnected fires.
   ///
   /// Pass [force] = true to skip the deferral check and register immediately.
-  /// Used for the post-reload bootstrap where SSE onConnected hasn't fired yet.
   Future<void> registerDeferredSubscriptions({bool force = false}) async {
     if (!force && !_coreSubsDeferred) return;
     _coreSubsDeferred = false;

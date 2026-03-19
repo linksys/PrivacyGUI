@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_info_row.dart';
+import 'package:privacy_gui/usp_page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
-import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_state.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_feature_state.dart';
 import 'package:privacy_gui/usp_page/internet_settings/views/components/usp_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -13,7 +13,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Displays IPv6 enable toggle, DHCPv6 toggle, DUID (read-only),
 /// and 6rd tunnel configuration.
 class UspIpv6Section extends ConsumerStatefulWidget {
-  final UspInternetSettingsState state;
+  final InternetSettingsFeatureState state;
   final bool isEditing;
 
   const UspIpv6Section({

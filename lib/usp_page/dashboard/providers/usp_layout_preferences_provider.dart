@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +22,14 @@ final uspLayoutPreferencesProvider =
 /// Key behaviour: toggling custom layout OFF also resets the grid layout
 /// to ensure [useCustomLayout = false] always shows the default layout.
 class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
+  final Completer<void> _initCompleter = Completer<void>();
+
+  /// Completes when the initial load from SharedPreferences is done.
+  /// Await this before capturing snapshots to avoid race conditions
+  /// where the default state (preset = null) is captured before the
+  /// persisted state is loaded.
+  Future<void> get initialized => _initCompleter.future;
+
   @override
   UspLayoutPreferences build() {
     _loadFromPrefs();
@@ -27,10 +37,16 @@ class UspLayoutPreferencesNotifier extends Notifier<UspLayoutPreferences> {
   }
 
   Future<void> _loadFromPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString(pUspLayoutPreferences);
-    if (json != null) {
-      state = UspLayoutPreferences.fromJsonString(json);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final json = prefs.getString(pUspLayoutPreferences);
+      if (json != null) {
+        state = UspLayoutPreferences.fromJsonString(json);
+      }
+    } finally {
+      if (!_initCompleter.isCompleted) {
+        _initCompleter.complete();
+      }
     }
   }
 

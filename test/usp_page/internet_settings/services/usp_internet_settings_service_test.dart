@@ -61,14 +61,14 @@ void main() {
         return _ipv6Response;
       });
 
-      final (wan, ipv6) = await service.fetchSettings();
+      final result = await service.fetchSettings();
 
-      expect(wan.addressingType, equals('DHCP'));
-      expect(wan.mtu, equals(1500));
-      expect(wan.staticIpAddress, equals('192.168.1.100'));
-      expect(ipv6.ipv6Enabled, isTrue);
-      expect(ipv6.dhcpv6Enabled, isTrue);
-      expect(ipv6.ipv6rdEnabled, isFalse);
+      expect(result.form.connectionType, equals(UspWanConnectionType.dhcp));
+      expect(result.form.mtu, equals(1500));
+      expect(result.form.staticIpAddress, equals('192.168.1.100'));
+      expect(result.form.ipv6Enabled, isTrue);
+      expect(result.form.dhcpv6Enabled, isTrue);
+      expect(result.form.ipv6rdEnabled, isFalse);
     });
   });
 

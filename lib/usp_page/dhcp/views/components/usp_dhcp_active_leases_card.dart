@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Read-only card displaying active DHCP client leases.

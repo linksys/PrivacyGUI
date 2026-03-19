@@ -2,25 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/dhcp_reservation_ui_model.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/components/usp_mutation_helper.dart';
+import 'package:privacy_gui/usp_page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/usp_page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/usp_page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Full CRUD card for DHCP reservations on the detail page.
 class UspDhcpReservationsDetailCard extends ConsumerWidget {
   final List<DhcpReservationUIModel> reservations;
+  final bool isSaving;
 
   const UspDhcpReservationsDetailCard({
     super.key,
     required this.reservations,
+    this.isSaving = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoading = ref.watch(uspMutationLoadingProvider) == 'dhcp';
-
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,8 +34,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
                   AppGap.sm(),
                   AppIconButton(
                     icon: AppIcon.font(Icons.add, size: 20),
-                    onTap:
-                        isLoading ? null : () => _showAddDialog(context, ref),
+                    onTap: isSaving ? null : () => _showAddDialog(context, ref),
                   ),
                 ],
               ),
@@ -46,8 +44,7 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
           if (reservations.isEmpty)
             AppText.bodyMedium('No DHCP reservations configured')
           else
-            ...reservations
-                .map((r) => _buildReservationRow(context, ref, r, isLoading)),
+            ...reservations.map((r) => _buildReservationRow(context, ref, r)),
         ],
       ),
     );
@@ -57,7 +54,6 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     DhcpReservationUIModel reservation,
-    bool isLoading,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -66,17 +62,11 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
           AppSwitch(
             value: reservation.enable,
             scale: 0.8,
-            onChanged: isLoading
+            onChanged: isSaving
                 ? null
-                : (value) => performUspMutation(
-                      context,
-                      ref,
-                      loadingKey: 'dhcp',
-                      mutation: () => ref
-                          .read(uspDashboardProvider.notifier)
-                          .toggleDhcpReservation(
-                              reservation.instancePath, value),
-                    ),
+                : (value) => ref
+                    .read(uspDhcpReservationsProvider.notifier)
+                    .toggleReservation(reservation, value),
           ),
           AppGap.sm(),
           Expanded(child: AppText.bodyMedium(reservation.mac)),
@@ -89,13 +79,13 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
           ),
           AppIconButton(
             icon: AppIcon.font(Icons.edit_outlined, size: 18),
-            onTap: isLoading
+            onTap: isSaving
                 ? null
                 : () => _showEditDialog(context, ref, reservation),
           ),
           AppIconButton(
             icon: AppIcon.font(Icons.delete_outline, size: 18),
-            onTap: isLoading
+            onTap: isSaving
                 ? null
                 : () => _confirmDelete(context, ref, reservation),
           ),
@@ -110,18 +100,13 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
       builder: (_) => const DhcpReservationEditDialog(),
     );
     if (result == null || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'dhcp',
-      mutation: () =>
-          ref.read(uspDashboardProvider.notifier).addDhcpReservation(
-                mac: result.mac,
-                ip: result.ip,
-                enable: result.enable,
-              ),
-      successMessage: 'Reservation added',
-    );
+    ref.read(uspDhcpReservationsProvider.notifier).addReservation(
+          DhcpReservationUIModel(
+            mac: result.mac,
+            ip: result.ip,
+            enable: result.enable,
+          ),
+        );
   }
 
   Future<void> _showEditDialog(
@@ -134,19 +119,14 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
       builder: (_) => DhcpReservationEditDialog(reservation: reservation),
     );
     if (result == null || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'dhcp',
-      mutation: () =>
-          ref.read(uspDashboardProvider.notifier).updateDhcpReservation(
-                instancePath: reservation.instancePath,
-                mac: result.mac,
-                ip: result.ip,
-                enable: result.enable,
-              ),
-      successMessage: 'Reservation updated',
-    );
+    ref.read(uspDhcpReservationsProvider.notifier).editReservation(
+          reservation,
+          reservation.copyWith(
+            mac: result.mac,
+            ip: result.ip,
+            enable: result.enable,
+          ),
+        );
   }
 
   Future<void> _confirmDelete(
@@ -170,14 +150,8 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
       ],
     );
     if (confirmed != true || !context.mounted) return;
-    await performUspMutation(
-      context,
-      ref,
-      loadingKey: 'dhcp',
-      mutation: () => ref
-          .read(uspDashboardProvider.notifier)
-          .deleteDhcpReservation(reservation.instancePath),
-      successMessage: 'Reservation deleted',
-    );
+    ref
+        .read(uspDhcpReservationsProvider.notifier)
+        .deleteReservation(reservation);
   }
 }

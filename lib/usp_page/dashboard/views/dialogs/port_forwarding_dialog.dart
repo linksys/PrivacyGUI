@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

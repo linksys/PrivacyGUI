@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/transforms.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/traffic_analysis_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_traffic_analysis_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/utils/usp_formatters.dart';
+import 'package:privacy_gui/usp_page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_traffic_analysis_notifier.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -57,13 +57,13 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
               defaultCenter: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppText.titleSmall(Transforms.formatBytes(grandTotal)),
+                  AppText.titleSmall(UspFormatters.formatBytes(grandTotal)),
                   AppText.labelSmall('total',
                       color: colorScheme.onSurfaceVariant),
                 ],
               ),
               touchedCenterLabel: (section, _) =>
-                  Transforms.formatBytes(section.value.toInt()),
+                  UspFormatters.formatBytes(section.value.toInt()),
               size: 180,
             ),
           ),
@@ -77,11 +77,11 @@ class StatsTrafficDistributionSection extends ConsumerWidget {
           children: [
             StatsLegendDot(color: colorScheme.primary),
             AppGap.xs(),
-            AppText.labelSmall('WAN: ${Transforms.formatBytes(wanTotal)}'),
+            AppText.labelSmall('WAN: ${UspFormatters.formatBytes(wanTotal)}'),
             AppGap.lg(),
             StatsLegendDot(color: colorScheme.secondary),
             AppGap.xs(),
-            AppText.labelSmall('LAN: ${Transforms.formatBytes(lanTotal)}'),
+            AppText.labelSmall('LAN: ${UspFormatters.formatBytes(lanTotal)}'),
           ],
         ),
       ],

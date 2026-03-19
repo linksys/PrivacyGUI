@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/device_analytics_state.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_device_analytics_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/models/device_analytics_state.dart';
+import 'package:privacy_gui/usp_page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

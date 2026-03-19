@@ -48,7 +48,6 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
   late String _protocol;
   late bool _enabled;
 
-  final _service = UspIpv6PortServiceService();
   Map<String, String> _errors = {};
 
   bool get _isEdit => widget.rule != null;
@@ -80,7 +79,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
 
   void _validate() {
     setState(() {
-      _errors = _service.validateRule(
+      _errors = UspIpv6PortServiceService.validateRule(
         description: _descriptionController.text.trim(),
         ipv6Address: _ipv6Controller.text.trim(),
         startPort: _startPortController.text.trim(),
@@ -90,7 +89,7 @@ class _Ipv6PortServiceRuleDialogState extends State<Ipv6PortServiceRuleDialog> {
   }
 
   bool get _isFormValid {
-    final errors = _service.validateRule(
+    final errors = UspIpv6PortServiceService.validateRule(
       description: _descriptionController.text.trim(),
       ipv6Address: _ipv6Controller.text.trim(),
       startPort: _startPortController.text.trim(),

@@ -1,26 +1,33 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/providers/preservable_contract.dart';
 import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_contract.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_feature_state.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_settings.dart';
+import 'package:privacy_gui/usp_page/internet_settings/models/internet_settings_status.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/usp_page/internet_settings/models/usp_wan_connection_type.dart';
-import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_state.dart';
 import 'package:privacy_gui/usp_page/internet_settings/services/usp_internet_settings_service.dart';
 
+// ---------------------------------------------------------------------------
+// Providers
+// ---------------------------------------------------------------------------
+
 /// Main provider for the USP Internet Settings page.
-final uspInternetSettingsProvider = AsyncNotifierProvider.autoDispose<
-    UspInternetSettingsNotifier, UspInternetSettingsState>(
+final uspInternetSettingsProvider = AutoDisposeNotifierProvider<
+    UspInternetSettingsNotifier, InternetSettingsFeatureState>(
   UspInternetSettingsNotifier.new,
 );
 
-/// Adapter that exposes the async notifier as [PreservableContract] for
-/// route-level dirty checking via [LinksysRoute].
-final preservableUspInternetSettingsProvider =
-    Provider<PreservableContract>((ref) {
-  return _UspPreservableAdapter(ref);
-});
+/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
+/// dirty-check integration.
+final preservableUspInternetSettingsProvider = AutoDisposeProvider<
+    PreservableContract<InternetSettingsSettings, InternetSettingsStatus>>(
+  (ref) => ref.watch(uspInternetSettingsProvider.notifier),
+);
 
 /// Service provider — stateless, created from the current UspService.
 final uspInternetSettingsServiceProvider =
@@ -30,74 +37,104 @@ final uspInternetSettingsServiceProvider =
   return UspInternetSettingsService(usp);
 });
 
-/// Tracks the current mutation in progress (for per-section loading overlays).
-/// Values: null (idle), 'save', 'renewIpv4', 'renewIpv6'
-final uspInternetMutationLoadingProvider =
-    StateProvider<String?>((ref) => null);
-
-/// Bridges the async USP notifier to the [PreservableContract] expected by
-/// [LinksysRoute.onExit]. Only [isDirty] and [revert] are called at route
-/// level; [performFetch] and [performSave] are unused stubs.
-class _UspPreservableAdapter
-    implements PreservableContract<UspInternetSettingsForm, Equatable> {
-  final Ref _ref;
-  const _UspPreservableAdapter(this._ref);
-
-  @override
-  bool isDirty() =>
-      _ref.read(uspInternetSettingsProvider).valueOrNull?.isDirty ?? false;
-
-  @override
-  void revert() =>
-      _ref.read(uspInternetSettingsProvider.notifier).exitEditMode();
-
-  @override
-  Future<(UspInternetSettingsForm?, Equatable?)> performFetch({
-    bool forceRemote = false,
-    bool updateStatusOnly = false,
-  }) =>
-      throw UnimplementedError('Use notifier.build() directly');
-
-  @override
-  Future<void> performSave() =>
-      throw UnimplementedError('Use notifier.save() directly');
-}
+// ---------------------------------------------------------------------------
+// Notifier
+// ---------------------------------------------------------------------------
 
 class UspInternetSettingsNotifier
-    extends AutoDisposeAsyncNotifier<UspInternetSettingsState> {
-  bool _mutating = false;
+    extends AutoDisposeNotifier<InternetSettingsFeatureState>
+    with
+        PreservableAutoDisposeNotifierMixin<InternetSettingsSettings,
+            InternetSettingsStatus, InternetSettingsFeatureState> {
+  @override
+  InternetSettingsFeatureState build() {
+    // Synchronous build with loading state; async fetch follows immediately.
+    Future.microtask(() => fetch());
+    return InternetSettingsFeatureState.initial();
+  }
+
+  // ---------------------------------------------------------------------------
+  // performFetch — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
 
   @override
-  Future<UspInternetSettingsState> build() async {
-    final usp = ref.watch(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+  Future<(InternetSettingsSettings?, InternetSettingsStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) async {
+    try {
+      final usp = ref.read(uspServiceProvider);
+      if (usp == null) throw StateError('USP service not available');
 
-    // Session restore on page reload (WASM state may be lost)
-    if (!usp.isAuthenticated) {
-      await ref.read(uspAuthCoordinatorProvider).restoreSession();
+      // Session restore on page reload (WASM state may be lost)
       if (!usp.isAuthenticated) {
-        throw StateError('USP not authenticated after restore attempt');
+        await ref.read(uspAuthCoordinatorProvider).restoreSession();
+        if (!usp.isAuthenticated) {
+          throw StateError('USP not authenticated after restore attempt');
+        }
       }
+
+      final service = ref.read(uspInternetSettingsServiceProvider);
+      final result = await service.fetchSettings();
+
+      logger.d('[USP][Network][WAN] Fetched — '
+          'raw addressingType: "${result.debugAddressingType}", '
+          'bridgeEnabled: ${result.debugBridgeEnabled}, '
+          'detected type: ${result.form.connectionType.name}, '
+          'mtu: ${result.debugMtu}, ipv6: ${result.debugIpv6Enabled}');
+
+      return (
+        InternetSettingsSettings(form: result.form),
+        InternetSettingsStatus(
+          isLoading: false,
+          readOnlyInfo: result.readOnlyInfo,
+        ),
+      );
+    } catch (e) {
+      logger.e('[USP][Network][WAN] Fetch failed', error: e);
+      return (
+        null,
+        InternetSettingsStatus(isLoading: false, errorMessage: '$e'),
+      );
     }
+  }
 
-    final service = ref.read(uspInternetSettingsServiceProvider);
-    final (wan, ipv6) = await service.fetchSettings();
-    final form = UspInternetSettingsForm.fromGenerated(wan, ipv6);
+  // ---------------------------------------------------------------------------
+  // performSave — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
 
-    logger.d('[USP][Network][WAN]Fetched — '
-        'raw addressingType: "${wan.addressingType}", '
-        'bridgeEnabled: ${wan.bridgeEnabled}, '
-        'detected type: ${UspWanConnectionType.fromWanSettings(wan).name}, '
-        'mtu: ${wan.mtu}, ipv6: ${ipv6.ipv6Enabled}, '
-        'staticIp: "${wan.staticIpAddress}", '
-        'gateway: "${wan.defaultGateway}"');
-
-    return UspInternetSettingsState(
-      wanSettings: wan,
-      ipv6Settings: ipv6,
-      original: form,
-      edited: form,
+  @override
+  Future<void> performSave() async {
+    state = state.copyWith(
+      status: state.status.copyWith(isSaving: true, activeMutation: 'save'),
     );
+
+    try {
+      final service = ref.read(uspInternetSettingsServiceProvider);
+
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await service.saveAll(state.original, state.edited);
+        logger.d('[USP][Network][WAN] Save complete');
+      });
+
+      // After save, exit edit mode (status will be updated by re-fetch)
+      state = state.copyWith(
+        status: state.status.copyWith(
+          isEditing: false,
+          clearActiveMutation: true,
+        ),
+      );
+    } catch (e) {
+      logger.e('[USP][Network][WAN] Save failed', error: e);
+      rethrow;
+    } finally {
+      state = state.copyWith(
+        status: state.status.copyWith(
+          isSaving: false,
+          clearActiveMutation: true,
+        ),
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -105,16 +142,26 @@ class UspInternetSettingsNotifier
   // ---------------------------------------------------------------------------
 
   void enterEditMode() {
-    final s = state.requireValue;
-    state = AsyncData(s.copyWith(isEditing: true));
+    state = state.copyWith(
+      status: state.status.copyWith(isEditing: true),
+    );
   }
 
   void exitEditMode() {
-    final s = state.requireValue;
-    state = AsyncData(s.copyWith(
-      edited: s.original,
-      isEditing: false,
-    ));
+    // Revert form to original + exit edit mode
+    state = state.copyWith(
+      settings: state.settings.copyWith(current: state.settings.original),
+      status: state.status.copyWith(isEditing: false),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // revert — override to also clear isEditing
+  // ---------------------------------------------------------------------------
+
+  @override
+  void revert() {
+    exitEditMode();
   }
 
   // ---------------------------------------------------------------------------
@@ -124,82 +171,66 @@ class UspInternetSettingsNotifier
   /// Generic field updater — takes a function that returns a modified form.
   void updateField(
       UspInternetSettingsForm Function(UspInternetSettingsForm) updater) {
-    final s = state.requireValue;
-    state = AsyncData(s.copyWith(edited: updater(s.edited)));
+    final current = state.settings.current;
+    state = state.copyWith(
+      settings: state.settings.update(
+        current.copyWith(form: updater(current.form)),
+      ),
+    );
   }
 
   /// Update connection type with appropriate field resets.
   void updateConnectionType(UspWanConnectionType type) {
-    final s = state.requireValue;
-    var form = s.edited.copyWith(connectionType: type);
+    final current = state.settings.current;
+    var form = current.form.copyWith(connectionType: type);
 
     // Reset type-specific fields when switching away
     if (type == UspWanConnectionType.bridge) {
-      // Bridge mode: disable MTU, reset MAC clone
       form = form.copyWith(mtu: 0);
     }
 
-    state = AsyncData(s.copyWith(edited: form));
+    state = state.copyWith(
+      settings: state.settings.update(
+        current.copyWith(form: form),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
-  // Save
-  // ---------------------------------------------------------------------------
-
-  Future<void> save() async {
-    await _withLock(() async {
-      final s = state.requireValue;
-      final service = ref.read(uspInternetSettingsServiceProvider);
-
-      logger.d('[USP][Network][WAN]Saving changes...');
-      await service.saveAll(s.original, s.edited);
-
-      // Re-fetch to get server-confirmed values
-      final (wan, ipv6) = await service.fetchSettings();
-      final form = UspInternetSettingsForm.fromGenerated(wan, ipv6);
-
-      logger.d('[USP][Network][WAN]Save complete, re-fetched');
-      state = AsyncData(UspInternetSettingsState(
-        wanSettings: wan,
-        ipv6Settings: ipv6,
-        original: form,
-        edited: form,
-        isEditing: false,
-      ));
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // DHCP Renewal
+  // DHCP Renewal (separate from form editing)
   // ---------------------------------------------------------------------------
 
   Future<void> renewDhcpLease() async {
-    await _withLock(() async {
-      final service = ref.read(uspInternetSettingsServiceProvider);
-      logger.d('[USP][Network][WAN]Renewing DHCPv4 lease...');
-      await service.renewDhcpLease();
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      state = state.copyWith(
+        status: state.status.copyWith(activeMutation: 'renewIpv4'),
+      );
+      try {
+        final service = ref.read(uspInternetSettingsServiceProvider);
+        logger.d('[USP][Network][WAN] Renewing DHCPv4 lease...');
+        await service.renewDhcpLease();
+      } finally {
+        state = state.copyWith(
+          status: state.status.copyWith(clearActiveMutation: true),
+        );
+      }
     });
   }
 
   Future<void> renewDhcpv6Lease() async {
-    await _withLock(() async {
-      final service = ref.read(uspInternetSettingsServiceProvider);
-      logger.d('[USP][Network][WAN]Renewing DHCPv6 lease...');
-      await service.renewDhcpv6Lease();
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      state = state.copyWith(
+        status: state.status.copyWith(activeMutation: 'renewIpv6'),
+      );
+      try {
+        final service = ref.read(uspInternetSettingsServiceProvider);
+        logger.d('[USP][Network][WAN] Renewing DHCPv6 lease...');
+        await service.renewDhcpv6Lease();
+      } finally {
+        state = state.copyWith(
+          status: state.status.copyWith(clearActiveMutation: true),
+        );
+      }
     });
-  }
-
-  // ---------------------------------------------------------------------------
-  // Sequential lock guard
-  // ---------------------------------------------------------------------------
-
-  Future<T> _withLock<T>(Future<T> Function() action) async {
-    if (_mutating) throw StateError('Another mutation is in progress');
-    _mutating = true;
-    try {
-      return await action();
-    } finally {
-      _mutating = false;
-    }
   }
 }

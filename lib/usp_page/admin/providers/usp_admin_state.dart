@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/usp_page/admin/models/admin_ui_models.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/time_settings_ui_model.dart';
 
 /// Immutable state for the USP Admin page.
 class UspAdminState extends Equatable {

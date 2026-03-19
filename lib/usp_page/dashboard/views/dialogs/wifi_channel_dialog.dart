@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wifi_radio_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Dialog for editing WiFi radio channel settings.

@@ -1,169 +1,134 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_contract.dart';
+import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/usp_page/dmz/models/dmz_feature_state.dart';
+import 'package:privacy_gui/usp_page/dmz/models/dmz_settings.dart';
+import 'package:privacy_gui/usp_page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/usp_page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/usp_page/dmz/services/usp_dmz_service.dart';
 
 // ---------------------------------------------------------------------------
-// State
-// ---------------------------------------------------------------------------
-
-class UspDmzState extends Equatable {
-  /// Original UI model (from last fetch).
-  final DmzUIModel original;
-
-  /// User's pending changes — may differ from [original] before save.
-  final DmzUIModel pending;
-
-  /// Instance path of the existing DMZ entry, or null if none exists.
-  final String? instancePath;
-
-  /// Whether a save operation is in progress.
-  final bool isSaving;
-
-  const UspDmzState({
-    required this.original,
-    required this.pending,
-    this.instancePath,
-    this.isSaving = false,
-  });
-
-  bool get isDirty => original != pending;
-
-  /// True when there is no existing DMZ entry on the router.
-  bool get isNewEntry => instancePath == null;
-
-  UspDmzState copyWith({
-    DmzUIModel? original,
-    DmzUIModel? pending,
-    String? instancePath,
-    bool clearInstancePath = false,
-    bool? isSaving,
-  }) {
-    return UspDmzState(
-      original: original ?? this.original,
-      pending: pending ?? this.pending,
-      instancePath:
-          clearInstancePath ? null : (instancePath ?? this.instancePath),
-      isSaving: isSaving ?? this.isSaving,
-    );
-  }
-
-  @override
-  List<Object?> get props => [original, pending, instancePath, isSaving];
-}
-
-// ---------------------------------------------------------------------------
-// Provider
+// Providers
 // ---------------------------------------------------------------------------
 
 final uspDmzProvider =
-    AsyncNotifierProvider.autoDispose<UspDmzNotifier, UspDmzState>(
+    AutoDisposeNotifierProvider<UspDmzNotifier, DmzFeatureState>(
   UspDmzNotifier.new,
+);
+
+/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
+/// dirty-check integration.
+final preservableUspDmzProvider =
+    AutoDisposeProvider<PreservableContract<DmzSettings, DmzStatus>>(
+  (ref) => ref.watch(uspDmzProvider.notifier),
 );
 
 // ---------------------------------------------------------------------------
 // Notifier
 // ---------------------------------------------------------------------------
 
-class UspDmzNotifier extends AutoDisposeAsyncNotifier<UspDmzState> {
-  @override
-  Future<UspDmzState> build() async {
-    final usp = ref.watch(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+class UspDmzNotifier extends AutoDisposeNotifier<DmzFeatureState>
+    with
+        PreservableAutoDisposeNotifierMixin<DmzSettings, DmzStatus,
+            DmzFeatureState> {
+  UspDmzService get _svc => ref.read(uspDmzServiceProvider);
 
+  @override
+  DmzFeatureState build() {
     // SSE invalidation: re-fetch when DMZ config changes externally.
-    // Only invalidate if user has no unsaved edits.
-    ref.listen(sseInvalidationProvider, (prev, next) {
+    // Uses the framework's onSseInvalidation() — skips if dirty.
+    ref.listen(sseInvalidationProvider, (_, next) {
       if (next.valueOrNull == InvalidationDomain.dmz) {
-        final s = state.valueOrNull;
-        if (s != null && !s.isDirty && !s.isSaving) {
-          ref.invalidateSelf();
-        }
+        onSseInvalidation();
       }
     });
 
-    final dmzData = await Dmz.fetch(usp);
-
-    final svc = ref.read(uspDmzServiceProvider);
-    final uiModel = svc.buildUIModel(dmzData);
-    final instancePath =
-        dmzData.items.isNotEmpty ? dmzData.items.first.instancePath : null;
-
-    logger.d('[USP][Firewall][DMZ]DMZ fetched — '
-        'entries: ${dmzData.items.length}, '
-        'enabled: ${uiModel.isEnabled}, '
-        'instancePath: $instancePath');
-
-    return UspDmzState(
-      original: uiModel,
-      pending: uiModel,
-      instancePath: instancePath,
-    );
+    // Synchronous build with loading state; async fetch follows immediately.
+    Future.microtask(() => fetch());
+    return DmzFeatureState.initial();
   }
 
-  /// Update a single setting synchronously (no network call).
-  void updateSetting(DmzUIModel Function(DmzUIModel) updater) {
-    final s = state.valueOrNull;
-    if (s == null) return;
-    state = AsyncData(s.copyWith(pending: updater(s.pending)));
-  }
+  // ---------------------------------------------------------------------------
+  // performFetch — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
 
-  /// Save pending changes to the router.
-  ///
-  /// Logic:
-  /// - No existing entry + enabling → ADD new entry
-  /// - Existing entry + changes → UPDATE entry
-  /// - Existing entry + disabling → UPDATE with enable=false
-  Future<void> save() async {
-    final s = state.requireValue;
-    if (!s.isDirty) return;
-
-    state = AsyncData(s.copyWith(isSaving: true));
+  @override
+  Future<(DmzSettings?, DmzStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) async {
     try {
-      final usp = ref.read(uspServiceProvider)!;
-      final pending = s.pending;
+      final (settings, status) = await _svc.fetch();
 
-      if (s.isNewEntry && pending.isEnabled) {
-        // ADD new DMZ entry
-        final sourcePrefix = pending.sourceType == DmzSourceType.any
-            ? '0.0.0.0/0'
-            : pending.sourcePrefix;
-        await Dmz.add(
-          usp,
-          enable: true,
-          destIp: pending.destIp,
-          sourcePrefix: sourcePrefix,
-          description: 'DMZ',
-        );
-        logger.d(
-            '[USP][Firewall][DMZ]DMZ entry added — destIp: ${pending.destIp}');
-      } else if (!s.isNewEntry) {
-        // UPDATE existing entry
-        final sourcePrefix = pending.sourceType == DmzSourceType.any
-            ? '0.0.0.0/0'
-            : pending.sourcePrefix;
-        await Dmz.update(
-          usp,
-          DmzEntryUpdate(
-            instancePath: s.instancePath!,
-            enable: pending.isEnabled,
-            destIp: pending.destIp,
-            sourcePrefix: sourcePrefix,
-          ),
-        );
-        logger.d('[USP][Firewall][DMZ]DMZ entry updated — '
-            'enabled: ${pending.isEnabled}, destIp: ${pending.destIp}');
-      }
+      logger.d('[USP][Firewall][DMZ] Fetched — '
+          'enabled: ${settings.model.isEnabled}, '
+          'instancePath: ${settings.instancePath}');
 
-      // Re-fetch to confirm changes.
-      ref.invalidateSelf();
+      return (settings, status);
     } catch (e) {
-      state = AsyncData(s.copyWith(isSaving: false));
-      rethrow;
+      logger.e('[USP][Firewall][DMZ] Fetch failed', error: e);
+      return (
+        null,
+        DmzStatus(isLoading: false, errorMessage: '$e'),
+      );
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // performSave — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> performSave() async {
+    state = state.copyWith(
+      status: state.status.copyWith(isSaving: true),
+    );
+
+    try {
+      final settings = state.settings.current;
+      final pending = settings.model;
+
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        if (settings.isNewEntry && pending.isEnabled) {
+          await _svc.add(model: pending);
+          logger.d(
+              '[USP][Firewall][DMZ] Entry added — destIp: ${pending.destIp}');
+        } else if (!settings.isNewEntry) {
+          await _svc.update(
+            instancePath: settings.instancePath!,
+            model: pending,
+          );
+          logger.d('[USP][Firewall][DMZ] Entry updated — '
+              'enabled: ${pending.isEnabled}, destIp: ${pending.destIp}');
+        }
+      });
+    } catch (e) {
+      logger.e('[USP][Firewall][DMZ] Save failed', error: e);
+      rethrow;
+    } finally {
+      state = state.copyWith(
+        status: state.status.copyWith(isSaving: false),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI Mutation (synchronous — no network call)
+  // ---------------------------------------------------------------------------
+
+  /// Update a single DMZ setting and re-validate.
+  void updateSetting(DmzUIModel Function(DmzUIModel) updater) {
+    final current = state.settings.current;
+    final newModel = updater(current.model);
+    final errors = _svc.validateForm(newModel);
+    state = state.copyWith(
+      settings: state.settings.update(
+        current.copyWith(model: newModel),
+      ),
+      status: state.status.copyWith(fieldErrors: errors),
+    );
   }
 }

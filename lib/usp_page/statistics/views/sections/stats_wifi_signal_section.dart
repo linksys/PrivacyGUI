@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/wifi_clients.g.dart';
-import 'package:privacy_gui/usp_page/dashboard/models/wifi_performance_helpers.dart';
-import 'package:privacy_gui/usp_page/dashboard/providers/usp_dashboard_notifier.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/usp_page/_shared/models/wifi_performance_helpers.dart';
+import 'package:privacy_gui/usp_page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/usp_page/statistics/views/components/stats_section_card.dart';
+import 'package:privacy_gui/usp_page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Per-client RSSI bar chart with tier coloring.
@@ -12,8 +13,8 @@ class StatsWifiSignalSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(uspDashboardProvider).valueOrNull;
-    if (state == null) {
+    final wifiData = ref.watch(wifiDataProvider).valueOrNull;
+    if (wifiData == null) {
       return StatsSectionCard(
         title: 'WiFi Signal Strength',
         subtitle: 'Per-client signal strength (RSSI)',
@@ -27,7 +28,8 @@ class StatsWifiSignalSection extends ConsumerWidget {
       );
     }
 
-    final activeClients = _buildClientList(state);
+    final devicesData = ref.watch(devicesDataProvider).valueOrNull;
+    final activeClients = _buildClientList(wifiData, devicesData);
 
     return StatsSectionCard(
       title: 'WiFi Signal Strength',
@@ -44,13 +46,13 @@ class StatsWifiSignalSection extends ConsumerWidget {
     );
   }
 
-  List<_ClientInfo> _buildClientList(dynamic state) {
+  List<_ClientInfo> _buildClientList(
+      WifiData wifiData, DevicesData? devicesData) {
     final clients = <_ClientInfo>[];
-    for (final entry
-        in (state.wifiClientMap as Map<String, WifiClient>).entries) {
+    for (final entry in wifiData.wifiClientMap.entries) {
       final client = entry.value;
       if (!client.active) continue;
-      final device = (state.deviceModels as List)
+      final device = devicesData?.deviceModels
           .where((d) => d.mac.toUpperCase() == entry.key.toUpperCase())
           .firstOrNull;
       final name = device?.hostName ?? entry.key;
@@ -127,7 +129,7 @@ class StatsWifiSignalSection extends ConsumerWidget {
 class _ClientInfo {
   final String mac;
   final String displayName;
-  final WifiClient client;
+  final WifiClientUIModel client;
   const _ClientInfo(
       {required this.mac, required this.displayName, required this.client});
 }

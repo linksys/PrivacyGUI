@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/generated/transforms.g.dart';
+import 'package:privacy_gui/usp_page/_shared/utils/usp_formatters.dart';
 
 /// Presentation Layer Model for a single vendor log file.
 ///
@@ -19,7 +19,7 @@ class LogFileUIModel extends Equatable {
 
   /// Human-readable file size, e.g. "512 KB". Returns "Unknown" if 0.
   String get formattedSize =>
-      maximumSize > 0 ? Transforms.formatBytes(maximumSize) : 'Unknown';
+      maximumSize > 0 ? UspFormatters.formatBytes(maximumSize) : 'Unknown';
 
   @override
   List<Object?> get props => [instancePath, name, maximumSize, persistent];
