@@ -1,10 +1,10 @@
 # The Constitution of Linksys Flutter App Development
 
-**Version:** 1.0
+**Version:** 2.0
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-02-11
+**Last Amended:** 2026-03-18
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -21,7 +21,7 @@ All business logic, state management, and service code MUST have corresponding u
 **Section 1.2: Testing Standards**
 All business logic, state management, and UI changes MUST have corresponding tests:
 * **Unit tests** - Required for all Services and Providers before code review
-* **Screenshot tests** - Required for UI changes (see `doc/screenshot_testing_guideline.md`)
+* **Screenshot tests** - Deferred for USP pages until UI design is finalized and approved. Not currently required for `lib/usp_page/`. UI Kit components have their own widget tests.
 
 **Refer to Article VIII: Testing Strategy for detailed testing strategies, tool usage, and organization methods.**
 
@@ -50,14 +50,12 @@ All business logic, state management, and UI changes MUST have corresponding tes
 **Section 1.5: Test Organization**
 Tests MUST be organized as follows:
 * Unit tests:
-  - Service tests: `test/page/[feature]/services/`
-  - Provider tests: `test/page/[feature]/providers/`
-* State tests: `test/page/[feature]/providers/` (same directory as Provider tests)
-  - UI Model tests: `test/page/[feature]/models/` (only when there is an independent UI Model class)
+  - Service tests: `test/usp_page/[feature]/services/`
+  - Provider tests: `test/usp_page/[feature]/providers/`
+* State tests: `test/usp_page/[feature]/providers/` (same directory as Provider tests)
+  - UI Model tests: `test/usp_page/[feature]/models/` (only when there is an independent UI Model class)
 * Mock classes: Created inline in test files or in `test/mocks/` for shared mocks
 * Test data builders: `test/mocks/test_data/[feature_name]_test_data.dart`
-* Screenshot tests: `test/page/[feature]/localizations/*_test.dart` (tool uses pattern `localizations/.*_test.dart`)
-* Screenshot test tool: `dart tools/run_screenshot_tests.dart` automatically discovers all tests in `localizations/` subdirectories
 * All test case names do not need numbering; they should only describe the purpose of the test.
 
 **Section 1.6: Mock Creation**
@@ -74,7 +72,7 @@ For Provider and Service mocking:
 
 **Section 1.6.2: Test Data Builder Pattern**
 
-**Purpose**: To provide reusable JNAP mock responses for Service layer testing.
+**Purpose**: To provide reusable USP codegen model instances for Service layer testing.
 
 **File Organization**:
 * Test data builders are unified in the `test/mocks/test_data/` directory.
@@ -84,99 +82,56 @@ For Provider and Service mocking:
 * If data adjustment is needed, use named parameters or the `copyWith()` method.
 
 **Usage Scenarios**:
-When testing a Service, the **return value of RouterRepository** (JNAP responses) is mocked, rather than the Service itself.
+When testing a Service, **`UspService` is mocked** and the generated codegen API methods return pre-built model instances from the Test Data Builder, rather than mocking the Service itself.
 
 **Test Data Builder Example**:
 ```dart
 /// Test data builder for [FeatureName]Service tests
 ///
-/// Provides factory methods to create JNAP mock responses with sensible defaults.
+/// Provides factory methods to create USP codegen model instances with sensible defaults.
 /// This centralizes test data and makes tests more readable.
 class [FeatureName]TestData {
-  /// Create default [SettingType]Success response
-  static JNAPSuccess create[SettingType]Success({
-    bool field1 = false,
+  /// Create a default [CodengenModel] instance
+  static [CodengenModel] create[FeatureName]({
+    String field1 = 'value',
     bool field2 = false,
     // ...
-  }) => JNAPSuccess(
-    result: 'ok',
-    output: {
-      'field1': field1,
-      'field2': field2,
-      // ...
-    },
+  }) => [CodengenModel](
+    field1: field1,
+    field2: field2,
+    // ...
   );
-
-  /// Create a complete successful JNAP transaction response
-  ///
-  /// Supports partial override design: only specify fields that need to change, others use default values.
-  static JNAPTransactionSuccessWrap createSuccessfulTransaction({
-    Map<String, dynamic>? setting1,
-    Map<String, dynamic>? setting2,
-  }) {
-    // Define default values
-    final defaultSetting1 = { /* ... */ };
-    final defaultSetting2 = { /* ... */ };
-
-    // Merge default and override values
-    return JNAPTransactionSuccessWrap(
-      result: 'ok',
-      data: [
-        MapEntry(
-          JNAPAction.getSetting1,
-          JNAPSuccess(
-            result: 'ok',
-            output: {...defaultSetting1, ...?setting1},
-          ),
-        ),
-        MapEntry(
-          JNAPAction.getSetting2,
-          JNAPSuccess(
-            result: 'ok',
-            output: {...defaultSetting2, ...?setting2},
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Create a partial error response (for error handling tests)
-  static JNAPTransactionSuccessWrap createPartialErrorTransaction({
-    required JNAPAction errorAction,
-    String errorMessage = 'Operation failed',
-  }) {
-    // ... Returns a transaction containing an error
-  }
-
-  // Private helpers for default values
-  static JNAPSuccess _createDefault[SettingType]() => JNAPSuccess(...);
 }
 ```
 
 **Test Example**:
 ```dart
-// test/page/advanced_settings/dmz/services/dmz_service_test.dart
-import 'package:test/mocks/test_data/dmz_test_data.dart';
+// test/usp_page/wifi/services/wifi_service_test.dart
+import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:test/mocks/test_data/wifi_test_data.dart';
+
+class MockUspService extends Mock implements UspService {}
 
 void main() {
-  late DMZService service;
-  late MockRouterRepository mockRepo;
+  late WifiService service;
+  late MockUspService mockUsp;
 
   setUp(() {
-    mockRepo = MockRouterRepository();
-    service = DMZService(mockRepo);
+    mockUsp = MockUspService();
+    service = WifiService(mockUsp);
   });
 
   test('fetchSettings returns UI model on success', () async {
-    // Arrange: Mock RouterRepository returns JNAP response
-    when(() => mockRepo.send(any()))
-        .thenAnswer((_) async => DMZTestData.createSuccessResponse());
+    // Arrange: Mock UspService so codegen fetch returns a pre-built model
+    when(() => WifiSsids.fetch(mockUsp))
+        .thenAnswer((_) async => WifiTestData.createWifiSsids());
 
     // Act: Call Service method
     final result = await service.fetchSettings();
 
     // Assert: Verify converted UI model
-    expect(result, isA<DMZSettingsUIModel>());
+    expect(result, isA<WifiSettingsUIModel>());
   });
 }
 ```
@@ -268,12 +223,12 @@ class SpeedTestUIModel extends Equatable { ... }
 class FirmwareUpdateUIModel extends Equatable { ... }
 ```
 
-**Data Models** (JNAP/Cloud):
+**Generated Models** (USP Codegen, `lib/generated/*.g.dart`):
 ```dart
-// Naming pattern: According to JNAP domain name
-class DMZSettings extends Equatable { ... }  // JNAP model
-class WirelessSettings extends Equatable { ... }
-class DeviceInfo extends Equatable { ... }
+// Naming pattern: According to TR-181 object name, generated by usp-codegen
+class WiFiRadios { ... }    // generated from Device.WiFi.Radio.{i}.
+class WifiSsids { ... }     // generated from Device.WiFi.SSID.{i}.
+class DeviceInfo { ... }    // generated from Device.DeviceInfo.
 ```
 
 **3.3.5: Error Classes**
@@ -300,11 +255,10 @@ final class AuthFailure<T> extends AuthResult<T> { ... }
 // Naming pattern: [Feature]TestData
 class AuthTestData {
   static SessionToken createValidToken() => ...;
-  static JNAPSuccess createSuccessResponse() => ...;
 }
 
-class DMZTestData {
-  static JNAPSuccess createDMZSettingsSuccess() => ...;
+class WifiTestData {
+  static WifiSsids createWifiSsids() => ...;
 }
 ```
 
@@ -312,7 +266,7 @@ class DMZTestData {
 ```dart
 // Naming pattern: Mock[ClassName]
 class MockAuthService extends Mock implements AuthService {}
-class MockRouterRepository extends Mock implements RouterRepository {}
+class MockUspService extends Mock implements UspService {}
 class MockAuthNotifier extends Mock implements AuthNotifier {}
 ```
 
@@ -339,7 +293,7 @@ final dmzSettingsProvider = NotifierProvider<DMZSettingsNotifier, DMZSettingsSta
 **3.4.3: Simple Providers**
 ```dart
 // Naming pattern: descriptive name + Provider
-final routerRepositoryProvider = Provider<RouterRepository>((ref) => ...);
+final uspServiceProvider = Provider<UspService>((ref) => ...);
 final cloudRepositoryProvider = Provider<LinksysCloudRepository>((ref) => ...);
 ```
 
@@ -351,23 +305,23 @@ All directories must use `snake_case`:
 
 **3.5.1: Feature Directory**
 ```
-lib/page/advanced_settings/     # Singular or plural based on semantics
-lib/page/instant_setup/
-lib/page/health_check/
+lib/usp_page/dashboard/
+lib/usp_page/wifi/
+lib/usp_page/devices/
 ```
 
 **3.5.2: Component Directory**
 ```
-lib/page/[feature]/views/       # Plural - Container directory
-lib/page/[feature]/providers/   # Plural - Container directory
-lib/page/[feature]/services/    # Plural - Container directory
-lib/page/[feature]/models/      # Plural - Container directory
+lib/usp_page/[feature]/views/       # Plural - Container directory
+lib/usp_page/[feature]/providers/   # Plural - Container directory
+lib/usp_page/[feature]/services/    # Plural - Container directory
+lib/usp_page/[feature]/models/      # Plural - Container directory
 ```
 
 **3.5.3: Test Directory**
 ```
-test/page/[feature]/services/
-test/page/[feature]/providers/
+test/usp_page/[feature]/services/
+test/usp_page/[feature]/providers/
 test/mocks/
 test/mocks/test_data/
 ```
@@ -398,16 +352,16 @@ group('DMZService - Settings Transformation', () { ... });
 
 **3.6.3: Test File Organization**
 ```dart
-// test/page/advanced_settings/dmz/services/dmz_service_test.dart
+// test/usp_page/wifi/services/wifi_service_test.dart
 void main() {
-  group('DMZService - fetchSettings', () {
+  group('WifiService - fetchSettings', () {
     test('returns UI model on success', () { ... });
-    test('throws ServiceError on JNAP failure', () { ... });
+    test('throws ServiceError on USP error', () { ... });
   });
 
-  group('DMZService - saveSettings', () {
-    test('transforms UI model to JNAP model', () { ... });
-    test('persists settings via RouterRepository', () { ... });
+  group('WifiService - updateSsid', () {
+    test('transforms UI model to codegen update', () { ... });
+    test('calls UspService with correct parameters', () { ... });
   });
 }
 ```
@@ -424,32 +378,36 @@ void main() {
 **Section 5.1: The Simplicity Gate**
 Complexity must be justified. Implementations must avoid "future-proofing" for speculative requirements.
 
-**Section 5.2: Feature Structure**
-Each feature should follow a consistent, minimal structure:
-* `lib/page/[feature]/views/` - UI components
-* `lib/page/[feature]/providers/` - State management
-* `lib/page/[feature]/services/` - Business logic (when needed)
-* `lib/page/[feature]/models/` - UI models (when needed)
+**Section 5.2: Avoid Over-Engineering**
+Do not create abstractions, interfaces, or layers until there is a concrete need. Start simple and refactor when patterns emerge.
 
-**Section 5.3: Architectural Layers and Separation of Concerns**
+**Section 5.3: Feature Structure**
+Each feature should follow a consistent, minimal structure:
+* `lib/usp_page/[feature]/views/` - UI components
+* `lib/usp_page/[feature]/providers/` - State management
+* `lib/usp_page/[feature]/services/` - Business logic (when needed)
+* `lib/usp_page/[feature]/models/` - UI models (when needed)
+
+**Section 5.4: Architectural Layers and Separation of Concerns**
 
 **Principle**: Strictly follow the three-tier architecture. The dependency direction must **always be downward**, and reverse dependencies are not allowed.
 
 ```
 ┌─────────────────────────────────┐
-│  Presentation (UI/Pages)         │  ← Responsible only for display and user interaction
-│  lib/page/*/views/              │
+│  Presentation (UI/Pages)        │  ← Responsible only for display and user interaction
+│  lib/usp_page/*/views/          │
 └────────────┬────────────────────┘
              │ Dependency
 ┌────────────▼────────────────────┐
 │ Application (Business Logic Layer)│  ← State management and business logic
-│  - lib/page/*/providers/        │  ← Notifiers (State Management)
-│  - lib/page/*/services/         │  ← Services (Business Logic)
+│  - lib/usp_page/*/providers/    │  ← Notifiers (State Management)
+│  - lib/usp_page/*/services/     │  ← Services (Business Logic)
 └────────────┬────────────────────┘
              │ Dependency
 ┌────────────▼────────────────────┐
-│  Data (Data Layer)               │  ← Data acquisition, local storage, parsing
-│  lib/core/jnap/, lib/core/cloud/│
+│  Data (Data Layer)               │  ← USP protocol communication, local storage
+│  lib/generated/*.g.dart          │  ← usp-codegen generated API
+│  lib/usp/                        │  ← UspService, transport layer
 └─────────────────────────────────┘
 ```
 
@@ -457,116 +415,119 @@ Each feature should follow a consistent, minimal structure:
 - **Presentation**: UI rendering, user input, state observation (access only Providers).
 - **Application**:
   - **Providers (Notifiers)**: State management, user interaction coordination.
-  - **Services**: Business logic, API communication, data transformation.
-- **Data**: API calls (JNAP, Cloud), database access, data model definitions.
+  - **Services**: Business logic, data transformation (generated models → UI models).
+- **Data**: Execute data operations via codegen API (`lib/generated/*.g.dart`); the underlying transport uses `UspService` for USP protocol communication with the router.
 
 **Key Principle**: Different levels should use **different data models**, and the models for each layer should only be used in that layer and below.
 
-**Section 5.3.1: Model Hierarchy Categorization**
+**Section 5.4.1: Model Hierarchy Categorization**
 
 ```
 ┌─────────────────────────────────────────┐
 │  Presentation Layer Models (UI Models)  │
 │  - Used for UI display and user input     │
-│  - ❌ Prohibition of direct dependency on JNAP Data Models │
+│  - ❌ Prohibition of direct dependency on Generated Models │
 └────────────────┬────────────────────────┘
                  │ Transformation
 ┌────────────────▼───────────────────────────┐
 │  Application Layer Models (DTO/State)      │
 │  - Business layer transformation models       │
-│  - Bridge between Data Models and Presentation │
-│  - Service layer performs Data Models ↔ UI Models transformation │
+│  - Bridge between Generated Models and Presentation │
+│  - Service layer performs Generated Models ↔ UI Models transformation │
 └────────────────┬───────────────────────────┘
                  │ Transformation
 ┌────────────────▼────────────────────────┐
-│  Data Layer Models (Data Models)        │
-│  - DMZSettings, DMZSourceRestriction    │
-│  - Direct mapping of JNAP and API responses │
+│  Data Layer Models (Generated Models)   │
+│  - WiFiRadios, WifiSsids, DeviceInfo    │
+│  - Auto-generated from TR-181 YAML definitions │
 │  - ❌ Prohibition in Provider and UI layers │
 └─────────────────────────────────────────┘
 ```
 
-**Section 5.3.2: Common Violations and Fixes**
+**Section 5.4.2: Common Violations and Fixes**
 
-**Direct use of JNAP Models in Provider**
+**Direct use of Generated Models in Provider**
 
 ❌ **Violation**:
 ```dart
-// lib/page/advanced_settings/dmz/providers/dmz_settings_provider.dart
-import 'package:privacy_gui/core/jnap/models/dmz_settings.dart';
+// lib/usp_page/wifi/providers/wifi_provider.dart
+import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 
-class DMZSettingsNotifier extends Notifier<DMZSettingsState> {
-  Future<void> performSave() async {
-    final domainSettings = DMZSettings(...);  // ❌ Should not be here
-    await repo.send(..., data: domainSettings.toMap());
+class WifiNotifier extends AsyncNotifier<WifiState> {
+  Future<void> build() async {
+    final usp = ref.read(uspServiceProvider);
+    final ssids = await WifiSsids.fetch(usp);  // ❌ Should not be here
+    state = AsyncData(WifiState(ssids: ssids));
   }
 }
 ```
 
 ✅ **Fix**:
 ```dart
-// lib/page/advanced_settings/dmz/providers/dmz_settings_provider.dart
-class DMZSettingsNotifier extends Notifier<DMZSettingsState> {
-  Future<void> performSave() async {
-    final service = ref.read(dmzSettingsServiceProvider);
-    await service.saveDmzSettings(ref, state.settings.current);  // UI Model
+// lib/usp_page/wifi/providers/wifi_provider.dart
+class WifiNotifier extends AsyncNotifier<WifiState> {
+  @override
+  Future<WifiState> build() async {
+    final service = ref.read(wifiServiceProvider);
+    return service.fetchSettings();  // Service returns UI models
   }
 }
 
-// lib/page/advanced_settings/dmz/services/dmz_settings_service.dart
-final dmzSettingsServiceProvider = Provider<DMZSettingsService>((ref) {
-  return DMZSettingsService(ref.watch(routerRepositoryProvider));
+// lib/usp_page/wifi/services/wifi_service.dart
+final wifiServiceProvider = Provider<WifiService>((ref) {
+  return WifiService(ref.watch(uspServiceProvider));
 });
 
-class DMZSettingsService {
-  final RouterRepository _routerRepository;
+class WifiService {
+  final UspService _usp;
 
-  DMZSettingsService(this._routerRepository);
+  WifiService(this._usp);
 
-  Future<void> saveDmzSettings(Ref ref, DMZSettingsUIModel settings) async {
-    // Service layer is responsible for transformation between UI Model and Data Model (JNAP Data)
-    final dataModel = DMZSettings(...);
-    await _routerRepository.send(..., data: dataModel.toMap());
+  Future<WifiState> fetchSettings() async {
+    // Service is responsible for fetching generated models and transforming to UI models
+    final ssids = await WifiSsids.fetch(_usp);
+    return WifiState(
+      ssidModels: ssids.items.map(_toUIModel).toList(),
+    );
   }
 }
 ```
 
-**Section 5.3.3: Architecture Compliance Check**
+**Section 5.4.3: Architecture Compliance Check**
 
 After completing the work, execute the following checks:
 
 ```bash
 # ═══════════════════════════════════════════════════════════════
-# JNAP Models Tier Isolation Check
+# Generated Models Tier Isolation Check
 # ═══════════════════════════════════════════════════════════════
 
-# 1️⃣ Check if JNAP models are still imported in the Provider layer
-grep -r "import.*jnap/models" lib/page/*/providers/
+# 1️⃣ Check if generated models are imported in the Provider layer
+grep -r "import.*generated/" lib/usp_page/*/providers/
 # ✅ Should return 0 results
 
-# 2️⃣ Check if JNAP models are still imported in the UI layer
-grep -r "import.*jnap/models" lib/page/*/views/
+# 2️⃣ Check if generated models are imported in the UI layer
+grep -r "import.*generated/" lib/usp_page/*/views/
 # ✅ Should return 0 results
 
-# 3️⃣ Check if Service layer has correct JNAP imports
-grep -r "import.*jnap/models" lib/page/*/services/
-# ✅ Should have results (Service layer should import JNAP models)
+# 3️⃣ Check if Service layer correctly imports generated models
+grep -r "import.*generated/" lib/usp_page/*/services/
+# ✅ Should have results (Service layer should import generated models)
 
 # ═══════════════════════════════════════════════════════════════
 # Error Handling Tier Isolation Check (Article XIII)
 # ═══════════════════════════════════════════════════════════════
 
-# 4️⃣ Check if Provider layer has JNAPError or jnap_result imports
-grep -r "import.*jnap/result" lib/page/*/providers/
-grep -r "on JNAPError" lib/page/*/providers/
-# ✅ Should return 0 results
+# 4️⃣ Check if Provider layer has ServiceError imports (correct)
+grep -r "import.*core/errors/service_error" lib/usp_page/*/providers/
+# ✅ Should have results when providers handle errors
 
 # 5️⃣ Check if Service layer correctly imports ServiceError
-grep -r "import.*core/errors/service_error" lib/page/*/services/
+grep -r "import.*core/errors/service_error" lib/usp_page/*/services/
 # ✅ Should have results (Service layer should import ServiceError)
 ```
 
-**Section 5.3.4: UI Model Creation Decision Criteria**
+**Section 5.4.4: UI Model Creation Decision Criteria**
 
 **Principle**: Not all states require a standalone UI Model. Create a UI Model only when necessary to avoid over-engineering.
 
@@ -595,7 +556,7 @@ grep -r "import.*core/errors/service_error" lib/page/*/services/
    - Example: `RouterPasswordState` (isDefault, isSetByUser, adminPassword, hint, etc.).
 
 2. **Simple One-to-One Mapping**
-   - Direct mapping from Service/JNAP data to state without complex transformation.
+   - Direct mapping from Service (USP codegen) data to state without complex transformation.
 
 **Decision Flowchart**:
 ```
@@ -639,21 +600,18 @@ class FirmwareUpdateState {
 }
 ```
 
-**Section 5.4: Avoid Over-Engineering**
-Do not create abstractions, interfaces, or layers until there is a concrete need. Start simple and refactor when patterns emerge.
-
 ---
 
 ## Article VI: The Service Layer Principle
 
 **Section 6.1: Service Layer Mandate**
-Complex business logic and external communication (JNAP protocol, Cloud APIs) MUST be encapsulated in Service classes. Services act as the bridge between Providers and external systems.
+Complex business logic and external communication (USP protocol via codegen API, Cloud APIs) MUST be encapsulated in Service classes. Services act as the bridge between Providers and external systems.
 
 **Section 6.2: Service Responsibilities**
 Services SHALL:
-* Handle all JNAP API communication
+* Call codegen API (`lib/generated/`) via `UspService` to fetch and update router data
 * Implement business logic and data transformations
-* Return domain/UI models, not raw API responses
+* Return domain/UI models, not raw codegen models
 * Be stateless (no internal state management)
 * Accept dependencies via constructor injection
 
@@ -664,13 +622,14 @@ Services SHALL NOT:
 
 **Section 6.3: File Organization**
 Services MUST be organized as follows:
-* Location: `lib/page/[feature]/services/`
+* Location: `lib/usp_page/[feature]/services/`
 * Folder: `services/` (plural folder name)
 * File naming: Follow **Article III Section 3.2** (files use `snake_case`)
 * Provider naming: Follow **Article III Section 3.4.1** (providers use `lowerCamelCase`)
 * Provider type: Use `Provider<T>` (stateless, NOT `NotifierProvider` or `StateNotifierProvider`)
 * Dependencies: Inject via `ref.watch()` in the provider definition
-**Reference implementation:** `lib/page/instant_admin/services/router_password_service.dart`
+
+**Reference implementation:** `lib/usp_page/dashboard/services/usp_device_service.dart`
 
 **Section 6.4: Provider-Service Separation**
 Clear separation of concerns MUST be maintained:
@@ -680,30 +639,29 @@ Clear separation of concerns MUST be maintained:
 * Handle user interactions and lifecycle
 * Call Service methods
 * Transform service results into state updates
-* Location: `lib/page/[feature]/providers/`
+* Location: `lib/usp_page/[feature]/providers/`
 
 **Services** (Business Logic):
 * Handle business logic and orchestration
-* Communicate with JNAP API via RouterRepository
-* Transform API data to UI models
+* Call codegen API via `UspService`
+* Transform generated models to UI models
 * Provide pure, testable functions
-* Location: `lib/page/[feature]/services/`
+* Location: `lib/usp_page/[feature]/services/`
 
 **Section 6.5: Testing Requirements**
 Services MUST have unit tests that:
-* Mock the RouterRepository and other dependencies
-* Verify data transformations (JNAP models → UI models)
+* Mock `UspService` and other dependencies
+* Verify data transformations (generated models → UI models)
 * Test error handling paths
 
-**Test organization:** `test/page/[feature]/services/`
+**Test organization:** `test/usp_page/[feature]/services/`
 
 **Refer to Article VIII Section 8.2 (Unit Testing) for a detailed testing strategy.**
 
 **Section 6.6: Reference Implementations**
 See these existing services as examples:
-* `lib/page/health_check/services/health_check_service.dart`
-* `lib/page/instant_setup/services/pnp_service.dart`
-* `lib/page/vpn/service/vpn_service.dart`
+* `lib/usp_page/dashboard/services/usp_device_service.dart`
+* `lib/usp_page/instant_safety/providers/instant_safety_provider.dart`
 
 **Section 6.7: Distinction from Article VII**
 The Service layer is a LEGITIMATE abstraction that:
@@ -727,8 +685,8 @@ Examples of PROHIBITED abstractions:
 **Section 7.2: Legitimate Abstractions**
 The following abstractions ARE permitted and encouraged:
 * **Service layer classes for business logic** (see Article VI)
-* JNAP protocol abstractions for router communication
-* RouterRepository for centralizing JNAP command execution
+* USP codegen API (`lib/generated/`) for type-safe router communication
+* `UspService` for centralizing USP protocol communication
 * Data transformation functions that add semantic value
 
 **Section 7.3: Data Representation**
@@ -741,21 +699,21 @@ The following abstractions ARE permitted and encouraged:
 **Example:**
 ```dart
 // ✅ Correct: Use different models across layers
-// Data Layer
-class DMZSettings { ... }  // JNAP model
+// Data Layer (lib/generated/)
+class WiFiRadios { ... }  // generated model
 
 // Application Layer (Service transformation)
-DMZSettingsUIModel convertToUI(DMZSettings data) => ...
+WifiRadioUIModel convertToUI(WiFiRadio radio) => ...
 
 // Presentation Layer
-class DMZSettingsUIModel { ... }  // UI model
+class WifiRadioUIModel { ... }  // UI model
 
 // ❌ Incorrect: Redundant within the same layer
-class DMZSettings1 { ... }
-class DMZSettings2 { ... }  // Semantically identical to DMZSettings1
+class WifiRadioUIModel1 { ... }
+class WifiRadioUIModel2 { ... }  // Semantically identical to WifiRadioUIModel1
 ```
 
-**Refer to Article V Section 5.3.1 (Cross-tier Model Transformation Specification) for detailed explanation.**
+**Refer to Article V Section 5.4.1 (Cross-tier Model Transformation Specification) for detailed explanation.**
 
 ---
 
@@ -764,25 +722,27 @@ class DMZSettings2 { ... }  // Semantically identical to DMZSettings1
 **Section 8.1: Test Pyramid Approach**
 Follow a balanced testing strategy:
 * **Many fast unit tests** - Test Services and Providers in isolation with mocks
-* **Moderate screenshot tests** - Verify UI rendering with golden files
+* **Screenshot tests** - Only required for pages with finalized UI design. Currently deferred for all `lib/usp_page/` pages — see **Section 1.2**.
 
 **Section 8.2: Unit Testing**
 Unit tests MUST:
 * **Provided for all Services and Providers** before code review
-* **Mock external dependencies** (RouterRepository, other services) using Mocktail
+* **Mock external dependencies** (UspService, other services) using Mocktail
 * **Test business logic in isolation** - No network calls, no real storage operations
 * **Be fast and deterministic** - No flaky tests, no time-dependent assertions
 
 **Mocking Requirements:**
 * Use Mocktail for all mocks (see Article I Section 1.6.1 for detailed patterns)
-* Mock RouterRepository when testing Services
+* Mock UspService when testing Services
 * Mock Services when testing Providers
-* Use Test Data Builders for JNAP responses (see Article I Section 1.6.2)
+* Use Test Data Builders for USP codegen model instances (see Article I Section 1.6.2)
 
 **Section 8.3: Screenshot Testing**
 
+**USP Pages Exception**: Screenshot tests for `lib/usp_page/` are currently deferred until UI design is finalized. See **Section 1.2**.
+
 **When Required:**
-* Screenshot tests (golden files) MUST be provided for all UI changes
+* Screenshot tests (golden files) MUST be provided for all UI changes with finalized design
 * Required before code review to verify visual consistency
 
 **File Organization:**
@@ -805,32 +765,6 @@ Run `dart tools/run_screenshot_tests.dart` with optional flags:
 
 ---
 
-## Article IX: Documentation Standards
-
-**Section 9.1: API Contract Documentation**
-API contracts and interface specifications MUST be documented in Markdown (.md) format, not as executable code files.
-
-**Section 9.2: Contract File Format**
-Contract documentation SHALL:
-* Use `.md` file extension for clarity that they are documentation, not code
-* Be stored in `specs/[feature-id]/contracts/` directories
-* Include method signatures, parameter descriptions, return types, and usage examples
-* Use Markdown code blocks for code examples
-* NOT be written as `.dart` files, even if they contain Dart code examples
-
-**Section 9.3: Rationale**
-Contract files serve as specification documents, not executable code:
-* Markdown format clearly indicates the file is documentation
-* `.dart` files may be mistaken for executable source code
-* Markdown provides better formatting options for documentation
-* IDEs and tools handle documentation differently from source code
-
-**Section 9.4: Examples**
-* ✅ Acceptable: `specs/001-auth-service-extraction/contracts/auth_service_contract.md`
-* ❌ Prohibited: `specs/001-auth-service-extraction/contracts/auth_service_contract.dart`
-
----
-
 ## Article X: Code Review Standards
 
 **Section 10.1: Review Checklist**
@@ -849,7 +783,7 @@ Contract files serve as specification documents, not executable code:
 - ✅ Edge cases handled properly (null checks, error handling)
 
 **Compatibility**:
-- ✅ All existing tests pass
+- ✅ All unit tests within the modified scope pass
 
 ---
 
@@ -857,11 +791,12 @@ Contract files serve as specification documents, not executable code:
 
 **Section 11.1: Model Requirements**
 
-All Models (Data Models, UI Models, State, etc.) **MUST**:
-1. ✅ Implement `Equatable` interface
-2. ✅ Provide `toJson()` and `fromJson()` methods
-3. ✅ Provide `toMap()` and `fromMap()` methods
-4. ✅ Optional: Use `freezed` or `json_serializable` for code generation
+Developer-written UI Models and State classes **MUST**:
+1. ✅ Implement `Equatable` interface (required for Riverpod state comparison)
+2. ⚠️ Provide `toJson()` and `fromJson()` only when local persistence is required (e.g., `shared_preferences`)
+3. ✅ Optional: Use `freezed` or `json_serializable` for code generation
+
+**Note**: Generated Models (`lib/generated/*.g.dart`) are exempt from these requirements — their structure is managed by `usp-codegen`. `toMap()`/`fromMap()` are no longer required; USP codegen handles all protocol-level data conversion.
 
 ---
 
@@ -871,29 +806,29 @@ All Models (Data Models, UI Models, State, etc.) **MUST**:
 
 **Principles**:
 - ✅ Use Riverpod to manage all mutable state
-- ✅ Use `Notifier` for state operations
+- ✅ USP pages use `AsyncNotifier`: `build()` is async fetch itself — no manual trigger needed
 
 **Section 12.2: Notifier Responsibility Definition**
 
 **Notifier Responsibilities**:
 - Only perform **business logic coordination** (no API details)
-- **Depend on** Service/Repository (no direct dependency on low-level APIs)
+- **Depend on** Service (no direct dependency on low-level APIs or Generated Models)
 - **No involvement** in UI layer decisions (e.g., navigation, Toast)
 
 **Correct Example**:
 ```dart
-class MyFeatureNotifier extends Notifier<MyFeatureState> {
+// USP standard pattern: use AsyncNotifier, build() auto-fetches
+class WifiNotifier extends AsyncNotifier<WifiState> {
   @override
-  MyFeatureState build() => MyFeatureState.initial();
+  Future<WifiState> build() async {
+    final service = ref.read(wifiServiceProvider);
+    return service.fetchSettings();  // build() returns data directly, no manual trigger
+  }
 
-  Future<void> loadData() async {
-    final service = ref.read(myFeatureServiceProvider);
-    final result = await service.fetchData();
-
-    state = state.copyWith(
-      data: result,
-      isLoading: false,
-    );
+  Future<void> updateSsid(String newName) async {
+    final service = ref.read(wifiServiceProvider);
+    await service.updateSsid(newName);
+    ref.invalidateSelf();  // re-triggers build() to refresh state
   }
 }
 ```
@@ -908,7 +843,7 @@ class MyFeatureNotifier extends Notifier<MyFeatureState> {
 - Implement `performFetch()` and `performSave()` methods
 
 **Reference Examples**:
-- `lib/page/instant_privacy/providers/instant_privacy_provider.dart`
+- `lib/usp_page/instant_privacy/providers/instant_privacy_provider.dart`
 - `lib/providers/notifier_mixin.dart` (PreservableNotifierMixin definition)
 
 **Detailed Guide**: `doc/dirty_guard/dirty_guard_framework_guide.md`
@@ -929,10 +864,18 @@ LinksysRoute(
 
 **Section 13.1: Unified Error Handling Principle**
 
-**Principle**: All errors from the data layer (JNAP, Cloud API, future data systems) MUST be converted to a unified `ServiceError` type in the Service layer. The Provider layer MUST NOT directly handle data-layer-specific error types.
+**Principle**: All errors from the data layer (USP protocol, Cloud API) MUST be caught in the **Service layer** and converted to a unified `ServiceError` type. The Provider and UI layers MUST NOT directly depend on data-layer-specific error types.
+
+`ServiceError` acts as the **isolation boundary** between the data layer and the application layer:
+
+| Layer | Allowed error types | Description |
+|-------|------|------|
+| **Service layer** | Any underlying exception (for conversion) | The only place allowed to `catch (e)` |
+| **Provider layer** | `ServiceError` only | MUST NOT import or catch underlying exceptions |
+| **UI layer** | `ServiceError` only | Displays messages mapped from `ServiceError` types |
 
 **Purpose**:
-- **Isolate data layer implementation**: When switching data sources (e.g., JNAP → new system), only the Service layer needs modification
+- **Isolate data layer implementation**: When the underlying protocol changes (e.g., USP → something else), only the Service layer's conversion logic needs updating — Provider and UI layers are unaffected
 - **Type-safe error handling**: Use sealed classes to provide compile-time checks and exhaustiveness verification
 - **Consistent error contract**: Provider and UI layers use a unified error interface
 
@@ -971,42 +914,42 @@ final class UnexpectedError extends ServiceError {
 
 **Section 13.3: Service Layer Error Handling**
 
-**Responsibility**: The Service layer is responsible for catching all data layer errors and converting them to `ServiceError`.
+**Responsibility**: The Service layer is the **only** place allowed to directly catch underlying exceptions (USP/WASM), and is responsible for converting them to `ServiceError`.
 
 **Correct Example**:
 ```dart
-// lib/page/instant_admin/services/router_password_service.dart
-Future<Map<String, dynamic>> verifyRecoveryCode(String code) async {
+// lib/usp_page/wifi/services/wifi_service.dart
+Future<WifiState> fetchSettings() async {
   try {
-    await _routerRepository.send(JNAPAction.verifyRouterResetCode, ...);
-    return {'isValid': true};
-  } on JNAPError catch (e) {
-    // ✅ Convert to ServiceError in Service layer
-    throw _mapJnapError(e);
+    final ssids = await WifiSsids.fetch(_usp);  // codegen call, may throw underlying exception
+    return WifiState(ssidModels: ssids.items.map(_toUIModel).toList());
+  } catch (e) {
+    // ✅ Convert all underlying exceptions to ServiceError in Service layer
+    throw UnexpectedError(originalError: e);
   }
 }
+```
 
-ServiceError _mapJnapError(JNAPError error) {
-  return switch (error.result) {
-    'ErrorInvalidResetCode' => InvalidResetCodeError(
-        attemptsRemaining: _parseAttempts(error),
-      ),
-    'ErrorAdminAccountLocked' => const AdminAccountLockedError(),
-    'ErrorInvalidAdminPassword' => const InvalidAdminPasswordError(),
-    _ => UnexpectedError(originalError: error),
-  };
+For known business rule violations, convert to a specific `ServiceError` subtype:
+```dart
+Future<void> updatePassword(String newPassword) async {
+  try {
+    await AdminSettings.update(_usp, AdminSettingsUpdate(password: newPassword));
+  } catch (e) {
+    if (e.toString().contains('ErrorInvalidPassword')) {
+      throw const InvalidAdminPasswordError();
+    }
+    throw UnexpectedError(originalError: e);
+  }
 }
 ```
 
 **Wrong Example**:
 ```dart
-// ❌ Wrong: Directly rethrow JNAPError
-Future<void> someMethod() async {
-  try {
-    await _routerRepository.send(...);
-  } on JNAPError {
-    rethrow;  // ❌ Should not let JNAPError leak to Provider layer
-  }
+// ❌ Wrong: No catch — underlying exception leaks directly to Provider layer
+Future<WifiState> fetchSettings() async {
+  final ssids = await WifiSsids.fetch(_usp);  // ❌ If this fails, raw exception propagates up
+  return WifiState(ssidModels: ssids.items.map(_toUIModel).toList());
 }
 ```
 
@@ -1014,69 +957,45 @@ Future<void> someMethod() async {
 
 **Section 13.4: Provider Layer Error Handling**
 
-**Responsibility**: The Provider layer only handles `ServiceError` types and MUST NOT import or handle JNAP-related errors.
+**Responsibility**: The Provider layer only handles `ServiceError` types. `build()` exceptions are automatically wrapped as `AsyncError` state by `AsyncNotifier`; mutation methods require explicit error handling.
 
 **Correct Example**:
 ```dart
-// lib/page/instant_admin/providers/router_password_provider.dart
+// lib/usp_page/wifi/providers/wifi_notifier.dart
 import 'package:privacy_gui/core/errors/service_error.dart';
 
-Future<bool> checkRecoveryCode(String code) async {
+// build() needs no try-catch — AsyncNotifier handles it automatically
+@override
+Future<WifiState> build() async {
+  final svc = ref.read(wifiServiceProvider);
+  return svc.fetchSettings();  // ServiceError automatically becomes AsyncError state
+}
+
+// Mutation methods require explicit handling
+Future<void> updatePassword(String newPassword) async {
   try {
-    final result = await service.verifyRecoveryCode(code);
-    return result['isValid'];
-  } on InvalidResetCodeError catch (e) {
-    // ✅ Handle ServiceError subclass
-    state = state.copyWith(remainingAttempts: e.attemptsRemaining);
-    return false;
-  } on AdminAccountLockedError {
-    // ✅ Handle ServiceError subclass
-    state = state.copyWith(isLocked: true);
-    return false;
+    final svc = ref.read(wifiServiceProvider);
+    await svc.updatePassword(newPassword);
+  } on InvalidAdminPasswordError {
+    // ✅ Handle known ServiceError subtype
+    state = AsyncError(const InvalidAdminPasswordError(), StackTrace.current);
   } on ServiceError catch (e) {
     // ✅ Handle other ServiceErrors
-    logger.e('Unexpected error: $e');
-    return false;
+    state = AsyncError(e, StackTrace.current);
   }
+  // ❌ Do NOT catch generic Exception — unknown errors should bubble up
 }
 ```
 
 **Wrong Example**:
 ```dart
-// ❌ Wrong: Provider directly handles JNAPError
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-
-Future<bool> checkRecoveryCode(String code) async {
+// ❌ Wrong: Provider swallows generic exceptions without converting
+Future<void> updatePassword(String newPassword) async {
   try {
-    ...
-  } on JNAPError catch (e) {  // ❌ Should not appear in Provider layer
-    if (e.result == 'ErrorInvalidResetCode') { ... }
+    await svc.updatePassword(newPassword);
+  } catch (e) {  // ❌ Absorbs all exceptions — UI won't know the operation failed
+    logger.e(e);
   }
-}
-```
-
----
-
-**Section 13.5: Future Data Source Migration**
-
-When switching data sources (e.g., JNAP → new system):
-
-| Layer | Impact |
-|-------|--------|
-| **ServiceError** | ✅ No change (contract/interface) |
-| **Service Implementation** | ⚠️ Modify error mapping logic |
-| **Provider** | ✅ No change |
-| **UI** | ✅ No change |
-
-**Example**:
-```dart
-// Future: New data system error mapping
-ServiceError _mapNewSystemError(NewSystemError error) {
-  return switch (error.code) {
-    ErrorCode.invalidCode => InvalidResetCodeError(...),
-    ErrorCode.accountLocked => const AdminAccountLockedError(),
-    _ => UnexpectedError(originalError: error),
-  };
 }
 ```
 
@@ -1159,4 +1078,4 @@ Code Review MUST check:
 
 ---
 
-**Version**: 1.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2026-02-11
+**Version**: 2.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2026-03-18
