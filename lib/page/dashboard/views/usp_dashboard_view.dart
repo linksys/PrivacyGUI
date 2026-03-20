@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/demo/providers/demo_ui_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_fab.dart';
 import 'package:privacy_gui/demo/theme_studio/theme_studio_panel.dart';
@@ -67,30 +68,32 @@ class UspDashboardView extends ConsumerWidget {
         ),
 
         // Theme Studio Panel (animated slide-in from right)
-        Consumer(
-          builder: (context, ref, _) {
-            final isOpen = ref.watch(demoUIProvider).isThemePanelOpen;
-            return AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOutCubic,
-              top: 0,
-              bottom: 0,
-              right: isOpen ? 0 : -500,
-              width: 500,
-              child: const Material(
-                elevation: 16,
-                child: ThemeStudioPanel(),
-              ),
-            );
-          },
-        ),
+        if (BuildConfig.enableThemeStudio)
+          Consumer(
+            builder: (context, ref, _) {
+              final isOpen = ref.watch(demoUIProvider).isThemePanelOpen;
+              return AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutCubic,
+                top: 0,
+                bottom: 0,
+                right: isOpen ? 0 : -500,
+                width: 500,
+                child: const Material(
+                  elevation: 16,
+                  child: ThemeStudioPanel(),
+                ),
+              );
+            },
+          ),
 
         // Theme Studio FAB
-        const Positioned(
-          bottom: 16,
-          right: 16,
-          child: ThemeStudioFab(),
-        ),
+        if (BuildConfig.enableThemeStudio)
+          const Positioned(
+            bottom: 16,
+            right: 16,
+            child: ThemeStudioFab(),
+          ),
       ],
     );
   }

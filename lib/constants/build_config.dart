@@ -46,6 +46,11 @@ class BuildConfig {
   static const bool customLayout =
       bool.fromEnvironment('custom_layout', defaultValue: false);
 
+  static const bool enableThemeStudio =
+      bool.fromEnvironment('theme_studio', defaultValue: false);
+  static const bool enableTestConsole =
+      bool.fromEnvironment('test_console', defaultValue: false);
+
   static const int refreshTimeInterval =
       int.fromEnvironment('refresh_time', defaultValue: 60);
   static const copyRightYear = int.fromEnvironment('year', defaultValue: 2025);

@@ -23,7 +23,7 @@ import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
 import 'package:privacy_gui/util/languages.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/util/app_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// The root widget of the Linksys application.

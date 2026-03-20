@@ -3,7 +3,7 @@ import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 final uspStaticRoutingServiceProvider = Provider<UspStaticRoutingService>(
   (ref) => UspStaticRoutingService(ref.read(uspServiceProvider)!),

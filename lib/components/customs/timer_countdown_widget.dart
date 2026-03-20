@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/util/date_format_utils.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class TimerCountdownWidget extends StatelessWidget {

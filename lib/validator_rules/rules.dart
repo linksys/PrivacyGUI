@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 abstract class ValidationRule {
   String get name => runtimeType.toString();

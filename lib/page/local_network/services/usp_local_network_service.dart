@@ -3,7 +3,7 @@ import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_ui_model.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 final uspLocalNetworkServiceProvider = Provider<UspLocalNetworkService>(
   (ref) => UspLocalNetworkService(ref.read(uspServiceProvider)!),

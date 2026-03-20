@@ -5,7 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/util/masking_utils.dart';
+import 'package:privacy_gui/util/screen_utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 /// A global logger instance for application-wide logging.
@@ -44,17 +45,17 @@ class CustomOutput extends LogOutput {
       }
     }
     if (!kIsWeb && output.isNotEmpty && _file.existsSync()) {
-      final processedOutput = Utils.encryptJNAPAuth(
-          Utils.maskSensitiveJsonValues(
-              Utils.replaceHttpScheme(output.toString())));
+      final processedOutput = MaskingUtils.encryptJNAPAuth(
+          MaskingUtils.maskSensitiveJsonValues(
+              MaskingUtils.replaceHttpScheme(output.toString())));
       await _file.writeAsBytes("$processedOutput\n".codeUnits,
           mode: FileMode.writeOnlyAppend);
     } else if (kIsWeb && output.isNotEmpty) {
       _recordLog(
-        Utils.encryptJNAPAuth(
-          Utils.maskUsernamePasswordBodyValue(
-            Utils.maskSensitiveJsonValues(
-              Utils.replaceHttpScheme(output.toString()),
+        MaskingUtils.encryptJNAPAuth(
+          MaskingUtils.maskUsernamePasswordBodyValue(
+            MaskingUtils.maskSensitiveJsonValues(
+              MaskingUtils.replaceHttpScheme(output.toString()),
             ),
           ),
         ),

@@ -5,7 +5,7 @@ import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/util/network_utils.dart';
 
 final uspDmzServiceProvider = Provider<UspDmzService>(
   (ref) => UspDmzService(ref.read(uspServiceProvider)!),

@@ -10,7 +10,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/styled/general_settings_widget/general_settings_widget.dart';
 import 'package:privacy_gui/util/debug_mixin.dart';
-import 'package:privacy_gui/utils.dart';
+import 'package:privacy_gui/util/app_utils.dart';
 
 class TopBar extends ConsumerStatefulWidget {
   final void Function(int)? onMenuClick;
