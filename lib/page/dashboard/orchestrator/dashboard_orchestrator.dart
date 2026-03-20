@@ -9,7 +9,6 @@ import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
@@ -56,8 +55,12 @@ final dashboardOrchestratorProvider =
 );
 
 class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
+  Timer? _retryTimer;
+
   @override
   Future<DashboardOrchestratorState> build() async {
+    ref.onDispose(() => _retryTimer?.cancel());
+
     try {
       return await _buildImpl();
     } catch (e, st) {
@@ -146,15 +149,21 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   /// error state. This handles the startup race where the bridge is
   /// temporarily unavailable (503) and providers fail before SSE connects.
   void _scheduleProviderRetry() {
+    // Cancel any previously scheduled retry (e.g. from refreshAll re-build).
+    _retryTimer?.cancel();
+
     const retryDelay = Duration(seconds: 5);
+    // Only retry providers that were already triggered in _buildImpl().
+    // wifiDataProvider is not eagerly triggered here — it starts lazily via
+    // devicesDataProvider's soft dependency or the WiFi settings page.
     final providers = [
       ('systemInfo', systemInfoDataProvider),
       ('devices', devicesDataProvider),
       ('ethernet', ethernetDataProvider),
-      ('wifi', wifiDataProvider),
     ];
 
-    Future.delayed(retryDelay, () {
+    _retryTimer = Timer(retryDelay, () {
+      _retryTimer = null;
       final failed = <String>[];
       for (final (name, provider) in providers) {
         final state = ref.read(provider);

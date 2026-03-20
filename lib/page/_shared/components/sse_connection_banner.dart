@@ -35,6 +35,15 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
   Timer? _graceTimer;
 
   @override
+  void initState() {
+    super.initState();
+    // Listen outside build() so setState() never fires during the build phase.
+    ref.listenManual(sseConnectionStateProvider, (prev, next) {
+      next.whenData(_reconcile);
+    });
+  }
+
+  @override
   void dispose() {
     _graceTimer?.cancel();
     super.dispose();
@@ -42,11 +51,9 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
 
   @override
   Widget build(BuildContext context) {
-    final stateAsync = ref.watch(sseConnectionStateProvider);
-
-    stateAsync.whenData((realState) {
-      _reconcile(realState);
-    });
+    // Keep the watch so the widget rebuilds when the provider emits, but
+    // all state reconciliation happens in the listenManual callback above.
+    ref.watch(sseConnectionStateProvider);
 
     final state = _visibleState;
     if (state == null) return const SizedBox.shrink();
