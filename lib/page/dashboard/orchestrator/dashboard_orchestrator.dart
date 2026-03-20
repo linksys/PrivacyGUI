@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
@@ -132,8 +133,40 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
       }),
     );
 
+    // Delayed retry: if domain providers failed (e.g. bridge 503 on startup),
+    // invalidate them after a delay so they re-fetch once the bridge is ready.
+    _scheduleProviderRetry();
+
     return DashboardOrchestratorState(
       isAuthenticated: usp.isAuthenticated,
     );
+  }
+
+  /// Checks domain providers after a delay and invalidates any that are in
+  /// error state. This handles the startup race where the bridge is
+  /// temporarily unavailable (503) and providers fail before SSE connects.
+  void _scheduleProviderRetry() {
+    const retryDelay = Duration(seconds: 5);
+    final providers = [
+      ('systemInfo', systemInfoDataProvider),
+      ('devices', devicesDataProvider),
+      ('ethernet', ethernetDataProvider),
+      ('wifi', wifiDataProvider),
+    ];
+
+    Future.delayed(retryDelay, () {
+      final failed = <String>[];
+      for (final (name, provider) in providers) {
+        final state = ref.read(provider);
+        if (state.hasError) {
+          failed.add(name);
+          ref.invalidate(provider);
+        }
+      }
+      if (failed.isNotEmpty) {
+        logger.d('[USP][Orchestrator] Retrying failed providers: '
+            '${failed.join(', ')}');
+      }
+    });
   }
 }

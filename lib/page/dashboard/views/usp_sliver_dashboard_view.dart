@@ -431,8 +431,8 @@ class _UspSliverDashboardViewState
           fit: StackFit.expand,
           clipBehavior: Clip.none,
           children: [
-            AbsorbPointer(
-              absorbing: true,
+            IgnorePointer(
+              ignoring: true,
               child: displayedWidget,
             ),
             if (canHide)

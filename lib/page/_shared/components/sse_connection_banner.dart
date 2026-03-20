@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
@@ -11,27 +13,84 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// - **suspended / disconnected** (non-intentional): danger banner with
 ///   a "Reconnect" button that calls [SseConnectionManager.tryReconnect]
 ///
+/// Uses a grace period ([_graceDelay]) before showing the banner to avoid
+/// flickering during brief reconnection cycles.
+///
 /// Place this at the top of [UspDashboardShell] body so it spans all pages.
-class SseConnectionBanner extends ConsumerWidget {
+class SseConnectionBanner extends ConsumerStatefulWidget {
   const SseConnectionBanner({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final stateAsync = ref.watch(sseConnectionStateProvider);
+  ConsumerState<SseConnectionBanner> createState() =>
+      _SseConnectionBannerState();
+}
 
-    return stateAsync.when(
-      data: (state) => _buildBanner(context, ref, state),
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
+class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
+  /// Grace period before showing the banner. If SSE reconnects within this
+  /// window the banner never appears, preventing visual flickering.
+  static const _graceDelay = Duration(seconds: 3);
+
+  /// The state currently displayed in the banner (null = hidden).
+  SseConnectionState? _visibleState;
+  Timer? _graceTimer;
+
+  @override
+  void dispose() {
+    _graceTimer?.cancel();
+    super.dispose();
   }
 
-  Widget _buildBanner(
-      BuildContext context, WidgetRef ref, SseConnectionState state) {
-    if (state == SseConnectionState.connected) {
-      return const SizedBox.shrink();
+  @override
+  Widget build(BuildContext context) {
+    final stateAsync = ref.watch(sseConnectionStateProvider);
+
+    stateAsync.whenData((realState) {
+      _reconcile(realState);
+    });
+
+    final state = _visibleState;
+    if (state == null) return const SizedBox.shrink();
+    return _buildBanner(context, state);
+  }
+
+  /// Reconciles the real SSE state with what the banner displays, applying
+  /// the grace period for non-connected states.
+  void _reconcile(SseConnectionState realState) {
+    if (realState == SseConnectionState.connected) {
+      // Recovered — hide immediately and cancel any pending show.
+      _graceTimer?.cancel();
+      _graceTimer = null;
+      if (_visibleState != null) {
+        setState(() => _visibleState = null);
+      }
+      return;
     }
 
+    // Non-connected state: start grace timer if not already ticking.
+    // Suspended/disconnected bypass the grace period (already severe).
+    final isSevere = realState == SseConnectionState.suspended ||
+        realState == SseConnectionState.disconnected;
+
+    if (isSevere) {
+      _graceTimer?.cancel();
+      _graceTimer = null;
+      if (_visibleState != realState) {
+        setState(() => _visibleState = realState);
+      }
+      return;
+    }
+
+    // connecting / reconnecting — wait for grace period before showing.
+    if (_graceTimer != null) return; // already waiting
+    _graceTimer = Timer(_graceDelay, () {
+      _graceTimer = null;
+      if (mounted) {
+        setState(() => _visibleState = realState);
+      }
+    });
+  }
+
+  Widget _buildBanner(BuildContext context, SseConnectionState state) {
     final appColors = Theme.of(context).extension<AppColorScheme>();
     final isSevere = state == SseConnectionState.suspended ||
         state == SseConnectionState.disconnected;

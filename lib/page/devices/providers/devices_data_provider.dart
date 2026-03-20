@@ -134,8 +134,19 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       }
     }
 
-    // Read WiFi enrichment data from domain provider
-    final wifiData = await ref.read(wifiDataProvider.future);
+    // Read WiFi enrichment data — soft dependency with timeout.
+    // If wifiDataProvider is in error (e.g. bridge 503 on startup), use
+    // fallback empty data so devices still load. The WiFi listener in build()
+    // will rebuild deviceModels when WiFi data arrives later.
+    WifiData wifiData;
+    try {
+      wifiData = await ref
+          .read(wifiDataProvider.future)
+          .timeout(const Duration(seconds: 10));
+    } catch (e) {
+      logger.w('[USP][DevicesData] WiFi data unavailable, using fallback: $e');
+      wifiData = const WifiData.empty();
+    }
 
     // Read system info for gateway name + node model building
     final sysData = ref.read(systemInfoDataProvider).valueOrNull;
