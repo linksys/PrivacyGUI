@@ -1,9 +1,9 @@
 # Linksys Vendor Parameters (X_LINKSYS_)
 
 > **Router**: Linksys M60-EU (PINNACLE 2.0)
-> **Firmware**: 1.0.14.26013014
+> **Firmware**: 1.0.14.26013014 (initial), OpenWrt 23.05-SNAPSHOT r0-9033d84 (re-validated)
 > **Platform**: OpenWrt 23.05-SNAPSHOT (BusyBox 1.36.1)
-> **Date**: 2026-03-10
+> **Date**: 2026-03-10 (initial), 2026-03-19 (re-validated on FW build 2026-03-18)
 > **BBF Vendor Prefix**: `X_LINKSYS_`
 
 This document catalogs all `X_LINKSYS_` vendor-extended TR-181 parameters discovered on the router via `obuspa` runtime queries and `bbfdm` microservice binary inspection.
@@ -46,10 +46,12 @@ This document catalogs all `X_LINKSYS_` vendor-extended TR-181 parameters discov
 
 | Path | Type | Sample Value | R/W | Description |
 |------|------|-------------|-----|-------------|
-| `Device.IP.Interface.{i}.IPv4Address.{i}.X_LINKSYS_DefaultGateway` | string | _(empty)_ | R | Default gateway for this interface |
-| `Device.IP.Interface.{i}.IPv4Address.{i}.X_LINKSYS_DNSServers` | string | _(empty)_ | R | DNS servers for this interface |
+| `Device.IP.Interface.{i}.IPv4Address.{i}.X_LINKSYS_DefaultGateway` | string | _(empty)_ | **R/W** | Default gateway for this interface |
+| `Device.IP.Interface.{i}.IPv4Address.{i}.X_LINKSYS_DNSServers` | string | _(empty)_ | **R/W** | DNS servers for this interface (comma-separated) |
 
 **Observed instances**: Interface.1.IPv4Address.1, Interface.2.IPv4Address.1
+
+> **Re-validation (2026-03-19, FW build 2026-03-18):** Both paths confirmed **writable** via SSH `ubus call bbfdm set`. Set returns `data: "1"` and modifies `/etc/config/network`. The original 2026-03-10 catalog incorrectly marked these as R (read-only); corrected to R/W based on live testing. DNS accepts comma-separated format (e.g., `"8.8.8.8,8.8.4.4"`).
 
 ---
 

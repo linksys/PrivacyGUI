@@ -36,9 +36,7 @@ bool _validateIpv4Fields(UspInternetSettingsForm form) {
     case UspWanConnectionType.pppoe:
       return form.pppUsername.isNotEmpty &&
           form.pppPassword.isNotEmpty &&
-          (form.connectionTrigger != 'OnDemand' ||
-              form.idleDisconnectTime > 0) &&
-          (form.connectionTrigger != 'AlwaysOn' || form.lcpEchoInterval >= 0);
+          (form.connectionTrigger != 'OnDemand' || form.idleDisconnectTime > 0);
     case UspWanConnectionType.bridge:
       return true;
   }

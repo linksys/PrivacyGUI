@@ -88,6 +88,8 @@ class UspInternetSettingsNotifier
         InternetSettingsStatus(
           isLoading: false,
           readOnlyInfo: result.readOnlyInfo,
+          pppInstancePath: result.pppInstancePath,
+          vlanInstancePath: result.vlanInstancePath,
         ),
       );
     } catch (e) {
@@ -113,7 +115,12 @@ class UspInternetSettingsNotifier
       final service = ref.read(uspInternetSettingsServiceProvider);
 
       await ref.read(uspMutationLockProvider).withLock(() async {
-        await service.saveAll(state.original, state.edited);
+        await service.saveAll(
+          state.original,
+          state.edited,
+          pppInstancePath: state.status.pppInstancePath,
+          vlanInstancePath: state.status.vlanInstancePath,
+        );
         logger.d('[USP][Network][WAN] Save complete');
       });
 
