@@ -74,8 +74,6 @@ const kSmartDeviceService = '/cloud/smart-device-service';
 const kEventService = '/cloud/event-service';
 const kAssetService = '/cloud/asset-service';
 const kStorageService = '/cloud/storage-service';
-const kRemoteAssistanceService = '/cloud/remote-access-service';
-
 /// Cloud API Endpoint
 // Authorization service
 const kOauthEndpoint =
@@ -118,17 +116,6 @@ const kFetchLinkup = '$kAssetService/rest/assets/linkup';
 // Storage service
 const kDeviceUpload =
     '$kStorageService/rest/deviceuploads?uploadType=MOBILE_LOG';
-// Remote assistance
-const kRASessions = '$kRemoteAssistanceService/rest/remoteassistance/sessions';
-const kRAAccountInfo =
-    '$kRemoteAssistanceService/rest/remoteassistance/sessions/$kVarRASessionId/accountinfo';
-const kRASessionInfo =
-    '$kRemoteAssistanceService/rest/remoteassistance/sessions/$kVarRASessionId';
-const kRATemporaryRAS =
-    '$kRemoteAssistanceService/rest/remoteassistance/temporaryras';
-const kRASendPin =
-    '$kRemoteAssistanceService/rest/remoteassistance/sessions/sendpin';
-const kRAPin = '$kRemoteAssistanceService/rest/remoteassistance/sessions/pin';
 // Create Ticket
 const kTickets = '/cloud/v1/tickets';
 const kGetTicketDetails = '/cloud/v1/tickets/$kTicketId';

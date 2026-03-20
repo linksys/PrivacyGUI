@@ -1,76 +1,99 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/instant_safety/providers/instant_safety_state.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
-import 'package:privacy_gui/providers/preservable_contract.dart';
-import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
 
-final instantSafetyProvider =
-    NotifierProvider<InstantSafetyNotifier, InstantSafetyState>(
-        () => InstantSafetyNotifier());
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
 
-// The provider now needs to be generic to match the contract.
-final preservableInstantSafetyProvider =
-    Provider<PreservableContract<InstantSafetySettings, InstantSafetyStatus>>(
-        (ref) {
-  return ref.watch(instantSafetyProvider.notifier);
-});
+class UspInstantSafetyState extends Equatable {
+  /// Presentation Layer UI Model (for views).
+  final SafeBrowsingUIModel uiModel;
 
-class InstantSafetyNotifier extends Notifier<InstantSafetyState>
-    with
-        PreservableNotifierMixin<InstantSafetySettings, InstantSafetyStatus,
-            InstantSafetyState> {
-  @override
-  InstantSafetyState build() {
-    // The mixin's fetch method is now available.
-    fetch(forceRemote: true);
-    return InstantSafetyState.initial();
-  }
+  /// User's pending selection — may differ from [uiModel.type] before save.
+  final SafeBrowsingType pendingType;
 
-  @override
-  Future<(InstantSafetySettings?, InstantSafetyStatus?)> performFetch(
-      {bool forceRemote = false, bool updateStatusOnly = false}) async {
-    final service = ref.read(instantSafetyServiceProvider);
-    final deviceInfo = ref.read(instantSafetyDeviceInfoProvider);
+  /// Whether a save operation is in progress.
+  final bool isSaving;
 
-    final result = await service.fetchSettings(
-      deviceInfo: deviceInfo,
-      forceRemote: forceRemote,
-    );
+  const UspInstantSafetyState({
+    required this.uiModel,
+    required this.pendingType,
+    this.isSaving = false,
+  });
 
-    final settings =
-        InstantSafetySettings(safeBrowsingType: result.safeBrowsingType);
-    final status = InstantSafetyStatus(hasFortinet: result.hasFortinet);
+  bool get isDirty => pendingType != uiModel.type;
+  bool get isEnabled => pendingType != SafeBrowsingType.off;
 
-    return (settings, status);
-  }
-
-  @override
-  Future<void> performSave() async {
-    final service = ref.read(instantSafetyServiceProvider);
-    final currentType = state.settings.current.safeBrowsingType;
-    await service.saveSettings(currentType);
-  }
-
-  // These methods are for UI interaction to update the 'current' state.
-  void setSafeBrowsingEnabled(bool isEnabled) {
-    final newType = isEnabled
-        ? (state.status.hasFortinet
-            ? InstantSafetyType.fortinet
-            : InstantSafetyType.openDNS)
-        : InstantSafetyType.off;
-
-    state = state.copyWith(
-      settings: state.settings.update(
-        state.settings.current.copyWith(safeBrowsingType: newType),
-      ),
+  UspInstantSafetyState copyWith({
+    SafeBrowsingUIModel? uiModel,
+    SafeBrowsingType? pendingType,
+    bool? isSaving,
+  }) {
+    return UspInstantSafetyState(
+      uiModel: uiModel ?? this.uiModel,
+      pendingType: pendingType ?? this.pendingType,
+      isSaving: isSaving ?? this.isSaving,
     );
   }
 
-  void setSafeBrowsingProvider(InstantSafetyType provider) {
-    state = state.copyWith(
-      settings: state.settings.update(
-        state.settings.current.copyWith(safeBrowsingType: provider),
-      ),
+  @override
+  List<Object?> get props => [uiModel, pendingType, isSaving];
+}
+
+// ---------------------------------------------------------------------------
+// Provider
+// ---------------------------------------------------------------------------
+
+final uspInstantSafetyProvider =
+    AsyncNotifierProvider<UspInstantSafetyNotifier, UspInstantSafetyState>(
+  UspInstantSafetyNotifier.new,
+);
+
+// ---------------------------------------------------------------------------
+// Notifier
+// ---------------------------------------------------------------------------
+
+class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
+  @override
+  Future<UspInstantSafetyState> build() async {
+    final svc = ref.read(uspInstantSafetyServiceProvider);
+    final uiModel = await svc.fetch();
+
+    logger.d('[USP][Safety]Instant Safety fetched — type: ${uiModel.type}');
+
+    return UspInstantSafetyState(
+      uiModel: uiModel,
+      pendingType: uiModel.type,
     );
+  }
+
+  /// Toggle safe browsing on/off.
+  void setEnabled(bool enabled) {
+    final s = state.valueOrNull;
+    if (s == null) return;
+    final newType = enabled ? SafeBrowsingType.openDNS : SafeBrowsingType.off;
+    state = AsyncData(s.copyWith(pendingType: newType));
+  }
+
+  /// Save the pending selection to the router.
+  Future<void> save() async {
+    final s = state.requireValue;
+    if (!s.isDirty) return;
+
+    state = AsyncData(s.copyWith(isSaving: true));
+    try {
+      final svc = ref.read(uspInstantSafetyServiceProvider);
+      await svc.save(s.pendingType);
+      logger.d('[USP][Safety]Instant Safety saved — type: ${s.pendingType}');
+
+      // Re-fetch to confirm the change took effect.
+      ref.invalidateSelf();
+    } catch (e) {
+      state = AsyncData(s.copyWith(isSaving: false));
+      rethrow;
+    }
   }
 }

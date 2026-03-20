@@ -1,61 +1,58 @@
-import 'dart:convert';
+import 'package:equatable/equatable.dart';
+import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
+import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
 
-import 'package:privacy_gui/core/models/privacy_settings.dart';
-export 'package:privacy_gui/core/models/privacy_settings.dart';
-import 'package:privacy_gui/providers/feature_state.dart';
-import 'package:privacy_gui/providers/preservable.dart';
+/// State for the Instant Privacy feature page.
+class UspInstantPrivacyState extends Equatable {
+  /// Whether MAC address filtering is currently active on the router.
+  final bool isEnabled;
 
-class InstantPrivacyState
-    extends FeatureState<InstantPrivacySettings, InstantPrivacyStatus> {
-  const InstantPrivacyState({
-    required super.settings,
-    required super.status,
+  /// Devices currently connected to the router (isActive = true).
+  final List<InstantPrivacyDeviceUIModel> connectedDevices;
+
+  /// Devices currently on the MAC whitelist.
+  final List<InstantPrivacyDeviceUIModel> allowedDevices;
+
+  /// Whether the toggle is locked during a save operation.
+  final bool isToggleLocked;
+
+  /// Opaque context holding MAC filter AP data for service operations.
+  final MacFilterContext macFilterContext;
+
+  const UspInstantPrivacyState({
+    required this.isEnabled,
+    required this.connectedDevices,
+    required this.allowedDevices,
+    required this.macFilterContext,
+    this.isToggleLocked = false,
   });
 
-  factory InstantPrivacyState.init() {
-    return InstantPrivacyState(
-      settings: Preservable(
-          original: InstantPrivacySettings.init(),
-          current: InstantPrivacySettings.init()),
-      status: InstantPrivacyStatus.init(),
-    );
-  }
+  /// Whether the toggle should be disabled in the UI.
+  bool get isToggleDisabled =>
+      isToggleLocked || (!isEnabled && connectedDevices.isEmpty);
 
-  @override
-  InstantPrivacyState copyWith({
-    Preservable<InstantPrivacySettings>? settings,
-    InstantPrivacyStatus? status,
+  UspInstantPrivacyState copyWith({
+    bool? isEnabled,
+    List<InstantPrivacyDeviceUIModel>? connectedDevices,
+    List<InstantPrivacyDeviceUIModel>? allowedDevices,
+    bool? isToggleLocked,
+    MacFilterContext? macFilterContext,
   }) {
-    return InstantPrivacyState(
-      settings: settings ?? this.settings,
-      status: status ?? this.status,
+    return UspInstantPrivacyState(
+      isEnabled: isEnabled ?? this.isEnabled,
+      connectedDevices: connectedDevices ?? this.connectedDevices,
+      allowedDevices: allowedDevices ?? this.allowedDevices,
+      isToggleLocked: isToggleLocked ?? this.isToggleLocked,
+      macFilterContext: macFilterContext ?? this.macFilterContext,
     );
   }
 
   @override
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'status': status.mode.name,
-      'settings': settings.toMap((s) => s.toMap()),
-    };
-  }
-
-  factory InstantPrivacyState.fromMap(Map<String, dynamic> map) {
-    return InstantPrivacyState(
-      status: InstantPrivacyStatus.fromMap(map['status']),
-      settings: Preservable.fromMap(
-          map['settings'],
-          (data) =>
-              InstantPrivacySettings.fromMap(data as Map<String, dynamic>)),
-    );
-  }
-
-  @override
-  String toJson() => json.encode(toMap());
-
-  factory InstantPrivacyState.fromJson(String source) =>
-      InstantPrivacyState.fromMap(json.decode(source) as Map<String, dynamic>);
-
-  @override
-  bool get stringify => true;
+  List<Object?> get props => [
+        isEnabled,
+        connectedDevices,
+        allowedDevices,
+        isToggleLocked,
+        macFilterContext,
+      ];
 }

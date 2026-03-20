@@ -1,9 +1,8 @@
-import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
-
 import 'get_local_ip.dart';
 
-String getLocalIp(ProviderReader read) =>
-    read(connectivityProvider).connectivityInfo.gatewayIp ?? '';
+/// Mobile IP getter — returns empty string since USP mode is web-only.
+/// TODO: Re-implement if mobile platform support is needed.
+String getLocalIp(ProviderReader read) => '';
 
 String getFullLocation(ProviderReader read) =>
     throw UnsupportedError('[Platform ERROR] Get Full Location');

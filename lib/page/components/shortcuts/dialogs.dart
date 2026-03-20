@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/data/providers/session_provider.dart';
-import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/providers/redirection/redirection_provider.dart';
@@ -370,7 +369,6 @@ Future<T?> showRouterNotFoundAlert<T>(BuildContext context, WidgetRef ref,
               logger.d('[RouterNotFound] Found!');
               return onComplete?.call();
             }).then((value) {
-              ref.read(pollingProvider.notifier).startPolling();
               if (context.mounted) {
                 context.pop(value);
               }

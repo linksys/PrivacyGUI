@@ -5,16 +5,10 @@ class RoutePath {
   static const selectNetwork = '/selectNetwork';
 
   /// login
-  static const cloudLoginAccount = '/cloudLoginAccount';
-  static const cloudLoginPassword = 'cloudLoginPassword';
-  static const phoneRegionCode = 'phoneRegionCode';
   static const localLoginPassword = '/localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
-  static const cloudRALogin = 'cloudRALogin';
-  static const cloudRAPin = 'cloudRAPin';
   static const autoParentFirstLogin = '/autoParentFirstLogin';
-  static const cloudLoginAuth = '/cloudLoginAuth';
 
   /// dashboard
   static const dashboardHome = '/dashboardHome';
@@ -165,16 +159,10 @@ class RouteNamed {
   static const selectNetwork = 'selectNetwork';
 
   /// login
-  static const cloudLoginAccount = 'cloudLoginAccount';
-  static const cloudLoginPassword = 'cloudLoginPassword';
-  static const phoneRegionCode = 'phoneRegionCode';
   static const localLoginPassword = 'localLoginPassword';
   static const localRouterRecovery = 'localRouterRecovery';
   static const localPasswordReset = 'localPasswordReset';
-  static const cloudRALogin = 'cloudRALogin';
-  static const cloudRAPin = 'cloudRAPin';
   static const autoParentFirstLogin = 'autoParentFirstLogin';
-  static const cloudLoginAuth = 'cloudLoginAuth';
 
   /// dashboard
   static const dashboardMenu = 'dashboardMenu';

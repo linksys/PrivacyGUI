@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/top_bar.dart';
-import 'package:privacy_gui/providers/remote_access/remote_access_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 const double kDefaultToolbarHeight = kToolbarHeight; // 56
@@ -38,7 +37,6 @@ class UiKitBottomBarConfig {
   final bool isPositiveEnabled;
   final bool isNegativeEnabled;
   final bool isDestructive;
-  final bool checkRemoteReadOnly;
 
   const UiKitBottomBarConfig({
     this.positiveLabel,
@@ -48,7 +46,6 @@ class UiKitBottomBarConfig {
     this.isPositiveEnabled = true,
     this.isNegativeEnabled = true,
     this.isDestructive = false,
-    this.checkRemoteReadOnly = true,
   });
 }
 
@@ -507,15 +504,6 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
 
     final bottomBar = widget.bottomBar!;
 
-    // Check remote read-only mode
-    final isRemoteReadOnly = bottomBar.checkRemoteReadOnly
-        ? ref.watch(
-            remoteAccessProvider.select((state) => state.isRemoteReadOnly))
-        : false;
-
-    // T078: Native PrivacyGUI localization support
-    // Note: PrivacyGUI localization will be added when needed
-
     return PageBottomBarConfig(
       positiveLabel: bottomBar.positiveLabel ?? loc(context).save,
       negativeLabel: bottomBar.negativeLabel,
@@ -527,7 +515,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
           context.pop(); // Default back navigation
         }
       },
-      isPositiveEnabled: bottomBar.isPositiveEnabled && !isRemoteReadOnly,
+      isPositiveEnabled: bottomBar.isPositiveEnabled,
       isNegativeEnabled: bottomBar.isNegativeEnabled,
       isDestructive: bottomBar.isDestructive,
     );

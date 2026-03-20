@@ -15,7 +15,6 @@ import 'package:privacy_gui/page/components/layouts/root_container.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
-import 'package:privacy_gui/providers/connectivity/connectivity_provider.dart';
 import 'package:privacy_gui/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
@@ -51,7 +50,6 @@ class LinksysApp extends ConsumerStatefulWidget {
 class _LinksysAppState extends ConsumerState<LinksysApp>
     with DebugObserver, WidgetsBindingObserver {
   LinksysRoute? _currentRoute;
-  late ConnectivityNotifier _connectivityNotifier;
   late GoRouterDelegate _routerDelegate;
 
   /// Initializes the state of the widget.
@@ -65,9 +63,7 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
 
     super.initState();
 
-    _connectivityNotifier = ref.read(connectivityProvider.notifier);
-    _connectivityNotifier.start();
-    _connectivityNotifier.forceUpdate().then((value) => _initAuth());
+    _initAuth();
     _routerDelegate = ref.read(routerProvider).routerDelegate;
     ref.read(appSettingsProvider.notifier).load();
     getVersion();
@@ -80,7 +76,6 @@ class _LinksysAppState extends ConsumerState<LinksysApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _connectivityNotifier.stop();
     _routerDelegate.removeListener(_onReceiveRouteChanged);
     super.dispose();
   }

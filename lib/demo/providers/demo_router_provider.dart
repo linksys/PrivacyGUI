@@ -73,8 +73,6 @@ final demoRouterProvider = Provider<GoRouter>((ref) {
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
         router.autoConfigurationLogic(state);
         return router.redirectLogic(state);
-      } else if (state.matchedLocation.startsWith('/pnp')) {
-        return router.goPnpPath(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'package:privacy_gui/usp/services/usp_service.dart';
@@ -17,13 +16,10 @@ final getIt = GetIt.instance;
 /// This function is called once at application startup to initialize and
 /// register all singleton services and objects that need to be globally
 /// accessible. Currently, it registers:
-/// - A singleton of [ServiceHelper].
 /// - Default light/dark [ThemeData] (used by some UI widgets).
 ///
 /// Theme configuration loading is handled by `themeConfigProvider` (Riverpod).
 void dependencySetup() {
-  getIt.registerSingleton<ServiceHelper>(ServiceHelper());
-
   // Register default ThemeData for UI widgets that read from GetIt
   // (e.g., top_bar.dart, general_settings_widget.dart)
   final config = ThemeJsonConfig.defaultConfig();

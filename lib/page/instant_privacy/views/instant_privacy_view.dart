@@ -1,386 +1,399 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
-import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/mixin/page_snackbar_mixin.dart';
-import 'package:privacy_gui/page/components/shared_widgets.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/page/components/views/arguments_view.dart';
-import 'package:privacy_gui/page/components/views/remote_aware_switch.dart';
-import 'package:privacy_gui/page/instant_device/extensions/icon_device_category_ext.dart';
-import 'package:privacy_gui/page/instant_device/providers/device_list_state.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_device_list_provider.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
+import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
+import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
+import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
+import 'package:privacy_gui/page/instant_privacy/views/components/instant_privacy_device_tile.dart';
+import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class InstantPrivacyView extends ArgumentsConsumerStatefulView {
-  const InstantPrivacyView({
-    super.key,
-    super.args,
-  });
+/// Instant Privacy page — one-tap MAC whitelist to lock the network to
+/// currently connected devices only.
+class InstantPrivacyView extends ConsumerWidget {
+  const InstantPrivacyView({super.key});
 
   @override
-  ConsumerState<InstantPrivacyView> createState() => _InstantPrivacyViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncState = ref.watch(uspInstantPrivacyProvider);
 
-class _InstantPrivacyViewState extends ConsumerState<InstantPrivacyView>
-    with PageSnackbarMixin {
-  late final InstantPrivacyNotifier _notifier;
-
-  @override
-  void initState() {
-    super.initState();
-    _notifier = ref.read(instantPrivacyProvider.notifier);
-    doSomethingWithSpinner(context, _notifier.fetch(forceRemote: true));
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(instantPrivacyProvider);
-    final displayDevices = ref.watch(instantPrivacyDeviceListProvider);
     return UiKitPageView.withSliver(
-      title: loc(context).instantPrivacy,
-      markLabel: 'Beta',
-      child: (context, constraints) => AppResponsiveLayout(
-        desktop: (ctx) => _desktopLayout(ctx, state, displayDevices),
-        mobile: (ctx) => _mobileLayout(ctx, state, displayDevices),
+      scrollable: true,
+      title: 'Instant Privacy',
+      topbar: const PreferredSize(
+        preferredSize: Size.fromHeight(64),
+        child: UspTopBar(),
       ),
+      onBackTap: () => context.canPop()
+          ? context.pop()
+          : context.goNamed(RouteNamed.uspMenu),
+      onRefresh: () => ref.refresh(uspInstantPrivacyProvider.future),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: (childContext, constraints) {
+        return asyncState.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _buildError(context, ref),
+          data: (state) => _buildContent(context, ref, state),
+        );
+      },
     );
   }
 
-  Widget _desktopLayout(BuildContext context, InstantPrivacyState state,
-      List<DeviceListItem> deviceList) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AppText.bodyLarge(loc(context).instantPrivacyDescription),
-        AppGap.xxxl(),
-        if (state.settings.current.mode == MacFilterMode.deny) ...[
-          _warningCard(context),
-          AppGap.sm(),
-        ],
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _enableTile(context, state),
-                  AppGap.xxl(),
-                  _deviceListView(
-                      context,
-                      state.settings.current.mode == MacFilterMode.allow,
-                      deviceList),
-                ],
-              ),
-            ),
-            AppGap.gutter(),
-            SizedBox(
-              width: context.colWidth(3),
-              child: _infoCard(context),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _mobileLayout(BuildContext context, InstantPrivacyState state,
-      List<DeviceListItem> deviceList) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (state.settings.current.mode == MacFilterMode.deny) ...[
-          _warningCard(context),
-          AppGap.sm(),
-        ],
-        AppText.bodyLarge(loc(context).instantPrivacyDescription),
-        AppGap.lg(),
-        _enableTile(context, state),
-        AppGap.sm(),
-        _infoCard(context),
-        AppGap.xxl(),
-        _deviceListView(context,
-            state.settings.current.mode == MacFilterMode.allow, deviceList),
-        AppGap.xxl(),
-      ],
-    );
-  }
-
-  Widget _warningCard(BuildContext context) {
-    return AppCard(
-      child: Row(
-        children: [
-          AppIcon.font(
-            AppFontIcons.infoCircle,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          AppGap.lg(),
-          Expanded(
-            child: AppText.bodyMedium(loc(context).macFilteringDisableWarning),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoCard(BuildContext context) {
-    return AppCard(
+  Widget _buildError(BuildContext context, WidgetRef ref) {
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          AppIcon.font(
-            AppFontIcons.infoCircle,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          AppGap.lg(),
-          AppText.bodySmall(
-            loc(context).instantPrivacyInfo,
+          AppText.titleMedium('Unable to load Instant Privacy settings'),
+          AppGap.md(),
+          AppButton.text(
+            label: 'Retry',
+            onTap: () => ref.invalidate(uspInstantPrivacyProvider),
           ),
         ],
       ),
     );
   }
 
-  Widget _deviceListView(
-      BuildContext context, bool isEnable, List<DeviceListItem> deviceList) {
+  Widget _buildContent(
+    BuildContext context,
+    WidgetRef ref,
+    UspInstantPrivacyState state,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.titleSmall(
-                    loc(context).nDevices(deviceList.length).capitalizeWords(),
-                  ),
-                  AppGap.xs(),
-                  AppText.bodyMedium(
-                    loc(context).theDevicesAllowedToConnect,
-                  ),
-                ],
-              ),
-            ),
-            AppIconButton(
-              icon: AppIcon.font(AppFontIcons.refresh),
-              onTap: () {
-                doSomethingWithSpinner(
-                  context,
-                  _notifier.fetch(forceRemote: true),
-                );
-              },
-            ),
-          ],
+        AppText.bodyMedium(
+          'Lock your network to only currently connected devices. '
+          'Any new device will be blocked until you disable Instant Privacy.',
         ),
+        AppGap.xl(),
+        _buildToggleCard(context, ref, state),
         AppGap.lg(),
-        SizedBox(
-          height: deviceList.length * 110,
-          child: ListView.separated(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            itemCount: deviceList.length,
-            itemBuilder: (context, index) {
-              return _deviceCard(context, isEnable, deviceList[index]);
-            },
-            separatorBuilder: (BuildContext context, int index) {
-              return AppGap.sm();
-            },
-          ),
-        ),
+        if (state.isEnabled)
+          _buildAllowedDevicesList(context, ref, state)
+        else
+          _buildConnectedDevicesList(context, state),
       ],
     );
   }
 
-  Widget _deviceCard(
-      BuildContext context, bool isEnable, DeviceListItem device) {
-    final myMac = ref.watch(
-        instantPrivacyProvider.select((state) => state.settings.current.myMac));
+  Widget _buildToggleCard(
+    BuildContext context,
+    WidgetRef ref,
+    UspInstantPrivacyState state,
+  ) {
     return AppCard(
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          AppIcon.font(
-            IconDeviceCategoryExt.resolveByName(device.icon),
-            size: 24,
-          ),
-          AppGap.lg(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    final textPainter = TextPainter(
-                      text: TextSpan(
-                        text: device.name,
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
-                      maxLines: 1,
-                      textDirection: TextDirection.ltr,
-                    )..layout(minWidth: 0, maxWidth: double.infinity);
-                    if (textPainter.size.width > constraints.maxWidth) {
-                      return Tooltip(
-                        message: device.name,
-                        child: Text(
-                          device.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                      );
-                    } else {
-                      return Text(
-                        device.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelLarge,
-                      );
-                    }
-                  },
+                AppText.labelLarge('Instant Privacy'),
+                AppGap.xs(),
+                AppText.bodySmall(
+                  state.isEnabled
+                      ? 'Only allowed devices can connect'
+                      : 'All devices can connect freely',
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                AppGap.xs(),
-                AppText.bodyMedium(device.isOnline
-                    ? device.ipv4Address
-                    : loc(context).offline),
-                AppGap.xs(),
-                AppText.bodyMedium(device.macAddress),
               ],
             ),
           ),
-          AppGap.xs(),
-          _connectionInfo(context, device),
-          AppGap.lg(),
-          SharedWidgets.resolveSignalStrengthIcon(
-            context,
-            device.signalStrength,
-            isOnline: device.isOnline,
-            isWired: device.isWired,
+          AppSwitch(
+            value: state.isEnabled,
+            onChanged: state.isToggleDisabled
+                ? null
+                : (value) =>
+                    value ? _onEnable(context, ref) : _onDisable(context, ref),
           ),
-          if (isEnable) ...[
-            AppGap.lg(),
-            AppIconButton(
-              icon: AppIcon.font(
-                AppFontIcons.delete,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              onTap: () {
-                _showDeleteDialog(
-                    device.macAddress, device.macAddress == myMac);
-              },
-            ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _connectionInfo(BuildContext context, DeviceListItem device) {
-    return device.isOnline
-        ? AppResponsiveLayout(
-            desktop: (ctx) => AppText.bodyMedium(device.isWired
-                ? loc(context).ethernet
-                : '${device.ssid}  •  ${device.band}'),
-            mobile: (ctx) => device.isWired
-                ? AppText.bodyMedium(loc(context).ethernet)
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      AppText.bodyMedium(device.ssid),
-                      AppGap.xs(),
-                      AppText.bodyMedium(device.band),
-                    ],
-                  ),
-          )
-        : Container();
-  }
+  // ---------------------------------------------------------------------------
+  // OFF state — show connected devices (snapshot preview)
+  // ---------------------------------------------------------------------------
 
-  Widget _enableTile(BuildContext context, InstantPrivacyState state) {
-    return AppCard(
-        child: Row(
+  Widget _buildConnectedDevicesList(
+    BuildContext context,
+    UspInstantPrivacyState state,
+  ) {
+    if (state.connectedDevices.isEmpty) {
+      return _buildEmptyDevicesMessage(context);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: AppText.labelLarge(loc(context).instantPrivacy)),
-        RemoteAwareSwitch(
-          value: state.settings.current.mode == MacFilterMode.allow,
-          onChanged: (value) {
-            _showEnableDialog(value);
-          },
-        )
+        AppText.labelLarge(
+            'Devices that will be allowed (${state.connectedDevices.length})'),
+        AppGap.sm(),
+        AppText.bodySmall(
+          'These devices are currently connected and will form the whitelist when you enable Instant Privacy.',
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        AppGap.md(),
+        for (final device in state.connectedDevices) ...[
+          InstantPrivacyDeviceTile(device: device),
+          AppGap.sm(),
+        ],
       ],
-    ));
+    );
   }
 
-  void _showEnableDialog(bool enable) {
-    showInstantPrivacyConfirmDialog(context, enable).then((value) {
-      if (value != true || !mounted) {
+  Widget _buildEmptyDevicesMessage(BuildContext context) {
+    return AppCard(
+      child: Column(
+        children: [
+          AppIcon.font(
+            Icons.devices_other,
+            size: 40,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          AppGap.md(),
+          AppText.bodyMedium(
+            'No devices are currently connected.',
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          AppGap.xs(),
+          AppText.bodySmall(
+            'Instant Privacy cannot be enabled until at least one device is connected.',
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ON state — show allowed devices + add MAC button
+  // ---------------------------------------------------------------------------
+
+  Widget _buildAllowedDevicesList(
+    BuildContext context,
+    WidgetRef ref,
+    UspInstantPrivacyState state,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            AppText.labelLarge(
+                'Allowed devices (${state.allowedDevices.length})'),
+            AppButton.text(
+              label: 'Add device',
+              onTap: state.isToggleLocked
+                  ? null
+                  : () => _showAddMacDialog(context, ref, state),
+            ),
+          ],
+        ),
+        AppGap.sm(),
+        if (state.allowedDevices.isEmpty)
+          AppText.bodySmall(
+            'No devices in the allowed list.',
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          )
+        else
+          for (final device in state.allowedDevices) ...[
+            InstantPrivacyDeviceTile(device: device),
+            AppGap.sm(),
+          ],
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Confirmation dialogs
+  // ---------------------------------------------------------------------------
+
+  Future<void> _onEnable(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AppDialog(
+        titleText: 'Enable Instant Privacy?',
+        content: AppText.bodyMedium(
+          'Only the ${ref.read(uspInstantPrivacyProvider).valueOrNull?.connectedDevices.length ?? 0} currently connected device(s) will be allowed to connect. All other devices will be blocked.',
+        ),
+        actions: [
+          AppButton.text(
+            label: 'Cancel',
+            onTap: () => Navigator.of(ctx).pop(false),
+          ),
+          AppButton.primary(
+            label: 'Enable',
+            onTap: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(uspInstantPrivacyProvider.notifier).enable();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to enable Instant Privacy: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _onDisable(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AppDialog(
+        titleText: 'Disable Instant Privacy?',
+        content: AppText.bodyMedium(
+          'All devices will be able to connect freely to your network.',
+        ),
+        actions: [
+          AppButton.text(
+            label: 'Cancel',
+            onTap: () => Navigator.of(ctx).pop(false),
+          ),
+          AppButton.primary(
+            label: 'Disable',
+            onTap: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(uspInstantPrivacyProvider.notifier).disable();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to disable Instant Privacy: $e')),
+        );
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Add MAC dialog
+  // ---------------------------------------------------------------------------
+
+  Future<void> _showAddMacDialog(
+    BuildContext context,
+    WidgetRef ref,
+    UspInstantPrivacyState state,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _AddMacDialog(
+        existingDevices: state.allowedDevices,
+        onConfirm: (mac) async {
+          Navigator.of(ctx).pop();
+          try {
+            await ref.read(uspInstantPrivacyProvider.notifier).addMac(mac);
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to add device: $e')),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// _AddMacDialog — stateful dialog for MAC address input with validation
+// ---------------------------------------------------------------------------
+
+class _AddMacDialog extends StatefulWidget {
+  final List<InstantPrivacyDeviceUIModel> existingDevices;
+  final Future<void> Function(String mac) onConfirm;
+
+  const _AddMacDialog({
+    required this.existingDevices,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_AddMacDialog> createState() => _AddMacDialogState();
+}
+
+class _AddMacDialogState extends State<_AddMacDialog> {
+  final _controller = TextEditingController();
+  String? _errorText;
+  bool _isConfirming = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
+    setState(() {
+      if (value.isEmpty) {
+        _errorText = null;
         return;
       }
-      if (enable) {
-        final macAddressList = ref
-            .read(instantPrivacyDeviceListProvider)
-            .map((e) => e.macAddress.toUpperCase())
-            .toList();
-        _notifier.setMacAddressList(macAddressList);
+      if (!UspInstantPrivacyService.validateMac(value)) {
+        _errorText = 'Invalid MAC address format (e.g. AA:BB:CC:DD:EE:FF)';
+        return;
       }
-      _notifier.setEnable(enable);
-      doSomethingWithSpinner(
-        context,
-        _notifier.save(),
-      ).then((state) {
-        showChangesSavedSnackBar();
-      }).onError((error, stackTrace) {
-        showErrorMessageSnackBar(error);
-      });
+      final normalized = UspInstantPrivacyService.normalizeMac(value);
+      final isDuplicate =
+          widget.existingDevices.any((d) => d.mac == normalized);
+      _errorText =
+          isDuplicate ? 'This device is already in the allowed list' : null;
     });
   }
 
-  void _showDeleteDialog(String macAddress, bool self) {
-    showSimpleAppDialog(
-      context,
-      dismissible: false,
-      title: self ? loc(context).alertExclamation : loc(context).deleteDevice,
-      content: AppText.bodyMedium(self
-          ? loc(context).instantPrivacyNotAllowDeleteCurrent
-          : loc(context).instantPrivacyDeleteDeviceDesc),
+  bool get _canConfirm =>
+      _controller.text.isNotEmpty &&
+      _errorText == null &&
+      UspInstantPrivacyService.validateMac(_controller.text);
+
+  Future<void> _confirm() async {
+    if (!_canConfirm) return;
+    setState(() => _isConfirming = true);
+    await widget
+        .onConfirm(UspInstantPrivacyService.normalizeMac(_controller.text));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppDialog(
+      titleText: 'Add device manually',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText.bodyMedium('Enter the MAC address of the device to allow.'),
+          AppGap.md(),
+          AppTextFormField(
+            controller: _controller,
+            hintText: 'AA:BB:CC:DD:EE:FF',
+            onChanged: _onChanged,
+            externalErrorText: _errorText,
+          ),
+        ],
+      ),
       actions: [
-        if (self) ...[
-          AppButton.text(
-            label: loc(context).ok,
-            onTap: () {
-              context.pop();
-            },
-          ),
-        ],
-        if (!self) ...[
-          AppButton.text(
-            label: loc(context).cancel,
-            onTap: () {
-              context.pop();
-            },
-          ),
-          AppButton.text(
-            label: loc(context).delete,
-            onTap: () {
-              _notifier.removeSelection([macAddress]);
-              context.pop();
-              doSomethingWithSpinner(
-                context,
-                _notifier.save(),
-              );
-            },
-          ),
-        ],
+        AppButton.text(
+          label: 'Cancel',
+          onTap: () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: _isConfirming ? 'Adding…' : 'Add',
+          onTap: (_canConfirm && !_isConfirming) ? _confirm : null,
+        ),
       ],
     );
   }

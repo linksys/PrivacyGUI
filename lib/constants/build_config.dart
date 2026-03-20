@@ -20,15 +20,12 @@ enum CloudEnvironment {
 
 enum ForceCommand {
   local,
-  remote,
   none;
 
   static ForceCommand reslove(String type) {
     logger.d('Force - $type');
     if (type == 'local') {
       return ForceCommand.local;
-    } else if (type == 'remote') {
-      return ForceCommand.remote;
     } else {
       return ForceCommand.none;
     }
@@ -137,16 +134,10 @@ class BuildConfig {
       final bundleId = packageInfo.packageName;
       if (bundleId.endsWith('.local')) {
         forceCommandType = ForceCommand.local;
-      } else if (bundleId.endsWith('.remote')) {
-        forceCommandType = ForceCommand.remote;
       }
       // Otherwise, keep ForceCommand.none (default)
       logger.d('Non-Web platforms: Force command type: $forceCommandType');
     }
-  }
-
-  static bool isRemote() {
-    return forceCommandType == ForceCommand.remote;
   }
 
   static bool isLocal() {

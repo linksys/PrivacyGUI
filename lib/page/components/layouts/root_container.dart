@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/components/layouts/idle_checker.dart';
-import 'package:privacy_gui/page/components/views/remote_read_only_banner.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
 
@@ -69,26 +68,9 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
           color: Theme.of(context).colorScheme.surface,
           child: CompositedTransformTarget(
             link: _link,
-            child: Column(
-              children: [
-                // Remote read-only banner at the top (respects safe area)
-                const SafeArea(
-                  bottom: false,
-                  child: RemoteReadOnlyBanner(),
-                ),
-                // Main content with connectivity overlay
-                Expanded(
-                  child: Stack(
-                    children: [
-                      _buildLayout(
-                          Container(child: widget.child ?? const Center()),
-                          constraints),
-                      ..._handleConnectivity(ref),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            child: _buildLayout(
+                Container(child: widget.child ?? const Center()),
+                constraints),
           ),
         ),
       );
@@ -99,29 +81,4 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
     return child;
   }
 
-  List<Widget> _handleConnectivity(WidgetRef ref) {
-    // final ignoreConnectivity =
-    //     (widget.routeConfig?.ignoreConnectivityEvent ?? false) || kIsWeb;
-    // final ignoreCloudOffline =
-    //     (widget.routeConfig?.ignoreCloudOfflineEvent ?? false) || kIsWeb;
-    // if (!ignoreConnectivity) {
-    //   final connectivity = ref.watch(connectivityProvider
-    //       .select((value) => (value.hasInternet, value.connectivityInfo.type)));
-    //   final hasInternet = connectivity.$1;
-    //   final connectivityType = connectivity.$2;
-    //   if (!hasInternet || connectivityType == ConnectivityResult.none) {
-    //     logger.i('No internet access: $hasInternet, $connectivityType');
-    //     return [const NoInternetConnectionModal()];
-    //   }
-    // }
-    // if (!ignoreCloudOffline) {
-    //   final cloudOffline = ref.watch(connectivityProvider
-    //       .select((value) => value.cloudAvailabilityInfo?.isCloudOk ?? false));
-    //   if (!cloudOffline) {
-    //     logger.i('cloud unavailable: $cloudOffline');
-    //     return [const NoInternetConnectionModal()];
-    //   }
-    // }
-    return [];
-  }
 }

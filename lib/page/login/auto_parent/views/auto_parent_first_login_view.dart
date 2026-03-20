@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/core/data/providers/firmware_update_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/login/auto_parent/providers/auto_parent_first_login_provider.dart';
@@ -40,19 +38,6 @@ class _AutoParentFirstLoginViewState
 
   @override
   Widget build(BuildContext context) {
-    // When the client fails to reconnect to the router after updating the firmware
-    // the retry requests will reach the max limit and the alert will pop up
-    ref.listen(firmwareUpdateProvider, (prev, next) {
-      if (prev?.isRetryMaxReached == false && next.isRetryMaxReached == true) {
-        showRouterNotFoundAlert(context, ref, onComplete: () async {
-          _finishFirstTimeLogin();
-        });
-      } else if (prev?.isUpdating == true && next.isUpdating == false) {
-        logger.d('[FirstTime]: FW update finish go to dashboard!');
-        _finishFirstTimeLogin();
-      }
-    });
-
     return UiKitPageView(
       backState: UiKitBackState.none,
       scrollable: true,

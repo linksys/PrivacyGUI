@@ -1,121 +1,66 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
-import 'package:privacy_gui/page/instant_setup/models/pnp_ui_models.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/data/providers/session_provider.dart';
-import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
-import 'package:privacy_gui/core/data/providers/polling_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/advanced_settings/local_network_settings/providers/dhcp_reservations_provider.dart';
-import 'package:privacy_gui/page/advanced_settings/_advanced_settings.dart';
-import 'package:privacy_gui/page/advanced_settings/static_routing/providers/static_routing_provider.dart';
-
-import 'package:privacy_gui/page/advanced_settings/static_routing/static_routing_view.dart';
-import 'package:privacy_gui/page/dashboard/_dashboard.dart';
-import 'package:privacy_gui/page/advanced_settings/apps_and_gaming/ddns/_ddns.dart';
-import 'package:privacy_gui/page/instant_device/_instant_device.dart';
-import 'package:privacy_gui/page/instant_device/views/select_device_view.dart';
-import 'package:privacy_gui/page/firmware_update/_firmware_update.dart';
-import 'package:privacy_gui/page/health_check/_health_check.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_provider.dart';
-import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart';
-import 'package:privacy_gui/page/instant_setup/providers/pnp_provider.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_auth_view.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';
 import 'package:privacy_gui/page/login/auto_parent/views/auto_parent_first_login_view.dart';
 import 'package:privacy_gui/page/login/views/local_reset_router_password_view.dart';
-import 'package:privacy_gui/page/login/views/login_cloud_auth_view.dart';
-import 'package:privacy_gui/page/instant_admin/_instant_admin.dart';
-import 'package:privacy_gui/page/nodes/_nodes.dart';
-import 'package:privacy_gui/page/nodes/views/add_nodes_view.dart';
-import 'package:privacy_gui/page/instant_setup/pnp_admin_view.dart';
-import 'package:privacy_gui/page/instant_setup/pnp_setup_view.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_pppoe_view.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_isp_type_selection_view.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/isp_settings/pnp_static_ip_view.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_modem_lights_off_view.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_unplug_modem_view.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_waiting_modem_view.dart';
-import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
-import 'package:privacy_gui/page/instant_setup/troubleshooter/views/pnp_no_internet_connection_view.dart';
-import 'package:privacy_gui/page/select_network/_select_network.dart';
-import 'package:privacy_gui/page/instant_verify/views/instant_verify_view.dart';
-import 'package:privacy_gui/page/support/faq_list_view.dart';
-import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
-import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/wifi_bundle_provider.dart';
-import 'package:privacy_gui/page/wifi_settings/views/mac_filter/mac_filtered_devices_view.dart';
-import 'package:privacy_gui/page/wifi_settings/views/main/wifi_main_view.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
-import 'package:privacy_gui/providers/auth/ra_session_provider.dart';
-import 'package:privacy_gui/providers/connectivity/_connectivity.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
-import 'package:privacy_gui/core/utils/ip_getter/ip_getter.dart';
 
-import 'package:privacy_gui/page/instant_safety/providers/_providers.dart';
-import 'package:privacy_gui/page/ai_assistant/views/router_assistant_view.dart';
-import 'package:privacy_gui/usp_page/dashboard/views/usp_dashboard_view.dart';
-import 'package:privacy_gui/usp_page/menu/views/usp_menu_view.dart';
-import 'package:privacy_gui/usp_page/support/views/usp_support_view.dart';
-import 'package:privacy_gui/usp_page/shell/usp_dashboard_shell.dart';
-import 'package:privacy_gui/usp_page/devices/views/usp_device_list_view.dart';
-import 'package:privacy_gui/usp_page/devices/views/usp_device_detail_view.dart';
-import 'package:privacy_gui/usp_page/topology/views/usp_topology_view.dart';
-import 'package:privacy_gui/usp_page/topology/views/usp_node_detail_view.dart';
-import 'package:privacy_gui/usp_page/instant_safety/views/instant_safety_view.dart';
-import 'package:privacy_gui/usp_page/instant_privacy/views/instant_privacy_view.dart'
+// USP dashboard imports
+import 'package:privacy_gui/page/dashboard/views/usp_dashboard_view.dart';
+import 'package:privacy_gui/page/menu/views/usp_menu_view.dart';
+import 'package:privacy_gui/page/support/views/usp_support_view.dart';
+import 'package:privacy_gui/page/shell/usp_dashboard_shell.dart';
+import 'package:privacy_gui/page/devices/views/usp_device_list_view.dart';
+import 'package:privacy_gui/page/devices/views/usp_device_detail_view.dart';
+import 'package:privacy_gui/page/topology/views/usp_topology_view.dart';
+import 'package:privacy_gui/page/topology/views/usp_node_detail_view.dart';
+import 'package:privacy_gui/page/instant_safety/views/instant_safety_view.dart';
+import 'package:privacy_gui/page/instant_privacy/views/instant_privacy_view.dart'
     as usp_instant_privacy;
-import 'package:privacy_gui/usp_page/admin/views/usp_admin_view.dart';
-import 'package:privacy_gui/usp_page/dhcp/views/usp_dhcp_detail_view.dart';
-import 'package:privacy_gui/usp_page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
-import 'package:privacy_gui/usp_page/system_log/views/usp_system_log_view.dart';
-import 'package:privacy_gui/usp_page/advanced_settings/views/usp_advanced_settings_view.dart';
-import 'package:privacy_gui/usp_page/firewall/views/usp_firewall_view.dart';
-import 'package:privacy_gui/usp_page/dmz/views/usp_dmz_view.dart';
-import 'package:privacy_gui/usp_page/local_network/views/usp_local_network_view.dart';
-import 'package:privacy_gui/usp_page/static_routing/views/usp_static_routing_view.dart';
-import 'package:privacy_gui/usp_page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
-import 'package:privacy_gui/usp_page/network_diagnostics/views/usp_network_diagnostics_view.dart';
-import 'package:privacy_gui/usp_page/statistics/views/usp_statistics_view.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:privacy_gui/usp_page/test_console/views/usp_test_console_view.dart';
-import 'package:privacy_gui/usp_page/dmz/providers/usp_dmz_notifier.dart';
-import 'package:privacy_gui/usp_page/firewall/providers/usp_firewall_notifier.dart';
-import 'package:privacy_gui/usp_page/local_network/providers/usp_local_network_notifier.dart';
-import 'package:privacy_gui/usp_page/internet_settings/providers/usp_internet_settings_notifier.dart';
-import 'package:privacy_gui/usp_page/internet_settings/views/usp_internet_settings_view.dart';
-import 'package:privacy_gui/usp_page/static_routing/providers/usp_static_routing_notifier.dart';
-import 'package:privacy_gui/usp_page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
-import 'package:privacy_gui/usp_page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
-import 'package:privacy_gui/usp_page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
-import 'package:privacy_gui/usp_page/wifi_settings/providers/usp_wifi_settings_provider.dart';
-import 'package:privacy_gui/usp_page/wifi_settings/views/usp_wifi_settings_view.dart';
-import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
+import 'package:privacy_gui/page/admin/views/usp_admin_view.dart';
+import 'package:privacy_gui/page/dhcp/views/usp_dhcp_detail_view.dart';
+import 'package:privacy_gui/page/port_forwarding/views/usp_port_forwarding_detail_view.dart';
+import 'package:privacy_gui/page/system_log/views/usp_system_log_view.dart';
+import 'package:privacy_gui/page/advanced_settings/views/usp_advanced_settings_view.dart';
+import 'package:privacy_gui/page/firewall/views/usp_firewall_view.dart';
+import 'package:privacy_gui/page/dmz/views/usp_dmz_view.dart';
+import 'package:privacy_gui/page/local_network/views/usp_local_network_view.dart';
+import 'package:privacy_gui/page/static_routing/views/usp_static_routing_view.dart';
+import 'package:privacy_gui/page/ipv6_port_service/views/usp_ipv6_port_service_view.dart';
+import 'package:privacy_gui/page/network_diagnostics/views/usp_network_diagnostics_view.dart';
+import 'package:privacy_gui/page/statistics/views/usp_statistics_view.dart';
+import 'package:privacy_gui/page/test_console/views/usp_test_console_view.dart';
+import 'package:privacy_gui/page/dmz/providers/usp_dmz_notifier.dart';
+import 'package:privacy_gui/page/firewall/providers/usp_firewall_notifier.dart';
+import 'package:privacy_gui/page/local_network/providers/usp_local_network_notifier.dart';
+import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
+import 'package:privacy_gui/page/internet_settings/views/usp_internet_settings_view.dart';
+import 'package:privacy_gui/page/static_routing/providers/usp_static_routing_notifier.dart';
+import 'package:privacy_gui/page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
+import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
+import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
 
 part 'route_home.dart';
-part 'route_cloud_login.dart';
 part 'route_local_login.dart';
-part 'route_dashboard.dart';
 part 'route_usp_dashboard.dart';
-part 'route_settings.dart';
-part 'route_advanced_settings.dart';
-part 'route_pnp.dart';
-part 'route_add_nodes.dart';
-part 'route_menu.dart';
 
 // init path enum
 enum LocalWhereToGo {
-  pnp,
   login,
   firstTimeLogin,
   ;
@@ -124,32 +69,14 @@ enum LocalWhereToGo {
 final appRoutes = [
   localLoginRoute,
   autoParentFirstLoginRoute,
-  cloudLoginAuthRoute,
-  cloudLoginRoute,
   homeRoute,
-  // ref.read(otpRouteProvider),
-  LinksysRoute(
-    name: RouteNamed.prepareDashboard,
-    path: RoutePath.prepareDashboard,
-    config: LinksysRouteConfig(
-      column: ColumnGrid(column: 4, centered: true),
-    ),
-    builder: (context, state) => const PrepareDashboardView(),
-  ),
-  LinksysRoute(
-    name: RouteNamed.selectNetwork,
-    path: RoutePath.selectNetwork,
-    config: const LinksysRouteConfig(
-      noNaviRail: true,
-    ),
-    builder: (context, state) => const SelectNetworkView(),
-  ),
-  dashboardRoute,
   uspDashboardRoute,
-  pnpRoute,
-  pnpTroubleshootingRoute,
-  addNodesRoute,
 ];
+
+/// Navigator key for the old dashboard shell (kept for component compatibility).
+/// Components like root_container, snack_bar, and menu_holder reference this.
+/// TODO: Migrate components to use uspShellNavigatorKey and remove this.
+final shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
@@ -166,14 +93,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       } else if (state.matchedLocation == RoutePath.localLoginPassword) {
         router.autoConfigurationLogic(state);
         return router.redirectLogic(state);
-      } else if (state.matchedLocation.startsWith('/pnp')) {
-        return router.goPnpPath(state);
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/usp')) {
-        // USP routes bypass JNAP-dependent redirect logic but still
-        // check auth — redirect to login when logged out.
+        // USP routes — check auth, redirect to login when logged out.
         final loginType =
             ref.watch(authProvider.select((value) => value.value?.loginType));
         if (loginType == null || loginType == LoginType.none) {
@@ -190,13 +114,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
   StreamSubscription? _errorSub;
-  RouterNotifier(this._ref) {
-    // _ref.listen(authProvider, (_, state) {
-    //   if (!state.isLoading && !state.hasError) {
-    //     notifyListeners();
-    //   }
-    // });
-  }
+  RouterNotifier(this._ref);
 
   @override
   void dispose() {
@@ -205,135 +123,29 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   Future<String?> autoConfigurationLogic(GoRouterState state) async {
-    await _ref.read(connectivityProvider.notifier).forceUpdate();
     final loginType = _ref.read(authProvider
         .select((value) => value.value?.loginType ?? LoginType.none));
-    final pnpNotifier = _ref.read(pnpProvider.notifier);
-    LocalWhereToGo whereToGo = LocalWhereToGo.login;
-    final routerType =
-        _ref.read(connectivityProvider).connectivityInfo.routerType;
-    if (BuildConfig.forceCommandType == ForceCommand.local ||
-        (routerType != RouterType.others && loginType != LoginType.remote)) {
-      whereToGo = await pnpNotifier
-          .fetchDeviceInfo(false)
-          .then((_) async => await pnpNotifier.autoConfigurationCheck())
-          .then((config) async {
-        // Un supported PnP or Unable to get AutoConfigurationSettings case -
-        if (config == null) {
-          return LocalWhereToGo.login;
-        }
-        // If isSupported is not true, then go to Login
-        if (config.isSupported != true) {
-          // Retail factory reset case - Check admin password
-          final isAdminPasswordSet = await pnpNotifier.isRouterPasswordSet();
-          return isAdminPasswordSet == false
-              ? LocalWhereToGo.pnp
-              : LocalWhereToGo.login;
-        }
-        // AutoConfigurationSupported is true case -
 
-        // AutoParent case -
-        if (config.method == AutoConfigurationMethodUI.autoParent) {
-          // AutoParent case -
-          // First Time Login -> isSupported is true and userAcknowledged is false
-          // Login -> else
-          return config.userAcknowledged == false
-              ? LocalWhereToGo.firstTimeLogin
-              : LocalWhereToGo.login;
-        }
-
-        // Prepair case - Check isSupported and userAcknowledged
-
-        final userAcknowledged = config.userAcknowledged;
-        if (userAcknowledged == false) {
-          // PnP case -
-          // Go PnP -> isSupported is true and userAcknowledged is false
-          // Login -> else
-          return LocalWhereToGo.pnp;
-        }
-        // Factory Reset (UnConfigured) case -
-        // Go PnP -> isAdminPasswordDefault is true and isAdminPasswordSetByUser is false
-        // Login -> else
-        //
-        final isRouterPasswordSet = await pnpNotifier.isRouterPasswordSet();
-        return isRouterPasswordSet == false
-            ? LocalWhereToGo.pnp
-            : LocalWhereToGo.login;
-      }).onError((error, __) {
-        logger.e('[Route]: [AutoConfigurationLogic]: Error - $error');
-        return LocalWhereToGo.login;
-      });
-    } else {
-      whereToGo = LocalWhereToGo.login;
-    }
-    logger.i('[Route]: [AutoConfigurationLogic]: whereToGo - $whereToGo');
-    if (whereToGo == LocalWhereToGo.pnp) {
-      // PnP case -
-      await _ref.read(authProvider.notifier).logout();
-      return goPnp(state.uri.query);
-    } else if (whereToGo == LocalWhereToGo.firstTimeLogin) {
-      // First Time Login case -
-      if (!_ref.read(autoParentFirstLoginStateProvider)) {
-        await _ref.read(authProvider.notifier).logout();
-      }
-      return goFirstTimeLogin(state);
-    } else {
-      // Login case -
-      return authCheck(state);
-    }
+    // Without PnP (removed with JNAP), go straight to auth check.
+    // TODO: Re-implement PnP / auto-configuration using USP when available.
+    logger.i('[Route]: [AutoConfigurationLogic]: loginType=$loginType');
+    return authCheck(state);
   }
 
   Future<String?> redirectLogic(GoRouterState state) async {
     final loginType =
         _ref.watch(authProvider.select((data) => data.value?.loginType));
 
-    // if no network Id for remote login
-    final managedNetworkId = _ref.read(selectedNetworkIdProvider);
-    if (loginType == LoginType.remote &&
-        managedNetworkId == null &&
-        state.matchedLocation != RoutePath.selectNetwork) {
-      FlutterNativeSplash.remove();
-      logger.d('[Route]: Remote: there is no managed network ID');
-      return _prepare(state);
-    }
-
-    // check query parameter in remote login
-    // if session is not null and different with current session which stores in pref,
-    // then logout
-    final queryParameters = state.uri.queryParameters;
-    final prefs = await SharedPreferences.getInstance();
-    final currentSession = prefs.getString(pGRASessionId);
-    if (loginType == LoginType.remote &&
-        (currentSession == null ||
-            (queryParameters['token'] != null &&
-                queryParameters['session'] != null &&
-                queryParameters['session'] != currentSession))) {
-      FlutterNativeSplash.remove();
-      logger
-          .d('[Route]: session is not null and different with current session');
-      await _ref.read(authProvider.notifier).logout();
-      return _prepare(state);
-    }
-
     // if have no login type and navigate into dashboard, then back to home
     if ((loginType == null || loginType == LoginType.none) &&
-        state.matchedLocation.startsWith('/dashboard')) {
+        (state.matchedLocation.startsWith('/dashboard') ||
+            state.matchedLocation.startsWith('/usp'))) {
       logger.d('[Route]: No login type but intend to dashboard, lead to Home');
       return _home();
     }
     return state.matchedLocation == RoutePath.home
         ? _home()
         : await (_prepare(state).then((_) => null));
-  }
-
-  FutureOr<String?> goPnp(String query) {
-    FlutterNativeSplash.remove();
-    final queryParams = query.isEmpty
-        ? Uri.tryParse(getFullLocation(_ref.read))?.query ?? ''
-        : query;
-    final path = '${RoutePath.pnp}?$queryParams';
-    logger.i('[Route]: Go to PnP, URI=$path');
-    return path;
   }
 
   FutureOr<String?> goFirstTimeLogin(GoRouterState state) {
@@ -347,65 +159,28 @@ class RouterNotifier extends ChangeNotifier {
       logger.i(
           '[Route]: Check credentials done: Login type = ${authState?.loginType}');
 
-      // check query parameter in remote login
-      // if session is not null and different with current session which stores in pref,
-      // then logout
-      final queryParameters = state.uri.queryParameters;
-      final prefs = await SharedPreferences.getInstance();
-      final currentSession = prefs.getString(pGRASessionId);
-      if (authState?.loginType == LoginType.remote &&
-          (currentSession == null ||
-              (queryParameters['token'] != null &&
-                  queryParameters['session'] != null &&
-                  queryParameters['session'] != currentSession))) {
-        FlutterNativeSplash.remove();
-        logger.d(
-            '[Route]: session is not null and different with current session');
-        await _ref.read(authProvider.notifier).logout();
-        return _home(state.uri.query);
-      }
       FlutterNativeSplash.remove();
       return switch (authState?.loginType ?? LoginType.none) {
-        LoginType.remote => await _prepare(state, RoutePath.dashboardHome)
-            .then((path) => path ?? RoutePath.dashboardHome),
-        LoginType.local => _ref.read(protocolResolverProvider).isUspOnlyMode
-            ? RoutePath.uspDashboard
-            : await _prepare(state, RoutePath.dashboardHome)
-                .then((path) => path ?? RoutePath.dashboardHome),
+        LoginType.local => await _prepare(state, RoutePath.uspDashboard)
+            .then((path) => path ?? RoutePath.uspDashboard),
         _ => _home(state.uri.query),
       };
     });
   }
 
   String _home([String? query]) {
-    return BuildConfig.forceCommandType == ForceCommand.local
-        ? '${RoutePath.localLoginPassword}?$query'
-        : '${RoutePath.cloudLoginAuth}?$query';
-  }
-
-  FutureOr<String?> goPnpPath(GoRouterState state) {
-    if (_ref.read(pnpProvider).deviceInfo == null) {
-      return goPnp(state.uri.query);
-    } else {
-      // bypass any pnp views
-      return state.uri.toString();
-    }
+    return '${RoutePath.localLoginPassword}?$query';
   }
 
   Future<String?> _prepare(GoRouterState state, [String? goToPath]) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
-    await _ref.read(connectivityProvider.notifier).forceUpdate();
     final prefs = await SharedPreferences.getInstance();
     String? serialNumber = prefs.getString(pCurrentSN);
     final loginType =
         _ref.read(authProvider.select((value) => value.value?.loginType));
     String? naviPath;
 
-    if (loginType == LoginType.remote) {
-      final networkId = prefs.getString(pSelectedNetworkId);
-      final sessionId = prefs.getString(pGRASessionId);
-      naviPath = await _prepareRemote(networkId, serialNumber, sessionId);
-    } else if (loginType == LoginType.local) {
+    if (loginType == LoginType.local) {
       naviPath = await _prepareLocal(serialNumber);
     }
     //
@@ -413,10 +188,6 @@ class RouterNotifier extends ChangeNotifier {
       logger.i('[Prepare]: naviPath - $naviPath');
       return naviPath;
     }
-    logger.d('[Prepare]: cache check');
-    await ProviderContainer()
-        .read(linksysCacheManagerProvider)
-        .loadCache(serialNumber: serialNumber ?? '');
     logger.d('[Prepare]: device info check - $serialNumber');
     final nodeDeviceInfo = await _ref
         .read(sessionProvider.notifier)
@@ -429,48 +200,14 @@ class RouterNotifier extends ChangeNotifier {
 
     if (nodeDeviceInfo != null) {
       logger.d('[Prepare]: SN changed: ${nodeDeviceInfo.serialNumber}');
-      await _ref.read(connectivityProvider.notifier).forceUpdate();
-      logger.d('[Prepare]: Force update connectivity finish!');
 
-      _ref
-          .read(pollingProvider.notifier)
-          .checkAndStartPolling(nodeDeviceInfo.serialNumber != serialNumber);
-
-      // RA mode
-      final raMode = prefs.getBool(pRAMode) ?? false;
-      if (raMode) {
-        _ref.read(raSessionProvider.notifier).startMonitorSession();
-      }
       final naviPath = goToPath ?? state.uri.toString();
       logger.d('[Prepare]: Prepare go to $naviPath');
       return naviPath;
     } else {
-      // TODO #LINKSYS Error handling for unable to get deviceinfo
       logger.i('[Prepare]: Error handling for unable to get deviceinfo');
       return _home('error=noDeviceInfo');
     }
-  }
-
-  Future<String?> _prepareRemote(
-      String? networkId, String? serialNumber, String? sessionId) async {
-    logger.i('[Prepare]: remote - $networkId, $serialNumber, $sessionId');
-    if (serialNumber != null && sessionId != null) {
-      if (isSerialNumberChanged(serialNumber)) {
-        return null;
-      }
-      await _ref
-          .read(sessionProvider.notifier)
-          .saveSelectedNetwork(serialNumber, '');
-    } else if (_ref.read(selectedNetworkIdProvider) == null) {
-      _ref.read(selectNetworkProvider.notifier).refreshCloudNetworks();
-      if (networkId == null || serialNumber == null) {
-        return RoutePath.selectNetwork;
-      }
-      await _ref
-          .read(sessionProvider.notifier)
-          .saveSelectedNetwork(serialNumber, networkId);
-    }
-    return null;
   }
 
   Future<String?> _prepareLocal(String? serialNumber) async {
@@ -486,8 +223,6 @@ class RouterNotifier extends ChangeNotifier {
       return null;
     }
 
-    // Use sessionProvider.forceFetchDeviceInfo() instead of direct RouterRepository access
-    // This adheres to Clean Architecture: Route -> Provider -> Service -> Repository
     try {
       final deviceInfo =
           await _ref.read(sessionProvider.notifier).forceFetchDeviceInfo();
@@ -512,7 +247,7 @@ class RouterNotifier extends ChangeNotifier {
       serialNumber != null &&
       serialNumber == _getStateDeviceInfo()?.serialNumber;
   NodeDeviceInfo? _getStateDeviceInfo() =>
-      _ref.read(deviceInfoProvider).deviceInfo;
+      _ref.read(sessionProvider).deviceInfo;
 }
 
 final autoParentFirstLoginStateProvider = StateProvider<bool>((ref) {

@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
-import 'package:privacy_gui/core/data/providers/device_info_provider.dart';
 import 'package:privacy_gui/core/data/services/session_service.dart';
 import 'package:privacy_gui/core/utils/bench_mark.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
@@ -88,7 +87,7 @@ class SessionNotifier extends Notifier<SessionState> {
     final benchMark = BenchMarkLogger(name: 'checkDeviceInfo');
     benchMark.start();
     final service = ref.read(sessionServiceProvider);
-    final cachedDeviceInfo = ref.read(deviceInfoProvider).deviceInfo;
+    final cachedDeviceInfo = state.deviceInfo;
     final nodeDeviceInfo = await service.checkDeviceInfo(cachedDeviceInfo);
     state = state.copyWith(deviceInfo: nodeDeviceInfo);
     logger.d(

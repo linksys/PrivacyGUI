@@ -9,9 +9,6 @@ import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/core/http/custom_multipart_request.dart';
-import 'package:privacy_gui/core/jnap/jnap_command_executor_mixin.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/command/http/base_http_command.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:http/io_client.dart';
@@ -26,9 +23,11 @@ typedef HttpErrorResponseHandler = void Function(dynamic error);
 ///
 /// timeout - will throw Timeout exception on ${timeout} seconds
 ///
-class LinksysHttpClient extends http.BaseClient
-    with JNAPCommandExecutor<Response> {
+class LinksysHttpClient extends http.BaseClient {
   static HttpErrorResponseHandler? onError;
+
+  int timeoutMs = 30000;
+  int retries = 3;
 
   LinksysHttpClient({
     IOClient? client,
@@ -326,22 +325,6 @@ class LinksysHttpClient extends http.BaseClient
     return response;
   }
 
-  @override
-  void dropCommand(String id) {
-    // DO nothing
-  }
-
-  @override
-  Future<Response> execute(BaseCommand command) async {
-    if (command is JNAPHttpCommand) {
-      return post(Uri.parse(command.url),
-          headers: command.header, body: command.data);
-    } else if (command is TransactionHttpCommand) {
-      return post(Uri.parse(command.url),
-          headers: command.header, body: command.data);
-    }
-    throw Exception();
-  }
 }
 
 bool _defaultWhen(http.BaseResponse response) {

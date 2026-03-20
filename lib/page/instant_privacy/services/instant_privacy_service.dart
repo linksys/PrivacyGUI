@@ -1,181 +1,230 @@
-import 'package:collection/collection.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/errors/jnap_error_mapper.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
-import 'package:privacy_gui/core/jnap/actions/jnap_service_supported.dart';
-import 'package:privacy_gui/core/jnap/command/base_command.dart';
-import 'package:privacy_gui/core/jnap/models/mac_filter_settings.dart';
-import 'package:privacy_gui/core/data/providers/device_manager_state.dart';
-import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
-import 'package:privacy_gui/core/jnap/router_repository.dart';
-import 'package:privacy_gui/core/utils/devices.dart';
-import 'package:privacy_gui/core/utils/extension.dart';
-import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
-import 'package:privacy_gui/util/extensions.dart';
+import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
+import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 
-/// Riverpod provider for InstantPrivacyService
-final instantPrivacyServiceProvider = Provider<InstantPrivacyService>((ref) {
-  return InstantPrivacyService(ref.watch(routerRepositoryProvider));
-});
+final uspInstantPrivacyServiceProvider = Provider<UspInstantPrivacyService>(
+  (ref) => UspInstantPrivacyService(ref.read(uspServiceProvider)!),
+);
 
-/// Stateless service for MAC filtering (Instant Privacy) operations.
+/// Opaque wrapper around MAC filter AP data.
 ///
-/// Encapsulates all JNAP communication for:
-/// - getMACFilterSettings / setMACFilterSettings
-/// - getSTABSSIDs
-/// - getLocalDevice (for current device MAC)
-///
-/// Reference: constitution.md Article VI
-class InstantPrivacyService {
-  /// Constructor injection of RouterRepository dependency
-  InstantPrivacyService(this._routerRepository);
+/// Notifiers and state hold this without knowing the inner codegen type.
+/// Only [UspInstantPrivacyService] can create and consume it.
+class MacFilterContext extends Equatable {
+  final MacFilterAccessPoints _data;
+  const MacFilterContext._(this._data);
 
-  final RouterRepository _routerRepository;
+  /// Empty context for initial state.
+  static const empty = MacFilterContext._(MacFilterAccessPoints(items: []));
 
-  /// Fetches MAC filter settings and status from JNAP.
-  ///
-  /// Parameters:
-  ///   - forceRemote: If true, bypasses cache (default: false)
-  ///   - updateStatusOnly: If true, returns only status without full settings
-  ///
-  /// Returns: Tuple of (InstantPrivacySettings?, InstantPrivacyStatus?)
-  ///   - If updateStatusOnly is true, first element is null
-  ///
-  /// Throws: [ServiceError] on JNAP failure
-  Future<(InstantPrivacySettings?, InstantPrivacyStatus?)>
-      fetchMacFilterSettings({
-    bool forceRemote = false,
-    bool updateStatusOnly = false,
-  }) async {
-    try {
-      final settings = await _routerRepository
-          .send(
-            JNAPAction.getMACFilterSettings,
-            fetchRemote: forceRemote,
-            auth: true,
-          )
-          .then((result) => MACFilterSettings.fromMap(result.output));
+  @override
+  List<Object?> get props => [_data.items.length];
+}
 
-      final mode = MacFilterMode.reslove(settings.macFilterMode);
-      final newStatus = InstantPrivacyStatus(mode: mode);
+/// Fetch result returned by [UspInstantPrivacyService.fetchAll].
+class InstantPrivacyFetchResult {
+  final bool isEnabled;
+  final List<InstantPrivacyDeviceUIModel> connectedDevices;
+  final List<InstantPrivacyDeviceUIModel> allowedDevices;
+  final MacFilterContext macFilterContext;
 
-      // Return status only if requested
-      if (updateStatusOnly) {
-        return (null, newStatus);
-      }
+  const InstantPrivacyFetchResult({
+    required this.isEnabled,
+    required this.connectedDevices,
+    required this.allowedDevices,
+    required this.macFilterContext,
+  });
+}
 
-      // Fetch STA BSSIDs if supported
-      final List<String> staBssids = await fetchStaBssids();
+/// Service layer for Instant Privacy — encapsulates codegen CRUD + transform.
+class UspInstantPrivacyService {
+  final UspService _usp;
 
-      final macAddresses =
-          settings.macAddresses.map((e) => e.toUpperCase()).toList();
-      final InstantPrivacySettings newSettings = InstantPrivacySettings(
-        mode: mode,
-        macAddresses: mode == MacFilterMode.allow ? macAddresses : [],
-        denyMacAddresses: mode == MacFilterMode.deny ? macAddresses : [],
-        maxMacAddresses: settings.maxMACAddresses,
-        bssids: staBssids,
+  UspInstantPrivacyService(this._usp);
+  static final _macRegExp = RegExp(
+    r'^([0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}$',
+  );
+
+  // ---------------------------------------------------------------------------
+  // Read helpers
+  // ---------------------------------------------------------------------------
+
+  /// Filters [data] to only currently active devices and maps to UI models.
+  List<InstantPrivacyDeviceUIModel> activeDevices(ConnectedDevices data) {
+    return data.items
+        .where((d) => d.isActive && d.interface_.isNotEmpty)
+        .map((d) {
+      final mac = normalizeMac(d.macAddress);
+      return InstantPrivacyDeviceUIModel(
+        mac: mac,
+        displayName: d.hostName.isNotEmpty ? d.hostName : mac,
       );
-      return (newSettings, newStatus);
-    } on JNAPError catch (e) {
-      throw _mapJnapError(e);
-    }
+    }).toList();
   }
 
-  /// Saves MAC filter settings to JNAP.
-  ///
-  /// Parameters:
-  ///   - settings: The InstantPrivacySettings to save
-  ///   - nodesMacAddresses: MAC addresses of mesh nodes (to include in allow list)
-  ///
-  /// Throws: [ServiceError] on JNAP failure
-  Future<void> saveMacFilterSettings(
-    InstantPrivacySettings settings,
-    List<String> nodesMacAddresses,
-  ) async {
-    try {
-      var macAddresses = <String>[];
-      if (settings.mode == MacFilterMode.allow) {
-        macAddresses = [
-          ...settings.macAddresses,
-          ...nodesMacAddresses,
-          ...settings.bssids,
-        ].unique();
-      } else if (settings.mode == MacFilterMode.deny) {
-        macAddresses = [
-          ...settings.denyMacAddresses,
-        ];
-      }
-
-      await _routerRepository.send(
-        JNAPAction.setMACFilterSettings,
-        data: {
-          'macFilterMode': settings.mode.name.capitalize(),
-          'macAddresses': macAddresses,
-        },
-        auth: true,
-        fetchRemote: true,
-        cacheLevel: CacheLevel.noCache,
-      );
-    } on JNAPError catch (e) {
-      throw _mapJnapError(e);
-    }
+  /// Returns true if any AP in [data] has MAC filtering enabled.
+  bool isEnabled(MacFilterAccessPoints data) {
+    return data.items.any((ap) => ap.macAddressControlEnabled);
   }
 
-  /// Fetches STA BSSIDs from the router.
+  /// Parses the current allowed MAC list from [data] and converts to UI models.
   ///
-  /// Returns: List of BSSID strings (uppercase), or empty list if not supported
-  ///
-  /// Note: Gracefully returns empty list if router doesn't support getSTABSSIDs
-  Future<List<String>> fetchStaBssids() async {
-    if (!serviceHelper.isSupportGetSTABSSID()) {
-      return [];
-    }
-
-    return _routerRepository
-        .send(
-      JNAPAction.getSTABSSIDs,
-      fetchRemote: true,
-      auth: true,
-    )
-        .then((result) {
-      return List<String>.from(result.output['staBSSIDS'])
-          .map((e) => e.toUpperCase())
-          .toList();
-    }).onError((error, _) {
-      logger.d('Not able to get STA BSSIDs');
-      return <String>[];
-    });
+  /// Uses the first AP's [allowedMACAddress] as the source (all APs share the
+  /// same list). Deduplicates by MAC address.
+  List<InstantPrivacyDeviceUIModel> allowedDevices(MacFilterAccessPoints data) {
+    if (data.items.isEmpty) return [];
+    final raw = data.items.first.allowedMACAddress;
+    final seen = <String>{};
+    return raw
+        .split(',')
+        .map((m) => m.trim())
+        .where((m) => m.isNotEmpty)
+        .map(normalizeMac)
+        .where(seen.add)
+        .map((mac) => InstantPrivacyDeviceUIModel(mac: mac, displayName: mac))
+        .toList();
   }
 
-  /// Fetches the MAC address of the current device.
+  // ---------------------------------------------------------------------------
+  // Write helpers — build update descriptors for MacFilterAccessPoints.updateMany()
+  // ---------------------------------------------------------------------------
+
+  /// Builds update descriptors to ENABLE MAC filtering on all APs.
   ///
-  /// Parameters:
-  ///   - deviceList: List of known devices to search
-  ///
-  /// Returns: MAC address string or null if not found
-  ///
-  /// Note: Uses getLocalDevice to find deviceID, then looks up MAC in deviceList
-  Future<String?> fetchMyMacAddress(List<LinksysDevice> deviceList) {
-    return _routerRepository
-        .send(JNAPAction.getLocalDevice, auth: true, fetchRemote: true)
-        .then((result) {
-      final deviceID = result.output['deviceID'];
-      return deviceList
-          .firstWhereOrNull((device) => device.deviceID == deviceID)
-          ?.getMacAddress();
-    }).onError((_, __) {
-      return null;
-    });
+  /// Sets [macAddressControlEnabled] = true and [allowedMACAddress] to the
+  /// comma-joined [macs] list on every AP instance in [data].
+  List<MacFilterAccessPointUpdate> buildEnableUpdates(
+    List<String> macs,
+    MacFilterAccessPoints data,
+  ) {
+    final macList = macs.join(',');
+    return data.items
+        .map((ap) => MacFilterAccessPointUpdate(
+              instancePath: ap.instancePath,
+              macAddressControlEnabled: true,
+              allowedMACAddress: macList,
+            ))
+        .toList();
   }
 
-  /// Maps JNAP errors to ServiceError.
+  /// Builds update descriptors to DISABLE MAC filtering on all APs.
   ///
-  /// Uses the centralized mapper from `jnap_error_mapper.dart` for consistent
-  /// error handling across all services.
-  ServiceError _mapJnapError(JNAPError error) {
-    return mapJnapErrorToServiceError(error);
+  /// Sets [macAddressControlEnabled] = false and clears [allowedMACAddress]
+  /// on every AP instance in [data].
+  List<MacFilterAccessPointUpdate> buildDisableUpdates(
+      MacFilterAccessPoints data) {
+    return data.items
+        .map((ap) => MacFilterAccessPointUpdate(
+              instancePath: ap.instancePath,
+              macAddressControlEnabled: false,
+              allowedMACAddress: '',
+            ))
+        .toList();
   }
+
+  /// Builds update descriptors to ADD [newMac] to the existing allowed list.
+  ///
+  /// Reads the current list from the first AP (all APs share the same list),
+  /// appends [newMac] if not already present, and updates every AP.
+  /// Precondition: [newMac] is already validated and normalized.
+  List<MacFilterAccessPointUpdate> buildAddMacUpdates(
+    String newMac,
+    MacFilterAccessPoints data,
+  ) {
+    if (data.items.isEmpty) return [];
+
+    final existing = data.items.first.allowedMACAddress
+        .split(',')
+        .map((m) => m.trim())
+        .where((m) => m.isNotEmpty)
+        .map(normalizeMac)
+        .toList();
+
+    if (existing.contains(newMac)) return [];
+
+    final updated = [...existing, newMac].join(',');
+    return data.items
+        .map((ap) => MacFilterAccessPointUpdate(
+              instancePath: ap.instancePath,
+              macAddressControlEnabled: true,
+              allowedMACAddress: updated,
+            ))
+        .toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // High-level CRUD (for Notifier consumption)
+  // ---------------------------------------------------------------------------
+
+  /// Fetch all data needed for Instant Privacy and return UI-safe result.
+  Future<InstantPrivacyFetchResult> fetchAll() async {
+    final results = await Future.wait([
+      ConnectedDevices.fetch(_usp),
+      MacFilterAccessPoints.fetch(_usp),
+    ]);
+
+    final devices = results[0] as ConnectedDevices;
+    final macAps = results[1] as MacFilterAccessPoints;
+
+    final active = activeDevices(devices);
+
+    // Build a MAC → hostname lookup from all known hosts (active + inactive)
+    final hostnameByMac = {
+      for (final d in devices.items)
+        if (d.macAddress.isNotEmpty)
+          normalizeMac(d.macAddress):
+              d.hostName.isNotEmpty ? d.hostName : normalizeMac(d.macAddress),
+    };
+
+    final allowed = allowedDevices(macAps).map((d) {
+      final name = hostnameByMac[d.mac] ?? 'Unknown Device';
+      return name == d.displayName
+          ? d
+          : InstantPrivacyDeviceUIModel(mac: d.mac, displayName: name);
+    }).toList();
+
+    return InstantPrivacyFetchResult(
+      isEnabled: isEnabled(macAps),
+      connectedDevices: active,
+      allowedDevices: allowed,
+      macFilterContext: MacFilterContext._(macAps),
+    );
+  }
+
+  /// Enable MAC filtering on all APs with the given MAC whitelist.
+  Future<void> enable(List<String> macs, MacFilterContext ctx) async {
+    final updates = buildEnableUpdates(macs, ctx._data);
+    await MacFilterAccessPoints.updateMany(_usp, updates);
+  }
+
+  /// Disable MAC filtering on all APs.
+  Future<void> disable(MacFilterContext ctx) async {
+    final updates = buildDisableUpdates(ctx._data);
+    await MacFilterAccessPoints.updateMany(_usp, updates);
+  }
+
+  /// Add a MAC address to the allowed list across all APs.
+  /// Returns true if the MAC was added, false if already present.
+  Future<bool> addMac(String mac, MacFilterContext ctx) async {
+    final updates = buildAddMacUpdates(mac, ctx._data);
+    if (updates.isEmpty) return false;
+    await MacFilterAccessPoints.updateMany(_usp, updates);
+    return true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // MAC address utilities
+  // ---------------------------------------------------------------------------
+
+  /// Returns true if [mac] matches colon-separated or hyphen-separated hex format.
+  static bool validateMac(String mac) => _macRegExp.hasMatch(mac.trim());
+
+  /// Converts [mac] to uppercase colon-separated canonical form.
+  /// Precondition: [mac] passes [validateMac].
+  static String normalizeMac(String mac) =>
+      mac.trim().toUpperCase().replaceAll('-', ':');
 }

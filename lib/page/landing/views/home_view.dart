@@ -5,11 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/page/components/composed/app_panel_with_value_check.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart' hide AppBarStyle, AppStyledText;
-import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeView extends ArgumentsConsumerStatefulView {
   const HomeView({Key? key, super.args}) : super(key: key);
@@ -19,14 +17,7 @@ class HomeView extends ArgumentsConsumerStatefulView {
 }
 
 class _HomeViewState extends ConsumerState<HomeView> {
-  final bool _isOpenDebug = false;
   final bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initialize();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,11 +30,6 @@ class _HomeViewState extends ConsumerState<HomeView> {
             )
           : _content(context),
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   Widget _content(BuildContext context) {
@@ -65,139 +51,23 @@ class _HomeViewState extends ConsumerState<HomeView> {
           variant: SurfaceVariant.highlight,
           key: const Key('home_view_button_login'),
           onTap: () {
-            if (BuildConfig.forceCommandType == ForceCommand.local) {
-              context.pushNamed(RouteNamed.localLoginPassword);
-            } else {
-              context.pushNamed(RouteNamed.cloudLoginAccount);
-            }
+            context.pushNamed(RouteNamed.localLoginPassword);
           },
         ),
       ),
       AppGap.md(),
-      if (!kIsWeb)
-        SizedBox(
-          width: double.infinity,
-          child: AppButton(
-            label: 'Local Log in',
-            variant: SurfaceVariant.highlight,
-            key: const Key('home_view_button_local_login'),
-            onTap: () async {
-              // Local version flow
-              context.pushNamed(RouteNamed.localLoginPassword);
-            },
-          ),
-        ),
-      Stack(
-        children: [
-          Center(
-            child: FutureBuilder(
-                future: getVersion(),
-                initialData: '-',
-                builder: (context, data) {
-                  var version = 'version ${data.data}';
-                  version = BuildConfig.forceCommandType == ForceCommand.local
-                      ? version
-                      : '$version ${cloudEnvTarget == CloudEnvironment.prod ? '' : cloudEnvTarget.name}';
-                  // if (kDebugMode && kIsWeb) {
-                  if (kIsWeb) {
-                    version = '$version - ${BuildConfig.forceCommandType.name}';
-                  }
-                  return AppText.bodySmall(
-                    version,
-                  );
-                }),
-          ),
-          if (BuildConfig.isEnableEnvPicker &&
-              BuildConfig.forceCommandType != ForceCommand.local)
-            Align(
-                alignment: Alignment.bottomRight,
-                child: AppButton.text(
-                    label: 'Select Env',
-                    onTap: () async {
-                      final _ = await showModalBottomSheet(
-                          enableDrag: false,
-                          context: context,
-                          showDragHandle: true,
-                          builder: (context) => _createEnvPicker());
-                      setState(() {});
-                    })),
-        ],
-      ),
-    ]);
-  }
-
-  List<Widget> showDebugButton() {
-    if (_isOpenDebug) {
-      return [
-        AppGap.xxl(),
-        AppButton.text(
-          label: 'Debug Tools',
-          onTap: () {
-            context.pushNamed(RouteNamed.debug);
-          },
-        ),
-      ];
-    } else {
-      return [];
-    }
-  }
-
-  _initialize() async {}
-
-  Widget _createEnvPicker() {
-    bool isLoading = false;
-    return StatefulBuilder(builder: (context, setState) {
-      return isLoading
-          ? AppFullScreenLoader(title: loc(context).processing)
-          : Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                children: [
-                  ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: CloudEnvironment.values.length,
-                      itemBuilder: (context, index) => InkWell(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.lg),
-                              child: AppPanelWithValueCheck(
-                                title: CloudEnvironment.values[index].name,
-                                valueText: '',
-                                isChecked: cloudEnvTarget ==
-                                    CloudEnvironment.values[index],
-                              ),
-                            ),
-                            onTap: () {
-                              setState(() {
-                                cloudEnvTarget = CloudEnvironment.values[index];
-                              });
-                            },
-                          )),
-                  const Spacer(),
-                  AppButton(
-                    label: 'Save',
-                    variant: SurfaceVariant.highlight,
-                    onTap: () async {
-                      setState(() {
-                        isLoading = true;
-                      });
-
-                      final pref = await SharedPreferences.getInstance();
-                      pref.setString(pCloudEnv, cloudEnvTarget.name);
-                      BuildConfig.load();
-                      setState(() {
-                        isLoading = false;
-                      });
-                      if (context.mounted) {
-                        Navigator.pop(context, cloudEnvTarget);
-                      }
-                    },
-                  ),
-                  AppGap.lg(),
-                ],
-              ),
+      FutureBuilder(
+          future: getVersion(),
+          initialData: '-',
+          builder: (context, data) {
+            var version = 'version ${data.data}';
+            if (kIsWeb) {
+              version = '$version - local';
+            }
+            return AppText.bodySmall(
+              version,
             );
-    });
+          }),
+    ]);
   }
 }

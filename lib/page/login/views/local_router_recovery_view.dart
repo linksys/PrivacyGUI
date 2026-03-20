@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/page/instant_admin/providers/_providers.dart';
+import 'package:privacy_gui/page/login/providers/router_password_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/components/views/arguments_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';

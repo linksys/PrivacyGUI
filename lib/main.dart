@@ -8,8 +8,6 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/cache/linksys_cache_manager.dart';
-import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/app.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/providers/logger_observer.dart';
@@ -65,10 +63,8 @@ void main() async {
   ///
   initErrorHandler();
 
-  container.read(linksysCacheManagerProvider);
 
   await BuildConfig.load();
-  initBetterActions();
   if (!kIsWeb) {
     HttpOverrides.global = MyHTTPOverrides();
   }

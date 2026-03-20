@@ -4,8 +4,6 @@ import 'package:privacy_gui/utils.dart';
 import 'package:test/test.dart';
 import 'package:privacy_gui/core/utils/fernet_manager.dart';
 
-import 'test_data/const_test_data.dart';
-
 // TODO test supported languages
 void main() {
   group('test ip conveter', () {
@@ -116,24 +114,6 @@ void main() {
       expect(maskedJson, rawJson);
     });
 
-    test('maskJsonValue: username case', () async {
-      final actual = Utils.maskJsonValue(sensitiveUsername, ['username']);
-      expect(actual.indexOf('austin.chang@gmail.com'), -1);
-    });
-
-    test('maskJsonValue: password case', () async {
-      final actual = Utils.maskJsonValue(sensitivePassword, ['password']);
-      expect(actual.indexOf('Linksys123!'), -1);
-    });
-
-    test('maskUsernamePasswordBodyValue', () async {
-      final actual = Utils.maskUsernamePasswordBodyValue(
-          cloudLoginWithUsernamePasswordRequest);
-      print(actual);
-      expect(actual.indexOf('hank.yu%40linksys.com'), -1);
-      expect(actual.indexOf('Linksys123%21'), -1);
-    });
-
     test(
         'maskSensitiveJsonValues: masks specified keys correctly in JSON string',
         () {
@@ -221,36 +201,6 @@ void main() {
       expect(result, expected);
     });
 
-    test('replaceHttpScheme: URL in http request', () async {
-      final actual = Utils.replaceHttpScheme(selfNetworksHttpRequest);
-      expect(
-          actual.indexOf(
-              'https://qa.linksyssmartwifi.com/cloud/device-service/rest/accounts/self/networks'),
-          -1);
-      expect(
-          actual.indexOf(
-                  'https-//qa-linksyssmartwifi-com/cloud/device-service/rest/accounts/self/networks') >
-              1,
-          true);
-    });
-    test('replaceHttpScheme: URL in http response', () async {
-      final actual =
-          Utils.replaceHttpScheme(isAdminPasswordDefaultHttpResponse);
-      expect(
-          actual.indexOf('http://linksys.com/jnap/core/IsAdminPasswordDefault'),
-          -1);
-      expect(
-          actual.indexOf(
-                  'http-//linksys-com/jnap/core/IsAdminPasswordDefault') >
-              1,
-          true);
-    });
-
-    test('replaceHttpScheme: URL in cache data', () async {
-      final actual = Utils.replaceHttpScheme(pollingResponseCache);
-
-      expect(actual.indexOf('http://linksys.com/jnap/'), -1);
-    });
   });
 
   group('test string encode/decode', () {

@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/constants/url_links.dart';
-import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/di.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/language_tile.dart';
 import 'package:privacy_gui/page/components/styled/general_settings_widget/theme_mode_tile.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
@@ -30,7 +27,6 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
     final loginType =
         ref.watch(authProvider.select((state) => state.value?.loginType)) ??
             LoginType.none;
-    final isRemote = loginType == LoginType.remote;
 
     // Watch Theme.of(context) to trigger rebuild when global theme changes
     Theme.of(context);
@@ -46,7 +42,7 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         identifier: 'now-topbar-icon-general-settings',
         label: 'general settings',
         child: Icon(
-          isRemote ? Icons.support_agent : AppFontIcons.person,
+          AppFontIcons.person,
           size: 20,
           color: colorScheme.onSurface,
         ),
@@ -91,17 +87,8 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
                       child: const ThemeModeTile(),
                     ),
                   ),
-                  // const AppGap.lg(),
-                  // Padding(
-                  //   padding: EdgeInsets.all(AppSpacing.sm),
-                  //   child: Semantics(
-                  //     identifier: 'now-general-settings-theme-color',
-                  //     label: 'themeColor',
-                  //     child: const ThemeColorTile(),
-                  //   ),
-                  // ),
                   AppGap.lg(),
-                  ..._displayAdditional(loginType, controller),
+                  ..._displayAdditional(loginType),
                   FutureBuilder(
                       future: getVersion(),
                       initialData: '-',
@@ -123,21 +110,9 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
     );
   }
 
-  List<Widget> _displayAdditional(
-      LoginType loginType, AppPopupController controller) {
-    final isRemote = loginType == LoginType.remote;
+  List<Widget> _displayAdditional(LoginType loginType) {
     if (loginType != LoginType.none) {
       return [
-        // Padding(
-        //   padding: const EdgeInsets.all(8.0),
-        //   child: AppButton.text(
-        //     label: loc(context).endUserLicenseAgreement,
-        //     onTap: () {
-        //       gotoOfficialWebUrl(linkEULA,
-        //           locale: ref.read(appSettingsProvider).locale);
-        //     },
-        //   ),
-        // ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: AppButton.text(
@@ -171,46 +146,14 @@ class _GeneralSettingsWidgetState extends ConsumerState<GeneralSettingsWidget> {
         const Divider(
           thickness: 1,
         ),
-        // const AppText.labelMedium('Router'),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: AppButton.dangerText(
-            label: isRemote
-                ? loc(context).endRemoteAssistance
-                : loc(context).logout,
-            onTap: isRemote
-                ? () {
-                    controller.close();
-                    showSimpleAppDialog(
-                      context,
-                      title: loc(context).endRemoteAssistance,
-                      content: AppText.bodyMedium(
-                          loc(context).endRemoteAssistanceDesc),
-                      actions: [
-                        AppButton.text(
-                          label: loc(context).cancel,
-                          onTap: () {
-                            context.pop();
-                          },
-                        ),
-                        AppButton.dangerText(
-                          label: loc(context).ok,
-                          onTap: () {
-                            logger.i('[Auth]: The user manually end session');
-                            context.pop();
-                            ref
-                                .read(remoteClientProvider.notifier)
-                                .endRemoteAssistance();
-                            ref.read(authProvider.notifier).logout();
-                          },
-                        ),
-                      ],
-                    );
-                  }
-                : () {
-                    logger.i('[Auth]: The user manually logs out');
-                    ref.read(authProvider.notifier).logout();
-                  },
+            label: loc(context).logout,
+            onTap: () {
+              logger.i('[Auth]: The user manually logs out');
+              ref.read(authProvider.notifier).logout();
+            },
           ),
         ),
         AppGap.lg(),
