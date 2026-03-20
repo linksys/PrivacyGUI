@@ -14,45 +14,46 @@ import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
 // ---------------------------------------------------------------------------
-// Data Model (Layer 1 — raw codegen + enrichment + UI models)
+// Data Model (Layer 1 — UIModel only)
 // ---------------------------------------------------------------------------
 
 class DevicesData extends Equatable {
-  // Raw codegen
-  final ConnectedDevices connectedDevices;
   final MeshTopologyInfo meshTopology;
 
   // UI models (computed from raw + cross-domain enrichment)
   final List<DeviceUIModel> deviceModels;
   final List<NodeUIModel> nodeModels;
 
+  /// Pre-computed MAC → hostname map for DHCP hostname enrichment.
+  final Map<String, String> hostNameByMac;
+
   const DevicesData({
-    required this.connectedDevices,
     this.meshTopology = MeshTopologyInfo.empty,
     this.deviceModels = const [],
     this.nodeModels = const [],
+    this.hostNameByMac = const {},
   });
 
   DevicesData copyWith({
-    ConnectedDevices? connectedDevices,
     MeshTopologyInfo? meshTopology,
     List<DeviceUIModel>? deviceModels,
     List<NodeUIModel>? nodeModels,
+    Map<String, String>? hostNameByMac,
   }) {
     return DevicesData(
-      connectedDevices: connectedDevices ?? this.connectedDevices,
       meshTopology: meshTopology ?? this.meshTopology,
       deviceModels: deviceModels ?? this.deviceModels,
       nodeModels: nodeModels ?? this.nodeModels,
+      hostNameByMac: hostNameByMac ?? this.hostNameByMac,
     );
   }
 
   @override
   List<Object?> get props => [
-        connectedDevices.items.length,
         meshTopology.nodes.length,
         deviceModels.length,
         nodeModels.length,
+        hostNameByMac.length,
       ];
 }
 
@@ -71,6 +72,9 @@ final devicesDataProvider =
 class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   Timer? _debounce;
 
+  /// Raw codegen kept as internal state for WiFi listener rebuild.
+  ConnectedDevices? _rawConnectedDevices;
+
   @override
   Future<DevicesData> build() async {
     // SSE: listen for device domain changes → debounce → re-fetch
@@ -85,13 +89,14 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     ref.listen(wifiDataProvider, (_, next) {
       final wd = next.valueOrNull;
       final cur = state.valueOrNull;
-      if (wd == null || cur == null) return;
+      final raw = _rawConnectedDevices;
+      if (wd == null || cur == null || raw == null) return;
       final svc = ref.read(uspDeviceServiceProvider);
       final gatewayName =
           ref.read(systemInfoDataProvider).valueOrNull?.model.gatewayName ??
               'Router';
       final rebuiltDevices = svc.buildDeviceUIModels(
-        connectedDevices: cur.connectedDevices,
+        connectedDevices: raw,
         wifiClientMap: wd.wifiClientMap,
         connectionDetailMap: wd.connectionDetailMap,
         meshTopology: cur.meshTopology,
@@ -117,6 +122,17 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
     final connectedDevices = results[0] as ConnectedDevices;
     final meshTopology = results[1] as MeshTopologyInfo;
+
+    // Cache raw for WiFi listener rebuild.
+    _rawConnectedDevices = connectedDevices;
+
+    // Build hostname map for DHCP enrichment.
+    final hostNameByMac = <String, String>{};
+    for (final d in connectedDevices.items) {
+      if (d.hostName.isNotEmpty) {
+        hostNameByMac[d.macAddress.trim().toUpperCase()] = d.hostName;
+      }
+    }
 
     // Read WiFi enrichment data from domain provider
     final wifiData = await ref.read(wifiDataProvider.future);
@@ -150,10 +166,10 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
         'nodeModels: ${nodeModels.length}');
 
     return DevicesData(
-      connectedDevices: connectedDevices,
       meshTopology: meshTopology,
       deviceModels: deviceModels,
       nodeModels: nodeModels,
+      hostNameByMac: hostNameByMac,
     );
   }
 

@@ -16,14 +16,43 @@ import 'package:privacy_gui/page/_shared/providers/wifi_client_enricher.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 
 // ---------------------------------------------------------------------------
-// Data Model (Layer 1 — raw codegen + enrichment + UI models)
+// Opaque codegen context (only WiFi-domain services can consume)
+// ---------------------------------------------------------------------------
+
+/// Opaque wrapper around raw WiFi codegen data.
+///
+/// External consumers hold this without accessing the inner codegen types.
+/// Only WiFi-domain services ([UspWifiSettingsService], [UspDeviceService])
+/// consume it via the typed accessor.
+class WifiCodegenContext extends Equatable {
+  final WiFiRadios _radios;
+  final WiFiSsids _ssids;
+  final WiFiAccessPoints _accessPoints;
+
+  const WifiCodegenContext(this._radios, this._ssids, this._accessPoints);
+
+  static const empty = WifiCodegenContext(
+    WiFiRadios(items: []),
+    WiFiSsids(items: []),
+    WiFiAccessPoints(items: []),
+  );
+
+  /// Destructure for WiFi-domain service consumption.
+  ({WiFiRadios radios, WiFiSsids ssids, WiFiAccessPoints accessPoints})
+      get raw => (radios: _radios, ssids: _ssids, accessPoints: _accessPoints);
+
+  @override
+  List<Object?> get props =>
+      [_radios.items.length, _ssids.items.length, _accessPoints.items.length];
+}
+
+// ---------------------------------------------------------------------------
+// Data Model (Layer 1 — UIModel only)
 // ---------------------------------------------------------------------------
 
 class WifiData extends Equatable {
-  // Raw codegen
-  final WiFiRadios radios;
-  final WiFiSsids ssids;
-  final WiFiAccessPoints accessPoints;
+  /// Opaque codegen context for WiFi settings service consumption.
+  final WifiCodegenContext codegenContext;
 
   // Enrichment (UI-safe types — codegen converted at boundary)
   final Map<String, WifiClientUIModel> wifiClientMap;
@@ -33,27 +62,21 @@ class WifiData extends Equatable {
   final List<WifiRadioUIModel> radioModels;
 
   const WifiData({
-    required this.radios,
-    required this.ssids,
-    required this.accessPoints,
+    required this.codegenContext,
     this.wifiClientMap = const {},
     this.connectionDetailMap = const {},
     this.radioModels = const [],
   });
 
   const WifiData.empty()
-      : radios = const WiFiRadios(items: []),
-        ssids = const WiFiSsids(items: []),
-        accessPoints = const WiFiAccessPoints(items: []),
+      : codegenContext = WifiCodegenContext.empty,
         wifiClientMap = const {},
         connectionDetailMap = const {},
         radioModels = const [];
 
   @override
   List<Object?> get props => [
-        radios.items.length,
-        ssids.items.length,
-        accessPoints.items.length,
+        codegenContext,
         wifiClientMap.length,
         connectionDetailMap.length,
         radioModels.length,
@@ -136,9 +159,7 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
         'clients: ${wifiClientMap.length}');
 
     return WifiData(
-      radios: radios,
-      ssids: ssids,
-      accessPoints: accessPoints,
+      codegenContext: WifiCodegenContext(radios, ssids, accessPoints),
       wifiClientMap: wifiClientMap,
       connectionDetailMap: connectionDetailMap,
       radioModels: radioModels,

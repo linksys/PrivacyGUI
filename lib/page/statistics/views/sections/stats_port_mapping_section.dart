@@ -34,7 +34,7 @@ class StatsPortMappingSection extends ConsumerWidget {
       BuildContext context, PortForwardingData? pfData, FirewallData? fwData) {
     final colorScheme = Theme.of(context).colorScheme;
     final portForwardingRules = pfData?.ruleModels ?? [];
-    final dmzEntries = fwData?.dmzEntries.items ?? [];
+    final dmzEntries = fwData?.dmzSummaries ?? [];
 
     if (portForwardingRules.isEmpty && dmzEntries.isEmpty) {
       return Center(

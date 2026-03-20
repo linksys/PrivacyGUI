@@ -17,16 +17,14 @@ final portTriggeringDataProvider =
 );
 
 class PortTriggeringData extends Equatable {
-  final PortTriggering raw;
   final List<PortTriggeringRuleUIModel> ruleModels;
 
   const PortTriggeringData({
-    required this.raw,
     required this.ruleModels,
   });
 
   @override
-  List<Object?> get props => [raw.items.length, ruleModels.length];
+  List<Object?> get props => [ruleModels.length];
 }
 
 class PortTriggeringDataNotifier extends AsyncNotifier<PortTriggeringData> {
@@ -38,11 +36,10 @@ class PortTriggeringDataNotifier extends AsyncNotifier<PortTriggeringData> {
   Future<PortTriggeringData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
-    final raw = await PortTriggering.fetch(usp);
+    final codegen = await PortTriggering.fetch(usp);
     final svc = ref.read(uspDeviceServiceProvider);
     return PortTriggeringData(
-      raw: raw,
-      ruleModels: svc.buildPortTriggeringRuleUIModels(raw),
+      ruleModels: svc.buildPortTriggeringRuleUIModels(codegen),
     );
   }
 

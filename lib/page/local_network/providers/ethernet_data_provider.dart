@@ -8,7 +8,7 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
-/// Layer 1 Ethernet Data Provider — raw EthernetInterfaces + port UI models.
+/// Layer 1 Ethernet Data Provider — port UI models.
 ///
 /// NOT autoDispose — persists across tab switches.
 /// Listens to [devicesDataProvider] to rebuild port models when device list changes.
@@ -17,45 +17,33 @@ final ethernetDataProvider =
   EthernetDataNotifier.new,
 );
 
-/// Aggregated Ethernet data: raw codegen + bridge classification + UI models.
+/// Aggregated Ethernet data: presentation-layer port models.
 class EthernetData extends Equatable {
-  /// Raw codegen Ethernet interfaces.
-  final EthernetInterfaces ethernetInterfaces;
-
-  /// Bridge port → Ethernet interface mapping (for WAN/LAN classification).
-  final Map<String, String> bridgePortMap;
-
   /// Presentation-layer port models (WAN/LAN classified, with connected devices).
   final List<EthernetPortUIModel> ethernetPortModels;
 
   const EthernetData({
-    required this.ethernetInterfaces,
-    this.bridgePortMap = const {},
     this.ethernetPortModels = const [],
   });
 
   EthernetData copyWith({
-    EthernetInterfaces? ethernetInterfaces,
-    Map<String, String>? bridgePortMap,
     List<EthernetPortUIModel>? ethernetPortModels,
   }) {
     return EthernetData(
-      ethernetInterfaces: ethernetInterfaces ?? this.ethernetInterfaces,
-      bridgePortMap: bridgePortMap ?? this.bridgePortMap,
       ethernetPortModels: ethernetPortModels ?? this.ethernetPortModels,
     );
   }
 
   @override
-  List<Object?> get props => [
-        ethernetInterfaces.items.length,
-        bridgePortMap.length,
-        ethernetPortModels.length,
-      ];
+  List<Object?> get props => [ethernetPortModels.length];
 }
 
 class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   UspDeviceService get _svc => ref.read(uspDeviceServiceProvider);
+
+  // Internal raw state for listener rebuild (not exposed in EthernetData)
+  EthernetInterfaces? _rawInterfaces;
+  Map<String, String> _bridgePortMap = const {};
 
   @override
   Future<EthernetData> build() async {
@@ -64,11 +52,12 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
     ref.listen(devicesDataProvider, (_, next) {
       final dd = next.valueOrNull;
       final cur = state.valueOrNull;
-      if (dd == null || cur == null) return;
+      final raw = _rawInterfaces;
+      if (dd == null || cur == null || raw == null) return;
       final rebuiltPorts = _svc.buildEthernetPortUIModels(
-        ethernetInterfaces: cur.ethernetInterfaces,
+        ethernetInterfaces: raw,
         deviceModels: dd.deviceModels,
-        bridgePortMap: cur.bridgePortMap,
+        bridgePortMap: _bridgePortMap,
       );
       state = AsyncData(cur.copyWith(ethernetPortModels: rebuiltPorts));
     });
@@ -88,6 +77,10 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
     final ethernetInterfaces = results[0] as EthernetInterfaces;
     final bridgePortMap = results[1] as Map<String, String>;
 
+    // Cache raw data for listener rebuild
+    _rawInterfaces = ethernetInterfaces;
+    _bridgePortMap = bridgePortMap;
+
     // Read current device models for port ↔ device mapping
     final devicesData = ref.read(devicesDataProvider).valueOrNull;
     final deviceModels = devicesData?.deviceModels ?? [];
@@ -103,8 +96,6 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
         '${portModels.length} port models');
 
     return EthernetData(
-      ethernetInterfaces: ethernetInterfaces,
-      bridgePortMap: bridgePortMap,
       ethernetPortModels: portModels,
     );
   }

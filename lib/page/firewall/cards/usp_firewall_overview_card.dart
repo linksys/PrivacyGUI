@@ -48,15 +48,15 @@ class UspFirewallOverviewCard extends ConsumerWidget {
           Expanded(
             child: switch (selectedTab) {
               0 => _RulesTab(
-                  firewallRules: firewallData.chainRules.items,
+                  ruleSummaries: firewallData.ruleSummaries,
                   portForwardingCount: pfData?.ruleModels.length ?? 0,
-                  dmzCount: firewallData.dmzEntries.items
+                  dmzCount: firewallData.dmzSummaries
                       .where((d) => d.enable)
                       .length,
                 ),
               1 => _PortsTab(
                   portForwardingRules: pfData?.ruleModels ?? [],
-                  dmzEntries: firewallData.dmzEntries.items,
+                  dmzSummaries: firewallData.dmzSummaries,
                 ),
               _ => const SizedBox.shrink(),
             },
@@ -72,12 +72,12 @@ class UspFirewallOverviewCard extends ConsumerWidget {
 // =============================================================================
 
 class _RulesTab extends StatelessWidget {
-  final List firewallRules;
+  final List<FirewallRuleSummary> ruleSummaries;
   final int portForwardingCount;
   final int dmzCount;
 
   const _RulesTab({
-    required this.firewallRules,
+    required this.ruleSummaries,
     required this.portForwardingCount,
     required this.dmzCount,
   });
@@ -86,7 +86,7 @@ class _RulesTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (firewallRules.isEmpty) {
+    if (ruleSummaries.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
           'No firewall rules configured',
@@ -98,10 +98,10 @@ class _RulesTab extends StatelessWidget {
     // Aggregate by target
     final targetCounts = <String, int>{};
     int activeCount = 0;
-    for (final rule in firewallRules) {
-      final target = (rule.target as String).isNotEmpty ? rule.target : 'Other';
+    for (final rule in ruleSummaries) {
+      final target = rule.target.isNotEmpty ? rule.target : 'Other';
       targetCounts[target] = (targetCounts[target] ?? 0) + 1;
-      if (rule.enable) activeCount++;
+      if (rule.enabled) activeCount++;
     }
 
     final seriesColors = [
@@ -129,7 +129,7 @@ class _RulesTab extends StatelessWidget {
           children: [
             _StatChip(
                 label: 'FW Rules',
-                value: '$activeCount/${firewallRules.length}'),
+                value: '$activeCount/${ruleSummaries.length}'),
             _StatChip(label: 'Port Fwd', value: '$portForwardingCount'),
             _StatChip(label: 'DMZ', value: '$dmzCount'),
           ],
@@ -144,7 +144,7 @@ class _RulesTab extends StatelessWidget {
               centerWidget: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppText.titleMedium('${firewallRules.length}'),
+                  AppText.titleMedium('${ruleSummaries.length}'),
                   AppText.labelSmall('Rules',
                       color: colorScheme.onSurfaceVariant),
                 ],
@@ -191,18 +191,18 @@ class _RulesTab extends StatelessWidget {
 
 class _PortsTab extends StatelessWidget {
   final List portForwardingRules;
-  final List dmzEntries;
+  final List<DmzEntrySummary> dmzSummaries;
 
   const _PortsTab({
     required this.portForwardingRules,
-    required this.dmzEntries,
+    required this.dmzSummaries,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (portForwardingRules.isEmpty && dmzEntries.isEmpty) {
+    if (portForwardingRules.isEmpty && dmzSummaries.isEmpty) {
       return Center(
         child: AppText.bodyMedium(
           'No port mappings configured',
@@ -219,7 +219,7 @@ class _PortsTab extends StatelessWidget {
     }
 
     // Active DMZ entries
-    final activeDmz = dmzEntries.where((d) => d.enable).toList();
+    final activeDmz = dmzSummaries.where((d) => d.enable).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

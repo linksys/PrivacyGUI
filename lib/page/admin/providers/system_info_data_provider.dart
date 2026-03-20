@@ -11,13 +11,12 @@ import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 // ── Data Model ──
 
 class SystemInfoData extends Equatable {
-  final SystemInfo raw;
   final SystemInfoUIModel model;
 
-  const SystemInfoData({required this.raw, required this.model});
+  const SystemInfoData({required this.model});
 
   @override
-  List<Object?> get props => [raw, model];
+  List<Object?> get props => [model];
 }
 
 // ── Provider ──
@@ -68,7 +67,7 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
     logger.d('[USP][SystemInfoData] Fetched — '
         'model=${systemInfo.modelName}, '
         'fw=${systemInfo.softwareVersion}');
-    return SystemInfoData(raw: systemInfo, model: model);
+    return SystemInfoData(model: model);
   }
 
   /// Fetches firmware image partitions and the active/boot reference paths.

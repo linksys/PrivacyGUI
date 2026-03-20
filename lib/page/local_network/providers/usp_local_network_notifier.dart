@@ -59,7 +59,21 @@ class UspLocalNetworkNotifier
     try {
       // Clone data from the shared data provider (read, not watch).
       final data = await ref.read(lanDataProvider.future);
-      final uiModel = _svc.buildUIModel(data.raw);
+      final lan = data.model;
+      final dnsParts =
+          lan.dnsServers.split(',').map((s) => s.trim()).toList();
+      final uiModel = LocalNetworkUIModel(
+        hostName: lan.hostName,
+        ipAddress: lan.ipAddress,
+        subnetMask: lan.subnetMask,
+        dhcpEnabled: lan.dhcpEnabled,
+        minAddress: lan.minAddress,
+        maxAddress: lan.maxAddress,
+        leaseTimeMinutes: lan.leaseTimeMinutes,
+        dnsServer1: dnsParts.isNotEmpty ? dnsParts[0] : '',
+        dnsServer2: dnsParts.length > 1 ? dnsParts[1] : '',
+        dnsServer3: dnsParts.length > 2 ? dnsParts[2] : '',
+      );
 
       logger.d('[USP][Network][LAN] Fetched — '
           'ip: ${uiModel.ipAddress}, '

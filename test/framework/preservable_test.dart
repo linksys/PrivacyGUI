@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/providers/feature_state.dart';
-import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 
 // --- Test Data and Mocks ---
 

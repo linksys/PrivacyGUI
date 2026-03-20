@@ -4,10 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:equatable/equatable.dart';
 
-import 'package:privacy_gui/providers/feature_state.dart';
-import 'package:privacy_gui/providers/preservable.dart';
-import 'package:privacy_gui/providers/preservable_contract.dart';
-import 'package:privacy_gui/providers/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
+import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';

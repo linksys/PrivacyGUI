@@ -20,16 +20,14 @@ final portForwardingDataProvider =
 );
 
 class PortForwardingData extends Equatable {
-  final PortForwarding raw;
   final List<PortForwardingRuleUIModel> ruleModels;
 
   const PortForwardingData({
-    required this.raw,
     required this.ruleModels,
   });
 
   @override
-  List<Object?> get props => [raw.items.length, ruleModels.length];
+  List<Object?> get props => [ruleModels.length];
 }
 
 class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
@@ -54,11 +52,10 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
   Future<PortForwardingData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
-    final raw = await PortForwarding.fetch(usp);
+    final codegen = await PortForwarding.fetch(usp);
     final svc = ref.read(uspDeviceServiceProvider);
     return PortForwardingData(
-      raw: raw,
-      ruleModels: svc.buildPortForwardingRuleUIModels(raw),
+      ruleModels: svc.buildPortForwardingRuleUIModels(codegen),
     );
   }
 

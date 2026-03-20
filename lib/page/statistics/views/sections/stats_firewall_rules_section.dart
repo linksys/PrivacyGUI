@@ -34,8 +34,8 @@ class StatsFirewallRulesSection extends ConsumerWidget {
   Widget _buildChart(
       BuildContext context, FirewallData fwData, int portForwardingCount) {
     final colorScheme = Theme.of(context).colorScheme;
-    final firewallRules = fwData.chainRules.items;
-    final dmzCount = fwData.dmzEntries.items.where((d) => d.enable).length;
+    final firewallRules = fwData.ruleSummaries;
+    final dmzCount = fwData.dmzSummaries.where((d) => d.enable).length;
 
     if (firewallRules.isEmpty) {
       return Center(
@@ -52,7 +52,7 @@ class StatsFirewallRulesSection extends ConsumerWidget {
     for (final rule in firewallRules) {
       final target = rule.target.isNotEmpty ? rule.target : 'Other';
       targetCounts[target] = (targetCounts[target] ?? 0) + 1;
-      if (rule.enable) activeCount++;
+      if (rule.enabled) activeCount++;
     }
 
     final seriesColors = [

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
 
 ValueNotifier<bool> showColumnOverlayNotifier =
     ValueNotifier(BuildConfig.showColumnOverlay);

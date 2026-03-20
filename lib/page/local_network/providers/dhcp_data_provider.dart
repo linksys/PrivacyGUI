@@ -15,22 +15,16 @@ import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 // ── Data Model ──
 
 class DhcpData extends Equatable {
-  final DhcpClients clients;
-  final DhcpReservations reservations;
   final List<DhcpClientUIModel> clientModels;
   final List<DhcpReservationUIModel> reservationModels;
 
   const DhcpData({
-    required this.clients,
-    required this.reservations,
     required this.clientModels,
     required this.reservationModels,
   });
 
   @override
   List<Object?> get props => [
-        clients.items.length,
-        reservations.items.length,
         clientModels.length,
         reservationModels.length,
       ];
@@ -71,16 +65,9 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     final clients = results[0] as DhcpClients;
     final reservations = results[1] as DhcpReservations;
 
-    // Hostname enrichment: read connectedDevices from devices provider if available.
-    final hostNameByMac = <String, String>{};
+    // Hostname enrichment: read pre-computed map from devices provider.
     final devicesData = ref.read(devicesDataProvider).valueOrNull;
-    if (devicesData != null) {
-      for (final d in devicesData.connectedDevices.items) {
-        if (d.hostName.isNotEmpty) {
-          hostNameByMac[d.macAddress.trim().toUpperCase()] = d.hostName;
-        }
-      }
-    }
+    final hostNameByMac = devicesData?.hostNameByMac ?? const {};
 
     final clientModels = clients.items
         .map((c) => DhcpClientUIModel(
@@ -106,8 +93,6 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
         'reservations: ${reservations.items.length}');
 
     return DhcpData(
-      clients: clients,
-      reservations: reservations,
       clientModels: clientModels,
       reservationModels: reservationModels,
     );

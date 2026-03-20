@@ -117,21 +117,14 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     // Push initial snapshot to system monitor when system info arrives
     unawaited(
       ref.read(systemInfoDataProvider.future).then((sysData) {
-        final systemInfo = sysData.raw;
-        final memPct = systemInfo.totalMemory > 0
-            ? ((systemInfo.totalMemory - systemInfo.freeMemory) /
-                    systemInfo.totalMemory *
-                    100)
-                .round()
-                .clamp(0, 100)
-            : 0;
+        final model = sysData.model;
         ref.read(uspSystemMonitorProvider.notifier).pushSnapshot(
               SystemSnapshot(
                 timestamp: DateTime.now(),
-                cpuPercent: systemInfo.cpuUsage.clamp(0, 100),
-                memoryPercent: memPct,
-                totalMemoryKb: systemInfo.totalMemory,
-                freeMemoryKb: systemInfo.freeMemory,
+                cpuPercent: model.cpuPercent,
+                memoryPercent: model.memoryPercent,
+                totalMemoryKb: model.totalMemory,
+                freeMemoryKb: model.freeMemory,
               ),
             );
       }).catchError((e) {

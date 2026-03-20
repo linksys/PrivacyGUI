@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
@@ -80,9 +80,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
     // Read from WiFi Data Provider (Layer 1) to avoid duplicate fetch
     final wifiData = await ref.read(wifiDataProvider.future);
-    final ssids = wifiData.ssids;
-    final accessPoints = wifiData.accessPoints;
-    final radios = wifiData.radios;
+    final (:radios, :ssids, :accessPoints) = wifiData.codegenContext.raw;
 
     final networks = _svc.buildWifiNetworks(
       ssids: ssids,

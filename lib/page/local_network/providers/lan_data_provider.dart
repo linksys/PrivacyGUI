@@ -9,23 +9,12 @@ import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 // ── Data Model ──
 
 class LanData extends Equatable {
-  final LanNetworkInfo raw;
   final LanInfoUIModel model;
 
-  const LanData({required this.raw, required this.model});
+  const LanData({required this.model});
 
   const LanData.empty()
-      : raw = const LanNetworkInfo(
-          ipAddress: '',
-          subnetMask: '',
-          dhcpEnabled: false,
-          minAddress: '',
-          maxAddress: '',
-          leaseTime: 0,
-          dnsServers: '',
-          hostName: '',
-        ),
-        model = const LanInfoUIModel(
+      : model = const LanInfoUIModel(
           ipAddress: '',
           subnetMask: '',
           dhcpEnabled: false,
@@ -34,7 +23,7 @@ class LanData extends Equatable {
         );
 
   @override
-  List<Object?> get props => [raw, model];
+  List<Object?> get props => [model];
 }
 
 // ── Provider ──
@@ -64,11 +53,13 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
     final ipv6 = results[1] as ({bool enabled, List<String> addresses});
 
     final model = LanInfoUIModel(
+      hostName: lanInfo.hostName,
       ipAddress: lanInfo.ipAddress,
       subnetMask: lanInfo.subnetMask,
       dhcpEnabled: lanInfo.dhcpEnabled,
       minAddress: lanInfo.minAddress,
       maxAddress: lanInfo.maxAddress,
+      leaseTimeMinutes: (lanInfo.leaseTime / 60).round(),
       dnsServers: lanInfo.dnsServers,
       ipv6Enabled: ipv6.enabled,
       ipv6Addresses: ipv6.addresses,
@@ -76,7 +67,7 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
 
     logger.d('[USP][LanData] Fetched — ip=${lanInfo.ipAddress}, '
         'dhcp=${lanInfo.dhcpEnabled}, ipv6=${ipv6.enabled}');
-    return LanData(raw: lanInfo, model: model);
+    return LanData(model: model);
   }
 
   /// Fetches IPv6 enable flag and addresses for LAN (Interface.1).

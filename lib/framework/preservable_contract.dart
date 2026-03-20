@@ -1,6 +1,16 @@
-// Re-export the original PreservableContract.
-//
-// This interface is the bridge between feature notifiers and the route
-// dirty-check system (LinksysRoute). Both sides must use the same type,
-// so we re-export rather than copy.
-export 'package:privacy_gui/providers/preservable_contract.dart';
+import 'package:equatable/equatable.dart';
+
+// The Interface (The "What")
+// This defines the contract that LinksysRoute and the Mixin will check for.
+abstract class PreservableContract<TSettings extends Equatable,
+    TStatus extends Equatable> {
+  void revert();
+  bool isDirty();
+
+  // Methods to be implemented by the concrete notifier.
+  Future<(TSettings?, TStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  });
+  Future<void> performSave();
+}

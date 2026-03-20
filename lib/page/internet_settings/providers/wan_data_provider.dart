@@ -12,13 +12,12 @@ import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 // ── Data Model ──
 
 class WanData extends Equatable {
-  final WanStatus raw;
   final WanStatusUIModel model;
 
-  const WanData({required this.raw, required this.model});
+  const WanData({required this.model});
 
   @override
-  List<Object?> get props => [raw, model];
+  List<Object?> get props => [model];
 }
 
 // ── Provider ──
@@ -63,7 +62,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
     logger.d('[USP][WanData] Fetched — ip=${wanStatus.ipAddress}, '
         'status=${wanStatus.status}, gateway=$gateway, '
         'ipv6=${ipv6.enabled}');
-    return WanData(raw: wanStatus, model: model);
+    return WanData(model: model);
   }
 
   // ── Mutation ──
@@ -83,7 +82,6 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
       final prev = state.valueOrNull;
       final svc = UspDeviceService();
       state = AsyncData(WanData(
-        raw: wan,
         model: svc.buildWanStatusUIModel(
           wanStatus: wan,
           gateway: prev?.model.gateway ?? '',

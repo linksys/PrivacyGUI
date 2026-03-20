@@ -62,7 +62,8 @@ class UspFirewallNotifier extends AutoDisposeNotifier<FirewallFeatureState>
       // Clone data from the shared data provider (read, not watch).
       final data = await ref.read(firewallDataProvider.future);
 
-      final (uiModel, ruleContext) = _svc.buildFromChainRules(data.chainRules);
+      final uiModel = data.firewallModel;
+      final ruleContext = data.ruleContext;
 
       logger.d('[USP][Firewall] Fetched — '
           'spiV4: ${uiModel.isIPv4FirewallEnabled}, '

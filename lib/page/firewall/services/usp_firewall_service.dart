@@ -17,6 +17,10 @@ class FirewallRuleContext extends Equatable {
   final Map<String, FirewallChainRule> _ruleMap;
   const FirewallRuleContext._(this._ruleMap);
 
+  /// Create from a pre-parsed rule map (used by data provider).
+  const FirewallRuleContext.fromMap(Map<String, FirewallChainRule> ruleMap)
+      : _ruleMap = ruleMap;
+
   /// Empty context for initial/loading state.
   static const empty = FirewallRuleContext._({});
 
