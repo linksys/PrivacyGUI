@@ -13,7 +13,10 @@ final localLoginRoute = LinksysRoute(
   config: LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: true),
   builder: (context, state) => LoginLocalView(
     args: <String, dynamic>{}
-      ..addAll(state.extra as Map<String, dynamic>? ?? <String, dynamic>{})
+      ..addAll((state.extra is NavigationExtra
+              ? (state.extra as NavigationExtra).data
+              : state.extra as Map<String, dynamic>?) ??
+          <String, dynamic>{})
       ..addAll(state.uri.queryParameters),
   ),
   routes: [
@@ -28,7 +31,10 @@ final localLoginRoute = LinksysRoute(
           path: RoutePath.localPasswordReset,
           config: const LinksysRouteConfig(noNaviRail: true),
           builder: (context, state) => LocalResetRouterPasswordView(
-            args: state.extra as Map<String, dynamic>? ?? {},
+            args: (state.extra is NavigationExtra
+                    ? (state.extra as NavigationExtra).data
+                    : state.extra as Map<String, dynamic>?) ??
+                {},
           ),
         ),
       ],

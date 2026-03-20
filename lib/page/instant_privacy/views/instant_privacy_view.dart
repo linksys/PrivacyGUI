@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
@@ -27,9 +26,7 @@ class InstantPrivacyView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.canPop()
-          ? context.pop()
-          : context.goNamed(RouteNamed.uspMenu),
+      backFallback: RouteNamed.uspMenu,
       onRefresh: () => ref.refresh(uspInstantPrivacyProvider.future),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {

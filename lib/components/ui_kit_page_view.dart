@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/components/styled/top_bar.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 const double kDefaultToolbarHeight = kToolbarHeight; // 56
@@ -127,6 +128,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
   final TabController? tabController;
   final void Function(int index)? onTabTap;
   final VoidCallback? onBackTap;
+  final String? backFallback; // Fallback route name for navigateBack when onBackTap is null
   final double?
       unboundedFallbackHeight; // Fallback height for unbounded content
   final bool isTabScrollable;
@@ -170,6 +172,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     this.tabController,
     this.onTabTap,
     this.onBackTap,
+    this.backFallback,
     this.unboundedFallbackHeight,
     this.isTabScrollable = true,
     this.showAppBarBorder = false,
@@ -249,6 +252,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
     TabController? tabController,
     void Function(int index)? onTabTap,
     VoidCallback? onBackTap,
+    String? backFallback,
     double? unboundedFallbackHeight,
     TextStyle? selectedTabTextStyle,
     TextStyle? tabTextStyle,
@@ -289,6 +293,7 @@ class UiKitPageView extends ConsumerStatefulWidget {
       tabController: tabController,
       onTabTap: onTabTap,
       onBackTap: onBackTap,
+      backFallback: backFallback,
       unboundedFallbackHeight: unboundedFallbackHeight,
       isTabScrollable: isTabScrollable,
       showAppBarBorder: showAppBarBorder,
@@ -493,7 +498,11 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       title: widget.title,
       showBackButton: showBackButton,
       toolbarHeight: widget.toolbarHeight,
-      onBackTap: widget.onBackTap,
+      onBackTap: widget.onBackTap ??
+          (showBackButton
+              ? () => context.navigateBack(
+                  fallback: widget.backFallback)
+              : null),
       showBorder: widget.showAppBarBorder,
     );
   }

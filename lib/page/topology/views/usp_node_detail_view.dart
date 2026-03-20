@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/core/utils/device_image_helper.dart';
 import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
@@ -29,9 +30,7 @@ class UspNodeDetailView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.canPop()
-          ? context.pop()
-          : context.goNamed(RouteNamed.uspTopology),
+      backFallback: RouteNamed.uspTopology,
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         if (detail.node == null) {
@@ -43,9 +42,7 @@ class UspNodeDetailView extends ConsumerWidget {
                 AppGap.lg(),
                 AppButton.text(
                   label: 'Back to Topology',
-                  onTap: () => context.canPop()
-                      ? context.pop()
-                      : context.goNamed(RouteNamed.uspTopology),
+                  onTap: () => context.navigateBack(fallback: RouteNamed.uspTopology),
                 ),
               ],
             ),
