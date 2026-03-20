@@ -41,7 +41,8 @@ class UspDeviceDetailView extends ConsumerWidget {
                 AppGap.lg(),
                 AppButton.text(
                   label: 'Back to Devices',
-                  onTap: () => context.navigateBack(fallback: RouteNamed.uspDeviceList),
+                  onTap: () =>
+                      context.navigateBack(fallback: RouteNamed.uspDeviceList),
                 ),
               ],
             ),

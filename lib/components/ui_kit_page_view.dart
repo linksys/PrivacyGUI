@@ -128,7 +128,8 @@ class UiKitPageView extends ConsumerStatefulWidget {
   final TabController? tabController;
   final void Function(int index)? onTabTap;
   final VoidCallback? onBackTap;
-  final String? backFallback; // Fallback route name for navigateBack when onBackTap is null
+  final String?
+      backFallback; // Fallback route name for navigateBack when onBackTap is null
   final double?
       unboundedFallbackHeight; // Fallback height for unbounded content
   final bool isTabScrollable;
@@ -500,8 +501,7 @@ class _UiKitPageViewState extends ConsumerState<UiKitPageView> {
       toolbarHeight: widget.toolbarHeight,
       onBackTap: widget.onBackTap ??
           (showBackButton
-              ? () => context.navigateBack(
-                  fallback: widget.backFallback)
+              ? () => context.navigateBack(fallback: widget.backFallback)
               : null),
       showBorder: widget.showAppBarBorder,
     );

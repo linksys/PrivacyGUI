@@ -42,7 +42,8 @@ class UspNodeDetailView extends ConsumerWidget {
                 AppGap.lg(),
                 AppButton.text(
                   label: 'Back to Topology',
-                  onTap: () => context.navigateBack(fallback: RouteNamed.uspTopology),
+                  onTap: () =>
+                      context.navigateBack(fallback: RouteNamed.uspTopology),
                 ),
               ],
             ),
