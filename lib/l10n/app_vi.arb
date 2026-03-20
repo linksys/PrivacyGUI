@@ -673,6 +673,7 @@
   "speedOkayDescription": "Với tốc độ này, WiFi của bạn có thể truyền các bộ phim HD và chơi trò chơi trực tuyến. Nếu nhiều thiết bị cùng sử dụng Internet, có thể bạn sẽ gặp hiện tượng tốc độ chậm và ghi vào bộ đệm.",
   "speedOptimal": "Tối ưu",
   "speedOptimalDescription": "Với tốc độ này, bạn có thể xử lý nhiều loại ứng dụng dựa trên Internet trên nhiều thiết bị và truyền các bộ phim HD một cách ổn định, đồng thời chơi các trò chơi trực tuyến cùng một lúc.",
+  "speedTestFailedToLoadServers": "Không thể tải danh sách máy chủ",
   "speedTest": "Kiểm tra tốc độ",
   "speedTestDesc": "Kiểm tra tốc độ kết nối internet của bạn",
   "speedTestExternalCloudFlare": "Kiểm tra bằng CloudFlare",

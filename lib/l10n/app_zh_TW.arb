@@ -717,6 +717,7 @@
   "speedOkayDescription": "依照目前的速度來說，您的 WiFi 可以串流 HD 電影並進行線上遊戲。若多部裝置同時使用網際網路，則您可能會遭遇到較低速度與緩衝處理。",
   "speedOptimal": "速度：最佳",
   "speedOptimalDescription": "依照目前的速度來說，您的 WiFi 可以同時在多部裝置上處理各種網際網路應用程式，並可靠地串流 HD 電影並進行線上遊戲。",
+  "speedTestFailedToLoadServers": "無法載入伺服器清單",
   "speedTest": "網速測試",
   "speedTestDesc": "有兩種方法可檢查網速",
   "speedTestExternalCloudFlare": "以 CloudFlare 測試",

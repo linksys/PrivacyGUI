@@ -673,6 +673,7 @@
   "speedOkayDescription": "Pada kecepatan ini, WiFi Anda dapat mengalirkan film HD dan bermain game online. Jika beberapa perangkat menggunakan internet secara bersamaan, Anda dapat mengalami kecepatan yang lambat dan buffering.",
   "speedOptimal": "Kecepatan: Optimal",
   "speedOptimalDescription": "Pada kecepatan ini, WiFi Anda dapat menangani berbagai aplikasi berbasis internet pada beberapa perangkat, dan mengalirkan film HD secara andal serta bermain game online secara bersamaan.",
+  "speedTestFailedToLoadServers": "Gagal memuat daftar server",
   "speedTest": "Uji Kecepatan",
   "speedTestDesc": "Ada 2 cara untuk memeriksa kecepatan Anda",
   "speedTestExternalCloudFlare": "Uji dengan Cloudflare",

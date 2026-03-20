@@ -17,6 +17,7 @@ class HealthCheckState extends Equatable {
   final double randomValue;
   final List<HealthCheckServer> servers;
   final HealthCheckServer? selectedServer;
+  final bool serversError;
 
   const HealthCheckState({
     this.step = 'latency',
@@ -28,6 +29,7 @@ class HealthCheckState extends Equatable {
     this.randomValue = 0.0,
     this.servers = const [],
     this.selectedServer,
+    this.serversError = false,
   });
 
   @override
@@ -39,7 +41,8 @@ class HealthCheckState extends Equatable {
         randomValue,
         error,
         servers,
-        selectedServer
+        selectedServer,
+        serversError,
       ];
 
   factory HealthCheckState.init() => const HealthCheckState(
@@ -50,6 +53,7 @@ class HealthCheckState extends Equatable {
         randomValue: 0.0,
         servers: [],
         selectedServer: null,
+        serversError: false,
       );
 
   HealthCheckState copyWith({
@@ -62,6 +66,8 @@ class HealthCheckState extends Equatable {
     JNAPError? error,
     List<HealthCheckServer>? servers,
     HealthCheckServer? selectedServer,
+    bool clearSelectedServer = false,
+    bool? serversError,
   }) {
     return HealthCheckState(
       step: step ?? this.step,
@@ -72,7 +78,9 @@ class HealthCheckState extends Equatable {
       randomValue: randomValue ?? this.randomValue,
       error: error ?? this.error,
       servers: servers ?? this.servers,
-      selectedServer: selectedServer ?? this.selectedServer,
+      selectedServer:
+          clearSelectedServer ? null : (selectedServer ?? this.selectedServer),
+      serversError: serversError ?? this.serversError,
     );
   }
 
@@ -87,6 +95,7 @@ class HealthCheckState extends Equatable {
       'randomValue': randomValue,
       'servers': servers.map((x) => x.toJson()).toList(),
       'selectedServer': selectedServer?.toJson(),
+      'serversError': serversError,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -117,6 +126,7 @@ class HealthCheckState extends Equatable {
           ? HealthCheckServer.fromJson(
               map['selectedServer'] as Map<String, dynamic>)
           : null,
+      serversError: map['serversError'] as bool? ?? false,
     );
   }
 

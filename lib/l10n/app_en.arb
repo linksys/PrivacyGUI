@@ -907,6 +907,7 @@
   "speedOkayDescription": "At this speed, your WiFi can stream HD movies and play online games. If multiple devices are using the internet at the same time, you may run into slow speeds and buffering.",
   "speedOptimal": "Speed: Optimal",
   "speedOptimalDescription": "At this speed, your WiFi can handle various internet-based applications on multiple devices and reliably stream HD movies and play online games at the same time.",
+  "speedTestFailedToLoadServers": "Failed to load server list",
   "speedTest": "Speed Test",
   "speedTestDesc": "There are 2 ways to check your speeds",
   "speedTestExternalCloudFlare": "Test with CloudFlare",

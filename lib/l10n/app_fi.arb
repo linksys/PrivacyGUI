@@ -673,6 +673,7 @@
   "speedOkayDescription": "Tällä nopeudella voit suoratoistaa HD-videoita ja pelata pelejä verkossa. Jos monta laitetta käyttää Internet-yhteyttä samanaikaisesti, nopeus voi hidastua ja viiveittä saattaa esiintyä.",
   "speedOptimal": "Nopeus: Optimaalinen",
   "speedOptimalDescription": "Tällä nopeudella WiFi-yhteys voi käsitellä monenlaisia Internet-pohjaisia sovelluksia, suoratoistaa HD-videoita ja tukea verkkopelejä monella laitteella yhtä aikaa.",
+  "speedTestFailedToLoadServers": "Palvelinluettelon lataus epäonnistui",
   "speedTest": "Nopeustesti",
   "speedTestDesc": "Nopeuden voi tarkistaa kahdella tavalla",
   "speedTestExternalCloudFlare": "Testaa CloudFlarella",

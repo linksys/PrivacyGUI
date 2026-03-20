@@ -715,6 +715,7 @@
   "speedOkayDescription": "A esta velocidad, puedes hacer streaming de videos en HD y jugar en línea. Si múltiples dispositivos están utilizando Internet al mismo tiempo, puedes tener menos velocidad y tiempos de carga.",
   "speedOptimal": "Velocidad: Óptima",
   "speedOptimalDescription": "A esta velocidad, tu WiFi puede soportar varias aplicaciones basadas en Internet en múltiples dispositivos y hacer streaming de videos en HD en forma confiable, y jugar en línea al mismo tiempo.",
+  "speedTestFailedToLoadServers": "Error al cargar la lista de servidores",
   "speedTest": "Prueba de velocidad",
   "speedTestDesc": "Hay 2 maneras de comprobar sus velocidades",
   "speedTestExternalCloudFlare": "Prueba con CloudFlare",

@@ -715,6 +715,7 @@
   "speedOkayDescription": "I denne hastigheten kan WiFi-en din strømme HD-filmer og spille nettbaserte spill. Hvis flere enheter bruker Internett samtidig, kan du få tregere hastigheter og bufring.",
   "speedOptimal": "Hastighet: Optimal",
   "speedOptimalDescription": "I denne hastigheten kan WiFi-en din takle ulike Internett-baserte applikasjoner på flere enheter og pålitelig strømme HD-filmer og spille nettbaserte spill samtidig.",
+  "speedTestFailedToLoadServers": "Kunne ikke laste serverlisten",
   "speedTest": "Hastighetstest",
   "speedTestDesc": "Det finnes to måter å sjekke hastigheten på",
   "speedTestExternalCloudFlare": "Test med CloudFlare",

@@ -715,6 +715,7 @@
   "speedOkayDescription": "A esta velocidade a sua ligação WiFi consegue transmitir em fluxo filmes HD e jogar online. Se vários dispositivos estiverem a usar a internet ao mesmo tempo, poderá deparar-se com baixas velocidades e atrasos.",
   "speedOptimal": "Velocidade: Ótima",
   "speedOptimalDescription": "A esta velocidade a sua ligação WiFi consegue ao mesmo tempo lidar com várias aplicações baseadas na internet em múltiplos dispositivos, transmitir filmes HD em fluxo de forma fiável e jogar online.",
+  "speedTestFailedToLoadServers": "Falha ao carregar a lista de servidores",
   "speedTest": "Teste de velocidade",
   "speedTestDesc": "Há duas maneiras de verificar suas velocidades",
   "speedTestExternalCloudFlare": "Testar com CloudFlare",

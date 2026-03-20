@@ -715,6 +715,7 @@
   "speedOkayDescription": "Nessa velocidade, seu WiFi pode transmitir filmes em qualidade HD e jogar on-line. Se diversos dispositivos estiverem usando a internet ao mesmo tempo, você pode executar em velocidades menores e com buffer.",
   "speedOptimal": "Velocidade: Ótima",
   "speedOptimalDescription": "Nessa velocidade, seu WiFi pode administrar diversos aplicativos baseados na internet em vários dispositivos e transmitir, com segurança, filmes em qualidade HD, organizar videoconferências e jogar on-line ao mesmo tempo.",
+  "speedTestFailedToLoadServers": "Falha ao carregar a lista de servidores",
   "speedTest": "Teste de velocidade",
   "speedTestDesc": "Há duas maneiras de verificar suas velocidades",
   "speedTestExternalCloudFlare": "Teste com CloudFlare",

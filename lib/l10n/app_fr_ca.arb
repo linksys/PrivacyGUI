@@ -715,6 +715,7 @@
   "speedOkayDescription": "À cette vitesse, votre sans-fil peut lire des films HD en flux et jouer à des jeux en ligne. Si plusieurs appareils utilisent Internet en même temps, le débit pourrait être réduit et il pourrait y avoir de la mise en mémoire tampon.",
   "speedOptimal": "Vitesse : Optimale",
   "speedOptimalDescription": "À cette vitesse, votre sans-fil peut prendre en charge plusieurs applications Internet sur plusieurs appareils, lire des films HD en flux et jouer en ligne simultanément.",
+  "speedTestFailedToLoadServers": "Échec du chargement de la liste des serveurs",
   "speedTest": "Test de vitesse",
   "speedTestDesc": "Il existe 2 façons de vérifier vos vitesses",
   "speedTestExternalCloudFlare": "Tester avec CloudFlare",

@@ -715,6 +715,7 @@
   "speedOkayDescription": "Bei dieser Geschwindigkeit ermöglicht Ihr WLAN das Streamen von HD-Filmen und Online-Gamen. Wenn mehrere Geräte gleichzeitig das Internet nutzen, kann die Geschwindigkeit beeinträchtigt werden und es kann zu Puffern kommen.",
   "speedOptimal": "Geschwindigkeit: Optimal",
   "speedOptimalDescription": "Bei dieser Geschwindigkeit ermöglicht Ihr WLAN gleichzeitig verschiedene internetbasierte Anwendungen auf mehreren Geräten, zuverlässiges Streamen von HD-Filmen und Online-Gamen.",
+  "speedTestFailedToLoadServers": "Serverliste konnte nicht geladen werden",
   "speedTest": "Geschwindigkeits-Test",
   "speedTestDesc": "Es gibt 2 Möglichkeiten, Ihre Geschwindigkeit zu überprüfen",
   "speedTestExternalCloudFlare": "Testen mit CloudFlare",
