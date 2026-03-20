@@ -6,6 +6,7 @@ import 'package:privacy_gui/components/styled/bottom_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/login/providers/router_password_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/navigation_extra.dart';
 import 'package:privacy_gui/components/views/arguments_view.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -116,7 +117,7 @@ class _LocalRouterRecoveryViewState
         if (!mounted) return;
         context.pushNamed(
           RouteNamed.localPasswordReset,
-          extra: {'code': code},
+          extra: NavigationExtra(data: {'code': code}),
         );
       }
     });

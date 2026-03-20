@@ -7,6 +7,7 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/components/views/arguments_view.dart';
 import 'package:privacy_gui/page/login/providers/router_password_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/route/navigation_extra.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -183,7 +184,8 @@ class _LocalResetRouterPasswordViewState
       dialogContent = loc(context).localResetRouterPasswordSuccessContent;
       actionTitle = loc(context).localResetRouterPasswordSuccessNext;
       action = () {
-        context.goNamed(RouteNamed.localLoginPassword, extra: {'reset': true});
+        context.goNamed(RouteNamed.localLoginPassword,
+            extra: NavigationExtra(data: {'reset': true}));
       };
     }).onError((error, stackTrace) {
       if (!mounted) return;

@@ -91,9 +91,7 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.canPop()
-          ? context.pop()
-          : context.goNamed(RouteNamed.uspMenu),
+      backFallback: RouteNamed.uspAdvancedSettings,
       onRefresh: () =>
           ref.read(uspLocalNetworkProvider.notifier).fetch(forceRemote: true),
       bottomBar: _buildBottomBar(context, ref, state),

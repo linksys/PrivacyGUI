@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
@@ -29,9 +29,7 @@ class UspDeviceDetailView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.canPop()
-          ? context.pop()
-          : context.goNamed(RouteNamed.uspDeviceList),
+      backFallback: RouteNamed.uspDeviceList,
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         if (detail.device == null) {
@@ -43,9 +41,8 @@ class UspDeviceDetailView extends ConsumerWidget {
                 AppGap.lg(),
                 AppButton.text(
                   label: 'Back to Devices',
-                  onTap: () => context.canPop()
-                      ? context.pop()
-                      : context.goNamed(RouteNamed.uspDeviceList),
+                  onTap: () =>
+                      context.navigateBack(fallback: RouteNamed.uspDeviceList),
                 ),
               ],
             ),

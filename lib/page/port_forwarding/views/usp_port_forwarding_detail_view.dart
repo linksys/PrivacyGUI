@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -66,9 +65,7 @@ class _UspPortForwardingDetailViewState
         useMainPadding: false,
         showAppBarBorder: false,
         showTabBorder: false,
-        onBackTap: () => context.canPop()
-            ? context.pop()
-            : context.goNamed(RouteNamed.uspMenu),
+        backFallback: RouteNamed.uspAdvancedSettings,
         onRefresh: () => ref
             .read(uspPortForwardingPageProvider.notifier)
             .fetch(forceRemote: true),
