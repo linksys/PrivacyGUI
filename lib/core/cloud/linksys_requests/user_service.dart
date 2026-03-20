@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart';
-import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_account.dart';
 import 'package:privacy_gui/core/cloud/model/create_account_input.dart';
 

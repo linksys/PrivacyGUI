@@ -2,8 +2,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 
 final uspInstantPrivacyServiceProvider = Provider<UspInstantPrivacyService>(

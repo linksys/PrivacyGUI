@@ -3,7 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 class MockUspService extends Mock implements UspService {}

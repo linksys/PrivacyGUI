@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/error_code.dart';
-import 'package:privacy_gui/core/data/providers/session_provider.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
-import 'package:privacy_gui/page/components/styled/bottom_bar.dart';
-import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/core/session/providers/session_provider.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/styled/bottom_bar.dart';
+import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/arguments_view.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -121,8 +121,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
       //The error message should not be set again when countdown is terminated
       if (!isCountdownJustFinished) {
         // Extract error code and data from UnexpectedError
-        final loginError =
-            (error is UnexpectedError) ? error : null;
+        final loginError = (error is UnexpectedError) ? error : null;
         setErrorMessage(loginError);
       }
       return contentView();
@@ -150,8 +149,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
             if (rawData is Map<String, dynamic>) {
               errorContent = rawData;
             } else if (rawData is String) {
-              errorContent =
-                  jsonDecode(rawData) as Map<String, dynamic>?;
+              errorContent = jsonDecode(rawData) as Map<String, dynamic>?;
             } else {
               errorContent = null;
             }

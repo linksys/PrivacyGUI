@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 
 final uspDhcpServiceProvider = Provider<UspDhcpService>(

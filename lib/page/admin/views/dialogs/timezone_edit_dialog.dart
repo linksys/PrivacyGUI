@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 

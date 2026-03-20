@@ -74,6 +74,7 @@ const kSmartDeviceService = '/cloud/smart-device-service';
 const kEventService = '/cloud/event-service';
 const kAssetService = '/cloud/asset-service';
 const kStorageService = '/cloud/storage-service';
+
 /// Cloud API Endpoint
 // Authorization service
 const kOauthEndpoint =

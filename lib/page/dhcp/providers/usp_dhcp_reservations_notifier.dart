@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/page/_framework/preservable_contract.dart';
-import 'package:privacy_gui/page/_framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
+import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservation_list.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservations_feature_state.dart';

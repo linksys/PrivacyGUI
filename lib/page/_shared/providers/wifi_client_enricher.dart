@@ -3,7 +3,7 @@ import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/generated/wifi_clients.g.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 

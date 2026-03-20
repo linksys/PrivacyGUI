@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
-import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 
 extension AuthorizationService on LinksysHttpClient {

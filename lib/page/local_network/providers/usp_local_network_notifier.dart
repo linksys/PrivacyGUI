@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/page/_framework/preservable_contract.dart';
-import 'package:privacy_gui/page/_framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
+import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_settings.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_status.dart';

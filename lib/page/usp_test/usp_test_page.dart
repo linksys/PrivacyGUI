@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:privacy_gui/usp/services/usp_bridge_client.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
-import 'package:privacy_gui/usp/web/usp_wasm_init.dart';
+import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/web/usp_wasm_init.dart';
 
 class UspTestPage extends StatefulWidget {
   const UspTestPage({super.key});

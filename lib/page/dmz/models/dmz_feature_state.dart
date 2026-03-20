@@ -1,5 +1,5 @@
-import 'package:privacy_gui/page/_framework/feature_state.dart';
-import 'package:privacy_gui/page/_framework/preservable.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 

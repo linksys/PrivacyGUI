@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
-import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_feature_state.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';

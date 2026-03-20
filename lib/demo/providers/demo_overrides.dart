@@ -7,17 +7,15 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_provider.dart';
 import 'package:privacy_gui/core/cloud/providers/geolocation/geolocation_state.dart';
-import 'package:privacy_gui/core/protocol/protocol_resolver.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_service.dart';
 import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacy_gui/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'demo_router_provider.dart';
 
 /// Demo provider overrides for the Demo application.
@@ -54,11 +52,7 @@ class DemoProviders {
       // 7. USP Bridge Client: Null (no bridge in demo)
       uspBridgeClientProvider.overrideWith((ref) => null),
 
-      // 8. Protocol Resolver: Force USP-only mode
-      protocolResolverProvider.overrideWith(
-          (ref) => ProtocolResolver(demoUsp, ProtocolPreference.uspOnly)),
-
-      // 9. USP Auth Coordinator: Uses DemoUspService (always authenticated)
+      // 8. USP Auth Coordinator: Uses DemoUspService (always authenticated)
       uspAuthCoordinatorProvider.overrideWith(
           (ref) => UspAuthCoordinator(demoUsp, const FlutterSecureStorage())),
     ];
@@ -125,4 +119,3 @@ class _DemoAuthNotifier extends AuthNotifier {
     state = AsyncValue.data(AuthState(loginType: LoginType.none));
   }
 }
-

@@ -200,7 +200,6 @@ void main() {
       final result = Utils.replaceHttpScheme(raw);
       expect(result, expected);
     });
-
   });
 
   group('test string encode/decode', () {

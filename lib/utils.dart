@@ -13,7 +13,7 @@ import 'package:privacy_gui/constants/build_config.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/core/utils/wifi.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/util/uuid.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:ui_kit_library/ui_kit.dart';

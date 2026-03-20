@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
 import 'package:privacy_gui/page/dashboard/views/components/effects/jiggle_shake.dart';
 import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';

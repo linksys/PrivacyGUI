@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shows a confirmation dialog for destructive system actions

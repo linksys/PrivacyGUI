@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/cloud_const.dart';
-import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 
 extension Cloud2Service on LinksysHttpClient {
   Future<Response> associateSmartDevice({

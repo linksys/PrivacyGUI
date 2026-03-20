@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
-import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
-import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/arguments_view.dart';
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';

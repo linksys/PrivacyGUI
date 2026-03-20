@@ -11,7 +11,7 @@ import 'package:privacy_gui/core/cloud/linksys_requests/smart_device_service.dar
 import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_linkup.dart';
-import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/authorization_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/device_service.dart';
 import 'package:privacy_gui/core/cloud/linksys_requests/user_service.dart';

@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/preservable_contract.dart';
-import 'package:privacy_gui/page/_framework/preservable_notifier_mixin.dart';
-import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';

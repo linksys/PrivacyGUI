@@ -16,15 +16,18 @@ class AutoParentFirstLoginService {
   AutoParentFirstLoginService();
 
   Future<void> setUserAcknowledgedAutoConfiguration() async {
-    logger.d('[AutoParentFirstLogin]: setUserAcknowledgedAutoConfiguration — stubbed (USP mode)');
+    logger.d(
+        '[AutoParentFirstLogin]: setUserAcknowledgedAutoConfiguration — stubbed (USP mode)');
   }
 
   Future<void> setFirmwareUpdatePolicy() async {
-    logger.d('[AutoParentFirstLogin]: setFirmwareUpdatePolicy — stubbed (USP mode)');
+    logger.d(
+        '[AutoParentFirstLogin]: setFirmwareUpdatePolicy — stubbed (USP mode)');
   }
 
   Future<bool> checkInternetConnection() async {
-    logger.d('[AutoParentFirstLogin]: checkInternetConnection — returning true (USP mode)');
+    logger.d(
+        '[AutoParentFirstLogin]: checkInternetConnection — returning true (USP mode)');
     return true;
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_state.dart';
 
 final uspWifiAdvancedProvider = AsyncNotifierProvider.autoDispose<

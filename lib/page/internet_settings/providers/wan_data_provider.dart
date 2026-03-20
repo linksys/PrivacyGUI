@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
-import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 

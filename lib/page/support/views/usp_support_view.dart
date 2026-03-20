@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';

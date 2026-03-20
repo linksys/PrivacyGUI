@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/_constants.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
-import 'package:privacy_gui/page/components/views/arguments_view.dart';
+import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/views/arguments_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart' hide AppBarStyle, AppStyledText;
 

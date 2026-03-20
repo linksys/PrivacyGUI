@@ -1,5 +1,5 @@
-import 'package:privacy_gui/page/_framework/feature_state.dart';
-import 'package:privacy_gui/page/_framework/preservable.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_settings.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_status.dart';
 

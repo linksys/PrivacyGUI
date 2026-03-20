@@ -1,5 +1,5 @@
-import 'package:privacy_gui/page/_framework/feature_state.dart';
-import 'package:privacy_gui/page/_framework/preservable.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_settings.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_status.dart';

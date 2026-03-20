@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
-import 'package:privacy_gui/core/data/providers/session_provider.dart';
+import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
 import 'package:privacy_gui/providers/auth/auth_state.dart';
 import 'package:privacy_gui/providers/auth/auth_types.dart';
-import 'package:privacy_gui/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

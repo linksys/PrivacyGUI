@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
-import 'package:privacy_gui/core/data/providers/session_provider.dart';
+import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/landing/_landing.dart';
 import 'package:privacy_gui/page/login/views/_views.dart';

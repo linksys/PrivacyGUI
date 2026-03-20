@@ -13,7 +13,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
 class DemoUspService extends UspService {
   final DemoUspDataLoader _loader;

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/usp/services/sse_operation_awaiter.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/page/network_diagnostics/models/network_diagnostics_ui_model.dart';
 
 // ---------------------------------------------------------------------------

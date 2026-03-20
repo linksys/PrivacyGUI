@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:http/http.dart';
 import 'package:privacy_gui/constants/_constants.dart';
-import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 
 extension PingService on LinksysHttpClient {
   Future<Response> testPingPng() {

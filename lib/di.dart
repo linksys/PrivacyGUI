@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
 /// A global instance of [GetIt] used as a service locator for dependency injection.
 ///

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/providers/feature_state.dart';
 import 'package:privacy_gui/route/route_model.dart';
 

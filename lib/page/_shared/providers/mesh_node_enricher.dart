@@ -1,6 +1,6 @@
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
 /// Info about a mesh node — lightweight view of codegen's MeshNode.
 ///

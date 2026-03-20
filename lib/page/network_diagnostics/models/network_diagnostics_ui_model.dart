@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/usp/services/sse_operation_awaiter.dart';
+import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 
 /// Which diagnostic tool is active.
 enum DiagnosticType { ping, traceroute }

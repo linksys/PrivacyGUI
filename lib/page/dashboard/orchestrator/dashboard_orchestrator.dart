@@ -9,9 +9,9 @@ import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
-import 'package:privacy_gui/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/usp/providers/usp_auth_coordinator.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 
 // ---------------------------------------------------------------------------
 // State

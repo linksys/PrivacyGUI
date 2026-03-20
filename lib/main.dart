@@ -63,7 +63,6 @@ void main() async {
   ///
   initErrorHandler();
 
-
   await BuildConfig.load();
   if (!kIsWeb) {
     HttpOverrides.global = MyHTTPOverrides();

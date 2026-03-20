@@ -5,8 +5,8 @@ import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
 /// Layer 1 Ethernet Data Provider — raw EthernetInterfaces + port UI models.
 ///

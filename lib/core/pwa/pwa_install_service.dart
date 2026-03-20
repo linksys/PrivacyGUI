@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:privacy_gui/core/utils/device_features.dart';
-import 'package:privacy_gui/core/data/providers/session_provider.dart';
+import 'package:privacy_gui/core/session/providers/session_provider.dart';
 
 import 'pwa_logic.dart';
 

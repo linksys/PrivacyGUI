@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/data/providers/session_provider.dart';
+import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/theme/theme_config_loader.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
 

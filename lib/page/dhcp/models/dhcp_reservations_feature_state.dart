@@ -1,5 +1,5 @@
-import 'package:privacy_gui/page/_framework/feature_state.dart';
-import 'package:privacy_gui/page/_framework/preservable.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservation_list.dart';
 import 'package:privacy_gui/page/dhcp/models/dhcp_reservations_status.dart';
 

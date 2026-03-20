@@ -1,5 +1,5 @@
-import 'package:privacy_gui/page/_framework/feature_state.dart';
-import 'package:privacy_gui/page/_framework/preservable.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_rule_list.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_status.dart';
 

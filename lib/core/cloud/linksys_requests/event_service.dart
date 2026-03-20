@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_action.dart';
 import 'package:privacy_gui/core/cloud/model/cloud_event_subscription.dart';
-import 'package:privacy_gui/core/http/linksys_http_client.dart';
+import 'package:privacy_gui/core/cloud/http/linksys_http_client.dart';
 
 import '../../../constants/_constants.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 
 /// Tracks which card is currently being mutated (for loading overlay).
 /// Values: null (idle), 'wifi', 'time', 'portForwarding', 'portTriggering', etc.

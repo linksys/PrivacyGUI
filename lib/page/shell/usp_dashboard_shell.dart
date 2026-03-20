@@ -3,12 +3,12 @@ import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/demo/providers/demo_theme_config_provider.dart';
 import 'package:privacy_gui/demo/theme_studio/demo_theme_builder.dart';
-import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
-import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
+import 'package:privacy_gui/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
-import 'package:privacy_gui/usp/providers/sse_providers.dart';
+import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_bars_visible_provider.dart';
 
 /// Riverpod provider for the USP-specific [MenuController].

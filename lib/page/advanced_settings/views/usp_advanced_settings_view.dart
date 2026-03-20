@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
-import 'package:privacy_gui/page/components/composed/app_list_card.dart';
-import 'package:privacy_gui/page/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/components/composed/app_list_card.dart';
+import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
