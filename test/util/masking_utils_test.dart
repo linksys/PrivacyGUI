@@ -80,7 +80,8 @@ void main() {
     });
 
     test('replaceHttpScheme: handles naked domain URL', () {
-      expect(MaskingUtils.replaceHttpScheme('www.google.com'), 'www-google-com');
+      expect(
+          MaskingUtils.replaceHttpScheme('www.google.com'), 'www-google-com');
     });
 
     test('replaceHttpScheme: handles missing scheme', () {

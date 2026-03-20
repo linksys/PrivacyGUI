@@ -36,14 +36,12 @@ final pdfReportDataProvider = Provider<PdfReportData?>((ref) {
     firewallSettings: fwData?.firewallModel ?? const FirewallUIModel(),
     dmzSettings: fwData?.dmzModel ?? const DmzUIModel.disabled(),
     staticRoutes: ref.read(uspStaticRoutingProvider).settings.current.routes,
-    ipv6PortRules:
-        ref.read(uspIpv6PortServiceProvider).settings.current.rules,
+    ipv6PortRules: ref.read(uspIpv6PortServiceProvider).settings.current.rules,
     safeBrowsing: ref.read(uspInstantSafetyProvider).valueOrNull?.uiModel,
     lanInfo: ref.read(lanDataProvider).valueOrNull?.model,
     timeSettings: ref.read(timeDataProvider).valueOrNull?.model,
     dhcpClients: ref.read(dhcpDataProvider).valueOrNull?.clientModels,
-    dhcpReservations:
-        ref.read(dhcpDataProvider).valueOrNull?.reservationModels,
+    dhcpReservations: ref.read(dhcpDataProvider).valueOrNull?.reservationModels,
     portForwardingRules:
         ref.read(portForwardingDataProvider).valueOrNull?.ruleModels,
     portTriggeringRules:

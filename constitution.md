@@ -4,7 +4,7 @@
 **Status:** Active
 **Context:** Source of Truth for Architectural Discipline
 **Ratified:** 2025-12-09
-**Last Amended:** 2026-03-18
+**Last Amended:** 2026-03-20
 
 ## Preamble
 This document establishes the immutable principles governing the development process of the Linksys Flutter application. It serves as the architectural DNA of the system, ensuring consistency, simplicity, and quality across all implementations.
@@ -21,7 +21,7 @@ All business logic, state management, and service code MUST have corresponding u
 **Section 1.2: Testing Standards**
 All business logic, state management, and UI changes MUST have corresponding tests:
 * **Unit tests** - Required for all Services and Providers before code review
-* **Screenshot tests** - Deferred for USP pages until UI design is finalized and approved. Not currently required for `lib/usp_page/`. UI Kit components have their own widget tests.
+* **Screenshot tests** - Deferred for USP pages until UI design is finalized and approved. Not currently required for `lib/page/`. UI Kit components have their own widget tests.
 
 **Refer to Article VIII: Testing Strategy for detailed testing strategies, tool usage, and organization methods.**
 
@@ -50,10 +50,10 @@ All business logic, state management, and UI changes MUST have corresponding tes
 **Section 1.5: Test Organization**
 Tests MUST be organized as follows:
 * Unit tests:
-  - Service tests: `test/usp_page/[feature]/services/`
-  - Provider tests: `test/usp_page/[feature]/providers/`
-* State tests: `test/usp_page/[feature]/providers/` (same directory as Provider tests)
-  - UI Model tests: `test/usp_page/[feature]/models/` (only when there is an independent UI Model class)
+  - Service tests: `test/page/[feature]/services/`
+  - Provider tests: `test/page/[feature]/providers/`
+* State tests: `test/page/[feature]/providers/` (same directory as Provider tests)
+  - UI Model tests: `test/page/[feature]/models/` (only when there is an independent UI Model class)
 * Mock classes: Created inline in test files or in `test/mocks/` for shared mocks
 * Test data builders: `test/mocks/test_data/[feature_name]_test_data.dart`
 * All test case names do not need numbering; they should only describe the purpose of the test.
@@ -106,9 +106,9 @@ class [FeatureName]TestData {
 
 **Test Example**:
 ```dart
-// test/usp_page/wifi/services/wifi_service_test.dart
+// test/page/wifi/services/wifi_service_test.dart
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:test/mocks/test_data/wifi_test_data.dart';
 
 class MockUspService extends Mock implements UspService {}
@@ -165,7 +165,7 @@ Any modifications to this constitution require:
 All names must comply with:
 * **Descriptive** - Clearly express purpose and function.
 * **Consistent** - Follow the project's unified pattern.
-* **Explicit** - Avoid abbreviations unless they are widely understood terms (e.g., UI, ID, HTTP, JNAP, RA).
+* **Explicit** - Avoid abbreviations unless they are widely understood terms (e.g., UI, ID, HTTP, USP, SSE).
 
 ---
 
@@ -305,23 +305,23 @@ All directories must use `snake_case`:
 
 **3.5.1: Feature Directory**
 ```
-lib/usp_page/dashboard/
-lib/usp_page/wifi/
-lib/usp_page/devices/
+lib/page/dashboard/
+lib/page/wifi/
+lib/page/devices/
 ```
 
 **3.5.2: Component Directory**
 ```
-lib/usp_page/[feature]/views/       # Plural - Container directory
-lib/usp_page/[feature]/providers/   # Plural - Container directory
-lib/usp_page/[feature]/services/    # Plural - Container directory
-lib/usp_page/[feature]/models/      # Plural - Container directory
+lib/page/[feature]/views/       # Plural - Container directory
+lib/page/[feature]/providers/   # Plural - Container directory
+lib/page/[feature]/services/    # Plural - Container directory
+lib/page/[feature]/models/      # Plural - Container directory
 ```
 
 **3.5.3: Test Directory**
 ```
-test/usp_page/[feature]/services/
-test/usp_page/[feature]/providers/
+test/page/[feature]/services/
+test/page/[feature]/providers/
 test/mocks/
 test/mocks/test_data/
 ```
@@ -335,7 +335,7 @@ test/mocks/test_data/
 // ✅ Correct: Describe test purpose, no numbering
 test('cloudLogin returns success with valid credentials', () { ... });
 test('localLogin handles invalid password', () { ... });
-test('fetchSettings transforms JNAP model to UI model', () { ... });
+test('fetchSettings transforms codegen model to UI model', () { ... });
 
 // ❌ Incorrect: Use numbering
 test('TC001: login test', () { ... });
@@ -352,7 +352,7 @@ group('DMZService - Settings Transformation', () { ... });
 
 **3.6.3: Test File Organization**
 ```dart
-// test/usp_page/wifi/services/wifi_service_test.dart
+// test/page/wifi/services/wifi_service_test.dart
 void main() {
   group('WifiService - fetchSettings', () {
     test('returns UI model on success', () { ... });
@@ -383,10 +383,10 @@ Do not create abstractions, interfaces, or layers until there is a concrete need
 
 **Section 5.3: Feature Structure**
 Each feature should follow a consistent, minimal structure:
-* `lib/usp_page/[feature]/views/` - UI components
-* `lib/usp_page/[feature]/providers/` - State management
-* `lib/usp_page/[feature]/services/` - Business logic (when needed)
-* `lib/usp_page/[feature]/models/` - UI models (when needed)
+* `lib/page/[feature]/views/` - UI components
+* `lib/page/[feature]/providers/` - State management
+* `lib/page/[feature]/services/` - Business logic (when needed)
+* `lib/page/[feature]/models/` - UI models (when needed)
 
 **Section 5.4: Architectural Layers and Separation of Concerns**
 
@@ -395,19 +395,19 @@ Each feature should follow a consistent, minimal structure:
 ```
 ┌─────────────────────────────────┐
 │  Presentation (UI/Pages)        │  ← Responsible only for display and user interaction
-│  lib/usp_page/*/views/          │
+│  lib/page/*/views/          │
 └────────────┬────────────────────┘
              │ Dependency
 ┌────────────▼────────────────────┐
 │ Application (Business Logic Layer)│  ← State management and business logic
-│  - lib/usp_page/*/providers/    │  ← Notifiers (State Management)
-│  - lib/usp_page/*/services/     │  ← Services (Business Logic)
+│  - lib/page/*/providers/    │  ← Notifiers (State Management)
+│  - lib/page/*/services/     │  ← Services (Business Logic)
 └────────────┬────────────────────┘
              │ Dependency
 ┌────────────▼────────────────────┐
 │  Data (Data Layer)               │  ← USP protocol communication, local storage
 │  lib/generated/*.g.dart          │  ← usp-codegen generated API
-│  lib/usp/                        │  ← UspService, transport layer
+│  lib/core/usp/                   │  ← UspService, transport layer
 └─────────────────────────────────┘
 ```
 
@@ -450,7 +450,7 @@ Each feature should follow a consistent, minimal structure:
 
 ❌ **Violation**:
 ```dart
-// lib/usp_page/wifi/providers/wifi_provider.dart
+// lib/page/wifi/providers/wifi_provider.dart
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 
 class WifiNotifier extends AsyncNotifier<WifiState> {
@@ -464,7 +464,7 @@ class WifiNotifier extends AsyncNotifier<WifiState> {
 
 ✅ **Fix**:
 ```dart
-// lib/usp_page/wifi/providers/wifi_provider.dart
+// lib/page/wifi/providers/wifi_provider.dart
 class WifiNotifier extends AsyncNotifier<WifiState> {
   @override
   Future<WifiState> build() async {
@@ -473,7 +473,7 @@ class WifiNotifier extends AsyncNotifier<WifiState> {
   }
 }
 
-// lib/usp_page/wifi/services/wifi_service.dart
+// lib/page/wifi/services/wifi_service.dart
 final wifiServiceProvider = Provider<WifiService>((ref) {
   return WifiService(ref.watch(uspServiceProvider));
 });
@@ -503,15 +503,15 @@ After completing the work, execute the following checks:
 # ═══════════════════════════════════════════════════════════════
 
 # 1️⃣ Check if generated models are imported in the Provider layer
-grep -r "import.*generated/" lib/usp_page/*/providers/
+grep -r "import.*generated/" lib/page/*/providers/
 # ✅ Should return 0 results
 
 # 2️⃣ Check if generated models are imported in the UI layer
-grep -r "import.*generated/" lib/usp_page/*/views/
+grep -r "import.*generated/" lib/page/*/views/
 # ✅ Should return 0 results
 
 # 3️⃣ Check if Service layer correctly imports generated models
-grep -r "import.*generated/" lib/usp_page/*/services/
+grep -r "import.*generated/" lib/page/*/services/
 # ✅ Should have results (Service layer should import generated models)
 
 # ═══════════════════════════════════════════════════════════════
@@ -519,11 +519,11 @@ grep -r "import.*generated/" lib/usp_page/*/services/
 # ═══════════════════════════════════════════════════════════════
 
 # 4️⃣ Check if Provider layer has ServiceError imports (correct)
-grep -r "import.*core/errors/service_error" lib/usp_page/*/providers/
+grep -r "import.*core/errors/service_error" lib/page/*/providers/
 # ✅ Should have results when providers handle errors
 
 # 5️⃣ Check if Service layer correctly imports ServiceError
-grep -r "import.*core/errors/service_error" lib/usp_page/*/services/
+grep -r "import.*core/errors/service_error" lib/page/*/services/
 # ✅ Should have results (Service layer should import ServiceError)
 ```
 
@@ -622,14 +622,14 @@ Services SHALL NOT:
 
 **Section 6.3: File Organization**
 Services MUST be organized as follows:
-* Location: `lib/usp_page/[feature]/services/`
+* Location: `lib/page/[feature]/services/`
 * Folder: `services/` (plural folder name)
 * File naming: Follow **Article III Section 3.2** (files use `snake_case`)
 * Provider naming: Follow **Article III Section 3.4.1** (providers use `lowerCamelCase`)
 * Provider type: Use `Provider<T>` (stateless, NOT `NotifierProvider` or `StateNotifierProvider`)
 * Dependencies: Inject via `ref.watch()` in the provider definition
 
-**Reference implementation:** `lib/usp_page/dashboard/services/usp_device_service.dart`
+**Reference implementation:** `lib/page/dashboard/services/usp_device_service.dart`
 
 **Section 6.4: Provider-Service Separation**
 Clear separation of concerns MUST be maintained:
@@ -639,14 +639,14 @@ Clear separation of concerns MUST be maintained:
 * Handle user interactions and lifecycle
 * Call Service methods
 * Transform service results into state updates
-* Location: `lib/usp_page/[feature]/providers/`
+* Location: `lib/page/[feature]/providers/`
 
 **Services** (Business Logic):
 * Handle business logic and orchestration
 * Call codegen API via `UspService`
 * Transform generated models to UI models
 * Provide pure, testable functions
-* Location: `lib/usp_page/[feature]/services/`
+* Location: `lib/page/[feature]/services/`
 
 **Section 6.5: Testing Requirements**
 Services MUST have unit tests that:
@@ -654,14 +654,14 @@ Services MUST have unit tests that:
 * Verify data transformations (generated models → UI models)
 * Test error handling paths
 
-**Test organization:** `test/usp_page/[feature]/services/`
+**Test organization:** `test/page/[feature]/services/`
 
 **Refer to Article VIII Section 8.2 (Unit Testing) for a detailed testing strategy.**
 
 **Section 6.6: Reference Implementations**
 See these existing services as examples:
-* `lib/usp_page/dashboard/services/usp_device_service.dart`
-* `lib/usp_page/instant_safety/providers/instant_safety_provider.dart`
+* `lib/page/dashboard/services/usp_device_service.dart`
+* `lib/page/instant_safety/providers/instant_safety_provider.dart`
 
 **Section 6.7: Distinction from Article VII**
 The Service layer is a LEGITIMATE abstraction that:
@@ -722,7 +722,7 @@ class WifiRadioUIModel2 { ... }  // Semantically identical to WifiRadioUIModel1
 **Section 8.1: Test Pyramid Approach**
 Follow a balanced testing strategy:
 * **Many fast unit tests** - Test Services and Providers in isolation with mocks
-* **Screenshot tests** - Only required for pages with finalized UI design. Currently deferred for all `lib/usp_page/` pages — see **Section 1.2**.
+* **Screenshot tests** - Only required for pages with finalized UI design. Currently deferred for all `lib/page/` pages — see **Section 1.2**.
 
 **Section 8.2: Unit Testing**
 Unit tests MUST:
@@ -739,7 +739,7 @@ Unit tests MUST:
 
 **Section 8.3: Screenshot Testing**
 
-**USP Pages Exception**: Screenshot tests for `lib/usp_page/` are currently deferred until UI design is finalized. See **Section 1.2**.
+**USP Pages Exception**: Screenshot tests for `lib/page/` are currently deferred until UI design is finalized. See **Section 1.2**.
 
 **When Required:**
 * Screenshot tests (golden files) MUST be provided for all UI changes with finalized design
@@ -843,8 +843,8 @@ class WifiNotifier extends AsyncNotifier<WifiState> {
 - Implement `performFetch()` and `performSave()` methods
 
 **Reference Examples**:
-- `lib/usp_page/instant_privacy/providers/instant_privacy_provider.dart`
-- `lib/providers/notifier_mixin.dart` (PreservableNotifierMixin definition)
+- `lib/page/instant_privacy/providers/instant_privacy_provider.dart`
+- `lib/framework/preservable_notifier_mixin.dart` (PreservableNotifierMixin definition)
 
 **Detailed Guide**: `doc/dirty_guard/dirty_guard_framework_guide.md`
 
@@ -918,7 +918,7 @@ final class UnexpectedError extends ServiceError {
 
 **Correct Example**:
 ```dart
-// lib/usp_page/wifi/services/wifi_service.dart
+// lib/page/wifi/services/wifi_service.dart
 Future<WifiState> fetchSettings() async {
   try {
     final ssids = await WifiSsids.fetch(_usp);  // codegen call, may throw underlying exception
@@ -961,7 +961,7 @@ Future<WifiState> fetchSettings() async {
 
 **Correct Example**:
 ```dart
-// lib/usp_page/wifi/providers/wifi_notifier.dart
+// lib/page/wifi/providers/wifi_notifier.dart
 import 'package:privacy_gui/core/errors/service_error.dart';
 
 // build() needs no try-catch — AsyncNotifier handles it automatically
@@ -1078,4 +1078,4 @@ Code Review MUST check:
 
 ---
 
-**Version**: 2.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2026-03-18
+**Version**: 2.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2026-03-20

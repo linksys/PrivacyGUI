@@ -72,6 +72,14 @@ class SseManager {
     // Inject SSE delegate so codegen subscribe() routes through SSE
     _usp.onSseSubscribe = _handleSseSubscribe;
 
+    // Force SSE reconnect after full re-login to ensure the new session's
+    // subscription routing is active (prevents silent notification failure).
+    _usp.onTokenRefreshed = () {
+      logger.d('[USP][SSE]Token refreshed (full re-login) '
+          '— forcing SSE reconnect');
+      connection.disconnect().then((_) => connection.connect());
+    };
+
     // Register browser unload handler to abort SSE on page refresh/close.
     // abortSse() is synchronous — critical because `beforeunload` does NOT
     // wait for async operations. disconnect() is best-effort async cleanup.
@@ -245,6 +253,7 @@ class SseManager {
   Future<void> dispose() async {
     _unloadHandler.unregister();
     _usp.onSseSubscribe = null;
+    _usp.onTokenRefreshed = null;
     await connection.disconnect();
     await registry.unregisterAll();
     router.dispose();

@@ -204,16 +204,31 @@ void main() {
 
   group('Test Network Utils', () {
     test('isValidIpAddress: identifies valid IPv4 addresses', () {
-      const validIps = ['192.168.1.1', '10.0.0.1', '255.255.255.255', '0.0.0.0'];
+      const validIps = [
+        '192.168.1.1',
+        '10.0.0.1',
+        '255.255.255.255',
+        '0.0.0.0'
+      ];
       for (final ip in validIps) {
-        expect(NetworkUtils.isValidIpAddress(ip), true, reason: '$ip should be valid');
+        expect(NetworkUtils.isValidIpAddress(ip), true,
+            reason: '$ip should be valid');
       }
     });
 
     test('isValidIpAddress: identifies invalid IP addresses', () {
-      const invalidIps = ['invalid_ip', '192.168.1', '256.256.256.256', '1.2.3.4.5', '123.456', '-1.0.0.0', '0.256.0.0'];
+      const invalidIps = [
+        'invalid_ip',
+        '192.168.1',
+        '256.256.256.256',
+        '1.2.3.4.5',
+        '123.456',
+        '-1.0.0.0',
+        '0.256.0.0'
+      ];
       for (final ip in invalidIps) {
-        expect(NetworkUtils.isValidIpAddress(ip), false, reason: '$ip should be invalid');
+        expect(NetworkUtils.isValidIpAddress(ip), false,
+            reason: '$ip should be invalid');
       }
     });
 
@@ -221,7 +236,8 @@ void main() {
       expect(NetworkUtils.isValidIpAddress(''), false);
     });
 
-    test('ipToNum: converts valid IPv4 address to numerical representation', () {
+    test('ipToNum: converts valid IPv4 address to numerical representation',
+        () {
       expect(NetworkUtils.ipToNum('192.168.1.1'), 3232235777);
     });
 
@@ -230,12 +246,18 @@ void main() {
     });
 
     test('ipToNum: returns 0 for invalid IP addresses', () {
-      for (final ip in ['invalid_ip', '192.168.1', '256.256.256.256', '1.2.3.4.5']) {
+      for (final ip in [
+        'invalid_ip',
+        '192.168.1',
+        '256.256.256.256',
+        '1.2.3.4.5'
+      ]) {
         expect(NetworkUtils.ipToNum(ip), 0);
       }
     });
 
-    test('numToIp: converts valid numerical representation to IPv4 address', () {
+    test('numToIp: converts valid numerical representation to IPv4 address',
+        () {
       expect(NetworkUtils.numToIp(3232235521), '192.168.0.1');
     });
 
@@ -244,43 +266,83 @@ void main() {
       expect(NetworkUtils.numToIp(4294967296), '0.0.0.0');
     });
 
-    test('ipInRange: correctly identifies address within range (inclusive)', () {
-      expect(NetworkUtils.ipInRange('192.168.1.10', '192.168.1.1', '192.168.1.15'), true);
+    test('ipInRange: correctly identifies address within range (inclusive)',
+        () {
+      expect(
+          NetworkUtils.ipInRange('192.168.1.10', '192.168.1.1', '192.168.1.15'),
+          true);
     });
 
     test('ipInRange: correctly identifies address at lower boundary', () {
-      expect(NetworkUtils.ipInRange('192.168.1.1', '192.168.1.1', '192.168.1.10'), true);
+      expect(
+          NetworkUtils.ipInRange('192.168.1.1', '192.168.1.1', '192.168.1.10'),
+          true);
     });
 
     test('ipInRange: correctly identifies address at upper boundary', () {
-      expect(NetworkUtils.ipInRange('192.168.1.10', '192.168.1.1', '192.168.1.10'), true);
+      expect(
+          NetworkUtils.ipInRange('192.168.1.10', '192.168.1.1', '192.168.1.10'),
+          true);
     });
 
     test('ipInRange: correctly identifies address outside range', () {
-      expect(NetworkUtils.ipInRange('192.168.1.20', '192.168.1.1', '192.168.1.10'), false);
+      expect(
+          NetworkUtils.ipInRange('192.168.1.20', '192.168.1.1', '192.168.1.10'),
+          false);
     });
 
     test('ipInRange: handles invalid IP addresses', () {
-      expect(() => NetworkUtils.ipInRange('invalid_ip', '192.168.1.1', '192.168.1.10'), throwsArgumentError);
-      expect(() => NetworkUtils.ipInRange('192.168.1.1', 'invalid_ip', '192.168.1.10'), throwsArgumentError);
-      expect(() => NetworkUtils.ipInRange('192.168.1.1', '192.168.1.10', 'invalid_ip'), throwsArgumentError);
+      expect(
+          () => NetworkUtils.ipInRange(
+              'invalid_ip', '192.168.1.1', '192.168.1.10'),
+          throwsArgumentError);
+      expect(
+          () => NetworkUtils.ipInRange(
+              '192.168.1.1', 'invalid_ip', '192.168.1.10'),
+          throwsArgumentError);
+      expect(
+          () => NetworkUtils.ipInRange(
+              '192.168.1.1', '192.168.1.10', 'invalid_ip'),
+          throwsArgumentError);
     });
 
     test('ipInRange: handles reversed range (min > max)', () {
-      expect(() => NetworkUtils.ipInRange('192.168.1.5', '192.168.1.10', '192.168.1.5'), throwsArgumentError);
+      expect(
+          () => NetworkUtils.ipInRange(
+              '192.168.1.5', '192.168.1.10', '192.168.1.5'),
+          throwsArgumentError);
     });
 
     test('isValidSubnetMask: identifies valid subnet masks', () {
-      for (final subnet in ['255.255.255.0', '255.255.255.128', '255.255.255.252', '255.0.0.0']) {
-        expect(NetworkUtils.isValidSubnetMask(subnet), true, reason: '$subnet should be valid');
+      for (final subnet in [
+        '255.255.255.0',
+        '255.255.255.128',
+        '255.255.255.252',
+        '255.0.0.0'
+      ]) {
+        expect(NetworkUtils.isValidSubnetMask(subnet), true,
+            reason: '$subnet should be valid');
       }
     });
 
     test('isValidSubnetMask: identifies invalid subnet masks', () {
-      const invalidSubnets = ['invalid_mask', '192.168.1', '256.256.256.256', '255.255.255.254', '255.255.255.191', '254.255.255.0', '0.0.0.0', '255.255.255.255'];
+      const invalidSubnets = [
+        'invalid_mask',
+        '192.168.1',
+        '256.256.256.256',
+        '255.255.255.254',
+        '255.255.255.191',
+        '254.255.255.0',
+        '0.0.0.0',
+        '255.255.255.255'
+      ];
       for (final subnet in invalidSubnets) {
         var isValid = true;
-        try { isValid = NetworkUtils.isValidSubnetMask(subnet); } catch (e) { isValid = false; }
+        try {
+          isValid = NetworkUtils.isValidSubnetMask(subnet);
+        } catch (e) {
+          isValid = false;
+        }
         expect(isValid, false, reason: '$subnet should be invalid');
       }
     });
@@ -290,56 +352,101 @@ void main() {
     });
 
     test('throws exception for invalid maxNetworkPrefixLength', () {
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', maxNetworkPrefixLength: -1), throwsException);
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              maxNetworkPrefixLength: -1),
+          throwsException);
     });
 
-    test('isValidSubnetMask: throws error for invalid minNetworkPrefixLength', () {
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 0), throwsException);
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 32), throwsException);
+    test('isValidSubnetMask: throws error for invalid minNetworkPrefixLength',
+        () {
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 0),
+          throwsException);
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 32),
+          throwsException);
     });
 
-    test('isValidSubnetMask: throws error for invalid maxNetworkPrefixLength', () {
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', maxNetworkPrefixLength: 0), throwsException);
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', maxNetworkPrefixLength: 32), throwsException);
+    test('isValidSubnetMask: throws error for invalid maxNetworkPrefixLength',
+        () {
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              maxNetworkPrefixLength: 0),
+          throwsException);
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              maxNetworkPrefixLength: 32),
+          throwsException);
     });
 
     test('isValidSubnetMask: throws error for invalid min/max combination', () {
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 24, maxNetworkPrefixLength: 23), throwsException);
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 24, maxNetworkPrefixLength: 23),
+          throwsException);
     });
 
-    test('isValidSubnetMask: handles valid subnet masks within specified range', () {
-      expect(NetworkUtils.isValidSubnetMask('255.255.255.128', minNetworkPrefixLength: 25, maxNetworkPrefixLength: 27), true);
-      expect(NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 24, maxNetworkPrefixLength: 24), true);
-      expect(NetworkUtils.isValidSubnetMask('255.255.255.128', minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30), true);
+    test('isValidSubnetMask: handles valid subnet masks within specified range',
+        () {
+      expect(
+          NetworkUtils.isValidSubnetMask('255.255.255.128',
+              minNetworkPrefixLength: 25, maxNetworkPrefixLength: 27),
+          true);
+      expect(
+          NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 24, maxNetworkPrefixLength: 24),
+          true);
+      expect(
+          NetworkUtils.isValidSubnetMask('255.255.255.128',
+              minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30),
+          true);
     });
 
-    test('isValidSubnetMask: handles invalid subnet masks outside specified range', () {
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.128', minNetworkPrefixLength: 26, maxNetworkPrefixLength: 30), throwsA(isA<FormatException>()));
-      expect(() => NetworkUtils.isValidSubnetMask('255.255.255.0', minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30), throwsA(isA<FormatException>()));
+    test(
+        'isValidSubnetMask: handles invalid subnet masks outside specified range',
+        () {
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.128',
+              minNetworkPrefixLength: 26, maxNetworkPrefixLength: 30),
+          throwsA(isA<FormatException>()));
+      expect(
+          () => NetworkUtils.isValidSubnetMask('255.255.255.0',
+              minNetworkPrefixLength: 25, maxNetworkPrefixLength: 30),
+          throwsA(isA<FormatException>()));
     });
 
-    test('getIpPrefix: calculates correct prefix for valid IP and subnet mask', () {
-      expect(NetworkUtils.getIpPrefix('192.168.1.10', '255.255.255.0'), '192.168.1.0');
+    test('getIpPrefix: calculates correct prefix for valid IP and subnet mask',
+        () {
+      expect(NetworkUtils.getIpPrefix('192.168.1.10', '255.255.255.0'),
+          '192.168.1.0');
     });
 
     test('getIpPrefix: handles leading zeros in IP address', () {
-      expect(NetworkUtils.getIpPrefix('010.020.003.001', '255.255.255.0'), '10.20.3.0');
+      expect(NetworkUtils.getIpPrefix('010.020.003.001', '255.255.255.0'),
+          '10.20.3.0');
     });
 
     test('getIpPrefix: handles invalid IP address', () {
-      expect(() => NetworkUtils.getIpPrefix('invalid_ip', '255.255.255.0'), throwsArgumentError);
+      expect(() => NetworkUtils.getIpPrefix('invalid_ip', '255.255.255.0'),
+          throwsArgumentError);
     });
 
     test('getIpPrefix: handles invalid subnet mask', () {
-      expect(() => NetworkUtils.getIpPrefix('192.168.1.10', 'invalid_mask'), throwsArgumentError);
+      expect(() => NetworkUtils.getIpPrefix('192.168.1.10', 'invalid_mask'),
+          throwsArgumentError);
     });
 
     test('getIpPrefix: handles mismatched IP and subnet mask lengths', () {
-      expect(() => NetworkUtils.getIpPrefix('192.168.1.10', '255.255'), throwsArgumentError);
+      expect(() => NetworkUtils.getIpPrefix('192.168.1.10', '255.255'),
+          throwsArgumentError);
     });
 
     test('getIpPrefix: handles non-contiguous subnet mask ones', () {
-      expect(() => NetworkUtils.getIpPrefix('192.168.1.10', '255.255.255.191'), throwsArgumentError);
+      expect(() => NetworkUtils.getIpPrefix('192.168.1.10', '255.255.255.191'),
+          throwsArgumentError);
     });
 
     test('getMinMtu: returns correct minimum MTU for known WAN types', () {
@@ -385,7 +492,8 @@ void main() {
       expect(NetworkUtils.isMtuValid('dhcp', 1500), true);
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for DHCP', () {
+    test('isMtuValid: returns false for invalid MTU outside range for DHCP',
+        () {
       expect(NetworkUtils.isMtuValid('dhcp', 575), false);
       expect(NetworkUtils.isMtuValid('dhcp', 1501), false);
     });
@@ -396,7 +504,8 @@ void main() {
       expect(NetworkUtils.isMtuValid('pppoe', 1492), true);
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for PPPoE', () {
+    test('isMtuValid: returns false for invalid MTU outside range for PPPoE',
+        () {
       expect(NetworkUtils.isMtuValid('pppoe', 575), false);
       expect(NetworkUtils.isMtuValid('pppoe', 1500), false);
     });
@@ -407,7 +516,8 @@ void main() {
       expect(NetworkUtils.isMtuValid('static', 1500), true);
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for Static', () {
+    test('isMtuValid: returns false for invalid MTU outside range for Static',
+        () {
       expect(NetworkUtils.isMtuValid('static', 575), false);
       expect(NetworkUtils.isMtuValid('static', 1501), false);
     });
@@ -418,7 +528,8 @@ void main() {
       expect(NetworkUtils.isMtuValid('pptp', 1460), true);
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for PPTP', () {
+    test('isMtuValid: returns false for invalid MTU outside range for PPTP',
+        () {
       expect(NetworkUtils.isMtuValid('pptp', 575), false);
       expect(NetworkUtils.isMtuValid('pptp', 1461), false);
     });
@@ -429,12 +540,14 @@ void main() {
       expect(NetworkUtils.isMtuValid('l2tp', 1460), true);
     });
 
-    test('isMtuValid: returns false for invalid MTU outside range for L2TP', () {
+    test('isMtuValid: returns false for invalid MTU outside range for L2TP',
+        () {
       expect(NetworkUtils.isMtuValid('l2tp', 575), false);
       expect(NetworkUtils.isMtuValid('l2tp', 1461), false);
     });
 
-    test('isMtuValid: returns false for any non-zero MTU for unknown WAN type', () {
+    test('isMtuValid: returns false for any non-zero MTU for unknown WAN type',
+        () {
       expect(NetworkUtils.isMtuValid('unknown', 1), false);
       expect(NetworkUtils.isMtuValid('unknown', 1000), false);
       expect(NetworkUtils.isMtuValid('', 576), false);

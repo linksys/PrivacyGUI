@@ -84,6 +84,11 @@ class UspService {
   /// Set by [UspAuthCoordinator] to provide re-login via stored password.
   Future<void> Function()? onReauthRequired;
 
+  /// Called after [reauth] completes successfully (either refreshToken or
+  /// full re-login). Set by [SseManager] to force SSE reconnect with the
+  /// new token, preventing silent subscription routing failures.
+  VoidCallback? onTokenRefreshed;
+
   /// SSE subscription delegate. Set by [SseManager] to route subscriptions
   /// through SSE instead of polling. When null, falls back to polling.
   SseSubscribeDelegate? onSseSubscribe;
@@ -112,12 +117,17 @@ class UspService {
 
   /// Two-stage re-authentication: refreshToken first, then full re-login.
   /// Uses a Completer lock to prevent concurrent reauth attempts.
+  ///
+  /// After successful reauth, notifies [onTokenRefreshed] so that SSE can
+  /// reconnect with the new token (prevents silent subscription routing
+  /// failures when the bridge session changes).
   Future<void> reauth() async {
     if (_reauthInProgress != null) {
       await _reauthInProgress!.future;
       return;
     }
     _reauthInProgress = Completer<void>();
+    bool didFullRelogin = false;
     try {
       // Stage 1: quick token refresh (no password needed)
       try {
@@ -132,6 +142,7 @@ class UspService {
       final reauth = onReauthRequired;
       if (reauth != null) {
         await reauth();
+        didFullRelogin = true;
         logger.d('[USP][Service]Full re-login succeeded');
       }
       _reauthInProgress!.complete();
@@ -142,6 +153,12 @@ class UspService {
       rethrow;
     } finally {
       _reauthInProgress = null;
+      // Notify SSE to reconnect after full re-login (new session/token).
+      // Stage 1 (refreshToken) typically extends the same session, so
+      // SSE reconnect is only needed after Stage 2 (full re-login).
+      if (didFullRelogin) {
+        onTokenRefreshed?.call();
+      }
     }
   }
 

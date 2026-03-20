@@ -60,8 +60,7 @@ class UspLocalNetworkNotifier
       // Clone data from the shared data provider (read, not watch).
       final data = await ref.read(lanDataProvider.future);
       final lan = data.model;
-      final dnsParts =
-          lan.dnsServers.split(',').map((s) => s.trim()).toList();
+      final dnsParts = lan.dnsServers.split(',').map((s) => s.trim()).toList();
       final uiModel = LocalNetworkUIModel(
         hostName: lan.hostName,
         ipAddress: lan.ipAddress,

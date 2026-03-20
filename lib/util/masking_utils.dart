@@ -71,12 +71,12 @@ class MaskingUtils {
     int idx = 0;
     regex.allMatches(result).forEach((element) {
       element.groups([1, 2, 4]).nonNulls.forEach((group) {
-        int start = raw.indexOf(group, idx);
-        int end = start + group.length;
-        final replaced = group.replaceAll(':', '-').replaceAll('.', '-');
-        result = result.replaceRange(start, end, replaced);
-        idx = end;
-      });
+            int start = raw.indexOf(group, idx);
+            int end = start + group.length;
+            final replaced = group.replaceAll(':', '-').replaceAll('.', '-');
+            result = result.replaceRange(start, end, replaced);
+            idx = end;
+          });
     });
     return result;
   }
