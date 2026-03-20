@@ -55,8 +55,12 @@ final dashboardOrchestratorProvider =
 );
 
 class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
+  Timer? _retryTimer;
+
   @override
   Future<DashboardOrchestratorState> build() async {
+    ref.onDispose(() => _retryTimer?.cancel());
+
     try {
       return await _buildImpl();
     } catch (e, st) {
@@ -132,8 +136,46 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
       }),
     );
 
+    // Delayed retry: if domain providers failed (e.g. bridge 503 on startup),
+    // invalidate them after a delay so they re-fetch once the bridge is ready.
+    _scheduleProviderRetry();
+
     return DashboardOrchestratorState(
       isAuthenticated: usp.isAuthenticated,
     );
+  }
+
+  /// Checks domain providers after a delay and invalidates any that are in
+  /// error state. This handles the startup race where the bridge is
+  /// temporarily unavailable (503) and providers fail before SSE connects.
+  void _scheduleProviderRetry() {
+    // Cancel any previously scheduled retry (e.g. from refreshAll re-build).
+    _retryTimer?.cancel();
+
+    const retryDelay = Duration(seconds: 5);
+    // Only retry providers that were already triggered in _buildImpl().
+    // wifiDataProvider is not eagerly triggered here — it starts lazily via
+    // devicesDataProvider's soft dependency or the WiFi settings page.
+    final providers = [
+      ('systemInfo', systemInfoDataProvider),
+      ('devices', devicesDataProvider),
+      ('ethernet', ethernetDataProvider),
+    ];
+
+    _retryTimer = Timer(retryDelay, () {
+      _retryTimer = null;
+      final failed = <String>[];
+      for (final (name, provider) in providers) {
+        final state = ref.read(provider);
+        if (state.hasError) {
+          failed.add(name);
+          ref.invalidate(provider);
+        }
+      }
+      if (failed.isNotEmpty) {
+        logger.d('[USP][Orchestrator] Retrying failed providers: '
+            '${failed.join(', ')}');
+      }
+    });
   }
 }

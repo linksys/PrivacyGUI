@@ -78,8 +78,20 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
     logger.d('[USP][WiFi]Fetching WiFi data...');
 
-    // Read from WiFi Data Provider (Layer 1) to avoid duplicate fetch
-    final wifiData = await ref.read(wifiDataProvider.future);
+    // Read from WiFi Data Provider (Layer 1) to avoid duplicate fetch.
+    // wifiDataProvider may throw (e.g. TimeoutException when the bridge is
+    // temporarily unavailable). Catch and return error status so the UI exits
+    // loading and displays the error instead of hanging.
+    final WifiData wifiData;
+    try {
+      wifiData = await ref.read(wifiDataProvider.future);
+    } catch (e) {
+      logger.w('[USP][WiFi] WiFi data fetch failed: $e');
+      return (
+        null,
+        WifiSettingsStatus(errorMessage: 'WiFi data unavailable'),
+      );
+    }
     final (:radios, :ssids, :accessPoints) = wifiData.codegenContext.raw;
 
     final networks = _svc.buildWifiNetworks(

@@ -92,12 +92,15 @@ class _DemoAuthNotifier extends AuthNotifier {
   @override
   Future<AuthState?> init() async {
     debugPrint('Demo: Auth init called - preserving local login');
-    final demoState = AuthState(
-      loginType: LoginType.local,
-      localPassword: 'demo-password',
-    );
-    state = AsyncValue.data(demoState);
-    return demoState;
+    // Use AsyncValue.guard to match base class pattern — the `await` ensures
+    // the state assignment happens after a microtask boundary, avoiding the
+    // "Tried to modify a provider while the widget tree was building" error
+    // when init() is called from go_router redirect during build phase.
+    state = await AsyncValue.guard(() async => AuthState(
+          loginType: LoginType.local,
+          localPassword: 'demo-password',
+        ));
+    return state.value;
   }
 
   @override
