@@ -1,9 +1,9 @@
 # USP Pages Architecture Design Review Report
 
 **Date**: 2026-03-18
-**Update**: 2026-03-18 — Fixed 4 structural issues (P1×2 + P2×2) + Fully resolved Codegen layer isolation (32 violations → 0)
-**Scope**: `lib/usp_page/` (245 files), `lib/usp/` (19 files), `test/usp_page/` (4 files)
-**Version**: v2.2.0 (Post Codegen Layer Isolation)
+**Update**: 2026-03-20 — Paths aligned to post-restructure layout (`lib/page/`, `lib/framework/`, `lib/core/usp/`); UIModel isolation complete; PdfReportDataProvider added
+**Scope**: `lib/page/` (~274 files), `lib/core/usp/` (19 files), `test/page/` (3 files)
+**Version**: v2.2.1 (Post Directory Restructure + UIModel Isolation)
 **Cross-Analysis Documents**:
 - `doc/_archived/usp_pages_architecture_v2.1.0.md` (archived)
 - `doc/_archived/architecture_analysis_2026-01-16.md` (archived)
@@ -17,7 +17,7 @@
 
 ## 1. Executive Summary
 
-Following Phase 0–6 refactorings, the USP Pages architecture successfully evolved from the original God Notifier anti-pattern into a **three-tier Provider architecture**, achieving appropriate separation of concerns. The framework layer (`_framework/`) provides unified `FeatureState` + `Preservable` + `PreservableNotifierMixin` infrastructure and represents the most successful design of the entire architecture.
+Following Phase 0–6 refactorings, the USP Pages architecture successfully evolved from the original God Notifier anti-pattern into a **three-tier Provider architecture**, achieving appropriate separation of concerns. The framework layer (`framework/`) provides unified `FeatureState` + `Preservable` + `PreservableNotifierMixin` infrastructure and represents the most successful design of the entire architecture.
 
 However, cross-analysis revealed the following structural issues (resolved items marked with ✅):
 
@@ -142,7 +142,7 @@ Compared to the four-layer model defined in `architecture_analysis_2026-01-16.md
 #### Figure 2: Feature Module Internal Structure (Using DMZ as an Example)
 
 ```
-lib/usp_page/dmz/
+lib/page/dmz/
 ├── models/
 │   ├── dmz_feature_state.dart          ─── FeatureState<DmzSettings, DmzStatus>
 │   ├── dmz_settings.dart               ─── Equatable, contains DmzUIModel
@@ -187,7 +187,7 @@ lib/usp_page/dmz/
                          │
                          ▼
                     ┌──────────┐
-                    │UspService│  lib/usp/services/
+                    │UspService│  lib/core/usp/services/
                     └────┬─────┘
                          │
           ┌──────────────┼──────────────┐
@@ -288,7 +288,7 @@ lib/usp_page/dmz/
 #### Figure 5: Directory Structure Overview
 
 ```
-lib/usp_page/                              # 245 files
+lib/page/                              # 245 files
 │
 ├── _framework/                            # Infrastructure (4 files)
 │   ├── feature_state.dart                 #   FeatureState<TSettings, TStatus>
@@ -325,7 +325,7 @@ lib/usp_page/                              # 245 files
 
 ### 3.1 Inter-Module Dependency Matrix
 
-The following matrix shows **cross-module imports** among feature modules under `usp_page/` (→ indicates A depends on B).
+The following matrix shows **cross-module imports** among feature modules under `lib/page/` (formerly `usp_page/`) (→ indicates A depends on B).
 
 > **✅ Update (2026-03-18)**: Cross-module dependencies to `dashboard/` have been migrated to `_shared/`. `_shared/` serves as an explicit shared layer, and being depended on by multiple modules is an intended design.
 
@@ -358,7 +358,7 @@ admin                  ★        —         —       —       —         �
 
 `dashboard/models/` and `dashboard/views/components/` were originally referenced by 8+ external modules.
 
-**Fix**: Created `usp_page/_shared/` directory and moved 30 cross-module shared files:
+**Fix**: Created `_shared/` directory (originally `usp_page/_shared/`, now `lib/page/_shared/`) and moved 30 cross-module shared files:
 
 | Category | Number Moved | Examples |
 |----------|--------------|----------|
@@ -370,7 +370,7 @@ admin                  ★        —         —       —       —         �
 **Post-Fix Structure**:
 
 ```
-lib/usp_page/
+lib/page/
 ├── _framework/          # FeatureState/Preservable (unchanged)
 ├── _shared/             # ✅ Created
 │   ├── models/          # 16 cross-module shared UI models
@@ -987,28 +987,28 @@ Fix Strategy Summary:
 
 | Component | Path |
 |-----------|------|
-| Framework — FeatureState | `lib/usp_page/_framework/feature_state.dart` |
-| Framework — Preservable | `lib/usp_page/_framework/preservable.dart` |
-| Framework — Mixin + Delegate | `lib/usp_page/_framework/preservable_notifier_mixin.dart` |
-| Shared — Models (16) | `lib/usp_page/_shared/models/` |
-| Shared — Components (4) | `lib/usp_page/_shared/components/` |
-| Shared — Services (2) | `lib/usp_page/_shared/services/` |
-| Shared — Providers (8) | `lib/usp_page/_shared/providers/` |
-| Orchestrator | `lib/usp_page/dashboard/orchestrator/dashboard_orchestrator.dart` |
+| Framework — FeatureState | `lib/framework/feature_state.dart` |
+| Framework — Preservable | `lib/framework/preservable.dart` |
+| Framework — Mixin + Delegate | `lib/framework/preservable_notifier_mixin.dart` |
+| Shared — Models (16) | `lib/page/_shared/models/` |
+| Shared — Components (4) | `lib/page/_shared/components/` |
+| Shared — Services (2) | `lib/page/_shared/services/` |
+| Shared — Providers (8) | `lib/page/_shared/providers/` |
+| Orchestrator | `lib/page/dashboard/orchestrator/dashboard_orchestrator.dart` |
 | Route Definitions | `lib/route/route_usp_dashboard.dart` |
-| SSE Providers | `lib/usp/providers/sse_providers.dart` |
-| Mutation Lock (+ timeout) | `lib/usp/providers/usp_mutation_lock.dart` |
-| Exemplar — DMZ Notifier | `lib/usp_page/dmz/providers/usp_dmz_notifier.dart` |
-| Exemplar — DMZ Service (+ validation) | `lib/usp_page/dmz/services/usp_dmz_service.dart` |
-| Exemplar — DMZ View | `lib/usp_page/dmz/views/usp_dmz_view.dart` |
-| Complex Example — WiFi Provider | `lib/usp_page/wifi_settings/providers/usp_wifi_settings_provider.dart` |
-| CRUD Example — DHCP Notifier | `lib/usp_page/dhcp/providers/usp_dhcp_reservations_notifier.dart` |
-| Facade — UspFormatters | `lib/usp_page/_shared/utils/usp_formatters.dart` |
-| Facade — UspSubscriptions | `lib/usp_page/_shared/utils/usp_subscriptions.dart` |
-| UI Model — WifiClientUIModel | `lib/usp_page/_shared/models/wifi_client_ui_model.dart` |
-| UI Model — InternetSettingsReadOnlyInfo | `lib/usp_page/internet_settings/models/internet_settings_read_only_info.dart` |
-| Opaque Wrapper — FirewallRuleContext | `lib/usp_page/firewall/services/usp_firewall_service.dart` (Defined within Service) |
-| Opaque Wrapper — MacFilterContext | `lib/usp_page/instant_privacy/services/instant_privacy_service.dart` (Defined within Service) |
-| New Service — DHCP | `lib/usp_page/dhcp/services/usp_dhcp_service.dart` |
-| New Service — Port Forwarding | `lib/usp_page/port_forwarding/services/usp_port_forwarding_service.dart` |
+| SSE Providers | `lib/core/usp/providers/sse_providers.dart` |
+| Mutation Lock (+ timeout) | `lib/core/usp/providers/usp_mutation_lock.dart` |
+| Exemplar — DMZ Notifier | `lib/page/dmz/providers/usp_dmz_notifier.dart` |
+| Exemplar — DMZ Service (+ validation) | `lib/page/dmz/services/usp_dmz_service.dart` |
+| Exemplar — DMZ View | `lib/page/dmz/views/usp_dmz_view.dart` |
+| Complex Example — WiFi Provider | `lib/page/wifi_settings/providers/usp_wifi_settings_provider.dart` |
+| CRUD Example — DHCP Notifier | `lib/page/dhcp/providers/usp_dhcp_reservations_notifier.dart` |
+| Facade — UspFormatters | `lib/page/_shared/utils/usp_formatters.dart` |
+| Facade — UspSubscriptions | `lib/page/_shared/utils/usp_subscriptions.dart` |
+| UI Model — WifiClientUIModel | `lib/page/_shared/models/wifi_client_ui_model.dart` |
+| UI Model — InternetSettingsReadOnlyInfo | `lib/page/internet_settings/models/internet_settings_read_only_info.dart` |
+| Opaque Wrapper — FirewallRuleContext | `lib/page/firewall/services/usp_firewall_service.dart` (Defined within Service) |
+| Opaque Wrapper — MacFilterContext | `lib/page/instant_privacy/services/instant_privacy_service.dart` (Defined within Service) |
+| New Service — DHCP | `lib/page/dhcp/services/usp_dhcp_service.dart` |
+| New Service — Port Forwarding | `lib/page/port_forwarding/services/usp_port_forwarding_service.dart` |
 

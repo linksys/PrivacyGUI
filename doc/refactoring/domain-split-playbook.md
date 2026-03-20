@@ -30,28 +30,28 @@
 
 ### Step 1: 建立 Data Provider (Layer 1)
 
-**檔案**：`lib/usp_page/<domain>/providers/<domain>_data_provider.dart`
+**檔案**：`lib/page/<domain>/providers/<domain>_data_provider.dart`
 
 ```dart
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-// import codegen types...
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+// import codegen types (only in this file)...
+// import UIModel types...
 
-// ── Data Model ──
+// ── Data Model (UIModel only — raw codegen stays in Notifier) ──
 class {Domain}Data extends Equatable {
-  final {CodegenType1} field1;
-  final {CodegenType2} field2;
-  // ...
+  final {UIModel1} model;          // UIModel — external consumers use this
+  final List<{UIModel2}>? items;   // UIModel list (nullable if optional)
+  // NO raw codegen fields here
 
-  const {Domain}Data({required this.field1, required this.field2});
-  const {Domain}Data.empty() : field1 = const ..., field2 = const ...;
+  const {Domain}Data({required this.model, this.items});
 
   @override
-  List<Object?> get props => [field1, field2];
+  List<Object?> get props => [model, items?.length];
 }
 
 // ── Provider ──
@@ -63,6 +63,9 @@ final {domain}DataProvider =
 // ── Notifier (NOT autoDispose) ──
 class {Domain}DataNotifier extends AsyncNotifier<{Domain}Data> {
   Timer? _debounce;
+
+  // Raw codegen kept as internal state (for mutations / listener rebuilds)
+  {CodegenType1}? _rawData;
 
   @override
   Future<{Domain}Data> build() async {
@@ -82,18 +85,16 @@ class {Domain}DataNotifier extends AsyncNotifier<{Domain}Data> {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
 
-    final results = await Future.wait([
-      {CodegenType1}.fetch(usp),
-      {CodegenType2}.fetch(usp),
-    ]);
+    // Fetch raw codegen
+    final raw = await {CodegenType1}.fetch(usp);
+    _rawData = raw;  // cache for internal use
 
-    final data = {Domain}Data(
-      field1: results[0] as {CodegenType1},
-      field2: results[1] as {CodegenType2},
-    );
+    // Convert codegen → UIModel at Layer 1 boundary
+    final svc = ref.read({domain}ServiceProvider);
+    final model = svc.buildUIModel(raw);
 
     logger.d('[USP][{Domain}Data] Fetched — ...');
-    return data;
+    return {Domain}Data(model: model);
   }
 
   void _debouncedInvalidate() {
@@ -107,13 +108,16 @@ class {Domain}DataNotifier extends AsyncNotifier<{Domain}Data> {
 
 **關鍵規則**：
 - `AsyncNotifier`（NOT `AsyncNotifierProvider.autoDispose`）— dashboard card 生命週期內持續存在
+- **Data class 只暴露 UIModel 型別** — raw codegen 保留為 Notifier instance variable
+- 需要 raw data 做 re-computation 的（如 WiFi listener rebuild），用 `_rawData` 快取
+- 跨 domain 的 pre-computed 欄位（如 `hostNameByMac`）在 Data class 中提供，避免消費者需要 raw codegen
 - SSE debounce 500ms 避免短時間大量 invalidation
 - `ref.onDispose()` 清理 timer
 - 無 SSE 需求的 domain（如 Time Settings）可省略 `ref.listen`
 
 ### Step 2: 更新 Dashboard Card
 
-**檔案**：`lib/usp_page/dashboard/views/components/usp_{domain}_card.dart`
+**檔案**：`lib/page/dashboard/views/components/usp_{domain}_card.dart`
 
 ```dart
 // 之前
@@ -217,8 +221,8 @@ class {Domain}Status extends Equatable {
 **`models/{domain}_feature_state.dart`** — 組合
 
 ```dart
-import 'package:privacy_gui/usp_page/_framework/feature_state.dart';
-import 'package:privacy_gui/usp_page/_framework/preservable.dart';
+import 'package:privacy_gui/framework/feature_state.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 
 class {Domain}FeatureState extends FeatureState<{Domain}Settings, {Domain}Status> {
   const {Domain}FeatureState({required super.settings, required super.status});
@@ -255,10 +259,10 @@ class {Domain}FeatureState extends FeatureState<{Domain}Settings, {Domain}Status
 
 ```dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/usp_page/_framework/preservable_contract.dart';
-import 'package:privacy_gui/usp_page/_framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
+import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 
 // ── Providers ──
 
@@ -405,7 +409,7 @@ LinksysRoute(
 
 ```dart
 // router_provider.dart — 加入 import
-import 'package:privacy_gui/usp_page/{domain}/providers/usp_{domain}_notifier.dart';
+import 'package:privacy_gui/page/{domain}/providers/usp_{domain}_notifier.dart';
 ```
 
 ### A 類型檢查清單
@@ -429,7 +433,7 @@ import 'package:privacy_gui/usp_page/{domain}/providers/usp_{domain}_notifier.da
 > 適用於 add/edit/delete 操作的列表頁面。使用 Preservable 追蹤 original vs current，
 > 所有變更累積在本地，Save 時 diff → batch 送出（`addMultiple` + `set` + `delete`）。
 >
-> **JNAP 參考實作**：`lib/page/advanced_settings/firewall/providers/ipv6_port_service_list_provider.dart`
+> **參考實作**：`lib/page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart`
 
 ### B.1 建立 Models
 
@@ -785,15 +789,11 @@ class {Domain}DataNotifier extends AsyncNotifier<{Domain}Data> {
 
 ### 1. PreservableContract 型別必須一致
 
-`_framework/preservable_contract.dart` **必須 re-export** 原始的 `lib/providers/preservable_contract.dart`，不可複製。原因：`LinksysRoute` 的 `preservableProvider` 參數期望原始型別，複製會產生不同型別。
+所有 Preservable 相關檔案已合併至 `lib/framework/`（canonical）。`PreservableContract` 定義在 `lib/framework/preservable_contract.dart`，`LinksysRoute` 和所有 notifier 都 import 同一來源。
 
 ```dart
-// lib/usp_page/_framework/preservable_contract.dart
-// 正確 ✓
-export 'package:privacy_gui/providers/preservable_contract.dart';
-
-// 錯誤 ✗ — 會造成型別不相容
-// class PreservableContract<T, S> { ... }
+// 正確 ✓ — 全部 import 同一檔案
+import 'package:privacy_gui/framework/preservable_contract.dart';
 ```
 
 ### 2. Data Provider 必須是 NOT autoDispose
@@ -832,7 +832,7 @@ Save 成功後必須 `ref.invalidate({domain}DataProvider)` 讓 data provider re
 移除 state 欄位後，用全域搜尋確認沒有殘留引用：
 
 ```bash
-grep -rn '{removedField}' lib/usp_page/dashboard/
+grep -rn '{removedField}' lib/page/dashboard/
 ```
 
 常見藏身處：PDF report (`usp_sliver_dashboard_view.dart`)、statistics page。
@@ -851,7 +851,7 @@ Dashboard notifier 的 SSE handler switch case 要保留但改為 no-op + 註解
 ## 檔案命名慣例
 
 ```
-lib/usp_page/<domain>/
+lib/page/<domain>/
 ├── models/
 │   ├── {domain}_ui_model.dart          # UI 展示模型
 │   ├── {domain}_settings.dart          # Type A: 可編輯設定 wrapper
@@ -983,54 +983,33 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
 
 ---
 
-## PDF Report 遷移模式
+## PDF Report 模式（已完成）
 
-> 每次從 dashboard 提取一個 domain 後，PDF report 也要同步更新。
+> ✅ **已實作**：`PdfReportDataProvider` 聚合所有 domain data provider 的 UIModel。
+> Dashboard view 只需 `ref.read(pdfReportDataProvider)` 即可取得所有 PDF 資料。
 
-### 5 步驟
+**檔案**：
+- Data model: `lib/page/_shared/models/pdf_report_data.dart`
+- Provider: `lib/page/dashboard/providers/pdf_report_data_provider.dart`
 
-1. **`PdfReportData` 新增 nullable 欄位**
-   ```dart
-   // lib/usp_page/dashboard/models/pdf_report_data.dart
-   class PdfReportData {
-     final UspDashboardState dashboard;
-     // ... 其他 domain 欄位 ...
-     final SystemInfoUIModel? systemInfo;  // ← 新增
-   }
-   ```
+```dart
+// PdfReportDataProvider 從各 domain data provider 讀取 UIModel
+final pdfReportDataProvider = Provider<PdfReportData?>((ref) {
+  return PdfReportData(
+    systemInfo: ref.read(systemInfoDataProvider).valueOrNull?.model,
+    wanStatus: ref.read(wanDataProvider).valueOrNull?.model,
+    radioModels: ref.read(wifiDataProvider).valueOrNull?.radioModels,
+    deviceModels: ref.read(devicesDataProvider).valueOrNull?.deviceModels,
+    // ... all domain UIModels
+  );
+});
 
-2. **`usp_sliver_dashboard_view.dart` 建構 PdfReportData**
-   ```dart
-   final reportData = PdfReportData(
-     dashboard: state,
-     // ...
-     systemInfo: ref.read(systemInfoDataProvider).valueOrNull?.model,
-   );
-   ```
+// Dashboard view — 1 行取得所有資料
+final reportData = ref.read(pdfReportDataProvider);
+if (reportData != null) UspPdfService.generatePdf(reportData);
+```
 
-3. **PDF service 方法改簽名**
-   ```dart
-   // 之前
-   static pw.Widget _buildDeviceInfo(UspDashboardState state) { ... }
-
-   // 之後
-   static pw.Widget _buildDeviceInfo(PdfReportData data) {
-     final info = data.systemInfo;
-     if (info == null) return pw.SizedBox.shrink();
-     // ...
-   }
-   ```
-
-4. **替換 state 存取為 data 存取**
-   ```dart
-   // 之前
-   state.systemInfoModel.firmwareVersion
-
-   // 之後
-   data.systemInfo?.firmwareVersion ?? '--'
-   ```
-
-5. **驗證**：`flutter analyze` + 確認 PDF 輸出正常
+新增 domain 時，只需在 `PdfReportData` 加欄位 + 在 provider 加一行 `ref.read()`。
 
 ---
 
@@ -1076,7 +1055,7 @@ final uspLoadingProgressProvider = StateProvider<UspLoadingProgress>(
 
 ```bash
 # 搜尋 state 欄位名稱
-grep -rn '{fieldName}' lib/usp_page/
+grep -rn '{fieldName}' lib/page/
 grep -rn 'state\.{fieldName}' lib/
 ```
 
@@ -1129,14 +1108,14 @@ grep -rn 'state\.{fieldName}' lib/
 
 | 類型 | Domain | 檔案路徑 |
 |------|--------|----------|
-| **Type A** (FeatureState — Form) | Firewall | `lib/usp_page/firewall/providers/usp_firewall_notifier.dart` |
-| **Type A** (FeatureState — Form) — 先行者 | WiFi Settings | `lib/usp_page/wifi_settings/providers/usp_wifi_settings_provider.dart` |
-| **Type B** (FeatureState — CRUD List) JNAP 參考 | IPv6 Port Service | `lib/page/advanced_settings/firewall/providers/ipv6_port_service_list_provider.dart` |
-| **Type C** (Read-Only) | System Info | `lib/usp_page/admin/providers/system_info_data_provider.dart` |
-| **Type C** (Dialog Atomic) | Time Settings | `lib/usp_page/admin/providers/time_data_provider.dart` |
-| **Layer 1** (SSE) | Firewall | `lib/usp_page/firewall/providers/firewall_data_provider.dart` |
-| **Layer 1** (no SSE) | Time Settings | `lib/usp_page/admin/providers/time_data_provider.dart` |
-| **Layer 1** (cross-domain) | DHCP | `lib/usp_page/local_network/providers/dhcp_data_provider.dart` |
-| **Mutation helper** | Shared | `lib/usp_page/dashboard/views/components/usp_mutation_helper.dart` |
-| **Mutation lock** | Shared | `lib/usp/providers/usp_mutation_lock.dart` |
-| **Framework mixin** | Shared | `lib/usp_page/_framework/preservable_notifier_mixin.dart` |
+| **Type A** (FeatureState — Form) | Firewall | `lib/page/firewall/providers/usp_firewall_notifier.dart` |
+| **Type A** (FeatureState — Form) — 先行者 | WiFi Settings | `lib/page/wifi_settings/providers/usp_wifi_settings_provider.dart` |
+| **Type B** (FeatureState — CRUD List) | IPv6 Port Service | `lib/page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart` |
+| **Type C** (Read-Only) | System Info | `lib/page/admin/providers/system_info_data_provider.dart` |
+| **Type C** (Dialog Atomic) | Time Settings | `lib/page/admin/providers/time_data_provider.dart` |
+| **Layer 1** (SSE) | Firewall | `lib/page/firewall/providers/firewall_data_provider.dart` |
+| **Layer 1** (no SSE) | Time Settings | `lib/page/admin/providers/time_data_provider.dart` |
+| **Layer 1** (cross-domain) | DHCP | `lib/page/local_network/providers/dhcp_data_provider.dart` |
+| **Mutation helper** | Shared | `lib/page/dashboard/views/components/usp_mutation_helper.dart` |
+| **Mutation lock** | Shared | `lib/core/usp/providers/usp_mutation_lock.dart` |
+| **Framework mixin** | Shared | `lib/framework/preservable_notifier_mixin.dart` |
