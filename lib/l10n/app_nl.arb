@@ -715,6 +715,7 @@
   "speedOkayDescription": "Met deze snelheid is uw WiFi-netwerk geschikt om HD-films te streamen en online te gamen. Als meerdere apparaten tegelijkertijd van het internet gebruikmaken, kunt u last krijgen van lage snelheden en bufferen.",
   "speedOptimal": "Snelheid: Optimaal",
   "speedOptimalDescription": "Met deze snelheid is uw WiFi-netwerk geschikt om verschillende internetapplicaties op meerdere apparaten te verwerken en betrouwbaar HD-films te streamen en tegelijk online te gamen.",
+  "speedTestFailedToLoadServers": "Kan serverlijst niet laden",
   "speedTest": "Snelheidstest",
   "speedTestDesc": "Er zijn 2 manieren om uw snelheid te controleren",
   "speedTestExternalCloudFlare": "Testen met CloudFlare",

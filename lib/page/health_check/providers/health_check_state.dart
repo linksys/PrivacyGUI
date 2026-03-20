@@ -66,6 +66,7 @@ class HealthCheckState extends Equatable {
     JNAPError? error,
     List<HealthCheckServer>? servers,
     HealthCheckServer? selectedServer,
+    bool clearSelectedServer = false,
     bool? serversError,
   }) {
     return HealthCheckState(
@@ -77,7 +78,8 @@ class HealthCheckState extends Equatable {
       randomValue: randomValue ?? this.randomValue,
       error: error ?? this.error,
       servers: servers ?? this.servers,
-      selectedServer: selectedServer ?? this.selectedServer,
+      selectedServer:
+          clearSelectedServer ? null : (selectedServer ?? this.selectedServer),
       serversError: serversError ?? this.serversError,
     );
   }

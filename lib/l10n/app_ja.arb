@@ -716,6 +716,7 @@
   "speedOkayDescription": "この速度であれば、HD動画のストリーミングやオンラインゲームを利用できます。複数のデバイスが同時にインターネットを使用している場合は、速度低下やバッファリングが発生する可能性があります。",
   "speedOptimal": "通信速度：最適",
   "speedOptimalDescription": "この速度なら、複数のデバイスでさまざまなインターネットアプリケーションを利用しながら、HD動画のストリーミングやオンラインゲームを同時に楽しめます。",
+  "speedTestFailedToLoadServers": "サーバーリストの読み込みに失敗しました",
   "speedTest": "スピードテスト",
   "speedTestDesc": "速度を確認する方法は2つあります。",
   "speedTestExternalCloudFlare": "Cloudflareでテスト",

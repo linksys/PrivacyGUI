@@ -716,6 +716,7 @@
   "speedOkayDescription": "以这种速度，您的WiFi可播放高清流媒体电影，并且进行在线游戏。 如果多台设备同时使用Internet，您的网络速度可能会变慢并缓冲。",
   "speedOptimal": "速度：最佳",
   "speedOptimalDescription": "以这种速度，您的WiFi能够在多台设备上同时处理不同的Internet应用程序，播放高清流媒体电影并进行在线游戏。",
+  "speedTestFailedToLoadServers": "无法加载服务器列表",
   "speedTest": "网速测试",
   "speedTestDesc": "有两种方法可检查网速",
   "speedTestExternalCloudFlare": "使用CloudFlare测试",

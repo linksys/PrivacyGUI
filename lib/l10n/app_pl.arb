@@ -673,6 +673,7 @@
   "speedOkayDescription": "Przy tej szybkości Twoja sieć WiFi pozwala na strumieniowe przesyłanie filmów w formacie HD i granie w gry online. Jeśli w tym samym czasie z Internetu korzysta wiele urządzeń, szybkość może się zmniejszyć i może występować buforowanie.",
   "speedOptimal": "Prędkość: Optymalna",
   "speedOptimalDescription": "Przy tej szybkości Twoja sieć WiFi może obsłużyć różne aplikacje internetowe na wielu urządzeniach, niezawodne przesyłanie strumieniowe filmów w formacie HD oraz granie w gry online w tym samym czasie.",
+  "speedTestFailedToLoadServers": "Nie udało się załadować listy serwerów",
   "speedTest": "Test prędkości",
   "speedTestDesc": "Są 2 sposoby sprawdzenia prędkości",
   "speedTestExternalCloudFlare": "Testuj za pomocą CloudFlare",

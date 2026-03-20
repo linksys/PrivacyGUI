@@ -272,7 +272,10 @@ class HealthCheckProvider extends Notifier<HealthCheckState> {
   }
 
   void setSelectedServer(HealthCheckServer? server) {
-    state = state.copyWith(selectedServer: server);
+    state = state.copyWith(
+      selectedServer: server,
+      clearSelectedServer: server == null,
+    );
   }
 
   _handleHealthCheckResults(List<HealthCheckResult> healthCheckResults) {

@@ -673,6 +673,7 @@
   "speedOkayDescription": "이 속도에서, 사용자의 WiFi는 HD 무비를 스트리밍하고 온라인 게임을 실행합니다. 동시에 인터넷을 사용하는 여러 장치가 있는 경우, 속도 지연과 버퍼링이 발생할 수 있습니다.",
   "speedOptimal": "속도: 최적",
   "speedOptimalDescription": "이 속도에서, WiFi가 동시에 여러 장치에서 다양한 인터넷 기반 응용 프로그램을 처리하고, HD 무비를 스트리밍하고, 온라인 게임을 실행할 수 있습니다.",
+  "speedTestFailedToLoadServers": "서버 목록을 불러오지 못했습니다",
   "speedTest": "속도 테스트",
   "speedTestDesc": "속도를 확인하는 2가지 방법이 있습니다",
   "speedTestExternalCloudFlare": "CloudFlare로 테스트",

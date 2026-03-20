@@ -715,6 +715,7 @@
   "speedOkayDescription": "A esta velocidad, tu red WiFi puede reproducir películas en HD y permitir el juego multijugador online. Si varios dispositivos están utilizando internet al mismo es muy posible que sufras bajas velocidades y tiempos de carga del búfer.",
   "speedOptimal": "Velocidad: Óptima",
   "speedOptimalDescription": "A esta velocidad tu WiFi puede operar varias aplicaciones de internet en múltiples dispositivos, reproducir por streaming películas en HD y facilitar el juego multijugador online de manera estable, fluida y simultánea.",
+  "speedTestFailedToLoadServers": "Error al cargar la lista de servidores",
   "speedTest": "Prueba de velocidad",
   "speedTestDesc": "Hay 2 maneras de comprobar sus velocidades",
   "speedTestExternalCloudFlare": "Probar con CloudFlare",

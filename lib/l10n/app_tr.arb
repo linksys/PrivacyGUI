@@ -673,6 +673,7 @@
   "speedOkayDescription": "Bu hızda WiFi HD filmler yürütebilir ve çevrimiçi oyunlar oynatabilir. İnterneti aynı anda birden fazla cihaz kullanıyorsa düşük hız ve geçici bellek hızı ile karşılaşabilirsiniz.",
   "speedOptimal": "Hız: Optimal",
   "speedOptimalDescription": "Bu hızda WiFi'ınız birden fazla cihazda çeşitli internet tabanlı uygulamaların üstesinden gelebilir, aynı anda HD filmler yürütebilir ve çevrimiçi oyunlar oynatabilir.",
+  "speedTestFailedToLoadServers": "Sunucu listesi yüklenemedi",
   "speedTest": "Hız Testi",
   "speedTestDesc": "Hızlarınızı kontrol etmenin 2 yolu vardır",
   "speedTestExternalCloudFlare": "CloudFlare ile test et",

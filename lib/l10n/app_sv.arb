@@ -715,6 +715,7 @@
   "speedOkayDescription": "Med den här hastigheten kan ditt trådlösa nätverk strömma HD-filmer och spela onlinespel. Om flera enheter använder internet samtidigt kan du råka ut för buffring och långsamma hastigheter.",
   "speedOptimal": "Hastighet: Optimalt",
   "speedOptimalDescription": "Med den här hastigheten kan ditt trådlösa nätverk olika internetbaserade program på flera enheter och strömma HD-filmer och spela spel samtidigt utan störningar.",
+  "speedTestFailedToLoadServers": "Kunde inte läsa in serverlistan",
   "speedTest": "Test av hastighet",
   "speedTestDesc": "Det finns 2 sätt att kontrollera din hastighet",
   "speedTestExternalCloudFlare": "Testa med CloudFlare",
