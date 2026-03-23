@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
@@ -59,9 +58,7 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.canPop()
-          ? context.pop()
-          : context.goNamed(RouteNamed.uspMenu),
+      backFallback: RouteNamed.uspAdvancedSettings,
       onRefresh: () =>
           ref.read(uspDmzProvider.notifier).fetch(forceRemote: true),
       bottomBar: _buildBottomBar(context, ref, state),

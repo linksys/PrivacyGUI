@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/composed/app_list_card.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/models/app_section_item_data.dart';
@@ -23,9 +24,7 @@ class UspAdvancedSettingsView extends StatelessWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.canPop()
-          ? context.pop()
-          : context.goNamed(RouteNamed.uspMenu),
+      onBackTap: () => context.navigateBack(fallback: RouteNamed.uspMenu),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
         return AppResponsiveLayout(
@@ -73,27 +72,27 @@ class UspAdvancedSettingsView extends StatelessWidget {
       ),
       AppSectionItemData(
         title: loc(context).localNetwork,
-        onTap: () => context.goNamed(RouteNamed.uspLocalNetwork),
+        onTap: () => context.pushNamed(RouteNamed.uspLocalNetwork),
       ),
       AppSectionItemData(
         title: loc(context).firewall,
-        onTap: () => context.goNamed(RouteNamed.uspFirewall),
+        onTap: () => context.pushNamed(RouteNamed.uspFirewall),
       ),
       AppSectionItemData(
         title: loc(context).dmz,
-        onTap: () => context.goNamed(RouteNamed.uspDmz),
+        onTap: () => context.pushNamed(RouteNamed.uspDmz),
       ),
       AppSectionItemData(
         title: 'Port Forwarding',
-        onTap: () => context.goNamed(RouteNamed.uspPortForwardingDetail),
+        onTap: () => context.pushNamed(RouteNamed.uspPortForwardingDetail),
       ),
       AppSectionItemData(
         title: loc(context).staticRouting,
-        onTap: () => context.goNamed(RouteNamed.uspStaticRouting),
+        onTap: () => context.pushNamed(RouteNamed.uspStaticRouting),
       ),
       AppSectionItemData(
         title: 'Network Diagnostics',
-        onTap: () => context.goNamed(RouteNamed.uspNetworkDiagnostics),
+        onTap: () => context.pushNamed(RouteNamed.uspNetworkDiagnostics),
       ),
     ];
   }

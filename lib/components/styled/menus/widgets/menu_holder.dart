@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/bottom_navigation_menu.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/top_navigation_menu.dart';
+import 'package:privacy_gui/route/navigation_extra.dart';
 import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -51,8 +52,8 @@ class MenuHolderState extends ConsumerState<MenuHolder> {
   void _updateMenuSelection() {
     if (_routerDelegate == null) return;
     final extra = _routerDelegate!.currentConfiguration.extra;
-    if (extra is NaviType) {
-      _controller.setTo(extra);
+    if (extra is NavigationExtra && extra.naviType != null) {
+      _controller.setTo(extra.naviType!);
     }
   }
 
@@ -151,7 +152,7 @@ class MenuController {
     final path = pathResolver?.call(type) ?? type.resolvePath();
     key.currentContext!.goNamed(
       path,
-      extra: type,
+      extra: NavigationExtra(naviType: type),
     );
   }
 

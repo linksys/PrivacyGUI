@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
@@ -639,9 +639,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
         children: [
           AppIconButton(
             icon: AppIcon.font(Icons.arrow_back),
-            onTap: () => context.canPop()
-                ? context.pop()
-                : context.goNamed(RouteNamed.uspMenu),
+            onTap: () => context.navigateBack(fallback: RouteNamed.uspMenu),
           ),
           AppGap.md(),
           Expanded(

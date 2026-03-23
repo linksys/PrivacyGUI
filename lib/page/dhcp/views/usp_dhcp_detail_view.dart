@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -36,9 +35,7 @@ class UspDhcpDetailView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.canPop()
-          ? context.pop()
-          : context.goNamed(RouteNamed.uspMenu),
+      backFallback: RouteNamed.uspMenu,
       onRefresh: () async {
         ref.invalidate(dhcpDataProvider);
         ref.read(uspDhcpReservationsProvider.notifier).fetch(forceRemote: true);

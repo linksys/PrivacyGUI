@@ -18,6 +18,7 @@ import 'package:privacy_gui/route/route_model.dart';
 import 'package:privacy_gui/route/router_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'constants.dart';
+import 'navigation_extra.dart';
 
 // USP dashboard imports
 import 'package:privacy_gui/page/dashboard/views/usp_dashboard_view.dart';

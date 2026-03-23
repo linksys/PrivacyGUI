@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
@@ -116,9 +116,7 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
       children: [
         AppIconButton(
           icon: const AppIcon.font(Icons.arrow_back),
-          onTap: () => context.canPop()
-              ? context.pop()
-              : context.goNamed(RouteNamed.uspMenu),
+          onTap: () => context.navigateBack(fallback: RouteNamed.uspMenu),
         ),
         AppGap.md(),
         Expanded(

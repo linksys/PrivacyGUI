@@ -41,9 +41,7 @@ class _UspDeviceListViewState extends ConsumerState<UspDeviceListView> {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      onBackTap: () => context.canPop()
-          ? context.pop()
-          : context.goNamed(RouteNamed.uspDashboard),
+      backFallback: RouteNamed.uspDashboard,
       onRefresh: () => ref.refresh(devicesDataProvider.future),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {
