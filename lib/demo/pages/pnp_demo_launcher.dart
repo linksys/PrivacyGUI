@@ -220,7 +220,8 @@ class _DemoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AppIcon.font(icon, size: 28, color: Theme.of(context).colorScheme.primary),
+              AppIcon.font(icon,
+                  size: 28, color: Theme.of(context).colorScheme.primary),
               AppGap.sm(),
               AppText.titleSmall(title),
               AppGap.xs(),

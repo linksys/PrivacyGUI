@@ -129,7 +129,10 @@ class PnpIspSettingsView extends ConsumerWidget {
     final steps = [
       (IspSaveStep.saving, loc(context).save),
       (IspSaveStep.checkingSettings, loc(context).pnpIspTypeSelectionTitle),
-      (IspSaveStep.checkingInternet, loc(context).pnpWaitingModemCheckingInternet),
+      (
+        IspSaveStep.checkingInternet,
+        loc(context).pnpWaitingModemCheckingInternet
+      ),
     ];
     final currentIdx = IspSaveStep.values.indexOf(phase.step);
 

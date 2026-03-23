@@ -25,11 +25,9 @@ class PnpWaitingModemView extends ConsumerWidget {
 
     // Navigate on success or failure
     ref.listen(pnpProvider, (prev, next) {
-      if (next.phase is WizardConfiguring ||
-          next.phase is WizardInitializing) {
+      if (next.phase is WizardConfiguring || next.phase is WizardInitializing) {
         context.go(RoutePath.pnp);
-      } else if (next.phase is NoInternet &&
-          prev?.phase is! NoInternet) {
+      } else if (next.phase is NoInternet && prev?.phase is! NoInternet) {
         context.go(RoutePath.pnpNoInternetConnection);
       }
     });
@@ -67,12 +65,10 @@ class PnpWaitingModemView extends ConsumerWidget {
       children: [
         Center(child: Assets.images.modemWaiting.svg(width: 200)),
         AppGap.xxxl(),
-
         AppText.headlineSmall(loc(context).pnpWaitingModemPlugBack),
         AppGap.md(),
         AppText.bodyMedium(loc(context).pnpWaitingModemDesc),
         AppGap.xxxl(),
-
         Center(
           child: AppButton(
             label: loc(context).pnpWaitingModemPluggedIn,
@@ -97,7 +93,6 @@ class PnpWaitingModemView extends ConsumerWidget {
           ),
         ),
         AppGap.xxxl(),
-
         AppText.headlineSmall(loc(context).pnpWaitingModemWaitStartUp),
         AppGap.md(),
         AppText.bodyMedium(loc(context).pnpWaitingModemDesc),
@@ -117,7 +112,6 @@ class PnpWaitingModemView extends ConsumerWidget {
           child: AppLoader(strokeWidth: 6),
         ),
         AppGap.xxxl(),
-
         AppText.headlineSmall(loc(context).pnpWaitingModemCheckingInternet),
         AppGap.md(),
         AppText.bodySmall(

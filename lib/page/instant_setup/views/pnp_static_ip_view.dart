@@ -91,13 +91,17 @@ class _PnpStaticIpViewState extends ConsumerState<PnpStaticIpView> {
               child: Row(
                 children: [
                   AppIcon.font(
-                    _showDns ? Icons.remove_circle_outline : Icons.add_circle_outline,
+                    _showDns
+                        ? Icons.remove_circle_outline
+                        : Icons.add_circle_outline,
                     color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   ),
                   AppGap.sm(),
                   AppText.bodyMedium(
-                    _showDns ? '- ${loc(context).dns}' : '+ ${loc(context).dns}',
+                    _showDns
+                        ? '- ${loc(context).dns}'
+                        : '+ ${loc(context).dns}',
                   ),
                 ],
               ),

@@ -15,9 +15,8 @@ class PnpNoInternetView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(pnpProvider);
-    final ssid = (state.phase is NoInternet)
-        ? (state.phase as NoInternet).ssid
-        : null;
+    final ssid =
+        (state.phase is NoInternet) ? (state.phase as NoInternet).ssid : null;
 
     // Listen for internet recovery → auto-navigate back to wizard.
     ref.listen(pnpProvider, (prev, next) {

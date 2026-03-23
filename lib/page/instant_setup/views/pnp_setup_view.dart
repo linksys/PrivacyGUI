@@ -130,7 +130,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         stepIdx++;
       }
       if (hasMeshNodes) {
-        if (_currentStep == stepIdx) return _buildYourNetworkStep(context, phase);
+        if (_currentStep == stepIdx)
+          return _buildYourNetworkStep(context, phase);
       }
       return _buildMainWifiStep(context, phase);
     }
@@ -247,7 +248,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             hasMeshStep
                 ? AppButton(
                     label: loc(context).next,
-                    onTap: () => setState(() => _currentStep = _currentStep + 1),
+                    onTap: () =>
+                        setState(() => _currentStep = _currentStep + 1),
                   )
                 : AppButton(
                     label: loc(context).save,

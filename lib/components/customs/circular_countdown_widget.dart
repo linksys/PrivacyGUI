@@ -23,8 +23,7 @@ class CircularCountdownWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        totalSeconds > 0 ? remainingSeconds / totalSeconds : 0.0;
+    final progress = totalSeconds > 0 ? remainingSeconds / totalSeconds : 0.0;
     final colorScheme = Theme.of(context).colorScheme;
 
     return SizedBox(

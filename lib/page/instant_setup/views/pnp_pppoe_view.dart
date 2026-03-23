@@ -94,7 +94,9 @@ class _PnpPppoeViewState extends ConsumerState<PnpPppoeView> {
               child: Row(
                 children: [
                   AppIcon.font(
-                    _showVlan ? Icons.remove_circle_outline : Icons.add_circle_outline,
+                    _showVlan
+                        ? Icons.remove_circle_outline
+                        : Icons.add_circle_outline,
                     color: Theme.of(context).colorScheme.primary,
                     size: 20,
                   ),
