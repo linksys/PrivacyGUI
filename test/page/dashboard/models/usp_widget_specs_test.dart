@@ -31,7 +31,8 @@ void main() {
     test('non-hideable cards: stats_panel, device_info, network_status', () {
       final nonHideable =
           UspWidgetSpecs.all.where((s) => !s.canHide).map((s) => s.id).toSet();
-      expect(nonHideable, containsAll(['stats_panel', 'device_info', 'network_status']));
+      expect(nonHideable,
+          containsAll(['stats_panel', 'device_info', 'network_status']));
     });
   });
 
@@ -363,9 +364,11 @@ void main() {
       final ids = UspDashboardPresetIds.essential;
       final layout = UspWidgetSpecs.createLayoutForCards(ids);
       final layoutIds = layout.map((i) => i.id).toSet();
-      expect(layoutIds, containsAll(ids.where(
-        (id) => UspWidgetSpecs.getById(id) != null,
-      )));
+      expect(
+          layoutIds,
+          containsAll(ids.where(
+            (id) => UspWidgetSpecs.getById(id) != null,
+          )));
     });
 
     test('respects input order for left-right placement', () {

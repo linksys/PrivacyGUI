@@ -138,19 +138,20 @@ void main() {
       final controllerNotifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
       await controllerNotifier.applyPreset(UspDashboardPreset.essential);
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 6);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          6);
 
       // Toggle OFF → should reset controller layout
       final notifier = container.read(uspLayoutPreferencesProvider.notifier);
       await notifier.toggleCustomLayout(false);
 
       // Controller should be reset to default 17 items
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
       expect(layout.length, 17);
     });
 
@@ -345,9 +346,8 @@ void main() {
       final notifier = container.read(uspLayoutPreferencesProvider.notifier);
       await notifier.selectPreset(UspDashboardPreset.essential);
 
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
       expect(layout.length, 6);
     });
 
@@ -449,18 +449,19 @@ void main() {
       final controllerNotifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
       await controllerNotifier.applyPreset(UspDashboardPreset.essential);
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 6);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          6);
 
       // Reset defaults should also reset controller
       final notifier = container.read(uspLayoutPreferencesProvider.notifier);
       await notifier.resetToDefaults();
 
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
       expect(layout.length, 17);
     });
   });

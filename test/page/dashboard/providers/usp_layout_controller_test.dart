@@ -102,7 +102,8 @@ void main() {
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
       final ids = layout.map((item) => (item as Map)['id']).toSet();
-      expect(ids, containsAll(['stats_panel', 'device_info', 'network_status']));
+      expect(
+          ids, containsAll(['stats_panel', 'device_info', 'network_status']));
     });
 
     test('saved layout with unknown ID → resets to 17 default items', () async {
@@ -119,7 +120,8 @@ void main() {
       expect(layout.length, 17);
     });
 
-    test('saved layout with unknown ID → saves default over bad data', () async {
+    test('saved layout with unknown ID → saves default over bad data',
+        () async {
       final savedLayout = [
         _layoutItem('unknown_widget_xyz', x: 0, y: 0),
       ];
@@ -188,9 +190,8 @@ void main() {
 
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
-      final statsPanel =
-          layout.firstWhere((item) => (item as Map)['id'] == 'stats_panel')
-              as Map;
+      final statsPanel = layout
+          .firstWhere((item) => (item as Map)['id'] == 'stats_panel') as Map;
       expect(statsPanel['w'], 12);
       expect(statsPanel['y'], 0);
     });
@@ -202,8 +203,7 @@ void main() {
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
       expect(notifier, isA<UspSliverDashboardControllerNotifier>());
-      expect(
-          container.read(uspSliverDashboardControllerProvider), isNotNull);
+      expect(container.read(uspSliverDashboardControllerProvider), isNotNull);
     });
   });
 
@@ -253,17 +253,21 @@ void main() {
           container.read(uspSliverDashboardControllerProvider.notifier);
       // First reduce layout via preset
       await notifier.applyPreset(UspDashboardPreset.essential);
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 6);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          6);
 
       // Reset
       await notifier.resetLayout();
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 17);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          17);
     });
 
     test('removes prefs key', () async {
@@ -310,8 +314,8 @@ void main() {
 
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
-      final item = layout.firstWhere(
-              (i) => (i as Map)['id'] == 'device_info') as Map;
+      final item =
+          layout.firstWhere((i) => (i as Map)['id'] == 'device_info') as Map;
       expect(item['w'], 8);
       expect(item['h'], 5);
     });
@@ -348,8 +352,8 @@ void main() {
       final saved = prefs.getString(pUspSliverDashboardLayout);
       expect(saved, isNotNull);
       final decoded = jsonDecode(saved!) as List;
-      final item = decoded.firstWhere(
-              (i) => (i as Map)['id'] == 'device_info') as Map;
+      final item =
+          decoded.firstWhere((i) => (i as Map)['id'] == 'device_info') as Map;
       expect(item['w'], 8);
       expect(item['h'], 5);
     });
@@ -362,8 +366,8 @@ void main() {
           container.read(uspSliverDashboardControllerProvider.notifier);
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
-      final item = layout.firstWhere(
-              (i) => (i as Map)['id'] == 'device_info') as Map;
+      final item =
+          layout.firstWhere((i) => (i as Map)['id'] == 'device_info') as Map;
       final originalW = item['w'] as int;
       final originalH = item['h'] as int;
 
@@ -410,9 +414,8 @@ void main() {
       await notifier.applyPreset(UspDashboardPreset.essential);
 
       // Calculate current maxY
-      final beforeLayout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
+      final beforeLayout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
       int maxY = 0;
       for (final item in beforeLayout) {
         final map = item as Map;
@@ -423,11 +426,10 @@ void main() {
 
       await notifier.addWidget('topology');
 
-      final afterLayout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
-      final newItem = afterLayout
-          .firstWhere((i) => (i as Map)['id'] == 'topology') as Map;
+      final afterLayout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
+      final newItem =
+          afterLayout.firstWhere((i) => (i as Map)['id'] == 'topology') as Map;
       // After compaction the y might shift, but should be at or beyond maxY
       expect(newItem['y'], greaterThanOrEqualTo(maxY - 1));
     });
@@ -500,11 +502,10 @@ void main() {
 
       await notifier.addWidget('topology');
 
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
-      final newItem = layout
-          .firstWhere((i) => (i as Map)['id'] == 'topology') as Map;
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
+      final newItem =
+          layout.firstWhere((i) => (i as Map)['id'] == 'topology') as Map;
       expect(newItem['w'], greaterThan(0));
       expect(newItem['h'], greaterThan(0));
     });
@@ -519,11 +520,10 @@ void main() {
 
       await notifier.addWidget('topology');
 
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
-      final newItem = layout
-          .firstWhere((i) => (i as Map)['id'] == 'topology') as Map;
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
+      final newItem =
+          layout.firstWhere((i) => (i as Map)['id'] == 'topology') as Map;
       expect(newItem['x'], greaterThanOrEqualTo(0));
     });
 
@@ -534,17 +534,21 @@ void main() {
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
       await notifier.applyPreset(UspDashboardPreset.essential);
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 6);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          6);
 
       await notifier.addWidget('topology');
 
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 7);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          7);
     });
   });
 
@@ -560,9 +564,8 @@ void main() {
           container.read(uspSliverDashboardControllerProvider.notifier);
       await notifier.applyPreset(UspDashboardPreset.essential);
 
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
       expect(layout.length, 6);
     });
 
@@ -574,9 +577,8 @@ void main() {
           container.read(uspSliverDashboardControllerProvider.notifier);
       await notifier.applyPreset(UspDashboardPreset.monitoring);
 
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
       expect(layout.length, 8);
     });
 
@@ -588,9 +590,8 @@ void main() {
           container.read(uspSliverDashboardControllerProvider.notifier);
       await notifier.applyPreset(UspDashboardPreset.professional);
 
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
       expect(layout.length, 17);
     });
 
@@ -617,11 +618,10 @@ void main() {
           container.read(uspSliverDashboardControllerProvider.notifier);
       await notifier.applyPreset(UspDashboardPreset.essential);
 
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
-      final statsPanel = layout.firstWhere(
-              (i) => (i as Map)['id'] == 'stats_panel') as Map;
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
+      final statsPanel =
+          layout.firstWhere((i) => (i as Map)['id'] == 'stats_panel') as Map;
       expect(statsPanel['w'], 12);
       expect(statsPanel['x'], 0);
       expect(statsPanel['y'], 0);
@@ -722,16 +722,20 @@ void main() {
       expect(initialCount, 6);
 
       await notifier.addWidget('topology');
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 7);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          7);
 
       await notifier.removeWidget('topology');
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 6);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          6);
     });
 
     test('applyPreset → add → length + 1', () async {
@@ -741,16 +745,20 @@ void main() {
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
       await notifier.applyPreset(UspDashboardPreset.essential);
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 6);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          6);
 
       await notifier.addWidget('topology');
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 7);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          7);
     });
 
     test('resetLayout → applyPreset → correct count', () async {
@@ -760,16 +768,20 @@ void main() {
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
       await notifier.resetLayout();
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 17);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          17);
 
       await notifier.applyPreset(UspDashboardPreset.monitoring);
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 8);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          8);
     });
 
     test('multiple adds work sequentially', () async {
@@ -779,17 +791,21 @@ void main() {
       final notifier =
           container.read(uspSliverDashboardControllerProvider.notifier);
       await notifier.applyPreset(UspDashboardPreset.essential);
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 6);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          6);
 
       await notifier.addWidget('topology');
       await notifier.addWidget('traffic_analysis');
-      expect(container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout()
-          .length, 8);
+      expect(
+          container
+              .read(uspSliverDashboardControllerProvider)
+              .exportLayout()
+              .length,
+          8);
     });
 
     test('remove non-hideable widget still works at controller level',
@@ -802,9 +818,8 @@ void main() {
       // stats_panel is non-hideable at UI level, but controller allows it
       await notifier.removeWidget('stats_panel');
 
-      final layout = container
-          .read(uspSliverDashboardControllerProvider)
-          .exportLayout();
+      final layout =
+          container.read(uspSliverDashboardControllerProvider).exportLayout();
       final ids = layout.map((i) => (i as Map)['id']).toSet();
       expect(ids.contains('stats_panel'), isFalse);
     });
@@ -865,8 +880,8 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(pUspSliverDashboardLayout);
       final decoded = jsonDecode(saved!) as List;
-      final item = decoded.firstWhere(
-              (i) => (i as Map)['id'] == 'device_info') as Map;
+      final item =
+          decoded.firstWhere((i) => (i as Map)['id'] == 'device_info') as Map;
       expect(item['w'], 8);
       expect(item['h'], 5);
     });

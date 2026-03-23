@@ -114,7 +114,8 @@ void main() {
     });
 
     test('setMode updates displayMode', () {
-      final result = prefsWithConfigs.setMode('device_info', DisplayMode.expanded);
+      final result =
+          prefsWithConfigs.setMode('device_info', DisplayMode.expanded);
       expect(result.getMode('device_info'), DisplayMode.expanded);
     });
 
@@ -144,8 +145,8 @@ void main() {
     test('_defaultConfig uses spec index for order', () {
       const prefs = UspLayoutPreferences();
       final config = prefs.getConfig('device_info');
-      final expectedIndex = UspWidgetSpecs.all
-          .indexWhere((s) => s.id == 'device_info');
+      final expectedIndex =
+          UspWidgetSpecs.all.indexWhere((s) => s.id == 'device_info');
       expect(config.order, expectedIndex);
     });
 

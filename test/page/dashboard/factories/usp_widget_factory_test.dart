@@ -36,7 +36,8 @@ void main() {
     });
 
     test('network_status returns UspNetworkStatusCard', () {
-      expect(factory.buildWidget('network_status'), isA<UspNetworkStatusCard>());
+      expect(
+          factory.buildWidget('network_status'), isA<UspNetworkStatusCard>());
     });
 
     test('topology returns UspNetworkTopologyCard', () {
