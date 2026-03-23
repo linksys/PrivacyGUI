@@ -78,20 +78,21 @@ class _DemoGeolocationNotifier extends GeolocationNotifier {
 // Demo Notifier Implementations
 // ============================================================================
 
-/// Demo auth notifier that simulates logged-in state
+/// Demo auth notifier — starts unauthenticated so PnP flow runs first.
+///
+/// - [build] returns [LoginType.none] (initial state before PnP).
+/// - [init] returns [LoginType.local] (simulates stored credentials found).
+/// - After PnP completes, [localLogin] sets state to [LoginType.local].
 class _DemoAuthNotifier extends AuthNotifier {
   @override
   Future<AuthState> build() async {
-    debugPrint('Demo: Auth initialized with local login');
-    return AuthState(
-      loginType: LoginType.local,
-      localPassword: 'demo-password',
-    );
+    debugPrint('Demo: Auth initialized as none (PnP flow will run)');
+    return AuthState(loginType: LoginType.none);
   }
 
   @override
   Future<AuthState?> init() async {
-    debugPrint('Demo: Auth init called - preserving local login');
+    debugPrint('Demo: Auth init called - returning local login');
     final demoState = AuthState(
       loginType: LoginType.local,
       localPassword: 'demo-password',

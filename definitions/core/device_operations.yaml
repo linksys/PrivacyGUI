@@ -1,0 +1,13 @@
+name: DeviceOperations
+description: Device lifecycle operations (reboot, factory reset)
+type: operate
+category: core
+
+operations:
+  - name: reboot
+    path: Device.Reboot()
+    description: Reboot the router
+
+  - name: factoryReset
+    path: Device.FactoryReset()
+    description: Reset router to factory defaults

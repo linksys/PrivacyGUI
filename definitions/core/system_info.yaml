@@ -49,3 +49,18 @@ parameters:
     path: .ProcessStatus.CPUUsage
     type: int
     description: CPU usage percentage (0-100)
+
+  - field_name: firstUseDate
+    path: .FirstUseDate
+    type: string
+    description: First use date (0001-01-01T00:00:00Z if never configured)
+
+  - field_name: description
+    path: .Description
+    type: string
+    description: Device description
+
+  - field_name: productClass
+    path: .ProductClass
+    type: string
+    description: Product class identifier

@@ -15,6 +15,9 @@ class SystemInfo {
   final int totalMemory;
   final int freeMemory;
   final int cpuUsage;
+  final String firstUseDate;
+  final String description;
+  final String productClass;
 
   const SystemInfo({
     required this.manufacturer,
@@ -26,6 +29,9 @@ class SystemInfo {
     required this.totalMemory,
     required this.freeMemory,
     required this.cpuUsage,
+    required this.firstUseDate,
+    required this.description,
+    required this.productClass,
   });
 
   static const _paths = [
@@ -38,6 +44,9 @@ class SystemInfo {
     'Device.DeviceInfo.MemoryStatus.Total',
     'Device.DeviceInfo.MemoryStatus.Free',
     'Device.DeviceInfo.ProcessStatus.CPUUsage',
+    'Device.DeviceInfo.FirstUseDate',
+    'Device.DeviceInfo.Description',
+    'Device.DeviceInfo.ProductClass',
   ];
 
   /// Fetch all parameters via USP Get message
@@ -73,6 +82,11 @@ class SystemInfo {
                       ?.toString() ??
                   '') ??
           0,
+      firstUseDate:
+          (response['Device.DeviceInfo.FirstUseDate'] ?? '') as String,
+      description: (response['Device.DeviceInfo.Description'] ?? '') as String,
+      productClass:
+          (response['Device.DeviceInfo.ProductClass'] ?? '') as String,
     );
   }
 
@@ -87,7 +101,10 @@ class SystemInfo {
         'uptime: $uptime, '
         'totalMemory: $totalMemory, '
         'freeMemory: $freeMemory, '
-        'cpuUsage: $cpuUsage'
+        'cpuUsage: $cpuUsage, '
+        'firstUseDate: $firstUseDate, '
+        'description: $description, '
+        'productClass: $productClass'
         ')';
   }
 }
