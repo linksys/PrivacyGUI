@@ -648,8 +648,7 @@ void main() {
     test('fromMap() round-trips correctly', () {
       final p = Preservable(original: original, current: current);
       final map = p.toMap((v) => v.toMap());
-      final restored =
-          Preservable.fromMap(map, (m) => TestSettings.fromMap(m));
+      final restored = Preservable.fromMap(map, (m) => TestSettings.fromMap(m));
 
       expect(restored.original, equals(original));
       expect(restored.current, equals(current));
@@ -666,12 +665,12 @@ void main() {
     }, tags: 'dirty-guard-framework');
 
     test('props contains original and current for Equatable comparison', () {
-      final p1 =
-          Preservable(original: const TestSettings('a'), current: const TestSettings('b'));
-      final p2 =
-          Preservable(original: const TestSettings('a'), current: const TestSettings('b'));
-      final p3 =
-          Preservable(original: const TestSettings('a'), current: const TestSettings('c'));
+      final p1 = Preservable(
+          original: const TestSettings('a'), current: const TestSettings('b'));
+      final p2 = Preservable(
+          original: const TestSettings('a'), current: const TestSettings('b'));
+      final p3 = Preservable(
+          original: const TestSettings('a'), current: const TestSettings('c'));
 
       expect(p1, equals(p2));
       expect(p1, isNot(equals(p3)));
