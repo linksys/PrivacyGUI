@@ -1,13 +1,38 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
 import '../helpers.dart';
 import '../mocks.dart';
+
+/// Mock that captures injected callbacks instead of swallowing them.
+///
+/// SseManager injects `_handleSseSubscribe` and `_onTokenRefreshed` via
+/// setters. The standard [MockUspService] mocks the setters to no-op,
+/// losing the references. This class stores them for direct invocation.
+class _CapturingUspService extends Mock implements UspService {
+  SseSubscribeDelegate? capturedSseSubscribe;
+  VoidCallback? capturedTokenRefreshed;
+
+  @override
+  set onSseSubscribe(SseSubscribeDelegate? value) =>
+      capturedSseSubscribe = value;
+
+  @override
+  SseSubscribeDelegate? get onSseSubscribe => capturedSseSubscribe;
+
+  @override
+  set onTokenRefreshed(VoidCallback? value) => capturedTokenRefreshed = value;
+
+  @override
+  VoidCallback? get onTokenRefreshed => capturedTokenRefreshed;
+}
 
 void main() {
   late MockUspBridgeClient mockBridge;
@@ -376,6 +401,312 @@ void main() {
 
       verify(() => mockUsp.onSseSubscribe = null).called(1);
       verify(() => mockUsp.onTokenRefreshed = null).called(1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Passthrough methods
+  // ---------------------------------------------------------------------------
+  group('passthrough methods', () {
+    test('disconnect delegates to connection', () async {
+      final manager = createManager();
+      await manager.connect();
+      streamController.add(heartbeatEvent());
+      await Future.delayed(Duration.zero);
+
+      expect(manager.isConnected, isTrue);
+      await manager.disconnect();
+      expect(manager.isConnected, isFalse);
+
+      await manager.dispose();
+    });
+
+    test('tryReconnect delegates to connection', () async {
+      final manager = createManager();
+
+      // From disconnected state, tryReconnect should start a connection
+      final result = await manager.tryReconnect();
+      expect(result, isTrue);
+
+      await manager.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // _handleSseSubscribe (SSE delegate injected into UspService)
+  // ---------------------------------------------------------------------------
+  group('_handleSseSubscribe (SSE delegate)', () {
+    late _CapturingUspService capturingUsp;
+    late SseManager manager;
+
+    setUp(() {
+      capturingUsp = _CapturingUspService();
+      manager = SseManager(usp: capturingUsp, bridge: mockBridge);
+    });
+
+    tearDown(() async {
+      await manager.dispose();
+    });
+
+    test('delegate is injected into UspService', () {
+      expect(capturingUsp.capturedSseSubscribe, isNotNull);
+    });
+
+    test('delegate registers subscription on registry', () async {
+      final result = await capturingUsp.capturedSseSubscribe!(
+        subscriptionId: 'codegen-sub',
+        notifType: 'ValueChange',
+        referenceList: 'Device.WiFi.SSID.',
+        onNotification: () {},
+      );
+
+      expect(manager.registry.activeIds, contains('codegen-sub'));
+
+      // Cleanup
+      result.removeHandler();
+      await result.unregister();
+    });
+
+    test('delegate adds wildcard handler on router', () async {
+      expect(manager.router.wildcardHandlerCount, 0);
+
+      final result = await capturingUsp.capturedSseSubscribe!(
+        subscriptionId: 'codegen-sub',
+        notifType: 'ValueChange',
+        referenceList: 'Device.WiFi.SSID.',
+        onNotification: () {},
+      );
+
+      expect(manager.router.wildcardHandlerCount, 1);
+
+      result.removeHandler();
+      await result.unregister();
+    });
+
+    test('wildcard handler fires on matching ValueChange notification',
+        () async {
+      int callCount = 0;
+
+      final result = await capturingUsp.capturedSseSubscribe!(
+        subscriptionId: 'codegen-sub',
+        notifType: 'ValueChange',
+        referenceList: 'Device.WiFi.SSID.',
+        onNotification: () => callCount++,
+      );
+
+      await manager.connect();
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-internal-id',
+        type: 'ValueChange',
+        valueChange: {'param_path': 'Device.WiFi.SSID.1.SSID'},
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(callCount, 1);
+
+      result.removeHandler();
+      await result.unregister();
+    });
+
+    test('wildcard handler fires on matching ObjectCreation notification',
+        () async {
+      int callCount = 0;
+
+      final result = await capturingUsp.capturedSseSubscribe!(
+        subscriptionId: 'codegen-sub',
+        notifType: 'ObjectCreation',
+        referenceList: 'Device.Hosts.Host.',
+        onNotification: () => callCount++,
+      );
+
+      await manager.connect();
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-internal-id',
+        type: 'ObjectCreation',
+        objCreation: {'obj_path': 'Device.Hosts.Host.5.'},
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(callCount, 1);
+
+      result.removeHandler();
+      await result.unregister();
+    });
+
+    test('wildcard handler fires on matching ObjectDeletion notification',
+        () async {
+      int callCount = 0;
+
+      final result = await capturingUsp.capturedSseSubscribe!(
+        subscriptionId: 'codegen-sub',
+        notifType: 'ObjectDeletion',
+        referenceList: 'Device.Hosts.Host.',
+        onNotification: () => callCount++,
+      );
+
+      await manager.connect();
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-internal-id',
+        type: 'ObjectDeletion',
+        objDeletion: {'obj_path': 'Device.Hosts.Host.3.'},
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(callCount, 1);
+
+      result.removeHandler();
+      await result.unregister();
+    });
+
+    test('wildcard handler ignores non-matching type', () async {
+      int callCount = 0;
+
+      final result = await capturingUsp.capturedSseSubscribe!(
+        subscriptionId: 'codegen-sub',
+        notifType: 'ValueChange',
+        referenceList: 'Device.WiFi.SSID.',
+        onNotification: () => callCount++,
+      );
+
+      await manager.connect();
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-internal-id',
+        type: 'ObjectCreation',
+        objCreation: {'obj_path': 'Device.WiFi.SSID.1.'},
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(callCount, 0);
+
+      result.removeHandler();
+      await result.unregister();
+    });
+
+    test('wildcard handler ignores non-matching path prefix', () async {
+      int callCount = 0;
+
+      final result = await capturingUsp.capturedSseSubscribe!(
+        subscriptionId: 'codegen-sub',
+        notifType: 'ValueChange',
+        referenceList: 'Device.WiFi.SSID.',
+        onNotification: () => callCount++,
+      );
+
+      await manager.connect();
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-internal-id',
+        type: 'ValueChange',
+        valueChange: {'param_path': 'Device.Hosts.Host.1.Active'},
+      ));
+      await Future.delayed(Duration.zero);
+
+      expect(callCount, 0);
+
+      result.removeHandler();
+      await result.unregister();
+    });
+
+    test('wildcard handler ignores unknown notification type', () async {
+      int callCount = 0;
+
+      final result = await capturingUsp.capturedSseSubscribe!(
+        subscriptionId: 'codegen-sub',
+        notifType: 'SomeUnknownType',
+        referenceList: 'Device.Test.',
+        onNotification: () => callCount++,
+      );
+
+      await manager.connect();
+      streamController.add(notificationEvent(
+        subscriptionId: 'cpe-internal-id',
+        type: 'SomeUnknownType',
+      ));
+      await Future.delayed(Duration.zero);
+
+      // _extractNotifPath returns null for unknown type → path check fails
+      expect(callCount, 0);
+
+      result.removeHandler();
+      await result.unregister();
+    });
+
+    test('cleanup removes handler and unregisters subscription', () async {
+      final result = await capturingUsp.capturedSseSubscribe!(
+        subscriptionId: 'codegen-sub',
+        notifType: 'ValueChange',
+        referenceList: 'Device.Test.',
+        onNotification: () {},
+      );
+
+      expect(manager.registry.activeIds, contains('codegen-sub'));
+      expect(manager.router.wildcardHandlerCount, 1);
+
+      result.removeHandler();
+      await result.unregister();
+
+      expect(manager.registry.activeIds, isNot(contains('codegen-sub')));
+      expect(manager.router.wildcardHandlerCount, 0);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // onTokenRefreshed callback
+  // ---------------------------------------------------------------------------
+  group('onTokenRefreshed callback', () {
+    test('forces disconnect then reconnect', () async {
+      final capturingUsp = _CapturingUspService();
+      final manager = SseManager(usp: capturingUsp, bridge: mockBridge);
+
+      await manager.connect();
+      streamController.add(heartbeatEvent());
+      await Future.delayed(Duration.zero);
+      expect(manager.isConnected, isTrue);
+
+      // The onTokenRefreshed callback disconnects then reconnects
+      // Create a new stream for the reconnection
+      final newStreamController = StreamController<SseEvent>();
+      when(() => mockBridge.notifications())
+          .thenAnswer((_) => newStreamController.stream);
+
+      capturingUsp.capturedTokenRefreshed!();
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Connection should attempt reconnect (may be connecting or connected)
+      expect(manager.connection.connectionState.value,
+          isNot(SseConnectionState.suspended));
+
+      newStreamController.close();
+      await manager.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // registerDeferredSubscriptions error handling
+  // ---------------------------------------------------------------------------
+  group('registerDeferredSubscriptions error handling', () {
+    test('logs and continues when registration fails', () async {
+      // Make bridge.subscribe throw for specific subscription
+      when(() => mockBridge.subscribe(
+            subscriptionId: 'fail-sub',
+            path: any(named: 'path'),
+            notifType: any(named: 'notifType'),
+          )).thenThrow(Exception('bridge error'));
+
+      final manager = createManager();
+
+      manager.setCoreSubscriptions([
+        ('fail-sub', 'ValueChange', 'Device.Fail.'),
+        ('ok-sub', 'ValueChange', 'Device.OK.'),
+      ]);
+
+      await manager.connect();
+      streamController.add(heartbeatEvent());
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // ok-sub should still be registered despite fail-sub throwing
+      expect(manager.registry.activeIds, contains('ok-sub'));
+
+      await manager.dispose();
     });
   });
 }

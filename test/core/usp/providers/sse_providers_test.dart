@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -67,8 +66,8 @@ void main() {
       container.dispose();
     });
 
-    test('emits on connectionState changes', () async {
-      final notifier = ValueNotifier(SseConnectionState.disconnected);
+    test('emits on connectionState changes via ValueNotifier listener',
+        () async {
       final connection = SseConnectionManager(mockBridge);
 
       when(() => mockManager.connection).thenReturn(connection);
@@ -83,7 +82,12 @@ void main() {
       // Initial state emitted
       expect(states.last, SseConnectionState.disconnected);
 
-      notifier.dispose();
+      // Change the ValueNotifier value to trigger the listener callback
+      connection.connectionState.value = SseConnectionState.connected;
+      await Future.delayed(Duration.zero);
+
+      expect(states.last, SseConnectionState.connected);
+
       connection.dispose();
       container.dispose();
     });

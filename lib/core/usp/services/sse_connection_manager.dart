@@ -39,7 +39,11 @@ class SseConnectionManager {
     int? maxRetries,
   })  : _initialBackoff = initialBackoff ?? _defaultInitialBackoff,
         _maxBackoff = maxBackoff ?? _defaultMaxBackoff,
-        _maxRetries = maxRetries ?? _defaultMaxRetries;
+        _maxRetries = maxRetries ?? _defaultMaxRetries {
+    assert(!_initialBackoff.isNegative, 'initialBackoff must not be negative');
+    assert(!_maxBackoff.isNegative, 'maxBackoff must not be negative');
+    assert(_maxRetries >= 0, 'maxRetries must not be negative');
+  }
 
   // ══════════════════════════════════════════════════════════════════════════
   // Configuration
