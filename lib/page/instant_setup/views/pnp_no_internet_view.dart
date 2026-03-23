@@ -14,6 +14,11 @@ class PnpNoInternetView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(pnpProvider);
+    final ssid = (state.phase is NoInternet)
+        ? (state.phase as NoInternet).ssid
+        : null;
+
     // Listen for internet recovery → auto-navigate back to wizard.
     ref.listen(pnpProvider, (prev, next) {
       if (next.phase is WizardConfiguring || next.phase is WizardInitializing) {
@@ -23,7 +28,7 @@ class PnpNoInternetView extends ConsumerWidget {
 
     return UiKitPageView(
       appBarStyle: UiKitAppBarStyle.back,
-      title: loc(context).pnpUnplugModemTitle,
+      title: ssid ?? loc(context).pnpUnplugModemTitle,
       scrollable: true,
       onBackTap: () => context.go(RoutePath.pnp),
       child: (context, constraints) => Padding(
@@ -34,7 +39,7 @@ class PnpNoInternetView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(Icons.wifi_off, size: 64),
+            Center(child: Assets.images.noInternetConnection.svg(width: 200)),
             AppGap.lg(),
             AppText.headlineSmall(loc(context).pnpErrorForStaticIpAndDhcp),
             AppGap.xxxl(),
@@ -47,7 +52,7 @@ class PnpNoInternetView extends ConsumerWidget {
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Row(
                     children: [
-                      const Icon(Icons.power_settings_new),
+                      AppIcon.font(Icons.power_settings_new),
                       AppGap.md(),
                       Expanded(
                         child: Column(
@@ -64,7 +69,7 @@ class PnpNoInternetView extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right),
+                      AppIcon.font(Icons.chevron_right),
                     ],
                   ),
                 ),
@@ -80,7 +85,7 @@ class PnpNoInternetView extends ConsumerWidget {
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   child: Row(
                     children: [
-                      const Icon(Icons.settings_ethernet),
+                      AppIcon.font(Icons.settings_ethernet),
                       AppGap.md(),
                       Expanded(
                         child: Column(
@@ -96,7 +101,7 @@ class PnpNoInternetView extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right),
+                      AppIcon.font(Icons.chevron_right),
                     ],
                   ),
                 ),

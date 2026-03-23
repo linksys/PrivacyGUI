@@ -62,6 +62,11 @@ import 'package:privacy_gui/page/instant_setup/views/pnp_admin_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_setup_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_no_internet_view.dart';
 import 'package:privacy_gui/page/instant_setup/views/pnp_isp_settings_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_unplug_modem_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_modem_lights_off_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_waiting_modem_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_pppoe_view.dart';
+import 'package:privacy_gui/page/instant_setup/views/pnp_static_ip_view.dart';
 
 part 'route_home.dart';
 part 'route_local_login.dart';
@@ -144,7 +149,7 @@ class RouterNotifier extends ChangeNotifier {
     logger.i('[Route]: [AutoConfigurationLogic]: loginType=$loginType');
 
     // If no stored credentials, check if PnP has been completed before.
-    if (loginType == LoginType.none) {
+    if (loginType == LoginType.none && !BuildConfig.skipPnp) {
       final prefs = await SharedPreferences.getInstance();
       final pnpConfiguredSN = prefs.getString(pPnpConfiguredSN);
       if (pnpConfiguredSN == null || pnpConfiguredSN.isEmpty) {

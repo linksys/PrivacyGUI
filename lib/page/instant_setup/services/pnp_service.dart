@@ -9,6 +9,7 @@ import 'package:privacy_gui/generated/wan_settings.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 
@@ -273,6 +274,25 @@ class PnpService {
           dnsServer1: config.dnsServer1,
           dnsServer2: config.dnsServer2,
         );
+    }
+  }
+
+  // ─── Mesh ──────────────────────────────────────────────
+
+  /// Fetch mesh node list via DataElements (returns empty if non-mesh).
+  Future<MeshTopologyInfo> fetchMeshTopology() async {
+    return fetchMeshNodes(_usp);
+  }
+
+  // ─── Utility ────────────────────────────────────────────
+
+  /// Fetch the primary WiFi SSID name (for display in no-internet view).
+  Future<String?> fetchCurrentSsid() async {
+    try {
+      final ssids = await WiFiSsids.fetch(_usp);
+      return ssids.items.isNotEmpty ? ssids.items.first.ssid : null;
+    } catch (_) {
+      return null;
     }
   }
 

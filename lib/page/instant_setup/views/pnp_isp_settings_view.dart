@@ -9,58 +9,32 @@ import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// ISP type selection + PPPoE / Static IP configuration forms.
-class PnpIspSettingsView extends ConsumerStatefulWidget {
-  final IspConnectionType? initialType;
-
-  const PnpIspSettingsView({super.key, this.initialType});
+/// ISP type selection hub — navigate to PPPoE, Static IP, or trigger DHCP.
+class PnpIspSettingsView extends ConsumerWidget {
+  const PnpIspSettingsView({super.key});
 
   @override
-  ConsumerState<PnpIspSettingsView> createState() => _PnpIspSettingsViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pnpState = ref.watch(pnpProvider);
+    final phase = pnpState.phase;
 
-class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
-  late IspConnectionType _selectedType;
-  final _pppUsernameController = TextEditingController();
-  final _pppPasswordController = TextEditingController();
-  final _pppServiceController = TextEditingController();
-  final _staticIpController = TextEditingController();
-  final _subnetController = TextEditingController();
-  final _gatewayController = TextEditingController();
-  final _dns1Controller = TextEditingController();
-  final _dns2Controller = TextEditingController();
-  bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedType = widget.initialType ?? IspConnectionType.dhcp;
-  }
-
-  @override
-  void dispose() {
-    _pppUsernameController.dispose();
-    _pppPasswordController.dispose();
-    _pppServiceController.dispose();
-    _staticIpController.dispose();
-    _subnetController.dispose();
-    _gatewayController.dispose();
-    _dns1Controller.dispose();
-    _dns2Controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Listen for internet recovery
+    // Listen for internet recovery or ISP save progress
     ref.listen(pnpProvider, (prev, next) {
       if (next.phase is WizardConfiguring || next.phase is WizardInitializing) {
         context.go(RoutePath.pnp);
       }
-      if (next.phase is NoInternet) {
-        setState(() => _saving = false);
-      }
     });
+
+    // Show save progress if ISP is being saved
+    if (phase is IspSaving) {
+      return UiKitPageView(
+        appBarStyle: UiKitAppBarStyle.none,
+        title: loc(context).pnpIspTypeSelectionTitle,
+        child: (context, constraints) => Center(
+          child: _buildSaveProgress(context, phase),
+        ),
+      );
+    }
 
     return UiKitPageView(
       appBarStyle: UiKitAppBarStyle.back,
@@ -72,94 +46,43 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.lg,
         ),
-        child: _saving ? _buildSaving(context) : _buildForm(context),
-      ),
-    );
-  }
-
-  Widget _buildSaving(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          AppGap.lg(),
-          AppText.bodyMedium(loc(context).pnpSavingChangesDesc),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildForm(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // ISP type selection
-        AppText.titleMedium(loc(context).pnpIspTypeSelectionTitle),
-        AppGap.lg(),
-        _buildTypeOption(
-          context,
-          IspConnectionType.dhcp,
-          'DHCP',
-          loc(context).pnpIspTypeSelectionDhcpDesc,
-        ),
-        _buildTypeOption(
-          context,
-          IspConnectionType.pppoe,
-          'PPPoE',
-          loc(context).pnpIspTypeSelectionPppoeDesc,
-        ),
-        _buildTypeOption(
-          context,
-          IspConnectionType.staticIp,
-          loc(context).ipAddress,
-          loc(context).pnpIspTypeSelectionStaticDesc,
-        ),
-        AppGap.xl(),
-
-        // Type-specific form fields
-        if (_selectedType == IspConnectionType.pppoe) _buildPppoeForm(context),
-        if (_selectedType == IspConnectionType.staticIp)
-          _buildStaticIpForm(context),
-
-        AppGap.xxxl(),
-
-        // Save button
-        AppButton(
-          label: loc(context).save,
-          onTap: _onSave,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTypeOption(
-    BuildContext context,
-    IspConnectionType type,
-    String title,
-    String description,
-  ) {
-    final isSelected = _selectedType == type;
-    return InkWell(
-      onTap: () => setState(() => _selectedType = type),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: isSelected ? Theme.of(context).colorScheme.primary : null,
+            AppText.headlineSmall(loc(context).pnpIspTypeSelectionTitle),
+            AppGap.xxxl(),
+
+            // DHCP
+            _buildTypeCard(
+              context,
+              icon: Icons.refresh,
+              title: 'DHCP',
+              description: loc(context).pnpIspTypeSelectionDhcpDesc,
+              onTap: () {
+                ref.read(pnpProvider.notifier).saveIspWithProgress(
+                      const PnpIspConfig(type: IspConnectionType.dhcp),
+                    );
+              },
             ),
             AppGap.md(),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.titleSmall(title),
-                  AppGap.xs(),
-                  AppText.bodySmall(description),
-                ],
-              ),
+
+            // PPPoE
+            _buildTypeCard(
+              context,
+              icon: Icons.vpn_key_outlined,
+              title: 'PPPoE',
+              description: loc(context).pnpIspTypeSelectionPppoeDesc,
+              onTap: () => context.goNamed(RouteNamed.pnpPPPOE),
+            ),
+            AppGap.md(),
+
+            // Static IP
+            _buildTypeCard(
+              context,
+              icon: Icons.pin_outlined,
+              title: loc(context).ipAddress,
+              description: loc(context).pnpIspTypeSelectionStaticDesc,
+              onTap: () => context.goNamed(RouteNamed.pnpStaticIp),
             ),
           ],
         ),
@@ -167,96 +90,82 @@ class _PnpIspSettingsViewState extends ConsumerState<PnpIspSettingsView> {
     );
   }
 
-  Widget _buildPppoeForm(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppText.titleSmall(loc(context).pnpPppoeTitle),
-        AppGap.lg(),
-        AppText.labelMedium(loc(context).username),
-        AppGap.xs(),
-        AppTextField(
-          hintText: loc(context).username,
-          controller: _pppUsernameController,
+  Widget _buildTypeCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    return AppCard(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              AppIcon.font(icon, size: 28),
+              AppGap.md(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.titleSmall(title),
+                    AppGap.xs(),
+                    AppText.bodySmall(description),
+                  ],
+                ),
+              ),
+              AppIcon.font(Icons.chevron_right),
+            ],
+          ),
         ),
-        AppGap.md(),
-        AppText.labelMedium(loc(context).password),
-        AppGap.xs(),
-        AppTextField(
-          hintText: loc(context).password,
-          controller: _pppPasswordController,
-          obscureText: true,
-        ),
-        AppGap.md(),
-        AppText.labelMedium(loc(context).pnpPppoeDesc),
-        AppGap.xs(),
-        AppTextField(
-          hintText: loc(context).pnpPppoeTitle,
-          controller: _pppServiceController,
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildStaticIpForm(BuildContext context) {
+  Widget _buildSaveProgress(BuildContext context, IspSaving phase) {
+    final steps = [
+      (IspSaveStep.saving, loc(context).save),
+      (IspSaveStep.checkingSettings, loc(context).pnpIspTypeSelectionTitle),
+      (IspSaveStep.checkingInternet, loc(context).pnpWaitingModemCheckingInternet),
+    ];
+    final currentIdx = IspSaveStep.values.indexOf(phase.step);
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        AppText.titleSmall(loc(context).pnpStaticIpDesc),
-        AppGap.lg(),
-        AppText.labelMedium(loc(context).ipAddress),
-        AppGap.xs(),
-        AppTextField(
-          hintText: loc(context).ipAddress,
-          controller: _staticIpController,
-        ),
-        AppGap.md(),
-        AppText.labelMedium(loc(context).subnetMask),
-        AppGap.xs(),
-        AppTextField(
-          hintText: loc(context).subnetMask,
-          controller: _subnetController,
-        ),
-        AppGap.md(),
-        AppText.labelMedium(loc(context).defaultGateway),
-        AppGap.xs(),
-        AppTextField(
-          hintText: loc(context).defaultGateway,
-          controller: _gatewayController,
-        ),
-        AppGap.md(),
-        AppText.labelMedium('${loc(context).dns} 1'),
-        AppGap.xs(),
-        AppTextField(
-          hintText: '${loc(context).dns} 1',
-          controller: _dns1Controller,
-        ),
-        AppGap.md(),
-        AppText.labelMedium('${loc(context).dns} 2'),
-        AppGap.xs(),
-        AppTextField(
-          hintText: '${loc(context).dns} 2',
-          controller: _dns2Controller,
-        ),
+        const AppLoader(),
+        AppGap.xxxl(),
+        ...steps.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final (_, label) = entry.value;
+          final isActive = idx == currentIdx;
+          final isDone = idx < currentIdx;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppIcon.font(
+                  isDone
+                      ? Icons.check_circle
+                      : isActive
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
+                  size: 20,
+                  color: isDone || isActive
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outline,
+                ),
+                AppGap.sm(),
+                AppText.bodyMedium(label),
+              ],
+            ),
+          );
+        }),
       ],
     );
-  }
-
-  void _onSave() {
-    setState(() => _saving = true);
-
-    final config = PnpIspConfig(
-      type: _selectedType,
-      pppUsername: _pppUsernameController.text,
-      pppPassword: _pppPasswordController.text,
-      pppoeServiceName: _pppServiceController.text,
-      staticIpAddress: _staticIpController.text,
-      subnetMask: _subnetController.text,
-      defaultGateway: _gatewayController.text,
-      dnsServer1: _dns1Controller.text,
-      dnsServer2: _dns2Controller.text,
-    );
-
-    ref.read(pnpProvider.notifier).saveIspSettingsAndCheck(config);
   }
 }

@@ -77,7 +77,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
   }
 
   Widget _buildLoading(BuildContext context) {
-    return const Center(child: CircularProgressIndicator());
+    return const Center(child: AppLoader());
   }
 
   Widget _buildUnconfiguredCard(BuildContext context) {
@@ -113,10 +113,9 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
             AppGap.xl(),
             AppText.bodyMedium(loc(context).pnpRouterLoginDesc),
             AppGap.lg(),
-            AppTextField(
+            AppPasswordInput(
               controller: _passwordController,
               hintText: loc(context).routerPassword,
-              obscureText: true,
               errorText: error,
               onSubmitted: (_) => _submit(),
             ),
@@ -144,7 +143,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(),
+            const AppLoader(),
             AppGap.lg(),
             AppText.bodyMedium(loc(context).pnpWaitingModemCheckingInternet),
           ],
@@ -160,7 +159,7 @@ class _PnpAdminViewState extends ConsumerState<PnpAdminView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            AppIcon.font(Icons.error_outline, size: 48, color: Colors.red),
             AppGap.lg(),
             AppText.bodyMedium(message),
             AppGap.xl(),

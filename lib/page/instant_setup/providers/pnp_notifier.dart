@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/services/pnp_service.dart';
@@ -110,7 +111,8 @@ class PnpNotifier extends Notifier<PnpState> {
         state = state.copyWith(phase: const AdminInternetConnected());
         await _initWizard();
       } else {
-        state = state.copyWith(phase: const NoInternet());
+        final ssid = await _svc.fetchCurrentSsid();
+        state = state.copyWith(phase: NoInternet(ssid: ssid));
       }
     } catch (e) {
       logger.e('[PnP] Internet check failed: $e');
@@ -122,14 +124,22 @@ class PnpNotifier extends Notifier<PnpState> {
   // Wizard Phase
   // ══════════════════════════════════════════════════════════
 
-  /// Fetch current WiFi config and enter WizardConfiguring.
+  /// Fetch current WiFi config + mesh nodes and enter WizardConfiguring.
   Future<void> _initWizard() async {
     state = state.copyWith(phase: const WizardInitializing());
 
     try {
-      final data = await _svc.fetchWizardData();
+      final results = await Future.wait([
+        _svc.fetchWizardData(),
+        _svc.fetchMeshTopology(),
+      ]);
+      final data = results[0] as PnpWizardFetchResult;
+      final mesh = results[1] as MeshTopologyInfo;
       state = state.copyWith(
-        phase: WizardConfiguring(wifiConfig: data.wifiConfig),
+        phase: WizardConfiguring(
+          wifiConfig: data.wifiConfig,
+          meshNodes: mesh.nodes,
+        ),
       );
     } catch (e) {
       logger.e('[PnP] Wizard init failed: $e');
@@ -147,6 +157,7 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(
       phase: WizardConfiguring(
         wifiConfig: phase.wifiConfig.copyWith(ssid: ssid),
+        meshNodes: phase.meshNodes,
       ),
     );
   }
@@ -157,6 +168,7 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(
       phase: WizardConfiguring(
         wifiConfig: phase.wifiConfig.copyWith(password: password),
+        meshNodes: phase.meshNodes,
       ),
     );
   }
@@ -167,6 +179,7 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(
       phase: WizardConfiguring(
         wifiConfig: phase.wifiConfig.copyWith(guestEnabled: enabled),
+        meshNodes: phase.meshNodes,
       ),
     );
   }
@@ -187,6 +200,7 @@ class PnpNotifier extends Notifier<PnpState> {
     state = state.copyWith(
       phase: WizardConfiguring(
         wifiConfig: phase.wifiConfig.copyWith(guestPassword: password),
+        meshNodes: phase.meshNodes,
       ),
     );
   }
@@ -239,7 +253,10 @@ class PnpNotifier extends Notifier<PnpState> {
     } catch (e) {
       logger.e('[PnP] Save failed: $e');
       state = state.copyWith(
-        phase: WizardConfiguring(wifiConfig: phase.wifiConfig),
+        phase: WizardConfiguring(
+          wifiConfig: phase.wifiConfig,
+          meshNodes: phase.meshNodes,
+        ),
         errorMessage: '$e',
       );
     }
@@ -338,5 +355,87 @@ class PnpNotifier extends Notifier<PnpState> {
   Future<void> retryInternetCheck() async {
     state = state.copyWith(phase: const AdminCheckingInternet());
     await _checkInternet();
+  }
+
+  // ─── Modem Restart Flow ───────────────────────────────────
+
+  /// Start the modem restart countdown (150s).
+  /// Called when user confirms they plugged the modem back in.
+  Future<void> startModemRestartCountdown() async {
+    const total = 150;
+    for (int s = total; s >= 0; s--) {
+      // Check if user navigated away (phase changed externally)
+      if (state.phase is! ModemRestartCountdown &&
+          state.phase is! NoInternet &&
+          s < total) {
+        return;
+      }
+      state = state.copyWith(
+        phase: ModemRestartCountdown(remainingSeconds: s, totalSeconds: total),
+      );
+      if (s > 0) await Future.delayed(const Duration(seconds: 1));
+    }
+    await _modemRestartCheckInternet();
+  }
+
+  /// Poll internet after modem restart (up to 30 attempts, 5s apart).
+  Future<void> _modemRestartCheckInternet() async {
+    const maxAttempts = 30;
+    for (int i = 1; i <= maxAttempts; i++) {
+      state = state.copyWith(
+        phase: ModemRestartCheckingInternet(
+          attemptCount: i,
+          maxAttempts: maxAttempts,
+        ),
+      );
+      await Future.delayed(const Duration(seconds: 5));
+      try {
+        final hasInternet = await _svc.checkInternetConnected();
+        if (hasInternet) {
+          state = state.copyWith(phase: const AdminInternetConnected());
+          await _initWizard();
+          return;
+        }
+      } catch (_) {}
+    }
+    state = state.copyWith(phase: const NoInternet());
+  }
+
+  // ─── ISP Save with Progress ───────────────────────────────
+
+  /// Save ISP settings with multi-step progress indication.
+  Future<void> saveIspWithProgress(PnpIspConfig config) async {
+    try {
+      state = state.copyWith(
+        phase: const IspSaving(step: IspSaveStep.saving),
+      );
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.saveIspSettings(config);
+      });
+
+      state = state.copyWith(
+        phase: const IspSaving(step: IspSaveStep.checkingSettings),
+      );
+      await Future.delayed(const Duration(seconds: 3));
+
+      state = state.copyWith(
+        phase: const IspSaving(step: IspSaveStep.checkingInternet),
+      );
+      await Future.delayed(const Duration(seconds: 5));
+      await _checkInternet();
+    } catch (e) {
+      logger.e('[PnP] ISP save failed: $e');
+      state = state.copyWith(
+        phase: const NoInternet(),
+        errorMessage: '$e',
+      );
+    }
+  }
+
+  // ─── Demo ─────────────────────────────────────────────────
+
+  /// Demo only: directly set phase for UI testing.
+  void setDemoPhase(PnpPhase phase) {
+    state = state.copyWith(phase: phase);
   }
 }

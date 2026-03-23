@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/composed/app_node_list_card.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/core/utils/device_image_helper.dart';
+import 'package:privacy_gui/core/utils/icon_rules.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_state.dart';
 import 'package:privacy_gui/page/instant_setup/providers/pnp_providers.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/util/qr_code.dart';
+import 'package:privacy_gui/util/wifi_credential.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// PnP wizard — main WiFi + guest WiFi configuration (two-step stepper).
@@ -82,18 +89,20 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             WizardWifiReady(ssid: final ssid, password: final pw) =>
               _buildComplete(context, ssid, pw),
             WizardError(message: final msg) => _buildError(context, msg),
-            _ => const Center(child: CircularProgressIndicator()),
+            _ => const Center(child: AppLoader()),
           },
         );
       },
     );
   }
 
-  // ── Two-Step Stepper ──────────────────────────────────────
+  // ── Stepper ─────────────────────────────────────────────
 
   Widget _buildStepperForm(BuildContext context, WizardConfiguring phase) {
     _initControllers(phase);
     final hasGuestNetwork = phase.wifiConfig.guestSsidInstancePaths.isNotEmpty;
+    final hasMeshNodes = phase.meshNodes.length > 1;
+    final totalSteps = 1 + (hasGuestNetwork ? 1 : 0) + (hasMeshNodes ? 1 : 0);
 
     final steps = [
       StepperStep(
@@ -105,12 +114,31 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           id: 'guest',
           label: loc(context).guestWifi,
         ),
+      if (hasMeshNodes)
+        StepperStep(
+          id: 'network',
+          label: loc(context).pnpYourNetworkTitle,
+        ),
     ];
+
+    // Map step index to content builder
+    Widget buildStepContent() {
+      if (_currentStep == 0) return _buildMainWifiStep(context, phase);
+      int stepIdx = 1;
+      if (hasGuestNetwork) {
+        if (_currentStep == stepIdx) return _buildGuestWifiStep(context, phase);
+        stepIdx++;
+      }
+      if (hasMeshNodes) {
+        if (_currentStep == stepIdx) return _buildYourNetworkStep(context, phase);
+      }
+      return _buildMainWifiStep(context, phase);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (hasGuestNetwork)
+        if (totalSteps > 1)
           AppStepper(
             steps: steps,
             currentStep: _currentStep,
@@ -119,13 +147,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             stepSize: 4.0,
             interactive: false,
           ),
-        if (hasGuestNetwork) AppGap.xl(),
+        if (totalSteps > 1) AppGap.xl(),
 
         // Step content
-        if (_currentStep == 0)
-          _buildMainWifiStep(context, phase)
-        else
-          _buildGuestWifiStep(context, phase),
+        buildStepContent(),
       ],
     );
   }
@@ -133,7 +158,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   // ── Step 0: Main WiFi ──
 
   Widget _buildMainWifiStep(BuildContext context, WizardConfiguring phase) {
-    final hasGuestNetwork = phase.wifiConfig.guestSsidInstancePaths.isNotEmpty;
+    final hasNextStep = phase.wifiConfig.guestSsidInstancePaths.isNotEmpty ||
+        phase.meshNodes.length > 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,19 +174,17 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           onChanged: (v) => ref.read(pnpProvider.notifier).updateWifiSsid(v),
         ),
         AppGap.lg(),
-        AppText.labelMedium(loc(context).wifiPassword),
-        AppGap.xs(),
-        AppTextField(
+        AppPasswordInput(
+          label: loc(context).wifiPassword,
           hintText: loc(context).wifiPassword,
           controller: _wifiPasswordController,
-          obscureText: true,
           onChanged: (v) =>
               ref.read(pnpProvider.notifier).updateWifiPassword(v),
         ),
         AppGap.xxxl(),
         Align(
           alignment: Alignment.centerRight,
-          child: hasGuestNetwork
+          child: hasNextStep
               ? AppButton(
                   label: loc(context).next,
                   onTap: () => setState(() => _currentStep = 1),
@@ -177,6 +201,8 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   // ── Step 1: Guest WiFi ──
 
   Widget _buildGuestWifiStep(BuildContext context, WizardConfiguring phase) {
+    final hasMeshStep = phase.meshNodes.length > 1;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -185,7 +211,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             Expanded(
               child: AppText.titleMedium(loc(context).guestWifi),
             ),
-            Switch(
+            AppSwitch(
               value: phase.wifiConfig.guestEnabled,
               onChanged: (v) =>
                   ref.read(pnpProvider.notifier).updateGuestEnabled(v),
@@ -202,12 +228,10 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             onChanged: (v) => ref.read(pnpProvider.notifier).updateGuestSsid(v),
           ),
           AppGap.lg(),
-          AppText.labelMedium(loc(context).wifiPassword),
-          AppGap.xs(),
-          AppTextField(
+          AppPasswordInput(
+            label: loc(context).wifiPassword,
             hintText: loc(context).wifiPassword,
             controller: _guestPasswordController,
-            obscureText: true,
             onChanged: (v) =>
                 ref.read(pnpProvider.notifier).updateGuestPassword(v),
           ),
@@ -219,6 +243,61 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             AppButton.text(
               label: loc(context).back,
               onTap: () => setState(() => _currentStep = 0),
+            ),
+            hasMeshStep
+                ? AppButton(
+                    label: loc(context).next,
+                    onTap: () => setState(() => _currentStep = _currentStep + 1),
+                  )
+                : AppButton(
+                    label: loc(context).save,
+                    onTap: () => ref.read(pnpProvider.notifier).saveChanges(),
+                  ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Step: Your Network (mesh nodes) ──
+
+  Widget _buildYourNetworkStep(BuildContext context, WizardConfiguring phase) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppText.titleMedium(loc(context).pnpYourNetworkTitle),
+        AppGap.sm(),
+        AppText.bodyMedium(loc(context).pnpYourNetworkDesc),
+        AppGap.xl(),
+
+        // Node list
+        ...phase.meshNodes.asMap().entries.map((entry) {
+          final node = entry.value;
+          final isMaster = entry.key == 0;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: AppNodeListCard(
+              leading: DeviceImageHelper.getRouterImage(
+                routerIconTestByModel(modelNumber: node.model),
+              ),
+              title: node.model.isNotEmpty ? node.model : node.deviceId,
+              description: isMaster ? 'Gateway' : 'Extender',
+              trailing: AppIcon.font(
+                Icons.check_circle,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+            ),
+          );
+        }),
+
+        AppGap.xxxl(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            AppButton.text(
+              label: loc(context).back,
+              onTap: () => setState(() => _currentStep = _currentStep - 1),
             ),
             AppButton(
               label: loc(context).save,
@@ -237,7 +316,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(),
+          const AppLoader(),
           AppGap.lg(),
           AppText.bodyMedium(loc(context).pnpSavingChangesDesc),
         ],
@@ -255,7 +334,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi, size: 48),
+              AppIcon.font(Icons.wifi, size: 48),
               AppGap.lg(),
               AppText.titleMedium(loc(context).pnpReconnectWiFi),
               AppGap.md(),
@@ -284,7 +363,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(),
+          const AppLoader(),
           AppGap.lg(),
           AppText.bodyMedium(
             '${loc(context).pnpWaitingModemCheckingInternet} ($attempt/$maxAttempts)',
@@ -297,6 +376,12 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
   // ── Complete ──────────────────────────────────────────────
 
   Widget _buildComplete(BuildContext context, String ssid, String password) {
+    final wifiString = WiFiCredential(
+      ssid: ssid,
+      password: password,
+      type: SecurityType.wpa,
+    ).generate();
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
@@ -306,23 +391,95 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.check_circle, size: 64, color: Colors.green),
+                Assets.images.pnpFinishDesktop.svg(width: 120),
                 AppGap.lg(),
                 AppText.headlineSmall(loc(context).pnpWiFiReady(ssid)),
-                if (ssid.isNotEmpty) ...[
-                  AppGap.xl(),
-                  AppText.bodyMedium('${loc(context).wifiName}: $ssid'),
-                ],
-                AppGap.xxxl(),
-                AppButton(
-                  label: loc(context).done,
-                  onTap: () => context.go(RoutePath.uspDashboard),
+                AppGap.xl(),
+
+                // QR Code
+                QrImageView(
+                  data: wifiString,
+                  size: 180,
+                  backgroundColor: Colors.white,
+                ),
+                AppGap.xl(),
+
+                // WiFi Name
+                _buildCredentialRow(
+                  context,
+                  label: loc(context).wifiName,
+                  value: ssid,
+                ),
+                AppGap.sm(),
+
+                // WiFi Password
+                _buildCredentialRow(
+                  context,
+                  label: loc(context).wifiPassword,
+                  value: password,
+                ),
+                AppGap.xl(),
+
+                // Actions
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AppButton.text(
+                      label: loc(context).print,
+                      icon: AppIcon.font(Icons.print_outlined, size: 18),
+                      onTap: () async {
+                        final imageBytes = await createWiFiQRCode(
+                          WiFiCredential(
+                            ssid: ssid,
+                            password: password,
+                            type: SecurityType.wpa,
+                          ),
+                        );
+                        if (context.mounted) {
+                          await printWiFiQRCode(
+                              context, imageBytes, ssid, password);
+                        }
+                      },
+                    ),
+                    AppGap.lg(),
+                    AppButton(
+                      label: loc(context).done,
+                      onTap: () => context.go(RoutePath.uspDashboard),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCredentialRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppText.bodyMedium('$label: '),
+        AppText.titleSmall(value),
+        AppGap.xs(),
+        GestureDetector(
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: value));
+            AppToast.show(
+              context,
+              type: ToastType.success,
+              title: loc(context).sharedCopied,
+            );
+          },
+          child: AppIcon.font(Icons.copy, size: 16),
+        ),
+      ],
     );
   }
 
@@ -333,7 +490,7 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          AppIcon.font(Icons.error_outline, size: 48, color: Colors.red),
           AppGap.lg(),
           AppText.bodyMedium(message),
           AppGap.xl(),

@@ -1,7 +1,7 @@
 # PnP USP Migration Analysis Report
 
 > Investigation date: 2026-03-20
-> Last updated: 2026-03-20 (P1 implementation complete)
+> Last updated: 2026-03-23 (P2 UI implementation complete)
 > Router firmware: 1.0.16.26013014 (M60TB-EU / PINNACLE 2.0)
 > USP bridge: v0.1.1 | OBUSPA: TR-181 2.18.1
 
@@ -340,30 +340,38 @@ Readable/writable via existing `WiFiSsids` and `WiFiAccessPoints` generated clas
 | `WanOperations` | `wan_operations.g.dart` | DHCP lease renewal |
 | `LanNetworkInfo` | `lan_network_info.g.dart` | LAN IP / DHCP pool |
 
-## 7. Implemented Architecture (P1)
+## 7. Implemented Architecture (P0 + P1 + P2)
 
 ```
 lib/page/instant_setup/
 ├── models/
-│   ├── pnp_state.dart             ← Sealed class hierarchy: PnpPhase (17 states)
+│   ├── pnp_state.dart             ← Sealed class hierarchy: PnpPhase (22 states)
 │   ├── pnp_wifi_config.dart       ← WiFi form model (main + guest, dirty tracking)
 │   ├── pnp_admin_config.dart      ← Admin password model (kept for future use)
-│   └── pnp_isp_config.dart        ← ISP config model (DHCP/PPPoE/Static)
+│   └── pnp_isp_config.dart        ← ISP config model (DHCP/PPPoE/Static/VLAN)
 ├── services/
 │   └── pnp_service.dart           ← Stateless USP service (all codegen calls)
 ├── providers/
 │   ├── pnp_providers.dart         ← Provider declarations
 │   └── pnp_notifier.dart          ← Notifier<PnpState> state machine
 └── views/
-    ├── pnp_admin_view.dart        ← Entry: default-password probe + login form
-    ├── pnp_setup_view.dart        ← Two-step wizard (Main WiFi → Guest WiFi)
-    ├── pnp_no_internet_view.dart  ← Troubleshooter hub (modem restart / ISP settings)
-    └── pnp_isp_settings_view.dart ← PPPoE / Static IP forms
+    ├── pnp_admin_view.dart            ← Entry: default-password probe + login form
+    ├── pnp_setup_view.dart            ← Dynamic wizard (WiFi → Guest → Your Network) + QR completion
+    ├── pnp_no_internet_view.dart      ← Troubleshooter hub (modem restart / ISP settings)
+    ├── pnp_isp_settings_view.dart     ← ISP type selection (DHCP / PPPoE / Static IP)
+    ├── pnp_pppoe_view.dart            ← PPPoE form (username + password + VLAN toggle)    [P2]
+    ├── pnp_static_ip_view.dart        ← Static IP form (IPv4 fields + DNS toggle)         [P2]
+    ├── pnp_unplug_modem_view.dart     ← Modem restart step 1: unplug instructions         [P2]
+    ├── pnp_modem_lights_off_view.dart ← Modem restart step 2: verify lights off            [P2]
+    └── pnp_waiting_modem_view.dart    ← Modem restart step 3: countdown + auto-check       [P2]
+
+lib/demo/pages/
+└── pnp_demo_launcher.dart             ← Demo mode: grid of PnP path entry points          [P2]
 ```
 
 ### 7.1 State Machine (Sealed Class)
 
-Complete transition map (17 states in `PnpPhase`):
+Complete transition map (22 states in `PnpPhase`):
 
 ```
 AdminInitializing
@@ -403,6 +411,26 @@ WizardSaved → WizardCheckingFirmware → WizardWifiReady  (FW update skipped, 
 WizardWifiReady → [user Done] → /uspDashboard
 WizardError → [user Try Again] → AdminInitializing     (startFlow)
 AdminError → [user Try Again] → AdminInitializing      (startFlow)
+
+── Modem Restart Sub-Flow (P2) ──────────────────────────────
+
+NoInternet → [user taps "Restart modem"]
+  → PnpUnplugModemView → PnpModemLightsOffView → PnpWaitingModemView
+  → [user taps "It's plugged in"] → startModemRestartCountdown()
+
+ModemRestartCountdown(remainingSeconds, totalSeconds)   (150s for loop)
+  └─ [countdown done] → ModemRestartCheckingInternet
+
+ModemRestartCheckingInternet(attemptCount, maxAttempts)  (30 × 5s polling)
+  ├─ [WAN up] → WizardInitializing
+  └─ [all failed] → NoInternet
+
+── ISP Save Progress (P2) ──────────────────────────────────
+
+IspSaving(step: IspSaveStep)
+  step transitions: saving → checkingSettings → checkingInternet
+  ├─ [internet OK] → WizardInitializing
+  └─ [fail]        → NoInternet
 ```
 
 #### Deviations from pnp-flow.md To-Be Design
@@ -415,17 +443,30 @@ AdminError → [user Try Again] → AdminInitializing      (startFlow)
 | Save/Reconnect 後依 configured/unconfigured 分流 | 統一以 `isMainDirty` 判定 | Admin password 步驟已移除，無 unconfigured 額外步驟 |
 | `NoInternetRoute` 為終態 | `NoInternet` 留在 PnpPhase 內 | View 透過 `ref.listen` 觸發路由，state machine 不中斷 |
 
-### 7.2 Wizard UI (Two-Step Stepper)
+### 7.2 Wizard UI (Dynamic Stepper, up to 3 steps)
 
-| Step | Content | Button |
-|---|---|---|
-| 0 — Main WiFi | SSID + password fields | **Next** (or **Save** if no guest network) |
-| 1 — Guest WiFi | Enable toggle + SSID + password | **Back** / **Save** |
+| Step | Content | Condition | Button |
+|---|---|---|---|
+| 0 — Main WiFi | SSID + password fields | Always shown | **Next** (or **Save** if solo step) |
+| 1 — Guest WiFi | Enable toggle + SSID + password | Guest SSID instances exist | **Back** / **Next** or **Save** |
+| 2 — Your Network | Mesh node list (`AppNodeListCard`) | Mesh nodes > 1 | **Back** / **Save** |
 
 - Uses `AppStepper` (bar indicator, `StepIndicatorType.bar`) from ui_kit_library
-- Bar indicator only shown when guest network instance paths exist
+- Bar indicator only shown when total steps > 1
 - Step state is local widget state (`_currentStep`), not in `PnpPhase`
 - Back button in app bar navigates step → step 0 → `context.pop()`
+
+#### WiFi Ready Completion Page (P2)
+
+After save, `WizardWifiReady(ssid, password)` renders:
+- QR code (`QrImageView` from `qr_flutter` via `createWiFiQRCode()`)
+- WiFi name/password with copy-to-clipboard (`AppToast` feedback)
+- Print button (`printWiFiQRCode()`)
+- "Done" → navigate to `/uspDashboard`
+
+#### No Internet SSID Dynamic Title (P2)
+
+`NoInternet(ssid)` carries the current SSID. The troubleshooter hub title shows `"<SSID> — No Internet"` when SSID is available, falling back to a generic title when absent.
 
 ### 7.3 Guest WiFi Detection
 
@@ -468,9 +509,11 @@ saveChanges() → WizardNeedsReconnect(newSsid, newPassword)
 ### 7.6 Route Integration
 
 - Routes defined in `lib/route/route_pnp.dart` (`part of router_provider.dart`)
-- `autoConfigurationLogic()`: if `LoginType.none` and no stored `pPnpConfiguredSN` → route to `/pnp`
+- `autoConfigurationLogic()`: if `LoginType.none` and `!BuildConfig.skipPnp` and no stored `pPnpConfiguredSN` → route to `/pnp`
+- **`BuildConfig.skipPnp`** (`--dart-define=skip_pnp`): defaults to `true` during development to bypass PnP auto-trigger. Production builds should set `--dart-define=skip_pnp=false`
 - `/pnp` and `/pnpNoInternetConnection` bypass auth redirect
 - Demo mode: `_DemoAuthNotifier.build()` returns `LoginType.none` to activate PnP routing
+- **PnP Demo Launcher** (`lib/demo/pages/pnp_demo_launcher.dart`): grid of cards for jumping directly to any PnP phase. Uses `pnpProvider.notifier.setDemoPhase()` to inject state without API calls
 
 ### 7.7 Dirty Tracking
 
@@ -496,13 +539,18 @@ saveChanges() → WizardNeedsReconnect(newSsid, newPassword)
 | **P1** | Reconnection polling (exponential backoff 2–32s, SN verification) | M | ✅ Complete |
 | **P1** | Route integration (`route_pnp.dart`, auto-redirect, demo mode) | S | ✅ Complete |
 
-### 8.2 Remaining — UI Only (no FW dependency)
+### 8.2 Completed (P2 — UI Only, no FW dependency)
 
 | Priority | Task | Effort | Status | Notes |
 |---|---|---|---|---|
-| **P2** | Modem restart sub-flow — 3 guided views | M | 🔲 Not started | `UnplugModem → ModemLightsOff → WaitingModem` (150s countdown + 30-attempt auto-check). Pure UI, all localization keys exist. Route constants defined. |
-| **P2** | ISP type selection view | S | 🔲 Not started | Radio buttons: DHCP / PPPoE / Static IP. Currently `pnp_isp_settings_view.dart` goes direct to form — needs type selector at top. |
-| **P2** | YourNetworkStep — mesh node display | M | 🔲 Not started | Show connected nodes (model, location, image). `DataElementsNetwork.fetch()` codegen ready. Mesh enricher provider exists. "Add Nodes" is separate feature. |
+| **P2-A** | Modem restart sub-flow — 3 guided views | M | ✅ Complete | `PnpUnplugModemView → PnpModemLightsOffView → PnpWaitingModemView` (150s countdown + 30-attempt auto-check). Circular countdown widget + AppLoader. |
+| **P2-B** | YourNetworkStep — mesh node display | M | ✅ Complete | Wizard step 2 (conditional, mesh nodes > 1). Uses `AppNodeListCard` + `DeviceImageHelper`. |
+| **P2-C** | WiFi Ready QR Code | S | ✅ Complete | QR code via `qr_flutter`, copy-to-clipboard with `AppToast`, print button via `printWiFiQRCode()`. |
+| **P2-D** | ISP settings split — type selection + dedicated forms | M | ✅ Complete | Type selector (DHCP/PPPoE/Static IP) + `PnpPppoeView` (VLAN toggle) + `PnpStaticIpView` (`AppIpv4TextField`). 3-step save progress (IspSaving state). |
+| **P2-E** | No Internet SSID dynamic title | S | ✅ Complete | `NoInternet(ssid)` field, title switches based on SSID availability. |
+| **P2** | PnP Demo Launcher | S | ✅ Complete | Grid of demo cards for direct PnP phase injection via `setDemoPhase()`. |
+| **P2** | `BuildConfig.skipPnp` flag | S | ✅ Complete | `--dart-define=skip_pnp` (default: true in dev, false in prod). Guards `autoConfigurationLogic()`. |
+| **P2** | Constitution compliance (UI Kit) | S | ✅ Complete | All 10 PnP views audited: replaced raw Material widgets with UI Kit equivalents (AppLoader, AppPasswordInput, AppIpv4TextField, AppIcon.font, AppSwitch, AppToast, AppDialog). |
 
 ### 8.3 Remaining — Blocked by Firmware
 
@@ -524,21 +572,21 @@ saveChanges() → WizardNeedsReconnect(newSsid, newPassword)
 
 ## 9. Conclusion
 
-**P0 + P1 complete.** Core PnP flow functional under USP-only architecture:
+**P0 + P1 + P2 complete.** Full PnP flow UI functional under USP-only architecture:
 
 - Factory default detection (default-password probe + `FirstUseDate`)
-- Main WiFi + Guest WiFi configuration (two-step stepper)
-- ISP troubleshooting (PPPoE, Static IP, DHCP)
+- Main WiFi + Guest WiFi configuration (dynamic stepper, up to 3 steps)
+- Your Network mesh node display (conditional step)
+- WiFi Ready completion with QR code + copy/print
+- ISP troubleshooting with dedicated forms (PPPoE + VLAN, Static IP with `AppIpv4TextField`, DHCP)
+- Modem restart 3-step guided flow (150s countdown + 30-attempt auto-check)
+- No Internet SSID dynamic title
 - Post-WiFi-change reconnection with exponential backoff polling
-- Route auto-detection and demo mode integration
+- Route auto-detection, `BuildConfig.skipPnp` dev toggle, and demo mode integration
+- PnP Demo Launcher for direct phase injection
+- All views UI Kit compliant (Article XIV constitution)
 
-**P2 remaining (no FW dependency):**
-
-- Modem restart 3-step guided flow (UI only, localization ready)
-- ISP type selection (DHCP / PPPoE / Static IP radio buttons)
-- YourNetworkStep — mesh node display (`DataElementsNetwork` codegen ready)
-
-**P3 blocked by firmware team:**
+**P3 blocked by firmware team** (no remaining P2 items):
 
 1. **Night mode / LED scheduling** (§4.5) — TR-181 has on/off but no time-of-day schedule; need vendor extension investigation
 2. **Admin password change** (§4.4) — needs factory password API + `IsDefaultPassword` flag
@@ -554,5 +602,9 @@ saveChanges() → WizardNeedsReconnect(newSsid, newPassword)
 | `WizardNeedsReconnect` carries `newPassword` | WiFi credentials must survive reconnect polling loop without loss (§7.4) |
 | `isMainDirty` determines reconnect | Only main WiFi SSID/password changes drop the connection; guest changes don't (§7.7) |
 | Stepper step is local widget state | Avoids polluting `PnpPhase` sealed class with UI-only navigation concern |
-| `AppStepper` bar indicator | Minimal visual footprint for a 2-step wizard; hidden when no guest network |
+| `AppStepper` bar indicator | Minimal visual footprint for dynamic wizard; hidden when only 1 step |
 | `Notifier<PnpState>` not `AsyncNotifier` | State machine has discrete phase transitions, not a single async build |
+| ISP forms split into dedicated views | PPPoE and Static IP have fundamentally different fields; VLAN toggle only applies to PPPoE |
+| `BuildConfig.skipPnp` default true | Dev builds skip PnP auto-trigger; prod sets `--dart-define=skip_pnp=false` |
+| `setDemoPhase()` on PnpNotifier | Allows demo launcher to inject any PnpPhase directly without API calls |
+| Modem restart uses for-loop countdown | `Future.delayed(1s)` × 150 iterations, state-driven UI via `ModemRestartCountdown` |
