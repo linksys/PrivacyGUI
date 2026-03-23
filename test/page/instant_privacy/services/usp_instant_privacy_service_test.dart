@@ -350,32 +350,41 @@ void main() {
   // High-level CRUD (fetchAll, enable, disable, addMac)
   // ---------------------------------------------------------------------------
 
-  group('UspInstantPrivacyService — fetchAll', () {
-    test('returns enriched result with active devices and allowed list',
-        () async {
-      // Mock USP get to return connected devices + AP data in sequence
-      var callCount = 0;
-      when(() => mockUsp.get(any())).thenAnswer((_) async {
-        callCount++;
-        if (callCount <= 1) {
-          // ConnectedDevices response
-          return {
-            'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
-            'Device.Hosts.Host.1.IPAddress': '192.168.1.10',
-            'Device.Hosts.Host.1.HostName': 'Laptop',
-            'Device.Hosts.Host.1.Active': true,
-            'Device.Hosts.Host.1.Layer1Interface':
-                'Device.Ethernet.Interface.1',
-            'Device.Hosts.Host.1.AddressSource': 'DHCP',
-          };
-        }
-        // MacFilterAccessPoints response
-        return {
+  /// Standard path-based mock for fetchAll: routes ConnectedDevices vs
+  /// MacFilterAccessPoints based on requested paths.
+  void stubFetchAll(
+    MockUspService mock, {
+    Map<String, dynamic>? devicesResponse,
+    Map<String, dynamic>? apResponse,
+  }) {
+    final devices = devicesResponse ??
+        {
+          'Device.Hosts.Host.1.PhysAddress': 'AA:BB:CC:DD:EE:01',
+          'Device.Hosts.Host.1.IPAddress': '192.168.1.10',
+          'Device.Hosts.Host.1.HostName': 'Laptop',
+          'Device.Hosts.Host.1.Active': true,
+          'Device.Hosts.Host.1.Layer1Interface': 'Device.Ethernet.Interface.1',
+          'Device.Hosts.Host.1.AddressSource': 'DHCP',
+        };
+    final aps = apResponse ??
+        {
           'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1',
           'Device.WiFi.AccessPoint.1.MACAddressControlEnabled': true,
           'Device.WiFi.AccessPoint.1.AllowedMACAddress': 'AA:BB:CC:DD:EE:01',
         };
-      });
+    when(() => mock.get(any())).thenAnswer((_) async {
+      final paths = _.positionalArguments[0] as List;
+      if (paths.any((p) => p.toString().contains('Hosts.Host'))) {
+        return devices;
+      }
+      return aps;
+    });
+  }
+
+  group('UspInstantPrivacyService — fetchAll', () {
+    test('returns enriched result with active devices and allowed list',
+        () async {
+      stubFetchAll(mockUsp);
 
       final result = await service.fetchAll();
 
@@ -385,43 +394,119 @@ void main() {
       // Allowed device should be enriched with hostname from devices
       expect(result.allowedDevices[0].displayName, 'Laptop');
     });
+
+    test('allowed device uses Unknown Device when no host match', () async {
+      stubFetchAll(mockUsp, apResponse: {
+        'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1',
+        'Device.WiFi.AccessPoint.1.MACAddressControlEnabled': true,
+        'Device.WiFi.AccessPoint.1.AllowedMACAddress': 'FF:FF:FF:FF:FF:FF',
+      });
+
+      final result = await service.fetchAll();
+
+      // FF:FF:FF:FF:FF:FF is not in connected devices → "Unknown Device"
+      expect(result.allowedDevices[0].displayName, 'Unknown Device');
+    });
   });
 
   group('UspInstantPrivacyService — enable', () {
-    test('calls updateMany with enable updates', () async {
+    test('calls set via updateMany with enable updates', () async {
+      // Stub fetchAll to get a real MacFilterContext
+      stubFetchAll(mockUsp, apResponse: {
+        'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1',
+        'Device.WiFi.AccessPoint.1.MACAddressControlEnabled': false,
+        'Device.WiFi.AccessPoint.1.AllowedMACAddress': '',
+      });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {});
 
-      // Build context from AP data
-      when(() => mockUsp.get(any())).thenAnswer((_) async => {
-            'Device.WiFi.AccessPoint.1.SSIDReference': 'Device.WiFi.SSID.1',
-            'Device.WiFi.AccessPoint.1.MACAddressControlEnabled': false,
-            'Device.WiFi.AccessPoint.1.AllowedMACAddress': '',
-          });
+      final result = await service.fetchAll();
 
-      // We need a real context — fetchAll uses codegen which is mocked via UspService
-      // Instead, test via buildEnableUpdates + verify set is called
-      final data = MacFilterAccessPoints(items: [
-        _ap(instancePath: 'ap.1.'),
-      ]);
-      final updates = service.buildEnableUpdates(['AA:BB:CC:DD:EE:01'], data);
+      await service.enable(['AA:BB:CC:DD:EE:01'], result.macFilterContext);
 
-      expect(updates, hasLength(1));
-      expect(updates[0].macAddressControlEnabled, isTrue);
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final params = captured.first as Map<String, dynamic>;
+      expect(
+          params,
+          containsPair(
+            'Device.WiFi.AccessPoint.1.MACAddressControlEnabled',
+            true,
+          ));
+      expect(
+          params,
+          containsPair(
+            'Device.WiFi.AccessPoint.1.AllowedMACAddress',
+            'AA:BB:CC:DD:EE:01',
+          ));
     });
   });
 
   group('UspInstantPrivacyService — disable', () {
-    test('builds correct disable updates', () {
-      final data = MacFilterAccessPoints(items: [
-        _ap(instancePath: 'ap.1.', macAddressControlEnabled: true),
-      ]);
+    test('calls set via updateMany with disable updates', () async {
+      stubFetchAll(mockUsp);
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {});
 
-      final updates = service.buildDisableUpdates(data);
+      final result = await service.fetchAll();
 
-      expect(updates, hasLength(1));
-      expect(updates[0].macAddressControlEnabled, isFalse);
-      expect(updates[0].allowedMACAddress, '');
+      await service.disable(result.macFilterContext);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final params = captured.first as Map<String, dynamic>;
+      expect(
+          params,
+          containsPair(
+            'Device.WiFi.AccessPoint.1.MACAddressControlEnabled',
+            false,
+          ));
+      expect(
+          params,
+          containsPair(
+            'Device.WiFi.AccessPoint.1.AllowedMACAddress',
+            '',
+          ));
+    });
+  });
+
+  group('UspInstantPrivacyService — addMac', () {
+    test('adds new MAC and calls set', () async {
+      stubFetchAll(mockUsp);
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {});
+
+      final result = await service.fetchAll();
+
+      final added = await service.addMac(
+        'FF:FF:FF:FF:FF:FF',
+        result.macFilterContext,
+      );
+
+      expect(added, isTrue);
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test('returns false when MAC already present', () async {
+      stubFetchAll(mockUsp);
+
+      final result = await service.fetchAll();
+
+      // AA:BB:CC:DD:EE:01 is already in the allowed list
+      final added = await service.addMac(
+        'AA:BB:CC:DD:EE:01',
+        result.macFilterContext,
+      );
+
+      expect(added, isFalse);
+      verifyNever(
+        () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')),
+      );
     });
   });
 
@@ -432,6 +517,15 @@ void main() {
   group('MacFilterContext', () {
     test('empty context is constant', () {
       expect(MacFilterContext.empty, MacFilterContext.empty);
+    });
+
+    test('props uses item count for equality', () async {
+      stubFetchAll(mockUsp);
+      final result = await service.fetchAll();
+
+      // Same item count → equal props
+      expect(result.macFilterContext.props, isNotEmpty);
+      expect(MacFilterContext.empty.props, isNotEmpty);
     });
   });
 
