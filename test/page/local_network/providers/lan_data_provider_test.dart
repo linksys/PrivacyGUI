@@ -1,0 +1,111 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
+
+class MockUspService extends Mock implements UspService {}
+
+void main() {
+  late MockUspService mockUsp;
+
+  /// LanNetworkInfo codegen response.
+  final lanInfoResponse = <String, dynamic>{
+    'Device.IP.Interface.1.IPv4Address.1.IPAddress': '192.168.1.1',
+    'Device.IP.Interface.1.IPv4Address.1.SubnetMask': '255.255.255.0',
+    'Device.DHCPv4.Server.Pool.1.Enable': true,
+    'Device.DHCPv4.Server.Pool.1.MinAddress': '192.168.1.100',
+    'Device.DHCPv4.Server.Pool.1.MaxAddress': '192.168.1.199',
+    'Device.DHCPv4.Server.Pool.1.LeaseTime': '7200',
+    'Device.DHCPv4.Server.Pool.1.DNSServers': '8.8.8.8,8.8.4.4',
+    'Device.DeviceInfo.HostName': 'LinksysRouter',
+  };
+
+  /// IPv6 response from raw usp.get().
+  final ipv6Response = <String, dynamic>{
+    'Device.IP.Interface.1.IPv6Enable': true,
+    'Device.IP.Interface.1.IPv6Address.1.IPAddress': 'fe80::1',
+    'Device.IP.Interface.1.IPv6Address.2.IPAddress': '2001:db8::1',
+  };
+
+  setUp(() {
+    mockUsp = MockUspService();
+    when(() => mockUsp.get(any())).thenAnswer((_) async {
+      final paths = _.positionalArguments[0] as List;
+      if (paths.any((p) => p.toString().contains('IPv6'))) {
+        return ipv6Response;
+      }
+      return lanInfoResponse;
+    });
+  });
+
+  ProviderContainer createContainer() {
+    return ProviderContainer(
+      overrides: [
+        uspServiceProvider.overrideWithValue(mockUsp),
+      ],
+    );
+  }
+
+  group('LanDataNotifier', () {
+    test('build fetches LAN info and IPv6', () async {
+      final container = createContainer();
+      final data = await container.read(lanDataProvider.future);
+
+      expect(data.model.ipAddress, '192.168.1.1');
+      expect(data.model.subnetMask, '255.255.255.0');
+      expect(data.model.dhcpEnabled, isTrue);
+      expect(data.model.minAddress, '192.168.1.100');
+      expect(data.model.maxAddress, '192.168.1.199');
+      expect(data.model.leaseTimeMinutes, 120); // 7200s / 60
+      expect(data.model.dnsServers, '8.8.8.8,8.8.4.4');
+      expect(data.model.hostName, 'LinksysRouter');
+      expect(data.model.ipv6Enabled, isTrue);
+      expect(data.model.ipv6Addresses, ['fe80::1', '2001:db8::1']);
+      container.dispose();
+    });
+
+    test('build throws when usp is null', () async {
+      final container = ProviderContainer(
+        overrides: [
+          uspServiceProvider.overrideWithValue(null),
+        ],
+      );
+
+      expect(
+        container.read(lanDataProvider.future),
+        throwsA(isA<StateError>()),
+      );
+      container.dispose();
+    });
+
+    test('IPv6 fetch failure falls back to disabled', () async {
+      when(() => mockUsp.get(any())).thenAnswer((_) async {
+        final paths = _.positionalArguments[0] as List;
+        if (paths.any((p) => p.toString().contains('IPv6'))) {
+          throw Exception('IPv6 not supported');
+        }
+        return lanInfoResponse;
+      });
+
+      final container = createContainer();
+      final data = await container.read(lanDataProvider.future);
+
+      // LAN info should still be present
+      expect(data.model.ipAddress, '192.168.1.1');
+      // IPv6 should gracefully fall back
+      expect(data.model.ipv6Enabled, isFalse);
+      expect(data.model.ipv6Addresses, isEmpty);
+      container.dispose();
+    });
+
+    test('dhcpRange formats min ~ max', () async {
+      final container = createContainer();
+      final data = await container.read(lanDataProvider.future);
+
+      expect(data.model.dhcpRange, '192.168.1.100 ~ 192.168.1.199');
+      container.dispose();
+    });
+  });
+}
