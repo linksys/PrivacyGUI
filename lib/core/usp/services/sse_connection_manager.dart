@@ -32,16 +32,26 @@ enum SseConnectionState {
 class SseConnectionManager {
   final UspBridgeClient _bridge;
 
-  SseConnectionManager(this._bridge);
+  SseConnectionManager(
+    this._bridge, {
+    Duration? initialBackoff,
+    Duration? maxBackoff,
+    int? maxRetries,
+  })  : _initialBackoff = initialBackoff ?? _defaultInitialBackoff,
+        _maxBackoff = maxBackoff ?? _defaultMaxBackoff,
+        _maxRetries = maxRetries ?? _defaultMaxRetries;
 
   // ══════════════════════════════════════════════════════════════════════════
   // Configuration
   // ══════════════════════════════════════════════════════════════════════════
 
   static const Duration _heartbeatTimeout = Duration(seconds: 45);
-  static const Duration _initialBackoff = Duration(seconds: 1);
-  static const Duration _maxBackoff = Duration(seconds: 60);
-  static const int _maxRetries = 5;
+  static const Duration _defaultInitialBackoff = Duration(seconds: 1);
+  static const Duration _defaultMaxBackoff = Duration(seconds: 60);
+  static const int _defaultMaxRetries = 5;
+  final Duration _initialBackoff;
+  final Duration _maxBackoff;
+  final int _maxRetries;
 
   // ══════════════════════════════════════════════════════════════════════════
   // State
