@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
@@ -175,6 +178,32 @@ void main() {
       container.dispose();
     });
 
+    test('performSave skips when new entry and disabled', () async {
+      final disabledNew = DmzSettings(
+        model: DmzUIModel(
+          isEnabled: false,
+          destIp: '',
+          sourceType: DmzSourceType.any,
+          sourcePrefix: '',
+        ),
+        // No instancePath → isNewEntry = true.
+      );
+      when(() => mockService.fetch())
+          .thenAnswer((_) async => (disabledNew, testStatus));
+      when(() => mockService.validateForm(any())).thenReturn({});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      await container.read(uspDmzProvider.notifier).save();
+
+      verifyNever(() => mockService.add(model: any(named: 'model')));
+      verifyNever(() => mockService.update(
+          instancePath: any(named: 'instancePath'),
+          model: any(named: 'model')));
+      container.dispose();
+    });
+
     test('isDirty true after mutation, false after fetch', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
@@ -191,6 +220,57 @@ void main() {
 
       await notifier.fetch();
       expect(notifier.isDirty(), isFalse);
+      container.dispose();
+    });
+
+    test('performSave rethrows on error and clears isSaving', () async {
+      when(() => mockService.fetch())
+          .thenAnswer((_) async => (testSettings, testStatus));
+      when(() => mockService.update(
+            instancePath: any(named: 'instancePath'),
+            model: any(named: 'model'),
+          )).thenThrow(Exception('save failed'));
+      when(() => mockService.validateForm(any())).thenReturn({});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspDmzProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(destIp: '10.0.0.1'));
+
+      expect(() => notifier.save(), throwsA(isA<Exception>()));
+      await Future.delayed(Duration.zero);
+
+      expect(container.read(uspDmzProvider).status.isSaving, isFalse);
+      container.dispose();
+    });
+
+    test('SSE invalidation triggers re-fetch when clean', () async {
+      final sseController = StreamController<InvalidationDomain>();
+      when(() => mockService.fetch())
+          .thenAnswer((_) async => (testSettings, testStatus));
+
+      final container = ProviderContainer(
+        overrides: [
+          uspDmzServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          sseInvalidationProvider.overrideWith((_) => sseController.stream),
+        ],
+      );
+      container.listen(uspDmzProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      // Initial fetch happened once.
+      verify(() => mockService.fetch()).called(1);
+
+      // Push a DMZ invalidation event.
+      sseController.add(InvalidationDomain.dmz);
+      await Future.delayed(Duration.zero);
+
+      // Should have re-fetched.
+      verify(() => mockService.fetch()).called(1);
+
+      await sseController.close();
       container.dispose();
     });
 

@@ -13,10 +13,14 @@ class MockUspFirewallService extends Mock implements UspFirewallService {}
 /// Test-only notifier that returns canned data instead of real fetch.
 class _TestFirewallDataNotifier extends FirewallDataNotifier {
   final FirewallData _testData;
-  _TestFirewallDataNotifier(this._testData);
+  final bool shouldThrow;
+  _TestFirewallDataNotifier(this._testData, {this.shouldThrow = false});
 
   @override
-  Future<FirewallData> build() async => _testData;
+  Future<FirewallData> build() async {
+    if (shouldThrow) throw Exception('data provider error');
+    return _testData;
+  }
 }
 
 void main() {
@@ -141,6 +145,32 @@ void main() {
       expect(
           container.read(uspFirewallProvider).settings.current.model.blockIPSec,
           isTrue);
+      container.dispose();
+    });
+
+    test('fetch error sets error status', () async {
+      final errorData = FirewallData(
+        firewallModel: const FirewallUIModel(),
+        ruleContext: FirewallRuleContext.empty,
+        ruleSummaries: const [],
+        dmzModel: const DmzUIModel.disabled(),
+        dmzSummaries: const [],
+      );
+      // Override firewallDataProvider to throw on read.
+      final container = ProviderContainer(
+        overrides: [
+          uspFirewallServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          firewallDataProvider.overrideWith(() {
+            return _TestFirewallDataNotifier(errorData, shouldThrow: true);
+          }),
+        ],
+      );
+      container.listen(uspFirewallProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspFirewallProvider);
+      expect(state.status.errorMessage, isNotNull);
       container.dispose();
     });
   });

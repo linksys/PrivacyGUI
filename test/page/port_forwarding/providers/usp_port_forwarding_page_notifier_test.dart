@@ -242,6 +242,44 @@ void main() {
       container.dispose();
     });
 
+    test('editTriggeringRule replaces by value match', () async {
+      stubFetch();
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final updated = pt1.copyWith(description: 'Game-Updated');
+      container
+          .read(uspPortForwardingPageProvider.notifier)
+          .editTriggeringRule(pt1, updated);
+
+      final rules = container
+          .read(uspPortForwardingPageProvider)
+          .settings
+          .current
+          .triggeringRules;
+      expect(rules[0].description, 'Game-Updated');
+      expect(rules, hasLength(1));
+      container.dispose();
+    });
+
+    test('toggleTriggeringRule flips enabled flag', () async {
+      stubFetch();
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      container
+          .read(uspPortForwardingPageProvider.notifier)
+          .toggleTriggeringRule(pt1, false);
+
+      final rules = container
+          .read(uspPortForwardingPageProvider)
+          .settings
+          .current
+          .triggeringRules;
+      expect(rules[0].enabled, isFalse);
+      container.dispose();
+    });
+
     test('isDirty after adding, clean after revert', () async {
       stubFetch();
       final container = createContainer();

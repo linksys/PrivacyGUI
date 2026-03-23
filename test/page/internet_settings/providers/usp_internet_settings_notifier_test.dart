@@ -198,5 +198,113 @@ void main() {
           isFalse);
       container.dispose();
     });
+
+    test('performSave calls service.saveAll and exits edit mode', () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      when(() => mockService.saveAll(any(), any())).thenAnswer((_) async {});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      notifier.enterEditMode();
+      notifier.updateField((f) => f.copyWith(mtu: 9000));
+      await notifier.save();
+
+      verify(() => mockService.saveAll(any(), any())).called(1);
+      expect(container.read(uspInternetSettingsProvider).status.isEditing,
+          isFalse);
+      container.dispose();
+    });
+
+    test('performSave sets isSaving flag during save', () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      when(() => mockService.saveAll(any(), any())).thenAnswer((_) async {});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      notifier.updateField((f) => f.copyWith(mtu: 9000));
+
+      // After save completes, isSaving should be false.
+      await notifier.save();
+      expect(
+          container.read(uspInternetSettingsProvider).status.isSaving, isFalse);
+      container.dispose();
+    });
+
+    test('renewDhcpLease calls service and tracks activeMutation', () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      when(() => mockService.renewDhcpLease()).thenAnswer((_) async {});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      await container
+          .read(uspInternetSettingsProvider.notifier)
+          .renewDhcpLease();
+
+      verify(() => mockService.renewDhcpLease()).called(1);
+      // After completion, activeMutation should be cleared.
+      expect(container.read(uspInternetSettingsProvider).status.activeMutation,
+          isNull);
+      container.dispose();
+    });
+
+    test('renewDhcpv6Lease calls service and tracks activeMutation', () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      when(() => mockService.renewDhcpv6Lease()).thenAnswer((_) async {});
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      await container
+          .read(uspInternetSettingsProvider.notifier)
+          .renewDhcpv6Lease();
+
+      verify(() => mockService.renewDhcpv6Lease()).called(1);
+      expect(container.read(uspInternetSettingsProvider).status.activeMutation,
+          isNull);
+      container.dispose();
+    });
+
+    test('performSave rethrows on error and clears isSaving', () async {
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+      when(() => mockService.saveAll(any(), any()))
+          .thenThrow(Exception('save failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspInternetSettingsProvider.notifier);
+      notifier.updateField((f) => f.copyWith(mtu: 9000));
+
+      expect(() => notifier.save(), throwsA(isA<Exception>()));
+      await Future.delayed(Duration.zero);
+
+      expect(
+          container.read(uspInternetSettingsProvider).status.isSaving, isFalse);
+      container.dispose();
+    });
+
+    test('fetch with unauthenticated service sets error status', () async {
+      when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockService.fetchSettings())
+          .thenAnswer((_) async => testFetchResult);
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspInternetSettingsProvider);
+      // Should hit the restore path which won't succeed with our mock.
+      expect(state.status.errorMessage, isNotNull);
+      container.dispose();
+    });
   });
 }

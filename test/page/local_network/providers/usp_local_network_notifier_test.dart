@@ -14,10 +14,14 @@ class MockUspLocalNetworkService extends Mock
 /// Test-only notifier that returns canned data.
 class _TestLanDataNotifier extends LanDataNotifier {
   final LanData _testData;
-  _TestLanDataNotifier(this._testData);
+  final bool shouldThrow;
+  _TestLanDataNotifier(this._testData, {this.shouldThrow = false});
 
   @override
-  Future<LanData> build() async => _testData;
+  Future<LanData> build() async {
+    if (shouldThrow) throw Exception('lan data error');
+    return _testData;
+  }
 }
 
 void main() {
@@ -163,6 +167,23 @@ void main() {
 
       notifier.revert();
       expect(notifier.isDirty(), isFalse);
+      container.dispose();
+    });
+
+    test('fetch error sets error status', () async {
+      final container = ProviderContainer(
+        overrides: [
+          uspLocalNetworkServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          lanDataProvider.overrideWith(
+              () => _TestLanDataNotifier(testLanData, shouldThrow: true)),
+        ],
+      );
+      container.listen(uspLocalNetworkProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspLocalNetworkProvider);
+      expect(state.status.errorMessage, contains('lan data error'));
       container.dispose();
     });
 

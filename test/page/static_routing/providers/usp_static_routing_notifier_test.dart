@@ -163,6 +163,26 @@ void main() {
       container.dispose();
     });
 
+    test('performSave rethrows on error and clears isSaving', () async {
+      when(() => mockService.fetch()).thenAnswer((_) async => [route1]);
+      when(() => mockService.saveBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(Exception('save failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspStaticRoutingProvider.notifier);
+      notifier.addRoute(route2);
+
+      expect(() => notifier.save(), throwsA(isA<Exception>()));
+      await Future.delayed(Duration.zero);
+
+      expect(container.read(uspStaticRoutingProvider).status.isSaving, isFalse);
+      container.dispose();
+    });
+
     test('isDirty after mutation, clean after revert', () async {
       when(() => mockService.fetch()).thenAnswer((_) async => [route1]);
       final container = createContainer();
