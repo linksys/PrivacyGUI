@@ -85,6 +85,54 @@ class TestStatusWithMessage extends Equatable {
       TestStatusWithMessage(map['message'] as String?);
 }
 
+class AutoDisposeTestNotifier extends AutoDisposeNotifier<TestState>
+    with
+        PreservableAutoDisposeNotifierMixin<TestSettings, TestStatus,
+            TestState> {
+  Future<(TestSettings?, TestStatus?)> Function({
+    bool forceRemote,
+    bool updateStatusOnly,
+  })? fetchOverride;
+  Future<void> Function()? saveOverride;
+  int fetchCallCount = 0;
+
+  @override
+  TestState build() {
+    return const TestState(
+      settings: Preservable(
+          original: TestSettings('initial'), current: TestSettings('initial')),
+      status: TestStatus(),
+    );
+  }
+
+  void updateValue(String newValue) {
+    state = state.copyWith(
+      settings: state.settings.update(TestSettings(newValue)),
+    );
+  }
+
+  @override
+  Future<(TestSettings?, TestStatus?)> performFetch(
+      {bool forceRemote = false, bool updateStatusOnly = false}) async {
+    fetchCallCount++;
+    if (fetchOverride != null) {
+      return fetchOverride!(
+          forceRemote: forceRemote, updateStatusOnly: updateStatusOnly);
+    }
+    if (updateStatusOnly) {
+      return (null, const TestStatus());
+    }
+    return (const TestSettings('fetched'), const TestStatus());
+  }
+
+  @override
+  Future<void> performSave() async {
+    if (saveOverride != null) {
+      return saveOverride!();
+    }
+  }
+}
+
 class TestNotifier extends Notifier<TestState>
     with PreservableNotifierMixin<TestSettings, TestStatus, TestState> {
   /// Hook to control performFetch behavior from tests.
@@ -456,6 +504,243 @@ void main() {
       // After fetch, original and current are both 'fetched' — clean
       expect(notifier.isDirty(), isFalse);
       expect(notifier.state.settings.current.value, 'fetched');
+    }, tags: 'dirty-guard-framework');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Line 68 coverage: fetch returns (settings, null) — status preserved
+  // ---------------------------------------------------------------------------
+
+  group('_PreservableDelegate — settings present, status null', () {
+    late ProviderContainer container;
+    late TestNotifier notifier;
+
+    setUp(() {
+      container = ProviderContainer();
+      final provider =
+          NotifierProvider<TestNotifier, TestState>(TestNotifier.new);
+      notifier = container.read(provider.notifier);
+    });
+
+    test('fetch() with (settings, null) updates settings and preserves status',
+        () async {
+      // First establish a known status via normal fetch
+      await notifier.fetch();
+      final statusBefore = notifier.state.status;
+
+      // Override: return new settings but null status
+      notifier.fetchOverride =
+          ({forceRemote = false, updateStatusOnly = false}) async {
+        return (const TestSettings('new-settings'), null);
+      };
+
+      await notifier.fetch();
+
+      // Settings updated
+      expect(notifier.state.settings.current.value, 'new-settings');
+      expect(notifier.state.settings.original.value, 'new-settings');
+      // Status preserved from before
+      expect(notifier.state.status, equals(statusBefore));
+      expect(notifier.isDirty(), isFalse);
+    }, tags: 'dirty-guard-framework');
+  });
+
+  // ---------------------------------------------------------------------------
+  // PreservableAutoDisposeNotifierMixin (lines 172-187)
+  // ---------------------------------------------------------------------------
+
+  group('PreservableAutoDisposeNotifierMixin', () {
+    late ProviderContainer container;
+    late AutoDisposeTestNotifier notifier;
+
+    setUp(() {
+      container = ProviderContainer();
+      final provider =
+          AutoDisposeNotifierProvider<AutoDisposeTestNotifier, TestState>(
+              AutoDisposeTestNotifier.new);
+      // Keep alive so we can test
+      container.listen(provider, (_, __) {});
+      notifier = container.read(provider.notifier);
+    });
+
+    test('isDirty() is false initially', () {
+      expect(notifier.isDirty(), isFalse);
+    }, tags: 'dirty-guard-framework');
+
+    test('isDirty() is true after updating state', () {
+      notifier.updateValue('new value');
+      expect(notifier.isDirty(), isTrue);
+    }, tags: 'dirty-guard-framework');
+
+    test('revert() restores original value', () {
+      notifier.updateValue('new value');
+      expect(notifier.isDirty(), isTrue);
+
+      notifier.revert();
+
+      expect(notifier.isDirty(), isFalse);
+      expect(notifier.state.settings.current.value, 'initial');
+    }, tags: 'dirty-guard-framework');
+
+    test('fetch() updates both original and current', () async {
+      await notifier.fetch();
+
+      expect(notifier.isDirty(), isFalse);
+      expect(notifier.state.settings.original.value, 'fetched');
+      expect(notifier.state.settings.current.value, 'fetched');
+    }, tags: 'dirty-guard-framework');
+
+    test('save() calls performSave then re-fetches', () async {
+      notifier.updateValue('edited');
+      expect(notifier.isDirty(), isTrue);
+
+      await notifier.save();
+
+      expect(notifier.isDirty(), isFalse);
+      expect(notifier.state.settings.original.value, 'fetched');
+    }, tags: 'dirty-guard-framework');
+
+    test('markAsSaved() updates original to current', () {
+      notifier.updateValue('new value');
+      notifier.markAsSaved();
+
+      expect(notifier.isDirty(), isFalse);
+      expect(notifier.state.settings.original.value, 'new value');
+    }, tags: 'dirty-guard-framework');
+
+    test('onSseInvalidation() skips fetch when dirty', () async {
+      notifier.updateValue('unsaved');
+      final countBefore = notifier.fetchCallCount;
+
+      notifier.onSseInvalidation();
+      await Future.delayed(Duration.zero);
+
+      expect(notifier.fetchCallCount, equals(countBefore));
+    }, tags: 'dirty-guard-framework');
+
+    test('onSseInvalidation() triggers fetch when clean', () async {
+      final countBefore = notifier.fetchCallCount;
+
+      notifier.onSseInvalidation();
+      await Future.delayed(Duration.zero);
+
+      expect(notifier.fetchCallCount, greaterThan(countBefore));
+      expect(notifier.state.settings.current.value, 'fetched');
+    }, tags: 'dirty-guard-framework');
+  });
+
+  // ---------------------------------------------------------------------------
+  // Preservable serialization (fromMap, fromJson, toMap, toJson)
+  // ---------------------------------------------------------------------------
+
+  group('Preservable serialization', () {
+    const original = TestSettings('orig');
+    const current = TestSettings('curr');
+
+    test('toMap() produces correct structure', () {
+      final p = Preservable(original: original, current: current);
+      final map = p.toMap((v) => v.toMap());
+
+      expect(map['original'], equals({'value': 'orig'}));
+      expect(map['current'], equals({'value': 'curr'}));
+    }, tags: 'dirty-guard-framework');
+
+    test('fromMap() round-trips correctly', () {
+      final p = Preservable(original: original, current: current);
+      final map = p.toMap((v) => v.toMap());
+      final restored =
+          Preservable.fromMap(map, (m) => TestSettings.fromMap(m));
+
+      expect(restored.original, equals(original));
+      expect(restored.current, equals(current));
+    }, tags: 'dirty-guard-framework');
+
+    test('toJson()/fromJson() round-trips correctly', () {
+      final p = Preservable(original: original, current: current);
+      final json = p.toJson((v) => v.toMap());
+      final restored =
+          Preservable.fromJson(json, (m) => TestSettings.fromMap(m));
+
+      expect(restored.original, equals(original));
+      expect(restored.current, equals(current));
+    }, tags: 'dirty-guard-framework');
+
+    test('props contains original and current for Equatable comparison', () {
+      final p1 =
+          Preservable(original: const TestSettings('a'), current: const TestSettings('b'));
+      final p2 =
+          Preservable(original: const TestSettings('a'), current: const TestSettings('b'));
+      final p3 =
+          Preservable(original: const TestSettings('a'), current: const TestSettings('c'));
+
+      expect(p1, equals(p2));
+      expect(p1, isNot(equals(p3)));
+      expect(p1.props, hasLength(2));
+    }, tags: 'dirty-guard-framework');
+
+    test('copyWith() creates copy with overrides', () {
+      final p = Preservable(original: original, current: current);
+
+      final updated = p.copyWith(original: const TestSettings('new-orig'));
+      expect(updated.original.value, 'new-orig');
+      expect(updated.current.value, 'curr');
+
+      final updatedCurrent =
+          p.copyWith(current: const TestSettings('new-curr'));
+      expect(updatedCurrent.original.value, 'orig');
+      expect(updatedCurrent.current.value, 'new-curr');
+    }, tags: 'dirty-guard-framework');
+  });
+
+  // ---------------------------------------------------------------------------
+  // FeatureState properties (current, toJson, props)
+  // ---------------------------------------------------------------------------
+
+  group('FeatureState properties', () {
+    test('current getter returns settings.current', () {
+      const state = TestState(
+        settings: Preservable(
+            original: TestSettings('a'), current: TestSettings('b')),
+        status: TestStatus(),
+      );
+      expect(state.current, equals(const TestSettings('b')));
+    }, tags: 'dirty-guard-framework');
+
+    test('toJson() returns valid JSON string', () {
+      const state = TestState(
+        settings: Preservable(
+            original: TestSettings('a'), current: TestSettings('b')),
+        status: TestStatus(),
+      );
+      final json = state.toJson();
+      expect(json, isA<String>());
+      expect(json, contains('"value":"a"'));
+      expect(json, contains('"value":"b"'));
+    }, tags: 'dirty-guard-framework');
+
+    test('props includes settings and status', () {
+      const state = TestState(
+        settings: Preservable(
+            original: TestSettings('a'), current: TestSettings('a')),
+        status: TestStatus(),
+      );
+      expect(state.props, hasLength(2));
+      expect(state.props[0], isA<Preservable<TestSettings>>());
+      expect(state.props[1], isA<TestStatus>());
+    }, tags: 'dirty-guard-framework');
+
+    test('equality based on settings and status', () {
+      const state1 = TestState(
+        settings: Preservable(
+            original: TestSettings('a'), current: TestSettings('a')),
+        status: TestStatus(),
+      );
+      const state2 = TestState(
+        settings: Preservable(
+            original: TestSettings('a'), current: TestSettings('a')),
+        status: TestStatus(),
+      );
+      expect(state1, equals(state2));
     }, tags: 'dirty-guard-framework');
   });
 }
