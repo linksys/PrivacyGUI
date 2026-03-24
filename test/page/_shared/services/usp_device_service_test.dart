@@ -503,8 +503,10 @@ void main() {
         ipv6Addresses: ['2001:db8::1'],
       );
 
+      expect(result.hostName, 'Router');
       expect(result.ipAddress, '192.168.1.1');
       expect(result.dhcpEnabled, isTrue);
+      expect(result.leaseTimeMinutes, 1440); // 86400s / 60
       expect(result.ipv6Enabled, isTrue);
       expect(result.ipv6Addresses, ['2001:db8::1']);
     });
