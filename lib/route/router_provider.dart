@@ -56,6 +56,7 @@ import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_p
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/usp_wifi_settings_view.dart';
+import 'package:privacy_gui/page/apps/views/usp_apps_view.dart';
 
 part 'route_home.dart';
 part 'route_local_login.dart';
@@ -147,7 +148,7 @@ class RouterNotifier extends ChangeNotifier {
     }
     return state.matchedLocation == RoutePath.home
         ? _home()
-        : await (_prepare(state).then((_) => null));
+        : await (_prepare(state, null, loginType).then((_) => null));
   }
 
   FutureOr<String?> goFirstTimeLogin(GoRouterState state) {
@@ -162,8 +163,9 @@ class RouterNotifier extends ChangeNotifier {
           '[Route]: Check credentials done: Login type = ${authState?.loginType}');
 
       FlutterNativeSplash.remove();
-      return switch (authState?.loginType ?? LoginType.none) {
-        LoginType.local => await _prepare(state, RoutePath.uspDashboard)
+      final type = authState?.loginType ?? LoginType.none;
+      return switch (type) {
+        LoginType.local => await _prepare(state, RoutePath.uspDashboard, type)
             .then((path) => path ?? RoutePath.uspDashboard),
         _ => _home(state.uri.query),
       };
@@ -174,12 +176,11 @@ class RouterNotifier extends ChangeNotifier {
     return '${RoutePath.localLoginPassword}?$query';
   }
 
-  Future<String?> _prepare(GoRouterState state, [String? goToPath]) async {
+  Future<String?> _prepare(GoRouterState state,
+      [String? goToPath, LoginType? loginType]) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
     final prefs = await SharedPreferences.getInstance();
     String? serialNumber = prefs.getString(pCurrentSN);
-    final loginType =
-        _ref.read(authProvider.select((value) => value.value?.loginType));
     String? naviPath;
 
     if (loginType == LoginType.local) {

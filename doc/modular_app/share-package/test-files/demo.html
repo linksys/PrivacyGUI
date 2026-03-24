@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo App - MVP Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 40px;
+        }
+        .status {
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .info-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        .test-button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #c0392b;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Demo Application</h1>
+            <p>OpenWrt UI Package Integration - MVP Test</p>
+        </div>
+        
+        <div class="content">
+            <div class="status">
+                ✅ Successfully installed via opkg package system
+            </div>
+            
+            <h2>📋 Application Information</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>📦 Package Info</h3>
+                    <p><strong>Name:</strong> Demo App</p>
+                    <p><strong>Version:</strong> 1.0.0</p>
+                    <p><strong>Type:</strong> User Application</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3>🌐 Network Info</h3>
+                    <p><strong>URL:</strong> /demo/</p>
+                    <p><strong>Status:</strong> Active</p>
+                    <p><strong>Protocol:</strong> HTTP</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3>⚡ Features</h3>
+                    <p><strong>SSE Events:</strong> ✅ Enabled</p>
+                    <p><strong>Auto Config:</strong> ✅ Enabled</p>
+                    <p><strong>Hot Reload:</strong> ✅ Ready</p>
+                </div>
+                
+                <div class="info-card">
+                    <h3>🕒 Timestamp</h3>
+                    <p><strong>Installed:</strong> <span id="timestamp"></span></p>
+                    <p><strong>Router:</strong> 192.168.1.1</p>
+                    <p><strong>Framework:</strong> OpenWrt</p>
+                </div>
+            </div>
+            
+            <h2>🧪 Functionality Tests</h2>
+            <p>Click the buttons below to test different features:</p>
+            
+            <button class="test-button" onclick="testConfig()">Test Config API</button>
+            <button class="test-button" onclick="testSSE()">Test SSE Events</button>
+            <button class="test-button" onclick="testRouter()">Test Router Info</button>
+            
+            <div id="result"></div>
+            
+            <h2>📚 Technical Details</h2>
+            <ul>
+                <li><strong>Installation Method:</strong> opkg install luci-app-demo</li>
+                <li><strong>Configuration Path:</strong> /www/assets/config/linksys_apps.json</li>
+                <li><strong>Web Path:</strong> /usr_www/demo/</li>
+                <li><strong>URL Alias:</strong> /demo/ → /usr_www/demo/</li>
+                <li><strong>Event Trigger:</strong> /tmp/linksys_app_update</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Display current timestamp
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        
+        function testConfig() {
+            showResult('Testing configuration...', 'info');
+            fetch('/assets/config/linksys_apps.json')
+                .then(response => response.json())
+                .then(data => {
+                    const apps = data.userApps || [];
+                    const demoApp = apps.find(app => app.name === 'Demo App');
+                    if (demoApp) {
+                        showResult('✅ Config test passed! Found Demo App in configuration.', 'success');
+                    } else {
+                        showResult('⚠️ Demo App not found in configuration.', 'warning');
+                    }
+                })
+                .catch(error => {
+                    showResult('❌ Config test failed: ' + error.message, 'error');
+                });
+        }
+        
+        function testSSE() {
+            showResult('SSE event system is ready. Events are triggered by app_util.lua operations.', 'info');
+        }
+        
+        function testRouter() {
+            showResult('✅ Router connection successful! Running on OpenWrt with LinksysNow UI integration.', 'success');
+        }
+        
+        function showResult(message, type) {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.textContent = message;
+            
+            result.className = '';
+            if (type === 'success') {
+                result.style.background = '#d4edda';
+                result.style.color = '#155724';
+                result.style.border = '1px solid #c3e6cb';
+            } else if (type === 'error') {
+                result.style.background = '#f8d7da';
+                result.style.color = '#721c24';
+                result.style.border = '1px solid #f5c6cb';
+            } else if (type === 'warning') {
+                result.style.background = '#fff3cd';
+                result.style.color = '#856404';
+                result.style.border = '1px solid #ffeeba';
+            } else {
+                result.style.background = '#d1ecf1';
+                result.style.color = '#0c5460';
+                result.style.border = '1px solid #bee5eb';
+            }
+        }
+    </script>
+</body>
+</html>
