@@ -1,6 +1,6 @@
 # SSE (Server-Sent Events) Implementation Guide
 
-**Date:** 2026-03-13 (updated 2026-03-20) | **Branch:** `dev-2.2.1`
+**Date:** 2026-03-13 (updated 2026-03-23) | **Branch:** `dev-2.2.1`
 **Firmware:** 1.0.16.26013014 | **usp-bridge:** v0.1.1
 
 ---
@@ -59,23 +59,12 @@ stateDiagram-v2
 
 ### Token & Session Architecture
 
-SSE uses a **dual-channel** model where the WASM client and the bridge client share the same JWT but maintain separate HTTP connections:
+> Full token lifecycle, reauth flow, and SSE coordination details in [§1.6 Token Management](#16-token-management).
 
-```mermaid
-graph LR
-    subgraph "WASM Client (protobuf)"
-        A[login/refreshToken] --> B[JWT stored internally]
-    end
-    subgraph "UspBridgeClient (HTTP)"
-        C[_usp.sessionToken getter] --> D[Bearer header]
-        D --> E[SSE /api/v1/notifications]
-        D --> F[REST /api/v1/subscription]
-        D --> G[REST /api/v1/health]
-    end
-    B -->|"read-only"| C
-```
+SSE uses a **dual-channel** model where the WASM client and the bridge client share the same JWT but maintain separate HTTP connections. SSE validates the JWT only at Fetch connection time. Once the TCP connection is established, the stream stays open regardless of token state.
 
-**Key point:** SSE validates the JWT only at connection time (initial Fetch). Once the TCP connection is established, the stream stays open regardless of token state. Token refresh does NOT automatically reconnect SSE — see [Known Issues](#9-known-issues--workarounds).
+- **Stage 1 (refreshToken)**: Extends the same session — SSE stays connected, no action needed.
+- **Stage 2 (full re-login)**: New session — `onTokenRefreshed` fires → SSE `disconnect()` + `connect()` with new token.
 
 ### Bridge-Managed Subscription Architecture
 
@@ -91,7 +80,162 @@ Key insight: OBUSPA subscriptions persist on the router even after the browser d
 
 On SSE reconnect, `SseSubscriptionRegistry.resubscribeAll()` re-registers all subscriptions on the bridge. Since the bridge is idempotent by `subscription_id`, this safely handles both scenarios (OBUSPA subs survived or were cleaned up).
 
-**Session expiry caveat:** Bridge session timeout does NOT clean up OBUSPA subscriptions -- they become orphans. `UspService.purgeAllSubscriptions()` can clean these up, but is currently only available via the Test Console (not called automatically during bootstrap).
+**Session expiry caveat:** Bridge session timeout does NOT clean up OBUSPA subscriptions — but subscription IDs from codegen are deterministic, so re-registration reuses existing OBUSPA subs via bridge idempotency. `UspService.purgeAllSubscriptions()` available in Test Console for edge cases (e.g., ID rename across app versions).
+
+---
+
+## 1.5 SSE Lifecycle Management
+
+SSE lifecycle is tied to the app's authentication state and page lifecycle. The following diagram shows when SSE connects, disconnects, and reconnects across all app states:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Shell as UspDashboardShell
+    participant Boot as sseBootstrapProvider
+    participant Mgr as SseManager
+    participant Auth as UspAuthCoordinator
+    participant App as App (WidgetsBindingObserver)
+
+    Note over User,App: === Fresh Login ===
+    User->>Auth: Login (password)
+    Auth->>Auth: syncAfterLocalLogin() → UspService.login()
+    Shell->>Boot: ref.watch(sseBootstrapProvider)
+    Boot->>Mgr: setCoreSubscriptions(coreSubscriptions)
+    Boot->>Mgr: connect()
+    Note over Mgr: SSE stream opens → first heartbeat → onConnected
+    Mgr->>Mgr: _registerOrResubscribe() → register core subs on bridge
+
+    Note over User,App: === Browser Refresh (Web) ===
+    User->>User: F5 / page reload
+    Note over Auth: WASM state destroyed, token lost
+    Shell->>Shell: Shell renders → JNAP auth restored
+    Auth->>Auth: restoreSession() → login(storedPassword)
+    Shell->>Boot: ref.watch(sseBootstrapProvider)
+    Boot->>Mgr: connect()
+    Note over Mgr: Bridge reuses existing OBUSPA subs (idempotent by ID)
+
+    Note over User,App: === App Background → Resume ===
+    App->>App: didChangeAppLifecycleState(resumed)
+    App->>App: _tryResumeSse()
+    alt SSE state == suspended
+        App->>Mgr: tryReconnect()
+    end
+
+    Note over User,App: === Token Expiry During Session ===
+    Mgr->>Mgr: REST 401 on bridge call
+    Mgr->>Auth: UspService.reauth()
+    alt Stage 1: refreshToken() succeeds
+        Note over Mgr: Same session extended, SSE stays connected
+    else Stage 2: refreshToken() fails → full re-login
+        Auth->>Auth: restoreSession() → login(storedPassword)
+        Auth->>Mgr: onTokenRefreshed fires
+        Mgr->>Mgr: disconnect() → connect() (new SSE stream with new token)
+    end
+
+    Note over User,App: === Logout ===
+    User->>Auth: Logout
+    Auth->>Mgr: sseManager.disconnect()
+    Auth->>Mgr: sseManager.registry.unregisterAll()
+    Note over Mgr: Bridge deletes OBUSPA subs for each
+    Auth->>Auth: syncAfterLogout() → UspService.logout()
+
+    Note over User,App: === Page Close (Web) ===
+    User->>User: Close tab / navigate away
+    App->>Mgr: SseUnloadHandler.onUnload
+    Mgr->>Mgr: bridge.abortSse() (synchronous)
+    Mgr->>Mgr: connection.disconnect() (best-effort async)
+    Note over Mgr: OBUSPA subs persist, reused on next session
+```
+
+### SSE Lifecycle Summary
+
+| App Event | SSE Action | Who Triggers | Key Code |
+|-----------|-----------|--------------|----------|
+| **Login** | `connect()` | `sseBootstrapProvider` (watched by `UspDashboardShell`) | `sse_providers.dart:76` |
+| **Browser refresh** | `restoreSession()` → `connect()` | `UspAuthCoordinator` + `sseBootstrapProvider` | `usp_auth_coordinator.dart:57` |
+| **Post-reload SSE setup** | `setCoreSubscriptions()` → `connect()` → `registerDeferredSubscriptions(force: true)` | `DashboardOrchestrator` (when `authWasRestored`) | `dashboard_orchestrator.dart:107-116` |
+| **App resume** | `tryReconnect()` (if `suspended`) | `App.didChangeAppLifecycleState` | `app.dart:235-246` |
+| **Stream error / heartbeat timeout** | Auto-reconnect (backoff) | `SseConnectionManager` internally | `sse_connection_manager.dart:255` |
+| **Token refresh (Stage 1)** | SSE stays connected (same session) | — | `usp_service.dart:134` |
+| **Full re-login (Stage 2)** | `disconnect()` → `connect()` | `onTokenRefreshed` callback | `sse_manager.dart:77-81` |
+| **Logout** | `disconnect()` → `unregisterAll()` | `AuthProvider.logout()` | `auth_provider.dart:112-115` |
+| **Page close** | `abortSse()` sync + `disconnect()` async | `SseUnloadHandler` (`beforeunload`/`pagehide`) | `sse_manager.dart:86-91` |
+| **Provider dispose** | `dispose()` (full cleanup) | Riverpod `ref.onDispose` | `sse_providers.dart:31` |
+
+---
+
+## 1.6 Token Management
+
+SSE uses a **dual-channel** model where the WASM client and the bridge client share the same JWT but maintain separate HTTP connections. Token lifecycle is managed by `UspService` and `UspAuthCoordinator`.
+
+### Token Flow
+
+```mermaid
+graph TD
+    subgraph "WASM Client (protobuf)"
+        A["login(password)"] --> B["JWT stored internally<br/>(sessionToken getter)"]
+        C["refreshToken()"] --> B
+    end
+    subgraph "UspAuthCoordinator"
+        D["syncAfterLocalLogin()"] -->|password| A
+        E["restoreSession()"] -->|storedPassword| A
+        F["ensureAuth()"] --> C
+        C -.->|"fails"| E
+    end
+    subgraph "UspService"
+        G["reauth() — Completer lock"]
+        G -->|"Stage 1"| C
+        G -->|"Stage 2 (refresh fails)"| H["onReauthRequired → restoreSession()"]
+        G -->|"Stage 2 success"| I["onTokenRefreshed fires"]
+    end
+    subgraph "UspBridgeClient (HTTP)"
+        J["_usp.sessionToken getter"] --> K["Bearer header"]
+        K --> L["SSE /api/v1/notifications"]
+        K --> M["REST /api/v1/subscription"]
+        K --> N["REST /api/v1/health"]
+        O["_withAuthRetry()"] -->|"401"| G
+    end
+    subgraph "SseManager"
+        I -->|"disconnect + reconnect"| L
+    end
+    B -->|"read-only"| J
+```
+
+### Token Lifecycle States
+
+| State | Trigger | REST Impact | SSE Impact |
+|-------|---------|-------------|------------|
+| **Valid** | After login / refreshToken | All requests succeed | SSE stream active, notifications flowing |
+| **Expired (soft)** | Token TTL elapsed | 401 → `reauth()` Stage 1 (`refreshToken`) | SSE TCP connection stays open (already established) |
+| **Expired (hard)** | `refreshToken` also fails | 401 → `reauth()` Stage 2 (`restoreSession`) | After re-login: `onTokenRefreshed` → SSE disconnect + reconnect |
+| **Lost (page reload)** | Browser refresh | WASM state destroyed | `restoreSession()` re-login → new SSE connection via bootstrap |
+| **Invalidated (logout)** | User logout | Session terminated | SSE disconnected, subscriptions unregistered |
+
+### Reauth Flow Detail
+
+`UspService.reauth()` uses a `Completer` lock to prevent concurrent reauth attempts:
+
+```
+REST call hits 401
+  → _withAuthRetry() calls reauth()
+  → Completer lock: if reauth already in progress, await it
+  → Stage 1: refreshToken()
+    → Success: same session extended, Completer completes
+    → SSE impact: none (same session, SSE stays connected)
+  → Stage 1 fails → Stage 2: onReauthRequired → restoreSession()
+    → UspAuthCoordinator reads stored password from FlutterSecureStorage
+    → UspService.login(storedPassword) → new JWT
+    → didFullRelogin = true
+    → Completer completes
+    → finally: onTokenRefreshed?.call()
+      → SseManager: disconnect() → connect() with new token
+```
+
+**Key design points:**
+- `onTokenRefreshed` only fires after Stage 2 (full re-login), not Stage 1 (token refresh). Stage 1 extends the same session, so SSE's existing TCP connection remains valid.
+- `UspBridgeClient._withAuthRetry()` handles 401 for REST calls. SSE Fetch handles its own 401 in `_startSseStream()` with a single retry.
+- Both `UspService.reauth()` and `UspBridgeClient._startSseStream()` use the same `UspService.reauth()` path — no duplicate auth logic.
 
 ---
 
@@ -197,7 +341,7 @@ sequenceDiagram
     Awaiter->>Manager: cleanup (remove handler + unsubscribe)
 ```
 
-This pattern exists because **BUG-006**: Operate results are NOT written back to the TR-181 data model. `GET Device.IP.Diagnostics.IPPing.` returns empty after Operate completes. The SSE OperationComplete notification is the only source of result data.
+This pattern exists because one-shot Operate commands (IPPing, TraceRoute) produce transient results that are not persisted to the TR-181 data model — this is expected behavior, not a bug. The SSE OperationComplete notification is the correct and only delivery path for these results.
 
 ---
 
@@ -241,7 +385,7 @@ When SSE is disconnected, `SseOperationAwaiter` falls back to polling:
 4. Parse response into OperateResult
 ```
 
-This fallback relies on GET returning results -- which only works for some diagnostics where the firmware writes results back. For commands affected by BUG-006, polling returns empty.
+This fallback relies on GET returning results — which only works for diagnostics that persist state. One-shot Operate commands (IPPing, TraceRoute) do not write results back by design, so polling returns empty for these commands.
 
 ### 4.5 Deferred Core Subscription Registration
 
@@ -405,6 +549,53 @@ flowchart TD
 
 WiFi SSID/Radio ValueChange is intentionally excluded to avoid `.Stats.*` noise flooding.
 
+### Bootstrap Resilience (added 2026-03-23, #717)
+
+When the usp-bridge is temporarily unavailable (HTTP 503) during app startup, domain providers may fail before SSE connects. Three mechanisms handle this:
+
+```mermaid
+flowchart TD
+    A["App startup — bridge 503"] --> B["wifiDataProvider fails (15s timeout)"]
+    A --> C["devicesDataProvider starts"]
+    C --> D{"await wifiDataProvider.future<br/>(soft dep, 10s timeout)"}
+    D -->|timeout| E["Use fallback WifiData.empty()"]
+    D -->|success| F["Use real WiFi data"]
+    E --> G["Devices load without WiFi enrichment"]
+    F --> G
+    A --> H["DashboardOrchestrator._scheduleProviderRetry()"]
+    H -->|"5s delay"| I{"Any domain provider<br/>still in error?"}
+    I -->|Yes| J["ref.invalidate(provider) → re-fetch"]
+    I -->|No| K["No action needed"]
+    G -.->|"WiFi data arrives later via SSE invalidation"| L["rebuild deviceModels with WiFi data"]
+```
+
+| Mechanism | File | Behavior |
+|-----------|------|----------|
+| **WiFi soft dependency** | `devices_data_provider.dart` | `wifiDataProvider.future` with 10s timeout → fallback `WifiData.empty()` |
+| **WiFi fetch timeout** | `wifi_data_provider.dart` | `Future.wait` with 15s timeout prevents indefinite hang |
+| **Orchestrator retry** | `dashboard_orchestrator.dart` | `_scheduleProviderRetry()` — 5s delayed check, invalidates error-state providers |
+
+### SSE Connection Banner
+
+`SseConnectionBanner` (`lib/page/_shared/components/sse_connection_banner.dart`) — placed at the top of `UspDashboardShell`, spans all pages.
+
+```mermaid
+flowchart LR
+    A[SseConnectionState change] --> B{State?}
+    B -->|connected| C["Hide immediately<br/>cancel grace timer"]
+    B -->|suspended / disconnected| D["Show immediately<br/>(severe — no grace)"]
+    B -->|connecting / reconnecting| E{"Grace timer<br/>running?"}
+    E -->|No| F["Start 3s grace timer"]
+    E -->|Yes| G["Wait"]
+    F -->|"3s elapsed, still not connected"| H["Show warning banner"]
+```
+
+| SSE State | Banner | Color | Action Button |
+|-----------|--------|-------|---------------|
+| `connected` | Hidden | — | — |
+| `connecting` / `reconnecting` | Warning (after 3s grace) | `appColorScheme.warning` | None |
+| `suspended` / `disconnected` | Danger (immediate) | `appColorScheme.danger` | "Reconnect" → `tryReconnect()` |
+
 ---
 
 ## 8. Reconnection Behavior
@@ -461,19 +652,19 @@ sequenceDiagram
 | Issue | Impact | Workaround | Status |
 |-------|--------|------------|--------|
 | **CPE subscription_id mismatch** | Per-subscription handlers never fire | Wildcard handlers + path/command_name matching | Permanent workaround |
-| **Token refresh -> SSE silent failure** | After full re-login (`restoreSession()`), SSE may stay connected with old session but receive no notifications. Heartbeat continues so watchdog doesn't trigger. | **None currently** -- requires SSE reconnect after reauth. See [Token Refresh Risk](#token-refresh-risk) | **OPEN** |
-| **Stale subscriptions on refresh** | OBUSPA subscriptions accumulate as orphans | `purgeAllSubscriptions()` available in Test Console (manual). Bridge idempotency mitigates duplicate registrations for same IDs | Partial mitigation |
-| **WASM `add` returns empty for LocalAgent** | Can't get new subscription instance path | N/A -- bridge handles OBUSPA lifecycle (legacy `createNotifySubscription()` retained for debug) | Bypassed by bridge auto-creation |
+| ~~**Token refresh -> SSE silent failure**~~ | After full re-login (`restoreSession()`), SSE previously stayed connected with old session. | `SseManager` wires `_usp.onTokenRefreshed` callback that forces `disconnect()` + `connect()` with the new token (`sse_manager.dart:77-81`) | **FIXED** (2026-03-23) |
+| ~~**Stale subscriptions on refresh**~~ | OBUSPA subscriptions persist after browser refresh | Effectively mitigated: core subscription IDs are fixed constants from `subscriptions.g.dart` (codegen). Bridge is idempotent by `subscription_id` — re-registering the same ID reuses the existing OBUSPA sub. No orphans are created as long as IDs remain stable across sessions. `purgeAllSubscriptions()` available in Test Console for edge cases (e.g., ID rename across versions). | **Mitigated** |
+| ~~**WASM `add` returns empty for LocalAgent**~~ | Can't get new subscription instance path | Not a problem — bridge handles full OBUSPA lifecycle automatically (FW 1.0.16). Client never needs to directly manipulate `LocalAgent.Subscription`. | **Not an issue** |
 | ~~**Bridge subscribe doesn't create OBUSPA**~~ | ~~Client must manage OBUSPA subscriptions~~ | ~~5-step workaround~~ | FIXED (2026-03-16) |
 | **WiFi Stats noise** | 50+ events/s from `.Stats.*` counters | Removed WiFi ValueChange from bootstrap + `.Stats.` filter | Fixed |
-| **BUG-006: Operate results not in data model** | Polling fallback returns empty | SSE OperationComplete is primary delivery (Direct Data Delivery pattern) | By design |
-| **No SSE disconnection UI** | User has no visual indicator when SSE is down; data may be stale | `sseConnectionStateProvider` exists but is only consumed by Test Console | **OPEN** |
+| **~~BUG-006: Operate results not in data model~~** | Polling fallback returns empty for one-shot Operate | Not a bug — one-shot Operate (IPPing, TraceRoute) results are transient by design and should not be persisted. SSE OperationComplete is the correct delivery path (Pattern B). | **Not a bug** |
+| ~~**No SSE disconnection UI**~~ | User had no visual indicator when SSE is down | `SseConnectionBanner` (`lib/page/_shared/components/sse_connection_banner.dart`) — `ConsumerStatefulWidget` with 3s grace period. Shows warning (connecting/reconnecting) or danger (suspended/disconnected) with "Reconnect" button. See [Banner Behavior](#sse-connection-banner). | **FIXED** (2026-03-23, #717) |
 
-### Token Refresh Risk
+### Token Refresh Risk — FIXED (2026-03-23)
 
 The `UspBridgeClient` reads the JWT from `UspService.sessionToken` (a getter on the WASM client) at SSE connection time. Once the Fetch connection is established, the token is not re-validated.
 
-**Risk scenario:**
+**Original risk scenario (now mitigated):**
 
 ```
 1. SSE connected with token-A (heartbeat active)
@@ -481,15 +672,12 @@ The `UspBridgeClient` reads the JWT from `UspService.sessionToken` (a getter on 
 3. UspService.reauth() -> refreshToken() fails
 4. UspService.reauth() -> restoreSession() -> login() -> token-B (new session)
 5. REST requests resume with token-B
-6. SSE stream still uses token-A's TCP connection
-   - Heartbeat continues (watchdog not triggered)
-   - Bridge subscription routing may be bound to old session
-   - Notifications silently stop arriving
+6. [FIXED] onTokenRefreshed fires -> SseManager disconnect() + connect()
+   - SSE reconnects with token-B
+   - Bridge subscription routing uses new session
 ```
 
-**Severity:** Medium-high (silent failure, no user-visible error)
-
-**Recommended fix:** Add `onTokenRefreshed` callback in `UspService.reauth()` that triggers `SseManager` to `disconnect()` + `connect()` with the new token.
+**Fix:** `SseManager` constructor wires `_usp.onTokenRefreshed` callback (`sse_manager.dart:77-81`) that forces `disconnect()` + `connect()` on full re-login, ensuring the SSE stream uses the new session token and subscription routing is re-established.
 
 ---
 
