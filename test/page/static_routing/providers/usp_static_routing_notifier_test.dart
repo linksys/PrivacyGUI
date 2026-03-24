@@ -176,8 +176,7 @@ void main() {
       final notifier = container.read(uspStaticRoutingProvider.notifier);
       notifier.addRoute(route2);
 
-      expect(() => notifier.save(), throwsA(isA<Exception>()));
-      await Future.delayed(Duration.zero);
+      await expectLater(notifier.save(), throwsA(isA<Exception>()));
 
       expect(container.read(uspStaticRoutingProvider).status.isSaving, isFalse);
       container.dispose();

@@ -285,8 +285,7 @@ void main() {
       final notifier = container.read(uspInternetSettingsProvider.notifier);
       notifier.updateField((f) => f.copyWith(mtu: 9000));
 
-      expect(() => notifier.save(), throwsA(isA<Exception>()));
-      await Future.delayed(Duration.zero);
+      await expectLater(notifier.save(), throwsA(isA<Exception>()));
 
       expect(
           container.read(uspInternetSettingsProvider).status.isSaving, isFalse);

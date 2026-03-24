@@ -238,8 +238,7 @@ void main() {
       final notifier = container.read(uspDmzProvider.notifier);
       notifier.updateSetting((m) => m.copyWith(destIp: '10.0.0.1'));
 
-      expect(() => notifier.save(), throwsA(isA<Exception>()));
-      await Future.delayed(Duration.zero);
+      await expectLater(notifier.save(), throwsA(isA<Exception>()));
 
       expect(container.read(uspDmzProvider).status.isSaving, isFalse);
       container.dispose();
@@ -260,14 +259,15 @@ void main() {
       container.listen(uspDmzProvider, (_, __) {});
       await Future.delayed(Duration.zero);
 
-      // Initial fetch happened once.
+      // Initial fetch happened once — clear for clean counting.
       verify(() => mockService.fetch()).called(1);
+      clearInteractions(mockService);
 
       // Push a DMZ invalidation event.
       sseController.add(InvalidationDomain.dmz);
       await Future.delayed(Duration.zero);
 
-      // Should have re-fetched.
+      // Should have re-fetched exactly once after SSE.
       verify(() => mockService.fetch()).called(1);
 
       await sseController.close();
