@@ -457,8 +457,7 @@ void main() {
       };
 
       // save() should propagate the error
-      expect(() => notifier.save(), throwsA(isA<Exception>()));
-      await Future.delayed(Duration.zero);
+      await expectLater(notifier.save(), throwsA(isA<Exception>()));
 
       expect(saveCalled, isTrue);
       // markAsSaved() was called before the re-fetch, so isDirty should be false
