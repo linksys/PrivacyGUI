@@ -88,11 +88,12 @@ void main() {
 
       final notifier = container.read(uspTrafficAnalysisProvider.notifier);
       notifier.setRefreshInterval(null); // Stop auto-timer.
-      await notifier.fetchNow(); // First fetch sets baseline.
 
+      // createAndWait() already triggered the first fetch (baseline set).
       final state = container.read(uspTrafficAnalysisProvider);
       expect(state.lastBaselines, isNotNull);
       expect(state.lastTimestamp, isNotNull);
+      expect(state.history, isEmpty);
       expect(state.isFetching, isFalse);
       container.dispose();
     });
@@ -125,6 +126,31 @@ void main() {
       expect(wan, isNotNull);
       expect(wan!.uploadBytesPerSec, greaterThan(0));
       expect(wan.downloadBytesPerSec, greaterThan(0));
+      container.dispose();
+    });
+
+    test('counter wraparound produces zero rates', () async {
+      final container = await createAndWait();
+
+      final notifier = container.read(uspTrafficAnalysisProvider.notifier);
+      notifier.setRefreshInterval(null);
+
+      // Ensure non-zero elapsed time.
+      await Future.delayed(Duration(milliseconds: 2));
+
+      // Second fetch with LOWER counters (simulating counter reset/wraparound).
+      when(() => mockUsp.get(any())).thenAnswer((_) async =>
+          makeTrafficResponse(
+              wanSent: 500, wanRecv: 1000, lanSent: 200, lanRecv: 700));
+      await notifier.fetchNow();
+
+      final state = container.read(uspTrafficAnalysisProvider);
+      expect(state.history, isNotEmpty);
+
+      final wan = state.latest!.interfaces[TrafficInterface.wan]!;
+      // Negative delta → clamped to 0.
+      expect(wan.uploadBytesPerSec, 0);
+      expect(wan.downloadBytesPerSec, 0);
       container.dispose();
     });
 

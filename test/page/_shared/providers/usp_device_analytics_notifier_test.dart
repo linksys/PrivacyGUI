@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:privacy_gui/page/_shared/models/device_analytics_state.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -183,6 +184,51 @@ void main() {
       expect(state.current!.offlineCount, 0);
       expect(state.current!.bandDistribution, isEmpty);
       expect(state.current!.signalLevelDistribution, isEmpty);
+      container.dispose();
+    });
+
+    test('hourly history older than 24h is pruned on dashboard update',
+        () async {
+      final now = DateTime.now();
+      final currentHour = DateTime(now.year, now.month, now.day, now.hour);
+
+      // Pre-populate SharedPreferences with old + recent history entries.
+      final oldHour = currentHour.subtract(Duration(hours: 25));
+      final recentHour = currentHour.subtract(Duration(hours: 2));
+      final persistedState = DeviceAnalyticsState(
+        hourlyHistory: [
+          HourlyAggregate(
+            hour: oldHour,
+            wifiCount: 5,
+            wiredCount: 2,
+            activeMacs: {'OLD:MAC:01'},
+          ),
+          HourlyAggregate(
+            hour: recentHour,
+            wifiCount: 3,
+            wiredCount: 1,
+            activeMacs: {'RECENT:MAC:01'},
+          ),
+        ],
+        allKnownMacs: {'OLD:MAC:01', 'RECENT:MAC:01'},
+        macDisplayNames: {'OLD:MAC:01': 'OldDevice', 'RECENT:MAC:01': 'Recent'},
+      );
+      SharedPreferences.setMockInitialValues({
+        'usp_device_analytics': persistedState.toJsonString(),
+      });
+
+      final container = createContainer();
+      await waitForAnalytics(container);
+
+      final state = container.read(uspDeviceAnalyticsProvider);
+      // The 25h-old entry should have been pruned (by both load and update).
+      // Only the recent entry + the new current-hour entry should remain.
+      for (final h in state.hourlyHistory) {
+        expect(h.hour.isAfter(oldHour), isTrue,
+            reason: 'Old entry ($oldHour) should be pruned');
+      }
+      // Old MAC should not appear in allKnownMacs anymore.
+      expect(state.allKnownMacs, isNot(contains('OLD:MAC:01')));
       container.dispose();
     });
 
