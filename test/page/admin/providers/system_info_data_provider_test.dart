@@ -144,6 +144,16 @@ void main() {
       container.dispose();
     });
 
+    test('SystemInfoData equality uses model props', () async {
+      final container = createContainer();
+      final data1 = await container.read(systemInfoDataProvider.future);
+      final data2 = await container.read(systemInfoDataProvider.future);
+
+      expect(data1, equals(data2));
+      expect(data1.props, [data1.model]);
+      container.dispose();
+    });
+
     test('gatewayName falls back to Router when modelName empty', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async {
         final paths = _.positionalArguments[0] as List;

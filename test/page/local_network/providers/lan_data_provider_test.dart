@@ -107,5 +107,27 @@ void main() {
       expect(data.model.dhcpRange, '192.168.1.100 ~ 192.168.1.199');
       container.dispose();
     });
+
+    test('LanData.empty() has default values', () {
+      const data = LanData.empty();
+      expect(data.model.ipAddress, isEmpty);
+      expect(data.model.subnetMask, isEmpty);
+      expect(data.model.dhcpEnabled, isFalse);
+      expect(data.model.minAddress, isEmpty);
+      expect(data.model.maxAddress, isEmpty);
+    });
+
+    test('LanData equality uses model props', () async {
+      final container = createContainer();
+      final data1 = await container.read(lanDataProvider.future);
+      final data2 = await container.read(lanDataProvider.future);
+
+      expect(data1, equals(data2));
+      expect(data1.props, [data1.model]);
+
+      const empty = LanData.empty();
+      expect(data1, isNot(equals(empty)));
+      container.dispose();
+    });
   });
 }

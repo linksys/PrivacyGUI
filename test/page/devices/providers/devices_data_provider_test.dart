@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
@@ -241,6 +245,184 @@ void main() {
       expect(updated.deviceModels, isEmpty);
     });
 
+    test('DevicesData props uses lengths for equality', () {
+      const a = DevicesData();
+      const b = DevicesData();
+      expect(a, equals(b));
+      expect(a.props, [0, 0, 0, 0]);
+
+      final c = DevicesData(hostNameByMac: {'AA:BB': 'Test'});
+      expect(a, isNot(equals(c)));
+      expect(c.props, [0, 0, 0, 1]);
+    });
+
+    test('SSE connectedDevices domain triggers debounced re-fetch', () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationDomain>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspServiceProvider.overrideWithValue(mockUsp),
+            uspDeviceServiceProvider.overrideWithValue(mockDeviceSvc),
+            wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+            systemInfoDataProvider.overrideWith(
+              () => _TestSystemInfoDataNotifier(null),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        // Trigger initial build
+        container.listen(devicesDataProvider, (_, __) {});
+        async.flushMicrotasks();
+
+        // Clear initial fetch interactions
+        clearInteractions(mockUsp);
+
+        // Emit SSE event for connected devices
+        sseController.add(InvalidationDomain.connectedDevices);
+        async.flushMicrotasks();
+
+        // Timer pending — no re-fetch yet
+        verifyNever(() => mockUsp.get(any()));
+
+        // Advance past 500ms debounce
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        // Re-fetch should have been triggered
+        verify(() => mockUsp.get(any())).called(greaterThanOrEqualTo(1));
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
+    test('SSE debounce cancels previous timer on rapid events', () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationDomain>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspServiceProvider.overrideWithValue(mockUsp),
+            uspDeviceServiceProvider.overrideWithValue(mockDeviceSvc),
+            wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+            systemInfoDataProvider.overrideWith(
+              () => _TestSystemInfoDataNotifier(null),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        container.listen(devicesDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        clearInteractions(mockUsp);
+
+        // Emit two rapid SSE events — second should cancel first timer
+        sseController.add(InvalidationDomain.connectedDevices);
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 200));
+
+        sseController.add(InvalidationDomain.connectedDevices);
+        async.flushMicrotasks();
+
+        // After 300ms more (500ms from first, 300ms from second) — not yet
+        async.elapse(const Duration(milliseconds: 300));
+        async.flushMicrotasks();
+        verifyNever(() => mockUsp.get(any()));
+
+        // 200ms more (500ms from second event)
+        async.elapse(const Duration(milliseconds: 200));
+        async.flushMicrotasks();
+
+        // Only one re-fetch (timer was reset)
+        verify(() => mockUsp.get(any())).called(greaterThanOrEqualTo(1));
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
+    test('SSE unrelated domain does not trigger re-fetch', () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationDomain>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspServiceProvider.overrideWithValue(mockUsp),
+            uspDeviceServiceProvider.overrideWithValue(mockDeviceSvc),
+            wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
+            systemInfoDataProvider.overrideWith(
+              () => _TestSystemInfoDataNotifier(null),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        container.listen(devicesDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        clearInteractions(mockUsp);
+
+        // Emit unrelated domain — should be ignored
+        sseController.add(InvalidationDomain.dmz);
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        verifyNever(() => mockUsp.get(any()));
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
+    test('WiFi data change triggers deviceModels rebuild via listener',
+        () async {
+      final container = ProviderContainer(
+        overrides: [
+          uspServiceProvider.overrideWithValue(mockUsp),
+          uspDeviceServiceProvider.overrideWithValue(mockDeviceSvc),
+          wifiDataProvider.overrideWith(() => _MutableWifiDataNotifier()),
+          systemInfoDataProvider.overrideWith(
+            () => _TestSystemInfoDataNotifier(null),
+          ),
+        ],
+      );
+
+      // Initial build
+      await container.read(devicesDataProvider.future);
+      clearInteractions(mockDeviceSvc);
+
+      // Emit new WiFi data — triggers the ref.listen(wifiDataProvider) callback
+      final wifiNotifier =
+          container.read(wifiDataProvider.notifier) as _MutableWifiDataNotifier;
+      wifiNotifier.emit(WifiData(
+        codegenContext: WifiCodegenContext.empty,
+        wifiClientMap: {
+          'AA:BB:CC:DD:EE:01': WifiClientUIModel(
+            macAddress: 'AA:BB:CC:DD:EE:01',
+            signalStrength: -50,
+            noise: -90,
+            lastDataDownlinkRate: 100000,
+            lastDataUplinkRate: 50000,
+            active: true,
+          ),
+        },
+      ));
+      await Future.delayed(Duration.zero);
+
+      // Verify listener called buildDeviceUIModels again
+      verify(() => mockDeviceSvc.buildDeviceUIModels(
+            connectedDevices: any(named: 'connectedDevices'),
+            wifiClientMap: any(named: 'wifiClientMap'),
+            connectionDetailMap: any(named: 'connectionDetailMap'),
+            meshTopology: any(named: 'meshTopology'),
+            gatewayName: any(named: 'gatewayName'),
+          )).called(1);
+
+      container.dispose();
+    });
+
     test('gatewayName uses modelName from sysData', () async {
       final sysData = SystemInfoData(
         model: SystemInfoUIModel(
@@ -284,6 +466,16 @@ class _TestWifiDataNotifier extends WifiDataNotifier {
   Future<WifiData> build() async {
     if (shouldThrow) throw Exception('wifi fetch failed');
     return const WifiData.empty();
+  }
+}
+
+/// Mutable WifiData notifier for testing listener rebuild paths.
+class _MutableWifiDataNotifier extends WifiDataNotifier {
+  @override
+  Future<WifiData> build() async => const WifiData.empty();
+
+  void emit(WifiData data) {
+    state = AsyncData(data);
   }
 }
 

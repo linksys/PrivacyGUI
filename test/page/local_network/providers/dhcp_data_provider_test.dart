@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -180,6 +184,116 @@ void main() {
       expect(data.clientModels, isEmpty);
       expect(data.reservationModels, isEmpty);
       container.dispose();
+    });
+
+    test('DhcpData props uses lengths for equality', () async {
+      final container = createContainer();
+      final data1 = await container.read(dhcpDataProvider.future);
+      final data2 = await container.read(dhcpDataProvider.future);
+
+      expect(data1, equals(data2));
+      expect(data1.props, [2, 1]); // 2 clients, 1 reservation
+      container.dispose();
+    });
+
+    test('SSE dhcpReservations domain triggers debounced re-fetch', () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationDomain>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspServiceProvider.overrideWithValue(mockUsp),
+            uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+            devicesDataProvider.overrideWith(
+              () => _TestDevicesDataNotifier(const DevicesData()),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        container.listen(dhcpDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        clearInteractions(mockUsp);
+
+        // Emit SSE for dhcpReservations
+        sseController.add(InvalidationDomain.dhcpReservations);
+        async.flushMicrotasks();
+
+        // Timer pending — no re-fetch yet
+        verifyNever(() => mockUsp.get(any()));
+
+        // Advance past 500ms debounce
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        verify(() => mockUsp.get(any())).called(greaterThanOrEqualTo(1));
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
+    test('SSE dhcpClients domain also triggers re-fetch', () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationDomain>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspServiceProvider.overrideWithValue(mockUsp),
+            uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+            devicesDataProvider.overrideWith(
+              () => _TestDevicesDataNotifier(const DevicesData()),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        container.listen(dhcpDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        clearInteractions(mockUsp);
+
+        // Emit SSE for dhcpClients (second OR-gate branch)
+        sseController.add(InvalidationDomain.dhcpClients);
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 500));
+        async.flushMicrotasks();
+
+        verify(() => mockUsp.get(any())).called(greaterThanOrEqualTo(1));
+
+        sseController.close();
+        container.dispose();
+      });
+    });
+
+    test('SSE unrelated domain does not trigger re-fetch', () {
+      fakeAsync((async) {
+        final sseController = StreamController<InvalidationDomain>.broadcast();
+
+        final container = ProviderContainer(
+          overrides: [
+            uspServiceProvider.overrideWithValue(mockUsp),
+            uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+            devicesDataProvider.overrideWith(
+              () => _TestDevicesDataNotifier(const DevicesData()),
+            ),
+            sseInvalidationProvider.overrideWith((ref) => sseController.stream),
+          ],
+        );
+
+        container.listen(dhcpDataProvider, (_, __) {});
+        async.flushMicrotasks();
+        clearInteractions(mockUsp);
+
+        sseController.add(InvalidationDomain.wifiSsids);
+        async.flushMicrotasks();
+        async.elapse(const Duration(milliseconds: 600));
+        async.flushMicrotasks();
+
+        verifyNever(() => mockUsp.get(any()));
+
+        sseController.close();
+        container.dispose();
+      });
     });
   });
 }

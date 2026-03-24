@@ -4,6 +4,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
+import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
@@ -18,7 +20,8 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const EthernetInterfaces(items: []));
-    registerFallbackValue(<DevicesData>[]);
+    registerFallbackValue(<DeviceUIModel>[]);
+    registerFallbackValue(<String, String>{});
   });
 
   /// EthernetInterfaces codegen response (2 interfaces).
@@ -129,22 +132,67 @@ void main() {
     });
 
     test('devices data change triggers rebuild of port models', () async {
-      // Start with empty devices
-      final container = createContainer();
-      await container.read(ethernetDataProvider.future);
+      final samplePort = EthernetPortUIModel(
+        name: 'eth1',
+        label: 'LAN 1',
+        isWan: false,
+        isUp: true,
+        instancePath: 'Device.Ethernet.Interface.1.',
+        currentBitRate: 1000,
+      );
 
-      // Verify initial build
+      final container = ProviderContainer(
+        overrides: [
+          uspServiceProvider.overrideWithValue(mockUsp),
+          uspDeviceServiceProvider.overrideWithValue(mockDeviceSvc),
+          devicesDataProvider.overrideWith(() => _MutableDevicesDataNotifier()),
+        ],
+      );
+
+      // Initial build
+      await container.read(ethernetDataProvider.future);
+      verify(() => mockDeviceSvc.buildEthernetPortUIModels(
+            ethernetInterfaces: any(named: 'ethernetInterfaces'),
+            deviceModels: any(named: 'deviceModels'),
+            bridgePortMap: any(named: 'bridgePortMap'),
+          )).called(1);
+      clearInteractions(mockDeviceSvc);
+
+      // Return a port model on the rebuild call
+      when(() => mockDeviceSvc.buildEthernetPortUIModels(
+            ethernetInterfaces: any(named: 'ethernetInterfaces'),
+            deviceModels: any(named: 'deviceModels'),
+            bridgePortMap: any(named: 'bridgePortMap'),
+          )).thenReturn([samplePort]);
+
+      // Emit new devices data — triggers the ref.listen(devicesDataProvider) callback
+      final devNotifier = container.read(devicesDataProvider.notifier)
+          as _MutableDevicesDataNotifier;
+      devNotifier.emit(DevicesData(
+        deviceModels: [
+          DeviceUIModel(
+            mac: 'AA:BB:CC:DD:EE:01',
+            ip: '192.168.1.101',
+            hostName: 'NewDevice',
+            isActive: true,
+            isWifi: false,
+          ),
+        ],
+      ));
+      await Future.delayed(Duration.zero);
+
+      // Verify listener triggered rebuild
       verify(() => mockDeviceSvc.buildEthernetPortUIModels(
             ethernetInterfaces: any(named: 'ethernetInterfaces'),
             deviceModels: any(named: 'deviceModels'),
             bridgePortMap: any(named: 'bridgePortMap'),
           )).called(1);
 
-      // Simulate devices data change by updating the devicesData state.
-      // The listener in build() watches devicesDataProvider.
-      // Since we've overridden devicesDataProvider with a test notifier,
-      // we can trigger the listener by reading and verifying the wiring.
-      // The real listener fires when devicesDataProvider emits new data.
+      // Verify state was updated with new port models
+      final data = container.read(ethernetDataProvider).valueOrNull;
+      expect(data?.ethernetPortModels, hasLength(1));
+      expect(data?.ethernetPortModels.first.name, 'eth1');
+
       container.dispose();
     });
 
@@ -152,8 +200,34 @@ void main() {
       const data = EthernetData();
       expect(data.ethernetPortModels, isEmpty);
 
+      // With explicit value
       final updated = data.copyWith(ethernetPortModels: []);
       expect(updated.ethernetPortModels, isEmpty);
+
+      // Without parameter — falls back to this.ethernetPortModels
+      final same = data.copyWith();
+      expect(same.ethernetPortModels, isEmpty);
+      expect(same, equals(data));
+    });
+
+    test('EthernetData props uses length for equality', () {
+      const a = EthernetData();
+      const b = EthernetData();
+      expect(a, equals(b));
+      expect(a.props, [0]);
+
+      final c = EthernetData(ethernetPortModels: [
+        EthernetPortUIModel(
+          name: 'eth1',
+          label: 'LAN',
+          isWan: false,
+          isUp: true,
+          instancePath: 'p',
+          currentBitRate: 100,
+        ),
+      ]);
+      expect(a, isNot(equals(c)));
+      expect(c.props, [1]);
     });
   });
 }
@@ -166,4 +240,14 @@ class _TestDevicesDataNotifier extends DevicesDataNotifier {
 
   @override
   Future<DevicesData> build() async => _data;
+}
+
+/// Mutable DevicesData notifier for testing listener rebuild paths.
+class _MutableDevicesDataNotifier extends DevicesDataNotifier {
+  @override
+  Future<DevicesData> build() async => const DevicesData();
+
+  void emit(DevicesData data) {
+    state = AsyncData(data);
+  }
 }
