@@ -148,11 +148,18 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   /// Checks domain providers after a delay and invalidates any that are in
   /// error state. This handles the startup race where the bridge is
   /// temporarily unavailable (503) and providers fail before SSE connects.
-  void _scheduleProviderRetry() {
+  ///
+  /// Uses exponential backoff (5s → 10s → 20s) with up to [maxRetryAttempts]
+  /// attempts. The bridge can take 7+ seconds to come online after app start.
+  static const maxRetryAttempts = 3;
+
+  void _scheduleProviderRetry([int attempt = 0]) {
+    if (attempt >= maxRetryAttempts) return;
+
     // Cancel any previously scheduled retry (e.g. from refreshAll re-build).
     _retryTimer?.cancel();
 
-    const retryDelay = Duration(seconds: 5);
+    final retryDelay = Duration(seconds: 5 * (1 << attempt)); // 5s, 10s, 20s
     // Only retry providers that were already triggered in _buildImpl().
     // wifiDataProvider is not eagerly triggered here — it starts lazily via
     // devicesDataProvider's soft dependency or the WiFi settings page.
@@ -173,8 +180,10 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
         }
       }
       if (failed.isNotEmpty) {
-        logger.d('[USP][Orchestrator] Retrying failed providers: '
-            '${failed.join(', ')}');
+        logger.d('[USP][Orchestrator] Retrying failed providers (attempt '
+            '${attempt + 1}/$maxRetryAttempts): ${failed.join(', ')}');
+        // Schedule next retry attempt if there are still failures
+        _scheduleProviderRetry(attempt + 1);
       }
     });
   }
