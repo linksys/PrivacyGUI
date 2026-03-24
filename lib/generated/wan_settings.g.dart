@@ -73,6 +73,7 @@ class WanSettings {
   /// Update writable parameters via USP Set message
   static Future<void> save(
     UspService client, {
+    String? addressingType,
     int? mtu,
     String? staticIpAddress,
     String? subnetMask,
@@ -81,6 +82,9 @@ class WanSettings {
     bool? bridgeEnabled,
   }) async {
     final params = <String, dynamic>{};
+    if (addressingType != null)
+      params['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
+          addressingType;
     if (mtu != null) params['Device.IP.Interface.2.MaxMTUSize'] = mtu;
     if (staticIpAddress != null)
       params['Device.IP.Interface.2.IPv4Address.1.IPAddress'] = staticIpAddress;
