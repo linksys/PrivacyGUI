@@ -237,20 +237,14 @@ class IPv6WithReservedRule extends ValidationRule {
         return false;
       }
 
-      // 2. Link-local Address (fe80::/10) - First byte is 0xFE, and the top two bits of the second byte are 10 (0x80 to 0xBF).
-      if (rawAddress[0] == 0xFE && (rawAddress[1] & 0xC0) == 0x80) {
-        return false;
-      }
+      // 2. Link-local (fe80::/10) — allowed for LAN port service targets.
 
       // 3. Multicast Address (ff00::/8) - First byte is 0xFF.
       if (rawAddress[0] == 0xFF) {
         return false;
       }
 
-      // 4. ULA (Unique Local Address) fc00::/7 - First byte is 0xFC or 0xFD.
-      if (rawAddress[0] == 0xFC || rawAddress[0] == 0xFD) {
-        return false;
-      }
+      // 4. ULA (fc00::/7) — allowed for private network port service targets.
 
       // 5. Unspecified Address (::) - All 16 bytes are 0.
       if (rawAddress.every((byte) => byte == 0)) {
@@ -274,15 +268,18 @@ class IPv6WithReservedRule extends ValidationRule {
         return false;
       }
 
-      // --- Rule: Must be a Global Unicast Address ---
-      // Global Unicast addresses fall within the 2000::/3 range,
-      // meaning the first byte starts with binary '001'.
-      // So, the first byte's value should be between 0x20 (00100000) and 0x3F (00111111), inclusive.
-      if (rawAddress[0] < 0x20 || rawAddress[0] > 0x3F) {
+      // --- Rule: Must be a unicast address usable for port service ---
+      // Allowed: Global Unicast (2000::/3), Link-local (fe80::/10), ULA (fc00::/7)
+      final firstByte = rawAddress[0];
+      final isGlobalUnicast = firstByte >= 0x20 && firstByte <= 0x3F;
+      final isLinkLocal =
+          firstByte == 0xFE && (rawAddress[1] & 0xC0) == 0x80;
+      final isULA = firstByte == 0xFC || firstByte == 0xFD;
+
+      if (!isGlobalUnicast && !isLinkLocal && !isULA) {
         return false;
       }
 
-      // If all checks pass, the address is considered a valid global unicast.
       return true;
     } catch (e) {
       // Catch any other unexpected errors during the process.
