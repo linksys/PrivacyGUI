@@ -27,6 +27,10 @@ enum UspWanConnectionType {
       default:
         // Only treat as bridge when addressingType is absent/unknown AND
         // bridgeEnabled is explicitly true.
+        // TODO: This detection is fragile — bridgeEnabled (Device.Bridging.
+        // Bridge.1.Enable) is typically always true on most routers (LAN-side
+        // L2 bridge). Proper detection should check whether the WAN interface
+        // is configured as a bridge port via Device.Bridging.Bridge.{i}.Port.
         if (bridgeEnabled && addressingType.isEmpty) return bridge;
         return dhcp;
     }

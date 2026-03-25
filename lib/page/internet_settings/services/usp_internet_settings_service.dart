@@ -239,12 +239,9 @@ class UspInternetSettingsService {
         _mergeDns(edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
 
     // Save IP interface params (Device.IP.Interface.2.*)
-    // AddressingType must be sent when connection type changes so the device
-    // switches between DHCP/Static/IPCP mode correctly.
     await WanSettings.save(
       _usp,
-      addressingType:
-          typeChanged ? edited.connectionType.addressingTypeValue : null,
+      addressingType: typeChanged ? edited.connectionType.addressingTypeValue : null,
       mtu: _diff(original.mtu, edited.mtu),
       staticIpAddress: _diff(original.staticIpAddress, edited.staticIpAddress),
       subnetMask: _diff(original.subnetMask, edited.subnetMask),
