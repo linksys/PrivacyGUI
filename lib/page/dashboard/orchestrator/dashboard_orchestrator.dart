@@ -8,6 +8,7 @@ import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart'
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
@@ -102,6 +103,10 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     ref.read(systemInfoDataProvider);
     ref.read(devicesDataProvider);
     ref.read(ethernetDataProvider);
+
+    // Load package widget templates (fire-and-forget — settings panel
+    // shows native specs immediately, package specs appear when loaded).
+    ref.read(packageWidgetLoaderProvider);
 
     // SSE subscription setup
     if (authWasRestored) {

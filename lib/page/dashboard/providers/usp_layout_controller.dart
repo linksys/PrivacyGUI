@@ -66,8 +66,12 @@ class UspSliverDashboardControllerNotifier
           .toSet();
       final knownIds = UspWidgetSpecs.all.map((s) => s.id).toSet();
       final unknownIds = savedIds.difference(knownIds);
+      // Allow package widget IDs (pkg_ prefix) to survive validation —
+      // their specs load asynchronously after dashboard init.
+      final invalidIds =
+          unknownIds.where((id) => !id.startsWith('pkg_')).toSet();
 
-      if (unknownIds.isNotEmpty) {
+      if (invalidIds.isNotEmpty) {
         debugPrint('USP layout has unknown widgets: $unknownIds — resetting');
         await saveLayout();
         _preSeedBreakpoints();
@@ -158,14 +162,16 @@ class UspSliverDashboardControllerNotifier
   }
 
   /// Add a widget to the dashboard layout (appended at the bottom).
-  Future<void> addWidget(String id) async {
+  ///
+  /// [spec] can be provided for package widgets not in [UspWidgetSpecs].
+  Future<void> addWidget(String id, {WidgetSpec? spec}) async {
     final currentLayout = state.exportLayout();
     if (currentLayout.any((item) => (item as Map)['id'] == id)) {
       return; // Already exists
     }
 
-    final WidgetSpec? spec = UspWidgetSpecs.getById(id);
-    if (spec == null) return;
+    final resolvedSpec = spec ?? UspWidgetSpecs.getById(id);
+    if (resolvedSpec == null) return;
 
     // Calculate position at the bottom of the grid
     int maxY = 0;
@@ -177,7 +183,7 @@ class UspSliverDashboardControllerNotifier
     }
 
     final item = LayoutItemFactory.fromSpec(
-      spec,
+      resolvedSpec,
       x: 0,
       y: maxY,
       displayMode: DisplayMode.normal,

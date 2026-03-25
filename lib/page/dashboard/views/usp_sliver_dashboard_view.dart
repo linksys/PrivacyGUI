@@ -8,6 +8,8 @@ import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
+import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
@@ -329,7 +331,9 @@ class _UspSliverDashboardViewState
 
   void _handleResizeEnd(BuildContext context, LayoutItem item) {
     final factory = ref.read(uspWidgetFactoryProvider);
-    final spec = factory.getSpec(item.id);
+    final spec = factory.getSpec(item.id) ??
+        ref.read(packageWidgetLoaderProvider).valueOrNull?[item.id]
+            ?.toWidgetSpec();
     if (spec == null) return;
 
     final constraints = spec.constraints[DisplayMode.normal];
@@ -410,6 +414,18 @@ class _UspSliverDashboardViewState
     final widget = factory.buildWidget(item.id);
 
     if (widget == null) {
+      // Try package widget
+      final templates =
+          ref.read(packageWidgetLoaderProvider).valueOrNull;
+      final template = templates?[item.id];
+      if (template != null) {
+        return SizedBox.expand(
+          child: ClipRect(
+            child: PackageWidgetRenderer(template: template),
+          ),
+        );
+      }
+
       return AppCard(
         child: Center(
           child: AppText.bodyMedium('Unknown widget: ${item.id}'),
@@ -417,9 +433,9 @@ class _UspSliverDashboardViewState
       );
     }
 
-    // ClipRect prevents content from visually overflowing the grid cell.
-    // Individual cards can add their own SingleChildScrollView if needed.
-    final displayedWidget = ClipRect(child: widget);
+    // SizedBox.expand ensures cards fill their grid cell.
+    // ClipRect prevents content from visually overflowing the cell boundary.
+    final displayedWidget = SizedBox.expand(child: ClipRect(child: widget));
 
     if (isEditMode) {
       final spec = UspWidgetSpecs.getById(item.id);

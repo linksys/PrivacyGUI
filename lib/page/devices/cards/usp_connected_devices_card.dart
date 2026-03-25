@@ -29,6 +29,7 @@ class UspConnectedDevicesCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header — fixed
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -55,21 +56,30 @@ class UspConnectedDevicesCard extends ConsumerWidget {
             ],
           ),
           AppGap.xl(),
+          // Device list — scrollable
           if (devices.isEmpty)
             AppText.bodyMedium('No devices found')
-          else ...[
-            if (activeDevices.isNotEmpty) ...[
-              AppText.labelLarge('Online'),
-              AppGap.sm(),
-              ...activeDevices.map(_buildDeviceRow),
-            ],
-            if (inactiveDevices.isNotEmpty) ...[
-              if (activeDevices.isNotEmpty) AppGap.lg(),
-              AppText.labelLarge('Offline'),
-              AppGap.sm(),
-              ...inactiveDevices.map(_buildDeviceRow),
-            ],
-          ],
+          else
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (activeDevices.isNotEmpty) ...[
+                      AppText.labelLarge('Online'),
+                      AppGap.sm(),
+                      ...activeDevices.map(_buildDeviceRow),
+                    ],
+                    if (inactiveDevices.isNotEmpty) ...[
+                      if (activeDevices.isNotEmpty) AppGap.lg(),
+                      AppText.labelLarge('Offline'),
+                      AppGap.sm(),
+                      ...inactiveDevices.map(_buildDeviceRow),
+                    ],
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

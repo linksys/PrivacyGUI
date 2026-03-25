@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
-import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:privacy_gui/page/dashboard/providers/all_widget_specs_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_preferences_provider.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/preset_selection_dialog.dart';
@@ -124,7 +124,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
     final currentIds =
         currentLayout.map((e) => (e as Map)['id'] as String).toSet();
 
-    final hiddenSpecs = UspWidgetSpecs.all.where((spec) {
+    final allSpecs = ref.watch(allWidgetSpecsProvider);
+    final hiddenSpecs = allSpecs.where((spec) {
       return !currentIds.contains(spec.id);
     }).toList();
 
@@ -146,7 +147,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                   onTap: () async {
                     await ref
                         .read(uspSliverDashboardControllerProvider.notifier)
-                        .addWidget(spec.id);
+                        .addWidget(spec.id, spec: spec);
 
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
