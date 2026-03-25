@@ -195,8 +195,7 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
                   ButtonSegment(value: 'Both', label: Text('Both')),
                 ],
                 selected: {_protocol},
-                onSelectionChanged: (v) =>
-                    setState(() => _protocol = v.first),
+                onSelectionChanged: (v) =>setState(() => _protocol = v.first),
               ),
             ],
           ),

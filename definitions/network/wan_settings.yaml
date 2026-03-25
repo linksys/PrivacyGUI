@@ -8,6 +8,7 @@ parameters:
   - path: Device.IP.Interface.2.IPv4Address.1.AddressingType
     field_name: addressingType
     type: string
+    writable: true
     description: IPv4 addressing type (Static, DHCP, IPCP, AutoIP)
 
   - path: Device.IP.Interface.2.MaxMTUSize
