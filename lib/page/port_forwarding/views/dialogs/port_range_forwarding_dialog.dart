@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -130,104 +131,103 @@ class _PortRangeForwardingDialogState extends State<PortRangeForwardingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
+    return AppDialog(
+      title: AppText.titleLarge(
           _isEdit ? 'Edit Port Range Forwarding' : 'Add Port Range Forwarding'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppTextField(
-              controller: _descController,
-              hintText: 'Description',
-              errorText: _errors['description'],
-              onChanged: (_) => _validate(),
-            ),
-            AppGap.lg(),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _extPortStartController,
-                    hintText: 'External Port Start',
-                    keyboardType: TextInputType.number,
-                    errorText: _errors['extStart'],
-                    onChanged: (_) => _validate(),
-                  ),
+      scrollable: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppTextField(
+            controller: _descController,
+            hintText: 'Description',
+            errorText: _errors['description'],
+            onChanged: (_) => _validate(),
+          ),
+          AppGap.lg(),
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  controller: _extPortStartController,
+                  hintText: 'External Port Start',
+                  keyboardType: TextInputType.number,
+                  errorText: _errors['extStart'],
+                  onChanged: (_) => _validate(),
                 ),
-                AppGap.md(),
-                Expanded(
-                  child: AppTextField(
-                    controller: _extPortEndController,
-                    hintText: 'External Port End',
-                    keyboardType: TextInputType.number,
-                    errorText: _errors['extEnd'],
-                    onChanged: (_) => _validate(),
-                  ),
+              ),
+              AppGap.md(),
+              Expanded(
+                child: AppTextField(
+                  controller: _extPortEndController,
+                  hintText: 'External Port End',
+                  keyboardType: TextInputType.number,
+                  errorText: _errors['extEnd'],
+                  onChanged: (_) => _validate(),
                 ),
-              ],
-            ),
-            AppGap.lg(),
-            AppTextField(
-              controller: _intPortController,
-              hintText: 'Internal Port',
-              keyboardType: TextInputType.number,
-              errorText: _errors['intPort'],
-              onChanged: (_) => _validate(),
-            ),
-            AppGap.lg(),
-            AppTextField(
-              controller: _intClientController,
-              hintText: 'Internal IP (e.g. 192.168.1.100)',
-              errorText: _errors['client'],
-              onChanged: (_) => _validate(),
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium('Protocol'),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'TCP', label: Text('TCP')),
-                    ButtonSegment(value: 'UDP', label: Text('UDP')),
-                    ButtonSegment(value: 'Both', label: Text('Both')),
-                  ],
-                  selected: {_protocol},
-                  onSelectionChanged: (v) =>
-                      setState(() => _protocol = v.first),
-                ),
-              ],
-            ),
-            AppGap.lg(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium('Enabled'),
-                AppSwitch(
-                  value: _enabled,
-                  onChanged: (value) => setState(() => _enabled = value),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          AppGap.lg(),
+          AppTextField(
+            controller: _intPortController,
+            hintText: 'Internal Port',
+            keyboardType: TextInputType.number,
+            errorText: _errors['intPort'],
+            onChanged: (_) => _validate(),
+          ),
+          AppGap.lg(),
+          AppTextField(
+            controller: _intClientController,
+            hintText: 'Internal IP (e.g. 192.168.1.100)',
+            errorText: _errors['client'],
+            onChanged: (_) => _validate(),
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium('Protocol'),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'TCP', label: Text('TCP')),
+                  ButtonSegment(value: 'UDP', label: Text('UDP')),
+                  ButtonSegment(value: 'Both', label: Text('Both')),
+                ],
+                selected: {_protocol},
+                onSelectionChanged: (v) =>
+                    setState(() => _protocol = v.first),
+              ),
+            ],
+          ),
+          AppGap.lg(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.bodyMedium('Enabled'),
+              AppSwitch(
+                value: _enabled,
+                onChanged: (value) => setState(() => _enabled = value),
+              ),
+            ],
+          ),
+        ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+        AppButton.text(
+          label: 'Cancel',
+          onTap: () => context.pop(),
         ),
-        FilledButton(
-          onPressed: _isFormValid ? _submit : null,
-          child: Text(_isEdit ? 'Save' : 'Add'),
+        AppButton.text(
+          label: _isEdit ? 'Save' : 'Add',
+          onTap: _isFormValid ? _submit : null,
         ),
       ],
     );
   }
 
   void _submit() {
-    Navigator.of(context).pop(PortRangeForwardingDialogResult(
+    context.pop(PortRangeForwardingDialogResult(
       description: _descController.text.trim(),
       externalPortStart: int.parse(_extPortStartController.text.trim()),
       externalPortEnd: int.parse(_extPortEndController.text.trim()),

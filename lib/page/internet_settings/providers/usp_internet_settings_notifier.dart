@@ -134,10 +134,9 @@ class UspInternetSettingsNotifier
     // Guard connection type for post-save re-fetch if type was not changed.
     final original = state.original;
     final edited = state.edited;
-    _preservedConnectionType =
-        original.connectionType == edited.connectionType
-            ? edited.connectionType
-            : null;
+    _preservedConnectionType = original.connectionType == edited.connectionType
+        ? edited.connectionType
+        : null;
 
     state = state.copyWith(
       status: state.status.copyWith(isSaving: true, activeMutation: 'save'),

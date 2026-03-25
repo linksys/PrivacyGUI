@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -71,8 +72,9 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEdit ? 'Edit DHCP Reservation' : 'Add DHCP Reservation'),
+    return AppDialog(
+      title: AppText.titleLarge(
+          _isEdit ? 'Edit DHCP Reservation' : 'Add DHCP Reservation'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -103,13 +105,13 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+        AppButton.text(
+          label: 'Cancel',
+          onTap: () => context.pop(),
         ),
-        FilledButton(
-          onPressed: _isFormValid ? _submit : null,
-          child: Text(_isEdit ? 'Save' : 'Add'),
+        AppButton.text(
+          label: _isEdit ? 'Save' : 'Add',
+          onTap: _isFormValid ? _submit : null,
         ),
       ],
     );
@@ -118,6 +120,6 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
   void _submit() {
     final mac = _macController.text.trim();
     final ip = _ipController.text.trim();
-    Navigator.of(context).pop((mac: mac, ip: ip, enable: _enabled));
+    context.pop((mac: mac, ip: ip, enable: _enabled));
   }
 }

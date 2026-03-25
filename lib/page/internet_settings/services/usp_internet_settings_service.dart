@@ -241,7 +241,8 @@ class UspInternetSettingsService {
     // Save IP interface params (Device.IP.Interface.2.*)
     await WanSettings.save(
       _usp,
-      addressingType: typeChanged ? edited.connectionType.addressingTypeValue : null,
+      addressingType:
+          typeChanged ? edited.connectionType.addressingTypeValue : null,
       mtu: _diff(original.mtu, edited.mtu),
       staticIpAddress: _diff(original.staticIpAddress, edited.staticIpAddress),
       subnetMask: _diff(original.subnetMask, edited.subnetMask),

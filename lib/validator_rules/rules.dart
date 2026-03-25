@@ -272,8 +272,7 @@ class IPv6WithReservedRule extends ValidationRule {
       // Allowed: Global Unicast (2000::/3), Link-local (fe80::/10), ULA (fc00::/7)
       final firstByte = rawAddress[0];
       final isGlobalUnicast = firstByte >= 0x20 && firstByte <= 0x3F;
-      final isLinkLocal =
-          firstByte == 0xFE && (rawAddress[1] & 0xC0) == 0x80;
+      final isLinkLocal = firstByte == 0xFE && (rawAddress[1] & 0xC0) == 0x80;
       final isULA = firstByte == 0xFC || firstByte == 0xFD;
 
       if (!isGlobalUnicast && !isLinkLocal && !isULA) {
