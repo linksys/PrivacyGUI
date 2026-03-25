@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/apps/models/app_info_ui_model.dart';
 import 'package:privacy_gui/page/apps/providers/usp_apps_notifier.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
+import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -29,7 +30,7 @@ class UspAppsView extends ConsumerWidget {
         return asyncState.when(
           loading: () => const Center(child: AppLoader()),
           error: (error, stack) => _buildError(context, ref, error),
-          data: (appsState) => _buildContent(context, appsState),
+          data: (appsState) => _buildContent(context, ref, appsState),
         );
       },
     );
@@ -56,7 +57,7 @@ class UspAppsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, UspAppsState appsState) {
+  Widget _buildContent(BuildContext context, WidgetRef ref, UspAppsState appsState) {
     final apps = appsState.apps;
     if (apps.isEmpty) {
       return Center(
@@ -82,7 +83,20 @@ class UspAppsView extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText.headlineSmall('Apps'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              AppText.headlineSmall('Apps'),
+              AppButton(
+                label: 'Store',
+                icon: AppIcon.font(Icons.storefront),
+                onTap: () {
+                  final token = ref.read(uspServiceProvider)?.sessionToken ?? '';
+                  openUrl('${Uri.base.origin}/app-store/?token=$token');
+                },
+              ),
+            ],
+          ),
           AppGap.xl(),
           SizedBox(
             height: (apps.length / crossAxisCount).ceil() * mainAxisExtent +
