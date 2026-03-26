@@ -7,6 +7,7 @@ import 'package:privacy_gui/components/styled/general_settings_widget/general_se
 import 'package:privacy_gui/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/components/styled/menus/widgets/menu_holder.dart';
 import 'package:privacy_gui/providers/app_settings/app_settings_provider.dart';
+import 'package:privacy_gui/page/apps/providers/apps_capability_provider.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/theme_config_provider.dart';
 import 'package:privacy_gui/page/shell/usp_dashboard_shell.dart';
@@ -50,8 +51,10 @@ class UspTopBar extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (ref.watch(authProvider.select(
-                      (v) => v.value?.loginType != null &&
-                          v.value?.loginType != LoginType.none)))
+                          (v) => v.value?.loginType != null &&
+                              v.value?.loginType != LoginType.none)) &&
+                      (ref.watch(appsCapabilityProvider).valueOrNull ??
+                          false))
                     IconButton(
                       icon: AppIcon.font(Icons.apps,
                           color: colorScheme.onSurface),
