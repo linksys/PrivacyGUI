@@ -51,6 +51,8 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
   bool _isLoading = false;
   bool _isWidget = false;
   late final TreeController<RouterTreeNode> treeController;
+  final ScrollController _desktopScrollController = ScrollController();
+  final ScrollController _mobileScrollController = ScrollController();
 
   @override
   void initState() {
@@ -70,8 +72,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
 
   @override
   void dispose() {
-    super.dispose();
+    _mobileScrollController.dispose();
+    _desktopScrollController.dispose();
     treeController.dispose();
+    super.dispose();
   }
 
   @override
@@ -142,8 +146,10 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
       BuildContext context, WidgetRef ref, double largeDesiredTreeWidth) {
     return ResponsiveLayout.isMobileLayout(context)
         ? Scrollbar(
+            controller: _mobileScrollController,
             thumbVisibility: true,
             child: TreeView<RouterTreeNode>(
+              controller: _mobileScrollController,
               treeController: treeController,
               physics: const BouncingScrollPhysics(
                   parent: AlwaysScrollableScrollPhysics()),
@@ -182,12 +188,14 @@ class _InstantTopologyViewState extends ConsumerState<InstantTopologyView> {
             ),
           )
         : Scrollbar(
+            controller: _desktopScrollController,
             thumbVisibility: true,
             child: RefreshIndicator(
               onRefresh: () {
                 return ref.read(pollingProvider.notifier).forcePolling();
               },
               child: SingleChildScrollView(
+                controller: _desktopScrollController,
                 physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics()),
                 child: SingleChildScrollView(
