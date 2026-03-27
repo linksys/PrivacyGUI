@@ -99,7 +99,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
         'Device.Routing.Router.1.IPv4Forwarding.*.DestIPAddress',
         'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress',
         'Device.Routing.Router.1.IPv4Forwarding.*.Interface',
-      ]).timeout(const Duration(seconds: 10));
+      ]).timeout(const Duration(seconds: 20));
 
       const basePath = 'Device.Routing.Router.1.IPv4Forwarding.';
       final ids = <String>{};
@@ -134,7 +134,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
       final resp = await usp.get([
         'Device.IP.Interface.2.IPv6Enable',
         'Device.IP.Interface.2.IPv6Address.',
-      ]).timeout(const Duration(seconds: 10));
+      ]).timeout(const Duration(seconds: 20));
 
       final enabled = resp['Device.IP.Interface.2.IPv6Enable'] == true;
       final instances = resp.getInstances('Device.IP.Interface.2.IPv6Address.');

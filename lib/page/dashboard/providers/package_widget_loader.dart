@@ -18,8 +18,8 @@ import '../models/package_widget_template.dart';
 /// 4. 30-second poll detects package install/remove via key set difference
 ///
 /// NOT autoDispose — persists across tab switches.
-final packageWidgetLoaderProvider = AsyncNotifierProvider<
-    PackageWidgetLoader, Map<String, PackageWidgetTemplate>>(
+final packageWidgetLoaderProvider = AsyncNotifierProvider<PackageWidgetLoader,
+    Map<String, PackageWidgetTemplate>>(
   PackageWidgetLoader.new,
 );
 
@@ -42,15 +42,19 @@ class PackageWidgetLoader
     return templates;
   }
 
+  /// Result of [_loadTemplates] — distinguishes "no widgets" from "fetch failed".
+  ({Map<String, PackageWidgetTemplate> templates, bool success}) _lastLoad =
+      (templates: const {}, success: false);
+
   Future<Map<String, PackageWidgetTemplate>> _loadTemplates() async {
     final baseUrl = Uri.base.origin;
     final templates = <String, PackageWidgetTemplate>{};
 
     try {
-      final appsResponse =
-          await http.get(Uri.parse('$baseUrl/api/apps.json'));
+      final appsResponse = await http.get(Uri.parse('$baseUrl/api/apps.json'));
       if (appsResponse.statusCode != 200) {
         logger.w('[USP][PkgWidgets] apps.json HTTP ${appsResponse.statusCode}');
+        _lastLoad = (templates: const {}, success: false);
         return {};
       }
 
@@ -67,6 +71,7 @@ class PackageWidgetLoader
 
       if (widgetEntries.isEmpty) {
         logger.d('[USP][PkgWidgets] No widget entries in apps.json');
+        _lastLoad = (templates: const {}, success: true);
         return {};
       }
 
@@ -100,9 +105,12 @@ class PackageWidgetLoader
       }
     } catch (e) {
       logger.w('[USP][PkgWidgets] Failed to load apps.json: $e');
+      _lastLoad = (templates: const {}, success: false);
+      return {};
     }
 
     logger.d('[USP][PkgWidgets] Loaded ${templates.length} templates');
+    _lastLoad = (templates: templates, success: true);
     return templates;
   }
 
@@ -113,10 +121,21 @@ class PackageWidgetLoader
   }
 
   /// Poll for package changes — detect install/remove via key set diff.
+  ///
+  /// Only processes removals when the HTTP fetch was successful. A transient
+  /// network failure (non-200, timeout, etc.) must NOT be interpreted as
+  /// "all packages were uninstalled" — that would wipe dashboard cards.
   Future<void> _pollForChanges() async {
     try {
       final currentIds = state.valueOrNull?.keys.toSet() ?? {};
       final freshTemplates = await _loadTemplates();
+
+      // Skip diff when fetch failed — we cannot tell removed from unavailable.
+      if (!_lastLoad.success) {
+        logger.d('[USP][PkgWidgets] Poll skipped (fetch failed)');
+        return;
+      }
+
       final freshIds = freshTemplates.keys.toSet();
 
       if (freshIds == currentIds) return; // No change

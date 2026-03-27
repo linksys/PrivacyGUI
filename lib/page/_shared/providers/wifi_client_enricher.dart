@@ -15,7 +15,9 @@ import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 /// If the selective-get wildcard paths return empty (possible USP agent
 /// limitation), falls back to a broader parent-path fetch and manual parse.
 Future<Map<String, WifiClient>> fetchWifiClients(UspService client) async {
-  final result = await WifiClients.fetch(client);
+  // Low priority: AssociatedDevice wildcard queries block OBUSPA's
+  // single-threaded processor. Dispatch after lighter queries complete.
+  final result = await WifiClients.fetch(client, priority: RequestPriority.low);
   logger.d('[USP][Dashboard]WifiClients raw: ${result.items.length} items');
 
   if (result.items.isNotEmpty) {
@@ -49,9 +51,10 @@ Future<Map<String, WifiClient>> fetchWifiClients(UspService client) async {
 /// parses the response map into [WifiClient] objects.
 Future<Map<String, WifiClient>> _fetchWifiClientsFallback(
     UspService client) async {
-  final response = await client.get([
-    'Device.WiFi.AccessPoint.*.AssociatedDevice.',
-  ]);
+  final response = await client.get(
+    ['Device.WiFi.AccessPoint.*.AssociatedDevice.'],
+    priority: RequestPriority.low,
+  );
   logger.d(
       '[USP][Dashboard]WifiClients fallback response: ${response.length} keys');
   if (response.isEmpty) return {};

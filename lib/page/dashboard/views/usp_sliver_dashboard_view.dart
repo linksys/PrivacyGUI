@@ -153,6 +153,11 @@ class _UspSliverDashboardViewState
     ref.watch(uspDeviceAnalyticsProvider);
     ref.watch(uspSystemMonitorProvider);
 
+    // Watch package widget loader so the view rebuilds when templates
+    // finish loading — without this, pkg_ cards show "Unknown widget"
+    // after page refresh because itemBuilder uses ref.read.
+    ref.watch(packageWidgetLoaderProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -332,7 +337,9 @@ class _UspSliverDashboardViewState
   void _handleResizeEnd(BuildContext context, LayoutItem item) {
     final factory = ref.read(uspWidgetFactoryProvider);
     final spec = factory.getSpec(item.id) ??
-        ref.read(packageWidgetLoaderProvider).valueOrNull?[item.id]
+        ref
+            .read(packageWidgetLoaderProvider)
+            .valueOrNull?[item.id]
             ?.toWidgetSpec();
     if (spec == null) return;
 
@@ -415,8 +422,7 @@ class _UspSliverDashboardViewState
 
     if (widget == null) {
       // Try package widget
-      final templates =
-          ref.read(packageWidgetLoaderProvider).valueOrNull;
+      final templates = ref.read(packageWidgetLoaderProvider).valueOrNull;
       final template = templates?[item.id];
       if (template != null) {
         return SizedBox.expand(

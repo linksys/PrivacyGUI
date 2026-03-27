@@ -119,14 +119,18 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
 
-    // Parallel fetch all WiFi data (15s timeout prevents indefinite hang
-    // when the bridge is temporarily unavailable, e.g. 503 on startup)
+    // Parallel fetch all WiFi data. No overall timeout here — the throttler's
+    // per-request timeout (15s) protects each individual request. An overall
+    // timeout would fire based on wall-clock time from build(), which includes
+    // queue wait time in the throttler. With ~14 normal-priority requests
+    // ahead and fetchWifiClients at low priority, queue time alone can exceed
+    // 12s, leaving insufficient time for the actual request.
     final results = await Future.wait([
       WiFiRadios.fetch(usp),
       WiFiSsids.fetch(usp),
       WiFiAccessPoints.fetch(usp),
       fetchWifiClients(usp),
-    ]).timeout(const Duration(seconds: 15));
+    ]);
 
     final radios = results[0] as WiFiRadios;
     final ssids = results[1] as WiFiSsids;

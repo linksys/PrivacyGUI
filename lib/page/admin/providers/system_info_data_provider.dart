@@ -80,7 +80,7 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
           'Device.DeviceInfo.ActiveFirmwareImage',
           'Device.DeviceInfo.BootFirmwareImage',
         ]),
-      ]).timeout(const Duration(seconds: 10));
+      ]).timeout(const Duration(seconds: 20));
       final images = results[0] as FirmwareImages;
       final refs = results[1] as Map<String, dynamic>;
       final activeRef =

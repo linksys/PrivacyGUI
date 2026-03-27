@@ -142,7 +142,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     try {
       wifiData = await ref
           .read(wifiDataProvider.future)
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 20));
     } catch (e) {
       logger.w('[USP][DevicesData] WiFi data unavailable, using fallback: $e');
       wifiData = const WifiData.empty();

@@ -254,6 +254,8 @@ class SseManager {
     _unloadHandler.unregister();
     _usp.onSseSubscribe = null;
     _usp.onTokenRefreshed = null;
+    // Synchronous abort first — critical for hot restart where async may not complete.
+    _bridge.abortSse();
     await connection.disconnect();
     await registry.unregisterAll();
     router.dispose();

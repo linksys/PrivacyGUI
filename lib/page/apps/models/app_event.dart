@@ -22,8 +22,7 @@ class AppEvent extends Equatable {
         'updated' => AppEventType.updated,
         _ => AppEventType.updated,
       },
-      appName: (json['app'] as Map<String, dynamic>?)?['name'] as String? ??
-          '',
+      appName: (json['app'] as Map<String, dynamic>?)?['name'] as String? ?? '',
       timestamp: json['timestamp'] as int? ?? 0,
     );
   }

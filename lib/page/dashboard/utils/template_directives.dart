@@ -92,21 +92,26 @@ dynamic _applyThreshold(dynamic current, Map<String, dynamic> op) {
 }
 
 /// Whitelisted function registry mapping to [Transforms] static methods.
-dynamic _applyFunction(String name, dynamic input, Map<String, dynamic> config) {
+dynamic _applyFunction(
+    String name, dynamic input, Map<String, dynamic> config) {
   final precision = config['precision'] as int?;
   switch (name) {
     case 'formatBandwidth':
-      return Transforms.formatBandwidth(_toDouble(input), precision: precision ?? 2);
+      return Transforms.formatBandwidth(_toDouble(input),
+          precision: precision ?? 2);
     case 'formatDuration':
       return Transforms.formatDuration(_toInt(input));
     case 'formatBytes':
       return Transforms.formatBytes(_toInt(input));
     case 'formatPercent':
-      return Transforms.formatPercent(_toDouble(input), precision: precision ?? 1);
+      return Transforms.formatPercent(_toDouble(input),
+          precision: precision ?? 1);
     case 'formatNumber':
-      return Transforms.formatNumber(_toDouble(input), precision: precision ?? 0);
+      return Transforms.formatNumber(_toDouble(input),
+          precision: precision ?? 0);
     case 'formatSpeed':
-      return Transforms.formatSpeed(_toDouble(input), precision: precision ?? 2);
+      return Transforms.formatSpeed(_toDouble(input),
+          precision: precision ?? 2);
     case 'cidrToNetmask':
       return Transforms.cidrToNetmask(_toInt(input));
     default:
@@ -148,14 +153,16 @@ dynamic evaluateCompute(
   }
 }
 
-String _computePercentUsed(Map<String, dynamic> config, ResolveValue resolveValue) {
+String _computePercentUsed(
+    Map<String, dynamic> config, ResolveValue resolveValue) {
   final total = _toDouble(resolveValue(config['total']));
   final free = _toDouble(resolveValue(config['free']));
   if (total <= 0) return '--';
   return ((total - free) / total * 100).toStringAsFixed(1);
 }
 
-dynamic _computeSubtract(Map<String, dynamic> config, ResolveValue resolveValue) {
+dynamic _computeSubtract(
+    Map<String, dynamic> config, ResolveValue resolveValue) {
   final a = _toDouble(resolveValue(config['a']));
   final b = _toDouble(resolveValue(config['b']));
   return a - b;
@@ -168,7 +175,8 @@ dynamic _computeRatio(Map<String, dynamic> config, ResolveValue resolveValue) {
   return numerator / denominator;
 }
 
-String _computeTemplate(Map<String, dynamic> config, ResolveValue resolveValue) {
+String _computeTemplate(
+    Map<String, dynamic> config, ResolveValue resolveValue) {
   final format = config['format'] as String? ?? '';
   final values = config['values'] as Map<String, dynamic>? ?? {};
 
@@ -215,7 +223,8 @@ bool evaluateVisible(
   }
 }
 
-bool _evaluateCondition(Map<String, dynamic> config, ResolveValue resolveValue) {
+bool _evaluateCondition(
+    Map<String, dynamic> config, ResolveValue resolveValue) {
   final condition = config['condition'] as String? ?? 'eq';
   final rawValue = resolveValue(config['value']);
   final rawExpected = config['expected'];
@@ -237,7 +246,9 @@ bool _evaluateCondition(Map<String, dynamic> config, ResolveValue resolveValue) 
       return _toString(rawValue).contains(_toString(rawExpected));
     case 'in':
       if (rawExpected is List) {
-        return rawExpected.map((e) => _toString(e)).contains(_toString(rawValue));
+        return rawExpected
+            .map((e) => _toString(e))
+            .contains(_toString(rawValue));
       }
       return false;
     default:

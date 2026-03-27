@@ -61,7 +61,10 @@ void main() {
           'type': 'AppCard',
           'properties': {'padding': 16},
           'children': [
-            {'type': 'AppText', 'properties': {'text': 'Hello'}},
+            {
+              'type': 'AppText',
+              'properties': {'text': 'Hello'}
+            },
           ],
         },
         {},

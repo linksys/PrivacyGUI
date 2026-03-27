@@ -108,7 +108,7 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
     try {
       final resp = await usp.get([
         'Device.Bridging.Bridge.*.Port.*.LowerLayers',
-      ]).timeout(const Duration(seconds: 10));
+      ]).timeout(const Duration(seconds: 20));
       final map = <String, String>{};
       for (final entry in resp.entries) {
         if (!entry.key.endsWith('.LowerLayers')) continue;

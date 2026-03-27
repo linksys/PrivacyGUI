@@ -57,7 +57,8 @@ class UspAppsView extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref, UspAppsState appsState) {
+  Widget _buildContent(
+      BuildContext context, WidgetRef ref, UspAppsState appsState) {
     final apps = appsState.apps;
     if (apps.isEmpty) {
       return Center(
@@ -91,7 +92,8 @@ class UspAppsView extends ConsumerWidget {
                 label: 'Store',
                 icon: AppIcon.font(Icons.storefront),
                 onTap: () {
-                  final token = ref.read(uspServiceProvider)?.sessionToken ?? '';
+                  final token =
+                      ref.read(uspServiceProvider)?.sessionToken ?? '';
                   openUrl('${Uri.base.origin}/app-store/?token=$token');
                 },
               ),
@@ -132,16 +134,22 @@ class UspAppsView extends ConsumerWidget {
 // App Grid Card
 // ---------------------------------------------------------------------------
 
-class _AppGridCard extends StatelessWidget {
+class _AppGridCard extends ConsumerWidget {
   final AppInfoUIModel app;
   final bool isNew;
 
   const _AppGridCard({required this.app, this.isNew = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppCard(
-      onTap: app.link.isNotEmpty ? () => openUrl(app.link) : null,
+      onTap: app.link.isNotEmpty
+          ? () {
+              final token = ref.read(uspServiceProvider)?.sessionToken ?? '';
+              final separator = app.link.contains('?') ? '&' : '?';
+              openUrl('${app.link}${separator}token=$token');
+            }
+          : null,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,

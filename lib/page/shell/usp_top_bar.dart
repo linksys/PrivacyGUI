@@ -50,17 +50,15 @@ class UspTopBar extends ConsumerWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (ref.watch(authProvider.select(
-                          (v) => v.value?.loginType != null &&
-                              v.value?.loginType != LoginType.none)) &&
-                      (ref.watch(appsCapabilityProvider).valueOrNull ??
-                          false))
+                  if (ref.watch(authProvider.select((v) =>
+                          v.value?.loginType != null &&
+                          v.value?.loginType != LoginType.none)) &&
+                      (ref.watch(appsCapabilityProvider).valueOrNull ?? false))
                     IconButton(
                       icon: AppIcon.font(Icons.apps,
                           color: colorScheme.onSurface),
                       tooltip: 'Apps',
-                      onPressed: () =>
-                          context.goNamed(RouteNamed.uspApps),
+                      onPressed: () => context.goNamed(RouteNamed.uspApps),
                     ),
                   const Padding(
                     padding: EdgeInsets.all(4.0),

@@ -43,6 +43,9 @@ class UspBridgeClient {
 
   /// Synchronously abort the active SSE stream. No-op on non-Web platforms.
   void abortSse() {}
+
+  /// Abort SSE from a previous hot restart session. No-op on non-Web platforms.
+  static void abortPreviousSession() {}
 }
 
 /// A parsed Server-Sent Event.

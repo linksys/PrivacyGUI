@@ -83,8 +83,11 @@ class DataElementsNetwork {
   ];
 
   /// Fetch all instances via USP Get message
-  static Future<DataElementsNetwork> fetch(UspService client) async {
-    final response = await client.get(_paths);
+  static Future<DataElementsNetwork> fetch(
+    UspService client, {
+    RequestPriority? priority,
+  }) async {
+    final response = await client.get(_paths, priority: priority);
     return DataElementsNetwork._fromResponse(response);
   }
 

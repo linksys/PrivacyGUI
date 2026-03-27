@@ -77,7 +77,7 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
       final resp = await usp.get([
         'Device.IP.Interface.1.IPv6Enable',
         'Device.IP.Interface.1.IPv6Address.',
-      ]).timeout(const Duration(seconds: 10));
+      ]).timeout(const Duration(seconds: 20));
 
       final enabled = resp['Device.IP.Interface.1.IPv6Enable'] == true;
       final instances = resp.getInstances('Device.IP.Interface.1.IPv6Address.');

@@ -10,6 +10,7 @@ import 'package:privacy_gui/page/_shared/providers/usp_system_monitor_notifier.d
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
@@ -78,6 +79,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     ref.invalidate(systemInfoDataProvider);
     ref.invalidate(devicesDataProvider);
     ref.invalidate(ethernetDataProvider);
+    ref.invalidate(wifiDataProvider);
     // Re-run orchestrator build (auth check + re-trigger providers).
     ref.invalidateSelf();
   }
@@ -165,13 +167,14 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
     _retryTimer?.cancel();
 
     final retryDelay = Duration(seconds: 5 * (1 << attempt)); // 5s, 10s, 20s
-    // Only retry providers that were already triggered in _buildImpl().
-    // wifiDataProvider is not eagerly triggered here — it starts lazily via
-    // devicesDataProvider's soft dependency or the WiFi settings page.
+    // Retry all domain providers that may have failed during initial load.
+    // wifiDataProvider starts lazily via devicesDataProvider's soft dependency
+    // but can fail due to throttler queue delays — include it in retries.
     final providers = [
       ('systemInfo', systemInfoDataProvider),
       ('devices', devicesDataProvider),
       ('ethernet', ethernetDataProvider),
+      ('wifi', wifiDataProvider),
     ];
 
     _retryTimer = Timer(retryDelay, () {
@@ -187,9 +190,11 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
       if (failed.isNotEmpty) {
         logger.d('[USP][Orchestrator] Retrying failed providers (attempt '
             '${attempt + 1}/$maxRetryAttempts): ${failed.join(', ')}');
-        // Schedule next retry attempt if there are still failures
-        _scheduleProviderRetry(attempt + 1);
       }
+      // Always schedule next retry — providers may still be loading at this
+      // check (e.g. throttler queue wait) and could fail after this point.
+      // The maxRetryAttempts guard at the top prevents infinite retries.
+      _scheduleProviderRetry(attempt + 1);
     });
   }
 }

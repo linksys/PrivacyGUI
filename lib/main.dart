@@ -14,6 +14,7 @@ import 'package:privacy_gui/providers/logger_observer.dart';
 
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/utils/storage.dart';
+import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The main entry point for the Flutter application.
@@ -31,6 +32,9 @@ void main() async {
   // if (kIsWeb) {
   //   usePathUrlStrategy();
   // }
+  // Abort SSE connection from previous hot restart (browser keeps old Fetch alive)
+  UspBridgeClient.abortPreviousSession();
+
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
 
   // TODO Revisit again until Flutter SDK 3.27.x

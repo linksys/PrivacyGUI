@@ -130,10 +130,10 @@ class UspAppsService {
 
     try {
       // Ensure we can parse as a URI — add scheme if missing.
-      final withScheme = link.startsWith('http://') ||
-              link.startsWith('https://')
-          ? link
-          : 'http://$link';
+      final withScheme =
+          link.startsWith('http://') || link.startsWith('https://')
+              ? link
+              : 'http://$link';
       final uri = Uri.parse(withScheme);
       final path = uri.path.isEmpty ? '/' : uri.path;
       final result = '$_baseUrl$path';

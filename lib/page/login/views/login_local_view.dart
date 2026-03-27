@@ -35,6 +35,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   bool isCountdownJustFinished = false;
   bool _showPassword = false;
   late AuthNotifier auth;
+  late SessionNotifier session;
 
   final TextEditingController _passwordController = TextEditingController();
   String? _p;
@@ -43,15 +44,15 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
   void initState() {
     super.initState();
     auth = ref.read(authProvider.notifier);
+    session = ref.read(sessionProvider.notifier);
     _p = widget.args['p'];
     //Use this to prevent errors from modifying the state during the init stage
     doSomethingWithSpinner(context, Future.doWhile(() => !mounted))
         .then((value) {
+      if (!mounted) return;
       _getAdminPasswordHint();
-      ref
-          .read(sessionProvider.notifier)
-          .fetchDeviceInfoAndInitializeServices()
-          .then((_) {
+      session.fetchDeviceInfoAndInitializeServices().then((_) {
+        if (!mounted) return;
         if (_p != null) {
           _passwordController.text = _p!;
           _doLogin();
@@ -64,9 +65,9 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   @override
   void dispose() {
-    super.dispose();
     _timer?.cancel();
     _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -199,6 +200,10 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   void _startTimer({String? errorResult}) {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_delayTime! < 1) {
         // Countdown has finished, clear the error message and refresh the view
         setState(() {
@@ -306,6 +311,7 @@ class _LoginViewState extends ConsumerState<LoginLocalView> {
 
   void _getAdminPasswordAuthStatus() {
     auth.getAdminPasswordAuthStatus().then((result) {
+      if (!mounted) return;
       if (result != null) {
         // Create the error and the countdown has yet to be triggered
         final loginError = UnexpectedError(

@@ -508,8 +508,7 @@ void main() {
     });
 
     test(r'resolves $bind then checks truthy', () {
-      final resolve =
-          _resolve({'Device.X.Enabled': 'true'});
+      final resolve = _resolve({'Device.X.Enabled': 'true'});
       final result = evaluateVisible(
         {r'$bind': 'Device.X.Enabled'},
         resolve,
@@ -604,7 +603,11 @@ void main() {
     test('contains', () {
       expect(
         evaluateVisible(
-          {'condition': 'contains', 'value': 'hello world', 'expected': 'world'},
+          {
+            'condition': 'contains',
+            'value': 'hello world',
+            'expected': 'world'
+          },
           (v) => v,
         ),
         isTrue,

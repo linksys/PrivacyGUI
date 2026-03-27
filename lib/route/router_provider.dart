@@ -179,12 +179,26 @@ class RouterNotifier extends ChangeNotifier {
   Future<String?> _prepare(GoRouterState state,
       [String? goToPath, LoginType? loginType]) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
+
+    // Cache notifiers synchronously before any await. After the first await,
+    // authProvider may have changed which marks _ref as outdated — calling
+    // _ref.read() after that point throws a Riverpod assertion.
+    final session = _ref.read(sessionProvider.notifier);
+    final autoParentLogin = _ref.read(autoParentFirstLoginStateProvider);
+    final autoParentLoginNotifier =
+        _ref.read(autoParentFirstLoginStateProvider.notifier);
+
     final prefs = await SharedPreferences.getInstance();
     String? serialNumber = prefs.getString(pCurrentSN);
     String? naviPath;
 
     if (loginType == LoginType.local) {
-      naviPath = await _prepareLocal(serialNumber);
+      naviPath = await _prepareLocal(
+        serialNumber,
+        session: session,
+        autoParentLogin: autoParentLogin,
+        autoParentLoginNotifier: autoParentLoginNotifier,
+      );
     }
     //
     if (naviPath != null) {
@@ -192,8 +206,7 @@ class RouterNotifier extends ChangeNotifier {
       return naviPath;
     }
     logger.d('[Prepare]: device info check - $serialNumber');
-    final nodeDeviceInfo = await _ref
-        .read(sessionProvider.notifier)
+    final nodeDeviceInfo = await session
         .fetchDeviceInfoAndInitializeServices()
         .then<NodeDeviceInfo?>((nodeDeviceInfo) {
       logger.d(
@@ -213,13 +226,17 @@ class RouterNotifier extends ChangeNotifier {
     }
   }
 
-  Future<String?> _prepareLocal(String? serialNumber) async {
+  Future<String?> _prepareLocal(
+    String? serialNumber, {
+    required SessionNotifier session,
+    required bool autoParentLogin,
+    required StateController<bool> autoParentLoginNotifier,
+  }) async {
     logger.i('[Prepare]: local - $serialNumber');
     // If auto parent first login, then go to auto parent first login page
-    final autoParentFirstLogin = _ref.read(autoParentFirstLoginStateProvider);
-    if (autoParentFirstLogin) {
+    if (autoParentLogin) {
       logger.i('[Prepare]: autoParentFirstLogin');
-      _ref.read(autoParentFirstLoginStateProvider.notifier).state = false;
+      autoParentLoginNotifier.state = false;
       return RoutePath.autoParentFirstLogin;
     }
     if (isSerialNumberChanged(serialNumber)) {
@@ -227,8 +244,7 @@ class RouterNotifier extends ChangeNotifier {
     }
 
     try {
-      final deviceInfo =
-          await _ref.read(sessionProvider.notifier).forceFetchDeviceInfo();
+      final deviceInfo = await session.forceFetchDeviceInfo();
       final newSerialNumber = deviceInfo.serialNumber;
 
       if (serialNumber == newSerialNumber) {
@@ -236,9 +252,7 @@ class RouterNotifier extends ChangeNotifier {
       }
 
       // Save serial number if serial number changed
-      await _ref
-          .read(sessionProvider.notifier)
-          .saveSelectedNetwork(newSerialNumber, '');
+      await session.saveSelectedNetwork(newSerialNumber, '');
     } catch (e) {
       logger.w('[Prepare]: forceFetchDeviceInfo failed in _prepareLocal: $e');
     }

@@ -15,6 +15,7 @@ class PackageWidgetTemplate extends Equatable {
   final String? description;
   final WidgetGridConstraints constraints;
   final WidgetSubscriptionConfig? subscription;
+  final HttpDataSourceConfig? dataSource;
   final Map<String, dynamic> template;
 
   const PackageWidgetTemplate({
@@ -23,6 +24,7 @@ class PackageWidgetTemplate extends Equatable {
     this.description,
     required this.constraints,
     this.subscription,
+    this.dataSource,
     required this.template,
   });
 
@@ -47,6 +49,10 @@ class PackageWidgetTemplate extends Equatable {
           ? WidgetSubscriptionConfig.fromJson(
               json['subscription'] as Map<String, dynamic>)
           : null,
+      dataSource: json['dataSource'] != null
+          ? HttpDataSourceConfig.fromJson(
+              json['dataSource'] as Map<String, dynamic>)
+          : null,
       template: json['template'] as Map<String, dynamic>? ?? {},
     );
   }
@@ -64,8 +70,52 @@ class PackageWidgetTemplate extends Equatable {
   }
 
   @override
+  List<Object?> get props => [
+        widgetId,
+        displayName,
+        description,
+        constraints,
+        subscription,
+        dataSource,
+        template,
+      ];
+}
+
+/// HTTP/CGI data source configuration from widget JSON.
+///
+/// Used by package widgets that fetch data from router CGI endpoints
+/// instead of USP. Mutually exclusive with [WidgetSubscriptionConfig].
+class HttpDataSourceConfig extends Equatable {
+  final String type;
+  final String url;
+  final String method;
+  final Map<String, dynamic>? body;
+  final int refreshInterval;
+  final Map<String, String> mapping;
+
+  const HttpDataSourceConfig({
+    this.type = 'http',
+    required this.url,
+    this.method = 'POST',
+    this.body,
+    this.refreshInterval = 0,
+    required this.mapping,
+  });
+
+  factory HttpDataSourceConfig.fromJson(Map<String, dynamic> json) {
+    return HttpDataSourceConfig(
+      type: json['type'] as String? ?? 'http',
+      url: json['url'] as String,
+      method: json['method'] as String? ?? 'POST',
+      body: json['body'] as Map<String, dynamic>?,
+      refreshInterval: json['refreshInterval'] as int? ?? 0,
+      mapping: Map<String, String>.from(json['mapping'] as Map),
+    );
+  }
+
+  @override
   List<Object?> get props =>
-      [widgetId, displayName, description, constraints, subscription, template];
+      [type, url, method, body, refreshInterval, mapping];
 }
 
 /// SSE subscription configuration from widget JSON.

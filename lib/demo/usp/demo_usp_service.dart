@@ -48,7 +48,10 @@ class DemoUspService extends UspService {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<Map<String, dynamic>> get(List<String> paths) async {
+  Future<Map<String, dynamic>> get(
+    List<String> paths, {
+    RequestPriority? priority,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 40));
 
     final raw = _loader.resolve(paths);

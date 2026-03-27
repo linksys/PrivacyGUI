@@ -16,7 +16,8 @@ final appsCapabilityProvider = FutureProvider<bool>((ref) async {
         .get(Uri.parse('$baseUrl/api/apps.json'))
         .timeout(const Duration(seconds: 5));
     final supported = response.statusCode == 200;
-    logger.d('[Apps] capability check: HTTP ${response.statusCode} → $supported');
+    logger
+        .d('[Apps] capability check: HTTP ${response.statusCode} → $supported');
     return supported;
   } catch (e) {
     logger.d('[Apps] capability check failed: $e');

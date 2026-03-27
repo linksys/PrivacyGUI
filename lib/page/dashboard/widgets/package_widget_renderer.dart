@@ -1,23 +1,31 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/models/sse_notification.dart';
+import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart'
+    show RequestPriority;
 import 'package:ui_kit_library/ui_kit.dart';
 
 import '../builders/package_widget_builders.dart';
 import '../models/package_widget_template.dart';
+import '../providers/http_client_provider.dart';
 import '../providers/package_widget_data_provider.dart';
 import '../utils/bind_resolver.dart';
 
-/// Renders a package widget template with live USP data.
+/// Renders a package widget template with live data from USP or HTTP/CGI.
 ///
 /// Lifecycle:
-/// 1. On first build: USP GET for initial data snapshot
-/// 2. SSE subscribe for live updates
+/// 1. On first build: fetch initial data (USP GET or HTTP POST/GET)
+/// 2. Subscribe for live updates (SSE for USP, polling timer for HTTP)
 /// 3. On each data change: resolve `$bind` → rebuild via [UiTreeBuilder]
-/// 4. On dispose: unsubscribe SSE
+/// 4. On dispose: unsubscribe SSE / cancel poll timer
 class PackageWidgetRenderer extends ConsumerStatefulWidget {
   final PackageWidgetTemplate template;
 
@@ -28,9 +36,9 @@ class PackageWidgetRenderer extends ConsumerStatefulWidget {
       _PackageWidgetRendererState();
 }
 
-class _PackageWidgetRendererState
-    extends ConsumerState<PackageWidgetRenderer> {
+class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
   Future<void> Function()? _sseCleanup;
+  Timer? _pollTimer;
   bool _initialFetchDone = false;
   late final UiTreeBuilder _treeBuilder;
 
@@ -38,41 +46,53 @@ class _PackageWidgetRendererState
   void initState() {
     super.initState();
     _treeBuilder = UiTreeBuilder(
-      builders: {...UiKitCatalog.standardBuilders, ...PackageWidgetBuilders.all},
+      builders: {
+        ...UiKitCatalog.standardBuilders,
+        ...PackageWidgetBuilders.all
+      },
       normalizer: _PassthroughNormalizer(),
     );
-    // Defer data loading to after first frame to avoid provider mutations
-    // during build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData();
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Data initialization — route to USP or HTTP based on template config
+  // ---------------------------------------------------------------------------
+
   Future<void> _initializeData() async {
-    final subscription = widget.template.subscription;
-    if (subscription == null) {
-      if (mounted) setState(() => _initialFetchDone = true);
-      return;
+    final template = widget.template;
+
+    if (template.subscription != null) {
+      await _initializeUspData(template.subscription!);
+    } else if (template.dataSource != null) {
+      await _initializeHttpData(template.dataSource!);
     }
 
+    if (mounted) setState(() => _initialFetchDone = true);
+  }
+
+  // ---------------------------------------------------------------------------
+  // USP data source (existing behavior, now routed through throttler)
+  // ---------------------------------------------------------------------------
+
+  Future<void> _initializeUspData(WidgetSubscriptionConfig subscription) async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) return;
 
-    // Initial USP GET to populate data map
     try {
+      // usp.get() is automatically throttled via UspService.throttler
       final data = await usp.get(subscription.paths);
       if (!mounted) return;
       ref
           .read(packageWidgetDataProvider(widget.template.widgetId).notifier)
           .setAll(data);
-      setState(() => _initialFetchDone = true);
     } catch (e) {
       logger.w('[USP][PkgWidget] Initial GET failed for '
           '${widget.template.widgetId}: $e');
-      if (mounted) setState(() => _initialFetchDone = true);
     }
 
-    // SSE subscribe for live updates
     await _subscribeSse();
   }
 
@@ -114,16 +134,95 @@ class _PackageWidgetRendererState
         .updatePath(path, value);
   }
 
+  // ---------------------------------------------------------------------------
+  // HTTP/CGI data source
+  // ---------------------------------------------------------------------------
+
+  Future<void> _initializeHttpData(HttpDataSourceConfig ds) async {
+    await _fetchHttpData(ds);
+    _startHttpPolling(ds);
+  }
+
+  Future<void> _fetchHttpData(HttpDataSourceConfig ds) async {
+    try {
+      // Security: only allow local CGI paths
+      final uri = Uri.parse(ds.url);
+      if (uri.hasAuthority || !ds.url.startsWith('/cgi-bin/')) {
+        logger.w('[HTTP][PkgWidget] Blocked non-local URL: ${ds.url}');
+        return;
+      }
+
+      final throttler = ref.read(bridgeRequestThrottlerProvider);
+      final client = ref.read(httpClientProvider);
+      final targetUrl = Uri.parse('${Uri.base.origin}${ds.url}');
+
+      // Attach JWT so CGI endpoints can optionally verify auth.
+      final token = ref.read(uspServiceProvider)?.sessionToken;
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await throttler.enqueue<http.Response>(
+        cacheKey: 'http:${ds.method}:${ds.url}',
+        priority: RequestPriority.low,
+        action: () {
+          if (ds.method.toUpperCase() == 'GET') {
+            return client.get(targetUrl, headers: headers);
+          }
+          return client.post(
+            targetUrl,
+            headers: headers,
+            body: ds.body != null ? jsonEncode(ds.body) : null,
+          );
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final mapped = applyMapping(json, ds.mapping);
+        if (!mounted) return;
+        ref
+            .read(packageWidgetDataProvider(widget.template.widgetId).notifier)
+            .setAll(mapped);
+      } else {
+        logger.w('[HTTP][PkgWidget] ${ds.url} returned ${response.statusCode}');
+      }
+    } catch (e) {
+      logger.w('[HTTP][PkgWidget] Fetch error for '
+          '${widget.template.widgetId}: $e');
+    }
+  }
+
+  void _startHttpPolling(HttpDataSourceConfig ds) {
+    if (ds.refreshInterval <= 0) return;
+    _pollTimer = Timer.periodic(
+      Duration(seconds: ds.refreshInterval),
+      (_) {
+        if (!mounted) return;
+        _fetchHttpData(ds);
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dispose
+  // ---------------------------------------------------------------------------
+
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _sseCleanup?.call();
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
-    final data =
-        ref.watch(packageWidgetDataProvider(widget.template.widgetId));
+    final data = ref.watch(packageWidgetDataProvider(widget.template.widgetId));
 
     // Show skeleton while initial data is loading
     if (!_initialFetchDone && data.isEmpty) {
@@ -133,8 +232,7 @@ class _PackageWidgetRendererState
     }
 
     // Resolve $bind expressions and normalize properties → props
-    final resolvedTemplate =
-        resolveBindings(widget.template.template, data);
+    final resolvedTemplate = resolveBindings(widget.template.template, data);
 
     // Render via UiTreeBuilder.
     //
@@ -142,8 +240,8 @@ class _PackageWidgetRendererState
     //   - The card shell fills the grid cell (parent SizedBox.expand in view)
     //   - Only inner content scrolls on overflow (SingleChildScrollView)
     try {
-      final rootProps =
-          resolvedTemplate['props'] as Map<String, dynamic>? ?? resolvedTemplate;
+      final rootProps = resolvedTemplate['props'] as Map<String, dynamic>? ??
+          resolvedTemplate;
       final childrenDefs = rootProps['children'] as List?;
 
       // Root has children → build them individually, wrap in scrollable card
@@ -188,6 +286,44 @@ class _PackageWidgetRendererState
     }
   }
 }
+
+// =============================================================================
+// Mapping helpers (package-visible for testing)
+// =============================================================================
+
+/// Transform JSON response into flat map via dot-notation mapping.
+///
+/// Example:
+///   json = `{"data": {"query": "1.2.3.4", "city": "Taipei"}}`
+///   mapping = `{"ip": "data.query", "city": "data.city"}`
+///   → `{"ip": "1.2.3.4", "city": "Taipei"}`
+Map<String, dynamic> applyMapping(
+  Map<String, dynamic> json,
+  Map<String, String> mapping,
+) {
+  final result = <String, dynamic>{};
+  for (final entry in mapping.entries) {
+    result[entry.key] = resolvePath(json, entry.value);
+  }
+  return result;
+}
+
+/// Resolve dot-notation path: `"data.query"` → `json["data"]["query"]`
+dynamic resolvePath(Map<String, dynamic> json, String path) {
+  dynamic current = json;
+  for (final segment in path.split('.')) {
+    if (current is Map<String, dynamic>) {
+      current = current[segment];
+    } else {
+      return null;
+    }
+  }
+  return current;
+}
+
+// =============================================================================
+// Passthrough normalizer
+// =============================================================================
 
 /// Minimal passthrough normalizer for package widget templates.
 ///
