@@ -17,7 +17,7 @@ import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 Future<Map<String, WifiClient>> fetchWifiClients(UspService client) async {
   // Low priority: AssociatedDevice wildcard queries block OBUSPA's
   // single-threaded processor. Dispatch after lighter queries complete.
-  final result = await WifiClients.fetch(client, priority: RequestPriority.low);
+  final result = await WifiClients.fetch(client);
   logger.d('[USP][Dashboard]WifiClients raw: ${result.items.length} items');
 
   if (result.items.isNotEmpty) {

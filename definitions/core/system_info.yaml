@@ -1,8 +1,8 @@
 name: SystemInfo
-version: 1.0.0
+version: 1.1.0
 instance: Device.DeviceInfo
 category: core
-description: System and device identification
+description: System and device identification with active firmware reference
 
 parameters:
   - field_name: manufacturer
@@ -49,3 +49,13 @@ parameters:
     path: .ProcessStatus.CPUUsage
     type: int
     description: CPU usage percentage (0-100)
+
+  - field_name: activeFirmwareImage
+    path: .ActiveFirmwareImage
+    type: string
+    description: Reference to active firmware image (e.g. Device.DeviceInfo.FirmwareImage.1.)
+
+  - field_name: bootFirmwareImage
+    path: .BootFirmwareImage
+    type: string
+    description: Reference to boot firmware image (e.g. Device.DeviceInfo.FirmwareImage.1.)

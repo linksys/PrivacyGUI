@@ -44,13 +44,15 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
 
+    // LanNetworkInfo.fetch includes IPv6Enable (merged in YAML v1.2.0).
+    // IPv6 addresses still need a separate multi-instance query.
     final results = await Future.wait([
       LanNetworkInfo.fetch(usp),
-      _fetchLanIpv6(usp),
+      _fetchLanIpv6Addresses(usp),
     ]);
 
     final lanInfo = results[0] as LanNetworkInfo;
-    final ipv6 = results[1] as ({bool enabled, List<String> addresses});
+    final ipv6Addresses = results[1] as List<String>;
 
     final model = LanInfoUIModel(
       hostName: lanInfo.hostName,
@@ -61,35 +63,30 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
       maxAddress: lanInfo.maxAddress,
       leaseTimeMinutes: (lanInfo.leaseTime / 60).round(),
       dnsServers: lanInfo.dnsServers,
-      ipv6Enabled: ipv6.enabled,
-      ipv6Addresses: ipv6.addresses,
+      ipv6Enabled: lanInfo.ipv6Enabled,
+      ipv6Addresses: ipv6Addresses,
     );
 
     logger.d('[USP][LanData] Fetched — ip=${lanInfo.ipAddress}, '
-        'dhcp=${lanInfo.dhcpEnabled}, ipv6=${ipv6.enabled}');
+        'dhcp=${lanInfo.dhcpEnabled}, ipv6=${lanInfo.ipv6Enabled}');
     return LanData(model: model);
   }
 
-  /// Fetches IPv6 enable flag and addresses for LAN (Interface.1).
-  Future<({bool enabled, List<String> addresses})> _fetchLanIpv6(
-      UspService usp) async {
+  /// Fetches IPv6 addresses for LAN (Interface.1) via multi-instance query.
+  Future<List<String>> _fetchLanIpv6Addresses(UspService usp) async {
     try {
       final resp = await usp.get([
-        'Device.IP.Interface.1.IPv6Enable',
         'Device.IP.Interface.1.IPv6Address.',
       ]).timeout(const Duration(seconds: 20));
 
-      final enabled = resp['Device.IP.Interface.1.IPv6Enable'] == true;
       final instances = resp.getInstances('Device.IP.Interface.1.IPv6Address.');
-      final List<String> addresses = instances
+      return instances
           .map((i) => i.getString('IPAddress'))
           .where((ip) => ip.isNotEmpty)
           .toList();
-
-      return (enabled: enabled, addresses: addresses);
     } catch (e) {
-      logger.w('[USP][LanData] IPv6 fetch failed (may not be supported): $e');
-      return (enabled: false, addresses: const <String>[]);
+      logger.w('[USP][LanData] IPv6 addresses fetch failed: $e');
+      return const <String>[];
     }
   }
 }

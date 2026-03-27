@@ -38,6 +38,7 @@ class BridgeRequestThrottler {
   final _queue = SplayTreeMap<_QueueKey, _PendingRequest<dynamic>>();
   int _sequence = 0;
   bool _draining = false;
+  Completer<void>? _idleCompleter;
 
   // In-flight: cacheKey → pending request (dispatched but not yet completed)
   final _inFlight = <String, _PendingRequest<dynamic>>{};
@@ -100,6 +101,16 @@ class BridgeRequestThrottler {
 
   /// Clear all cached results.
   void clearCache() => _cache.clear();
+
+  /// Resolves when the throttler has no active or queued requests.
+  ///
+  /// If already idle, returns immediately. Otherwise waits for all
+  /// in-flight and queued requests to complete.
+  Future<void> whenIdle() {
+    if (_active == 0 && _queue.isEmpty) return Future.value();
+    _idleCompleter ??= Completer<void>();
+    return _idleCompleter!.future;
+  }
 
   // ---------------------------------------------------------------------------
   // Internal
@@ -173,6 +184,10 @@ class BridgeRequestThrottler {
       } finally {
         _active--;
         _inFlight.remove(pending.cacheKey);
+        if (_active == 0 && _queue.isEmpty && _idleCompleter != null) {
+          _idleCompleter!.complete();
+          _idleCompleter = null;
+        }
         _drain();
       }
     });

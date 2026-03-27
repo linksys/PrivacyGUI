@@ -54,6 +54,10 @@
 | SSE Invalidation Provider | Path-based domain mapping, `.Stats.` noise filter, 11 invalidation domains for selective re-fetch | Active |
 | SSE Operation Awaiter | Async Operate commands (Ping/Traceroute) via OperationComplete, wildcard command_name matching, polling fallback | Active |
 | SSE Bootstrap Purge | `purgeAllSubscriptions()` on app start — clears stale OBUSPA subscriptions from previous sessions | Active |
+| Bridge Request Throttler | Concurrency limit (maxConcurrent=2), priority queue, stagger delay (80ms), per-request timeout (15s), 3-level dedup (cache→in-flight→queue), `whenIdle()` API | Active |
+| Dashboard Orchestrator | Auth→fire-and-forget triggers→SSE deferred registration→retry; manages 11 domain providers. See [dashboard-orchestration.md](dashboard-orchestration.md) | Active |
+| SSE Deferred Registration | Two-phase boot: (1) SSE connect only, (2) register subscriptions after `dashboardDomainReady` + `throttler.whenIdle()` — prevents 503 cascade from concurrent POSTs+GETs | Active |
+| Provider Retry (Exponential Backoff) | 5s→10s→20s, 3 attempts max, checks all 11 domain providers for `.hasError`, `ref.invalidate()` on failure | Active |
 
 ### Completed Feature Work (Phase 3)
 

@@ -4,13 +4,14 @@
 
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
-/// WAN interface status and IPv4 configuration
+/// WAN interface status, IPv4 configuration, and IPv6 enable flag
 class WanStatus {
   final String status;
   final String ipAddress;
   final String subnetMask;
   final String addressingType;
   final int maxMtuSize;
+  final bool ipv6Enabled;
 
   const WanStatus({
     required this.status,
@@ -18,6 +19,7 @@ class WanStatus {
     required this.subnetMask,
     required this.addressingType,
     required this.maxMtuSize,
+    required this.ipv6Enabled,
   });
 
   static const _paths = [
@@ -26,6 +28,7 @@ class WanStatus {
     'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
     'Device.IP.Interface.2.IPv4Address.1.AddressingType',
     'Device.IP.Interface.2.MaxMTUSize',
+    'Device.IP.Interface.2.IPv6Enable',
   ];
 
   /// Fetch all parameters via USP Get message
@@ -47,6 +50,9 @@ class WanStatus {
       maxMtuSize: int.tryParse(
               response['Device.IP.Interface.2.MaxMTUSize']?.toString() ?? '') ??
           0,
+      ipv6Enabled: response['Device.IP.Interface.2.IPv6Enable'] == true ||
+          response['Device.IP.Interface.2.IPv6Enable'] == 'true' ||
+          response['Device.IP.Interface.2.IPv6Enable'] == '1',
     );
   }
 
@@ -57,7 +63,8 @@ class WanStatus {
         'ipAddress: $ipAddress, '
         'subnetMask: $subnetMask, '
         'addressingType: $addressingType, '
-        'maxMtuSize: $maxMtuSize'
+        'maxMtuSize: $maxMtuSize, '
+        'ipv6Enabled: $ipv6Enabled'
         ')';
   }
 }

@@ -269,7 +269,6 @@ class UspDeviceService {
 
   LanInfoUIModel buildLanInfoUIModel(
     LanNetworkInfo info, {
-    bool ipv6Enabled = false,
     List<String> ipv6Addresses = const [],
   }) {
     return LanInfoUIModel(
@@ -279,7 +278,7 @@ class UspDeviceService {
       minAddress: info.minAddress,
       maxAddress: info.maxAddress,
       dnsServers: info.dnsServers,
-      ipv6Enabled: ipv6Enabled,
+      ipv6Enabled: info.ipv6Enabled,
       ipv6Addresses: ipv6Addresses,
     );
   }
@@ -291,7 +290,6 @@ class UspDeviceService {
   WanStatusUIModel buildWanStatusUIModel({
     required WanStatus wanStatus,
     required String gateway,
-    bool ipv6Enabled = false,
     List<String> ipv6Addresses = const [],
   }) {
     return WanStatusUIModel(
@@ -301,7 +299,7 @@ class UspDeviceService {
       addressingType: wanStatus.addressingType,
       mtu: wanStatus.maxMtuSize,
       gateway: gateway,
-      ipv6Enabled: ipv6Enabled,
+      ipv6Enabled: wanStatus.ipv6Enabled,
       ipv6Addresses: ipv6Addresses,
     );
   }
@@ -351,28 +349,44 @@ class UspDeviceService {
       }
     }
 
-    // Each active wired device → its own LAN port entry.
-    final wiredDevices =
-        deviceModels.where((d) => d.isActive && !d.isWifi).toList();
-    final lanBitRate = lanAggregate?.currentBitRate ?? 0;
+    // LAN port entries: one per active wired device, or a single entry
+    // showing the physical interface when no wired devices are connected.
+    if (lanAggregate != null) {
+      final wiredDevices =
+          deviceModels.where((d) => d.isActive && !d.isWifi).toList();
+      final lanBitRate = lanAggregate.currentBitRate;
+      final lanIsUp = lanAggregate.status.toLowerCase() == 'up';
 
-    for (var i = 0; i < wiredDevices.length; i++) {
-      final d = wiredDevices[i];
-      result.add(EthernetPortUIModel(
-        name: lanAggregate?.name ?? 'lan',
-        label: 'LAN ${i + 1}',
-        isWan: false,
-        isUp: true,
-        instancePath: lanAggregate?.instancePath ?? '',
-        currentBitRate: lanBitRate,
-        connectedDevices: [
-          WiredDeviceInfo(
-            hostName: d.hostName,
-            macAddress: d.mac,
-            ipAddress: d.ip,
-          ),
-        ],
-      ));
+      if (wiredDevices.isEmpty) {
+        // No wired devices — still show the physical LAN port.
+        result.add(EthernetPortUIModel(
+          name: lanAggregate.name,
+          label: 'LAN',
+          isWan: false,
+          isUp: lanIsUp,
+          instancePath: lanAggregate.instancePath,
+          currentBitRate: lanBitRate,
+        ));
+      } else {
+        for (var i = 0; i < wiredDevices.length; i++) {
+          final d = wiredDevices[i];
+          result.add(EthernetPortUIModel(
+            name: lanAggregate.name,
+            label: 'LAN ${i + 1}',
+            isWan: false,
+            isUp: true,
+            instancePath: lanAggregate.instancePath,
+            currentBitRate: lanBitRate,
+            connectedDevices: [
+              WiredDeviceInfo(
+                hostName: d.hostName,
+                macAddress: d.mac,
+                ipAddress: d.ip,
+              ),
+            ],
+          ));
+        }
+      }
     }
 
     return result;

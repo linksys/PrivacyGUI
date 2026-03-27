@@ -43,11 +43,8 @@ class WifiClients {
   ];
 
   /// Fetch all instances via USP Get message
-  static Future<WifiClients> fetch(
-    UspService client, {
-    RequestPriority? priority,
-  }) async {
-    final response = await client.get(_paths, priority: priority);
+  static Future<WifiClients> fetch(UspService client) async {
+    final response = await client.get(_paths);
     return WifiClients._fromResponse(response);
   }
 

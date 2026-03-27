@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/multi_interface_traffic_stats.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 
 /// Multi-interface traffic analysis provider — compares WAN vs LAN traffic
 /// with timer-based polling. NOT autoDispose so history persists across tab
@@ -23,8 +24,17 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
       _timer?.cancel();
       _timer = null;
     });
+
+    // Gate polling start on domain providers completing their first fetch.
+    // This prevents traffic stats requests from competing for throttler slots
+    // during the initial domain data load phase.
     const defaultInterval = Duration(seconds: 5);
-    Future.microtask(() => setRefreshInterval(defaultInterval));
+    ref.listen(dashboardDomainReadyProvider, (_, next) {
+      if (next is AsyncData) {
+        setRefreshInterval(defaultInterval);
+      }
+    });
+
     return const TrafficAnalysisState(
       refreshInterval: defaultInterval,
     );

@@ -55,13 +55,11 @@ class MeshTopologyInfo {
 /// or the subtree is empty (non-mesh / single router).
 Future<MeshTopologyInfo> fetchMeshNodes(UspService client) async {
   try {
-    // Low priority: DataElements uses 9 deep-wildcard paths that block
-    // OBUSPA's single-threaded processor for 15-30s. Dispatch after all
-    // lighter queries (LAN, WAN, system info, ethernet) have completed.
-    final network = await DataElementsNetwork.fetch(
-      client,
-      priority: RequestPriority.low,
-    );
+    // DataElements uses 9 deep-wildcard paths that can be slow on OBUSPA.
+    // Domain-ready gating (dashboardDomainReadyProvider) ensures lighter
+    // queries complete before polling providers start.
+    // TODO: Add codegen priority support so fetch() can pass RequestPriority.
+    final network = await DataElementsNetwork.fetch(client);
     if (network.items.isEmpty) {
       logger
           .d('[USP][Dashboard]DataElements empty — not a mesh or unsupported');

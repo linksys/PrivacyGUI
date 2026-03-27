@@ -146,9 +146,23 @@ class RouterNotifier extends ChangeNotifier {
       logger.d('[Route]: No login type but intend to dashboard, lead to Home');
       return _home();
     }
-    return state.matchedLocation == RoutePath.home
-        ? _home()
-        : await (_prepare(state, null, loginType).then((_) => null));
+    if (state.matchedLocation == RoutePath.home) {
+      return _home();
+    }
+    // Cache refs before async _prepare — same pattern as authCheck.
+    final session = _ref.read(sessionProvider.notifier);
+    final autoParentLogin = _ref.read(autoParentFirstLoginStateProvider);
+    final autoParentLoginNotifier =
+        _ref.read(autoParentFirstLoginStateProvider.notifier);
+    final cachedDeviceInfo = _ref.read(sessionProvider).deviceInfo;
+    return _prepare(
+      state,
+      loginType: loginType,
+      session: session,
+      autoParentLogin: autoParentLogin,
+      autoParentLoginNotifier: autoParentLoginNotifier,
+      cachedDeviceInfo: cachedDeviceInfo,
+    ).then((_) => null);
   }
 
   FutureOr<String?> goFirstTimeLogin(GoRouterState state) {
@@ -158,6 +172,17 @@ class RouterNotifier extends ChangeNotifier {
   }
 
   Future<String?> authCheck(GoRouterState state) {
+    // Cache providers synchronously BEFORE init(). The init() call changes
+    // authProvider state which invalidates routerProvider's Ref — any
+    // _ref.read() after init() resolves throws the Riverpod assertion:
+    // "Cannot use ref functions after the dependency of a provider changed
+    // but before the provider rebuilt"
+    final session = _ref.read(sessionProvider.notifier);
+    final autoParentLogin = _ref.read(autoParentFirstLoginStateProvider);
+    final autoParentLoginNotifier =
+        _ref.read(autoParentFirstLoginStateProvider.notifier);
+    final cachedDeviceInfo = _ref.read(sessionProvider).deviceInfo;
+
     return _ref.read(authProvider.notifier).init().then((authState) async {
       logger.i(
           '[Route]: Check credentials done: Login type = ${authState?.loginType}');
@@ -165,8 +190,15 @@ class RouterNotifier extends ChangeNotifier {
       FlutterNativeSplash.remove();
       final type = authState?.loginType ?? LoginType.none;
       return switch (type) {
-        LoginType.local => await _prepare(state, RoutePath.uspDashboard, type)
-            .then((path) => path ?? RoutePath.uspDashboard),
+        LoginType.local => await _prepare(
+            state,
+            goToPath: RoutePath.uspDashboard,
+            loginType: type,
+            session: session,
+            autoParentLogin: autoParentLogin,
+            autoParentLoginNotifier: autoParentLoginNotifier,
+            cachedDeviceInfo: cachedDeviceInfo,
+          ).then((path) => path ?? RoutePath.uspDashboard),
         _ => _home(state.uri.query),
       };
     });
@@ -176,17 +208,16 @@ class RouterNotifier extends ChangeNotifier {
     return '${RoutePath.localLoginPassword}?$query';
   }
 
-  Future<String?> _prepare(GoRouterState state,
-      [String? goToPath, LoginType? loginType]) async {
+  Future<String?> _prepare(
+    GoRouterState state, {
+    String? goToPath,
+    LoginType? loginType,
+    required SessionNotifier session,
+    required bool autoParentLogin,
+    required StateController<bool> autoParentLoginNotifier,
+    NodeDeviceInfo? cachedDeviceInfo,
+  }) async {
     logger.d('[Prepare]: prepare data. Go to path: $goToPath');
-
-    // Cache notifiers synchronously before any await. After the first await,
-    // authProvider may have changed which marks _ref as outdated — calling
-    // _ref.read() after that point throws a Riverpod assertion.
-    final session = _ref.read(sessionProvider.notifier);
-    final autoParentLogin = _ref.read(autoParentFirstLoginStateProvider);
-    final autoParentLoginNotifier =
-        _ref.read(autoParentFirstLoginStateProvider.notifier);
 
     final prefs = await SharedPreferences.getInstance();
     String? serialNumber = prefs.getString(pCurrentSN);
@@ -198,6 +229,7 @@ class RouterNotifier extends ChangeNotifier {
         session: session,
         autoParentLogin: autoParentLogin,
         autoParentLoginNotifier: autoParentLoginNotifier,
+        cachedDeviceInfo: cachedDeviceInfo,
       );
     }
     //
@@ -231,6 +263,7 @@ class RouterNotifier extends ChangeNotifier {
     required SessionNotifier session,
     required bool autoParentLogin,
     required StateController<bool> autoParentLoginNotifier,
+    NodeDeviceInfo? cachedDeviceInfo,
   }) async {
     logger.i('[Prepare]: local - $serialNumber');
     // If auto parent first login, then go to auto parent first login page
@@ -239,7 +272,7 @@ class RouterNotifier extends ChangeNotifier {
       autoParentLoginNotifier.state = false;
       return RoutePath.autoParentFirstLogin;
     }
-    if (isSerialNumberChanged(serialNumber)) {
+    if (isSerialNumberChanged(serialNumber, cachedDeviceInfo)) {
       return null;
     }
 
@@ -260,11 +293,9 @@ class RouterNotifier extends ChangeNotifier {
     return null;
   }
 
-  bool isSerialNumberChanged(String? serialNumber) =>
-      serialNumber != null &&
-      serialNumber == _getStateDeviceInfo()?.serialNumber;
-  NodeDeviceInfo? _getStateDeviceInfo() =>
-      _ref.read(sessionProvider).deviceInfo;
+  bool isSerialNumberChanged(
+          String? serialNumber, NodeDeviceInfo? cachedDeviceInfo) =>
+      serialNumber != null && serialNumber == cachedDeviceInfo?.serialNumber;
 }
 
 final autoParentFirstLoginStateProvider = StateProvider<bool>((ref) {

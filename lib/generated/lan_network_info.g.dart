@@ -4,7 +4,7 @@
 
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
-/// LAN IP configuration and DHCP server pool settings
+/// LAN IP configuration, DHCP server pool settings, and IPv6 enable flag
 class LanNetworkInfo {
   final String ipAddress;
   final String subnetMask;
@@ -14,6 +14,7 @@ class LanNetworkInfo {
   final int leaseTime;
   final String dnsServers;
   final String hostName;
+  final bool ipv6Enabled;
 
   const LanNetworkInfo({
     required this.ipAddress,
@@ -24,6 +25,7 @@ class LanNetworkInfo {
     required this.leaseTime,
     required this.dnsServers,
     required this.hostName,
+    required this.ipv6Enabled,
   });
 
   static const _paths = [
@@ -35,6 +37,7 @@ class LanNetworkInfo {
     'Device.DHCPv4.Server.Pool.1.LeaseTime',
     'Device.DHCPv4.Server.Pool.1.DNSServers',
     'Device.DeviceInfo.HostName',
+    'Device.IP.Interface.1.IPv6Enable',
   ];
 
   /// Fetch all parameters via USP Get message
@@ -63,6 +66,9 @@ class LanNetworkInfo {
       dnsServers:
           (response['Device.DHCPv4.Server.Pool.1.DNSServers'] ?? '') as String,
       hostName: (response['Device.DeviceInfo.HostName'] ?? '') as String,
+      ipv6Enabled: response['Device.IP.Interface.1.IPv6Enable'] == true ||
+          response['Device.IP.Interface.1.IPv6Enable'] == 'true' ||
+          response['Device.IP.Interface.1.IPv6Enable'] == '1',
     );
   }
 
@@ -107,7 +113,8 @@ class LanNetworkInfo {
         'maxAddress: $maxAddress, '
         'leaseTime: $leaseTime, '
         'dnsServers: $dnsServers, '
-        'hostName: $hostName'
+        'hostName: $hostName, '
+        'ipv6Enabled: $ipv6Enabled'
         ')';
   }
 }

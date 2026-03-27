@@ -147,8 +147,9 @@ class _UspSliverDashboardViewState
 
   @override
   Widget build(BuildContext context) {
-    // Eager-init polling providers so they start fetching immediately,
-    // regardless of whether their dashboard cards are visible in the viewport.
+    // Initialize and watch polling/analytics providers for reactive rebuilds.
+    // Polling timers are gated by dashboardDomainReadyProvider — they won't
+    // start fetching until domain providers have completed their first load.
     ref.watch(uspTrafficAnalysisProvider);
     ref.watch(uspDeviceAnalyticsProvider);
     ref.watch(uspSystemMonitorProvider);
@@ -418,20 +419,18 @@ class _UspSliverDashboardViewState
     bool isEditMode,
     UspWidgetFactory factory,
   ) {
-    final widget = factory.buildWidget(item.id);
+    Widget? resolvedWidget = factory.buildWidget(item.id);
 
-    if (widget == null) {
+    if (resolvedWidget == null) {
       // Try package widget
       final templates = ref.read(packageWidgetLoaderProvider).valueOrNull;
       final template = templates?[item.id];
       if (template != null) {
-        return SizedBox.expand(
-          child: ClipRect(
-            child: PackageWidgetRenderer(template: template),
-          ),
-        );
+        resolvedWidget = PackageWidgetRenderer(template: template);
       }
+    }
 
+    if (resolvedWidget == null) {
       return AppCard(
         child: Center(
           child: AppText.bodyMedium('Unknown widget: ${item.id}'),
@@ -441,7 +440,8 @@ class _UspSliverDashboardViewState
 
     // SizedBox.expand ensures cards fill their grid cell.
     // ClipRect prevents content from visually overflowing the cell boundary.
-    final displayedWidget = SizedBox.expand(child: ClipRect(child: widget));
+    final displayedWidget =
+        SizedBox.expand(child: ClipRect(child: resolvedWidget));
 
     if (isEditMode) {
       final spec = UspWidgetSpecs.getById(item.id);

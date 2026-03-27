@@ -4,7 +4,7 @@
 
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
-/// System and device identification
+/// System and device identification with active firmware reference
 class SystemInfo {
   final String manufacturer;
   final String modelName;
@@ -15,6 +15,8 @@ class SystemInfo {
   final int totalMemory;
   final int freeMemory;
   final int cpuUsage;
+  final String activeFirmwareImage;
+  final String bootFirmwareImage;
 
   const SystemInfo({
     required this.manufacturer,
@@ -26,6 +28,8 @@ class SystemInfo {
     required this.totalMemory,
     required this.freeMemory,
     required this.cpuUsage,
+    required this.activeFirmwareImage,
+    required this.bootFirmwareImage,
   });
 
   static const _paths = [
@@ -38,6 +42,8 @@ class SystemInfo {
     'Device.DeviceInfo.MemoryStatus.Total',
     'Device.DeviceInfo.MemoryStatus.Free',
     'Device.DeviceInfo.ProcessStatus.CPUUsage',
+    'Device.DeviceInfo.ActiveFirmwareImage',
+    'Device.DeviceInfo.BootFirmwareImage',
   ];
 
   /// Fetch all parameters via USP Get message
@@ -73,6 +79,10 @@ class SystemInfo {
                       ?.toString() ??
                   '') ??
           0,
+      activeFirmwareImage:
+          (response['Device.DeviceInfo.ActiveFirmwareImage'] ?? '') as String,
+      bootFirmwareImage:
+          (response['Device.DeviceInfo.BootFirmwareImage'] ?? '') as String,
     );
   }
 
@@ -87,7 +97,9 @@ class SystemInfo {
         'uptime: $uptime, '
         'totalMemory: $totalMemory, '
         'freeMemory: $freeMemory, '
-        'cpuUsage: $cpuUsage'
+        'cpuUsage: $cpuUsage, '
+        'activeFirmwareImage: $activeFirmwareImage, '
+        'bootFirmwareImage: $bootFirmwareImage'
         ')';
   }
 }

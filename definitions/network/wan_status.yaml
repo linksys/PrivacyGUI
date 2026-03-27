@@ -1,7 +1,7 @@
 name: WanStatus
-version: 1.0.0
+version: 1.1.0
 category: network
-description: WAN interface status and IPv4 configuration
+description: WAN interface status, IPv4 configuration, and IPv6 enable flag
 
 parameters:
   - field_name: status
@@ -28,3 +28,8 @@ parameters:
     path: Device.IP.Interface.2.MaxMTUSize
     type: int
     description: Maximum MTU size
+
+  - field_name: ipv6_enabled
+    path: Device.IP.Interface.2.IPv6Enable
+    type: boolean
+    description: Whether IPv6 is enabled on WAN interface
