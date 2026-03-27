@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
+import '../builders/package_widget_builders.dart';
 import '../models/package_widget_template.dart';
 import '../providers/package_widget_data_provider.dart';
 import '../utils/bind_resolver.dart';
@@ -37,7 +38,7 @@ class _PackageWidgetRendererState
   void initState() {
     super.initState();
     _treeBuilder = UiTreeBuilder(
-      builders: UiKitCatalog.standardBuilders,
+      builders: {...UiKitCatalog.standardBuilders, ...PackageWidgetBuilders.all},
       normalizer: _PassthroughNormalizer(),
     );
     // Defer data loading to after first frame to avoid provider mutations

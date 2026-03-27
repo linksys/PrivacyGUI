@@ -1,8 +1,12 @@
-/// Resolves `$bind` expressions in a widget template JSON tree.
+import 'template_directives.dart';
+
+/// Resolves template directives in a widget template JSON tree.
 ///
-/// Walks the tree recursively. When a value is a Map with a single
-/// `$bind` key, replaces it with the corresponding value from [dataMap].
-/// If the bound path is not found, substitutes `--` as a placeholder.
+/// Supported directives:
+/// - `$bind` — single value lookup from [dataMap]
+/// - `$transform` — single-value pipeline (divide, multiply, fn, etc.)
+/// - `$compute` — multi-value computation (percent_used, template, etc.)
+/// - `$visible` — conditional show/hide (node-level, returns `_hidden` sentinel)
 ///
 /// Also normalizes the JSON structure for UiTreeBuilder compatibility:
 /// - Renames `properties` → `props` (UiTreeBuilder reads `child['props']`)
@@ -19,8 +23,19 @@ Map<String, dynamic> _resolveMap(
   Map<String, dynamic> map,
   Map<String, dynamic> dataMap,
 ) {
+  // $visible check — if false, return sentinel to skip rendering.
+  // Evaluated first to avoid resolving the entire subtree unnecessarily.
+  if (map.containsKey(r'$visible')) {
+    final visible = evaluateVisible(
+      map[r'$visible'],
+      (v) => _resolveValue(v, dataMap),
+    );
+    if (!visible) return const {'_hidden': true};
+  }
+
   final result = <String, dynamic>{};
   for (final entry in map.entries) {
+    if (entry.key == r'$visible') continue; // strip from output
     // Rename "properties" -> "props" for UiTreeBuilder
     final key = entry.key == 'properties' ? 'props' : entry.key;
     result[key] = _resolveValue(entry.value, dataMap);
@@ -44,17 +59,34 @@ Map<String, dynamic> _resolveMap(
 
 dynamic _resolveValue(dynamic value, Map<String, dynamic> dataMap) {
   if (value is Map<String, dynamic>) {
-    // Check for $bind expression: {"$bind": "Device.X.Y"}
-    if (value.length == 1 && value.containsKey(r'$bind')) {
+    // $bind — single value lookup
+    if (value.containsKey(r'$bind')) {
       final path = value[r'$bind'] as String;
       final resolved = dataMap[path];
       return resolved?.toString() ?? '--';
     }
-    // Recurse into nested maps
+    // $transform — single-value pipeline
+    if (value.containsKey(r'$transform')) {
+      return evaluateTransform(
+        value[r'$transform'] as Map<String, dynamic>,
+        (v) => _resolveValue(v, dataMap),
+      );
+    }
+    // $compute — multi-value computation
+    if (value.containsKey(r'$compute')) {
+      return evaluateCompute(
+        value[r'$compute'] as Map<String, dynamic>,
+        (v) => _resolveValue(v, dataMap),
+      );
+    }
+    // Regular map — recurse
     return _resolveMap(value, dataMap);
   }
   if (value is List) {
-    return value.map((item) => _resolveValue(item, dataMap)).toList();
+    return value
+        .map((item) => _resolveValue(item, dataMap))
+        .where((item) => item is! Map || !item.containsKey('_hidden'))
+        .toList();
   }
   // Primitives pass through
   return value;
