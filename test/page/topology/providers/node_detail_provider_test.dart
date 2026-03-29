@@ -89,8 +89,7 @@ void main() {
       final container = createContainer(data: meshData);
       await container.read(devicesDataProvider.future);
 
-      final detail =
-          container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
+      final detail = container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
 
       expect(detail.node, masterNode);
       expect(detail.connectedDevices, hasLength(2));
@@ -103,8 +102,7 @@ void main() {
       final container = createContainer(data: meshData);
       await container.read(devicesDataProvider.future);
 
-      final detail =
-          container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:02'));
+      final detail = container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:02'));
 
       expect(detail.node, extenderNode);
       expect(detail.connectedDevices, hasLength(1));
@@ -120,8 +118,7 @@ void main() {
       final container = createContainer(data: meshData);
       await container.read(devicesDataProvider.future);
 
-      final detail =
-          container.read(uspNodeDetailProvider('aa:bb:cc:dd:ee:01'));
+      final detail = container.read(uspNodeDetailProvider('aa:bb:cc:dd:ee:01'));
 
       expect(detail.node, masterNode);
       expect(detail.connectedDevices, hasLength(2));
@@ -224,8 +221,7 @@ void main() {
     test('returns empty state when devices data is null', () {
       final container = createContainer(data: null);
 
-      final detail =
-          container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
+      final detail = container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
 
       expect(detail.node, isNull);
       expect(detail.connectedDevices, isEmpty);
@@ -252,8 +248,7 @@ void main() {
       final container = createContainer(data: data);
       await container.read(devicesDataProvider.future);
 
-      final detail =
-          container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
+      final detail = container.read(uspNodeDetailProvider('AA:BB:CC:DD:EE:01'));
 
       expect(detail.node, masterNode);
       expect(detail.connectedDevices, isEmpty);

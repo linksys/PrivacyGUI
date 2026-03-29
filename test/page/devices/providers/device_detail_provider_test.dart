@@ -50,10 +50,8 @@ void main() {
   }) {
     return ProviderContainer(
       overrides: [
-        devicesDataProvider.overrideWith(
-            () => _FakeDevicesNotifier(devices)),
-        dhcpDataProvider.overrideWith(
-            () => _FakeDhcpNotifier(dhcp)),
+        devicesDataProvider.overrideWith(() => _FakeDevicesNotifier(devices)),
+        dhcpDataProvider.overrideWith(() => _FakeDhcpNotifier(dhcp)),
       ],
     );
   }
@@ -71,7 +69,8 @@ void main() {
       await container.read(devicesDataProvider.future);
       await container.read(dhcpDataProvider.future);
 
-      final detail = container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:01'));
+      final detail =
+          container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:01'));
 
       expect(detail.device, wifiDevice);
       expect(detail.reservation, reservation);
@@ -87,7 +86,8 @@ void main() {
       await container.read(devicesDataProvider.future);
       await container.read(dhcpDataProvider.future);
 
-      final detail = container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:02'));
+      final detail =
+          container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:02'));
 
       expect(detail.device, ethernetDevice);
       expect(detail.reservation, isNull);
@@ -107,7 +107,8 @@ void main() {
       await container.read(devicesDataProvider.future);
       await container.read(dhcpDataProvider.future);
 
-      final detail = container.read(uspDeviceDetailProvider('aa:bb:cc:dd:ee:01'));
+      final detail =
+          container.read(uspDeviceDetailProvider('aa:bb:cc:dd:ee:01'));
 
       expect(detail.device, wifiDevice);
       expect(detail.reservation, reservation);
@@ -121,7 +122,8 @@ void main() {
     test('returns empty state when devices data is null', () {
       final container = createContainer(devices: null, dhcp: null);
 
-      final detail = container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:01'));
+      final detail =
+          container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:01'));
 
       expect(detail.device, isNull);
       expect(detail.reservation, isNull);
@@ -135,7 +137,8 @@ void main() {
       );
       await container.read(devicesDataProvider.future);
 
-      final detail = container.read(uspDeviceDetailProvider('FF:FF:FF:FF:FF:FF'));
+      final detail =
+          container.read(uspDeviceDetailProvider('FF:FF:FF:FF:FF:FF'));
 
       expect(detail.device, isNull);
       container.dispose();
@@ -148,7 +151,8 @@ void main() {
       );
       await container.read(devicesDataProvider.future);
 
-      final detail = container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:01'));
+      final detail =
+          container.read(uspDeviceDetailProvider('AA:BB:CC:DD:EE:01'));
 
       expect(detail.device, wifiDevice);
       expect(detail.reservation, isNull);

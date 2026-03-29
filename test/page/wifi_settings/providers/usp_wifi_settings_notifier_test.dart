@@ -55,8 +55,7 @@ void main() {
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         uspServiceProvider.overrideWithValue(mockUsp),
         uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
-        wifiDataProvider
-            .overrideWith(() => _FakeWifiDataNotifier(data)),
+        wifiDataProvider.overrideWith(() => _FakeWifiDataNotifier(data)),
       ],
     );
     container.listen(uspWifiSettingsProvider, (_, __) {});
@@ -124,8 +123,8 @@ void main() {
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
           uspServiceProvider.overrideWithValue(null),
           uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
-          wifiDataProvider.overrideWith(
-              () => _FakeWifiDataNotifier(WifiSettingsTestData.createWifiData())),
+          wifiDataProvider.overrideWith(() =>
+              _FakeWifiDataNotifier(WifiSettingsTestData.createWifiData())),
         ],
       );
       container.listen(uspWifiSettingsProvider, (_, __) {});
@@ -162,14 +161,15 @@ void main() {
       notifier.updateNetworkField('Device.WiFi.SSID.1.', ssid: 'NewSSID');
 
       final state = container.read(uspWifiSettingsProvider);
-      final n1 = state.settings.current.networks.firstWhere(
-          (n) => n.ssidInstancePath == 'Device.WiFi.SSID.1.');
+      final n1 = state.settings.current.networks
+          .firstWhere((n) => n.ssidInstancePath == 'Device.WiFi.SSID.1.');
       expect(n1.ssid, 'NewSSID');
       expect(state.isDirty, isTrue);
       container.dispose();
     });
 
-    test('updateNetworkField auto-resets channel to auto when bandwidth changes and channel invalid',
+    test(
+        'updateNetworkField auto-resets channel to auto when bandwidth changes and channel invalid',
         () async {
       final networks = [
         WifiSettingsTestData.createNetworkUIModel(
@@ -214,7 +214,8 @@ void main() {
     // setQuickSetupEnabled
     // -----------------------------------------------------------------------
 
-    test('setQuickSetupEnabled initializes quick setup settings from aggregates',
+    test(
+        'setQuickSetupEnabled initializes quick setup settings from aggregates',
         () async {
       final networks = WifiSettingsTestData.createNetworks();
       final mainAggregate = WifiSettingsTestData.createQuickSetupAggregate();

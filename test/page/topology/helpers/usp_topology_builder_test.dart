@@ -196,7 +196,8 @@ void main() {
         meshNodes: [],
       );
 
-      final link = topo.links.where((l) => l.targetId.startsWith('client-')).first;
+      final link =
+          topo.links.where((l) => l.targetId.startsWith('client-')).first;
       expect(link.connectionType, ConnectionType.wifi);
       expect(link.rssi, -55);
     });
@@ -208,7 +209,8 @@ void main() {
         meshNodes: [],
       );
 
-      final link = topo.links.where((l) => l.targetId.startsWith('client-')).first;
+      final link =
+          topo.links.where((l) => l.targetId.startsWith('client-')).first;
       expect(link.connectionType, ConnectionType.ethernet);
       expect(link.rssi, isNull);
     });
@@ -220,7 +222,8 @@ void main() {
         meshNodes: [],
       );
 
-      final client = topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.status, MeshNodeStatus.online);
     });
 
@@ -231,7 +234,8 @@ void main() {
         meshNodes: [],
       );
 
-      final client = topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.status, MeshNodeStatus.offline);
     });
 
@@ -242,7 +246,8 @@ void main() {
         meshNodes: [],
       );
 
-      final client = topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.name, 'iPhone');
     });
   });
@@ -268,7 +273,8 @@ void main() {
         meshNodes: [],
       );
 
-      final client = topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.9);
       expect(client.signalQuality, SignalQuality.strong);
     });
@@ -289,7 +295,8 @@ void main() {
         meshNodes: [],
       );
 
-      final client = topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.65);
       expect(client.signalQuality, SignalQuality.medium);
     });
@@ -310,7 +317,8 @@ void main() {
         meshNodes: [],
       );
 
-      final client = topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.1);
       expect(client.signalQuality, SignalQuality.weak);
     });
@@ -322,7 +330,8 @@ void main() {
         meshNodes: [],
       );
 
-      final client = topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 1.0);
       expect(client.signalQuality, SignalQuality.wired);
     });
@@ -343,7 +352,8 @@ void main() {
         meshNodes: [],
       );
 
-      final client = topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
+      final client =
+          topo.nodes.firstWhere((n) => n.type == MeshNodeType.client);
       expect(client.level, 0.0);
       expect(client.signalQuality, SignalQuality.unknown);
     });

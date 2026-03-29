@@ -527,5 +527,4 @@ void main() {
       expect(MacFilterContext.empty.props, isNotEmpty);
     });
   });
-
 }

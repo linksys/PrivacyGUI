@@ -73,7 +73,8 @@ void main() {
   }) {
     return ProviderContainer(
       overrides: [
-        devicesDataProvider.overrideWith(() => _FakeDevicesNotifier(devicesData)),
+        devicesDataProvider
+            .overrideWith(() => _FakeDevicesNotifier(devicesData)),
         deviceFilterConfigProvider.overrideWith((ref) => filter),
       ],
     );
@@ -295,8 +296,7 @@ void main() {
     test('returns empty options when data is unavailable', () {
       final container = ProviderContainer(
         overrides: [
-          devicesDataProvider
-              .overrideWith(() => _FakeDevicesNotifier(null)),
+          devicesDataProvider.overrideWith(() => _FakeDevicesNotifier(null)),
         ],
       );
 

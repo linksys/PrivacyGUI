@@ -127,8 +127,8 @@ void main() {
     // -----------------------------------------------------------------------
 
     test('setEnabled(true) sets pendingType to openDNS', () async {
-      when(() => mockService.fetch()).thenAnswer((_) async =>
-          const SafeBrowsingUIModel(type: SafeBrowsingType.off));
+      when(() => mockService.fetch()).thenAnswer(
+          (_) async => const SafeBrowsingUIModel(type: SafeBrowsingType.off));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -157,11 +157,10 @@ void main() {
     });
 
     test('setEnabled does nothing when state is loading', () async {
-      when(() => mockService.fetch())
-          .thenAnswer((_) async => Future.delayed(
-                const Duration(seconds: 10),
-                () => const SafeBrowsingUIModel(type: SafeBrowsingType.off),
-              ));
+      when(() => mockService.fetch()).thenAnswer((_) async => Future.delayed(
+            const Duration(seconds: 10),
+            () => const SafeBrowsingUIModel(type: SafeBrowsingType.off),
+          ));
 
       final container = createContainer();
       // Don't await — state is still loading
@@ -178,8 +177,8 @@ void main() {
     // -----------------------------------------------------------------------
 
     test('save calls service with pendingType', () async {
-      when(() => mockService.fetch()).thenAnswer((_) async =>
-          const SafeBrowsingUIModel(type: SafeBrowsingType.off));
+      when(() => mockService.fetch()).thenAnswer(
+          (_) async => const SafeBrowsingUIModel(type: SafeBrowsingType.off));
       when(() => mockService.save(any())).thenAnswer((_) async {});
 
       final container = createContainer();
@@ -194,8 +193,8 @@ void main() {
     });
 
     test('save skips when not dirty', () async {
-      when(() => mockService.fetch()).thenAnswer((_) async =>
-          const SafeBrowsingUIModel(type: SafeBrowsingType.off));
+      when(() => mockService.fetch()).thenAnswer(
+          (_) async => const SafeBrowsingUIModel(type: SafeBrowsingType.off));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -207,8 +206,8 @@ void main() {
     });
 
     test('save resets isSaving on error', () async {
-      when(() => mockService.fetch()).thenAnswer((_) async =>
-          const SafeBrowsingUIModel(type: SafeBrowsingType.off));
+      when(() => mockService.fetch()).thenAnswer(
+          (_) async => const SafeBrowsingUIModel(type: SafeBrowsingType.off));
       when(() => mockService.save(any())).thenThrow(Exception('save failed'));
 
       final container = createContainer();

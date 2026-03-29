@@ -181,5 +181,4 @@ class WifiNetworkUIModel extends Equatable {
         supportedBandwidths,
         availableChannelsPerBandwidth,
       ];
-
 }
