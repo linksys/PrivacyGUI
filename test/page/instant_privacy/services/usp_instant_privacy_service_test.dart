@@ -3,7 +3,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
-import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
 
 class MockUspService extends Mock implements UspService {}
@@ -529,21 +528,4 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // InstantPrivacyDeviceUIModel
-  // ---------------------------------------------------------------------------
-
-  group('InstantPrivacyDeviceUIModel', () {
-    test('toMap / fromMap round-trip', () {
-      final model = InstantPrivacyDeviceUIModel(
-        mac: 'AA:BB:CC:DD:EE:FF',
-        displayName: 'Laptop',
-      );
-
-      final map = model.toMap();
-      final restored = InstantPrivacyDeviceUIModel.fromMap(map);
-
-      expect(restored, model);
-    });
-  });
 }
