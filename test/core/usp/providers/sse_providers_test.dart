@@ -178,7 +178,8 @@ void main() {
       container.dispose();
     });
 
-    test('happy path: health → connect (subscriptions deferred to orchestrator)',
+    test(
+        'happy path: health → connect (subscriptions deferred to orchestrator)',
         () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
       when(() => mockBridge.health()).thenAnswer((_) async => {'status': 'ok'});

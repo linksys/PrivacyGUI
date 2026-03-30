@@ -24,8 +24,7 @@ void main() {
     'Device.DeviceInfo.ProcessStatus.CPUUsage': '25',
     'Device.DeviceInfo.ActiveFirmwareImage':
         'Device.DeviceInfo.FirmwareImage.1.',
-    'Device.DeviceInfo.BootFirmwareImage':
-        'Device.DeviceInfo.FirmwareImage.1.',
+    'Device.DeviceInfo.BootFirmwareImage': 'Device.DeviceInfo.FirmwareImage.1.',
   };
 
   final firmwareImagesResponse = <String, dynamic>{
