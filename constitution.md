@@ -326,6 +326,14 @@ test/mocks/
 test/mocks/test_data/
 ```
 
+**3.5.4: Special Directories**
+
+Two special infrastructure directories exist outside the normal feature structure. They are not feature pages.
+
+**`lib/framework/`** — Provides the base infrastructure (`FeatureState`, `Preservable`, `PreservableNotifierMixin`) used by all Type A and Type B feature pages. Do not add feature-specific code here.
+
+**`lib/page/_shared/`** — Holds assets shared across multiple feature modules. See **Article V Section 5.3** for usage rules.
+
 ---
 
 **Section 3.6: Test Naming**
@@ -368,8 +376,144 @@ void main() {
 
 ---
 
-## Article IV: Operations & Deployment (Reserved)
-*Reserved for future definition of deployment policies, CI/CD pipelines, and runtime observability requirements.*
+## Article IV: USP Provider Architecture
+
+**Section 4.1: Two-Tier Provider Taxonomy**
+
+USP pages follow a two-tier provider structure. Each tier has distinct responsibilities, lifecycle, and codegen import rules.
+
+| Tier | Role | Lifecycle | Codegen Import |
+|------|------|-----------|----------------|
+| **L1 Domain Data Provider** | Repository: holds raw codegen data, responds to SSE invalidation | **NOT autoDispose** | ✅ Permitted |
+| **L2 Feature Page Provider** | Holds editable working copy; coordinates save/revert | **AutoDispose** | ❌ Prohibited |
+
+**Key Principle**: L1 and L2 serve different purposes:
+- **L1** → Persistent session cache: shared across features, SSE target, no redundant re-fetches
+- **L2** → Editable working copy: isolated per page, discarded when the page closes
+
+---
+
+**Section 4.2: Page Type Classification**
+
+Before implementing a feature page, determine its type using the following decision tree:
+
+```
+Does the page have an edit form (fields or list) + Save/Cancel?
+├── YES → Is the user editing a list (add/edit/delete items)?
+│         ├── YES → Type B: CRUD List
+│         └── NO  → Type A: Form
+└── NO  → Type C: Read-Only / Toggle
+```
+
+**Type A — Form**
+
+For pages with fixed editable fields and a single Save operation.
+
+- State: `FeatureState<{Domain}Settings, {Domain}Status>`
+- Mutations: `updateSetting({UIModel} Function({UIModel}) fn)`
+- Save: `Service.update(current)` (direct)
+- Requires L2: ✅ | Dirty Guard: ✅
+
+Examples: DMZ, Firewall, WiFi Settings, Internet Settings
+
+**Type B — CRUD List**
+
+For pages where users add/edit/delete list items, saved all at once.
+
+- State: `FeatureState<{Item}UIList, {Domain}ListStatus>`
+- Mutations: `addItem()` / `editItem()` / `deleteItem()`
+- Save: diff(original, current) → `addMultiple` + `set` + `delete`
+- New item identification: `instancePath == null` (not yet written to router)
+- Requires L2: ✅ | Dirty Guard: ✅
+
+Examples: Port Forwarding, DHCP Reservations, Static Routing
+
+**Type C — Read-Only / Toggle**
+
+For display-only pages or instant-effect operations with no Save/Cancel flow.
+
+- View consumes L1 directly: `ref.watch({domain}DataProvider)`
+- Requires L2: ❌ — do not create an unnecessary L2 provider
+
+Examples: System Info, WAN Status, Time Settings
+
+**Dirty Guard Implementation (Type A and Type B)**:
+- Use `PreservableAutoDisposeNotifierMixin` with the Notifier class
+- State MUST extend `FeatureState<TSettings, TStatus>`
+- Implement `performFetch()` and `performSave()` template methods
+- Expose `preservableProvider` for route dirty check:
+
+```dart
+final preservable{Domain}Provider =
+    AutoDisposeProvider<PreservableContract<{Domain}Settings, {Domain}Status>>(
+  (ref) => ref.watch(usp{Domain}Provider.notifier),
+);
+```
+
+**Route Configuration**:
+```dart
+LinksysRoute(
+  path: '{domain}',
+  builder: (context, state) => const {Domain}View(),
+  enableDirtyCheck: true,
+  preservableProvider: preservable{Domain}Provider,
+)
+```
+
+Reference implementation: `lib/page/dmz/providers/usp_dmz_notifier.dart`
+Detailed Guide: `doc/dirty_guard/dirty_guard_framework_guide.md`
+
+---
+
+**Section 4.3: Hard Rules**
+
+The following rules are non-negotiable for all USP provider implementations:
+
+**Rule 1: L1 Data Providers MUST NOT be `autoDispose`**
+
+L1 Data Providers are the single source of truth for the entire connected session. They must persist for the app lifetime so that multiple features can share the same cached data, SSE updates have a stable target, and re-navigating to a page does not trigger redundant re-fetches.
+
+```dart
+// ✅ Correct
+final xxxDataProvider = AsyncNotifierProvider<XxxDataNotifier, XxxData>(...);
+
+// ❌ Wrong
+final xxxDataProvider = AsyncNotifierProvider.autoDispose<XxxDataNotifier, XxxData>(...);
+```
+
+**Rule 2: L2 Notifiers MUST use `ref.read` (not `ref.watch`) when reading from L1**
+
+`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. SSE updates must flow through the `onSseInvalidation()` dirty guard path instead.
+
+```dart
+// ✅ Correct — one-time clone, no live tracking
+final data = await ref.read(xxxDataProvider.future);
+
+// ❌ Wrong — SSE will silently overwrite user edits
+final data = await ref.watch(xxxDataProvider.future);
+```
+
+**Rule 3: All mutations MUST go through `uspMutationLockProvider.withLock()`**
+
+The WASM USP client does not support concurrent calls. All write operations (add, update, delete) MUST acquire the global mutation lock.
+
+```dart
+await ref.read(uspMutationLockProvider).withLock(() async {
+  await _svc.save(current);
+});
+```
+
+**Rule 4: `PreservableContract` MUST be re-exported, not duplicated**
+
+`lib/framework/preservable_contract.dart` MUST re-export the original from `lib/providers/preservable_contract.dart`. Duplicating the class creates a type incompatibility that silently breaks `LinksysRoute`'s dirty check at runtime.
+
+```dart
+// ✅ Correct
+export 'package:privacy_gui/providers/preservable_contract.dart';
+
+// ❌ Wrong — creates incompatible type
+class PreservableContract<T, S> { ... }
+```
 
 ---
 
@@ -382,11 +526,33 @@ Complexity must be justified. Implementations must avoid "future-proofing" for s
 Do not create abstractions, interfaces, or layers until there is a concrete need. Start simple and refactor when patterns emerge.
 
 **Section 5.3: Feature Structure**
-Each feature should follow a consistent, minimal structure:
+
+The overall structure is:
+
+```
+lib/
+├── framework/           # Infrastructure (FeatureState, Preservable, mixins)
+└── page/
+    ├── _shared/             # Cross-module shared assets
+    │   ├── models/          # UI models used by 2+ feature modules
+    │   ├── components/      # UI components used by 2+ feature modules
+    │   ├── services/        # Services used by 2+ feature modules
+    │   └── providers/       # Providers used by 2+ feature modules
+    ├── dashboard/           # Dashboard page (orchestrator, cards)
+    └── [feature]/           # Feature modules
+        ├── views/
+        ├── providers/
+        ├── services/
+        └── models/
+```
+
+Each feature module should follow a consistent, minimal structure:
 * `lib/page/[feature]/views/` - UI components
 * `lib/page/[feature]/providers/` - State management
 * `lib/page/[feature]/services/` - Business logic (when needed)
 * `lib/page/[feature]/models/` - UI models (when needed)
+
+**`_shared/` Usage Rule**: Code belongs in `lib/page/_shared/` only when it is referenced by **two or more unrelated feature modules**. Do not move code to `_shared/` preemptively — wait until the second consumer exists.
 
 **Section 5.4: Architectural Layers and Separation of Concerns**
 
@@ -407,7 +573,7 @@ Each feature should follow a consistent, minimal structure:
 ┌────────────▼────────────────────┐
 │  Data (Data Layer)               │  ← USP protocol communication, local storage
 │  lib/generated/*.g.dart          │  ← usp-codegen generated API
-│  lib/core/usp/                   │  ← UspService, transport layer
+│  lib/core/usp/                        │  ← UspService, transport layer
 └─────────────────────────────────┘
 ```
 
@@ -660,8 +826,8 @@ Services MUST have unit tests that:
 
 **Section 6.6: Reference Implementations**
 See these existing services as examples:
-* `lib/page/dashboard/services/usp_device_service.dart`
-* `lib/page/instant_safety/providers/instant_safety_provider.dart`
+* `lib/page/_shared/services/usp_device_service.dart`
+* `lib/page/dmz/services/usp_dmz_service.dart`
 
 **Section 6.7: Distinction from Article VII**
 The Service layer is a LEGITIMATE abstraction that:
@@ -765,6 +931,11 @@ Run `dart tools/run_screenshot_tests.dart` with optional flags:
 
 ---
 
+## Article IX: (Reserved)
+*Reserved for future definition.*
+
+---
+
 ## Article X: Code Review Standards
 
 **Section 10.1: Review Checklist**
@@ -831,31 +1002,6 @@ class WifiNotifier extends AsyncNotifier<WifiState> {
     ref.invalidateSelf();  // re-triggers build() to refresh state
   }
 }
-```
-
-**Section 12.3: Dirty Guard Feature**
-
-**Usage Scenario**: When developers require implementing Dirty Guard functionality, refer to the following
-
-**Implementation Approach**:
-- Use `PreservableNotifierMixin` mixin with Notifier class
-- State must extend `FeatureState<Settings, Status>`
-- Implement `performFetch()` and `performSave()` methods
-
-**Reference Examples**:
-- `lib/page/instant_privacy/providers/instant_privacy_provider.dart`
-- `lib/framework/preservable_notifier_mixin.dart` (PreservableNotifierMixin definition)
-
-**Detailed Guide**: `doc/dirty_guard/dirty_guard_framework_guide.md`
-
-**Route Configuration**:
-```dart
-LinksysRoute(
-  path: 'feature',
-  builder: (context, state) => const FeatureView(),
-  preservableProvider: featureProvider,  // Specify provider to check
-  enableDirtyCheck: true,  // Enable dirty guard
-)
 ```
 
 ---
@@ -1077,5 +1223,3 @@ Code Review MUST check:
 - ✅ If there are custom components, confirm they have user approval
 
 ---
-
-**Version**: 2.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2026-03-20

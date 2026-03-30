@@ -272,11 +272,13 @@ class UspDeviceService {
     List<String> ipv6Addresses = const [],
   }) {
     return LanInfoUIModel(
+      hostName: info.hostName,
       ipAddress: info.ipAddress,
       subnetMask: info.subnetMask,
       dhcpEnabled: info.dhcpEnabled,
       minAddress: info.minAddress,
       maxAddress: info.maxAddress,
+      leaseTimeMinutes: (info.leaseTime / 60).round(),
       dnsServers: info.dnsServers,
       ipv6Enabled: info.ipv6Enabled,
       ipv6Addresses: ipv6Addresses,

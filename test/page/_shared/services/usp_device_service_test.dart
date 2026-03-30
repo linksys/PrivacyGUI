@@ -1,6 +1,8 @@
+import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
+import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
@@ -8,491 +10,989 @@ import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
+import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
+import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
+import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
+import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
+import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
-import 'package:test/test.dart';
 
-// ---------------------------------------------------------------------------
-// Shared fixtures
-// ---------------------------------------------------------------------------
+SystemInfo _sysInfo({
+  String manufacturer = 'Linksys',
+  String modelName = 'M60TB',
+  String serialNumber = 'SN123',
+  String hardwareVersion = '1.0',
+  String softwareVersion = '2.0.0',
+  int uptime = 3600,
+  int totalMemory = 512000,
+  int freeMemory = 256000,
+  int cpuUsage = 25,
+  String activeFirmwareImage = '',
+  String bootFirmwareImage = '',
+}) =>
+    SystemInfo(
+      manufacturer: manufacturer,
+      modelName: modelName,
+      serialNumber: serialNumber,
+      hardwareVersion: hardwareVersion,
+      softwareVersion: softwareVersion,
+      uptime: uptime,
+      totalMemory: totalMemory,
+      freeMemory: freeMemory,
+      cpuUsage: cpuUsage,
+      activeFirmwareImage: activeFirmwareImage,
+      bootFirmwareImage: bootFirmwareImage,
+    );
 
-const _systemInfo = SystemInfo(
-  manufacturer: 'Linksys',
-  modelName: 'M60TB',
-  serialNumber: 'SN12345',
-  hardwareVersion: '1.0',
-  softwareVersion: '1.0.16',
-  uptime: 86400,
-  totalMemory: 524288,
-  freeMemory: 262144,
-  cpuUsage: 35,
-  activeFirmwareImage: 'Device.DeviceInfo.FirmwareImage.1.',
-  bootFirmwareImage: 'Device.DeviceInfo.FirmwareImage.1.',
-);
+ConnectedDevice _device({
+  String instancePath = 'Device.Hosts.Host.1.',
+  String macAddress = 'AA:BB:CC:DD:EE:FF',
+  String ipAddress = '192.168.1.100',
+  String hostName = 'TestDevice',
+  bool isActive = true,
+  String interface_ = 'Device.WiFi.SSID.1',
+  String addressSource = 'DHCP',
+  List<ConnectedDeviceIpv6> ipv6Addresses = const [],
+}) =>
+    ConnectedDevice(
+      instancePath: instancePath,
+      macAddress: macAddress,
+      ipAddress: ipAddress,
+      hostName: hostName,
+      isActive: isActive,
+      interface_: interface_,
+      addressSource: addressSource,
+      ipv6Addresses: ipv6Addresses,
+    );
 
 void main() {
-  late UspDeviceService svc;
+  late UspDeviceService service;
 
   setUp(() {
-    svc = UspDeviceService();
+    service = UspDeviceService();
   });
 
-  // -----------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // buildSystemInfoUIModel
-  // -----------------------------------------------------------------------
-  group('buildSystemInfoUIModel', () {
-    test('maps all fields correctly', () {
-      final model = svc.buildSystemInfoUIModel(_systemInfo);
+  // ---------------------------------------------------------------------------
 
-      expect(model.manufacturer, 'Linksys');
-      expect(model.modelName, 'M60TB');
-      expect(model.serialNumber, 'SN12345');
-      expect(model.hardwareVersion, '1.0');
-      expect(model.softwareVersion, '1.0.16');
-      expect(model.uptime, 86400);
-      expect(model.totalMemory, 524288);
-      expect(model.freeMemory, 262144);
-      expect(model.cpuUsage, 35);
-      expect(model.firmwareImages, isEmpty);
+  group('UspDeviceService — buildSystemInfoUIModel', () {
+    test('maps all fields correctly', () {
+      final info = _sysInfo();
+      final result = service.buildSystemInfoUIModel(info);
+
+      expect(result.manufacturer, 'Linksys');
+      expect(result.modelName, 'M60TB');
+      expect(result.serialNumber, 'SN123');
+      expect(result.hardwareVersion, '1.0');
+      expect(result.softwareVersion, '2.0.0');
+      expect(result.uptime, 3600);
+      expect(result.totalMemory, 512000);
+      expect(result.freeMemory, 256000);
+      expect(result.cpuUsage, 25);
+      expect(result.firmwareImages, isEmpty);
     });
 
-    test('passes firmware images through', () {
-      final fwModels = svc.buildFirmwareImageUIModels(
-        data: FirmwareImages(items: [
-          FirmwareImage(
-            instancePath: 'Device.DeviceInfo.FirmwareImage.1.',
-            name: 'fw1',
-            version: '1.0',
-            status: 'Active',
-            available: true,
-          ),
-        ]),
-        activeRef: 'Device.DeviceInfo.FirmwareImage.1.',
-        bootRef: 'Device.DeviceInfo.FirmwareImage.1.',
-      );
-
-      final model =
-          svc.buildSystemInfoUIModel(_systemInfo, firmwareImages: fwModels);
-      expect(model.firmwareImages.length, 1);
-      expect(model.firmwareImages.first.name, 'fw1');
+    test('includes firmware images when provided', () {
+      final images = [
+        FirmwareImageUIModel(
+          instancePath: 'p.1.',
+          name: 'fw1',
+          version: '1.0',
+          status: 'active',
+          available: true,
+        ),
+      ];
+      final result =
+          service.buildSystemInfoUIModel(_sysInfo(), firmwareImages: images);
+      expect(result.firmwareImages, hasLength(1));
     });
   });
 
-  // -----------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // buildFirmwareImageUIModels
-  // -----------------------------------------------------------------------
-  group('buildFirmwareImageUIModels', () {
-    test('maps fields and marks active/boot', () {
-      final result = svc.buildFirmwareImageUIModels(
-        data: FirmwareImages(items: [
-          FirmwareImage(
-            instancePath: 'Device.DeviceInfo.FirmwareImage.1.',
-            name: 'fw1',
-            version: '1.0.16',
-            status: 'Active',
-            available: true,
-          ),
-          FirmwareImage(
-            instancePath: 'Device.DeviceInfo.FirmwareImage.2.',
-            name: 'fw2',
-            version: '1.0.14',
-            status: 'Available',
-            available: true,
-          ),
-        ]),
-        activeRef: 'Device.DeviceInfo.FirmwareImage.1.',
-        bootRef: 'Device.DeviceInfo.FirmwareImage.1.',
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildFirmwareImageUIModels', () {
+    test('identifies active and boot target images', () {
+      final data = FirmwareImages(items: [
+        FirmwareImage(
+          instancePath: 'Device.FW.1.',
+          name: 'fw1',
+          version: '1.0',
+          status: 'active',
+          available: true,
+        ),
+        FirmwareImage(
+          instancePath: 'Device.FW.2.',
+          name: 'fw2',
+          version: '2.0',
+          status: 'inactive',
+          available: true,
+        ),
+      ]);
+
+      final result = service.buildFirmwareImageUIModels(
+        data: data,
+        activeRef: 'Device.FW.1.',
+        bootRef: 'Device.FW.2.',
       );
 
-      expect(result.length, 2);
       expect(result[0].isActive, isTrue);
-      expect(result[0].isBootTarget, isTrue);
+      expect(result[0].isBootTarget, isFalse);
       expect(result[1].isActive, isFalse);
-      expect(result[1].isBootTarget, isFalse);
+      expect(result[1].isBootTarget, isTrue);
     });
 
-    test('handles trailing dot normalization in refs', () {
-      final result = svc.buildFirmwareImageUIModels(
-        data: FirmwareImages(items: [
-          FirmwareImage(
-            instancePath: 'Device.DeviceInfo.FirmwareImage.1.',
-            name: 'fw1',
-            version: '1.0',
-            status: 'Active',
-            available: true,
-          ),
-        ]),
-        // Ref WITHOUT trailing dot — should still match
-        activeRef: 'Device.DeviceInfo.FirmwareImage.1',
+    test('strips trailing dot for comparison', () {
+      final data = FirmwareImages(items: [
+        FirmwareImage(
+          instancePath: 'Device.FW.1.',
+          name: 'fw1',
+          version: '1.0',
+          status: 'active',
+          available: true,
+        ),
+      ]);
+
+      // activeRef without trailing dot should still match
+      final result = service.buildFirmwareImageUIModels(
+        data: data,
+        activeRef: 'Device.FW.1',
         bootRef: '',
       );
 
-      expect(result.first.isActive, isTrue);
-      expect(result.first.isBootTarget, isFalse);
+      expect(result[0].isActive, isTrue);
+      expect(result[0].isBootTarget, isFalse);
     });
 
-    test('empty items returns empty list', () {
-      final result = svc.buildFirmwareImageUIModels(
-        data: FirmwareImages(items: []),
+    test('empty refs mark nothing as active/boot', () {
+      final data = FirmwareImages(items: [
+        FirmwareImage(
+          instancePath: 'Device.FW.1.',
+          name: 'fw1',
+          version: '1.0',
+          status: 'inactive',
+          available: true,
+        ),
+      ]);
+
+      final result = service.buildFirmwareImageUIModels(
+        data: data,
         activeRef: '',
         bootRef: '',
       );
-      expect(result, isEmpty);
+
+      expect(result[0].isActive, isFalse);
+      expect(result[0].isBootTarget, isFalse);
     });
   });
 
-  // -----------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // buildDeviceUIModels
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildDeviceUIModels', () {
+    final emptyMesh = MeshTopologyInfo(nodes: [], clientToNodeMap: {});
+
+    test('filters out devices with empty interface', () {
+      final devices = ConnectedDevices(items: [
+        _device(interface_: 'Device.WiFi.SSID.1'),
+        _device(
+          instancePath: 'p.2.',
+          macAddress: 'BB:CC:DD:EE:FF:00',
+          interface_: '',
+        ),
+      ]);
+
+      final result = service.buildDeviceUIModels(
+        connectedDevices: devices,
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: emptyMesh,
+        gatewayName: 'Router',
+      );
+
+      expect(result, hasLength(1));
+    });
+
+    test('detects WiFi devices by interface containing wifi', () {
+      final devices = ConnectedDevices(items: [
+        _device(interface_: 'Device.WiFi.SSID.1'),
+        _device(
+          instancePath: 'p.2.',
+          macAddress: 'BB:CC:DD:EE:FF:00',
+          interface_: 'Device.Ethernet.Interface.1',
+        ),
+      ]);
+
+      final result = service.buildDeviceUIModels(
+        connectedDevices: devices,
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: emptyMesh,
+        gatewayName: 'Router',
+      );
+
+      expect(result[0].isWifi, isTrue);
+      expect(result[1].isWifi, isFalse);
+    });
+
+    test('enriches WiFi devices with signal data', () {
+      final devices = ConnectedDevices(items: [
+        _device(macAddress: 'aa:bb:cc:dd:ee:ff'),
+      ]);
+      final wifiMap = {
+        'AA:BB:CC:DD:EE:FF': WifiClientUIModel(
+          macAddress: 'AA:BB:CC:DD:EE:FF',
+          signalStrength: -50,
+          noise: -90,
+          lastDataDownlinkRate: 100,
+          lastDataUplinkRate: 50,
+          active: true,
+        ),
+      };
+
+      final result = service.buildDeviceUIModels(
+        connectedDevices: devices,
+        wifiClientMap: wifiMap,
+        connectionDetailMap: {},
+        meshTopology: emptyMesh,
+        gatewayName: 'Router',
+      );
+
+      expect(result[0].signalStrength, -50);
+      expect(result[0].downlinkRate, 100);
+    });
+
+    test('non-mesh active device gets gateway name as parent', () {
+      final devices = ConnectedDevices(items: [_device()]);
+
+      final result = service.buildDeviceUIModels(
+        connectedDevices: devices,
+        wifiClientMap: {},
+        connectionDetailMap: {},
+        meshTopology: emptyMesh,
+        gatewayName: 'MyRouter',
+      );
+
+      expect(result[0].parentNodeName, 'MyRouter');
+      expect(result[0].parentNodeId, isNull);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // buildTimeSettingsUIModel
-  // -----------------------------------------------------------------------
-  group('buildTimeSettingsUIModel', () {
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildTimeSettingsUIModel', () {
     test('maps all fields', () {
-      final model = svc.buildTimeSettingsUIModel(TimeSettings(
+      final settings = TimeSettings(
         enable: true,
         status: 'Synchronized',
+        currentLocalTime: '2026-03-23T12:00:00',
+        localTimeZone: 'Asia/Taipei',
         ntpServer1: 'pool.ntp.org',
         ntpServer2: 'time.google.com',
-        localTimeZone: 'Asia/Taipei',
-        currentLocalTime: '2026-03-30T16:00:00',
-      ));
+      );
 
-      expect(model.enable, isTrue);
-      expect(model.status, 'Synchronized');
-      expect(model.ntpServer1, 'pool.ntp.org');
-      expect(model.ntpServer2, 'time.google.com');
-      expect(model.localTimeZone, 'Asia/Taipei');
-      expect(model.currentLocalTime, '2026-03-30T16:00:00');
+      final result = service.buildTimeSettingsUIModel(settings);
+
+      expect(result.enable, isTrue);
+      expect(result.status, 'Synchronized');
+      expect(result.localTimeZone, 'Asia/Taipei');
+      expect(result.ntpServer1, 'pool.ntp.org');
     });
   });
 
-  // -----------------------------------------------------------------------
-  // buildLanInfoUIModel
-  // -----------------------------------------------------------------------
-  group('buildLanInfoUIModel', () {
-    test('maps all fields', () {
-      final model = svc.buildLanInfoUIModel(
-        LanNetworkInfo(
-          ipAddress: '192.168.1.1',
-          subnetMask: '255.255.255.0',
-          dhcpEnabled: true,
-          minAddress: '192.168.1.100',
-          maxAddress: '192.168.1.200',
-          leaseTime: 86400,
-          dnsServers: '8.8.8.8',
-          hostName: 'router',
-          ipv6Enabled: false,
+  // ---------------------------------------------------------------------------
+  // buildDhcpClientUIModels
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildDhcpClientUIModels', () {
+    test('enriches with hostname from connected devices', () {
+      final clients = DhcpClients(items: [
+        DhcpClient(
+          instancePath: 'p.1.',
+          chaddr: 'AA:BB:CC:DD:EE:FF',
+          active: true,
+          ipAddress: '192.168.1.100',
+          leaseTimeRemaining: DateTime(2026, 1, 1, 1, 0, 0),
         ),
+      ]);
+      final devices = ConnectedDevices(items: [
+        _device(
+          macAddress: 'AA:BB:CC:DD:EE:FF',
+          hostName: 'Laptop',
+        ),
+      ]);
+
+      final result = service.buildDhcpClientUIModels(
+        clients: clients,
+        connectedDevices: devices,
       );
 
-      expect(model.ipAddress, '192.168.1.1');
-      expect(model.subnetMask, '255.255.255.0');
-      expect(model.dhcpEnabled, isTrue);
-      expect(model.minAddress, '192.168.1.100');
-      expect(model.maxAddress, '192.168.1.200');
-      expect(model.dnsServers, '8.8.8.8');
-      expect(model.ipv6Enabled, isFalse);
-      expect(model.ipv6Addresses, isEmpty);
+      expect(result[0].hostName, 'Laptop');
+      expect(result[0].mac, 'AA:BB:CC:DD:EE:FF');
     });
 
-    test('passes ipv6Addresses through', () {
-      final model = svc.buildLanInfoUIModel(
-        LanNetworkInfo(
-          ipAddress: '192.168.1.1',
-          subnetMask: '255.255.255.0',
-          dhcpEnabled: true,
-          minAddress: '192.168.1.100',
-          maxAddress: '192.168.1.200',
-          leaseTime: 0,
-          dnsServers: '',
-          hostName: '',
-          ipv6Enabled: true,
+    test('missing hostname defaults to empty string', () {
+      final clients = DhcpClients(items: [
+        DhcpClient(
+          instancePath: 'p.1.',
+          chaddr: 'AA:BB:CC:DD:EE:FF',
+          active: true,
+          ipAddress: '192.168.1.100',
+          leaseTimeRemaining: DateTime(2026, 1, 1, 1, 0, 0),
         ),
-        ipv6Addresses: ['2001:db8::1', 'fe80::1'],
+      ]);
+
+      final result = service.buildDhcpClientUIModels(
+        clients: clients,
+        connectedDevices: ConnectedDevices(items: []),
       );
 
-      expect(model.ipv6Enabled, isTrue);
-      expect(model.ipv6Addresses, ['2001:db8::1', 'fe80::1']);
-    });
-  });
-
-  // -----------------------------------------------------------------------
-  // buildWanStatusUIModel
-  // -----------------------------------------------------------------------
-  group('buildWanStatusUIModel', () {
-    test('maps fields, isUp from status string', () {
-      final model = svc.buildWanStatusUIModel(
-        wanStatus: WanStatus(
-          status: 'Up',
-          ipAddress: '100.64.0.1',
-          subnetMask: '255.255.255.0',
-          addressingType: 'DHCP',
-          maxMtuSize: 1500,
-          ipv6Enabled: false,
-        ),
-        gateway: '100.64.0.254',
-      );
-
-      expect(model.isUp, isTrue);
-      expect(model.ipAddress, '100.64.0.1');
-      expect(model.subnetMask, '255.255.255.0');
-      expect(model.addressingType, 'DHCP');
-      expect(model.mtu, 1500);
-      expect(model.gateway, '100.64.0.254');
+      expect(result[0].hostName, '');
     });
 
-    test('status Down → isUp false', () {
-      final model = svc.buildWanStatusUIModel(
-        wanStatus: WanStatus(
-          status: 'Down',
-          ipAddress: '',
-          subnetMask: '',
-          addressingType: '',
-          maxMtuSize: 0,
-          ipv6Enabled: false,
+    test('MAC case normalized for lookup', () {
+      final clients = DhcpClients(items: [
+        DhcpClient(
+          instancePath: 'p.1.',
+          chaddr: 'aa:bb:cc:dd:ee:ff',
+          active: true,
+          ipAddress: '192.168.1.100',
+          leaseTimeRemaining: DateTime(2026, 1, 1, 1, 0, 0),
         ),
-        gateway: '',
+      ]);
+      final devices = ConnectedDevices(items: [
+        _device(macAddress: 'AA:BB:CC:DD:EE:FF', hostName: 'Match'),
+      ]);
+
+      final result = service.buildDhcpClientUIModels(
+        clients: clients,
+        connectedDevices: devices,
       );
 
-      expect(model.isUp, isFalse);
-    });
-
-    test('passes ipv6 fields', () {
-      final model = svc.buildWanStatusUIModel(
-        wanStatus: WanStatus(
-          status: 'Up',
-          ipAddress: '100.64.0.1',
-          subnetMask: '255.255.255.0',
-          addressingType: 'DHCP',
-          maxMtuSize: 1500,
-          ipv6Enabled: true,
-        ),
-        gateway: '',
-        ipv6Addresses: ['2001:db8::1'],
-      );
-
-      expect(model.ipv6Enabled, isTrue);
-      expect(model.ipv6Addresses, ['2001:db8::1']);
+      expect(result[0].hostName, 'Match');
     });
   });
 
-  // -----------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // buildDhcpReservationUIModels
-  // -----------------------------------------------------------------------
-  group('buildDhcpReservationUIModels', () {
-    test('maps reservation fields', () {
-      final result = svc.buildDhcpReservationUIModels(DhcpReservations(items: [
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildDhcpReservationUIModels', () {
+    test('maps all fields', () {
+      final data = DhcpReservations(items: [
         DhcpReservation(
-          instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+          instancePath: 'path.1.',
           enable: true,
-          chaddr: 'AA:BB:CC:DD:EE:01',
+          chaddr: 'AA:BB:CC:DD:EE:FF',
           yiaddr: '192.168.1.50',
         ),
-        DhcpReservation(
-          instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.2.',
-          enable: false,
-          chaddr: 'AA:BB:CC:DD:EE:02',
-          yiaddr: '192.168.1.51',
-        ),
-      ]));
+      ]);
 
-      expect(result.length, 2);
-      expect(result[0].mac, 'AA:BB:CC:DD:EE:01');
+      final result = service.buildDhcpReservationUIModels(data);
+
+      expect(result, hasLength(1));
+      expect(result[0].instancePath, 'path.1.');
+      expect(result[0].mac, 'AA:BB:CC:DD:EE:FF');
       expect(result[0].ip, '192.168.1.50');
       expect(result[0].enable, isTrue);
-      expect(result[1].enable, isFalse);
-    });
-
-    test('empty reservations returns empty list', () {
-      final result =
-          svc.buildDhcpReservationUIModels(DhcpReservations(items: []));
-      expect(result, isEmpty);
     });
   });
 
-  // -----------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // buildPortForwardingRuleUIModels
-  // -----------------------------------------------------------------------
-  group('buildPortForwardingRuleUIModels', () {
-    test('maps rule fields', () {
-      final result = svc.buildPortForwardingRuleUIModels(PortForwarding(items: [
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildPortForwardingRuleUIModels', () {
+    test('maps all fields including nested data', () {
+      final data = PortForwarding(items: [
         PortForwardingRule(
-          instancePath: 'Device.NAT.PortMapping.1.',
-          enabled: true,
-          externalPort: 8080,
-          externalPortEndRange: 8090,
+          instancePath: 'path.1.',
+          description: 'HTTP',
+          externalPort: 80,
+          externalPortEndRange: 80,
           internalPort: 80,
-          internalClient: '192.168.1.10',
+          internalClient: '192.168.1.100',
           protocol: 'TCP',
-          description: 'Web Server',
+          enabled: true,
         ),
-      ]));
+      ]);
 
-      expect(result.length, 1);
-      expect(result.first.description, 'Web Server');
-      expect(result.first.externalPort, 8080);
-      expect(result.first.externalPortEndRange, 8090);
-      expect(result.first.internalPort, 80);
-      expect(result.first.internalClient, '192.168.1.10');
-      expect(result.first.protocol, 'TCP');
-      expect(result.first.enabled, isTrue);
-    });
+      final result = service.buildPortForwardingRuleUIModels(data);
 
-    test('empty rules returns empty list', () {
-      final result =
-          svc.buildPortForwardingRuleUIModels(PortForwarding(items: []));
-      expect(result, isEmpty);
+      expect(result, hasLength(1));
+      expect(result[0].description, 'HTTP');
+      expect(result[0].protocol, 'TCP');
+      expect(result[0].enabled, isTrue);
     });
   });
 
-  // -----------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // buildPortTriggeringRuleUIModels
-  // -----------------------------------------------------------------------
-  group('buildPortTriggeringRuleUIModels', () {
-    test('maps trigger with nested forward rules', () {
-      final result = svc.buildPortTriggeringRuleUIModels(PortTriggering(items: [
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildPortTriggeringRuleUIModels', () {
+    test('maps parent + nested forward rules', () {
+      final data = PortTriggering(items: [
         PortTrigger(
-          instancePath: 'Device.NAT.PortTrigger.1.',
+          instancePath: 'path.1.',
           enabled: true,
-          description: 'Gaming',
-          triggerPort: 3000,
-          triggerPortEndRange: 3010,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerPortEndRange: 21,
           triggerProtocol: 'TCP',
           rules: [
             PortTriggerForwardRule(
-              instancePath: 'Device.NAT.PortTrigger.1.Rule.1.',
-              forwardPort: 4000,
-              forwardPortEndRange: 4010,
-              forwardProtocol: 'UDP',
-            ),
-            PortTriggerForwardRule(
-              instancePath: 'Device.NAT.PortTrigger.1.Rule.2.',
-              forwardPort: 5000,
-              forwardPortEndRange: 5005,
+              instancePath: 'path.1.Rule.1.',
+              forwardPort: 1024,
+              forwardPortEndRange: 1030,
               forwardProtocol: 'TCP',
             ),
           ],
         ),
-      ]));
+      ]);
 
-      expect(result.length, 1);
-      final trigger = result.first;
-      expect(trigger.enabled, isTrue);
-      expect(trigger.description, 'Gaming');
-      expect(trigger.triggerPort, 3000);
-      expect(trigger.triggerPortEndRange, 3010);
-      expect(trigger.triggerProtocol, 'TCP');
-      expect(trigger.forwardRules.length, 2);
-      expect(trigger.forwardRules[0].forwardPort, 4000);
-      expect(trigger.forwardRules[0].forwardProtocol, 'UDP');
-      expect(trigger.forwardRules[1].forwardPort, 5000);
+      final result = service.buildPortTriggeringRuleUIModels(data);
+
+      expect(result, hasLength(1));
+      expect(result[0].description, 'FTP');
+      expect(result[0].forwardRules, hasLength(1));
+      expect(result[0].forwardRules[0].forwardPort, 1024);
     });
 
-    test('trigger with no forward rules', () {
-      final result = svc.buildPortTriggeringRuleUIModels(PortTriggering(items: [
+    test('empty forward rules list', () {
+      final data = PortTriggering(items: [
         PortTrigger(
-          instancePath: 'Device.NAT.PortTrigger.1.',
-          enabled: false,
-          description: 'Empty',
-          triggerPort: 100,
-          triggerPortEndRange: 100,
-          triggerProtocol: 'TCP',
+          instancePath: 'path.1.',
+          enabled: true,
+          description: 'Simple',
+          triggerPort: 5060,
+          triggerPortEndRange: 5060,
+          triggerProtocol: 'UDP',
           rules: [],
         ),
-      ]));
+      ]);
 
-      expect(result.length, 1);
-      expect(result.first.forwardRules, isEmpty);
-      expect(result.first.enabled, isFalse);
+      final result = service.buildPortTriggeringRuleUIModels(data);
+      expect(result[0].forwardRules, isEmpty);
     });
   });
 
-  // -----------------------------------------------------------------------
-  // buildDhcpClientUIModels (medium — hostname enrichment)
-  // -----------------------------------------------------------------------
-  group('buildDhcpClientUIModels', () {
-    final leaseTime = DateTime(2026, 3, 30, 12, 0, 0);
+  // ---------------------------------------------------------------------------
+  // buildLanInfoUIModel
+  // ---------------------------------------------------------------------------
 
-    test('maps client fields with hostname enrichment', () {
-      final result = svc.buildDhcpClientUIModels(
-        clients: DhcpClients(items: [
-          DhcpClient(
-            instancePath: 'Device.DHCPv4.Server.Pool.1.Client.1.',
-            chaddr: 'AA:BB:CC:DD:EE:FF',
-            active: true,
-            ipAddress: '192.168.1.10',
-            leaseTimeRemaining: leaseTime,
-          ),
-        ]),
-        connectedDevices: ConnectedDevices(items: [
-          ConnectedDevice(
-            instancePath: 'Device.Hosts.Host.1.',
-            macAddress: 'AA:BB:CC:DD:EE:FF',
-            ipAddress: '192.168.1.10',
-            hostName: 'laptop',
+  group('UspDeviceService — buildLanInfoUIModel', () {
+    test('maps all fields with optional IPv6', () {
+      final info = LanNetworkInfo(
+        ipAddress: '192.168.1.1',
+        subnetMask: '255.255.255.0',
+        dhcpEnabled: true,
+        minAddress: '192.168.1.100',
+        maxAddress: '192.168.1.200',
+        leaseTime: 86400,
+        dnsServers: '8.8.8.8',
+        hostName: 'Router',
+        ipv6Enabled: true,
+      );
+
+      final result = service.buildLanInfoUIModel(
+        info,
+        ipv6Addresses: ['2001:db8::1'],
+      );
+
+      expect(result.hostName, 'Router');
+      expect(result.ipAddress, '192.168.1.1');
+      expect(result.dhcpEnabled, isTrue);
+      expect(result.leaseTimeMinutes, 1440); // 86400s / 60
+      expect(result.ipv6Enabled, isTrue);
+      expect(result.ipv6Addresses, ['2001:db8::1']);
+    });
+
+    test('IPv6 defaults to false/empty', () {
+      final info = LanNetworkInfo(
+        ipAddress: '192.168.1.1',
+        subnetMask: '255.255.255.0',
+        dhcpEnabled: false,
+        minAddress: '',
+        maxAddress: '',
+        leaseTime: 0,
+        dnsServers: '',
+        hostName: '',
+        ipv6Enabled: false,
+      );
+
+      final result = service.buildLanInfoUIModel(info);
+
+      expect(result.ipv6Enabled, isFalse);
+      expect(result.ipv6Addresses, isEmpty);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // buildWanStatusUIModel
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildWanStatusUIModel', () {
+    test('maps fields and derives isUp from status', () {
+      final status = WanStatus(
+        status: 'Up',
+        ipAddress: '203.0.113.1',
+        subnetMask: '255.255.255.0',
+        addressingType: 'DHCP',
+        maxMtuSize: 1500,
+        ipv6Enabled: false,
+      );
+
+      final result = service.buildWanStatusUIModel(
+        wanStatus: status,
+        gateway: '203.0.113.254',
+      );
+
+      expect(result.isUp, isTrue);
+      expect(result.ipAddress, '203.0.113.1');
+      expect(result.mtu, 1500);
+      expect(result.gateway, '203.0.113.254');
+    });
+
+    test('status "down" → isUp false (case insensitive)', () {
+      final status = WanStatus(
+        status: 'Down',
+        ipAddress: '',
+        subnetMask: '',
+        addressingType: '',
+        maxMtuSize: 0,
+        ipv6Enabled: false,
+      );
+
+      final result = service.buildWanStatusUIModel(
+        wanStatus: status,
+        gateway: '',
+      );
+
+      expect(result.isUp, isFalse);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // buildEthernetPortUIModels
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildEthernetPortUIModels', () {
+    test('classifies by bridge membership not upstream flag', () {
+      final interfaces = EthernetInterfaces(items: [
+        EthernetInterface(
+          instancePath: 'Device.Ethernet.Interface.1.',
+          name: 'eth1',
+          status: 'Up',
+          upstream: true, // misleading — actually LAN
+          currentBitRate: 1000,
+        ),
+        EthernetInterface(
+          instancePath: 'Device.Ethernet.Interface.2.',
+          name: 'eth0',
+          status: 'Up',
+          upstream: false, // misleading — actually WAN
+          currentBitRate: 1000,
+        ),
+      ]);
+
+      // Bridge port map: eth1 is a bridge member → LAN
+      final bridgePortMap = {
+        'Device.Bridging.Bridge.1.Port.1.': 'Device.Ethernet.Interface.1',
+      };
+
+      final result = service.buildEthernetPortUIModels(
+        ethernetInterfaces: interfaces,
+        deviceModels: [],
+        bridgePortMap: bridgePortMap,
+      );
+
+      // eth1 is bridge member → LAN (no wired devices, single LAN entry)
+      // eth0 is NOT bridge member → WAN port
+      expect(result, hasLength(2));
+      expect(result[0].isWan, isTrue);
+      expect(result[0].label, 'WAN');
+      expect(result[1].isWan, isFalse);
+      expect(result[1].label, 'LAN');
+      expect(result[1].connectedDevices, isEmpty);
+    });
+
+    test('creates LAN port per active wired device', () {
+      final interfaces = EthernetInterfaces(items: [
+        EthernetInterface(
+          instancePath: 'Device.Ethernet.Interface.1.',
+          name: 'eth1',
+          status: 'Up',
+          upstream: false,
+          currentBitRate: 1000,
+        ),
+      ]);
+      final bridgePortMap = {
+        'port.1.': 'Device.Ethernet.Interface.1',
+      };
+      final devices = [
+        DeviceUIModel(
+          mac: 'AA:BB:CC:DD:EE:01',
+          ip: '192.168.1.10',
+          hostName: 'PC1',
+          isActive: true,
+          isWifi: false,
+        ),
+        DeviceUIModel(
+          mac: 'AA:BB:CC:DD:EE:02',
+          ip: '192.168.1.11',
+          hostName: 'PC2',
+          isActive: true,
+          isWifi: false,
+        ),
+      ];
+
+      final result = service.buildEthernetPortUIModels(
+        ethernetInterfaces: interfaces,
+        deviceModels: devices,
+        bridgePortMap: bridgePortMap,
+      );
+
+      expect(result, hasLength(2));
+      expect(result[0].label, 'LAN 1');
+      expect(result[1].label, 'LAN 2');
+      expect(result[0].connectedDevices[0].hostName, 'PC1');
+    });
+
+    test('WiFi and inactive devices excluded from wired count', () {
+      final interfaces = EthernetInterfaces(items: [
+        EthernetInterface(
+          instancePath: 'Device.Ethernet.Interface.1.',
+          name: 'eth1',
+          status: 'Up',
+          upstream: false,
+          currentBitRate: 1000,
+        ),
+      ]);
+      final bridgePortMap = {'port.1.': 'Device.Ethernet.Interface.1'};
+      final devices = [
+        DeviceUIModel(
+          mac: 'AA:BB:CC:DD:EE:01',
+          ip: '192.168.1.10',
+          hostName: 'WiFi',
+          isActive: true,
+          isWifi: true, // excluded — WiFi
+        ),
+        DeviceUIModel(
+          mac: 'AA:BB:CC:DD:EE:02',
+          ip: '192.168.1.11',
+          hostName: 'Inactive',
+          isActive: false, // excluded — inactive
+          isWifi: false,
+        ),
+      ];
+
+      final result = service.buildEthernetPortUIModels(
+        ethernetInterfaces: interfaces,
+        deviceModels: devices,
+        bridgePortMap: bridgePortMap,
+      );
+
+      // Single LAN port with no connected devices (WiFi/inactive excluded)
+      expect(result, hasLength(1));
+      expect(result[0].isWan, isFalse);
+      expect(result[0].label, 'LAN');
+      expect(result[0].connectedDevices, isEmpty);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // buildNodeUIModels
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildNodeUIModels', () {
+    test('empty mesh creates synthetic gateway node', () {
+      final emptyMesh = MeshTopologyInfo(nodes: [], clientToNodeMap: {});
+      final sysInfo = SystemInfoUIModel(
+        manufacturer: 'Linksys',
+        modelName: 'M60TB',
+        serialNumber: 'SN123',
+        hardwareVersion: '1.0',
+        softwareVersion: '2.0.0',
+        uptime: 3600,
+        totalMemory: 512000,
+        freeMemory: 256000,
+        cpuUsage: 25,
+      );
+
+      final result = service.buildNodeUIModels(
+        meshTopology: emptyMesh,
+        deviceModels: [
+          DeviceUIModel(
+            mac: 'AA:BB:CC:DD:EE:01',
+            ip: '192.168.1.10',
+            hostName: 'PC',
             isActive: true,
-            interface_: 'Device.Ethernet.Interface.1',
-            addressSource: 'DHCP',
-            ipv6Addresses: [],
+            isWifi: false,
           ),
-        ]),
+        ],
+        systemInfo: sysInfo,
       );
 
-      expect(result.length, 1);
-      expect(result.first.mac, 'AA:BB:CC:DD:EE:FF');
-      expect(result.first.ip, '192.168.1.10');
-      expect(result.first.active, isTrue);
-      expect(result.first.hostName, 'laptop');
+      expect(result, hasLength(1));
+      expect(result[0].deviceId, 'gateway');
+      expect(result[0].isMaster, isTrue);
+      expect(result[0].model, 'M60TB');
+      expect(result[0].connectedDeviceCount, 1);
     });
 
-    test('case-insensitive MAC matching for hostname', () {
-      final result = svc.buildDhcpClientUIModels(
-        clients: DhcpClients(items: [
-          DhcpClient(
-            instancePath: 'Device.DHCPv4.Server.Pool.1.Client.1.',
-            chaddr: 'aa:bb:cc:dd:ee:ff',
-            active: true,
-            ipAddress: '192.168.1.10',
-            leaseTimeRemaining: leaseTime,
+    test('mesh network: first node is master', () {
+      final mesh = MeshTopologyInfo(
+        nodes: [
+          MeshNodeInfo(
+            instancePath: 'p.1.',
+            deviceId: 'node-1',
+            model: 'M60',
           ),
-        ]),
-        connectedDevices: ConnectedDevices(items: [
-          ConnectedDevice(
-            instancePath: 'Device.Hosts.Host.1.',
-            macAddress: 'AA:BB:CC:DD:EE:FF',
-            ipAddress: '192.168.1.10',
-            hostName: 'laptop',
-            isActive: true,
-            interface_: 'Device.Ethernet.Interface.1',
-            addressSource: 'DHCP',
-            ipv6Addresses: [],
+          MeshNodeInfo(
+            instancePath: 'p.2.',
+            deviceId: 'node-2',
+            model: 'M60',
           ),
-        ]),
+        ],
+        clientToNodeMap: {},
       );
 
-      expect(result.first.hostName, 'laptop');
+      final result = service.buildNodeUIModels(
+        meshTopology: mesh,
+        deviceModels: [],
+        systemInfo: SystemInfoUIModel(
+          manufacturer: '',
+          modelName: '',
+          serialNumber: '',
+          hardwareVersion: '',
+          softwareVersion: '',
+          uptime: 0,
+          totalMemory: 0,
+          freeMemory: 0,
+          cpuUsage: 0,
+        ),
+      );
+
+      expect(result[0].isMaster, isTrue);
+      expect(result[1].isMaster, isFalse);
     });
 
-    test('no matching device — hostname empty', () {
-      final result = svc.buildDhcpClientUIModels(
-        clients: DhcpClients(items: [
-          DhcpClient(
-            instancePath: 'Device.DHCPv4.Server.Pool.1.Client.1.',
-            chaddr: 'FF:FF:FF:FF:FF:FF',
-            active: true,
-            ipAddress: '192.168.1.99',
-            leaseTimeRemaining: leaseTime,
+    test('counts connected devices per node (case insensitive)', () {
+      final mesh = MeshTopologyInfo(
+        nodes: [
+          MeshNodeInfo(
+            instancePath: 'p.1.',
+            deviceId: 'NODE-A',
+            model: 'M60',
           ),
-        ]),
-        connectedDevices: ConnectedDevices(items: []),
+        ],
+        clientToNodeMap: {},
       );
 
-      expect(result.first.hostName, '');
+      final devices = [
+        DeviceUIModel(
+          mac: 'AA:BB:CC:DD:EE:01',
+          ip: '192.168.1.10',
+          hostName: 'PC1',
+          isActive: true,
+          isWifi: false,
+          parentNodeId: 'node-a', // lowercase
+        ),
+        DeviceUIModel(
+          mac: 'AA:BB:CC:DD:EE:02',
+          ip: '192.168.1.11',
+          hostName: 'PC2',
+          isActive: false, // inactive — not counted
+          isWifi: false,
+          parentNodeId: 'node-a',
+        ),
+      ];
+
+      final result = service.buildNodeUIModels(
+        meshTopology: mesh,
+        deviceModels: devices,
+        systemInfo: SystemInfoUIModel(
+          manufacturer: '',
+          modelName: '',
+          serialNumber: '',
+          hardwareVersion: '',
+          softwareVersion: '',
+          uptime: 0,
+          totalMemory: 0,
+          freeMemory: 0,
+          cpuUsage: 0,
+        ),
+      );
+
+      expect(result[0].connectedDeviceCount, 1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // buildWifiRadioUIModels
+  // ---------------------------------------------------------------------------
+
+  group('UspDeviceService — buildWifiRadioUIModels', () {
+    test('groups APs by radio via SSID lowerLayers reference', () {
+      final radios = WiFiRadios(items: [
+        WiFiRadio(
+          instancePath: 'Device.WiFi.Radio.1.',
+          enable: true,
+          status: 'Up',
+          channel: 6,
+          operatingFrequencyBand: '2.4GHz',
+          operatingChannelBandwidth: '20MHz',
+          possibleChannels: '1,6,11',
+          operatingStandards: 'n',
+          supportedStandards: 'b,g,n',
+          transmitPower: 100,
+          maxBitRate: 300,
+          autoChannelEnable: true,
+          ieee80211hEnabled: false,
+          supportedOperatingChannelBandwidths: '20MHz,40MHz',
+        ),
+      ]);
+      final ssids = WiFiSsids(items: [
+        WiFiSsid(
+          instancePath: 'Device.WiFi.SSID.1.',
+          ssid: 'MyNetwork',
+          enable: true,
+          status: 'Up',
+          bssid: 'AA:BB:CC:DD:EE:FF',
+          lowerLayers: 'Device.WiFi.Radio.1.',
+        ),
+      ]);
+      final aps = WiFiAccessPoints(items: [
+        WiFiAccessPoint(
+          instancePath: 'Device.WiFi.AccessPoint.1.',
+          enable: true,
+          status: 'Up',
+          modesSupported: 'WPA2-Personal',
+          securityModeEnabled: 'WPA2-Personal',
+          encryptionMode: 'AES',
+          keyPassphrase: 'password',
+          ssidAdvertisementEnabled: true,
+          ssidReference: 'Device.WiFi.SSID.1.',
+        ),
+      ]);
+
+      final result = service.buildWifiRadioUIModels(
+        radios: radios,
+        ssids: ssids,
+        accessPoints: aps,
+      );
+
+      expect(result, hasLength(1));
+      expect(result[0].band, '2.4GHz');
+      expect(result[0].accessPoints, hasLength(1));
+      expect(result[0].accessPoints[0].ssidName, 'MyNetwork');
+      expect(result[0].accessPoints[0].securityMode, 'WPA2-Personal');
     });
 
-    test('empty clients returns empty list', () {
-      final result = svc.buildDhcpClientUIModels(
-        clients: DhcpClients(items: []),
-        connectedDevices: ConnectedDevices(items: []),
+    test('AP with missing SSID reference is skipped', () {
+      final radios = WiFiRadios(items: [
+        WiFiRadio(
+          instancePath: 'Device.WiFi.Radio.1.',
+          enable: true,
+          status: 'Up',
+          channel: 36,
+          operatingFrequencyBand: '5GHz',
+          operatingChannelBandwidth: '80MHz',
+          possibleChannels: '36,40,44,48',
+          operatingStandards: 'ac',
+          supportedStandards: 'a,n,ac',
+          transmitPower: 100,
+          maxBitRate: 1300,
+          autoChannelEnable: true,
+          ieee80211hEnabled: false,
+          supportedOperatingChannelBandwidths: '20MHz,40MHz,80MHz',
+        ),
+      ]);
+      final ssids = WiFiSsids(items: []); // No SSIDs
+      final aps = WiFiAccessPoints(items: [
+        WiFiAccessPoint(
+          instancePath: 'Device.WiFi.AccessPoint.1.',
+          enable: true,
+          status: 'Up',
+          modesSupported: 'WPA2-Personal',
+          securityModeEnabled: 'WPA2-Personal',
+          encryptionMode: 'AES',
+          keyPassphrase: 'password',
+          ssidAdvertisementEnabled: true,
+          ssidReference: 'Device.WiFi.SSID.1.', // Not in SSIDs
+        ),
+      ]);
+
+      final result = service.buildWifiRadioUIModels(
+        radios: radios,
+        ssids: ssids,
+        accessPoints: aps,
       );
-      expect(result, isEmpty);
+
+      // Radio should exist but with no access points
+      expect(result, hasLength(1));
+      expect(result[0].accessPoints, isEmpty);
+    });
+
+    test('empty SSID name falls back to AP ssidReference', () {
+      final radios = WiFiRadios(items: [
+        WiFiRadio(
+          instancePath: 'Device.WiFi.Radio.1.',
+          enable: true,
+          status: 'Up',
+          channel: 6,
+          operatingFrequencyBand: '2.4GHz',
+          operatingChannelBandwidth: '20MHz',
+          possibleChannels: '1,6,11',
+          operatingStandards: 'n',
+          supportedStandards: 'n',
+          transmitPower: 100,
+          maxBitRate: 300,
+          autoChannelEnable: true,
+          ieee80211hEnabled: false,
+          supportedOperatingChannelBandwidths: '20MHz',
+        ),
+      ]);
+      final ssids = WiFiSsids(items: [
+        WiFiSsid(
+          instancePath: 'Device.WiFi.SSID.1.',
+          ssid: '', // empty
+          enable: true,
+          status: 'Up',
+          bssid: '',
+          lowerLayers: 'Device.WiFi.Radio.1.',
+        ),
+      ]);
+      final aps = WiFiAccessPoints(items: [
+        WiFiAccessPoint(
+          instancePath: 'Device.WiFi.AccessPoint.1.',
+          enable: true,
+          status: 'Up',
+          modesSupported: '',
+          securityModeEnabled: '',
+          encryptionMode: '',
+          keyPassphrase: '',
+          ssidAdvertisementEnabled: true,
+          ssidReference: 'Device.WiFi.SSID.1.',
+        ),
+      ]);
+
+      final result = service.buildWifiRadioUIModels(
+        radios: radios,
+        ssids: ssids,
+        accessPoints: aps,
+      );
+
+      // Fallback to ssidReference since SSID.ssid is empty
+      expect(result[0].accessPoints[0].ssidName, 'Device.WiFi.SSID.1.');
     });
   });
 }
