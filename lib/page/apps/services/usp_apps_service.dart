@@ -16,11 +16,16 @@ final uspAppsServiceProvider = Provider<UspAppsService>(
 /// These endpoints are NOT USP/TR-181 — they are plain files served by
 /// lighttpd, written by app_util.lua on opkg install/remove.
 class UspAppsService {
-  String get _baseUrl => Uri.base.origin;
+  final http.Client _client;
+  final String _baseUrl;
+
+  UspAppsService({http.Client? client, String? baseUrl})
+      : _client = client ?? http.Client(),
+        _baseUrl = baseUrl ?? Uri.base.origin;
 
   /// Fetch all apps from /api/apps.json.
   Future<List<AppInfoUIModel>> fetchApps() async {
-    final response = await http.get(Uri.parse('$_baseUrl/api/apps.json'));
+    final response = await _client.get(Uri.parse('$_baseUrl/api/apps.json'));
     if (response.statusCode != 200) {
       throw Exception('Failed to load apps: HTTP ${response.statusCode}');
     }
@@ -33,7 +38,7 @@ class UspAppsService {
   Future<AppEvent?> fetchLatestEvent() async {
     try {
       final response =
-          await http.get(Uri.parse('$_baseUrl/api/app-events.json'));
+          await _client.get(Uri.parse('$_baseUrl/api/app-events.json'));
       if (response.statusCode != 200 || response.body.trim().isEmpty) {
         return null;
       }
