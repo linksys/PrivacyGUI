@@ -63,8 +63,7 @@ void main() {
     });
 
     test('first load has no NEW badges', () async {
-      when(() => mock.fetchApps())
-          .thenAnswer((_) async => [_app('app1')]);
+      when(() => mock.fetchApps()).thenAnswer((_) async => [_app('app1')]);
 
       final container = _container(mock);
       addTearDown(container.dispose);
@@ -90,8 +89,7 @@ void main() {
   group('polling', () {
     test('detects added app after 5s poll', () {
       fakeAsync((async) {
-        when(() => mock.fetchApps())
-            .thenAnswer((_) async => [_app('app1')]);
+        when(() => mock.fetchApps()).thenAnswer((_) async => [_app('app1')]);
 
         final container = _container(mock);
         _listen(container, async);
@@ -121,8 +119,7 @@ void main() {
         _listen(container, async);
 
         // app2 removed
-        when(() => mock.fetchApps())
-            .thenAnswer((_) async => [_app('app1')]);
+        when(() => mock.fetchApps()).thenAnswer((_) async => [_app('app1')]);
 
         async.elapse(Duration(seconds: 6));
 
@@ -158,8 +155,7 @@ void main() {
 
     test('poll failure is non-fatal', () {
       fakeAsync((async) {
-        when(() => mock.fetchApps())
-            .thenAnswer((_) async => [_app('app1')]);
+        when(() => mock.fetchApps()).thenAnswer((_) async => [_app('app1')]);
 
         final container = _container(mock);
         _listen(container, async);
@@ -182,8 +178,7 @@ void main() {
   group('NEW badge auto-clear', () {
     test('badge clears after 60s', () {
       fakeAsync((async) {
-        when(() => mock.fetchApps())
-            .thenAnswer((_) async => [_app('app1')]);
+        when(() => mock.fetchApps()).thenAnswer((_) async => [_app('app1')]);
 
         final container = _container(mock);
         _listen(container, async);
@@ -212,8 +207,7 @@ void main() {
   group('lifecycle', () {
     test('timer cancelled on dispose', () {
       fakeAsync((async) {
-        when(() => mock.fetchApps())
-            .thenAnswer((_) async => [_app('app1')]);
+        when(() => mock.fetchApps()).thenAnswer((_) async => [_app('app1')]);
 
         final container = _container(mock);
         _listen(container, async);

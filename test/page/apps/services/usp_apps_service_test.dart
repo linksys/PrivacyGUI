@@ -17,9 +17,8 @@ const _base = 'http://test.local';
 UspAppsService _svc(MockClient client) =>
     UspAppsService(client: client, baseUrl: _base);
 
-http.Response _json200(Object body) =>
-    http.Response(jsonEncode(body), 200,
-        headers: {'content-type': 'application/json'});
+http.Response _json200(Object body) => http.Response(jsonEncode(body), 200,
+    headers: {'content-type': 'application/json'});
 
 http.Response _status(int code) => http.Response('', code);
 
@@ -82,8 +81,8 @@ void main() {
 
     test('server returns object instead of array — treated as empty', () async {
       // lua edge case: empty list serialized as {}
-      final client = MockClient(
-          (_) async => _json200({'apps': {}, 'userApps': {}}));
+      final client =
+          MockClient((_) async => _json200({'apps': {}, 'userApps': {}}));
 
       final apps = await _svc(client).fetchApps();
       expect(apps, isEmpty);
@@ -270,8 +269,7 @@ void main() {
     });
 
     test('empty body returns null', () async {
-      final client = MockClient(
-          (_) async => http.Response('', 200));
+      final client = MockClient((_) async => http.Response('', 200));
 
       final event = await _svc(client).fetchLatestEvent();
       expect(event, isNull);

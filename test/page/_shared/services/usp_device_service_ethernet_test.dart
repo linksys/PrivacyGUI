@@ -90,9 +90,7 @@ void main() {
       //        Interface.2 (eth0) has Upstream=false but is WAN
       final interfaces = EthernetInterfaces(items: [
         _iface(
-            path: 'Device.Ethernet.Interface.1.',
-            name: 'eth1',
-            upstream: true),
+            path: 'Device.Ethernet.Interface.1.', name: 'eth1', upstream: true),
         _iface(
             path: 'Device.Ethernet.Interface.2.',
             name: 'eth0',
@@ -124,13 +122,9 @@ void main() {
     test('isUp reflects status field', () {
       final interfaces = EthernetInterfaces(items: [
         _iface(
-            path: 'Device.Ethernet.Interface.2.',
-            name: 'eth0',
-            status: 'Up'),
+            path: 'Device.Ethernet.Interface.2.', name: 'eth0', status: 'Up'),
         _iface(
-            path: 'Device.Ethernet.Interface.3.',
-            name: 'eth2',
-            status: 'Down'),
+            path: 'Device.Ethernet.Interface.3.', name: 'eth2', status: 'Down'),
       ]);
 
       final result = svc.buildEthernetPortUIModels(
@@ -187,8 +181,8 @@ void main() {
       expect(result.first.label, 'LAN 1');
       expect(result.first.connectedDevices.length, 1);
       expect(result.first.connectedDevices.first.hostName, 'laptop');
-      expect(result.first.connectedDevices.first.macAddress,
-          'AA:BB:CC:DD:EE:FF');
+      expect(
+          result.first.connectedDevices.first.macAddress, 'AA:BB:CC:DD:EE:FF');
     });
 
     test('multiple wired devices — LAN 1, LAN 2, LAN 3', () {
@@ -292,13 +286,9 @@ void main() {
     test('multiple WAN interfaces create separate entries', () {
       final interfaces = EthernetInterfaces(items: [
         _iface(
-            path: 'Device.Ethernet.Interface.2.',
-            name: 'eth0',
-            bitRate: 1000),
+            path: 'Device.Ethernet.Interface.2.', name: 'eth0', bitRate: 1000),
         _iface(
-            path: 'Device.Ethernet.Interface.3.',
-            name: 'eth2',
-            bitRate: 2500),
+            path: 'Device.Ethernet.Interface.3.', name: 'eth2', bitRate: 2500),
       ]);
 
       final result = svc.buildEthernetPortUIModels(

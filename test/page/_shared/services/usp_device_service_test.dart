@@ -347,8 +347,7 @@ void main() {
   // -----------------------------------------------------------------------
   group('buildPortTriggeringRuleUIModels', () {
     test('maps trigger with nested forward rules', () {
-      final result =
-          svc.buildPortTriggeringRuleUIModels(PortTriggering(items: [
+      final result = svc.buildPortTriggeringRuleUIModels(PortTriggering(items: [
         PortTrigger(
           instancePath: 'Device.NAT.PortTrigger.1.',
           enabled: true,
@@ -387,8 +386,7 @@ void main() {
     });
 
     test('trigger with no forward rules', () {
-      final result =
-          svc.buildPortTriggeringRuleUIModels(PortTriggering(items: [
+      final result = svc.buildPortTriggeringRuleUIModels(PortTriggering(items: [
         PortTrigger(
           instancePath: 'Device.NAT.PortTrigger.1.',
           enabled: false,
