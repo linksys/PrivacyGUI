@@ -104,6 +104,32 @@ void main() {
         expect(state.isDirty, isTrue);
       });
 
+      test(
+          'false when quick setup is initialized with same values on both original and current',
+          () {
+        final networks = WifiSettingsTestData.createNetworks();
+        const qsMain = WifiQuickSetupSettings(
+          isGuest: false,
+          enabled: true,
+          ssid: 'Home',
+          password: '',
+          securityMode: 'WPA2-Personal',
+          supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+        );
+        final settings = WifiSettingsSettings(
+          networks: networks,
+          quickSetupEnabled: true,
+          quickSetupMain: qsMain,
+        );
+
+        final state = UspWifiSettingsState(
+          settings: Preservable(original: settings, current: settings),
+          status: const WifiSettingsStatus(),
+        );
+
+        expect(state.isDirty, isFalse);
+      });
+
       test('true when quickSetupGuest password changes', () {
         const qsGuest = WifiQuickSetupSettings(
           isGuest: true,
@@ -245,6 +271,67 @@ void main() {
         );
 
         // isDirty is false because original == current, so canSave is false
+        expect(state.canSave, isFalse);
+      });
+
+      test('true in quick setup mode when only security mode changes to open',
+          () {
+        final networks = WifiSettingsTestData.createNetworks();
+        const qsMain = WifiQuickSetupSettings(
+          isGuest: false,
+          enabled: true,
+          ssid: 'Home',
+          password: '',
+          securityMode: 'WPA2-Personal',
+          supportedSecurityModes: ['None', 'WPA2-Personal', 'WPA3-Personal'],
+        );
+        final settings = WifiSettingsSettings(
+          networks: networks,
+          quickSetupEnabled: true,
+          quickSetupMain: qsMain,
+        );
+        final current = settings.copyWith(
+          quickSetupMain: qsMain.copyWith(securityMode: 'None'),
+        );
+
+        final state = UspWifiSettingsState(
+          settings: Preservable(original: settings, current: current),
+          status: const WifiSettingsStatus(),
+        );
+
+        expect(state.isDirty, isTrue);
+        expect(state.canSave, isTrue);
+      });
+
+      test(
+          'false in quick setup mode when security mode changes but password still empty',
+          () {
+        final networks = WifiSettingsTestData.createNetworks();
+        const qsMain = WifiQuickSetupSettings(
+          isGuest: false,
+          enabled: true,
+          ssid: 'Home',
+          password: '',
+          securityMode: 'WPA2-Personal',
+          supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+        );
+        final settings = WifiSettingsSettings(
+          networks: networks,
+          quickSetupEnabled: true,
+          quickSetupMain: qsMain,
+        );
+        final current = settings.copyWith(
+          quickSetupMain: qsMain.copyWith(securityMode: 'WPA3-Personal'),
+        );
+
+        final state = UspWifiSettingsState(
+          settings: Preservable(original: settings, current: current),
+          status: const WifiSettingsStatus(),
+        );
+
+        // isDirty because securityMode changed, but canSave false because
+        // password is still empty and the new mode requires one.
+        expect(state.isDirty, isTrue);
         expect(state.canSave, isFalse);
       });
 

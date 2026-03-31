@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
@@ -116,10 +117,12 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
     if (effectiveQsEnabled) {
       qsMain = quickSetup.main != null
-          ? _buildQsSettings(quickSetup.main!, isGuest: false)
+          ? _buildQsSettings(quickSetup.main!,
+              isGuest: false, networks: networks)
           : null;
       qsGuest = quickSetup.guest != null
-          ? _buildQsSettings(quickSetup.guest!, isGuest: true)
+          ? _buildQsSettings(quickSetup.guest!,
+              isGuest: true, networks: networks)
           : null;
     }
 
@@ -244,28 +247,24 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     if (enabled) {
       final mainAgg = state.status.quickSetupMainAggregate;
       final guestAgg = state.status.quickSetupGuestAggregate;
+      final newSettings = current.copyWith(
+        quickSetupEnabled: true,
+        quickSetupMain:
+            mainAgg != null ? _buildQsSettings(mainAgg, isGuest: false) : null,
+        quickSetupGuest:
+            guestAgg != null ? _buildQsSettings(guestAgg, isGuest: true) : null,
+      );
       state = state.copyWith(
-        settings: state.settings.update(
-          current.copyWith(
-            quickSetupEnabled: true,
-            quickSetupMain: mainAgg != null
-                ? _buildQsSettings(mainAgg, isGuest: false)
-                : null,
-            quickSetupGuest: guestAgg != null
-                ? _buildQsSettings(guestAgg, isGuest: true)
-                : null,
-          ),
-        ),
+        settings: Preservable(original: newSettings, current: newSettings),
       );
     } else {
+      final newSettings = current.copyWith(
+        quickSetupEnabled: false,
+        clearQuickSetupMain: true,
+        clearQuickSetupGuest: true,
+      );
       state = state.copyWith(
-        settings: state.settings.update(
-          current.copyWith(
-            quickSetupEnabled: false,
-            clearQuickSetupMain: true,
-            clearQuickSetupGuest: true,
-          ),
-        ),
+        settings: Preservable(original: newSettings, current: newSettings),
       );
     }
   }
@@ -315,9 +314,13 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   WifiQuickSetupSettings _buildQsSettings(
     WifiQuickSetupNetwork aggregate, {
     required bool isGuest,
+    List<WifiNetworkUIModel>? networks,
   }) {
     // enabled = true only when ALL networks in the group are currently enabled.
-    final allEnabled = state.settings.current.networks
+    // Use the explicit [networks] list when called from performFetch (the new
+    // networks haven't been written to state yet at that point).
+    final effectiveNetworks = networks ?? state.settings.current.networks;
+    final allEnabled = effectiveNetworks
         .where((n) => n.isGuest == isGuest)
         .every((n) => n.enabled);
 
@@ -326,9 +329,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       enabled: allEnabled,
       ssid: aggregate.ssid,
       password: '',
-      securityMode: aggregate.supportedSecurityModes.isNotEmpty
-          ? aggregate.supportedSecurityModes.first
-          : aggregate.securityMode,
+      securityMode: aggregate.securityMode,
       supportedSecurityModes: aggregate.supportedSecurityModes,
     );
   }
