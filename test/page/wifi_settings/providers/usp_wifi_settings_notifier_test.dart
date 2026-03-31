@@ -245,6 +245,67 @@ void main() {
       container.dispose();
     });
 
+    test('setQuickSetupEnabled does not make state dirty', () async {
+      final networks = WifiSettingsTestData.createNetworks();
+      final mainAggregate = WifiSettingsTestData.createQuickSetupAggregate();
+      when(() => mockService.buildWifiNetworks(
+            ssids: any(named: 'ssids'),
+            accessPoints: any(named: 'accessPoints'),
+            radios: any(named: 'radios'),
+          )).thenReturn(networks);
+      when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+        main: mainAggregate,
+        guest: null,
+        isQuickSetup: false,
+      ));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspWifiSettingsProvider.notifier);
+      notifier.setQuickSetupEnabled(true);
+
+      expect(notifier.isDirty(), isFalse);
+
+      final state = container.read(uspWifiSettingsProvider);
+      expect(state.settings.original.quickSetupMain, isNotNull);
+      expect(state.settings.original.quickSetupMain,
+          state.settings.current.quickSetupMain);
+      container.dispose();
+    });
+
+    test('updateQuickSetupField makes state dirty after setQuickSetupEnabled',
+        () async {
+      final networks = WifiSettingsTestData.createNetworks();
+      final mainAggregate = WifiSettingsTestData.createQuickSetupAggregate();
+      when(() => mockService.buildWifiNetworks(
+            ssids: any(named: 'ssids'),
+            accessPoints: any(named: 'accessPoints'),
+            radios: any(named: 'radios'),
+          )).thenReturn(networks);
+      when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+        main: mainAggregate,
+        guest: null,
+        isQuickSetup: false,
+      ));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspWifiSettingsProvider.notifier);
+      notifier.setQuickSetupEnabled(true);
+      expect(notifier.isDirty(), isFalse);
+
+      notifier.updateQuickSetupField(
+        isGuest: false,
+        securityMode: 'WPA3-Personal',
+      );
+      expect(notifier.isDirty(), isTrue);
+      container.dispose();
+    });
+
     test('setQuickSetupEnabled(false) clears quick setup settings', () async {
       final networks = WifiSettingsTestData.createNetworks();
       final mainAggregate = WifiSettingsTestData.createQuickSetupAggregate();

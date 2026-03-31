@@ -71,7 +71,7 @@ class UspWifiListTab extends ConsumerWidget {
 
     return Column(
       children: [
-        Expanded(
+        Flexible(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
             child: Column(
@@ -113,8 +113,12 @@ class UspWifiListTab extends ConsumerWidget {
                 ),
                 AppGap.lg(),
                 // ── Quick Setup mode: Main + Guest cards ─────────────────
-                if (quickSetupEnabled)
-                  _buildQuickSetupGrid(context, columnCount, fixedWidth, gutter)
+                if (quickSetupEnabled) ...[
+                  _buildQuickSetupNotice(context),
+                  AppGap.md(),
+                  _buildQuickSetupGrid(
+                      context, columnCount, fixedWidth, gutter),
+                ]
                 // ── Normal mode: per-band grid ───────────────────────────
                 else
                   _buildAdvancedGrid(
@@ -124,7 +128,7 @@ class UspWifiListTab extends ConsumerWidget {
           ),
         ),
         // ── Page-level Save button ───────────────────────────────────────
-        if (quickSetupEnabled || state.isDirty || isSaving)
+        if (state.isDirty || isSaving)
           _buildSaveBar(context, ref, canSave, isSaving),
       ],
     );
@@ -159,6 +163,34 @@ class UspWifiListTab extends ConsumerWidget {
       defaultVerticalAlignment: TableCellVerticalAlignment.intrinsicHeight,
       columnWidths: _columnWidths(columnCount, fixedWidth, gutter),
       children: rows,
+    );
+  }
+
+  Widget _buildQuickSetupNotice(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return AppSurface(
+      variant: SurfaceVariant.tonal,
+      borderRadius: AppRadius.md,
+      showBorder: false,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon.font(
+            AppFontIcons.infoCircle,
+            color: colorScheme.onSurfaceVariant,
+            size: 18,
+          ),
+          AppGap.sm(),
+          Expanded(
+            child: AppText.bodySmall(
+              'Quick Setup applies the same name, password, and security '
+              'mode to all bands. A password is required to save.',
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
