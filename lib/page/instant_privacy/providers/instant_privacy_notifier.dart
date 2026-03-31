@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
 import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
 
@@ -37,7 +38,9 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
     state = AsyncData(s.copyWith(isToggleLocked: true));
     try {
       final macs = s.connectedDevices.map((d) => d.mac).toList();
-      await _svc.enable(macs, s.macFilterContext);
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.enable(macs, s.macFilterContext);
+      });
       logger.d('[USP] Instant Privacy enabled — ${macs.length} MACs');
       ref.invalidateSelf();
     } catch (e) {
@@ -53,7 +56,9 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
 
     state = AsyncData(s.copyWith(isToggleLocked: true));
     try {
-      await _svc.disable(s.macFilterContext);
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.disable(s.macFilterContext);
+      });
       logger.d('[USP] Instant Privacy disabled');
       ref.invalidateSelf();
     } catch (e) {
@@ -69,7 +74,9 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
 
     state = AsyncData(s.copyWith(isToggleLocked: true));
     try {
-      final added = await _svc.addMac(mac, s.macFilterContext);
+      final added = await ref.read(uspMutationLockProvider).withLock(() async {
+        return await _svc.addMac(mac, s.macFilterContext);
+      });
       if (!added) {
         state = AsyncData(s.copyWith(isToggleLocked: false));
         return;

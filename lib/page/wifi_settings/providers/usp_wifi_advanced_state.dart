@@ -27,10 +27,4 @@ class UspWifiAdvancedState extends Equatable {
 
   @override
   List<Object?> get props => [ieee80211hByRadio];
-
-  Map<String, dynamic> toMap() => {
-        'ieee80211hByRadio': ieee80211hByRadio,
-      };
-
-  Map<String, dynamic> toJson() => toMap();
 }

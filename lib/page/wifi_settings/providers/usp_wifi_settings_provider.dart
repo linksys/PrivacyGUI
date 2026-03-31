@@ -3,6 +3,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
@@ -166,15 +167,17 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
   @override
   Future<void> performSave() async {
-    final current = state.settings.current;
-    if (current.quickSetupEnabled) {
-      await _svc.saveQuickSetup(current: current, status: state.status);
-    } else {
-      await _svc.saveAdvanced(
-        original: state.settings.original.networks,
-        current: current.networks,
-      );
-    }
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      final current = state.settings.current;
+      if (current.quickSetupEnabled) {
+        await _svc.saveQuickSetup(current: current, status: state.status);
+      } else {
+        await _svc.saveAdvanced(
+          original: state.settings.original.networks,
+          current: current.networks,
+        );
+      }
+    });
   }
 
   // ---------------------------------------------------------------------------
