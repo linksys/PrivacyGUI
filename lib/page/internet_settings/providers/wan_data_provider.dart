@@ -41,27 +41,27 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
 
+    // WanStatus.fetch includes IPv6Enable (merged in YAML v1.1.0).
+    // Gateway + IPv6 addresses are combined into one manual request
+    // to reduce throttler pressure (was 3 → now 2 USP requests).
     final results = await Future.wait([
       WanStatus.fetch(usp),
-      _fetchDefaultGateway(usp),
-      _fetchWanIpv6(usp),
+      _fetchGatewayAndIpv6Addresses(usp),
     ]);
 
     final wanStatus = results[0] as WanStatus;
-    final gateway = results[1] as String;
-    final ipv6 = results[2] as ({bool enabled, List<String> addresses});
+    final extra = results[1] as ({String gateway, List<String> ipv6Addresses});
 
     final svc = UspDeviceService();
     final model = svc.buildWanStatusUIModel(
       wanStatus: wanStatus,
-      gateway: gateway,
-      ipv6Enabled: ipv6.enabled,
-      ipv6Addresses: ipv6.addresses,
+      gateway: extra.gateway,
+      ipv6Addresses: extra.ipv6Addresses,
     );
 
     logger.d('[USP][WanData] Fetched — ip=${wanStatus.ipAddress}, '
-        'status=${wanStatus.status}, gateway=$gateway, '
-        'ipv6=${ipv6.enabled}');
+        'status=${wanStatus.status}, gateway=${extra.gateway}, '
+        'ipv6=${wanStatus.ipv6Enabled}');
     return WanData(model: model);
   }
 
@@ -92,15 +92,24 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
 
   // ── Helpers ──
 
-  /// Fetches the default gateway IP from the IPv4 routing table.
-  Future<String> _fetchDefaultGateway(UspService usp) async {
+  /// Fetches default gateway IP and IPv6 addresses in a single USP request.
+  ///
+  /// Combines the routing table scan (for gateway) and IPv6Address
+  /// multi-instance query to minimize throttler slot usage.
+  Future<({String gateway, List<String> ipv6Addresses})>
+      _fetchGatewayAndIpv6Addresses(UspService usp) async {
     try {
       final resp = await usp.get([
+        // Gateway: scan routing table for default route on WAN interface
         'Device.Routing.Router.1.IPv4Forwarding.*.DestIPAddress',
         'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress',
         'Device.Routing.Router.1.IPv4Forwarding.*.Interface',
-      ]).timeout(const Duration(seconds: 10));
+        // IPv6 addresses (multi-instance)
+        'Device.IP.Interface.2.IPv6Address.',
+      ]).timeout(const Duration(seconds: 20));
 
+      // Parse gateway from routing table
+      String gateway = '';
       const basePath = 'Device.Routing.Router.1.IPv4Forwarding.';
       final ids = <String>{};
       for (final key in resp.keys) {
@@ -110,43 +119,28 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
           if (dot > 0) ids.add(rest.substring(0, dot));
         }
       }
-
       for (final id in ids) {
         final prefix = '$basePath$id.';
         final dest = resp['${prefix}DestIPAddress']?.toString() ?? '';
         final gw = resp['${prefix}GatewayIPAddress']?.toString() ?? '';
         final iface = resp['${prefix}Interface']?.toString() ?? '';
         if (dest == '0.0.0.0' && iface.contains('Interface.2')) {
-          return gw;
+          gateway = gw;
+          break;
         }
       }
-      return '';
-    } catch (e) {
-      logger.w('[USP][WanData] Failed to fetch default gateway: $e');
-      return '';
-    }
-  }
 
-  /// Fetches IPv6 enable flag and addresses for WAN (Interface.2).
-  Future<({bool enabled, List<String> addresses})> _fetchWanIpv6(
-      UspService usp) async {
-    try {
-      final resp = await usp.get([
-        'Device.IP.Interface.2.IPv6Enable',
-        'Device.IP.Interface.2.IPv6Address.',
-      ]).timeout(const Duration(seconds: 10));
-
-      final enabled = resp['Device.IP.Interface.2.IPv6Enable'] == true;
+      // Parse IPv6 addresses
       final instances = resp.getInstances('Device.IP.Interface.2.IPv6Address.');
-      final List<String> addresses = instances
+      final List<String> ipv6Addresses = instances
           .map((i) => i.getString('IPAddress'))
           .where((ip) => ip.isNotEmpty)
           .toList();
 
-      return (enabled: enabled, addresses: addresses);
+      return (gateway: gateway, ipv6Addresses: ipv6Addresses);
     } catch (e) {
-      logger.w('[USP][WanData] IPv6 fetch failed (may not be supported): $e');
-      return (enabled: false, addresses: const <String>[]);
+      logger.w('[USP][WanData] Gateway/IPv6 fetch failed: $e');
+      return (gateway: '', ipv6Addresses: const <String>[]);
     }
   }
 }

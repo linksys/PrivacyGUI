@@ -41,23 +41,21 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
 
+    // SystemInfo.fetch now includes ActiveFirmwareImage + BootFirmwareImage
+    // (merged in YAML v1.1.0), reducing from 3 → 2 USP requests.
     final results = await Future.wait([
       SystemInfo.fetch(usp),
       _fetchFirmwareImages(usp),
     ]);
 
     final systemInfo = results[0] as SystemInfo;
-    final fwData = results[1] as ({
-      FirmwareImages images,
-      String activeRef,
-      String bootRef
-    });
+    final fwImages = results[1] as FirmwareImages;
 
     final svc = UspDeviceService();
     final fwModels = svc.buildFirmwareImageUIModels(
-      data: fwData.images,
-      activeRef: fwData.activeRef,
-      bootRef: fwData.bootRef,
+      data: fwImages,
+      activeRef: systemInfo.activeFirmwareImage,
+      bootRef: systemInfo.bootFirmwareImage,
     );
     final model = svc.buildSystemInfoUIModel(
       systemInfo,
@@ -70,31 +68,14 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
     return SystemInfoData(model: model);
   }
 
-  /// Fetches firmware image partitions and the active/boot reference paths.
-  Future<({FirmwareImages images, String activeRef, String bootRef})>
-      _fetchFirmwareImages(UspService usp) async {
+  /// Fetches firmware image partitions (multi-instance).
+  Future<FirmwareImages> _fetchFirmwareImages(UspService usp) async {
     try {
-      final results = await Future.wait([
-        FirmwareImages.fetch(usp),
-        usp.get([
-          'Device.DeviceInfo.ActiveFirmwareImage',
-          'Device.DeviceInfo.BootFirmwareImage',
-        ]),
-      ]).timeout(const Duration(seconds: 10));
-      final images = results[0] as FirmwareImages;
-      final refs = results[1] as Map<String, dynamic>;
-      final activeRef =
-          refs['Device.DeviceInfo.ActiveFirmwareImage']?.toString() ?? '';
-      final bootRef =
-          refs['Device.DeviceInfo.BootFirmwareImage']?.toString() ?? '';
-      return (images: images, activeRef: activeRef, bootRef: bootRef);
+      return await FirmwareImages.fetch(usp)
+          .timeout(const Duration(seconds: 20));
     } catch (e) {
       logger.w('[USP][SystemInfoData] Firmware images fetch failed: $e');
-      return (
-        images: FirmwareImages(items: []),
-        activeRef: '',
-        bootRef: '',
-      );
+      return FirmwareImages(items: []);
     }
   }
 }

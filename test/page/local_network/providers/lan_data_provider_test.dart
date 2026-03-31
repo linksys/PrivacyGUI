@@ -10,7 +10,7 @@ class MockUspService extends Mock implements UspService {}
 void main() {
   late MockUspService mockUsp;
 
-  /// LanNetworkInfo codegen response.
+  /// LanNetworkInfo codegen response (includes IPv6Enable since YAML v1.2.0).
   final lanInfoResponse = <String, dynamic>{
     'Device.IP.Interface.1.IPv4Address.1.IPAddress': '192.168.1.1',
     'Device.IP.Interface.1.IPv4Address.1.SubnetMask': '255.255.255.0',
@@ -20,6 +20,7 @@ void main() {
     'Device.DHCPv4.Server.Pool.1.LeaseTime': '7200',
     'Device.DHCPv4.Server.Pool.1.DNSServers': '8.8.8.8,8.8.4.4',
     'Device.DeviceInfo.HostName': 'LinksysRouter',
+    'Device.IP.Interface.1.IPv6Enable': true,
   };
 
   /// IPv6 response from raw usp.get().
@@ -33,7 +34,8 @@ void main() {
     mockUsp = MockUspService();
     when(() => mockUsp.get(any())).thenAnswer((_) async {
       final paths = _.positionalArguments[0] as List;
-      if (paths.any((p) => p.toString().contains('IPv6'))) {
+      // IPv6 multi-instance address query (separate from LanNetworkInfo.fetch)
+      if (paths.any((p) => p.toString().contains('IPv6Address'))) {
         return ipv6Response;
       }
       return lanInfoResponse;
@@ -83,7 +85,7 @@ void main() {
     test('IPv6 fetch failure falls back to disabled', () async {
       when(() => mockUsp.get(any())).thenAnswer((_) async {
         final paths = _.positionalArguments[0] as List;
-        if (paths.any((p) => p.toString().contains('IPv6'))) {
+        if (paths.any((p) => p.toString().contains('IPv6Address'))) {
           throw Exception('IPv6 not supported');
         }
         return lanInfoResponse;
@@ -94,8 +96,9 @@ void main() {
 
       // LAN info should still be present
       expect(data.model.ipAddress, '192.168.1.1');
-      // IPv6 should gracefully fall back
-      expect(data.model.ipv6Enabled, isFalse);
+      // ipv6Enabled comes from LanNetworkInfo (still true from IPv6Enable key),
+      // but addresses should be empty because the address fetch failed
+      expect(data.model.ipv6Enabled, isTrue);
       expect(data.model.ipv6Addresses, isEmpty);
       container.dispose();
     });

@@ -4,12 +4,16 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
+import 'bridge_request_throttler.dart';
+
 // Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
 import '../stub/usp_client_stub.dart'
     if (dart.library.js_interop) '../web/usp_client_wasm.dart';
 
 // Export response helpers so generated code only needs one import.
 export 'usp_response_helpers.dart';
+// Export RequestPriority so generated fetch() methods can accept priority.
+export 'bridge_request_throttler.dart' show RequestPriority;
 
 // ===========================================================================
 // USP Subscription types (used by codegen-generated subscribe methods)
@@ -92,6 +96,11 @@ class UspService {
   /// SSE subscription delegate. Set by [SseManager] to route subscriptions
   /// through SSE instead of polling. When null, falls back to polling.
   SseSubscribeDelegate? onSseSubscribe;
+
+  /// Optional request throttler. When set, all [get] calls are routed through
+  /// the throttler to limit concurrent outbound requests to the router.
+  /// Set by [uspServiceProvider] during initialization.
+  BridgeRequestThrottler? throttler;
 
   Future<void> login(String password) async {
     await _client.login(password);
@@ -187,7 +196,26 @@ class UspService {
   ///
   /// Returns a coerced `Map<String, dynamic>` where booleans and nulls are
   /// properly typed (not left as raw strings).
-  Future<Map<String, dynamic>> get(List<String> paths) async {
+  ///
+  /// When [throttler] is set, requests are queued through it to limit
+  /// concurrent outbound requests to the router. Use [priority] to control
+  /// dispatch order — heavy wildcard queries should use [RequestPriority.low]
+  /// so they run after lighter queries complete (OBUSPA is single-threaded).
+  Future<Map<String, dynamic>> get(
+    List<String> paths, {
+    RequestPriority? priority,
+  }) async {
+    if (throttler != null) {
+      return throttler!.enqueue(
+        cacheKey: 'usp:${paths.join(",")}',
+        priority: priority ?? RequestPriority.normal,
+        action: () => _rawGet(paths),
+      );
+    }
+    return _rawGet(paths);
+  }
+
+  Future<Map<String, dynamic>> _rawGet(List<String> paths) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final rawMap = await _withAuthRetry(() => _client.getMultiple(paths));

@@ -35,7 +35,7 @@ class EthernetData extends Equatable {
   }
 
   @override
-  List<Object?> get props => [ethernetPortModels.length];
+  List<Object?> get props => [ethernetPortModels];
 }
 
 class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
@@ -49,17 +49,19 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   Future<EthernetData> build() async {
     // Listen to Devices Data Provider changes → rebuild ethernetPortModels.
     // Device list changes affect which wired devices show on LAN ports.
+    // NOTE: Do NOT check state.valueOrNull here — during build()'s async
+    // execution, state is AsyncLoading so the check would skip the rebuild.
+    // _rawInterfaces alone is sufficient to guard readiness.
     ref.listen(devicesDataProvider, (_, next) {
       final dd = next.valueOrNull;
-      final cur = state.valueOrNull;
       final raw = _rawInterfaces;
-      if (dd == null || cur == null || raw == null) return;
+      if (dd == null || raw == null) return;
       final rebuiltPorts = _svc.buildEthernetPortUIModels(
         ethernetInterfaces: raw,
         deviceModels: dd.deviceModels,
         bridgePortMap: _bridgePortMap,
       );
-      state = AsyncData(cur.copyWith(ethernetPortModels: rebuiltPorts));
+      state = AsyncData(EthernetData(ethernetPortModels: rebuiltPorts));
     });
 
     return _fetch();
@@ -108,7 +110,7 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
     try {
       final resp = await usp.get([
         'Device.Bridging.Bridge.*.Port.*.LowerLayers',
-      ]).timeout(const Duration(seconds: 10));
+      ]).timeout(const Duration(seconds: 20));
       final map = <String, String>{};
       for (final entry in resp.entries) {
         if (!entry.key.endsWith('.LowerLayers')) continue;

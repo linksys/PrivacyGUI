@@ -27,6 +27,7 @@ void main() {
         leaseTime: 86400,
         dnsServers: '208.67.222.222,208.67.220.220',
         hostName: 'router',
+        ipv6Enabled: false,
       );
 
       final model = service.buildUIModel(data);
@@ -46,6 +47,7 @@ void main() {
         leaseTime: 86400,
         dnsServers: '8.8.8.8,8.8.4.4',
         hostName: 'router',
+        ipv6Enabled: false,
       );
 
       final model = service.buildUIModel(data);
@@ -64,6 +66,7 @@ void main() {
         leaseTime: 86400,
         dnsServers: '',
         hostName: 'router',
+        ipv6Enabled: false,
       );
 
       final model = service.buildUIModel(data);

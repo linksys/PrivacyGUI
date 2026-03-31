@@ -106,7 +106,7 @@ void main() {
           ids, containsAll(['stats_panel', 'device_info', 'network_status']));
     });
 
-    test('saved layout with unknown ID → resets to 17 default items', () async {
+    test('saved layout with unknown ID → accepts as package widget', () async {
       final savedLayout = [
         _layoutItem('unknown_widget_xyz', x: 0, y: 0),
       ];
@@ -117,11 +117,11 @@ void main() {
 
       final controller = container.read(uspSliverDashboardControllerProvider);
       final layout = controller.exportLayout();
-      expect(layout.length, 17);
+      // Unknown IDs are accepted — may be package widgets loading async
+      expect(layout.length, 1);
     });
 
-    test('saved layout with unknown ID → saves default over bad data',
-        () async {
+    test('saved layout with unknown ID → preserves in prefs', () async {
       final savedLayout = [
         _layoutItem('unknown_widget_xyz', x: 0, y: 0),
       ];
@@ -135,7 +135,8 @@ void main() {
       expect(saved, isNotNull);
       final decoded = jsonDecode(saved!) as List;
       final ids = decoded.map((item) => (item as Map)['id']).toSet();
-      expect(ids, isNot(contains('unknown_widget_xyz')));
+      // Unknown IDs preserved — may be package widgets
+      expect(ids, contains('unknown_widget_xyz'));
     });
 
     test('malformed JSON → resets to default', () async {

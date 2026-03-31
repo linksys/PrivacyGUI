@@ -4,8 +4,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
-import 'package:privacy_gui/generated/subscriptions.g.dart';
-
 import '../mocks.dart';
 
 void main() {
@@ -180,10 +178,11 @@ void main() {
       container.dispose();
     });
 
-    test('happy path: health → setCoreSubscriptions → connect', () async {
+    test(
+        'happy path: health → connect (subscriptions deferred to orchestrator)',
+        () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
       when(() => mockBridge.health()).thenAnswer((_) async => {'status': 'ok'});
-      when(() => mockManager.setCoreSubscriptions(any())).thenReturn(null);
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = createContainer(
@@ -196,17 +195,16 @@ void main() {
 
       verifyInOrder([
         () => mockBridge.health(),
-        () => mockManager.setCoreSubscriptions(coreSubscriptions),
         () => mockManager.connect(),
       ]);
+      // setCoreSubscriptions is deferred to dashboard orchestrator
+      verifyNever(() => mockManager.setCoreSubscriptions(any()));
       container.dispose();
     });
 
-    test('health check fails → still calls setCoreSubscriptions + connect',
-        () async {
+    test('health check fails → still calls connect', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
       when(() => mockBridge.health()).thenThrow(Exception('503'));
-      when(() => mockManager.setCoreSubscriptions(any())).thenReturn(null);
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = createContainer(
@@ -217,14 +215,12 @@ void main() {
 
       await container.read(sseBootstrapProvider.future);
 
-      verify(() => mockManager.setCoreSubscriptions(coreSubscriptions))
-          .called(1);
+      verifyNever(() => mockManager.setCoreSubscriptions(any()));
       verify(() => mockManager.connect()).called(1);
       container.dispose();
     });
 
-    test('health check timeout → still calls setCoreSubscriptions + connect',
-        () async {
+    test('health check timeout → still calls connect', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
       when(() => mockBridge.health()).thenAnswer(
         (_) => Future.delayed(
@@ -232,7 +228,6 @@ void main() {
           () => {'status': 'ok'},
         ),
       );
-      when(() => mockManager.setCoreSubscriptions(any())).thenReturn(null);
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = createContainer(
@@ -243,16 +238,14 @@ void main() {
 
       await container.read(sseBootstrapProvider.future);
 
-      verify(() => mockManager.setCoreSubscriptions(coreSubscriptions))
-          .called(1);
+      verifyNever(() => mockManager.setCoreSubscriptions(any()));
       verify(() => mockManager.connect()).called(1);
       container.dispose();
     });
 
-    test('setCoreSubscriptions receives coreSubscriptions constant', () async {
+    test('setCoreSubscriptions not called in bootstrap (deferred)', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(true);
       when(() => mockBridge.health()).thenAnswer((_) async => {'status': 'ok'});
-      when(() => mockManager.setCoreSubscriptions(any())).thenReturn(null);
       when(() => mockManager.connect()).thenAnswer((_) async {});
 
       final container = createContainer(
@@ -263,10 +256,7 @@ void main() {
 
       await container.read(sseBootstrapProvider.future);
 
-      final captured = verify(
-        () => mockManager.setCoreSubscriptions(captureAny()),
-      ).captured.single;
-      expect(captured, coreSubscriptions);
+      verifyNever(() => mockManager.setCoreSubscriptions(any()));
       container.dispose();
     });
   });

@@ -175,6 +175,8 @@ void main() {
     test('fetchNow returns early when not authenticated', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
       final container = await createAndWait();
+      // Clear interactions from other providers triggered during setup
+      clearInteractions(mockUsp);
 
       final notifier = container.read(uspTrafficAnalysisProvider.notifier);
       notifier.setRefreshInterval(null);

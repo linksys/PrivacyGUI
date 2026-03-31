@@ -210,24 +210,21 @@ void main() {
       expect(same, equals(data));
     });
 
-    test('EthernetData props uses length for equality', () {
+    test('EthernetData props uses list for equality', () {
       const a = EthernetData();
       const b = EthernetData();
       expect(a, equals(b));
-      expect(a.props, [0]);
 
-      final c = EthernetData(ethernetPortModels: [
-        EthernetPortUIModel(
-          name: 'eth1',
-          label: 'LAN',
-          isWan: false,
-          isUp: true,
-          instancePath: 'p',
-          currentBitRate: 100,
-        ),
-      ]);
+      final port = EthernetPortUIModel(
+        name: 'eth1',
+        label: 'LAN',
+        isWan: false,
+        isUp: true,
+        instancePath: 'p',
+        currentBitRate: 100,
+      );
+      final c = EthernetData(ethernetPortModels: [port]);
       expect(a, isNot(equals(c)));
-      expect(c.props, [1]);
     });
   });
 }

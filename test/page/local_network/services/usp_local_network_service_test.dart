@@ -16,6 +16,7 @@ LanNetworkInfo _lanInfo({
   int leaseTime = 86400,
   String dnsServers = '8.8.8.8,8.8.4.4',
   String hostName = 'MyRouter',
+  bool ipv6Enabled = false,
 }) =>
     LanNetworkInfo(
       ipAddress: ipAddress,
@@ -26,6 +27,7 @@ LanNetworkInfo _lanInfo({
       leaseTime: leaseTime,
       dnsServers: dnsServers,
       hostName: hostName,
+      ipv6Enabled: ipv6Enabled,
     );
 
 LocalNetworkUIModel _model({

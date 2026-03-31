@@ -40,11 +40,11 @@ class UspSliverDashboardControllerNotifier
   /// Load saved layout from SharedPreferences, or keep the constructor default.
   ///
   /// The constructor already initialises with [UspWidgetSpecs.createDefaultLayout].
-  /// This method only replaces the state when a **valid** saved layout exists.
+  /// This method only replaces the state when a saved layout exists.
   ///
-  /// Validation: reject layouts that reference **unknown** widget IDs (removed
-  /// from specs). Layouts with **fewer** cards than the full spec are valid —
-  /// they come from presets or user customisation.
+  /// All saved IDs are accepted — unknown IDs may be package widgets whose
+  /// specs load asynchronously after dashboard init. The grid renders them
+  /// as "Unknown widget" until their template is available.
   Future<void> _initializeLayout() async {
     final prefs = await SharedPreferences.getInstance();
     final layoutJson = prefs.getString(pUspSliverDashboardLayout);
@@ -59,20 +59,10 @@ class UspSliverDashboardControllerNotifier
     try {
       final layoutData = jsonDecode(layoutJson) as List<dynamic>;
 
-      // Validate: reject layouts with unknown IDs (widget was removed from specs).
-      // Layouts with fewer cards than specs are fine (preset / user customisation).
-      final savedIds = layoutData
-          .map((item) => (item as Map<String, dynamic>)['id'] as String)
-          .toSet();
-      final knownIds = UspWidgetSpecs.all.map((s) => s.id).toSet();
-      final unknownIds = savedIds.difference(knownIds);
-
-      if (unknownIds.isNotEmpty) {
-        debugPrint('USP layout has unknown widgets: $unknownIds — resetting');
-        await saveLayout();
-        _preSeedBreakpoints();
-        return;
-      }
+      // Accept all saved IDs — unknown IDs may be package widgets whose
+      // specs load asynchronously. The grid renders them as "Unknown widget"
+      // if their template never loads, which is preferable to resetting
+      // the user's entire layout.
 
       // Create a NEW controller then swap via state= so Riverpod
       // properly notifies listeners (avoids mutating the existing
@@ -158,14 +148,16 @@ class UspSliverDashboardControllerNotifier
   }
 
   /// Add a widget to the dashboard layout (appended at the bottom).
-  Future<void> addWidget(String id) async {
+  ///
+  /// [spec] can be provided for package widgets not in [UspWidgetSpecs].
+  Future<void> addWidget(String id, {WidgetSpec? spec}) async {
     final currentLayout = state.exportLayout();
     if (currentLayout.any((item) => (item as Map)['id'] == id)) {
       return; // Already exists
     }
 
-    final WidgetSpec? spec = UspWidgetSpecs.getById(id);
-    if (spec == null) return;
+    final resolvedSpec = spec ?? UspWidgetSpecs.getById(id);
+    if (resolvedSpec == null) return;
 
     // Calculate position at the bottom of the grid
     int maxY = 0;
@@ -177,7 +169,7 @@ class UspSliverDashboardControllerNotifier
     }
 
     final item = LayoutItemFactory.fromSpec(
-      spec,
+      resolvedSpec,
       x: 0,
       y: maxY,
       displayMode: DisplayMode.normal,

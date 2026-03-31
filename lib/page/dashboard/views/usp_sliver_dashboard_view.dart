@@ -8,6 +8,8 @@ import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
+import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
 import 'package:privacy_gui/page/dashboard/providers/usp_layout_controller.dart';
 import 'package:privacy_gui/page/_shared/providers/usp_device_analytics_notifier.dart';
@@ -145,11 +147,17 @@ class _UspSliverDashboardViewState
 
   @override
   Widget build(BuildContext context) {
-    // Eager-init polling providers so they start fetching immediately,
-    // regardless of whether their dashboard cards are visible in the viewport.
+    // Initialize and watch polling/analytics providers for reactive rebuilds.
+    // Polling timers are gated by dashboardDomainReadyProvider — they won't
+    // start fetching until domain providers have completed their first load.
     ref.watch(uspTrafficAnalysisProvider);
     ref.watch(uspDeviceAnalyticsProvider);
     ref.watch(uspSystemMonitorProvider);
+
+    // Watch package widget loader so the view rebuilds when templates
+    // finish loading — without this, pkg_ cards show "Unknown widget"
+    // after page refresh because itemBuilder uses ref.read.
+    ref.watch(packageWidgetLoaderProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,7 +337,11 @@ class _UspSliverDashboardViewState
 
   void _handleResizeEnd(BuildContext context, LayoutItem item) {
     final factory = ref.read(uspWidgetFactoryProvider);
-    final spec = factory.getSpec(item.id);
+    final spec = factory.getSpec(item.id) ??
+        ref
+            .read(packageWidgetLoaderProvider)
+            .valueOrNull?[item.id]
+            ?.toWidgetSpec();
     if (spec == null) return;
 
     final constraints = spec.constraints[DisplayMode.normal];
@@ -407,9 +419,18 @@ class _UspSliverDashboardViewState
     bool isEditMode,
     UspWidgetFactory factory,
   ) {
-    final widget = factory.buildWidget(item.id);
+    Widget? resolvedWidget = factory.buildWidget(item.id);
 
-    if (widget == null) {
+    if (resolvedWidget == null) {
+      // Try package widget
+      final templates = ref.read(packageWidgetLoaderProvider).valueOrNull;
+      final template = templates?[item.id];
+      if (template != null) {
+        resolvedWidget = PackageWidgetRenderer(template: template);
+      }
+    }
+
+    if (resolvedWidget == null) {
       return AppCard(
         child: Center(
           child: AppText.bodyMedium('Unknown widget: ${item.id}'),
@@ -417,9 +438,10 @@ class _UspSliverDashboardViewState
       );
     }
 
-    // ClipRect prevents content from visually overflowing the grid cell.
-    // Individual cards can add their own SingleChildScrollView if needed.
-    final displayedWidget = ClipRect(child: widget);
+    // SizedBox.expand ensures cards fill their grid cell.
+    // ClipRect prevents content from visually overflowing the cell boundary.
+    final displayedWidget =
+        SizedBox.expand(child: ClipRect(child: resolvedWidget));
 
     if (isEditMode) {
       final spec = UspWidgetSpecs.getById(item.id);

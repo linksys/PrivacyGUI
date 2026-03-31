@@ -5,6 +5,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 
 /// System monitor provider — tracks CPU/Memory history with optional
 /// auto-refresh timer. NOT autoDispose so history persists across tab switches.
@@ -22,9 +23,17 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
       _timer?.cancel();
       _timer = null;
     });
-    // Auto-start with 30s default interval
+
+    // Gate polling start on domain providers completing their first fetch.
+    // The orchestrator already pushes the first snapshot from systemInfoData,
+    // so delaying the timer avoids a duplicate fetch during init.
     const defaultInterval = Duration(seconds: 30);
-    Future.microtask(() => setRefreshInterval(defaultInterval));
+    ref.listen(dashboardDomainReadyProvider, (_, next) {
+      if (next is AsyncData) {
+        setRefreshInterval(defaultInterval);
+      }
+    });
+
     return const SystemMonitorState(
       refreshInterval: defaultInterval,
     );

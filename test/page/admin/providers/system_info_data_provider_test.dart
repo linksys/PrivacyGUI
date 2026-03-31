@@ -10,8 +10,8 @@ class MockUspService extends Mock implements UspService {}
 void main() {
   late MockUspService mockUsp;
 
-  /// Canned response covering SystemInfo + FirmwareImages + refs.
-  /// Three separate get() calls: SystemInfo.fetch, FirmwareImages.fetch, ref paths.
+  /// Canned response covering SystemInfo (includes firmware refs since YAML v1.1.0).
+  /// Two get() calls: SystemInfo.fetch (includes refs), FirmwareImages.fetch.
   final systemInfoResponse = <String, dynamic>{
     'Device.DeviceInfo.Manufacturer': 'Linksys',
     'Device.DeviceInfo.ModelName': 'M60TB',
@@ -22,6 +22,9 @@ void main() {
     'Device.DeviceInfo.MemoryStatus.Total': '512000',
     'Device.DeviceInfo.MemoryStatus.Free': '256000',
     'Device.DeviceInfo.ProcessStatus.CPUUsage': '25',
+    'Device.DeviceInfo.ActiveFirmwareImage':
+        'Device.DeviceInfo.FirmwareImage.1.',
+    'Device.DeviceInfo.BootFirmwareImage': 'Device.DeviceInfo.FirmwareImage.1.',
   };
 
   final firmwareImagesResponse = <String, dynamic>{
@@ -43,25 +46,15 @@ void main() {
 
   setUp(() {
     mockUsp = MockUspService();
-    // The notifier makes 3 concurrent get() calls:
-    // 1) SystemInfo.fetch → systemInfoResponse
+    // The notifier makes 2 concurrent get() calls:
+    // 1) SystemInfo.fetch → systemInfoResponse (includes firmware refs)
     // 2) FirmwareImages.fetch → firmwareImagesResponse
-    // 3) usp.get([ActiveFirmwareImage, BootFirmwareImage]) → firmwareRefResponse
-    //
-    // Mocktail any() matcher matches all get() calls, so we use thenAnswer
-    // with invocation matching to return different responses.
     when(() => mockUsp.get(any())).thenAnswer((_) async {
-      // SystemInfo.fetch and FirmwareImages.fetch run in parallel via Future.wait.
-      // Within the firmware branch, FirmwareImages.fetch and the ref get() also
-      // run in parallel. The exact call order depends on the scheduler.
-      // We match based on the paths list content.
       final paths = _.positionalArguments[0] as List;
       if (paths.any((p) => p.toString().contains('Manufacturer'))) {
         return systemInfoResponse;
       } else if (paths.any((p) => p.toString().contains('FirmwareImage.*.'))) {
         return firmwareImagesResponse;
-      } else if (paths.any((p) => p.toString().contains('ActiveFirmware'))) {
-        return firmwareRefResponse;
       }
       return <String, dynamic>{};
     });

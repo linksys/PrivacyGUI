@@ -29,6 +29,8 @@ SystemInfo _sysInfo({
   int totalMemory = 512000,
   int freeMemory = 256000,
   int cpuUsage = 25,
+  String activeFirmwareImage = '',
+  String bootFirmwareImage = '',
 }) =>
     SystemInfo(
       manufacturer: manufacturer,
@@ -40,6 +42,8 @@ SystemInfo _sysInfo({
       totalMemory: totalMemory,
       freeMemory: freeMemory,
       cpuUsage: cpuUsage,
+      activeFirmwareImage: activeFirmwareImage,
+      bootFirmwareImage: bootFirmwareImage,
     );
 
 ConnectedDevice _device({
@@ -495,11 +499,11 @@ void main() {
         leaseTime: 86400,
         dnsServers: '8.8.8.8',
         hostName: 'Router',
+        ipv6Enabled: true,
       );
 
       final result = service.buildLanInfoUIModel(
         info,
-        ipv6Enabled: true,
         ipv6Addresses: ['2001:db8::1'],
       );
 
@@ -521,6 +525,7 @@ void main() {
         leaseTime: 0,
         dnsServers: '',
         hostName: '',
+        ipv6Enabled: false,
       );
 
       final result = service.buildLanInfoUIModel(info);
@@ -542,6 +547,7 @@ void main() {
         subnetMask: '255.255.255.0',
         addressingType: 'DHCP',
         maxMtuSize: 1500,
+        ipv6Enabled: false,
       );
 
       final result = service.buildWanStatusUIModel(
@@ -562,6 +568,7 @@ void main() {
         subnetMask: '',
         addressingType: '',
         maxMtuSize: 0,
+        ipv6Enabled: false,
       );
 
       final result = service.buildWanStatusUIModel(
@@ -607,11 +614,14 @@ void main() {
         bridgePortMap: bridgePortMap,
       );
 
-      // eth1 is bridge member → LAN (no wired devices, so no LAN ports)
+      // eth1 is bridge member → LAN (no wired devices, single LAN entry)
       // eth0 is NOT bridge member → WAN port
-      expect(result, hasLength(1));
+      expect(result, hasLength(2));
       expect(result[0].isWan, isTrue);
       expect(result[0].label, 'WAN');
+      expect(result[1].isWan, isFalse);
+      expect(result[1].label, 'LAN');
+      expect(result[1].connectedDevices, isEmpty);
     });
 
     test('creates LAN port per active wired device', () {
@@ -690,8 +700,11 @@ void main() {
         bridgePortMap: bridgePortMap,
       );
 
-      // No LAN ports because no active wired devices
-      expect(result, isEmpty);
+      // Single LAN port with no connected devices (WiFi/inactive excluded)
+      expect(result, hasLength(1));
+      expect(result[0].isWan, isFalse);
+      expect(result[0].label, 'LAN');
+      expect(result[0].connectedDevices, isEmpty);
     });
   });
 

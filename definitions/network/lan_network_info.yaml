@@ -1,7 +1,7 @@
 name: LanNetworkInfo
-version: 1.1.0
+version: 1.2.0
 category: network
-description: LAN IP configuration and DHCP server pool settings
+description: LAN IP configuration, DHCP server pool settings, and IPv6 enable flag
 
 parameters:
   - field_name: ip_address
@@ -51,3 +51,8 @@ parameters:
     type: string
     writable: true
     description: Router hostname
+
+  - field_name: ipv6_enabled
+    path: Device.IP.Interface.1.IPv6Enable
+    type: boolean
+    description: Whether IPv6 is enabled on LAN interface

@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
@@ -51,8 +52,8 @@ class DevicesData extends Equatable {
   @override
   List<Object?> get props => [
         meshTopology.nodes.length,
-        deviceModels.length,
-        nodeModels.length,
+        deviceModels,
+        nodeModels,
         hostNameByMac.length,
       ];
 }
@@ -85,12 +86,14 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       }
     });
 
-    // WiFi data changes → rebuild deviceModels with updated enrichment
+    // WiFi data changes → rebuild deviceModels with updated enrichment.
+    // NOTE: Do NOT check state.valueOrNull — during build()'s async
+    // execution, state is AsyncLoading so the check would skip the rebuild.
     ref.listen(wifiDataProvider, (_, next) {
       final wd = next.valueOrNull;
-      final cur = state.valueOrNull;
       final raw = _rawConnectedDevices;
-      if (wd == null || cur == null || raw == null) return;
+      final cur = state.valueOrNull;
+      if (wd == null || raw == null || cur == null) return;
       final svc = ref.read(uspDeviceServiceProvider);
       final gatewayName =
           ref.read(systemInfoDataProvider).valueOrNull?.model.gatewayName ??
@@ -114,14 +117,11 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) throw StateError('USP service not available');
 
-    // Parallel fetch devices + mesh topology
-    final results = await Future.wait([
-      ConnectedDevices.fetch(usp),
-      fetchMeshNodes(usp),
-    ]);
-
-    final connectedDevices = results[0] as ConnectedDevices;
-    final meshTopology = results[1] as MeshTopologyInfo;
+    // Fetch ConnectedDevices immediately; mesh topology in background.
+    // DataElements (mesh) uses 9 deep-wildcard paths that often timeout
+    // (15s) on single-router setups where it always returns empty.
+    // Don't block devices on it — show devices first, update mesh later.
+    final connectedDevices = await ConnectedDevices.fetch(usp);
 
     // Cache raw for WiFi listener rebuild.
     _rawConnectedDevices = connectedDevices;
@@ -142,7 +142,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     try {
       wifiData = await ref
           .read(wifiDataProvider.future)
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 20));
     } catch (e) {
       logger.w('[USP][DevicesData] WiFi data unavailable, using fallback: $e');
       wifiData = const WifiData.empty();
@@ -152,8 +152,9 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     final sysData = ref.read(systemInfoDataProvider).valueOrNull;
     final gatewayName = sysData?.model.gatewayName ?? 'Router';
 
-    // Build UI models
+    // Build UI models with empty mesh first — devices appear immediately.
     final svc = ref.read(uspDeviceServiceProvider);
+    var meshTopology = MeshTopologyInfo.empty;
     final deviceModels = svc.buildDeviceUIModels(
       connectedDevices: connectedDevices,
       wifiClientMap: wifiData.wifiClientMap,
@@ -172,9 +173,12 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
     logger.d('[USP][DevicesData] Fetched — '
         'devices: ${connectedDevices.items.length}, '
-        'meshNodes: ${meshTopology.nodes.length}, '
         'deviceModels: ${deviceModels.length}, '
         'nodeModels: ${nodeModels.length}');
+
+    // Fire-and-forget: fetch mesh topology in background, then update state.
+    _fetchMeshAndUpdate(
+        usp, connectedDevices, wifiData, svc, gatewayName, sysData);
 
     return DevicesData(
       meshTopology: meshTopology,
@@ -182,6 +186,48 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       nodeModels: nodeModels,
       hostNameByMac: hostNameByMac,
     );
+  }
+
+  /// Background mesh topology fetch — updates state when complete.
+  Future<void> _fetchMeshAndUpdate(
+    UspService usp,
+    ConnectedDevices connectedDevices,
+    WifiData wifiData,
+    UspDeviceService svc,
+    String gatewayName,
+    SystemInfoData? sysData,
+  ) async {
+    final meshTopology = await fetchMeshNodes(usp);
+    if (meshTopology.isEmpty) return; // Single router — no mesh update needed.
+
+    final cur = state.valueOrNull;
+    if (cur == null) return;
+
+    final deviceModels = svc.buildDeviceUIModels(
+      connectedDevices: connectedDevices,
+      wifiClientMap: wifiData.wifiClientMap,
+      connectionDetailMap: wifiData.connectionDetailMap,
+      meshTopology: meshTopology,
+      gatewayName: gatewayName,
+    );
+
+    final nodeModels = sysData != null
+        ? svc.buildNodeUIModels(
+            meshTopology: meshTopology,
+            deviceModels: deviceModels,
+            systemInfo: sysData.model,
+          )
+        : <NodeUIModel>[];
+
+    logger.d('[USP][DevicesData] Mesh update — '
+        'meshNodes: ${meshTopology.nodes.length}, '
+        'nodeModels: ${nodeModels.length}');
+
+    state = AsyncData(cur.copyWith(
+      meshTopology: meshTopology,
+      deviceModels: deviceModels,
+      nodeModels: nodeModels,
+    ));
   }
 
   void _debouncedInvalidate() {

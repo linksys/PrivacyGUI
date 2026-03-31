@@ -245,15 +245,13 @@ void main() {
       expect(updated.deviceModels, isEmpty);
     });
 
-    test('DevicesData props uses lengths for equality', () {
+    test('DevicesData props for equality', () {
       const a = DevicesData();
       const b = DevicesData();
       expect(a, equals(b));
-      expect(a.props, [0, 0, 0, 0]);
 
       final c = DevicesData(hostNameByMac: {'AA:BB': 'Test'});
       expect(a, isNot(equals(c)));
-      expect(c.props, [0, 0, 0, 1]);
     });
 
     test('SSE connectedDevices domain triggers debounced re-fetch', () {
