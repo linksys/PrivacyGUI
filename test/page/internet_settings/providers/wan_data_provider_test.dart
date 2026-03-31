@@ -13,12 +13,14 @@ void main() {
   late MockUspService mockUsp;
 
   /// Simulated WAN status response (Device.IP.Interface.2.*).
+  /// Includes IPv6Enable since WanStatus codegen v1.1.0 fetches it.
   final wanStatusResponse = <String, dynamic>{
     'Device.IP.Interface.2.Status': 'Up',
     'Device.IP.Interface.2.IPv4Address.1.IPAddress': '100.64.0.10',
     'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
     'Device.IP.Interface.2.IPv4Address.1.AddressingType': 'DHCP',
     'Device.IP.Interface.2.MaxMTUSize': '1500',
+    'Device.IP.Interface.2.IPv6Enable': true,
   };
 
   /// Simulated routing table response for gateway lookup.
@@ -44,15 +46,21 @@ void main() {
     mockUsp = MockUspService();
 
     // Route usp.get() calls by path content.
+    //
+    // _fetch() issues two concurrent requests:
+    //   1. WanStatus.fetch  → paths include IPv6Enable (codegen v1.1.0)
+    //   2. _fetchGatewayAndIpv6Addresses → paths include IPv4Forwarding + IPv6Address
+    //
+    // Distinguish by the presence of 'IPv4Forwarding' (only in request #2).
     when(() => mockUsp.get(any())).thenAnswer((invocation) async {
       final paths = invocation.positionalArguments[0] as List;
       final joined = paths.join(',');
 
-      if (joined.contains('IPv4Forwarding')) return routingResponse;
-      if (joined.contains('IPv6Enable') || joined.contains('IPv6Address')) {
-        return ipv6Response;
+      if (joined.contains('IPv4Forwarding')) {
+        // Combined gateway + IPv6 addresses request
+        return {...routingResponse, ...ipv6Response};
       }
-      // WAN status (Device.IP.Interface.2.*)
+      // WanStatus.fetch (includes IPv6Enable in its paths)
       return wanStatusResponse;
     });
   });
@@ -142,9 +150,9 @@ void main() {
                 '0.0.0.0',
             'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
                 'Device.IP.Interface.1.',
+            ...ipv6Response,
           };
         }
-        if (joined.contains('IPv6')) return ipv6Response;
         return wanStatusResponse;
       });
 
@@ -164,7 +172,6 @@ void main() {
         if (joined.contains('IPv4Forwarding')) {
           throw Exception('timeout');
         }
-        if (joined.contains('IPv6')) return ipv6Response;
         return wanStatusResponse;
       });
 
@@ -187,8 +194,11 @@ void main() {
         final paths = invocation.positionalArguments[0] as List;
         final joined = paths.join(',');
 
-        if (joined.contains('IPv6')) throw Exception('not supported');
-        if (joined.contains('IPv4Forwarding')) return routingResponse;
+        // The combined gateway+IPv6 call fails entirely — both gateway and
+        // IPv6 fall back to empty.
+        if (joined.contains('IPv4Forwarding')) {
+          throw Exception('not supported');
+        }
         return wanStatusResponse;
       });
 
@@ -196,7 +206,9 @@ void main() {
       await Future.delayed(Duration.zero);
 
       final data = container.read(wanDataProvider).requireValue;
-      expect(data.model.ipv6Enabled, isFalse);
+      // ipv6Enabled comes from WanStatus.fetch (succeeds), addresses from
+      // the combined call (fails) — graceful degradation.
+      expect(data.model.ipv6Enabled, isTrue);
       expect(data.model.ipv6Addresses, isEmpty);
       // Core WAN data still loads
       expect(data.model.ipAddress, '100.64.0.10');
