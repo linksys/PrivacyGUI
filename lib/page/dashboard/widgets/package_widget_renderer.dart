@@ -217,6 +217,113 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
   }
 
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Layout property extraction and building
+  // ---------------------------------------------------------------------------
+
+  /// Extract layout properties from the original template root.
+  /// This preserves the designer's original layout intentions.
+  Map<String, dynamic> _extractLayoutProperties(Map<String, dynamic> template) {
+    final props = template['props'] as Map<String, dynamic>? ?? {};
+    return {
+      'mainAxisAlignment': props['mainAxisAlignment'],
+      'crossAxisAlignment': props['crossAxisAlignment'],
+      'alignment': props['alignment'],
+      'expandChildren': props['expandChildren'],
+    };
+  }
+
+  /// Parse main axis alignment from string value.
+  /// Borrowed from UI Kit parsing logic for consistency.
+  MainAxisAlignment _parseMainAxisAlignment(dynamic value) {
+    if (value is! String) return MainAxisAlignment.start;
+    switch (value.toLowerCase()) {
+      case 'center':
+        return MainAxisAlignment.center;
+      case 'end':
+        return MainAxisAlignment.end;
+      case 'spacebetween':
+        return MainAxisAlignment.spaceBetween;
+      case 'spacearound':
+        return MainAxisAlignment.spaceAround;
+      case 'spaceevenly':
+        return MainAxisAlignment.spaceEvenly;
+      default:
+        return MainAxisAlignment.start;
+    }
+  }
+
+  /// Parse cross axis alignment from string value.
+  /// Borrowed from UI Kit parsing logic for consistency.
+  CrossAxisAlignment _parseCrossAxisAlignment(dynamic value) {
+    if (value is! String) return CrossAxisAlignment.start;
+    switch (value.toLowerCase()) {
+      case 'center':
+        return CrossAxisAlignment.center;
+      case 'end':
+        return CrossAxisAlignment.end;
+      case 'stretch':
+        return CrossAxisAlignment.stretch;
+      default:
+        return CrossAxisAlignment.start;
+    }
+  }
+
+  /// Build layout container based on original template type and properties.
+  /// This reconstructs the designer's original layout intentions.
+  Widget _buildLayoutContainer({
+    required String? originalType,
+    required Map<String, dynamic> layoutProps,
+    required List<Widget> children,
+  }) {
+    switch (originalType?.toLowerCase()) {
+      case 'column':
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: _parseMainAxisAlignment(layoutProps['mainAxisAlignment']),
+          crossAxisAlignment: _parseCrossAxisAlignment(layoutProps['crossAxisAlignment']),
+          children: children,
+        );
+
+      case 'row':
+        final expandChildren = layoutProps['expandChildren'] as bool? ?? false;
+        final processedChildren = expandChildren
+            ? children.map((child) => Expanded(child: child)).toList()
+            : children;
+
+        return Row(
+          mainAxisSize: expandChildren ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: _parseMainAxisAlignment(layoutProps['mainAxisAlignment']),
+          crossAxisAlignment: _parseCrossAxisAlignment(layoutProps['crossAxisAlignment']),
+          children: processedChildren,
+        );
+
+      case 'center':
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: children,
+          ),
+        );
+
+      case 'stack':
+        // Basic stack support (can be enhanced later for Positioned)
+        return Stack(
+          children: children,
+        );
+
+      default:
+        // Default: preserve center alignment instead of forcing start
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: children,
+        );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
@@ -251,6 +358,10 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
             .map((c) => _treeBuilder.build(context, c))
             .toList();
 
+        // 🎯 CORE FIX: Extract original layout properties
+        final originalType = resolvedTemplate['type'] as String?;
+        final layoutProps = _extractLayoutProperties(resolvedTemplate);
+
         // Forward common card props from the template
         final padding = rootProps['padding'] != null
             ? EdgeInsets.all(
@@ -262,9 +373,9 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
           padding: padding,
           child: SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: _buildLayoutContainer(
+              originalType: originalType,
+              layoutProps: layoutProps,
               children: childWidgets,
             ),
           ),

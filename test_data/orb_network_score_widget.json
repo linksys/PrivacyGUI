@@ -1,0 +1,161 @@
+{
+  "widgetId": "orb_network_score_test",
+  "displayName": "Orb Network Score (Test)",
+  "description": "Test widget to verify layout optimization with center alignment and spaceEvenly distribution",
+  "constraints": {
+    "minColumns": 2,
+    "maxColumns": 6,
+    "preferredColumns": 4,
+    "minRows": 2,
+    "maxRows": 4,
+    "preferredRows": 2
+  },
+  "dataSource": {
+    "type": "http",
+    "url": "/cgi-bin/mock-orb-status.cgi",
+    "method": "POST",
+    "body": { "action": "card" },
+    "refreshInterval": 60,
+    "mapping": {
+      "score": "score",
+      "scoreGauge": "scoreGauge",
+      "download": "download",
+      "upload": "upload",
+      "latency": "latency",
+      "isp": "isp"
+    }
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "mainAxisAlignment": "center",
+      "crossAxisAlignment": "center",
+      "children": [
+        {
+          "type": "AppText",
+          "props": {
+            "text": "🟢 Network Score",
+            "variant": "titleMedium"
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "sm"
+          }
+        },
+        {
+          "type": "AppText",
+          "props": {
+            "text": { "$bind": "scoreGauge" },
+            "variant": "headlineLarge"
+          }
+        },
+        {
+          "type": "AppText",
+          "props": {
+            "text": "/100",
+            "variant": "bodySmall"
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "md"
+          }
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceEvenly",
+            "expandChildren": true,
+            "children": [
+              {
+                "type": "Column",
+                "props": {
+                  "mainAxisAlignment": "center",
+                  "crossAxisAlignment": "center",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": { "$bind": "download" },
+                        "variant": "titleSmall"
+                      }
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "Download",
+                        "variant": "bodySmall"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "Column",
+                "props": {
+                  "mainAxisAlignment": "center",
+                  "crossAxisAlignment": "center",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": { "$bind": "upload" },
+                        "variant": "titleSmall"
+                      }
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "Upload",
+                        "variant": "bodySmall"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "Column",
+                "props": {
+                  "mainAxisAlignment": "center",
+                  "crossAxisAlignment": "center",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": { "$bind": "latency" },
+                        "variant": "titleSmall"
+                      }
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "Latency",
+                        "variant": "bodySmall"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "xs"
+          }
+        },
+        {
+          "type": "AppText",
+          "props": {
+            "text": { "$bind": "isp" },
+            "variant": "bodySmall"
+          }
+        }
+      ]
+    }
+  }
+}
