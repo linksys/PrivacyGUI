@@ -3,8 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
 import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
-import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
-import 'package:privacy_gui/page/dashboard/models/height_strategy.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 /// Test theme data for layout verification.
@@ -18,13 +16,14 @@ final _testTheme = AppTheme.create(
 
 void main() {
   group('Layout Fix Verification', () {
-    testWidgets('Column with center alignment preserves original layout properties',
+    testWidgets(
+        'Column with center alignment preserves original layout properties',
         (WidgetTester tester) async {
       // Create a template that uses Column with center alignment
       final template = PackageWidgetTemplate(
         widgetId: 'test_center_column',
         displayName: 'Test Center Column',
-        constraints: const WidgetGridConstraints(
+        constraints: WidgetGridConstraints(
           minColumns: 2,
           maxColumns: 4,
           preferredColumns: 3,
@@ -89,7 +88,7 @@ void main() {
       final template = PackageWidgetTemplate(
         widgetId: 'test_space_evenly_row',
         displayName: 'Test SpaceEvenly Row',
-        constraints: const WidgetGridConstraints(
+        constraints: WidgetGridConstraints(
           minColumns: 2,
           maxColumns: 4,
           preferredColumns: 3,
@@ -151,7 +150,8 @@ void main() {
 
       // Verify that the Row preserves spaceEvenly alignment
       expect(row.mainAxisAlignment, MainAxisAlignment.spaceEvenly,
-          reason: 'Row should preserve original mainAxisAlignment: spaceEvenly');
+          reason:
+              'Row should preserve original mainAxisAlignment: spaceEvenly');
 
       // Verify expandChildren functionality
       expect(row.mainAxisSize, MainAxisSize.max,
@@ -160,9 +160,11 @@ void main() {
       // Check that children are wrapped in Expanded widgets
       final expandedFinder = find.byType(Expanded);
       expect(expandedFinder, findsAtLeastNWidgets(3),
-          reason: 'Row with expandChildren should wrap children in Expanded widgets');
+          reason:
+              'Row with expandChildren should wrap children in Expanded widgets');
 
-      print('✅ Layout Fix Verification: Row spaceEvenly alignment and expandChildren preserved');
+      print(
+          '✅ Layout Fix Verification: Row spaceEvenly alignment and expandChildren preserved');
     });
 
     testWidgets('Default layout uses center alignment instead of start',
@@ -170,7 +172,7 @@ void main() {
       final template = PackageWidgetTemplate(
         widgetId: 'test_default_layout',
         displayName: 'Test Default Layout',
-        constraints: const WidgetGridConstraints(
+        constraints: WidgetGridConstraints(
           minColumns: 2,
           maxColumns: 4,
           preferredColumns: 3,
@@ -213,9 +215,11 @@ void main() {
 
       // Verify that default layout uses center alignment instead of start
       expect(column.mainAxisAlignment, MainAxisAlignment.center,
-          reason: 'Default layout should use center alignment instead of start');
+          reason:
+              'Default layout should use center alignment instead of start');
       expect(column.crossAxisAlignment, CrossAxisAlignment.center,
-          reason: 'Default layout should use center alignment instead of start');
+          reason:
+              'Default layout should use center alignment instead of start');
 
       print('✅ Layout Fix Verification: Default layout uses center alignment');
     });

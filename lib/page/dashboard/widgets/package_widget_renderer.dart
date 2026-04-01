@@ -13,11 +13,9 @@ import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart'
     show RequestPriority;
 import 'package:ui_kit_library/ui_kit.dart';
 
-import '../builders/package_widget_builders.dart';
 import '../models/package_widget_template.dart';
 import '../providers/http_client_provider.dart';
 import '../providers/package_widget_data_provider.dart';
-import '../utils/bind_resolver.dart';
 
 /// Renders a package widget template with live data from USP or HTTP/CGI.
 ///
@@ -40,18 +38,10 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
   Future<void> Function()? _sseCleanup;
   Timer? _pollTimer;
   bool _initialFetchDone = false;
-  late final UiTreeBuilder _treeBuilder;
 
   @override
   void initState() {
     super.initState();
-    _treeBuilder = UiTreeBuilder(
-      builders: {
-        ...UiKitCatalog.standardBuilders,
-        ...PackageWidgetBuilders.all
-      },
-      normalizer: _PassthroughNormalizer(),
-    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData();
     });
@@ -194,6 +184,202 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Action Handling
+  // ---------------------------------------------------------------------------
+
+  /// Handle widget actions triggered by user interactions.
+  ///
+  /// This method processes actions from UI components and routes them to
+  /// appropriate handlers based on the action type.
+  void _handleWidgetAction(Map<String, dynamic> actionData) {
+    final actionType = actionData['action'] as String?;
+    if (actionType == null) {
+      logger.w('[PkgWidget] Action missing type: $actionData');
+      return;
+    }
+
+    logger.d('[PkgWidget] ${widget.template.widgetId} action: $actionType');
+
+    try {
+      switch (actionType) {
+        case 'pressed':
+        case 'tapped':
+          _handleTapAction(actionData);
+          break;
+        case 'changed':
+        case 'toggled':
+          _handleValueChangedAction(actionData);
+          break;
+        case 'selected':
+          _handleSelectionAction(actionData);
+          break;
+        case 'save_settings':
+          _handleSaveSettingsAction(actionData);
+          break;
+        case 'navigate':
+          _handleNavigationAction(actionData);
+          break;
+        case 'refresh_data':
+          _handleRefreshDataAction(actionData);
+          break;
+        default:
+          logger.w('[PkgWidget] Unknown action type: $actionType');
+          // For unknown actions, just log the data for debugging
+          logger.d('[PkgWidget] Action data: $actionData');
+      }
+    } catch (e) {
+      logger.w('[PkgWidget] Error handling action $actionType: $e');
+    }
+  }
+
+  /// Handle tap/press actions from buttons and interactive elements.
+  void _handleTapAction(Map<String, dynamic> actionData) {
+    final elementType =
+        actionData['button'] ?? actionData['title'] ?? 'unknown';
+    logger.d('[PkgWidget] Tap action on: $elementType');
+
+    // Add specific tap handling logic here
+    // For example: trigger data refresh, show dialog, etc.
+  }
+
+  /// Handle value change actions from form inputs.
+  void _handleValueChangedAction(Map<String, dynamic> actionData) {
+    final newValue = actionData['value'];
+    logger.d('[PkgWidget] Value changed to: $newValue');
+
+    // Add value change handling logic here
+    // For example: update local state, validate input, etc.
+  }
+
+  /// Handle selection actions from dropdowns, tabs, etc.
+  void _handleSelectionAction(Map<String, dynamic> actionData) {
+    final selectedValue = actionData['value'] ?? actionData['index'];
+    logger.d('[PkgWidget] Selection changed to: $selectedValue');
+
+    // Add selection handling logic here
+    // For example: update filter settings, change view mode, etc.
+  }
+
+  /// Handle save settings action with validation and persistence.
+  void _handleSaveSettingsAction(Map<String, dynamic> actionData) {
+    final section = actionData['section'] as String?;
+    final shouldValidate = actionData['validate'] as bool? ?? true;
+
+    logger.d(
+        '[PkgWidget] Save settings: section=$section, validate=$shouldValidate');
+
+    // Add save settings logic here
+    // For example: validate form data, call USP API, show success message, etc.
+  }
+
+  /// Handle navigation actions to other pages or dialogs.
+  void _handleNavigationAction(Map<String, dynamic> actionData) {
+    final destination = actionData['destination'] as String?;
+    final params = actionData['params'] as Map<String, dynamic>?;
+
+    logger.d('[PkgWidget] Navigate to: $destination with params: $params');
+
+    // Add navigation handling logic here
+    // For example: use GoRouter to navigate, show modal dialog, etc.
+  }
+
+  /// Handle data refresh action to reload widget content.
+  void _handleRefreshDataAction(Map<String, dynamic> actionData) {
+    logger.d('[PkgWidget] Refresh data requested');
+
+    // Trigger data refresh based on widget's data source type
+    if (widget.template.subscription != null) {
+      // USP data source - trigger fresh GET request
+      _refreshUspData();
+    } else if (widget.template.dataSource != null) {
+      // HTTP data source - trigger immediate fetch
+      _fetchHttpData(widget.template.dataSource!);
+    }
+  }
+
+  /// Refresh USP data by performing a fresh GET request.
+  Future<void> _refreshUspData() async {
+    final subscription = widget.template.subscription;
+    if (subscription == null) return;
+
+    final usp = ref.read(uspServiceProvider);
+    if (usp == null) return;
+
+    try {
+      logger
+          .d('[PkgWidget] Refreshing USP data for ${widget.template.widgetId}');
+      final data = await usp.get(subscription.paths);
+      if (!mounted) return;
+      ref
+          .read(packageWidgetDataProvider(widget.template.widgetId).notifier)
+          .setAll(data);
+    } catch (e) {
+      logger.w(
+          '[PkgWidget] USP refresh failed for ${widget.template.widgetId}: $e');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Template Rendering with UI Kit
+  // ---------------------------------------------------------------------------
+
+  /// Build widget card with scrollable content using UI Kit template engine
+  Widget _buildCardWithContent(
+    BuildContext context,
+    Map<String, dynamic> template,
+    Map<String, dynamic> data,
+  ) {
+    try {
+      // Create UI Kit template renderer
+      final renderer = UiKitTemplateRenderer(
+        template: template,
+        data: data,
+        builders: {
+          ...UiKitCatalog.standardBuilders,
+          ...PackageWidgetBuilders.all,
+        },
+        onAction: _handleWidgetAction,
+      );
+
+      // Get template root properties for card configuration
+      final rootProps = template['props'] as Map<String, dynamic>? ?? template;
+      final hasChildren = (rootProps['children'] as List?)?.isNotEmpty ?? false;
+
+      // Extract card padding from template
+      final padding = rootProps['padding'] != null
+          ? EdgeInsets.all((rootProps['padding'] as num).toDouble())
+          : null;
+
+      if (hasChildren) {
+        // Root has children → wrap in scrollable card
+        return AppCard(
+          padding: padding,
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: renderer.build(context),
+          ),
+        );
+      } else {
+        // No children → render directly with optional card wrapper
+        final renderedWidget = renderer.build(context);
+        return padding != null
+            ? AppCard(padding: padding, child: renderedWidget)
+            : renderedWidget;
+      }
+    } catch (e) {
+      logger.w('[USP][PkgWidget] Render error '
+          '${widget.template.widgetId}: $e');
+      return AppCard(
+        child: Center(
+          child: AppText.bodySmall(
+            'Widget error: ${widget.template.displayName}',
+          ),
+        ),
+      );
+    }
+  }
+
   void _startHttpPolling(HttpDataSourceConfig ds) {
     if (ds.refreshInterval <= 0) return;
     _pollTimer = Timer.periodic(
@@ -217,113 +403,6 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
   }
 
   // ---------------------------------------------------------------------------
-  // ---------------------------------------------------------------------------
-  // Layout property extraction and building
-  // ---------------------------------------------------------------------------
-
-  /// Extract layout properties from the original template root.
-  /// This preserves the designer's original layout intentions.
-  Map<String, dynamic> _extractLayoutProperties(Map<String, dynamic> template) {
-    final props = template['props'] as Map<String, dynamic>? ?? {};
-    return {
-      'mainAxisAlignment': props['mainAxisAlignment'],
-      'crossAxisAlignment': props['crossAxisAlignment'],
-      'alignment': props['alignment'],
-      'expandChildren': props['expandChildren'],
-    };
-  }
-
-  /// Parse main axis alignment from string value.
-  /// Borrowed from UI Kit parsing logic for consistency.
-  MainAxisAlignment _parseMainAxisAlignment(dynamic value) {
-    if (value is! String) return MainAxisAlignment.start;
-    switch (value.toLowerCase()) {
-      case 'center':
-        return MainAxisAlignment.center;
-      case 'end':
-        return MainAxisAlignment.end;
-      case 'spacebetween':
-        return MainAxisAlignment.spaceBetween;
-      case 'spacearound':
-        return MainAxisAlignment.spaceAround;
-      case 'spaceevenly':
-        return MainAxisAlignment.spaceEvenly;
-      default:
-        return MainAxisAlignment.start;
-    }
-  }
-
-  /// Parse cross axis alignment from string value.
-  /// Borrowed from UI Kit parsing logic for consistency.
-  CrossAxisAlignment _parseCrossAxisAlignment(dynamic value) {
-    if (value is! String) return CrossAxisAlignment.start;
-    switch (value.toLowerCase()) {
-      case 'center':
-        return CrossAxisAlignment.center;
-      case 'end':
-        return CrossAxisAlignment.end;
-      case 'stretch':
-        return CrossAxisAlignment.stretch;
-      default:
-        return CrossAxisAlignment.start;
-    }
-  }
-
-  /// Build layout container based on original template type and properties.
-  /// This reconstructs the designer's original layout intentions.
-  Widget _buildLayoutContainer({
-    required String? originalType,
-    required Map<String, dynamic> layoutProps,
-    required List<Widget> children,
-  }) {
-    switch (originalType?.toLowerCase()) {
-      case 'column':
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: _parseMainAxisAlignment(layoutProps['mainAxisAlignment']),
-          crossAxisAlignment: _parseCrossAxisAlignment(layoutProps['crossAxisAlignment']),
-          children: children,
-        );
-
-      case 'row':
-        final expandChildren = layoutProps['expandChildren'] as bool? ?? false;
-        final processedChildren = expandChildren
-            ? children.map((child) => Expanded(child: child)).toList()
-            : children;
-
-        return Row(
-          mainAxisSize: expandChildren ? MainAxisSize.max : MainAxisSize.min,
-          mainAxisAlignment: _parseMainAxisAlignment(layoutProps['mainAxisAlignment']),
-          crossAxisAlignment: _parseCrossAxisAlignment(layoutProps['crossAxisAlignment']),
-          children: processedChildren,
-        );
-
-      case 'center':
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: children,
-          ),
-        );
-
-      case 'stack':
-        // Basic stack support (can be enhanced later for Positioned)
-        return Stack(
-          children: children,
-        );
-
-      default:
-        // Default: preserve center alignment instead of forcing start
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: children,
-        );
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
@@ -338,63 +417,8 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
       );
     }
 
-    // Resolve $bind expressions and normalize properties → props
-    final resolvedTemplate = resolveBindings(widget.template.template, data);
-
-    // Render via UiTreeBuilder.
-    //
-    // Split the root card from its children so that:
-    //   - The card shell fills the grid cell (parent SizedBox.expand in view)
-    //   - Only inner content scrolls on overflow (SingleChildScrollView)
-    try {
-      final rootProps = resolvedTemplate['props'] as Map<String, dynamic>? ??
-          resolvedTemplate;
-      final childrenDefs = rootProps['children'] as List?;
-
-      // Root has children → build them individually, wrap in scrollable card
-      if (childrenDefs != null && childrenDefs.isNotEmpty) {
-        final childWidgets = childrenDefs
-            .whereType<Map<String, dynamic>>()
-            .map((c) => _treeBuilder.build(context, c))
-            .toList();
-
-        // 🎯 CORE FIX: Extract original layout properties
-        final originalType = resolvedTemplate['type'] as String?;
-        final layoutProps = _extractLayoutProperties(resolvedTemplate);
-
-        // Forward common card props from the template
-        final padding = rootProps['padding'] != null
-            ? EdgeInsets.all(
-                (rootProps['padding'] as num).toDouble(),
-              )
-            : null;
-
-        return AppCard(
-          padding: padding,
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            child: _buildLayoutContainer(
-              originalType: originalType,
-              layoutProps: layoutProps,
-              children: childWidgets,
-            ),
-          ),
-        );
-      }
-
-      // No children — render the full tree as-is
-      return _treeBuilder.build(context, resolvedTemplate);
-    } catch (e) {
-      logger.w('[USP][PkgWidget] Render error '
-          '${widget.template.widgetId}: $e');
-      return AppCard(
-        child: Center(
-          child: AppText.bodySmall(
-            'Widget error: ${widget.template.displayName}',
-          ),
-        ),
-      );
-    }
+    // Delegate rendering to UI Kit template engine with integrated card wrapper
+    return _buildCardWithContent(context, widget.template.template, data);
   }
 }
 
@@ -430,33 +454,4 @@ dynamic resolvePath(Map<String, dynamic> json, String path) {
     }
   }
   return current;
-}
-
-// =============================================================================
-// Passthrough normalizer
-// =============================================================================
-
-/// Minimal passthrough normalizer for package widget templates.
-///
-/// Package widget JSON uses simple property names matching UiKitCatalog
-/// builder expectations. No protocol-specific normalization needed.
-class _PassthroughNormalizer implements PropNormalizer {
-  @override
-  String get protocolName => 'package_widget';
-
-  @override
-  Map<String, dynamic> normalize(
-    String componentType,
-    Map<String, dynamic> rawProps,
-  ) {
-    final props = Map<String, dynamic>.from(rawProps);
-    // Promote child → children (standard normalization)
-    if (props.containsKey('child') && !props.containsKey('children')) {
-      final child = props['child'];
-      if (child != null) {
-        props['children'] = [child];
-      }
-    }
-    return props;
-  }
 }

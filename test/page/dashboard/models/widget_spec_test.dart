@@ -1,10 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
-import 'package:privacy_gui/page/dashboard/models/height_strategy.dart';
-import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 
-const _normalConstraints = WidgetGridConstraints(
+final _normalConstraints = WidgetGridConstraints(
   minColumns: 3,
   maxColumns: 8,
   preferredColumns: 6,
@@ -13,7 +12,7 @@ const _normalConstraints = WidgetGridConstraints(
   maxHeightRows: 8,
 );
 
-const _compactConstraints = WidgetGridConstraints(
+final _compactConstraints = WidgetGridConstraints(
   minColumns: 2,
   maxColumns: 6,
   preferredColumns: 4,
@@ -22,7 +21,7 @@ const _compactConstraints = WidgetGridConstraints(
   maxHeightRows: 4,
 );
 
-const _defaultConstraints = WidgetGridConstraints(
+final _defaultConstraints = WidgetGridConstraints(
   minColumns: 4,
   maxColumns: 12,
   preferredColumns: 8,
@@ -34,9 +33,7 @@ const _defaultConstraints = WidgetGridConstraints(
 WidgetSpec _make({
   String id = 'test_widget',
   String displayName = 'Test Widget',
-  Map<DisplayMode, WidgetGridConstraints> constraints = const {
-    DisplayMode.normal: _normalConstraints,
-  },
+  Map<DisplayMode, WidgetGridConstraints>? constraints,
   WidgetGridConstraints? defaultConstraints,
   bool canHide = true,
   List<WidgetRequirement> requirements = const [],
@@ -44,7 +41,7 @@ WidgetSpec _make({
   return WidgetSpec(
     id: id,
     displayName: displayName,
-    constraints: constraints,
+    constraints: constraints ?? {DisplayMode.normal: _normalConstraints},
     defaultConstraints: defaultConstraints,
     canHide: canHide,
     requirements: requirements,

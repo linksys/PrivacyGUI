@@ -1,8 +1,7 @@
 import 'package:equatable/equatable.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 import 'display_mode.dart';
-import 'height_strategy.dart';
-import 'widget_grid_constraints.dart';
 import 'widget_spec.dart';
 
 /// Parsed widget template from a router-deployed package.

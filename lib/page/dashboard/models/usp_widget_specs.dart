@@ -1,6 +1,5 @@
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
-import 'package:privacy_gui/page/dashboard/models/height_strategy.dart';
-import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/layout_item_factory.dart';
 import 'package:sliver_dashboard/sliver_dashboard.dart';

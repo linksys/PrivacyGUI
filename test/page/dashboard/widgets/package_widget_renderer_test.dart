@@ -13,9 +13,7 @@ import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
-import 'package:privacy_gui/page/dashboard/models/height_strategy.dart';
 import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
-import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
 import 'package:privacy_gui/page/dashboard/providers/http_client_provider.dart';
 import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
 

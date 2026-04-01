@@ -1,11 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
-import 'package:privacy_gui/page/dashboard/models/height_strategy.dart';
-import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
 import 'package:privacy_gui/page/dashboard/models/widget_spec.dart';
 import 'package:privacy_gui/page/dashboard/providers/layout_item_factory.dart';
 
-const _normalConstraints = WidgetGridConstraints(
+final _normalConstraints = WidgetGridConstraints(
   minColumns: 3,
   maxColumns: 8,
   preferredColumns: 6,
@@ -14,7 +13,7 @@ const _normalConstraints = WidgetGridConstraints(
   maxHeightRows: 8,
 );
 
-const _testSpec = WidgetSpec(
+final _testSpec = WidgetSpec(
   id: 'test_widget',
   displayName: 'Test Widget',
   constraints: {DisplayMode.normal: _normalConstraints},
