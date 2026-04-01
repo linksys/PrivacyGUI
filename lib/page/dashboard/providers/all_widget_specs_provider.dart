@@ -8,7 +8,7 @@ import 'package_widget_loader.dart';
 ///
 /// Single source of truth for "what widgets are available".
 /// Used by:
-/// - [UspLayoutSettingsPanel] (hidden widgets list)
+/// - [UspLayoutSettingsPanel] (available widgets list)
 /// - [UspLayoutController] (addWidget lookup)
 /// - [UspSliverDashboardView] (resize constraint enforcement)
 ///
