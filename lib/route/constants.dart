@@ -118,6 +118,8 @@ class RoutePath {
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
+  static const csDiagnostic = '/troubleshoot';
+  static const csDiagnosticAgent = 'agent';
 
   /// Support
   static const faqList = 'faqList';
@@ -258,6 +260,8 @@ class RouteNamed {
   /// Troubleshooting
   static const troubleshooting = 'troubleshooting';
   static const troubleshootingPing = 'troubleshootingPing';
+  static const csDiagnostic = 'csDiagnostic';
+  static const csDiagnosticAgent = 'csDiagnosticAgent';
 
   /// Support
   static const faqList = 'faqList';
