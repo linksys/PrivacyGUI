@@ -571,7 +571,7 @@ Settings panel shown in edit mode (via tune icon):
 
 1. **Instructions** — Info card with drag-drop/resize guide text
 2. **Preset Selection** — Shows current preset with "Change" button → opens `PresetSelectionDialog`
-3. **Hidden Widgets** — Lists removed widgets with "Add" button to re-add them
+3. **Available Widgets** — Lists unused widgets (built-in and app widgets) with "Add" button to re-add them
 4. **Reset Layout** — Resets all preferences to defaults
 
 **Dialog Return Values**: `'reset'`, `'toggle_off'`, `'preset_changed'` — used by the view to exit edit mode when layout is replaced.
@@ -1177,7 +1177,7 @@ sequenceDiagram
 4. **Remove** cards via red close button (only for `canHide == true` widgets)
 5. Click **Settings** (tune icon):
    - Change preset → replaces entire layout
-   - Re-add hidden widgets
+   - Re-add available widgets
    - Reset to defaults
 6. Click **Auto Fix** to optimize layout (fill gaps)
 7. **Save** (check icon) or **Cancel** (close icon → restores snapshot)

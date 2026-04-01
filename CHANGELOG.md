@@ -119,7 +119,7 @@ All notable changes to PrivacyGUI after version 2.0.0 are documented in this fil
 - Add `UspWidgetFactory` — ID → Widget mapping for grid item builder
 - Add `UspLayoutController` — SharedPreferences persistence for layout & edit mode state
 - Add `UspLayoutPreferences` — widget visibility, layout reset; `useCustomLayout = true` default
-- Add `UspLayoutSettingsPanel` — hidden widgets re-add, reset layout to defaults
+- Add `UspLayoutSettingsPanel` — available widgets re-add (categorized: built-in & app widgets), reset layout to defaults
 - Convert `UspStatsPanel` to `ConsumerWidget` (self-contained provider read) + add to widget specs registry
 - Remove firmware images section from `UspDeviceInfoCard` (reduce height for grid fit)
 - Increase `SystemStatus` card height (h=3→4) to accommodate gauges + chart

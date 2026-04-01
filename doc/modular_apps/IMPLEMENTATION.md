@@ -594,7 +594,7 @@ for authenticated access to the router's app store.
 
 | Decision | Rationale |
 |----------|-----------|
-| **User-initiated Add** | Installing a package ≠ auto-showing a card. Widgets appear in settings panel "Hidden Widgets" for user to manually add. Prevents unwanted dashboard clutter. |
+| **User-initiated Add** | Installing a package ≠ auto-showing a card. Widgets appear in settings panel "Available Widgets" for user to manually add. Prevents unwanted dashboard clutter. |
 | **Independent fetch** | `PackageWidgetLoader` does not reuse `UspAppsNotifier` (autoDispose — destroyed when Apps page is closed). Dashboard needs persistent template cache. |
 | **`properties→props` + children merge** | Widget JSON uses `properties` + sibling `children`. UiTreeBuilder reads `child['props']['children']`. `bind_resolver` normalizes both in a single recursive pass. |
 | **Passthrough normalizer** | 10-line local `_PassthroughNormalizer` avoids importing from `generative_ui` package. Only promotes `child→children`. |

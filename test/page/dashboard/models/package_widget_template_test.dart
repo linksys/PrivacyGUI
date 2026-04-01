@@ -1,7 +1,6 @@
+import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/page/dashboard/models/display_mode.dart';
-import 'package:privacy_gui/page/dashboard/models/height_strategy.dart';
 import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
-import 'package:privacy_gui/page/dashboard/models/widget_grid_constraints.dart';
 import 'package:test/test.dart';
 
 void main() {

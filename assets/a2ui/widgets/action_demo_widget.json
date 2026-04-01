@@ -1,0 +1,156 @@
+{
+  "widgetId": "action_demo_widget",
+  "displayName": "Action Demo Widget",
+  "description": "Demonstrates various action types supported by Package Widget architecture",
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 6,
+    "preferredColumns": 4,
+    "preferredRows": 3,
+    "minRows": 2,
+    "maxRows": 5
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "mainAxisAlignment": "start",
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "AppText",
+          "props": {
+            "text": "Interactive Action Demo",
+            "variant": "titleLarge"
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "md"
+          }
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceEvenly",
+            "children": [
+              {
+                "type": "AppButton",
+                "props": {
+                  "label": "Save Settings",
+                  "variant": "highlight",
+                  "onTap": {
+                    "$action": "save_settings",
+                    "section": "network",
+                    "validate": true
+                  }
+                }
+              },
+              {
+                "type": "AppIconButton",
+                "props": {
+                  "icon": "refresh",
+                  "variant": "base",
+                  "onTap": {
+                    "$action": "refresh_data"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "md"
+          }
+        },
+        {
+          "type": "AppTextField",
+          "props": {
+            "label": "Device Name",
+            "hintText": "Enter device name",
+            "onChanged": {
+              "$action": "field_changed",
+              "field": "deviceName"
+            }
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "sm"
+          }
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceBetween",
+            "children": [
+              {
+                "type": "AppText",
+                "props": {
+                  "text": "Auto-connect",
+                  "variant": "bodyMedium"
+                }
+              },
+              {
+                "type": "AppSwitch",
+                "props": {
+                  "value": true,
+                  "onChanged": {
+                    "$action": "setting_toggled",
+                    "setting": "autoConnect"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "md"
+          }
+        },
+        {
+          "type": "AppCard",
+          "props": {
+            "padding": 12,
+            "onTap": {
+              "$action": "navigate",
+              "destination": "advanced_settings",
+              "params": {
+                "section": "network",
+                "highlight": "security"
+              }
+            },
+            "children": [
+              {
+                "type": "Row",
+                "props": {
+                  "mainAxisAlignment": "spaceBetween",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "Advanced Settings",
+                        "variant": "bodyMedium"
+                      }
+                    },
+                    {
+                      "type": "AppIcon",
+                      "props": {
+                        "name": "chevron_right"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
