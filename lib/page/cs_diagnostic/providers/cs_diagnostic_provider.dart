@@ -1,8 +1,11 @@
 import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/cs_diagnostic/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/cs_diagnostic/providers/cs_diagnostic_auth_provider.dart';
 import 'package:privacy_gui/page/cs_diagnostic/providers/cs_diagnostic_state.dart';
-import 'package:privacy_gui/page/cs_diagnostic/services/jnap_diagnostic_service.dart';
 import 'package:privacy_gui/page/cs_diagnostic/services/mock_diagnostic_data.dart';
 
 final csDiagnosticProvider = NotifierProvider<CsDiagnosticNotifier, CsDiagnosticState>(
@@ -19,6 +22,29 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
   @override
   CsDiagnosticState build() => const CsDiagnosticState();
 
+  /// Helper: send a JNAP action via RouterRepository with diagnostic auth headers.
+  Future<Map<String, dynamic>> _send(JNAPAction action, {bool auth = true}) async {
+    final repo = ref.read(routerRepositoryProvider);
+    final headers = auth ? ref.read(diagnosticAuthProvider).authHeaders : const <String, String>{};
+    final result = await repo.send(
+      action,
+      extraHeaders: headers,
+      fetchRemote: true,
+      cacheLevel: CacheLevel.noCache,
+    );
+    return result.output;
+  }
+
+  /// Helper: send a JNAP action, returning empty map on failure (for optional calls).
+  Future<Map<String, dynamic>> _sendOptional(JNAPAction action) async {
+    try {
+      return await _send(action);
+    } catch (e) {
+      dev.log('Instant-Help: ${action.name} failed: $e');
+      return <String, dynamic>{};
+    }
+  }
+
   Future<void> fetch() async {
     state = state.copyWith(loadState: DiagnosticLoadState.loading);
 
@@ -31,13 +57,11 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
     }
 
     try {
-      final service = ref.read(jnapDiagnosticServiceProvider);
-
       // Fetch reliable data first
       final coreResults = await Future.wait([
-        service.getWANStatus(),     // 0: WAN state
-        service.getDeviceInfo(),    // 1: router info
-        service.getSystemStats(),   // 2: uptime, CPU, memory
+        _send(JNAPAction.getWANStatus, auth: false),  // 0: WAN state
+        _send(JNAPAction.getDeviceInfo, auth: false),  // 1: router info
+        _send(JNAPAction.getSystemStats),               // 2: uptime, CPU, memory
       ]);
 
       final wanData = coreResults[0];
@@ -53,7 +77,7 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
 
       // Approach 1: GetNodesWirelessNetworkConnections (mesh devices)
       try {
-        wirelessData = await service.getNodesWirelessConnections();
+        wirelessData = await _send(JNAPAction.getNodesWirelessNetworkConnections);
         dev.log('Instant-Help: NodesWireless OK, keys: ${wirelessData.keys}');
       } catch (e) {
         dev.log('Instant-Help: NodesWireless failed: $e');
@@ -61,7 +85,7 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
 
       // Approach 2: GetNetworkConnections (has MAC, IP, hostname, wireless)
       try {
-        netConns = await service.getNetworkConnections();
+        netConns = await _send(JNAPAction.getNetworkConnections);
         dev.log('Instant-Help: NetConns OK, keys: ${netConns.keys}');
       } catch (e) {
         dev.log('Instant-Help: NetConns failed: $e');
@@ -69,7 +93,7 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
 
       // DHCP
       try {
-        dhcpData = await service.getDHCPClientLeases();
+        dhcpData = await _send(JNAPAction.getDHCPClientLeases);
       } catch (e) {
         dev.log('Instant-Help: DHCP failed: $e');
       }
@@ -82,7 +106,7 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
 
       // Try GetDevices3 for richer names
       try {
-        final deviceList = await service.getDevices();
+        final deviceList = await _send(JNAPAction.getDevices);
         final devMap = _buildDeviceMap(deviceList);
         for (final entry in devMap.entries) {
           deviceMap[entry.key] = entry.value;
@@ -119,19 +143,19 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
 
       // Fetch supplementary data in parallel (all optional — failures don't block)
       final supplementary = await Future.wait([
-        service.getRadioInfo().catchError((_) => <String, dynamic>{}),
-        service.getGuestNetworkSettings().catchError((_) => <String, dynamic>{}),
-        service.getFirmwareUpdateStatus().catchError((_) => <String, dynamic>{}),
-        service.getBackhaulInfo().catchError((_) => <String, dynamic>{}),
-        service.getMACFilterSettings().catchError((_) => <String, dynamic>{}),
-        service.getNetworkSecuritySettings().catchError((_) => <String, dynamic>{}),
-        service.getParentalControlSettings().catchError((_) => <String, dynamic>{}),
-        service.getWirelessSchedulerSettings().catchError((_) => <String, dynamic>{}),
-        service.getSelectedChannels().catchError((_) => <String, dynamic>{}),
-        service.getEthernetPortConnections().catchError((_) => <String, dynamic>{}),
+        _sendOptional(JNAPAction.getRadioInfo),              // 0
+        _sendOptional(JNAPAction.getGuestNetworkSettings),   // 1
+        _sendOptional(JNAPAction.getFirmwareUpdateStatus),   // 2
+        _sendOptional(JNAPAction.getBackhaulInfo),           // 3
+        _sendOptional(JNAPAction.getMACFilterSettings),      // 4
+        _sendOptional(JNAPAction.getNetworkSecuritySettings),// 5
+        _sendOptional(JNAPAction.getParentalControlSettings),// 6
+        _sendOptional(JNAPAction.getWirelessSchedulerSettings),// 7
+        _sendOptional(JNAPAction.getSelectedChannels),       // 8
+        _sendOptional(JNAPAction.getEthernetPortConnections),// 9
       ]);
 
-      Map<String, dynamic> orNull(Map<String, dynamic> m) => m.isNotEmpty ? m : {};
+      Map<String, dynamic>? orNull(Map<String, dynamic> m) => m.isNotEmpty ? m : null;
 
       state = state.copyWith(
         loadState: DiagnosticLoadState.loaded,
@@ -144,16 +168,16 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
           'cpuLoad': cpuPct,
           'memoryLoad': memPct,
         },
-        radioInfo: orNull(supplementary[0]).isNotEmpty ? supplementary[0] : null,
-        guestNetwork: orNull(supplementary[1]).isNotEmpty ? supplementary[1] : null,
-        firmwareUpdate: orNull(supplementary[2]).isNotEmpty ? supplementary[2] : null,
-        backhaulInfo: orNull(supplementary[3]).isNotEmpty ? supplementary[3] : null,
-        macFilter: orNull(supplementary[4]).isNotEmpty ? supplementary[4] : null,
-        networkSecurity: orNull(supplementary[5]).isNotEmpty ? supplementary[5] : null,
-        parentalControls: orNull(supplementary[6]).isNotEmpty ? supplementary[6] : null,
-        wirelessSchedule: orNull(supplementary[7]).isNotEmpty ? supplementary[7] : null,
-        channelInfo: orNull(supplementary[8]).isNotEmpty ? supplementary[8] : null,
-        ethernetPorts: orNull(supplementary[9]).isNotEmpty ? supplementary[9] : null,
+        radioInfo: orNull(supplementary[0]),
+        guestNetwork: orNull(supplementary[1]),
+        firmwareUpdate: orNull(supplementary[2]),
+        backhaulInfo: orNull(supplementary[3]),
+        macFilter: orNull(supplementary[4]),
+        networkSecurity: orNull(supplementary[5]),
+        parentalControls: orNull(supplementary[6]),
+        wirelessSchedule: orNull(supplementary[7]),
+        channelInfo: orNull(supplementary[8]),
+        ethernetPorts: orNull(supplementary[9]),
       );
     } catch (e) {
       state = state.copyWith(
@@ -195,10 +219,10 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
   Map<String, Map<String, String?>> _buildDeviceMap(Map<String, dynamic> data) {
     final map = <String, Map<String, String?>>{};
     final devices = data['devices'] as List? ?? [];
-    for (final dev in devices) {
-      final connections = dev['connections'] as List? ?? [];
-      final friendlyName = dev['friendlyName'] as String?;
-      final hostname = dev['hostname'] as String?;
+    for (final d in devices) {
+      final connections = d['connections'] as List? ?? [];
+      final friendlyName = d['friendlyName'] as String?;
+      final hostname = d['hostname'] as String?;
       final name = friendlyName ?? hostname;
 
       for (final conn in connections) {
@@ -212,7 +236,7 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
     return map;
   }
 
-  /// Parse GetNetworkConnections2 response, merging hostname/IP from device map.
+  /// Parse GetNodesWirelessNetworkConnections response, merging hostname/IP from device map.
   List<DiagnosticClient> _parseClients(
     Map<String, dynamic> netConns,
     Map<String, Map<String, String?>> deviceMap,
@@ -225,21 +249,21 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
       for (final conn in connections) {
         final mac = ((conn['macAddress'] as String?) ?? '').toUpperCase();
         final wireless = conn['wireless'] as Map<String, dynamic>?;
-        final deviceInfo = deviceMap[mac];
+        final devInfo = deviceMap[mac];
 
         // Debug: log first connection's structure
         if (clients.isEmpty && wireless != null) {
           dev.log('Instant-Help: wireless keys: ${wireless.keys.toList()}');
           dev.log('Instant-Help: wireless sample: $wireless');
-          dev.log('Instant-Help: deviceInfo for $mac: $deviceInfo');
+          dev.log('Instant-Help: deviceInfo for $mac: $devInfo');
           dev.log('Instant-Help: conn keys: ${conn.keys.toList()}');
         }
 
         if (wireless != null) {
           clients.add(DiagnosticClient(
             macAddress: mac,
-            hostname: deviceInfo?['hostname'],
-            ipAddress: deviceInfo?['ipAddress'],
+            hostname: devInfo?['hostname'],
+            ipAddress: devInfo?['ipAddress'],
             band: (wireless['band'] as String?) ?? 'Unknown',
             signalDecibels: wireless['signalDecibels'] as int?,
             txRateMbps: wireless['txRate'] as int?,

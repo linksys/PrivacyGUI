@@ -3,7 +3,6 @@ export 'providers/cs_diagnostic_auth_provider.dart';
 export 'providers/cs_diagnostic_provider.dart';
 export 'providers/cs_diagnostic_state.dart';
 export 'services/browser_diagnostic_service.dart';
-export 'services/jnap_diagnostic_service.dart';
 export 'services/mock_diagnostic_data.dart';
 export 'views/diagnostic_entry_view.dart';
 export 'views/customer/customer_home_view.dart';

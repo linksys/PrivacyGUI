@@ -1,6 +1,10 @@
-import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
+import 'package:privacy_gui/constants/jnap_const.dart';
+import 'package:privacy_gui/core/jnap/actions/better_action.dart';
+import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/result/jnap_result.dart';
+import 'package:privacy_gui/core/jnap/router_repository.dart';
+import 'package:privacy_gui/utils.dart';
 
 enum DiagnosticAuthStatus { unauthenticated, authenticating, authenticated, error }
 
@@ -26,7 +30,11 @@ class DiagnosticAuthState {
   );
 
   bool get isAuthenticated => status == DiagnosticAuthStatus.authenticated;
-  String get authHeader => 'Basic ${base64Encode(utf8.encode('admin:${password ?? ''}'))}';
+
+  /// Auth headers for RouterRepository extraHeaders parameter.
+  Map<String, String> get authHeaders => password != null
+      ? {kJNAPAuthorization: 'Basic ${Utils.stringBase64Encode('admin:$password')}'}
+      : const {};
 }
 
 final diagnosticAuthProvider = NotifierProvider<DiagnosticAuthNotifier, DiagnosticAuthState>(
@@ -50,24 +58,23 @@ class DiagnosticAuthNotifier extends Notifier<DiagnosticAuthState> {
     }
 
     try {
-      final authHeader = 'Basic ${base64Encode(utf8.encode('admin:$password'))}';
-      final response = await http.post(
-        Uri.parse('http://192.168.1.1/JNAP/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-JNAP-Action': 'http://linksys.com/jnap/core/GetDeviceInfo',
-          'X-JNAP-Authorization': authHeader,
-        },
-        body: '{}',
-      ).timeout(const Duration(seconds: 10));
+      final authHeaders = {
+        kJNAPAuthorization: 'Basic ${Utils.stringBase64Encode('admin:$password')}',
+      };
 
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        if (body['result'] == 'OK') {
-          state = state.copyWith(status: DiagnosticAuthStatus.authenticated, password: password);
-          return true;
-        }
-      }
+      // Validate credentials via RouterRepository
+      final repo = ref.read(routerRepositoryProvider);
+      await repo.send(
+        JNAPAction.getDeviceInfo,
+        extraHeaders: authHeaders,
+        fetchRemote: true,
+        cacheLevel: CacheLevel.noCache,
+      );
+
+      // If send() succeeds (no exception), credentials are valid
+      state = state.copyWith(status: DiagnosticAuthStatus.authenticated, password: password);
+      return true;
+    } on JNAPError catch (_) {
       state = state.copyWith(
         status: DiagnosticAuthStatus.error,
         errorMessage: 'Incorrect password. Check your router admin password.',
