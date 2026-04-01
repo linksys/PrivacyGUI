@@ -85,7 +85,11 @@ class BrowserDiagnosticResult extends Equatable {
 
 /// Browser-based diagnostic service that runs tests from the customer device.
 class BrowserDiagnosticService {
-  static const _gatewayUrl = 'http://192.168.1.1';
+  /// Use HTTPS to match page origin and avoid mixed-content blocks.
+  /// The router's self-signed cert will cause a TLS error, but the HTTP
+  /// library still throws — we catch it and treat "connected but TLS error"
+  /// as reachable (the TCP handshake succeeded).
+  static const _gatewayUrl = 'https://192.168.1.1';
   static const _dnsTestUrl = 'https://detectportal.firefox.com/success.txt';
   static const _timeout = Duration(seconds: 5);
 

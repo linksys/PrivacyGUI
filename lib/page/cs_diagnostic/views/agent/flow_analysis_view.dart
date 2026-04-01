@@ -788,121 +788,35 @@ class FlowAnalysisView extends StatelessWidget {
 
   // ── Shared builders ────────────────────────────────────────────────
 
+  /// Sort findings: critical → warning → ask → info → ok.
+  /// "Ask" stays near the bottom but above green items.
+  List<_Finding> _sortFindings(List<_Finding> findings) {
+    const order = {
+      _Severity.critical: 0,
+      _Severity.warning: 1,
+      _Severity.ask: 3,
+      _Severity.info: 2,
+      _Severity.ok: 4,
+    };
+    return List.of(findings)..sort((a, b) => order[a.severity]!.compareTo(order[b.severity]!));
+  }
+
   Widget _buildFindings(BuildContext context, String title, String subtitle, List<_Finding> findings) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth > 700;
-        final header = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 2),
-            Text(subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
-            const SizedBox(height: 12),
-          ],
-        );
+    final sorted = _sortFindings(findings);
 
-        if (!wide) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [header, ...findings.map((f) => _findingCard(context, f))],
-          );
-        }
-
-        // Two-column layout: findings left, summary right
-        final actionable = findings.where((f) => f.severity != _Severity.ok && f.severity != _Severity.info && f.severity != _Severity.ask).toList();
-        final other = findings.where((f) => f.severity == _Severity.ok || f.severity == _Severity.info || f.severity == _Severity.ask).toList();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            header,
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (actionable.isNotEmpty) ...[
-                        Text('Action Items', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade700)),
-                        const SizedBox(height: 4),
-                        ...actionable.map((f) => _findingCard(context, f)),
-                      ],
-                      if (other.isNotEmpty) ...[
-                        if (actionable.isNotEmpty) const SizedBox(height: 8),
-                        ...other.map((f) => _findingCard(context, f)),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 2,
-                  child: _buildQuickRef(context),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Quick-reference sidebar shown on wide screens
-  Widget _buildQuickRef(BuildContext context) {
-    final model = state.deviceInfo?['description'] ?? state.deviceInfo?['modelNumber'] ?? 'Unknown';
-    final fw = state.deviceInfo?['firmwareVersion'] ?? 'Unknown';
-    final cpuLoad = state.routerHealth?['cpuLoad'] as int?;
-    final memLoad = state.routerHealth?['memoryLoad'] as int?;
-    final on24 = state.clients.where((c) => c.band == '2.4GHz').length;
-    final on5 = state.clients.where((c) => c.band == '5GHz').length;
-    final wired = state.clients.where((c) => !c.isWireless).length;
-
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Quick Reference', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
-            const Divider(height: 16),
-            _refRow('Model', '$model'),
-            _refRow('Firmware', '$fw'),
-            _refRow('Uptime', _formatUptime(state.routerUptimeSeconds)),
-            _refRow('WAN', state.wanConnected ? 'Connected' : 'DOWN'),
-            if (cpuLoad != null) _refRow('CPU', '$cpuLoad%'),
-            if (memLoad != null) _refRow('Memory', '$memLoad%'),
-            _refRow('Devices', '${state.clients.length} (2.4G: $on24, 5G: $on5, Wired: $wired)'),
-            _refRow('DHCP', '${state.dhcpLeasesCount}/${state.dhcpPoolLimit} (${(state.dhcpUtilization * 100).toInt()}%)'),
-            if (state.bandSteeringEnabled) _refRow('Band Steer', 'Enabled'),
-            if (state.guestNetworkEnabled) _refRow('Guest Net', 'Enabled'),
-            if (state.firmwareUpdateAvailable) _refRow('FW Update', 'Available'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _refRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 2),
+        Text(subtitle,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+        const SizedBox(height: 8),
+        ...sorted.map((f) => _findingCard(context, f)),
+      ],
     );
   }
 
@@ -916,43 +830,44 @@ class FlowAnalysisView extends StatelessWidget {
     };
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 6),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon, size: 20, color: color),
-                const SizedBox(width: 10),
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(finding.title,
-                      style: TextStyle(fontWeight: FontWeight.w600, color: color)),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Padding(
-              padding: const EdgeInsets.only(left: 30),
+              padding: const EdgeInsets.only(left: 26),
               child: Text(finding.detail,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Padding(
-              padding: const EdgeInsets.only(left: 30),
+              padding: const EdgeInsets.only(left: 26),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.arrow_forward, size: 14,
+                  Icon(Icons.arrow_forward, size: 12,
                       color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(finding.action,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: Theme.of(context).colorScheme.primary,
                         )),

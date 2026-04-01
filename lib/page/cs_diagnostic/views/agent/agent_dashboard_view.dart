@@ -117,10 +117,10 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
                   complaintIndex: _selectedComplaint,
                   state: state,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 // Contextual data section per tab
                 _buildContextualData(context, state),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -142,7 +142,7 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
     };
   }
 
-  // ── Slow Internet: WAN details + band distribution + DHCP ──────────
+  // ── Slow Internet: WAN details + band distribution + DHCP + radio ──
   Widget _contextSlowInternet(BuildContext context, CsDiagnosticState state) {
     final wanConn = state.wanStatus?['wanConnection'] as Map<String, dynamic>?;
     final wanIp = wanConn?['ipAddress'] as String? ?? state.wanStatus?['wanIPAddress'] as String?;
@@ -160,6 +160,8 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
         _infoItem('DHCP', '${state.dhcpLeasesCount}/${state.dhcpPoolLimit} (${(state.dhcpUtilization * 100).toInt()}%)'),
         _infoItem('Uptime', _formatUptime(state.routerUptimeSeconds)),
       ]),
+      if (state.radioInfo != null)
+        _buildRadioInfoCard(context, state),
       if (state.firmwareUpdateAvailable)
         _infoCard(context, 'Firmware Update Available', Icons.system_update, [
           _infoItem('Current', state.deviceInfo?['firmwareVersion'] ?? 'Unknown'),
@@ -177,7 +179,7 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
     ]);
   }
 
-  // ── Drops: Router stability + signal table (marginal devices) ──────
+  // ── Drops: Router stability + radio config + signal table (marginal) ──
   Widget _contextDrops(BuildContext context, CsDiagnosticState state) {
     final marginalOrWorse = state.clients.where((c) =>
         c.isWireless && c.signalDecibels != null && c.signalDecibels! < -65).toList();
@@ -185,11 +187,13 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
     return Column(children: [
       _infoCard(context, 'Router Stability', Icons.router, [
         _infoItem('Uptime', _formatUptime(state.routerUptimeSeconds)),
-        _infoItem('CPU Load', '${state.routerHealth?['cpuLoad'] ?? 'N/A'}'),
-        _infoItem('Memory Load', '${state.routerHealth?['memoryLoad'] ?? 'N/A'}'),
+        _infoItem('CPU Load', '${state.routerHealth?['cpuLoad'] ?? 'N/A'}%'),
+        _infoItem('Memory', '${state.routerHealth?['memoryLoad'] ?? 'N/A'}%'),
         _infoItem('Firmware', state.deviceInfo?['firmwareVersion'] ?? 'Unknown'),
         _infoItem('WAN', state.wanConnected ? 'Connected' : 'Disconnected'),
       ]),
+      if (state.radioInfo != null)
+        _buildRadioInfoCard(context, state),
       if (marginalOrWorse.isNotEmpty)
         SignalTableView(clients: marginalOrWorse),
     ]);
@@ -324,28 +328,28 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
 
   Widget _infoCard(BuildContext context, String title, IconData icon, List<_InfoItem> items) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+              Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
-              Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 13)),
             ]),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             ...items.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 3),
               child: Row(children: [
                 SizedBox(
-                  width: 120,
+                  width: 110,
                   child: Text(item.label,
                       style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
                 ),
                 Expanded(
-                  child: Text(item.value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                  child: Text(item.value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
                 ),
               ]),
             )),
