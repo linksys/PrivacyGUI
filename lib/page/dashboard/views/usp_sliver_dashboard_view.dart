@@ -8,6 +8,7 @@ import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
 import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
@@ -331,6 +332,17 @@ class _UspSliverDashboardViewState
     });
   }
 
+  /// Build package widget with header (title + info icon)
+  Widget _buildPackageWidgetWithHeader(
+    BuildContext context,
+    PackageWidgetTemplate template,
+  ) {
+    return PackageWidgetRenderer(
+      template: template,
+      showHeader: true,
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Edit Mode — resize, settings, item builder
   // ---------------------------------------------------------------------------
@@ -426,7 +438,7 @@ class _UspSliverDashboardViewState
       final templates = ref.read(packageWidgetLoaderProvider).valueOrNull;
       final template = templates?[item.id];
       if (template != null) {
-        resolvedWidget = PackageWidgetRenderer(template: template);
+        resolvedWidget = _buildPackageWidgetWithHeader(context, template);
       }
     }
 

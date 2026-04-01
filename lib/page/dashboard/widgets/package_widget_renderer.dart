@@ -26,8 +26,13 @@ import '../providers/package_widget_data_provider.dart';
 /// 4. On dispose: unsubscribe SSE / cancel poll timer
 class PackageWidgetRenderer extends ConsumerStatefulWidget {
   final PackageWidgetTemplate template;
+  final bool showHeader;
 
-  const PackageWidgetRenderer({super.key, required this.template});
+  const PackageWidgetRenderer({
+    super.key,
+    required this.template,
+    this.showHeader = false,
+  });
 
   @override
   ConsumerState<PackageWidgetRenderer> createState() =>
@@ -380,6 +385,59 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
     }
   }
 
+  Widget _buildContentOnly(
+    BuildContext context,
+    Map<String, dynamic> template,
+    Map<String, dynamic> data,
+  ) {
+    try {
+      // Create UI Kit template renderer
+      final renderer = UiKitTemplateRenderer(
+        template: template,
+        data: data,
+        builders: {
+          ...UiKitCatalog.standardBuilders,
+          ...PackageWidgetBuilders.all,
+        },
+        onAction: _handleWidgetAction,
+      );
+
+      // Get template root properties for card configuration
+      final rootProps = template['props'] as Map<String, dynamic>? ?? template;
+      final hasChildren = (rootProps['children'] as List?)?.isNotEmpty ?? false;
+
+      // Extract card padding from template
+      final padding = rootProps['padding'] != null
+          ? EdgeInsets.all((rootProps['padding'] as num).toDouble())
+          : null;
+
+      if (hasChildren) {
+        // Root has children → wrap in scrollable container (no card)
+        return Padding(
+          padding: padding ?? EdgeInsets.zero,
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: renderer.build(context),
+          ),
+        );
+      } else {
+        // No children → render directly with optional padding
+        final renderedWidget = renderer.build(context);
+        return padding != null
+            ? Padding(padding: padding, child: renderedWidget)
+            : renderedWidget;
+      }
+    } catch (e) {
+      logger.w('[USP][PkgWidget] Render error '
+          '${widget.template.widgetId}: $e');
+      return Center(
+        child: AppText.bodySmall(
+          'Widget error: ${widget.template.displayName}',
+        ),
+      );
+    }
+  }
+
   void _startHttpPolling(HttpDataSourceConfig ds) {
     if (ds.refreshInterval <= 0) return;
     _pollTimer = Timer.periodic(
@@ -403,6 +461,42 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
   }
 
   // ---------------------------------------------------------------------------
+  // Build with header
+  // ---------------------------------------------------------------------------
+
+  Widget _buildWidgetWithHeader(BuildContext context, Map<String, dynamic> data) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with title and info icon
+          Row(
+            children: [
+              Expanded(
+                child: AppText.titleMedium(widget.template.displayName),
+              ),
+              if (widget.template.description != null)
+                Tooltip(
+                  message: widget.template.description!,
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+          AppGap.sm(),
+          // Widget content without outer card wrapper
+          Expanded(
+            child: _buildContentOnly(context, widget.template.template, data),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
@@ -417,8 +511,12 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
       );
     }
 
-    // Delegate rendering to UI Kit template engine with integrated card wrapper
-    return _buildCardWithContent(context, widget.template.template, data);
+    if (widget.showHeader) {
+      return _buildWidgetWithHeader(context, data);
+    } else {
+      // Delegate rendering to UI Kit template engine with integrated card wrapper
+      return _buildCardWithContent(context, widget.template.template, data);
+    }
   }
 }
 

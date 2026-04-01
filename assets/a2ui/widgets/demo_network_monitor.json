@@ -1,0 +1,220 @@
+{
+  "widgetId": "demo_network_monitor",
+  "displayName": "Network Monitor Pro",
+  "description": "Real-time network monitoring with speed tests and connection analysis",
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 6,
+    "preferredColumns": 4,
+    "preferredRows": 4,
+    "minRows": 3,
+    "maxRows": 6
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "mainAxisAlignment": "start",
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceBetween",
+            "crossAxisAlignment": "center",
+            "children": [
+              {
+                "type": "AppText",
+                "props": {
+                  "text": "Network Monitor",
+                  "variant": "titleMedium"
+                }
+              },
+              {
+                "type": "AppCard",
+                "props": {
+                  "padding": 8,
+                  "backgroundColor": "success",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "ONLINE",
+                        "variant": "bodySmall",
+                        "color": "onPrimary"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "md"
+          }
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceBetween",
+            "children": [
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "start",
+                  "children": [
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {
+                            "type": "AppIcon",
+                            "props": {
+                              "name": "download",
+                              "size": 16,
+                              "color": "primary"
+                            }
+                          },
+                          {
+                            "type": "AppGap",
+                            "props": {
+                              "size": "xs"
+                            }
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": "450 Mbps",
+                              "variant": "bodyMedium"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {
+                        "size": "xs"
+                      }
+                    },
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {
+                            "type": "AppIcon",
+                            "props": {
+                              "name": "upload",
+                              "size": 16,
+                              "color": "secondary"
+                            }
+                          },
+                          {
+                            "type": "AppGap",
+                            "props": {
+                              "size": "xs"
+                            }
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": "125 Mbps",
+                              "variant": "bodyMedium"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "end",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "Ping: 12ms",
+                        "variant": "bodySmall"
+                      }
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {
+                        "size": "xs"
+                      }
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "24 devices",
+                        "variant": "bodySmall"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "lg"
+          }
+        },
+        {
+          "type": "AppButton",
+          "props": {
+            "label": "Run Speed Test",
+            "variant": "highlight",
+            "icon": "speed",
+            "onTap": {
+              "$action": "run_speed_test"
+            }
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "sm"
+          }
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceEvenly",
+            "children": [
+              {
+                "type": "AppTextButton",
+                "props": {
+                  "label": "Analytics",
+                  "onTap": {
+                    "$action": "navigate",
+                    "destination": "network_analytics"
+                  }
+                }
+              },
+              {
+                "type": "AppTextButton",
+                "props": {
+                  "label": "History",
+                  "onTap": {
+                    "$action": "navigate",
+                    "destination": "speed_history"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

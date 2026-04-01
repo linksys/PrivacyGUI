@@ -376,37 +376,33 @@ All actions use the `$action` keyword:
 }
 ```
 
-#### 4. Form Change
+#### 4. Value Changed (Form Input)
 
 ```json
 {
-  "$action": "field_changed",
+  "$action": "changed",
   "field": "deviceName",
   "validation": "required"
 }
 ```
 
-#### 5. Settings Toggle
+#### 5. Toggle Changed (Switch/Checkbox)
 
 ```json
 {
-  "$action": "setting_toggled", 
+  "$action": "toggled", 
   "setting": "autoConnect",
   "requiresReboot": false
 }
 ```
 
-#### 6. Custom Action
+#### 6. Selection Changed (Dropdown/Radio)
 
 ```json
 {
-  "$action": "custom_action",
-  "handler": "networkDiagnostic",
-  "timeout": 30000,
-  "data": {
-    "testType": "connectivity",
-    "target": "internet"
-  }
+  "$action": "selected",
+  "option": "networkMode",
+  "value": "auto"
 }
 ```
 
@@ -1012,14 +1008,14 @@ All charts support touch interactions, automatically generating action events:
 
 #### Basic Binding
 
-Use `$bind:` syntax in templates to bind data:
+Use `$bind` object syntax in templates to bind data:
 
 ```json
 {
   "type": "AppText",
   "props": {
-    "text": "$bind:device.name",          // Simple binding
-    "color": "$bind:status.color"      // Status color binding
+    "text": {"$bind": "device.name"},          // Simple binding
+    "color": {"$bind": "status.color"}      // Status color binding
   }
 }
 ```
@@ -1046,8 +1042,8 @@ Complex computations using multiple data sources:
         "falseValue": {
           "$compute": {
             "op": "template",
-            "template": "Blocked: {{blocked}} | Queries: {{queries}}",
-            "data": {
+            "format": "Blocked: {blocked} | Queries: {queries}",
+            "values": {
               "blocked": { "$bind": "blocked_today" },
               "queries": { "$bind": "queries_today" }
             }
@@ -1061,13 +1057,19 @@ Complex computations using multiple data sources:
 
 ### Data Transformation
 
-#### Simple Transform (Legacy Syntax)
+#### Simple Transform (Function Mode)
 
 ```json
 {
   "type": "AppText", 
   "props": {
-    "text": "$transform:bandwidth|formatBytes:precision:2"
+    "text": {
+      "$transform": {
+        "input": {"$bind": "bandwidth"},
+        "fn": "formatBytes",
+        "precision": 2
+      }
+    }
   }
 }
 ```
@@ -1135,8 +1137,8 @@ Complex computations using multiple data sources:
     "data": {
       "$compute": {
         "op": "template",
-        "template": "WIFI:T:{mode};S:{ssid};P:{pass};;",
-        "data": {
+        "format": "WIFI:T:{mode};S:{ssid};P:{pass};;",
+        "values": {
           "mode": { "$bind": "Device.WiFi.AccessPoint.1.Security.ModeEnabled" },
           "ssid": { "$bind": "Device.WiFi.SSID.1.SSID" },
           "pass": { "$bind": "Device.WiFi.AccessPoint.1.Security.KeyPassphrase" }
@@ -1307,7 +1309,7 @@ Control widget visibility based on data conditions:
 {
   "type": "AppText",
   "props": {
-    "text": "$bind:networkStatus|default:'Connecting...'"
+    "text": {"$bind": "networkStatus"}
   }
 }
 ```
@@ -1330,11 +1332,11 @@ Control widget visibility based on data conditions:
 
 #### Externalize Text
 ```json
-// ✅ Recommended: Use i18n keys
+// ✅ Recommended: Use i18n keys (future feature)
 {
   "type": "AppText",
   "props": {
-    "text": "$i18n:network.status.title"
+    "text": "Network Status"
   }
 }
 
@@ -1386,7 +1388,7 @@ Control widget visibility based on data conditions:
         {
           "type": "AppText",
           "props": {
-            "text": "$bind:network.status",
+            "text": {"$bind": "network.status"},
             "variant": "titleMedium",
             "textAlign": "center"
           }
@@ -1394,7 +1396,7 @@ Control widget visibility based on data conditions:
         {
           "type": "AppText",
           "props": {
-            "text": "$bind:network.ssid|default:'Not connected'",
+            "text": {"$bind": "network.ssid"},
             "variant": "bodySmall",
             "textAlign": "center"
           }
@@ -1444,9 +1446,9 @@ Control widget visibility based on data conditions:
           "type": "AppTextField",
           "props": {
             "label": "Network Name (SSID)",
-            "value": "$bind:wifi.ssid",
+            "value": {"$bind": "wifi.ssid"},
             "onChanged": {
-              "$action": "field_changed",
+              "$action": "changed",
               "field": "ssid"
             }
           }
@@ -1470,9 +1472,9 @@ Control widget visibility based on data conditions:
               {
                 "type": "AppSwitch",
                 "props": {
-                  "value": "$bind:wifi.enable5ghz|default:true",
+                  "value": {"$bind": "wifi.enable5ghz"},
                   "onChanged": {
-                    "$action": "setting_toggled",
+                    "$action": "toggled",
                     "setting": "enable5ghz"
                   }
                 }
@@ -1566,20 +1568,20 @@ Control widget visibility based on data conditions:
             "series": [
               {
                 "label": "Download",
-                "data": "$bind:traffic.download",
+                "data": {"$bind": "traffic.download"},
                 "color": "#4CAF50",
                 "filled": true
               },
               {
                 "label": "Upload", 
-                "data": "$bind:traffic.upload",
+                "data": {"$bind": "traffic.upload"},
                 "color": "#FF5722"
               }
             ],
-            "xLabels": "$bind:traffic.timestamps",
+            "xLabels": {"$bind": "traffic.timestamps"},
             "yAxis": {
               "min": 0,
-              "max": "$bind:traffic.maxBandwidth|default:100"
+              "max": {"$bind": "traffic.maxBandwidth"}
             },
             "showGrid": true,
             "showTooltip": true,
@@ -1603,7 +1605,12 @@ Control widget visibility based on data conditions:
                     {
                       "type": "AppText",
                       "props": {
-                        "text": "$bind:traffic.currentDownload|formatBandwidth",
+                        "text": {
+                          "$transform": {
+                            "input": {"$bind": "traffic.currentDownload"},
+                            "fn": "formatBandwidth"
+                          }
+                        },
                         "variant": "titleMedium"
                       }
                     },
@@ -1625,7 +1632,12 @@ Control widget visibility based on data conditions:
                     {
                       "type": "AppText",
                       "props": {
-                        "text": "$bind:traffic.currentUpload|formatBandwidth", 
+                        "text": {
+                          "$transform": {
+                            "input": {"$bind": "traffic.currentUpload"},
+                            "fn": "formatBandwidth"
+                          }
+                        }, 
                         "variant": "titleMedium"
                       }
                     },
@@ -1751,8 +1763,8 @@ Advanced status widget with conditional logic and complex data binding:
                       "falseValue": {
                         "$compute": {
                           "op": "template",
-                          "template": "Blocked: {{blocked}} | Queries: {{queries}}",
-                          "data": {
+                          "format": "Blocked: {blocked} | Queries: {queries}",
+                          "values": {
                             "blocked": { "$bind": "blocked_today" },
                             "queries": { "$bind": "queries_today" }
                           }
@@ -1839,8 +1851,8 @@ Dynamic QR code generation with USP data and advanced transforms:
             "data": {
               "$compute": {
                 "op": "template",
-                "template": "WIFI:T:{mode};S:{ssid};P:{pass};;",
-                "data": {
+                "format": "WIFI:T:{mode};S:{ssid};P:{pass};;",
+                "values": {
                   "mode": {
                     "$transform": {
                       "input": { "$bind": "Device.WiFi.AccessPoint.1.Security.ModeEnabled" },
@@ -2149,12 +2161,12 @@ Multi-gauge system monitoring with computed values:
 ```json
 // ❌ Error: Incorrect binding syntax
 {
-  "text": "bind:device.name"  // Missing $
+  "text": "$bind:device.name"  // Should be object format
 }
 
 // ✅ Correct  
 {
-  "text": "$bind:device.name"
+  "text": {"$bind": "device.name"}
 }
 ```
 
@@ -2266,11 +2278,9 @@ The Dashboard Widget Card system provides a powerful and flexible way to create 
 - Implement complex data transformation and validation logic
 
 For more help, refer to:
-- [UI Kit Component Documentation](./ui-kit-components.md)
-- [Action System Deep Dive](./package-widget-action-system.md)  
-- [Data Binding Guide](./data-binding-guide.md)
+- [Action System Deep Dive](./package-widget-action-system.md)
 
 ---
 
-*Last updated: March 31, 2026*
-*Version: v2.16.1*
+*Last updated: April 01, 2026*
+*Version: v2.16.1 (Syntax Corrected)*

@@ -1,0 +1,339 @@
+{
+  "widgetId": "demo_smart_home_hub",
+  "displayName": "Smart Home Hub",
+  "description": "Central control panel for all connected IoT devices with automation scenes",
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 7,
+    "preferredColumns": 5,
+    "preferredRows": 6,
+    "minRows": 4,
+    "maxRows": 8
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "mainAxisAlignment": "start",
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceBetween",
+            "children": [
+              {
+                "type": "AppText",
+                "props": {
+                  "text": "Smart Home Hub",
+                  "variant": "titleMedium"
+                }
+              },
+              {
+                "type": "AppCard",
+                "props": {
+                  "padding": 6,
+                  "backgroundColor": "primaryContainer",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "18 DEVICES",
+                        "variant": "labelSmall",
+                        "color": "onPrimaryContainer"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "md"
+          }
+        },
+        {
+          "type": "AppText",
+          "props": {
+            "text": "Quick Controls",
+            "variant": "titleSmall"
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "sm"
+          }
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceBetween",
+            "children": [
+              {
+                "type": "AppCard",
+                "props": {
+                  "padding": 12,
+                  "onTap": {
+                    "$action": "toggle_device",
+                    "deviceId": "living_room_lights"
+                  },
+                  "children": [
+                    {
+                      "type": "Column",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {
+                            "type": "AppIcon",
+                            "props": {
+                              "name": "lightbulb",
+                              "color": "warning",
+                              "size": 32
+                            }
+                          },
+                          {
+                            "type": "AppGap",
+                            "props": {
+                              "size": "xs"
+                            }
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": "Lights",
+                              "variant": "bodySmall"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "AppCard",
+                "props": {
+                  "padding": 12,
+                  "onTap": {
+                    "$action": "toggle_device",
+                    "deviceId": "thermostat"
+                  },
+                  "children": [
+                    {
+                      "type": "Column",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {
+                            "type": "AppIcon",
+                            "props": {
+                              "name": "thermostat",
+                              "color": "info",
+                              "size": 32
+                            }
+                          },
+                          {
+                            "type": "AppGap",
+                            "props": {
+                              "size": "xs"
+                            }
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": "Climate",
+                              "variant": "bodySmall"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "AppCard",
+                "props": {
+                  "padding": 12,
+                  "onTap": {
+                    "$action": "toggle_device",
+                    "deviceId": "security_system"
+                  },
+                  "children": [
+                    {
+                      "type": "Column",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {
+                            "type": "AppIcon",
+                            "props": {
+                              "name": "security",
+                              "color": "success",
+                              "size": 32
+                            }
+                          },
+                          {
+                            "type": "AppGap",
+                            "props": {
+                              "size": "xs"
+                            }
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": "Security",
+                              "variant": "bodySmall"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "lg"
+          }
+        },
+        {
+          "type": "AppText",
+          "props": {
+            "text": "Active Scenes",
+            "variant": "titleSmall"
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "sm"
+          }
+        },
+        {
+          "type": "AppCard",
+          "props": {
+            "padding": 12,
+            "backgroundColor": "secondaryContainer",
+            "children": [
+              {
+                "type": "Row",
+                "props": {
+                  "mainAxisAlignment": "spaceBetween",
+                  "children": [
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {
+                            "type": "AppIcon",
+                            "props": {
+                              "name": "nightlight",
+                              "color": "secondary",
+                              "size": 20
+                            }
+                          },
+                          {
+                            "type": "AppGap",
+                            "props": {
+                              "size": "sm"
+                            }
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": "Evening Mode",
+                              "variant": "bodyMedium"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "ACTIVE",
+                        "variant": "labelSmall",
+                        "color": "secondary"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "sm"
+          }
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceBetween",
+            "children": [
+              {
+                "type": "AppTextButton",
+                "props": {
+                  "label": "Morning",
+                  "onTap": {
+                    "$action": "activate_scene",
+                    "scene": "morning"
+                  }
+                }
+              },
+              {
+                "type": "AppTextButton",
+                "props": {
+                  "label": "Away",
+                  "onTap": {
+                    "$action": "activate_scene",
+                    "scene": "away"
+                  }
+                }
+              },
+              {
+                "type": "AppTextButton",
+                "props": {
+                  "label": "Sleep",
+                  "onTap": {
+                    "$action": "activate_scene",
+                    "scene": "sleep"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "lg"
+          }
+        },
+        {
+          "type": "AppButton",
+          "props": {
+            "label": "Manage Devices",
+            "variant": "base",
+            "icon": "settings",
+            "onTap": {
+              "$action": "navigate",
+              "destination": "smart_home_settings"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
