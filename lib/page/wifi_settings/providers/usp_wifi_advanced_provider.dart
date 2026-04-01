@@ -1,9 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_state.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 
 final uspWifiAdvancedProvider = AsyncNotifierProvider.autoDispose<
     UspWifiAdvancedNotifier, UspWifiAdvancedState>(
@@ -12,39 +11,13 @@ final uspWifiAdvancedProvider = AsyncNotifierProvider.autoDispose<
 
 class UspWifiAdvancedNotifier
     extends AutoDisposeAsyncNotifier<UspWifiAdvancedState> {
-  static const _ieee80211hPath = 'Device.WiFi.Radio.*.IEEE80211hEnabled';
-
-  UspService get _usp {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-    return usp;
-  }
+  UspWifiAdvancedService get _svc => ref.read(uspWifiAdvancedServiceProvider);
 
   @override
   Future<UspWifiAdvancedState> build() async {
-    final usp = ref.watch(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-
-    if (!usp.isAuthenticated) {
-      await ref.read(uspAuthCoordinatorProvider).restoreSession();
-      if (!usp.isAuthenticated) throw StateError('USP not authenticated');
-    }
-
     logger.d('[USP][WiFi][Advanced]Fetching advanced settings...');
 
-    final response = await usp.get([_ieee80211hPath]);
-
-    // Parse per-radio IEEE80211hEnabled
-    final ieee80211h = <String, bool>{};
-    for (final key in response.keys) {
-      if (key.startsWith('Device.WiFi.Radio.') &&
-          key.endsWith('.IEEE80211hEnabled')) {
-        final radioPath =
-            key.substring(0, key.length - 'IEEE80211hEnabled'.length);
-        final val = response[key];
-        ieee80211h[radioPath] = val == true || val == 'true' || val == '1';
-      }
-    }
+    final ieee80211h = await _svc.fetchIeee80211h();
 
     logger.d('[USP][WiFi][Advanced]radios=${ieee80211h.length}');
 
@@ -56,10 +29,9 @@ class UspWifiAdvancedNotifier
     final paths = state.requireValue.ieee80211hByRadio.keys.toList();
     if (paths.isEmpty) return;
 
-    final params = <String, dynamic>{
-      for (final path in paths) '${path}IEEE80211hEnabled': enabled,
-    };
-    await _usp.set(params);
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.setIeee80211hEnabled(radioPaths: paths, enabled: enabled);
+    });
 
     state = AsyncData(state.requireValue.copyWith(
       ieee80211hByRadio: {for (final path in paths) path: enabled},

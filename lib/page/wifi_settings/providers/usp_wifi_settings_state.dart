@@ -31,19 +31,16 @@ class UspWifiSettingsState
 
   /// True when the user has unsaved changes.
   ///
-  /// Compares [networks] and Quick Setup settings between `original` and
-  /// `current`. The [quickSetupEnabled] flag is intentionally excluded —
-  /// toggling the mode switch is not itself a "data change", but initialising
-  /// the Quick Setup settings objects (via [setQuickSetupEnabled]) will set
-  /// [quickSetupMain] / [quickSetupGuest] to non-null, which does trigger dirty.
+  /// Normalises [quickSetupEnabled] before comparing so that toggling the
+  /// mode switch alone is not treated as a data change.  Uses Equatable's
+  /// `==` (which applies [DeepCollectionEquality] on [List] props) instead
+  /// of comparing extracted fields directly — Dart's [List.==] is reference
+  /// equality and would produce false positives after any `copyWith` call.
   @override
   bool get isDirty {
-    final orig = settings.original;
-    final curr = settings.current;
-    if (orig.networks != curr.networks) return true;
-    if (orig.quickSetupMain != curr.quickSetupMain) return true;
-    if (orig.quickSetupGuest != curr.quickSetupGuest) return true;
-    return false;
+    final orig = settings.original.copyWith(quickSetupEnabled: false);
+    final curr = settings.current.copyWith(quickSetupEnabled: false);
+    return orig != curr;
   }
 
   // ---------------------------------------------------------------------------

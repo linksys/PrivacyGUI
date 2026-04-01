@@ -40,9 +40,7 @@ class WifiQuickSetupSettings extends Equatable {
   /// True when all required fields are filled and valid.
   bool get isValid {
     if (ssid.trim().isEmpty) return false;
-    final isOpen = securityMode == 'None' ||
-        securityMode == 'Enhanced-Open' ||
-        securityMode.isEmpty;
+    final isOpen = securityMode == 'None' || securityMode == 'Enhanced-Open';
     if (isOpen) return true;
     return password.isNotEmpty &&
         LengthRule(min: 8, max: 63).validate(password) &&

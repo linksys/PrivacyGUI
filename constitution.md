@@ -503,15 +503,15 @@ await ref.read(uspMutationLockProvider).withLock(() async {
 });
 ```
 
-**Rule 4: `PreservableContract` MUST be re-exported, not duplicated**
+**Rule 4: `PreservableContract` MUST NOT be duplicated**
 
-`lib/framework/preservable_contract.dart` MUST re-export the original from `lib/providers/preservable_contract.dart`. Duplicating the class creates a type incompatibility that silently breaks `LinksysRoute`'s dirty check at runtime.
+`lib/framework/preservable_contract.dart` is the single definition of `PreservableContract`. All features MUST import it from this location. Duplicating the class elsewhere creates a type incompatibility that silently breaks `LinksysRoute`'s dirty check at runtime.
 
 ```dart
-// ✅ Correct
-export 'package:privacy_gui/providers/preservable_contract.dart';
+// ✅ Correct — import from the single source of truth
+import 'package:privacy_gui/framework/preservable_contract.dart';
 
-// ❌ Wrong — creates incompatible type
+// ❌ Wrong — re-defining the class creates an incompatible type
 class PreservableContract<T, S> { ... }
 ```
 
@@ -670,7 +670,8 @@ After completing the work, execute the following checks:
 
 # 1️⃣ Check if generated models are imported in the Provider layer
 grep -r "import.*generated/" lib/page/*/providers/
-# ✅ Should return 0 results
+# ✅ L2 Feature Page Providers: should return 0 results
+# ⚠️ L1 Data Providers (*_data_provider.dart): allowed per Article IV §4.1
 
 # 2️⃣ Check if generated models are imported in the UI layer
 grep -r "import.*generated/" lib/page/*/views/
@@ -795,7 +796,7 @@ Services MUST be organized as follows:
 * Provider type: Use `Provider<T>` (stateless, NOT `NotifierProvider` or `StateNotifierProvider`)
 * Dependencies: Inject via `ref.watch()` in the provider definition
 
-**Reference implementation:** `lib/page/dashboard/services/usp_device_service.dart`
+**Reference implementation:** `lib/page/_shared/services/usp_device_service.dart`
 
 **Section 6.4: Provider-Service Separation**
 Clear separation of concerns MUST be maintained:

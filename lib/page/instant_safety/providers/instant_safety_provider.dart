@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
 
@@ -85,8 +86,10 @@ class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
 
     state = AsyncData(s.copyWith(isSaving: true));
     try {
-      final svc = ref.read(uspInstantSafetyServiceProvider);
-      await svc.save(s.pendingType);
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        final svc = ref.read(uspInstantSafetyServiceProvider);
+        await svc.save(s.pendingType);
+      });
       logger.d('[USP][Safety]Instant Safety saved — type: ${s.pendingType}');
 
       // Re-fetch to confirm the change took effect.

@@ -19,21 +19,4 @@ class InstantPrivacyDeviceUIModel extends Equatable {
 
   @override
   List<Object?> get props => [mac, displayName];
-
-  Map<String, dynamic> toMap() => {
-        'mac': mac,
-        'displayName': displayName,
-      };
-
-  Map<String, dynamic> toJson() => toMap();
-
-  factory InstantPrivacyDeviceUIModel.fromMap(Map<String, dynamic> map) {
-    return InstantPrivacyDeviceUIModel(
-      mac: map['mac'] as String,
-      displayName: map['displayName'] as String,
-    );
-  }
-
-  factory InstantPrivacyDeviceUIModel.fromJson(Map<String, dynamic> json) =>
-      InstantPrivacyDeviceUIModel.fromMap(json);
 }
