@@ -90,14 +90,11 @@
                         "mainAxisSize": "min",
                         "children": [
                           {
-                            "type": "Container",
+                            "type": "AppIcon",
                             "props": {
-                              "width": 12,
-                              "height": 12,
-                              "decoration": {
-                                "color": "primary",
-                                "shape": "circle"
-                              }
+                              "name": "circle",
+                              "color": "primary",
+                              "size": 12
                             }
                           },
                           {
@@ -143,14 +140,11 @@
                         "mainAxisSize": "min",
                         "children": [
                           {
-                            "type": "Container",
+                            "type": "AppIcon",
                             "props": {
-                              "width": 12,
-                              "height": 12,
-                              "decoration": {
-                                "color": "secondary",
-                                "shape": "circle"
-                              }
+                              "name": "circle",
+                              "color": "secondary",
+                              "size": 12
                             }
                           },
                           {
@@ -196,14 +190,11 @@
                         "mainAxisSize": "min",
                         "children": [
                           {
-                            "type": "Container",
+                            "type": "AppIcon",
                             "props": {
-                              "width": 12,
-                              "height": 12,
-                              "decoration": {
-                                "color": "tertiary",
-                                "shape": "circle"
-                              }
+                              "name": "circle",
+                              "color": "tertiary",
+                              "size": 12
                             }
                           },
                           {

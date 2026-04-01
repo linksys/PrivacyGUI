@@ -1,0 +1,242 @@
+{
+  "widgetId": "demo_network_traffic",
+  "displayName": "Network Traffic Monitor",
+  "description": "Real-time network traffic statistics with bandwidth usage charts and speed monitoring",
+  "constraints": {
+    "minColumns": 4,
+    "maxColumns": 8,
+    "preferredColumns": 6,
+    "minRows": 4,
+    "maxRows": 7,
+    "preferredRows": 5
+  },
+  "dataSource": {
+    "type": "http",
+    "url": "/cgi-bin/network-stats.cgi",
+    "method": "POST",
+    "body": {
+      "action": "get_traffic_stats",
+      "interface": "wan",
+      "timeRange": "24h"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "refreshInterval": 60,
+    "timeout": 10000,
+    "mapping": {
+      "bytes_sent": "traffic.upload.bytes",
+      "bytes_received": "traffic.download.bytes",
+      "current_upload_rate": "traffic.upload.rate",
+      "current_download_rate": "traffic.download.rate",
+      "peak_upload": "traffic.upload.peak",
+      "peak_download": "traffic.download.peak",
+      "hourly_data": "traffic.hourly_stats"
+    },
+    "errorHandling": {
+      "fallbackData": {
+        "traffic.upload.rate": "0",
+        "traffic.download.rate": "0",
+        "traffic.upload.bytes": "0",
+        "traffic.download.bytes": "0"
+      }
+    }
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "AppText",
+          "props": {
+            "text": "Network Traffic",
+            "variant": "titleMedium"
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "md"}
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceBetween",
+            "children": [
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "start",
+                  "children": [
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {
+                            "type": "AppIcon",
+                            "props": {
+                              "name": "download",
+                              "size": 16,
+                              "color": "primary"
+                            }
+                          },
+                          {
+                            "type": "AppGap",
+                            "props": {"size": "xs"}
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": {
+                                "$compute": {
+                                  "op": "formatBandwidth",
+                                  "value": {"$bind": "traffic.download.rate"}
+                                }
+                              },
+                              "variant": "bodyMedium"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {"size": "xs"}
+                    },
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {
+                            "type": "AppIcon",
+                            "props": {
+                              "name": "upload",
+                              "size": 16,
+                              "color": "secondary"
+                            }
+                          },
+                          {
+                            "type": "AppGap",
+                            "props": {"size": "xs"}
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": {
+                                "$compute": {
+                                  "op": "formatBandwidth",
+                                  "value": {"$bind": "traffic.upload.rate"}
+                                }
+                              },
+                              "variant": "bodyMedium"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "end",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "Today",
+                        "variant": "labelSmall",
+                        "color": "onSurfaceVariant"
+                      }
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": {
+                          "$compute": {
+                            "op": "formatBytes",
+                            "value": {
+                              "$compute": {
+                                "op": "add",
+                                "left": {"$bind": "traffic.download.bytes"},
+                                "right": {"$bind": "traffic.upload.bytes"}
+                              }
+                            }
+                          }
+                        },
+                        "variant": "bodyMedium"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "lg"}
+        },
+        {
+          "type": "AppLineChart",
+          "props": {
+            "series": [
+              {
+                "label": "Download",
+                "data": {"$bind": "traffic.hourly_stats.download"},
+                "color": "#2196F3"
+              },
+              {
+                "label": "Upload",
+                "data": {"$bind": "traffic.hourly_stats.upload"},
+                "color": "#FF9800"
+              }
+            ],
+            "xAxisLabels": ["00:00", "06:00", "12:00", "18:00", "24:00"],
+            "showGrid": true,
+            "showTooltip": true,
+            "height": 120
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "lg"}
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceEvenly",
+            "children": [
+              {
+                "type": "AppButton",
+                "props": {
+                  "label": "Speed Test",
+                  "variant": "highlight",
+                  "size": "small",
+                  "icon": "speed",
+                  "onTap": {
+                    "$action": "run_speed_test",
+                    "type": "bandwidth_test"
+                  }
+                }
+              },
+              {
+                "type": "AppTextButton",
+                "props": {
+                  "label": "View Details",
+                  "onTap": {
+                    "$action": "navigate_to_details",
+                    "destination": "network_analytics"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

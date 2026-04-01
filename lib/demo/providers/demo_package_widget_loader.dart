@@ -29,14 +29,13 @@ class DemoPackageWidgetLoader extends PackageWidgetLoader {
   Future<Map<String, PackageWidgetTemplate>> _loadDemoTemplates() async {
     final templates = <String, PackageWidgetTemplate>{};
 
-    // List of demo widget asset paths
+    // List of demo widget asset paths - realistic router management widgets
     final assetPaths = [
+      'assets/a2ui/widgets/demo_wifi_status_simple.json',
+      'assets/a2ui/widgets/demo_adguard_blocker.json',
+      'assets/a2ui/widgets/demo_device_overview.json',
       'assets/a2ui/widgets/action_demo_widget.json',
       'assets/a2ui/widgets/chart_integration_demo.json',
-      'assets/a2ui/widgets/demo_network_monitor.json',
-      'assets/a2ui/widgets/demo_security_center.json',
-      'assets/a2ui/widgets/demo_smart_qos.json',
-      'assets/a2ui/widgets/demo_smart_home_hub.json',
     ];
 
     for (final assetPath in assetPaths) {

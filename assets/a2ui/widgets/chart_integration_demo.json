@@ -11,13 +11,10 @@
     "maxRows": 10
   },
   "template": {
-    "type": "SingleChildScrollView",
+    "type": "Column",
     "props": {
-      "child": {
-        "type": "Column",
-        "props": {
-          "crossAxisAlignment": "start",
-          "children": [
+      "crossAxisAlignment": "start",
+      "children": [
             {
               "type": "AppText",
               "props": {
@@ -296,8 +293,6 @@
               }
             }
           ]
-        }
-      }
     }
   }
 }
