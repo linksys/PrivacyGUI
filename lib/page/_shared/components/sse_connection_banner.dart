@@ -51,6 +51,10 @@ class _SseConnectionBannerState extends ConsumerState<SseConnectionBanner> {
 
   @override
   Widget build(BuildContext context) {
+    // Hide banner in demo mode (where sseManagerProvider returns null)
+    final sseManager = ref.watch(sseManagerProvider);
+    if (sseManager == null) return const SizedBox.shrink();
+
     // Keep the watch so the widget rebuilds when the provider emits, but
     // all state reconciliation happens in the listenManual callback above.
     ref.watch(sseConnectionStateProvider);

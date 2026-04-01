@@ -207,7 +207,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                           child: Icon(
                             Icons.info_outline,
                             size: 20,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -216,7 +217,8 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
                         icon: const Icon(Icons.add_circle_outline),
                         onTap: () async {
                           await ref
-                              .read(uspSliverDashboardControllerProvider.notifier)
+                              .read(
+                                  uspSliverDashboardControllerProvider.notifier)
                               .addWidget(spec.id, spec: spec);
 
                           if (context.mounted) {

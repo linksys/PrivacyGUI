@@ -464,7 +464,8 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
   // Build with header
   // ---------------------------------------------------------------------------
 
-  Widget _buildWidgetWithHeader(BuildContext context, Map<String, dynamic> data) {
+  Widget _buildWidgetWithHeader(
+      BuildContext context, Map<String, dynamic> data) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
