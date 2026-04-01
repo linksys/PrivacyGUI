@@ -52,6 +52,8 @@ class CoreTransactionData extends Equatable {
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
   bool _paused = false;
+  int _consecutiveFailures = 0;
+  static const _maxFailuresBeforeLogout = 3;
   set paused(bool value) {
     _paused = value;
     if (_paused) {
@@ -130,16 +132,20 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
               data: Map.fromEntries(data),
             ))
         .onError((error, stackTrace) {
-      logger.e('Polling error: $error, $stackTrace');
-      logger.f('[Auth]: Force to log out because of failed polling');
-      ref.read(authProvider.notifier).logout();
-
+      _consecutiveFailures++;
+      logger.e('Polling error ($_consecutiveFailures/$_maxFailuresBeforeLogout): $error');
+      if (_consecutiveFailures >= _maxFailuresBeforeLogout) {
+        logger.f('[Auth]: Force to log out after $_consecutiveFailures consecutive polling failures');
+        _consecutiveFailures = 0;
+        ref.read(authProvider.notifier).logout();
+      }
       throw error ?? '';
     });
 
     state = await AsyncValue.guard(
       () => fetchFuture.then(
         (result) async {
+          _consecutiveFailures = 0; // Reset on success
           // Update Fernet key from device info
           try {
             final deviceInfoResult = result.data[JNAPAction.getDeviceInfo];

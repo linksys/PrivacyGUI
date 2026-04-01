@@ -90,34 +90,53 @@ class BrowserDiagnosticService {
   /// library still throws — we catch it and treat "connected but TLS error"
   /// as reachable (the TCP handshake succeeded).
   static const _gatewayUrl = 'https://192.168.1.1';
-  static const _dnsTestUrl = 'https://detectportal.firefox.com/success.txt';
+  /// Cloudflare endpoint — fast, reliable, and returns CORS headers.
+  static const _dnsTestUrl = 'https://1.1.1.1/cdn-cgi/trace';
+  /// Fallback: Google's generate_204 (may lack CORS headers but worth trying).
+  static const _dnsTestFallback = 'https://www.google.com/generate_204';
   static const _timeout = Duration(seconds: 5);
 
-  /// HTTP HEAD to the gateway, returns latency or null on failure.
+  /// HTTP HEAD to the gateway. On a self-signed cert router, the TLS
+  /// handshake may fail — but if it fails quickly (<timeout), the gateway
+  /// is reachable (TCP connected, TLS rejected). Only a timeout or network
+  /// error means truly unreachable.
   Future<GatewayPingResult> pingGateway() async {
     final stopwatch = Stopwatch()..start();
     try {
       await http.head(Uri.parse(_gatewayUrl)).timeout(_timeout);
       stopwatch.stop();
       return GatewayPingResult(reachable: true, latencyMs: stopwatch.elapsedMilliseconds);
-    } catch (_) {
+    } catch (e) {
       stopwatch.stop();
+      final elapsed = stopwatch.elapsedMilliseconds;
+      // If error came back fast (< timeout), the TCP connection worked but
+      // TLS/CORS rejected it — gateway IS reachable.
+      if (elapsed < _timeout.inMilliseconds - 500) {
+        return GatewayPingResult(reachable: true, latencyMs: elapsed);
+      }
       return const GatewayPingResult(reachable: false);
     }
   }
 
   /// Fetch a known URL to verify DNS resolution and internet connectivity.
+  /// Tries primary (Cloudflare), then fallback (Google). A successful HTTP
+  /// response at any status code means DNS resolved and internet is reachable.
+  /// CORS errors in browsers can mask successful DNS resolution, so we try
+  /// multiple endpoints before declaring failure.
   Future<DnsCheckResult> checkDns() async {
-    final stopwatch = Stopwatch()..start();
-    try {
-      final response = await http.get(Uri.parse(_dnsTestUrl)).timeout(_timeout);
-      stopwatch.stop();
-      final resolved = response.statusCode == 200;
-      return DnsCheckResult(resolved: resolved, latencyMs: stopwatch.elapsedMilliseconds);
-    } catch (_) {
-      stopwatch.stop();
-      return const DnsCheckResult(resolved: false);
+    for (final url in [_dnsTestUrl, _dnsTestFallback]) {
+      final stopwatch = Stopwatch()..start();
+      try {
+        await http.get(Uri.parse(url)).timeout(_timeout);
+        stopwatch.stop();
+        // Any HTTP response (even 4xx) means DNS + internet worked
+        return DnsCheckResult(resolved: true, latencyMs: stopwatch.elapsedMilliseconds);
+      } catch (_) {
+        stopwatch.stop();
+        // Try next endpoint — CORS may have blocked this one
+      }
     }
+    return const DnsCheckResult(resolved: false);
   }
 
   /// Placeholder speed test returning mock values. Will integrate LibreSpeed later.

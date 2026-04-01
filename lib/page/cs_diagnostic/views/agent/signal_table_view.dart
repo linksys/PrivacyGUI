@@ -48,7 +48,10 @@ class SignalTableView extends StatelessWidget {
                       style: TextStyle(fontWeight: client.isFlagged ? FontWeight.bold : FontWeight.normal)),
                 )),
                 DataCell(Text(client.manufacturer ?? '—',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600))),
+                    style: TextStyle(fontSize: 11,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600))),
                 DataCell(Text(client.ipAddress ?? '—', style: const TextStyle(fontSize: 12))),
                 DataCell(_bandChip(context, client.band)),
                 DataCell(client.isWireless ? _signalCell(context, client) : const Text('—')),

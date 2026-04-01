@@ -117,7 +117,16 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
       List<DiagnosticClient> clients;
       if (wirelessData.isNotEmpty) {
         clients = _parseClients(wirelessData, deviceMap);
-        dev.log('Instant-Help: parsed ${clients.length} from NodesWireless');
+        dev.log('Instant-Help: parsed ${clients.length} wireless from NodesWireless');
+        // NodesWireless only returns wireless clients — add wired from NetConns
+        if (netConns.isNotEmpty) {
+          final wirelessMacs = clients.map((c) => c.macAddress).toSet();
+          final wiredClients = _parseClientsFromNetConns(netConns)
+              .where((c) => !c.isWireless && !wirelessMacs.contains(c.macAddress))
+              .toList();
+          clients.addAll(wiredClients);
+          dev.log('Instant-Help: added ${wiredClients.length} wired from NetConns');
+        }
       } else if (netConns.isNotEmpty) {
         clients = _parseClientsFromNetConns(netConns);
         dev.log('Instant-Help: parsed ${clients.length} from NetConns');
@@ -215,7 +224,7 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
     return map;
   }
 
-  /// Build a lookup of MAC address → {hostname, ipAddress} from GetDevices3.
+  /// Build a lookup of MAC address → {hostname, ipAddress, txRate, rxRate} from GetDevices3.
   Map<String, Map<String, String?>> _buildDeviceMap(Map<String, dynamic> data) {
     final map = <String, Map<String, String?>>{};
     final devices = data['devices'] as List? ?? [];
@@ -229,7 +238,19 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
         final mac = (conn['macAddress'] as String?)?.toUpperCase();
         final ip = conn['ipAddress'] as String?;
         if (mac != null) {
-          map[mac] = {'hostname': name, 'ipAddress': ip};
+          final entry = <String, String?>{'hostname': name, 'ipAddress': ip};
+
+          // GetDevices has txRate/rxRate in wirelessConnectionInfo (not in GetNodesWireless)
+          final wcInfo = conn['wirelessConnectionInfo'] as Map<String, dynamic>?;
+          if (wcInfo != null) {
+            final txRaw = wcInfo['txRate'];
+            final rxRaw = wcInfo['rxRate'];
+            // Values are in Kbps — convert to Mbps
+            if (txRaw != null) entry['txRate'] = '${(txRaw as int) ~/ 1000}';
+            if (rxRaw != null) entry['rxRate'] = '${(rxRaw as int) ~/ 1000}';
+          }
+
+          map[mac] = entry;
         }
       }
     }
@@ -260,14 +281,20 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
         }
 
         if (wireless != null) {
+          // TX/RX: prefer wireless object, fallback to GetDevices wirelessConnectionInfo
+          final txWireless = wireless['txRate'] as int?;
+          final rxWireless = wireless['rxRate'] as int?;
+          final txFromDevices = devInfo?['txRate'] != null ? int.tryParse(devInfo!['txRate']!) : null;
+          final rxFromDevices = devInfo?['rxRate'] != null ? int.tryParse(devInfo!['rxRate']!) : null;
+
           clients.add(DiagnosticClient(
             macAddress: mac,
             hostname: devInfo?['hostname'],
             ipAddress: devInfo?['ipAddress'],
             band: (wireless['band'] as String?) ?? 'Unknown',
             signalDecibels: wireless['signalDecibels'] as int?,
-            txRateMbps: wireless['txRate'] as int?,
-            rxRateMbps: wireless['rxRate'] as int?,
+            txRateMbps: txWireless ?? txFromDevices,
+            rxRateMbps: rxWireless ?? rxFromDevices,
             isWireless: true,
           ));
         }

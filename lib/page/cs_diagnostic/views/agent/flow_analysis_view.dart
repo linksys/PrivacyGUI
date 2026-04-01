@@ -803,6 +803,7 @@ class FlowAnalysisView extends StatelessWidget {
 
   Widget _buildFindings(BuildContext context, String title, String subtitle, List<_Finding> findings) {
     final sorted = _sortFindings(findings);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -813,7 +814,7 @@ class FlowAnalysisView extends StatelessWidget {
         Text(subtitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontStyle: FontStyle.italic,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: isDark ? 0.8 : 0.6))),
         const SizedBox(height: 8),
         ...sorted.map((f) => _findingCard(context, f)),
       ],
@@ -821,12 +822,13 @@ class FlowAnalysisView extends StatelessWidget {
   }
 
   Widget _findingCard(BuildContext context, _Finding finding) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final (icon, color) = switch (finding.severity) {
-      _Severity.critical => (Icons.error, Colors.red.shade700),
-      _Severity.warning => (Icons.warning_amber, Colors.orange.shade800),
-      _Severity.ask => (Icons.chat_bubble_outline, Colors.deepPurple),
-      _Severity.info => (Icons.info_outline, Colors.blueGrey),
-      _Severity.ok => (Icons.check_circle, Colors.green.shade700),
+      _Severity.critical => (Icons.error, isDark ? Colors.red.shade300 : Colors.red.shade700),
+      _Severity.warning => (Icons.warning_amber, isDark ? Colors.orange.shade300 : Colors.orange.shade800),
+      _Severity.ask => (Icons.chat_bubble_outline, isDark ? Colors.purple.shade200 : Colors.deepPurple),
+      _Severity.info => (Icons.info_outline, isDark ? Colors.blueGrey.shade200 : Colors.blueGrey),
+      _Severity.ok => (Icons.check_circle, isDark ? Colors.green.shade300 : Colors.green.shade700),
     };
 
     return Card(
@@ -853,7 +855,7 @@ class FlowAnalysisView extends StatelessWidget {
               child: Text(finding.detail,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: isDark ? 0.85 : 0.7))),
             ),
             const SizedBox(height: 4),
             Padding(

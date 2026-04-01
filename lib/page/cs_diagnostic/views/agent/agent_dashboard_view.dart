@@ -237,18 +237,32 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
 
   Widget _buildRadioInfoCard(BuildContext context, CsDiagnosticState state) {
     final radios = state.radioInfo?['radios'] as List? ?? [];
+    final selectedChannels = state.channelInfo?['selectedChannels'] as List? ?? [];
     final items = <_InfoItem>[];
     items.add(_infoItem('Band Steering', state.bandSteeringEnabled ? 'Enabled' : 'Disabled'));
     for (final radio in radios) {
-      // Prefer 'band' (e.g. "2.4GHz") over 'physicalRadioID' (e.g. "ath0")
       final band = radio['band'] as String? ??
           radio['radioID'] as String? ??
           radio['physicalRadioID'] as String? ?? '?';
       final channelRaw = radio['settings']?['channel'] ?? radio['channel'];
-      final channel = (channelRaw == 0 || channelRaw == '0') ? 'Auto' : '$channelRaw';
+      final isAuto = channelRaw == 0 || channelRaw == '0';
       final width = radio['settings']?['channelWidth'] ?? radio['channelWidth'] ?? '?';
       final mode = radio['settings']?['mode'] ?? radio['mode'] ?? '?';
-      items.add(_infoItem(band, 'Ch $channel ($width) — $mode'));
+
+      // Find actual channel from getSelectedChannels
+      String channelDisplay;
+      if (isAuto) {
+        final radioId = radio['radioID'] as String? ?? '';
+        final actual = selectedChannels.cast<Map<String, dynamic>?>().firstWhere(
+          (ch) => ch?['radioID'] == radioId,
+          orElse: () => null,
+        );
+        final actualCh = actual?['channel'];
+        channelDisplay = actualCh != null ? 'Auto (ch $actualCh)' : 'Auto';
+      } else {
+        channelDisplay = '$channelRaw';
+      }
+      items.add(_infoItem(band, 'Ch $channelDisplay ($width) — $mode'));
     }
     return _infoCard(context, 'Radio Configuration', Icons.cell_tower, items);
   }
@@ -285,21 +299,28 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
     }
     if (messages.isEmpty) return const SizedBox.shrink();
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        border: Border(bottom: BorderSide(color: Colors.red.shade200, width: 1)),
+        color: isDark ? Colors.red.shade900.withValues(alpha: 0.3) : Colors.red.shade50,
+        border: Border(bottom: BorderSide(
+          color: isDark ? Colors.red.shade700 : Colors.red.shade200, width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: messages.map((m) => Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: Row(children: [
-            Icon(Icons.warning_amber, size: 16, color: Colors.red.shade700),
+            Icon(Icons.warning_amber, size: 16,
+                color: isDark ? Colors.red.shade300 : Colors.red.shade700),
             const SizedBox(width: 6),
-            Expanded(child: Text(m, style: TextStyle(fontSize: 13, color: Colors.red.shade900, fontWeight: FontWeight.w500))),
+            Expanded(child: Text(m, style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.red.shade200 : Colors.red.shade900,
+              fontWeight: FontWeight.w500,
+            ))),
           ]),
         )).toList(),
       ),
@@ -327,6 +348,7 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
   // ── Shared helpers ─────────────────────────────────────────────────
 
   Widget _infoCard(BuildContext context, String title, IconData icon, List<_InfoItem> items) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Padding(
@@ -346,10 +368,18 @@ class _AgentDashboardViewState extends ConsumerState<AgentDashboardView> {
                 SizedBox(
                   width: 110,
                   child: Text(item.label,
-                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: isDark ? 0.8 : 0.6),
+                      )),
                 ),
                 Expanded(
-                  child: Text(item.value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                  child: Text(item.value,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      )),
                 ),
               ]),
             )),
