@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'mock_registry.dart';
 
 /// Shell wrapper type for pumping the view.
 enum ShellType {
@@ -73,7 +74,3 @@ class GoldenTestConfig {
     this.interactions,
   });
 }
-
-/// Placeholder — real implementation in mock_registry.dart (Task 2).
-/// This exists only so golden_test_config.dart compiles standalone.
-class MockRegistry {}
