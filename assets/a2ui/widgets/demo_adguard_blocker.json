@@ -193,9 +193,11 @@
                 }
               },
               {
-                "type": "AppTextButton",
+                "type": "AppButton",
                 "props": {
                   "label": "Settings",
+                  "variant": "base",
+                  "size": "small",
                   "onTap": {
                     "$action": "open_adguard_settings"
                   }

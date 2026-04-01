@@ -283,7 +283,7 @@
             "mainAxisAlignment": "spaceBetween",
             "children": [
               {
-                "type": "AppTextButton",
+                "type": "AppButton",
                 "props": {
                   "label": "Morning",
                   "onTap": {
@@ -293,7 +293,7 @@
                 }
               },
               {
-                "type": "AppTextButton",
+                "type": "AppButton",
                 "props": {
                   "label": "Away",
                   "onTap": {
@@ -303,7 +303,7 @@
                 }
               },
               {
-                "type": "AppTextButton",
+                "type": "AppButton",
                 "props": {
                   "label": "Sleep",
                   "onTap": {

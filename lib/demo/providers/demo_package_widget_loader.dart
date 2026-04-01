@@ -33,9 +33,10 @@ class DemoPackageWidgetLoader extends PackageWidgetLoader {
     final assetPaths = [
       'assets/a2ui/widgets/demo_wifi_status_simple.json',
       'assets/a2ui/widgets/demo_adguard_blocker.json',
+      'assets/a2ui/widgets/demo_security_center.json',
       'assets/a2ui/widgets/demo_device_overview.json',
-      'assets/a2ui/widgets/action_demo_widget.json',
-      'assets/a2ui/widgets/chart_integration_demo.json',
+      'assets/a2ui/widgets/chart_integration_demo_simple.json',
+      'assets/a2ui/widgets/demo_network_monitor.json',
     ];
 
     for (final assetPath in assetPaths) {

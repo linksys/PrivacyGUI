@@ -126,9 +126,11 @@
                 }
               },
               {
-                "type": "AppTextButton",
+                "type": "AppButton",
                 "props": {
                   "label": "Devices",
+                  "variant": "base",
+                  "size": "small",
                   "onTap": {
                     "$action": "show_connected_devices"
                   }

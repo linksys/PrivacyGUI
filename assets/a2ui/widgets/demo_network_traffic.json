@@ -224,7 +224,7 @@
                 }
               },
               {
-                "type": "AppTextButton",
+                "type": "AppButton",
                 "props": {
                   "label": "View Details",
                   "onTap": {

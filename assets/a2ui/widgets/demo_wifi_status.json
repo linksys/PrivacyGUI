@@ -194,7 +194,7 @@
                 }
               },
               {
-                "type": "AppTextButton",
+                "type": "AppButton",
                 "props": {
                   "label": "Settings",
                   "onTap": {

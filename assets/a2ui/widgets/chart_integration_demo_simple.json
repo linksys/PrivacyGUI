@@ -1,0 +1,91 @@
+{
+  "widgetId": "chart_integration_demo_simple",
+  "displayName": "Chart Integration Demo",
+  "description": "Simplified chart demonstration with line chart showing network usage over time",
+  "constraints": {
+    "minColumns": 4,
+    "maxColumns": 8,
+    "preferredColumns": 6,
+    "minRows": 4,
+    "maxRows": 6,
+    "preferredRows": 5
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "crossAxisAlignment": "start",
+      "children": [
+        {
+          "type": "AppText",
+          "props": {
+            "text": "Network Usage Chart",
+            "variant": "titleMedium"
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "md"
+          }
+        },
+        {
+          "type": "AppLineChart",
+          "props": {
+            "series": [
+              {
+                "label": "Download",
+                "data": [10, 25, 40, 30, 50, 35, 60, 45],
+                "color": "#2196F3"
+              },
+              {
+                "label": "Upload",
+                "data": [5, 15, 20, 15, 25, 20, 30, 25],
+                "color": "#FF9800"
+              }
+            ],
+            "xLabels": ["00:00", "03:00", "06:00", "09:00", "12:00", "15:00", "18:00", "21:00"],
+            "showGrid": true,
+            "height": 150
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {
+            "size": "lg"
+          }
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceEvenly",
+            "children": [
+              {
+                "type": "AppButton",
+                "props": {
+                  "label": "Refresh",
+                  "variant": "tonal",
+                  "size": "small",
+                  "icon": "refresh",
+                  "onTap": {
+                    "$action": "refresh_chart_data"
+                  }
+                }
+              },
+              {
+                "type": "AppButton",
+                "props": {
+                  "label": "View Details",
+                  "variant": "base",
+                  "size": "small",
+                  "onTap": {
+                    "$action": "show_detailed_chart"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
