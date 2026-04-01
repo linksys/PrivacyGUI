@@ -192,18 +192,18 @@ Future<void> _pumpWidgetInShell(
       break;
   }
 
-  // Step 2: Wrap in ProviderScope
-  wrappedChild = ProviderScope(
-    overrides: overrides,
-    child: wrappedChild,
-  );
-
-  // Step 3: Wrap in MaterialApp with locale and localization
+  // Step 2: Wrap in MaterialApp with locale and localization
   wrappedChild = MaterialApp(
     locale: locale,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: wrappedChild,
+  );
+
+  // Step 3: Wrap in ProviderScope (outermost — providers must be above MaterialApp)
+  wrappedChild = ProviderScope(
+    overrides: overrides,
+    child: wrappedChild,
   );
 
   // Step 4: Pump using golden_toolkit
