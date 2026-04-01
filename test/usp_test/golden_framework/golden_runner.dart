@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/l10n/gen/app_localizations.dart';
+import 'package:privacy_gui/route/route_model.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
 import 'golden_test_config.dart';
 import 'mock_registry.dart';
 
@@ -64,10 +68,15 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 locale,
               );
 
-              // Capture screenshot
+              // Capture screenshot — use pump() instead of pumpAndSettle
+              // because AppLoader and other widgets run infinite animations
+              // that cause pumpAndSettle to time out.
               await screenMatchesGolden(
                 tester,
                 '${config.viewId}-$stateName-${device.name}-${locale.languageCode}',
+                customPump: (tester) async {
+                  await tester.pump(const Duration(milliseconds: 100));
+                },
               );
             },
           );
@@ -104,10 +113,14 @@ void runViewGoldenTests(GoldenTestConfig config) {
                 // Execute interaction steps
                 await interaction.steps(tester);
 
-                // Capture screenshot after interaction
+                // Capture screenshot after interaction — use pump() to avoid
+                // pumpAndSettle timeout from infinite animations.
                 await screenMatchesGolden(
                   tester,
                   '${config.viewId}-$interactionName-${device.name}-${locale.languageCode}',
+                  customPump: (tester) async {
+                    await tester.pump(const Duration(milliseconds: 100));
+                  },
                 );
               },
             );
@@ -165,7 +178,8 @@ void _validateConfig(GoldenTestConfig config) {
 /// Internal helper that:
 /// 1. Wraps the child widget based on ShellType
 /// 2. Wraps in ProviderScope with overrides
-/// 3. Wraps in MaterialApp with locale and localization delegates
+/// 3. Wraps in MaterialApp.router with GoRouter (provides InheritedGoRouter
+///    so that widgets using context.goNamed / GoRouter.of work correctly)
 /// 4. Pumps using golden_toolkit's pumpWidgetBuilder
 Future<void> _pumpWidgetInShell(
   WidgetTester tester,
@@ -175,6 +189,23 @@ Future<void> _pumpWidgetInShell(
   Size screenSize,
   Locale locale,
 ) async {
+  // Step 0: Mock platform channels used by plugins (e.g. package_info_plus)
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(
+    const MethodChannel('dev.fluttercommunity.plus/package_info'),
+    (MethodCall methodCall) async {
+      if (methodCall.method == 'getAll') {
+        return <String, dynamic>{
+          'appName': 'PrivacyGUI',
+          'packageName': 'com.linksys.privacygui',
+          'version': '0.0.0',
+          'buildNumber': '0',
+        };
+      }
+      return null;
+    },
+  );
+
   // Step 1: Wrap child based on ShellType
   Widget wrappedChild;
   switch (shell) {
@@ -192,23 +223,43 @@ Future<void> _pumpWidgetInShell(
       break;
   }
 
-  // Step 2: Wrap in MaterialApp with locale and localization
-  wrappedChild = MaterialApp(
+  // Step 2: Build a GoRouter that renders the wrapped child at '/'
+  // Uses LinksysRoute (not GoRoute) because MenuHolder casts the last route
+  // to LinksysRoute? — a plain GoRoute causes a type cast failure.
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      LinksysRoute(
+        path: '/',
+        name: 'test_root',
+        builder: (context, state) => wrappedChild,
+      ),
+    ],
+  );
+
+  // Step 3: Wrap in MaterialApp.router with locale, localization, and UI Kit theme
+  final themeConfig = ThemeJsonConfig.defaultConfig();
+  Widget app = MaterialApp.router(
     locale: locale,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: wrappedChild,
+    theme: themeConfig.createLightTheme(),
+    darkTheme: themeConfig.createDarkTheme(),
+    routerConfig: router,
   );
 
-  // Step 3: Wrap in ProviderScope (outermost — providers must be above MaterialApp)
-  wrappedChild = ProviderScope(
+  // Step 4: Wrap in ProviderScope (outermost — providers must be above MaterialApp)
+  app = ProviderScope(
     overrides: overrides,
-    child: wrappedChild,
+    child: app,
   );
 
-  // Step 4: Pump using golden_toolkit
+  // Step 5: Pump using golden_toolkit
+  // Pass identity wrapper to prevent golden_toolkit from adding its own
+  // MaterialApp wrapper — we already provide ProviderScope > MaterialApp.router.
   await tester.pumpWidgetBuilder(
-    wrappedChild,
+    app,
+    wrapper: (child) => child,
     surfaceSize: screenSize,
   );
 }

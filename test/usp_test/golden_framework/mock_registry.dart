@@ -1,9 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get_it/get_it.dart';
+import 'package:privacy_gui/page/apps/providers/apps_capability_provider.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_feature_state.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_settings.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_status.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/usp_firewall_notifier.dart';
+import 'package:privacy_gui/providers/auth/_auth.dart';
+import 'package:privacy_gui/theme/theme_json_config.dart';
 
 /// Fixed-state notifier for firewall golden tests.
 ///
@@ -53,9 +58,22 @@ class MockRegistry {
 
   /// Common provider overrides shared across all views.
   ///
-  /// TODO: Add shared overrides incrementally as more views are tested.
+  /// Sets up:
+  /// - GetIt singletons (dark/light ThemeData) required by GeneralSettingsWidget
+  /// - authProvider — returns unauthenticated state (hides login-only UI)
+  /// - appsCapabilityProvider — returns false (hides Apps button in TopBar)
   void common() {
-    // Reserved for future use.
+    _ensureGetItDefaults();
+
+    // authProvider: unauthenticated — hides logout, ToS, apps icon in TopBar
+    _overrides.add(
+      authProvider.overrideWith(() => _FixedAuthNotifier()),
+    );
+
+    // appsCapabilityProvider: false — hides Apps icon in TopBar
+    _overrides.add(
+      appsCapabilityProvider.overrideWith((ref) => false),
+    );
   }
 
   /// Override firewall provider with a fixed state.
@@ -67,4 +85,38 @@ class MockRegistry {
 
   /// Build the list of provider overrides for ProviderScope.
   List<Override> build() => List.unmodifiable(_overrides);
+
+  /// Ensures GetIt has default singletons registered.
+  ///
+  /// Registers ThemeJsonConfig, light ThemeData, and dark ThemeData —
+  /// required by GeneralSettingsWidget, UspTopBar, and buildDemoThemeData.
+  /// Safe to call multiple times — checks isRegistered before registering.
+  static void _ensureGetItDefaults() {
+    final getIt = GetIt.instance;
+    final config = ThemeJsonConfig.defaultConfig();
+
+    if (!getIt.isRegistered<ThemeJsonConfig>()) {
+      getIt.registerSingleton<ThemeJsonConfig>(config);
+    }
+
+    if (!getIt.isRegistered<ThemeData>(instanceName: 'lightThemeData')) {
+      getIt.registerSingleton<ThemeData>(
+        config.createLightTheme(),
+        instanceName: 'lightThemeData',
+      );
+    }
+
+    if (!getIt.isRegistered<ThemeData>(instanceName: 'darkThemeData')) {
+      getIt.registerSingleton<ThemeData>(
+        config.createDarkTheme(),
+        instanceName: 'darkThemeData',
+      );
+    }
+  }
+}
+
+/// Fixed auth notifier that returns an unauthenticated state.
+class _FixedAuthNotifier extends AuthNotifier {
+  @override
+  Future<AuthState> build() => Future.value(AuthState.empty());
 }
