@@ -4,27 +4,15 @@
 
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
-/// WAN IPv4 connection settings aggregated from multiple TR-181 objects
+/// WAN IPv4 singleton settings — fields that always exist on the device
 class WanSettings {
   final String addressingType;
   final int mtu;
   final String staticIpAddress;
   final String subnetMask;
   final String defaultGateway;
-  final String dnsServer1;
-  final String dnsServer2;
-  final String dnsServer3;
-  final String pppUsername;
-  final String pppPassword;
-  final String pppoeServiceName;
-  final String connectionTrigger;
-  final int idleDisconnectTime;
-  final int lcpEchoInterval;
-  final String pppConnectionStatus;
-  final bool vlanEnabled;
-  final int vlanId;
+  final String dnsServers;
   final bool bridgeEnabled;
-  final String wanMacAddress;
   final String currentMacAddress;
 
   const WanSettings({
@@ -33,20 +21,8 @@ class WanSettings {
     required this.staticIpAddress,
     required this.subnetMask,
     required this.defaultGateway,
-    required this.dnsServer1,
-    required this.dnsServer2,
-    required this.dnsServer3,
-    required this.pppUsername,
-    required this.pppPassword,
-    required this.pppoeServiceName,
-    required this.connectionTrigger,
-    required this.idleDisconnectTime,
-    required this.lcpEchoInterval,
-    required this.pppConnectionStatus,
-    required this.vlanEnabled,
-    required this.vlanId,
+    required this.dnsServers,
     required this.bridgeEnabled,
-    required this.wanMacAddress,
     required this.currentMacAddress,
   });
 
@@ -55,21 +31,9 @@ class WanSettings {
     'Device.IP.Interface.2.MaxMTUSize',
     'Device.IP.Interface.2.IPv4Address.1.IPAddress',
     'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
-    'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress',
-    'Device.DNS.Client.Server.1.DNSServer',
-    'Device.DNS.Client.Server.2.DNSServer',
-    'Device.DNS.Client.Server.3.DNSServer',
-    'Device.PPP.Interface.1.Username',
-    'Device.PPP.Interface.1.Password',
-    'Device.PPP.Interface.1.PPPoE.ServiceName',
-    'Device.PPP.Interface.1.ConnectionTrigger',
-    'Device.PPP.Interface.1.IdleDisconnectTime',
-    'Device.PPP.Interface.1.LCPEcho',
-    'Device.PPP.Interface.1.ConnectionStatus',
-    'Device.Ethernet.VLANTermination.1.Enable',
-    'Device.Ethernet.VLANTermination.1.VLANID',
+    'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway',
+    'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers',
     'Device.Bridging.Bridge.1.Enable',
-    'Device.Ethernet.Link.1.MACAddress',
     'Device.Ethernet.Interface.1.MACAddress',
   ];
 
@@ -93,46 +57,14 @@ class WanSettings {
       subnetMask: (response['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] ??
           '') as String,
       defaultGateway: (response[
-              'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress'] ??
+              'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'] ??
           '') as String,
-      dnsServer1:
-          (response['Device.DNS.Client.Server.1.DNSServer'] ?? '') as String,
-      dnsServer2:
-          (response['Device.DNS.Client.Server.2.DNSServer'] ?? '') as String,
-      dnsServer3:
-          (response['Device.DNS.Client.Server.3.DNSServer'] ?? '') as String,
-      pppUsername:
-          (response['Device.PPP.Interface.1.Username'] ?? '') as String,
-      pppPassword:
-          (response['Device.PPP.Interface.1.Password'] ?? '') as String,
-      pppoeServiceName: (response['Device.PPP.Interface.1.PPPoE.ServiceName'] ??
+      dnsServers: (response[
+              'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] ??
           '') as String,
-      connectionTrigger:
-          (response['Device.PPP.Interface.1.ConnectionTrigger'] ?? '')
-              as String,
-      idleDisconnectTime: int.tryParse(
-              response['Device.PPP.Interface.1.IdleDisconnectTime']
-                      ?.toString() ??
-                  '') ??
-          0,
-      lcpEchoInterval: int.tryParse(
-              response['Device.PPP.Interface.1.LCPEcho']?.toString() ?? '') ??
-          0,
-      pppConnectionStatus:
-          (response['Device.PPP.Interface.1.ConnectionStatus'] ?? '') as String,
-      vlanEnabled:
-          response['Device.Ethernet.VLANTermination.1.Enable'] == true ||
-              response['Device.Ethernet.VLANTermination.1.Enable'] == 'true' ||
-              response['Device.Ethernet.VLANTermination.1.Enable'] == '1',
-      vlanId: int.tryParse(response['Device.Ethernet.VLANTermination.1.VLANID']
-                  ?.toString() ??
-              '') ??
-          0,
       bridgeEnabled: response['Device.Bridging.Bridge.1.Enable'] == true ||
           response['Device.Bridging.Bridge.1.Enable'] == 'true' ||
           response['Device.Bridging.Bridge.1.Enable'] == '1',
-      wanMacAddress:
-          (response['Device.Ethernet.Link.1.MACAddress'] ?? '') as String,
       currentMacAddress:
           (response['Device.Ethernet.Interface.1.MACAddress'] ?? '') as String,
     );
@@ -141,59 +73,31 @@ class WanSettings {
   /// Update writable parameters via USP Set message
   static Future<void> save(
     UspService client, {
+    String? addressingType,
     int? mtu,
     String? staticIpAddress,
     String? subnetMask,
     String? defaultGateway,
-    String? dnsServer1,
-    String? dnsServer2,
-    String? dnsServer3,
-    String? pppUsername,
-    String? pppPassword,
-    String? pppoeServiceName,
-    String? connectionTrigger,
-    int? idleDisconnectTime,
-    int? lcpEchoInterval,
-    bool? vlanEnabled,
-    int? vlanId,
+    String? dnsServers,
     bool? bridgeEnabled,
-    String? wanMacAddress,
   }) async {
     final params = <String, dynamic>{};
+    if (addressingType != null)
+      params['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
+          addressingType;
     if (mtu != null) params['Device.IP.Interface.2.MaxMTUSize'] = mtu;
     if (staticIpAddress != null)
       params['Device.IP.Interface.2.IPv4Address.1.IPAddress'] = staticIpAddress;
     if (subnetMask != null)
       params['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] = subnetMask;
     if (defaultGateway != null)
-      params['Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress'] =
+      params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'] =
           defaultGateway;
-    if (dnsServer1 != null)
-      params['Device.DNS.Client.Server.1.DNSServer'] = dnsServer1;
-    if (dnsServer2 != null)
-      params['Device.DNS.Client.Server.2.DNSServer'] = dnsServer2;
-    if (dnsServer3 != null)
-      params['Device.DNS.Client.Server.3.DNSServer'] = dnsServer3;
-    if (pppUsername != null)
-      params['Device.PPP.Interface.1.Username'] = pppUsername;
-    if (pppPassword != null)
-      params['Device.PPP.Interface.1.Password'] = pppPassword;
-    if (pppoeServiceName != null)
-      params['Device.PPP.Interface.1.PPPoE.ServiceName'] = pppoeServiceName;
-    if (connectionTrigger != null)
-      params['Device.PPP.Interface.1.ConnectionTrigger'] = connectionTrigger;
-    if (idleDisconnectTime != null)
-      params['Device.PPP.Interface.1.IdleDisconnectTime'] = idleDisconnectTime;
-    if (lcpEchoInterval != null)
-      params['Device.PPP.Interface.1.LCPEcho'] = lcpEchoInterval;
-    if (vlanEnabled != null)
-      params['Device.Ethernet.VLANTermination.1.Enable'] = vlanEnabled;
-    if (vlanId != null)
-      params['Device.Ethernet.VLANTermination.1.VLANID'] = vlanId;
+    if (dnsServers != null)
+      params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] =
+          dnsServers;
     if (bridgeEnabled != null)
       params['Device.Bridging.Bridge.1.Enable'] = bridgeEnabled;
-    if (wanMacAddress != null)
-      params['Device.Ethernet.Link.1.MACAddress'] = wanMacAddress;
     if (params.isNotEmpty) await client.set(params);
   }
 
@@ -205,20 +109,8 @@ class WanSettings {
         'staticIpAddress: $staticIpAddress, '
         'subnetMask: $subnetMask, '
         'defaultGateway: $defaultGateway, '
-        'dnsServer1: $dnsServer1, '
-        'dnsServer2: $dnsServer2, '
-        'dnsServer3: $dnsServer3, '
-        'pppUsername: $pppUsername, '
-        'pppPassword: $pppPassword, '
-        'pppoeServiceName: $pppoeServiceName, '
-        'connectionTrigger: $connectionTrigger, '
-        'idleDisconnectTime: $idleDisconnectTime, '
-        'lcpEchoInterval: $lcpEchoInterval, '
-        'pppConnectionStatus: $pppConnectionStatus, '
-        'vlanEnabled: $vlanEnabled, '
-        'vlanId: $vlanId, '
+        'dnsServers: $dnsServers, '
         'bridgeEnabled: $bridgeEnabled, '
-        'wanMacAddress: $wanMacAddress, '
         'currentMacAddress: $currentMacAddress'
         ')';
   }

@@ -1,13 +1,14 @@
 name: WanSettings
-version: 1.0.0
+version: 1.1.0
 category: network
-description: WAN IPv4 connection settings aggregated from multiple TR-181 objects
+description: WAN IPv4 singleton settings — fields that always exist on the device
 
 parameters:
   # === WAN Interface Status ===
   - path: Device.IP.Interface.2.IPv4Address.1.AddressingType
     field_name: addressingType
     type: string
+    writable: true
     description: IPv4 addressing type (Static, DHCP, IPCP, AutoIP)
 
   - path: Device.IP.Interface.2.MaxMTUSize
@@ -29,89 +30,18 @@ parameters:
     writable: true
     description: IPv4 subnet mask
 
-  - path: Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress
+  # === Gateway & DNS (vendor extension paths — confirmed writable 2026-03-19) ===
+  - path: Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway
     field_name: defaultGateway
     type: string
     writable: true
-    description: Default gateway IPv4 address
+    description: Default gateway IPv4 address (Linksys vendor extension, replaces non-writable Routing.Router path)
 
-  # === DNS Servers ===
-  - path: Device.DNS.Client.Server.1.DNSServer
-    field_name: dnsServer1
+  - path: Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers
+    field_name: dnsServers
     type: string
     writable: true
-    description: Primary DNS server address
-
-  - path: Device.DNS.Client.Server.2.DNSServer
-    field_name: dnsServer2
-    type: string
-    writable: true
-    description: Secondary DNS server address
-
-  - path: Device.DNS.Client.Server.3.DNSServer
-    field_name: dnsServer3
-    type: string
-    writable: true
-    description: Tertiary DNS server address
-
-  # === PPPoE / PPP Configuration ===
-  - path: Device.PPP.Interface.1.Username
-    field_name: pppUsername
-    type: string
-    writable: true
-    sensitive: true
-    description: PPP authentication username (PPPoE/PPTP/L2TP)
-
-  - path: Device.PPP.Interface.1.Password
-    field_name: pppPassword
-    type: string
-    writable: true
-    sensitive: true
-    description: PPP authentication password
-
-  - path: Device.PPP.Interface.1.PPPoE.ServiceName
-    field_name: pppoeServiceName
-    type: string
-    writable: true
-    description: PPPoE service name (optional)
-
-  - path: Device.PPP.Interface.1.ConnectionTrigger
-    field_name: connectionTrigger
-    type: string
-    writable: true
-    description: PPP connection mode (AlwaysOn, OnDemand, Manual)
-    # Value mapping: JNAP KeepAlive → TR-181 AlwaysOn, JNAP ConnectOnDemand → TR-181 OnDemand
-
-  - path: Device.PPP.Interface.1.IdleDisconnectTime
-    field_name: idleDisconnectTime
-    type: int
-    writable: true
-    description: Idle timeout before disconnection in seconds (0=never)
-    # Unit conversion: JNAP maxIdleMinutes (minutes) → TR-181 IdleDisconnectTime (seconds), multiply by 60
-
-  - path: Device.PPP.Interface.1.LCPEcho
-    field_name: lcpEchoInterval
-    type: int
-    writable: true
-    description: LCP Echo keep-alive interval in seconds (0=disabled)
-
-  - path: Device.PPP.Interface.1.ConnectionStatus
-    field_name: pppConnectionStatus
-    type: string
-    description: PPP connection status (Connected, Disconnected, etc.)
-
-  # === VLAN Tagging ===
-  - path: Device.Ethernet.VLANTermination.1.Enable
-    field_name: vlanEnabled
-    type: boolean
-    writable: true
-    description: Enable VLAN tagging on WAN port
-
-  - path: Device.Ethernet.VLANTermination.1.VLANID
-    field_name: vlanId
-    type: int
-    writable: true
-    description: VLAN tag ID (1-4094)
+    description: DNS servers as comma-separated string (e.g. "8.8.8.8,8.8.4.4"). Replaces non-writable DNS.Client.Server paths.
 
   # === Bridge Mode ===
   - path: Device.Bridging.Bridge.1.Enable
@@ -120,13 +50,7 @@ parameters:
     writable: true
     description: Enable bridge mode
 
-  # === MAC Address ===
-  - path: Device.Ethernet.Link.1.MACAddress
-    field_name: wanMacAddress
-    type: string
-    writable: true
-    description: WAN interface MAC address (for MAC clone, writable)
-
+  # === MAC Address (read-only — ISS-5 writable path not yet found) ===
   - path: Device.Ethernet.Interface.1.MACAddress
     field_name: currentMacAddress
     type: string

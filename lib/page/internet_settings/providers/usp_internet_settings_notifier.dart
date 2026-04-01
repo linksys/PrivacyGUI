@@ -46,6 +46,17 @@ class UspInternetSettingsNotifier
     with
         PreservableAutoDisposeNotifierMixin<InternetSettingsSettings,
             InternetSettingsStatus, InternetSettingsFeatureState> {
+  /// One-shot guard: set during [performSave] when connection type was NOT
+  /// changed, consumed by [performFetch] to prevent transient empty
+  /// `addressingType` from the device causing Bridge misdetection.
+  ///
+  // TODO: Remove this guard once Bridge Mode is properly implemented via
+  // TR-181 `Device.Bridging.Bridge.{i}.Port.{i}` — see the tracking issue
+  // for details. The current Bridge detection relies on empty addressingType
+  // + bridgeEnabled, which is fragile because bridgeEnabled is always true
+  // on most routers (LAN-side L2 bridge).
+  UspWanConnectionType? _preservedConnectionType;
+
   @override
   InternetSettingsFeatureState build() {
     // Synchronous build with loading state; async fetch follows immediately.
@@ -83,11 +94,26 @@ class UspInternetSettingsNotifier
           'detected type: ${result.form.connectionType.name}, '
           'mtu: ${result.debugMtu}, ipv6: ${result.debugIpv6Enabled}');
 
+      // Consume the one-shot guard: if connection type was not changed during
+      // the last save but the device returned a different type (transient empty
+      // addressingType), preserve the known type to avoid Bridge misdetection.
+      final savedType = _preservedConnectionType;
+      _preservedConnectionType = null;
+      var form = result.form;
+      if (savedType != null && form.connectionType != savedType) {
+        logger.w('[USP][Network][WAN] Transient type mismatch — '
+            'fetched: ${form.connectionType.name}, '
+            'preserving: ${savedType.name}');
+        form = form.copyWith(connectionType: savedType);
+      }
+
       return (
-        InternetSettingsSettings(form: result.form),
+        InternetSettingsSettings(form: form),
         InternetSettingsStatus(
           isLoading: false,
           readOnlyInfo: result.readOnlyInfo,
+          pppInstancePath: result.pppInstancePath,
+          vlanInstancePath: result.vlanInstancePath,
         ),
       );
     } catch (e) {
@@ -105,6 +131,13 @@ class UspInternetSettingsNotifier
 
   @override
   Future<void> performSave() async {
+    // Guard connection type for post-save re-fetch if type was not changed.
+    final original = state.original;
+    final edited = state.edited;
+    _preservedConnectionType = original.connectionType == edited.connectionType
+        ? edited.connectionType
+        : null;
+
     state = state.copyWith(
       status: state.status.copyWith(isSaving: true, activeMutation: 'save'),
     );
@@ -113,7 +146,12 @@ class UspInternetSettingsNotifier
       final service = ref.read(uspInternetSettingsServiceProvider);
 
       await ref.read(uspMutationLockProvider).withLock(() async {
-        await service.saveAll(state.original, state.edited);
+        await service.saveAll(
+          state.original,
+          state.edited,
+          pppInstancePath: state.status.pppInstancePath,
+          vlanInstancePath: state.status.vlanInstancePath,
+        );
         logger.d('[USP][Network][WAN] Save complete');
       });
 

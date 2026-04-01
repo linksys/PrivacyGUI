@@ -37,10 +37,12 @@ SSH validation (2026-03-10) on Community00080 (OpenWrt 23.05-SNAPSHOT) found 10 
 
 ### 2.2 Missing instances — multi-instance objects require Add before Set
 
-| Object | basePath | Default State | Needed When |
-|---|---|---|---|
-| PPP Interface | `Device.PPP.Interface.` | 0 instances in non-PPPoE mode | Switching to PPPoE |
-| VLAN Termination | `Device.Ethernet.VLANTermination.` | 0 instances | Enabling VLAN tagging |
+| Object | basePath | Default State (FW 2026-02-27) | Default State (FW 2026-03-18) | Needed When |
+|---|---|---|---|---|
+| PPP Interface | `Device.PPP.Interface.` | 0 instances in non-PPPoE mode | **1 instance** in DHCP mode | Switching to PPPoE (if 0 instances) |
+| VLAN Termination | `Device.Ethernet.VLANTermination.` | 0 instances | **1 instance** in default state | Enabling VLAN tagging (if 0 instances) |
+
+> **Note (2026-03-19):** Newer firmware (build 2026-03-18) ships with 1 default instance for both PPP and VLAN even in DHCP mode. The Add/Delete lifecycle code should check `NumberOfEntries` before Add to handle both firmware behaviors gracefully.
 
 ### 2.3 Firmware-level blockers — require FW team involvement
 

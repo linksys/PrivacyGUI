@@ -62,7 +62,7 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
   Widget build(BuildContext context) {
     final form = widget.state.edited;
     final isEditing = widget.isEditing;
-    final isAutoMtu = form.mtu == 0;
+    // final isAutoMtu = form.mtu == 0;
     final l = loc(context);
 
     return UspSectionCard(
@@ -71,42 +71,53 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // MTU
+          // MTU — Auto toggle hidden until backend supports auto detection
+          // if (!isEditing) ...[
+          //   UspInfoRow(label: l.mtu, value: isAutoMtu ? l.auto : '${form.mtu}'),
+          // ] else ...[
+          //   Row(
+          //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //     children: [
+          //       AppText.bodyMedium(l.mtu),
+          //       Row(
+          //         mainAxisSize: MainAxisSize.min,
+          //         children: [
+          //           AppText.bodyMedium(l.auto),
+          //           AppGap.sm(),
+          //           AppSwitch(
+          //             value: isAutoMtu,
+          //             onChanged: (v) {
+          //               _updateField((f) => f.copyWith(mtu: v ? 0 : 1500));
+          //               if (!v) {
+          //                 _mtuController.text = '1500';
+          //               }
+          //             },
+          //           ),
+          //         ],
+          //       ),
+          //     ],
+          //   ),
+          //   if (!isAutoMtu) ...[
+          //     AppGap.md(),
+          //     AppTextFormField(
+          //       controller: _mtuController,
+          //       label: l.size,
+          //       keyboardType: TextInputType.number,
+          //       onChanged: (v) =>
+          //           _updateField((f) => f.copyWith(mtu: int.tryParse(v) ?? 0)),
+          //     ),
+          //   ],
+          // ],
           if (!isEditing) ...[
-            UspInfoRow(label: l.mtu, value: isAutoMtu ? l.auto : '${form.mtu}'),
+            UspInfoRow(label: l.mtu, value: '${form.mtu}'),
           ] else ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                AppText.bodyMedium(l.mtu),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppText.bodyMedium(l.auto),
-                    AppGap.sm(),
-                    AppSwitch(
-                      value: isAutoMtu,
-                      onChanged: (v) {
-                        _updateField((f) => f.copyWith(mtu: v ? 0 : 1500));
-                        if (!v) {
-                          _mtuController.text = '1500';
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
+            AppTextFormField(
+              controller: _mtuController,
+              label: l.mtu,
+              keyboardType: TextInputType.number,
+              onChanged: (v) =>
+                  _updateField((f) => f.copyWith(mtu: int.tryParse(v) ?? 0)),
             ),
-            if (!isAutoMtu) ...[
-              AppGap.md(),
-              AppTextFormField(
-                controller: _mtuController,
-                label: l.size,
-                keyboardType: TextInputType.number,
-                onChanged: (v) =>
-                    _updateField((f) => f.copyWith(mtu: int.tryParse(v) ?? 0)),
-              ),
-            ],
           ],
           AppGap.lg(),
           AppDivider(),

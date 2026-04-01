@@ -10,6 +10,16 @@
 | WAN mode at test time | DHCP (`network.wan.proto='dhcp'`) |
 | Date | 2026-03-10 |
 
+### Re-validation Environment (2026-03-19)
+
+| Item | Value |
+|------|-------|
+| Device | Community00080 (OpenWrt 23.05-SNAPSHOT, r0-9033d84) |
+| Firmware build | 2026-03-18 |
+| Data model agent | bbfdm (via ubus) |
+| WAN mode at test time | DHCP |
+| Date | 2026-03-19 |
+
 ---
 
 ## Summary
@@ -67,6 +77,8 @@ All tests performed via direct `ubus call bbfdm {get|set|add|del|schema|instance
 - `bbfdm del '{"path":"Device.PPP.Interface.1."}'` → removes instance, modifies `/etc/bbfdm/dmmap/PPP`
 - In DHCP mode, **zero PPP instances exist** — any direct Set to `Device.PPP.Interface.1.*` will fail with fault 9005 or error 7016
 
+> **Re-validation (2026-03-19, FW build 2026-03-18):** PPP instance count is now **1** in DHCP mode (changed from 0 in FW build 2026-02-27). Add/Delete still work correctly: `add` creates instance `.2.`, `del` on `.1.` succeeds. The lifecycle management code should still be implemented to handle both firmware behaviors.
+
 ### VLAN
 
 | # | TR-181 Path | Field | Current State | Verdict |
@@ -77,6 +89,8 @@ All tests performed via direct `ubus call bbfdm {get|set|add|del|schema|instance
 **VLAN Instance lifecycle:**
 - `bbfdm add '{"path":"Device.Ethernet.VLANTermination."}'` → creates instance, modifies `/etc/config/network`
 - `bbfdm del '{"path":"Device.Ethernet.VLANTermination.1."}'` → removes instance
+
+> **Re-validation (2026-03-19, FW build 2026-03-18):** VLAN instance count is now **1** in default state (changed from 0 in FW build 2026-02-27). Add/Delete still work correctly: `add` creates instance `.2.`, `del` on `.1.` succeeds.
 
 ### Bridge & MAC
 
@@ -256,3 +270,79 @@ ubus call bbfdm del '{"path":"Device.PPP.Interface.1."}'
 **Schema data field meaning:**
 - `"data": "1"` → writable parameter
 - `"data": "0"` → read-only parameter
+
+---
+
+## Appendix B: Re-validation Results (2026-03-19)
+
+**FW build:** 2026-03-18 (OpenWrt 23.05-SNAPSHOT r0-9033d84)
+
+### Key Behavioral Changes from FW 2026-02-27
+
+| Aspect | FW 2026-02-27 (original) | FW 2026-03-18 (re-validated) |
+|---|---|---|
+| PPP instances in DHCP mode | 0 | **1** |
+| VLAN instances in default state | 0 | **1** |
+| `X_LINKSYS_DefaultGateway` writability | Not tested via ubus (marked R in catalog) | **Confirmed R/W** via `ubus call bbfdm set` |
+| `X_LINKSYS_DNSServers` writability | Not tested via ubus (marked R in catalog) | **Confirmed R/W** via `ubus call bbfdm set` |
+
+### ISS-3/4 Vendor Path Writability Test
+
+```
+# SET Gateway
+ubus call bbfdm set '{"path":"Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway","value":"192.168.1.1"}'
+→ {"results":[{"path":"...X_LINKSYS_DefaultGateway","data":"1"}],"modified_uci":["/etc/config/network"]}
+
+# GET verify
+→ {"X_LINKSYS_DefaultGateway":"192.168.1.1"}
+
+# SET DNS (comma-separated)
+ubus call bbfdm set '{"path":"Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers","value":"8.8.8.8,8.8.4.4"}'
+→ {"results":[{"path":"...X_LINKSYS_DNSServers","data":"1"}],"modified_uci":["/etc/config/network"]}
+
+# GET verify
+→ {"X_LINKSYS_DNSServers":"8.8.8.8,8.8.4.4"}
+
+# Cleanup: restored both to empty string
+```
+
+### ISS-2 PPP Add/Delete Test
+
+```
+# Initial state
+PPP.InterfaceNumberOfEntries = 1
+
+# Add
+ubus call bbfdm add '{"path":"Device.PPP.Interface."}'
+→ {"results":[{"path":"Device.PPP.Interface.","data":"2"}],"modified_uci":["/etc/bbfdm/dmmap/PPP"]}
+PPP.InterfaceNumberOfEntries = 2
+
+# Delete instance .1.
+ubus call bbfdm del '{"path":"Device.PPP.Interface.1."}'
+→ success
+PPP.InterfaceNumberOfEntries = 1
+```
+
+### ISS-8 VLAN Add/Delete Test
+
+```
+# Initial state
+VLANTerminationNumberOfEntries = 1
+
+# Add
+ubus call bbfdm add '{"path":"Device.Ethernet.VLANTermination."}'
+→ {"results":[{"path":"Device.Ethernet.VLANTermination.","data":"2"}],"modified_uci":["/etc/config/network","/etc/bbfdm/dmmap/Ethernet"]}
+VLANTerminationNumberOfEntries = 2
+
+# Delete instance .1.
+ubus call bbfdm del '{"path":"Device.Ethernet.VLANTermination.1."}'
+→ success
+VLANTerminationNumberOfEntries = 1
+```
+
+### Impact on Fix Design
+
+1. **ISS-3/4 (Gateway/DNS):** Vendor path solution confirmed viable. No blocker.
+2. **ISS-2 (PPP):** Add/Delete works. New FW has 1 default instance, so direct Set may work without Add on newer FW. Code should still handle both cases (0 or 1 initial instances).
+3. **ISS-8 (VLAN):** Same as ISS-2 — Add/Delete works, 1 default instance on newer FW.
+4. **ISS-6 (LCPEcho):** Not retested (YAML fix only, no FW dependency).

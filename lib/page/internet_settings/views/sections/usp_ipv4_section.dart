@@ -42,7 +42,6 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
   late TextEditingController _pppServiceNameController;
   late TextEditingController _vlanIdController;
   late TextEditingController _idleTimeController;
-  late TextEditingController _lcpEchoController;
 
   @override
   void initState() {
@@ -65,8 +64,6 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     _vlanIdController = TextEditingController(text: form.vlanId.toString());
     _idleTimeController =
         TextEditingController(text: form.idleDisconnectTime.toString());
-    _lcpEchoController =
-        TextEditingController(text: form.lcpEchoInterval.toString());
   }
 
   @override
@@ -90,7 +87,6 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     _syncIfDifferent(_pppServiceNameController, form.pppoeServiceName);
     _syncIfDifferent(_vlanIdController, form.vlanId.toString());
     _syncIfDifferent(_idleTimeController, form.idleDisconnectTime.toString());
-    _syncIfDifferent(_lcpEchoController, form.lcpEchoInterval.toString());
   }
 
   void _syncIfDifferent(TextEditingController controller, String value) {
@@ -112,7 +108,6 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
     _pppServiceNameController.dispose();
     _vlanIdController.dispose();
     _idleTimeController.dispose();
-    _lcpEchoController.dispose();
     super.dispose();
   }
 
@@ -288,13 +283,10 @@ class _UspIpv4SectionState extends ConsumerState<UspIpv4Section> {
         ),
         AppGap.md(),
       ],
-      if (form.connectionTrigger == 'AlwaysOn') ...[
-        AppTextFormField(
-          controller: _lcpEchoController,
+      if (form.connectionTrigger == 'AlwaysOn' && form.lcpEchoInterval > 0) ...[
+        UspInfoRow(
           label: l.lcpEchoInterval,
-          keyboardType: TextInputType.number,
-          onChanged: (v) => _updateField(
-              (f) => f.copyWith(lcpEchoInterval: int.tryParse(v) ?? 0)),
+          value: '${form.lcpEchoInterval}',
         ),
         AppGap.md(),
       ],

@@ -35,7 +35,7 @@ class UspDhcpDetailView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backFallback: RouteNamed.uspMenu,
+      backFallback: RouteNamed.uspLocalNetwork,
       onRefresh: () async {
         ref.invalidate(dhcpDataProvider);
         ref.read(uspDhcpReservationsProvider.notifier).fetch(forceRemote: true);

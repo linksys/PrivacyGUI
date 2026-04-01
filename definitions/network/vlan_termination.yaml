@@ -1,0 +1,20 @@
+name: VlanTermination
+singularName: VlanTerminationInstance
+version: 1.0.0
+multiInstance: Device.Ethernet.VLANTermination.
+category: network
+description: VLAN termination instances for WAN VLAN tagging
+type: add
+
+parameters:
+  - field_name: enable
+    path: .Enable
+    type: boolean
+    writable: true
+    description: Enable VLAN tagging on WAN port
+
+  - field_name: vlanId
+    path: .VLANID
+    type: int
+    writable: true
+    description: VLAN tag ID (1-4094)
