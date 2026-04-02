@@ -15,6 +15,15 @@ class PackageWidgetTemplate extends Equatable {
   final WidgetGridConstraints constraints;
   final WidgetSubscriptionConfig? subscription;
   final HttpDataSourceConfig? dataSource;
+  final String? navigateTo;
+  final String? icon;
+  final String? iconColor;
+
+  /// Header badge text — `String` for static, `Map` for `$bind`/`$compute`.
+  final Object? headerBadge;
+
+  /// Header subtitle — `String` for static, `Map` for `$bind`/`$compute`.
+  final Object? headerExtra;
   final Map<String, dynamic> template;
 
   const PackageWidgetTemplate({
@@ -24,6 +33,11 @@ class PackageWidgetTemplate extends Equatable {
     required this.constraints,
     this.subscription,
     this.dataSource,
+    this.navigateTo,
+    this.icon,
+    this.iconColor,
+    this.headerBadge,
+    this.headerExtra,
     required this.template,
   });
 
@@ -52,6 +66,11 @@ class PackageWidgetTemplate extends Equatable {
           ? HttpDataSourceConfig.fromJson(
               json['dataSource'] as Map<String, dynamic>)
           : null,
+      navigateTo: json['navigateTo'] as String?,
+      icon: json['icon'] as String?,
+      iconColor: json['iconColor'] as String?,
+      headerBadge: json['headerBadge'],  // String | Map | null
+      headerExtra: json['headerExtra'],  // String | Map | null
       template: json['template'] as Map<String, dynamic>? ?? {},
     );
   }
@@ -76,6 +95,11 @@ class PackageWidgetTemplate extends Equatable {
         constraints,
         subscription,
         dataSource,
+        navigateTo,
+        icon,
+        iconColor,
+        headerBadge,
+        headerExtra,
         template,
       ];
 }

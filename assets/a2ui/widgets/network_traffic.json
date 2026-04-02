@@ -1,188 +1,112 @@
 {
-    "widgetId": "a2ui_network_traffic",
-    "displayName": "Network Traffic",
-    "description": "Shows current network upload and download speeds with traffic monitoring",
-    "constraints": {
-        "minColumns": 3,
-        "maxColumns": 5,
-        "preferredColumns": 4,
-        "minRows": 2,
-        "maxRows": 3,
-        "preferredRows": 2
-    },
-    "template": {
-        "type": "Card",
-        "properties": {
-            "padding": 16.0,
-            "onTap": {
-                "$action": "navigation.push",
-                "params": {
-                    "route": "dashboardSpeedTest"
-                }
-            },
-            "style": {
-                "elevation": 2,
-                "borderRadius": 12
-            }
-        },
-        "children": [
-            {
-                "type": "Column",
-                "properties": {
-                    "mainAxisAlignment": "spaceBetween",
-                    "crossAxisAlignment": "stretch",
-                    "mainAxisSize": "max"
-                },
-                "children": [
+  "widgetId": "a2ui_network_traffic",
+  "displayName": "Network Traffic",
+  "description": "Shows current network upload and download speeds with traffic monitoring",
+  "icon": "swap_vert",
+  "iconColor": "#66BB6A",
+  "navigateTo": "/apps/network-traffic/",
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 5,
+    "preferredColumns": 4,
+    "minRows": 2,
+    "maxRows": 3,
+    "preferredRows": 2
+  },
+  "template": {
+    "type": "Row",
+    "props": {
+      "mainAxisAlignment": "spaceBetween",
+      "children": [
+        {
+          "type": "Column",
+          "props": {
+            "crossAxisAlignment": "start",
+            "mainAxisSize": "min",
+            "children": [
+              {
+                "type": "Row",
+                "props": {
+                  "mainAxisSize": "min",
+                  "crossAxisAlignment": "center",
+                  "children": [
                     {
-                        "type": "Row",
-                        "properties": {
-                            "mainAxisAlignment": "spaceBetween",
-                            "crossAxisAlignment": "center"
-                        },
-                        "children": [
-                            {
-                                "type": "Text",
-                                "properties": {
-                                    "text": "Network Traffic",
-                                    "variant": "titleMedium",
-                                    "color": "primary"
-                                }
-                            },
-                            {
-                                "type": "Icon",
-                                "properties": {
-                                    "icon": "network_wifi_3_bar",
-                                    "size": 20.0,
-                                    "color": "success"
-                                }
-                            }
-                        ]
+                      "type": "AppIcon",
+                      "props": {"icon": "upload", "size": 16, "color": "success"}
                     },
                     {
-                        "type": "SizedBox",
-                        "properties": {
-                            "height": 12.0
-                        }
+                      "type": "AppGap",
+                      "props": {"size": "xs"}
                     },
                     {
-                        "type": "Row",
-                        "properties": {
-                            "mainAxisAlignment": "spaceBetween"
-                        },
-                        "children": [
-                            {
-                                "type": "Column",
-                                "properties": {
-                                    "crossAxisAlignment": "start",
-                                    "mainAxisSize": "min"
-                                },
-                                "children": [
-                                    {
-                                        "type": "Row",
-                                        "properties": {
-                                            "mainAxisSize": "min",
-                                            "crossAxisAlignment": "center"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "Icon",
-                                                "properties": {
-                                                    "icon": "upload",
-                                                    "size": 16.0,
-                                                    "color": "success"
-                                                }
-                                            },
-                                            {
-                                                "type": "SizedBox",
-                                                "properties": {
-                                                    "width": 4.0
-                                                }
-                                            },
-                                            {
-                                                "type": "Text",
-                                                "properties": {
-                                                    "text": {
-                                                        "$bind": "router.uploadSpeed"
-                                                    },
-                                                    "variant": "bodyMedium",
-                                                    "color": "success"
-                                                }
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "type": "SizedBox",
-                                        "properties": {
-                                            "height": 4.0
-                                        }
-                                    },
-                                    {
-                                        "type": "Row",
-                                        "properties": {
-                                            "mainAxisSize": "min",
-                                            "crossAxisAlignment": "center"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "Icon",
-                                                "properties": {
-                                                    "icon": "download",
-                                                    "size": 16.0,
-                                                    "color": "info"
-                                                }
-                                            },
-                                            {
-                                                "type": "SizedBox",
-                                                "properties": {
-                                                    "width": 4.0
-                                                }
-                                            },
-                                            {
-                                                "type": "Text",
-                                                "properties": {
-                                                    "text": {
-                                                        "$bind": "router.downloadSpeed"
-                                                    },
-                                                    "variant": "bodyMedium",
-                                                    "color": "info"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "Column",
-                                "properties": {
-                                    "crossAxisAlignment": "end",
-                                    "mainAxisSize": "min"
-                                },
-                                "children": [
-                                    {
-                                        "type": "Text",
-                                        "properties": {
-                                            "text": {
-                                                "$bind": "router.deviceCount"
-                                            },
-                                            "variant": "bodySmall",
-                                            "color": "onSurfaceVariant"
-                                        }
-                                    },
-                                    {
-                                        "type": "Text",
-                                        "properties": {
-                                            "text": "Active",
-                                            "variant": "bodySmall",
-                                            "color": "onSurfaceVariant"
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
+                      "type": "AppText",
+                      "props": {
+                        "text": {"$bind": "router.uploadSpeed"},
+                        "variant": "bodyMedium",
+                        "color": "success"
+                      }
                     }
-                ]
-            }
-        ]
+                  ]
+                }
+              },
+              {
+                "type": "AppGap",
+                "props": {"size": "xs"}
+              },
+              {
+                "type": "Row",
+                "props": {
+                  "mainAxisSize": "min",
+                  "crossAxisAlignment": "center",
+                  "children": [
+                    {
+                      "type": "AppIcon",
+                      "props": {"icon": "download", "size": 16, "color": "info"}
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {"size": "xs"}
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": {"$bind": "router.downloadSpeed"},
+                        "variant": "bodyMedium",
+                        "color": "info"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "Column",
+          "props": {
+            "crossAxisAlignment": "end",
+            "mainAxisSize": "min",
+            "children": [
+              {
+                "type": "AppText",
+                "props": {
+                  "text": {"$bind": "router.deviceCount"},
+                  "variant": "bodySmall",
+                  "color": "onSurfaceVariant"
+                }
+              },
+              {
+                "type": "AppText",
+                "props": {
+                  "text": "Active",
+                  "variant": "bodySmall",
+                  "color": "onSurfaceVariant"
+                }
+              }
+            ]
+          }
+        }
+      ]
     }
+  }
 }

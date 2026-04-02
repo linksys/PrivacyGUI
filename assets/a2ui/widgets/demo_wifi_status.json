@@ -2,6 +2,23 @@
   "widgetId": "demo_wifi_status",
   "displayName": "WiFi Status Monitor",
   "description": "Real-time WiFi network status with connected devices and signal strength monitoring",
+  "icon": "wifi",
+  "navigateTo": "/wifi-manager/",
+  "headerBadge": {
+    "$compute": {
+      "op": "conditional",
+      "condition": {
+        "$compute": {
+          "op": "eq",
+          "left": {"$bind": "Device.WiFi.SSID.1.Status"},
+          "right": "Up"
+        }
+      },
+      "ifTrue": "Online",
+      "ifFalse": "Offline"
+    }
+  },
+  "headerExtra": {"$bind": "Device.WiFi.SSID.1.SSID"},
   "constraints": {
     "minColumns": 3,
     "maxColumns": 6,
@@ -25,60 +42,6 @@
     "props": {
       "crossAxisAlignment": "stretch",
       "children": [
-        {
-          "type": "Row",
-          "props": {
-            "mainAxisAlignment": "spaceBetween",
-            "crossAxisAlignment": "center",
-            "children": [
-              {
-                "type": "AppText",
-                "props": {
-                  "text": {"$bind": "Device.WiFi.SSID.1.SSID"},
-                  "variant": "titleMedium"
-                }
-              },
-              {
-                "type": "AppIcon",
-                "props": {
-                  "name": {
-                    "$compute": {
-                      "op": "conditional",
-                      "condition": {
-                        "$compute": {
-                          "op": "eq",
-                          "left": {"$bind": "Device.WiFi.SSID.1.Status"},
-                          "right": "Up"
-                        }
-                      },
-                      "ifTrue": "wifi",
-                      "ifFalse": "wifi_off"
-                    }
-                  },
-                  "color": {
-                    "$compute": {
-                      "op": "conditional",
-                      "condition": {
-                        "$compute": {
-                          "op": "eq",
-                          "left": {"$bind": "Device.WiFi.SSID.1.Status"},
-                          "right": "Up"
-                        }
-                      },
-                      "ifTrue": "success",
-                      "ifFalse": "error"
-                    }
-                  },
-                  "size": 24
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {"size": "md"}
-        },
         {
           "type": "AppCard",
           "props": {
@@ -176,35 +139,16 @@
           "props": {"size": "lg"}
         },
         {
-          "type": "Row",
+          "type": "AppButton",
           "props": {
-            "mainAxisAlignment": "spaceEvenly",
-            "children": [
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "Restart WiFi",
-                  "variant": "tonal",
-                  "size": "small",
-                  "icon": "refresh",
-                  "onTap": {
-                    "$action": "restart_wifi_interface",
-                    "interface": "WiFi.SSID.1"
-                  }
-                }
-              },
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "Settings",
-                  "onTap": {
-                    "$action": "navigate_to_settings",
-                    "destination": "wifi_settings",
-                    "params": {"ssid": "1"}
-                  }
-                }
-              }
-            ]
+            "label": "Restart WiFi",
+            "variant": "tonal",
+            "size": "small",
+            "icon": "refresh",
+            "onTap": {
+              "$action": "restart_wifi_interface",
+              "interface": "WiFi.SSID.1"
+            }
           }
         }
       ]

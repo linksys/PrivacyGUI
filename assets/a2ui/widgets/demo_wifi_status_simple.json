@@ -2,6 +2,10 @@
   "widgetId": "demo_wifi_status_simple",
   "displayName": "WiFi Status",
   "description": "WiFi network status display with connection information (Demo version with static data)",
+  "icon": "wifi",
+  "iconColor": "#66BB6A",
+  "navigateTo": "/wifi-manager/",
+  "headerExtra": "Linksys_5G",
   "constraints": {
     "minColumns": 3,
     "maxColumns": 5,
@@ -27,34 +31,6 @@
       "crossAxisAlignment": "stretch",
       "children": [
         {
-          "type": "Row",
-          "props": {
-            "mainAxisAlignment": "spaceBetween",
-            "crossAxisAlignment": "center",
-            "children": [
-              {
-                "type": "AppText",
-                "props": {
-                  "text": "Linksys_5G",
-                  "variant": "titleMedium"
-                }
-              },
-              {
-                "type": "AppIcon",
-                "props": {
-                  "name": "wifi",
-                  "color": "success",
-                  "size": 24
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {"size": "md"}
-        },
-        {
           "type": "AppCard",
           "props": {
             "padding": 12,
@@ -67,10 +43,7 @@
                   "children": [
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "Network Online",
-                        "variant": "bodyMedium"
-                      }
+                      "props": {"text": "Network Online", "variant": "bodyMedium"}
                     },
                     {
                       "type": "AppGap",
@@ -83,57 +56,16 @@
                         "children": [
                           {
                             "type": "AppText",
-                            "props": {
-                              "text": "12 devices",
-                              "variant": "bodySmall"
-                            }
+                            "props": {"text": "12 devices", "variant": "bodySmall"}
                           },
                           {
                             "type": "AppText",
-                            "props": {
-                              "text": "5 GHz",
-                              "variant": "bodySmall"
-                            }
+                            "props": {"text": "5 GHz", "variant": "bodySmall"}
                           }
                         ]
                       }
                     }
                   ]
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {"size": "lg"}
-        },
-        {
-          "type": "Row",
-          "props": {
-            "mainAxisAlignment": "spaceEvenly",
-            "children": [
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "Settings",
-                  "variant": "tonal",
-                  "size": "small",
-                  "icon": "settings",
-                  "onTap": {
-                    "$action": "navigate_to_wifi_settings"
-                  }
-                }
-              },
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "Devices",
-                  "variant": "base",
-                  "size": "small",
-                  "onTap": {
-                    "$action": "show_connected_devices"
-                  }
                 }
               }
             ]

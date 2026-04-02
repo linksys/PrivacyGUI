@@ -2,6 +2,9 @@
   "widgetId": "demo_device_overview",
   "displayName": "Connected Devices",
   "description": "Overview of all connected devices with quick access to device management features",
+  "icon": "devices",
+  "navigateTo": "/apps/device-overview/",
+  "headerBadge": "24 TOTAL",
   "constraints": {
     "minColumns": 3,
     "maxColumns": 6,
@@ -32,53 +35,13 @@
             "mainAxisAlignment": "spaceBetween",
             "children": [
               {
-                "type": "AppText",
-                "props": {
-                  "text": "Connected Devices",
-                  "variant": "titleMedium"
-                }
-              },
-              {
-                "type": "AppCard",
-                "props": {
-                  "padding": 6,
-                  "backgroundColor": "primaryContainer",
-                  "children": [
-                    {
-                      "type": "AppText",
-                      "props": {
-                        "text": "24 TOTAL",
-                        "variant": "labelSmall",
-                        "color": "onPrimaryContainer"
-                      }
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {"size": "md"}
-        },
-        {
-          "type": "Row",
-          "props": {
-            "mainAxisAlignment": "spaceBetween",
-            "children": [
-              {
                 "type": "Column",
                 "props": {
                   "crossAxisAlignment": "center",
                   "children": [
                     {
                       "type": "AppIcon",
-                      "props": {
-                        "name": "wifi",
-                        "color": "primary",
-                        "size": 32
-                      }
+                      "props": {"name": "wifi", "color": "primary", "size": 32}
                     },
                     {
                       "type": "AppGap",
@@ -86,17 +49,11 @@
                     },
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "18",
-                        "variant": "headlineSmall"
-                      }
+                      "props": {"text": "18", "variant": "headlineSmall"}
                     },
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "WiFi",
-                        "variant": "bodySmall"
-                      }
+                      "props": {"text": "WiFi", "variant": "bodySmall"}
                     }
                   ]
                 }
@@ -108,11 +65,7 @@
                   "children": [
                     {
                       "type": "AppIcon",
-                      "props": {
-                        "name": "cable",
-                        "color": "secondary",
-                        "size": 32
-                      }
+                      "props": {"name": "cable", "color": "secondary", "size": 32}
                     },
                     {
                       "type": "AppGap",
@@ -120,17 +73,11 @@
                     },
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "6",
-                        "variant": "headlineSmall"
-                      }
+                      "props": {"text": "6", "variant": "headlineSmall"}
                     },
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "Wired",
-                        "variant": "bodySmall"
-                      }
+                      "props": {"text": "Wired", "variant": "bodySmall"}
                     }
                   ]
                 }
@@ -154,11 +101,7 @@
                   "children": [
                     {
                       "type": "AppIcon",
-                      "props": {
-                        "name": "security",
-                        "color": "success",
-                        "size": 20
-                      }
+                      "props": {"name": "security", "color": "success", "size": 20}
                     },
                     {
                       "type": "AppGap",
@@ -174,18 +117,11 @@
                             "children": [
                               {
                                 "type": "AppText",
-                                "props": {
-                                  "text": "All devices secured",
-                                  "variant": "bodyMedium"
-                                }
+                                "props": {"text": "All devices secured", "variant": "bodyMedium"}
                               },
                               {
                                 "type": "AppText",
-                                "props": {
-                                  "text": "3 new devices detected today",
-                                  "variant": "bodySmall",
-                                  "color": "onSurfaceVariant"
-                                }
+                                "props": {"text": "3 new devices detected today", "variant": "bodySmall", "color": "onSurfaceVariant"}
                               }
                             ]
                           }
@@ -193,39 +129,6 @@
                       }
                     }
                   ]
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {"size": "lg"}
-        },
-        {
-          "type": "Row",
-          "props": {
-            "mainAxisAlignment": "spaceEvenly",
-            "children": [
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "Manage",
-                  "variant": "highlight",
-                  "size": "small",
-                  "icon": "device_hub",
-                  "onTap": {
-                    "$action": "navigate_to_device_management"
-                  }
-                }
-              },
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "Parental Controls",
-                  "onTap": {
-                    "$action": "open_parental_controls"
-                  }
                 }
               }
             ]

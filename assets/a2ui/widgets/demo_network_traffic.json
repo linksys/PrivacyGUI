@@ -2,6 +2,8 @@
   "widgetId": "demo_network_traffic",
   "displayName": "Network Traffic Monitor",
   "description": "Real-time network traffic statistics with bandwidth usage charts and speed monitoring",
+  "icon": "swap_vert",
+  "headerExtra": "WAN \u2022 24h",
   "constraints": {
     "minColumns": 4,
     "maxColumns": 8,
@@ -19,11 +21,7 @@
       "interface": "wan",
       "timeRange": "24h"
     },
-    "headers": {
-      "Content-Type": "application/json"
-    },
     "refreshInterval": 60,
-    "timeout": 10000,
     "mapping": {
       "bytes_sent": "traffic.upload.bytes",
       "bytes_received": "traffic.download.bytes",
@@ -32,14 +30,6 @@
       "peak_upload": "traffic.upload.peak",
       "peak_download": "traffic.download.peak",
       "hourly_data": "traffic.hourly_stats"
-    },
-    "errorHandling": {
-      "fallbackData": {
-        "traffic.upload.rate": "0",
-        "traffic.download.rate": "0",
-        "traffic.upload.bytes": "0",
-        "traffic.download.bytes": "0"
-      }
     }
   },
   "template": {
@@ -47,17 +37,6 @@
     "props": {
       "crossAxisAlignment": "stretch",
       "children": [
-        {
-          "type": "AppText",
-          "props": {
-            "text": "Network Traffic",
-            "variant": "titleMedium"
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {"size": "md"}
-        },
         {
           "type": "Row",
           "props": {
@@ -75,11 +54,7 @@
                         "children": [
                           {
                             "type": "AppIcon",
-                            "props": {
-                              "name": "download",
-                              "size": 16,
-                              "color": "primary"
-                            }
+                            "props": {"name": "download", "size": 16, "color": "primary"}
                           },
                           {
                             "type": "AppGap",
@@ -111,11 +86,7 @@
                         "children": [
                           {
                             "type": "AppIcon",
-                            "props": {
-                              "name": "upload",
-                              "size": 16,
-                              "color": "secondary"
-                            }
+                            "props": {"name": "upload", "size": 16, "color": "secondary"}
                           },
                           {
                             "type": "AppGap",
@@ -199,41 +170,6 @@
             "showGrid": true,
             "showTooltip": true,
             "height": 120
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {"size": "lg"}
-        },
-        {
-          "type": "Row",
-          "props": {
-            "mainAxisAlignment": "spaceEvenly",
-            "children": [
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "Speed Test",
-                  "variant": "highlight",
-                  "size": "small",
-                  "icon": "speed",
-                  "onTap": {
-                    "$action": "run_speed_test",
-                    "type": "bandwidth_test"
-                  }
-                }
-              },
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "View Details",
-                  "onTap": {
-                    "$action": "navigate_to_details",
-                    "destination": "network_analytics"
-                  }
-                }
-              }
-            ]
           }
         }
       ]

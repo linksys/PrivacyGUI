@@ -2,6 +2,9 @@
   "widgetId": "demo_adguard_blocker",
   "displayName": "AdGuard DNS Blocker",
   "description": "DNS-based ad and malware blocking statistics with real-time protection status",
+  "icon": "shield",
+  "iconColor": "#4FC3F7",
+  "headerBadge": "ON",
   "constraints": {
     "minColumns": 3,
     "maxColumns": 6,
@@ -38,7 +41,7 @@
                 "type": "AppText",
                 "props": {
                   "text": "DNS Protection",
-                  "variant": "titleMedium"
+                  "variant": "bodyMedium"
                 }
               },
               {
@@ -155,7 +158,7 @@
                               {
                                 "type": "AppText",
                                 "props": {
-                                  "text": "15% of queries blocked • Last update: 2 min ago",
+                                  "text": "15% of queries blocked",
                                   "variant": "bodySmall",
                                   "color": "onSurfaceVariant"
                                 }
@@ -166,41 +169,6 @@
                       }
                     }
                   ]
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {"size": "lg"}
-        },
-        {
-          "type": "Row",
-          "props": {
-            "mainAxisAlignment": "spaceEvenly",
-            "children": [
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "View Logs",
-                  "variant": "tonal",
-                  "size": "small",
-                  "icon": "list_alt",
-                  "onTap": {
-                    "$action": "view_adguard_logs"
-                  }
-                }
-              },
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "Settings",
-                  "variant": "base",
-                  "size": "small",
-                  "onTap": {
-                    "$action": "open_adguard_settings"
-                  }
                 }
               }
             ]

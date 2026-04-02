@@ -149,6 +149,99 @@ void main() {
       final t = PackageWidgetTemplate.fromJson(json);
       expect(t.template, isEmpty);
     });
+
+    test('parses navigateTo field', () {
+      final json = {
+        'widgetId': 'nav_widget',
+        'displayName': 'Nav Widget',
+        'navigateTo': 'uspWifiSettings',
+        'template': {'type': 'AppCard'},
+      };
+
+      final t = PackageWidgetTemplate.fromJson(json);
+      expect(t.navigateTo, 'uspWifiSettings');
+    });
+
+    test('navigateTo defaults to null when absent', () {
+      final json = {
+        'widgetId': 'no_nav',
+        'template': {'type': 'AppCard'},
+      };
+
+      final t = PackageWidgetTemplate.fromJson(json);
+      expect(t.navigateTo, isNull);
+    });
+
+    test('parses icon and iconColor', () {
+      final json = {
+        'widgetId': 'icon_widget',
+        'icon': 'speed',
+        'iconColor': '#4FC3F7',
+        'template': {'type': 'AppCard'},
+      };
+
+      final t = PackageWidgetTemplate.fromJson(json);
+      expect(t.icon, 'speed');
+      expect(t.iconColor, '#4FC3F7');
+    });
+
+    test('parses headerBadge as String', () {
+      final json = {
+        'widgetId': 'badge_str',
+        'headerBadge': 'ON',
+        'template': {'type': 'AppCard'},
+      };
+
+      final t = PackageWidgetTemplate.fromJson(json);
+      expect(t.headerBadge, 'ON');
+    });
+
+    test('parses headerBadge as Map (\$bind)', () {
+      final json = {
+        'widgetId': 'badge_bind',
+        'headerBadge': {r'$bind': 'status'},
+        'template': {'type': 'AppCard'},
+      };
+
+      final t = PackageWidgetTemplate.fromJson(json);
+      expect(t.headerBadge, isA<Map>());
+      expect((t.headerBadge as Map)[r'$bind'], 'status');
+    });
+
+    test('parses headerExtra as String', () {
+      final json = {
+        'widgetId': 'extra_str',
+        'headerExtra': 'Chunghwa Mobile',
+        'template': {'type': 'AppCard'},
+      };
+
+      final t = PackageWidgetTemplate.fromJson(json);
+      expect(t.headerExtra, 'Chunghwa Mobile');
+    });
+
+    test('parses headerExtra as Map (\$bind)', () {
+      final json = {
+        'widgetId': 'extra_bind',
+        'headerExtra': {r'$bind': 'isp'},
+        'template': {'type': 'AppCard'},
+      };
+
+      final t = PackageWidgetTemplate.fromJson(json);
+      expect(t.headerExtra, isA<Map>());
+    });
+
+    test('icon/iconColor/headerBadge/headerExtra default to null', () {
+      final json = {
+        'widgetId': 'defaults',
+        'template': {'type': 'AppCard'},
+      };
+
+      final t = PackageWidgetTemplate.fromJson(json);
+      expect(t.icon, isNull);
+      expect(t.iconColor, isNull);
+      expect(t.headerBadge, isNull);
+      expect(t.headerExtra, isNull);
+    });
   });
 
   // -----------------------------------------------------------------------

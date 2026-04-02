@@ -2,6 +2,7 @@
   "widgetId": "action_demo_widget",
   "displayName": "Action Demo Widget",
   "description": "Demonstrates various action types supported by Package Widget architecture",
+  "icon": "touch_app",
   "constraints": {
     "minColumns": 3,
     "maxColumns": 6,
@@ -16,19 +17,6 @@
       "mainAxisAlignment": "start",
       "crossAxisAlignment": "stretch",
       "children": [
-        {
-          "type": "AppText",
-          "props": {
-            "text": "Interactive Action Demo",
-            "variant": "titleLarge"
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {
-            "size": "md"
-          }
-        },
         {
           "type": "Row",
           "props": {
@@ -61,9 +49,7 @@
         },
         {
           "type": "AppGap",
-          "props": {
-            "size": "md"
-          }
+          "props": {"size": "md"}
         },
         {
           "type": "AppTextField",
@@ -71,16 +57,14 @@
             "label": "Device Name",
             "hintText": "Enter device name",
             "onChanged": {
-              "$action": "field_changed",
+              "$action": "changed",
               "field": "deviceName"
             }
           }
         },
         {
           "type": "AppGap",
-          "props": {
-            "size": "sm"
-          }
+          "props": {"size": "sm"}
         },
         {
           "type": "Row",
@@ -89,17 +73,14 @@
             "children": [
               {
                 "type": "AppText",
-                "props": {
-                  "text": "Auto-connect",
-                  "variant": "bodyMedium"
-                }
+                "props": {"text": "Auto-connect", "variant": "bodyMedium"}
               },
               {
                 "type": "AppSwitch",
                 "props": {
                   "value": true,
                   "onChanged": {
-                    "$action": "setting_toggled",
+                    "$action": "toggled",
                     "setting": "autoConnect"
                   }
                 }
@@ -109,9 +90,7 @@
         },
         {
           "type": "AppGap",
-          "props": {
-            "size": "md"
-          }
+          "props": {"size": "md"}
         },
         {
           "type": "AppCard",
@@ -119,11 +98,7 @@
             "padding": 12,
             "onTap": {
               "$action": "navigate",
-              "destination": "advanced_settings",
-              "params": {
-                "section": "network",
-                "highlight": "security"
-              }
+              "destination": "advanced_settings"
             },
             "children": [
               {
@@ -133,16 +108,11 @@
                   "children": [
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "Advanced Settings",
-                        "variant": "bodyMedium"
-                      }
+                      "props": {"text": "Advanced Settings", "variant": "bodyMedium"}
                     },
                     {
                       "type": "AppIcon",
-                      "props": {
-                        "name": "chevron_right"
-                      }
+                      "props": {"name": "chevron_right"}
                     }
                   ]
                 }

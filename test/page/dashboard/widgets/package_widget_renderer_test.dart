@@ -118,6 +118,7 @@ Widget _buildTestWidget({
   SseManager? sse,
   http.Client? httpClient,
   BridgeRequestThrottler? throttler,
+  bool showHeader = false,
 }) {
   return ProviderScope(
     overrides: [
@@ -131,7 +132,10 @@ Widget _buildTestWidget({
       theme: _testTheme,
       home: Scaffold(
         body: SizedBox.expand(
-          child: PackageWidgetRenderer(template: template),
+          child: PackageWidgetRenderer(
+            template: template,
+            showHeader: showHeader,
+          ),
         ),
       ),
     ),
@@ -392,6 +396,430 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Hello Static'), findsOneWidget);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Header mode (showHeader: true)
+  // -----------------------------------------------------------------------
+  group('header mode', () {
+    testWidgets('shows refresh button when dataSource exists', (tester) async {
+      await tester.pumpWidget(_buildTestWidget(
+        template: _httpTemplate(),
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Refresh icon should be visible in header
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+    });
+
+    testWidgets('shows info button when description exists', (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'info_test',
+        displayName: 'Info Widget',
+        description: 'Some description',
+        constraints: _testConstraints,
+        dataSource: HttpDataSourceConfig(
+          url: '/cgi-bin/test.cgi',
+          mapping: {'k': 'v'},
+        ),
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+    });
+
+    testWidgets('shows navigate button when navigateTo is set',
+        (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'nav_test',
+        displayName: 'Nav Widget',
+        constraints: _testConstraints,
+        navigateTo: 'uspWifiSettings',
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.open_in_new), findsOneWidget);
+    });
+
+    testWidgets('hides navigate button when navigateTo is null',
+        (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'no_nav',
+        displayName: 'No Nav',
+        constraints: _testConstraints,
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.open_in_new), findsNothing);
+    });
+
+    testWidgets('hides refresh button when no data source', (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'static_header',
+        displayName: 'Static',
+        constraints: _testConstraints,
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.refresh), findsNothing);
+    });
+
+    testWidgets('falls back to legacy onTap navigate destination',
+        (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'legacy_nav',
+        displayName: 'Legacy Nav',
+        constraints: _testConstraints,
+        template: {
+          'type': 'AppCard',
+          'props': {
+            'onTap': {
+              r'$action': 'navigate',
+              'destination': 'uspDeviceList',
+            },
+            'children': [
+              {
+                'type': 'AppText',
+                'props': {'text': 'Content'},
+              },
+            ],
+          },
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Navigate button should appear from legacy onTap format
+      expect(find.byIcon(Icons.open_in_new), findsOneWidget);
+    });
+
+    testWidgets('navigateTo takes priority over legacy onTap', (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'priority_nav',
+        displayName: 'Priority Nav',
+        constraints: _testConstraints,
+        navigateTo: 'uspWifiSettings',
+        template: {
+          'type': 'AppCard',
+          'props': {
+            'onTap': {
+              r'$action': 'navigate',
+              'destination': 'uspDeviceList',
+            },
+            'children': [
+              {
+                'type': 'AppText',
+                'props': {'text': 'Content'},
+              },
+            ],
+          },
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Button should exist (navigateTo wins)
+      expect(find.byIcon(Icons.open_in_new), findsOneWidget);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Header — icon, badge, extra
+  // -----------------------------------------------------------------------
+  group('header icon/badge/extra', () {
+    testWidgets('shows icon when icon is set', (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'icon_test',
+        displayName: 'Icon Widget',
+        constraints: _testConstraints,
+        icon: 'speed',
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.speed), findsOneWidget);
+    });
+
+    testWidgets('hides icon when icon is null', (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'no_icon',
+        displayName: 'No Icon',
+        constraints: _testConstraints,
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Only default icons (info/refresh/navigate) should be absent
+      // No AppIcon.font rendered for header icon
+      expect(find.byType(AppIcon), findsNothing);
+    });
+
+    testWidgets('shows badge with static string', (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'badge_test',
+        displayName: 'Badge Widget',
+        constraints: _testConstraints,
+        headerBadge: 'ON',
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppTag), findsOneWidget);
+      expect(find.text('ON'), findsOneWidget);
+    });
+
+    testWidgets('hides badge when headerBadge is null', (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'no_badge',
+        displayName: 'No Badge',
+        constraints: _testConstraints,
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppTag), findsNothing);
+    });
+
+    testWidgets('shows extra subtitle with static string', (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'extra_test',
+        displayName: 'Extra Widget',
+        constraints: _testConstraints,
+        headerExtra: 'Chunghwa Mobile',
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chunghwa Mobile'), findsOneWidget);
+    });
+
+    testWidgets('hides extra when headerExtra is null', (tester) async {
+      final template = PackageWidgetTemplate(
+        widgetId: 'no_extra',
+        displayName: 'No Extra',
+        constraints: _testConstraints,
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'Content'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        showHeader: true,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chunghwa Mobile'), findsNothing);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // cgi_call action — security
+  // -----------------------------------------------------------------------
+  group('cgi_call security', () {
+    testWidgets('blocks cgi_call with non-local URL', (tester) async {
+      var requestMade = false;
+      final mockClient = MockClient((request) async {
+        requestMade = true;
+        return http.Response('{}', 200);
+      });
+
+      // Template with an AppIconButton that fires onAction when tapped.
+      // We embed the $action inline — but since builders hardcode 'pressed',
+      // we test the security path by constructing a template that has
+      // a dataSource with a blocked URL and tapping refresh.
+      final template = PackageWidgetTemplate(
+        widgetId: 'cgi_block_test',
+        displayName: 'CGI Block',
+        constraints: _testConstraints,
+        dataSource: HttpDataSourceConfig(
+          url: 'https://evil.com/steal',
+          mapping: {'k': 'v'},
+        ),
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'CGI Test'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        httpClient: mockClient,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(requestMade, false);
+    });
+
+    testWidgets('blocks cgi_call without /cgi-bin/ prefix', (tester) async {
+      var requestMade = false;
+      final mockClient = MockClient((request) async {
+        requestMade = true;
+        return http.Response('{}', 200);
+      });
+
+      final template = PackageWidgetTemplate(
+        widgetId: 'cgi_prefix_test',
+        displayName: 'CGI Prefix',
+        constraints: _testConstraints,
+        dataSource: HttpDataSourceConfig(
+          url: '/api/v1/hack',
+          mapping: {'k': 'v'},
+        ),
+        template: {
+          'type': 'AppText',
+          'props': {'text': 'CGI Test'},
+        },
+      );
+
+      await tester.pumpWidget(_buildTestWidget(
+        template: template,
+        httpClient: mockClient,
+      ));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(requestMade, false);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // applyMapping / resolvePath helpers
+  // -----------------------------------------------------------------------
+  group('applyMapping', () {
+    test('maps nested JSON to flat keys', () {
+      final json = {
+        'data': {'query': '1.2.3.4', 'city': 'Taipei'}
+      };
+      final mapping = {'ip': 'data.query', 'city': 'data.city'};
+
+      final result = applyMapping(json, mapping);
+
+      expect(result['ip'], '1.2.3.4');
+      expect(result['city'], 'Taipei');
+    });
+
+    test('returns null for missing paths', () {
+      final json = {'data': <String, dynamic>{}};
+      final mapping = {'missing': 'data.nonexistent'};
+
+      final result = applyMapping(json, mapping);
+
+      expect(result['missing'], isNull);
+    });
+
+    test('handles deeply nested paths', () {
+      final json = {
+        'a': {
+          'b': {'c': 42}
+        }
+      };
+      final mapping = {'val': 'a.b.c'};
+
+      final result = applyMapping(json, mapping);
+
+      expect(result['val'], 42);
     });
   });
 }

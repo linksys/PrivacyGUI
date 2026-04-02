@@ -2,6 +2,7 @@
   "widgetId": "chart_integration_demo",
   "displayName": "Chart Integration Demo",
   "description": "Demonstrates all chart types in UI Kit integrated with package widget architecture",
+  "icon": "bar_chart",
   "constraints": {
     "minColumns": 4,
     "maxColumns": 12,
@@ -15,284 +16,148 @@
     "props": {
       "crossAxisAlignment": "start",
       "children": [
-            {
-              "type": "AppText",
-              "props": {
-                "text": "UI Kit Chart Integration Demo",
-                "variant": "headlineSmall"
+        {
+          "type": "AppText",
+          "props": {"text": "Line Chart", "variant": "titleMedium"}
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "sm"}
+        },
+        {
+          "type": "AppLineChart",
+          "props": {
+            "series": [
+              {
+                "label": "CPU Usage",
+                "data": [10, 25, 40, 30, 50, 35, 60],
+                "color": "#2196F3",
+                "filled": true
+              },
+              {
+                "label": "Memory Usage",
+                "data": [20, 35, 30, 45, 40, 55, 50],
+                "color": "#FF9800"
               }
-            },
-            {
-              "type": "AppGap",
-              "props": {
-                "size": "lg"
-              }
-            },
-            {
-              "type": "AppText",
-              "props": {
-                "text": "Line Chart",
-                "variant": "titleMedium"
-              }
-            },
-            {
-              "type": "AppGap",
-              "props": {
-                "size": "sm"
-              }
-            },
-            {
-              "type": "AppLineChart",
-              "props": {
-                "series": [
-                  {
-                    "label": "CPU Usage",
-                    "data": [10, 25, 40, 30, 50, 35, 60],
-                    "color": "#2196F3",
-                    "filled": true
-                  },
-                  {
-                    "label": "Memory Usage",
-                    "data": [20, 35, 30, 45, 40, 55, 50],
-                    "color": "#FF9800"
-                  }
-                ],
-                "xLabels": ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00", "24:00"],
-                "yAxis": {
-                  "min": 0,
-                  "max": 100,
-                  "interval": 25
-                },
-                "showGrid": true,
-                "showTooltip": true,
-                "height": 200
-              }
-            },
-            {
-              "type": "AppGap",
-              "props": {
-                "size": "lg"
-              }
-            },
-            {
-              "type": "AppText",
-              "props": {
-                "text": "Bar Chart",
-                "variant": "titleMedium"
-              }
-            },
-            {
-              "type": "AppGap",
-              "props": {
-                "size": "sm"
-              }
-            },
-            {
-              "type": "AppBarChart",
-              "props": {
-                "series": [
-                  {
-                    "label": "Download",
-                    "data": [100, 150, 200, 175, 220],
-                    "color": "#4CAF50"
-                  },
-                  {
-                    "label": "Upload",
-                    "data": [50, 75, 100, 85, 110],
-                    "color": "#FF5722"
-                  }
-                ],
-                "xLabels": ["Jan", "Feb", "Mar", "Apr", "May"],
-                "horizontal": false,
-                "stacked": false,
-                "height": 200
-              }
-            },
-            {
-              "type": "AppGap",
-              "props": {
-                "size": "lg"
-              }
-            },
-            {
-              "type": "Row",
-              "props": {
-                "mainAxisAlignment": "spaceEvenly",
-                "children": [
-                  {
-                    "type": "Column",
-                    "props": {
-                      "mainAxisSize": "min",
-                      "children": [
-                        {
-                          "type": "AppText",
-                          "props": {
-                            "text": "Pie Chart",
-                            "variant": "titleMedium"
-                          }
-                        },
-                        {
-                          "type": "AppGap",
-                          "props": {
-                            "size": "sm"
-                          }
-                        },
-                        {
-                          "type": "AppPieChart",
-                          "props": {
-                            "sections": [
-                              {
-                                "value": 40,
-                                "color": "#2196F3",
-                                "title": "WiFi",
-                                "radius": 50
-                              },
-                              {
-                                "value": 30,
-                                "color": "#4CAF50",
-                                "title": "Ethernet",
-                                "radius": 50
-                              },
-                              {
-                                "value": 20,
-                                "color": "#FF9800",
-                                "title": "Guest",
-                                "radius": 50
-                              },
-                              {
-                                "value": 10,
-                                "color": "#9C27B0",
-                                "title": "Other",
-                                "radius": 50
-                              }
-                            ],
-                            "showLabels": true,
-                            "height": 200
-                          }
-                        }
-                      ]
+            ],
+            "xLabels": ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00", "24:00"],
+            "yAxis": {"min": 0, "max": 100, "interval": 25},
+            "showGrid": true,
+            "showTooltip": true,
+            "height": 200
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "lg"}
+        },
+        {
+          "type": "AppText",
+          "props": {"text": "Bar Chart", "variant": "titleMedium"}
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "sm"}
+        },
+        {
+          "type": "AppBarChart",
+          "props": {
+            "series": [
+              {"label": "Download", "data": [100, 150, 200, 175, 220], "color": "#4CAF50"},
+              {"label": "Upload", "data": [50, 75, 100, 85, 110], "color": "#FF5722"}
+            ],
+            "xLabels": ["Jan", "Feb", "Mar", "Apr", "May"],
+            "horizontal": false,
+            "stacked": false,
+            "height": 200
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "lg"}
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceEvenly",
+            "children": [
+              {
+                "type": "Column",
+                "props": {
+                  "mainAxisSize": "min",
+                  "children": [
+                    {"type": "AppText", "props": {"text": "Pie Chart", "variant": "titleMedium"}},
+                    {"type": "AppGap", "props": {"size": "sm"}},
+                    {
+                      "type": "AppPieChart",
+                      "props": {
+                        "sections": [
+                          {"value": 40, "color": "#2196F3", "title": "WiFi", "radius": 50},
+                          {"value": 30, "color": "#4CAF50", "title": "Ethernet", "radius": 50},
+                          {"value": 20, "color": "#FF9800", "title": "Guest", "radius": 50},
+                          {"value": 10, "color": "#9C27B0", "title": "Other", "radius": 50}
+                        ],
+                        "showLabels": true,
+                        "height": 200
+                      }
                     }
-                  },
-                  {
-                    "type": "Column",
-                    "props": {
-                      "mainAxisSize": "min",
-                      "children": [
-                        {
-                          "type": "AppText",
-                          "props": {
-                            "text": "Radar Chart",
-                            "variant": "titleMedium"
-                          }
-                        },
-                        {
-                          "type": "AppGap",
-                          "props": {
-                            "size": "sm"
-                          }
-                        },
-                        {
-                          "type": "AppRadarChart",
-                          "props": {
-                            "series": [
-                              {
-                                "label": "Performance",
-                                "data": [80, 90, 70, 85, 75],
-                                "color": "#2196F3"
-                              },
-                              {
-                                "label": "Target",
-                                "data": [90, 85, 80, 90, 85],
-                                "color": "#FF9800"
-                              }
-                            ],
-                            "categories": ["Speed", "Stability", "Coverage", "Security", "Ease"],
-                            "maxValue": 100,
-                            "height": 200
-                          }
-                        }
-                      ]
+                  ]
+                }
+              },
+              {
+                "type": "Column",
+                "props": {
+                  "mainAxisSize": "min",
+                  "children": [
+                    {"type": "AppText", "props": {"text": "Radar Chart", "variant": "titleMedium"}},
+                    {"type": "AppGap", "props": {"size": "sm"}},
+                    {
+                      "type": "AppRadarChart",
+                      "props": {
+                        "series": [
+                          {"label": "Performance", "data": [80, 90, 70, 85, 75], "color": "#2196F3"},
+                          {"label": "Target", "data": [90, 85, 80, 90, 85], "color": "#FF9800"}
+                        ],
+                        "categories": ["Speed", "Stability", "Coverage", "Security", "Ease"],
+                        "maxValue": 100,
+                        "height": 200
+                      }
                     }
-                  }
-                ]
+                  ]
+                }
               }
-            },
-            {
-              "type": "AppGap",
-              "props": {
-                "size": "lg"
-              }
-            },
-            {
-              "type": "AppText",
-              "props": {
-                "text": "Heatmap Chart",
-                "variant": "titleMedium"
-              }
-            },
-            {
-              "type": "AppGap",
-              "props": {
-                "size": "sm"
-              }
-            },
-            {
-              "type": "AppHeatmapChart",
-              "props": {
-                "rows": 3,
-                "columns": 4,
-                "values": [
-                  [0.1, 0.3, 0.8, 0.6],
-                  [0.4, 0.9, 0.2, 0.7],
-                  [0.5, 0.1, 0.6, 0.4]
-                ],
-                "rowLabels": ["2.4GHz", "5GHz", "6GHz"],
-                "columnLabels": ["Ch 1", "Ch 6", "Ch 11", "Ch 36"],
-                "showValues": true,
-                "height": 150
-              }
-            },
-            {
-              "type": "AppGap",
-              "props": {
-                "size": "lg"
-              }
-            },
-            {
-              "type": "AppText",
-              "props": {
-                "text": "Interactive Chart Actions",
-                "variant": "titleMedium"
-              }
-            },
-            {
-              "type": "AppGap",
-              "props": {
-                "size": "sm"
-              }
-            },
-            {
-              "type": "AppLineChart",
-              "props": {
-                "series": [
-                  {
-                    "label": "Network Traffic",
-                    "data": [15, 30, 45, 25, 40, 55, 35],
-                    "color": "#E91E63"
-                  }
-                ],
-                "xLabels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-                "yAxis": {
-                  "min": 0,
-                  "max": 60,
-                  "interval": 15
-                },
-                "showGrid": true,
-                "showTooltip": true,
-                "height": 180
-              }
-            }
-          ]
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "lg"}
+        },
+        {
+          "type": "AppText",
+          "props": {"text": "Heatmap Chart", "variant": "titleMedium"}
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "sm"}
+        },
+        {
+          "type": "AppHeatmapChart",
+          "props": {
+            "rows": 3,
+            "columns": 4,
+            "values": [
+              [0.1, 0.3, 0.8, 0.6],
+              [0.4, 0.9, 0.2, 0.7],
+              [0.5, 0.1, 0.6, 0.4]
+            ],
+            "rowLabels": ["2.4GHz", "5GHz", "6GHz"],
+            "columnLabels": ["Ch 1", "Ch 6", "Ch 11", "Ch 36"],
+            "showValues": true,
+            "height": 150
+          }
+        }
+      ]
     }
   }
 }

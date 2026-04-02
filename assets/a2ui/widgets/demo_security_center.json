@@ -2,6 +2,9 @@
   "widgetId": "demo_security_center",
   "displayName": "Security Center",
   "description": "Comprehensive security monitoring and threat protection dashboard",
+  "icon": "shield",
+  "iconColor": "#66BB6A",
+  "headerBadge": "Protected",
   "constraints": {
     "minColumns": 3,
     "maxColumns": 6,
@@ -17,35 +20,6 @@
       "crossAxisAlignment": "stretch",
       "children": [
         {
-          "type": "Row",
-          "props": {
-            "mainAxisAlignment": "spaceBetween",
-            "children": [
-              {
-                "type": "AppText",
-                "props": {
-                  "text": "Security Center",
-                  "variant": "titleMedium"
-                }
-              },
-              {
-                "type": "AppIcon",
-                "props": {
-                  "name": "shield",
-                  "color": "success",
-                  "size": 24
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "AppGap",
-          "props": {
-            "size": "md"
-          }
-        },
-        {
           "type": "AppCard",
           "props": {
             "padding": 12,
@@ -57,17 +31,11 @@
                   "children": [
                     {
                       "type": "AppIcon",
-                      "props": {
-                        "name": "check_circle",
-                        "color": "success",
-                        "size": 20
-                      }
+                      "props": {"name": "check_circle", "color": "success", "size": 20}
                     },
                     {
                       "type": "AppGap",
-                      "props": {
-                        "size": "sm"
-                      }
+                      "props": {"size": "sm"}
                     },
                     {
                       "type": "Column",
@@ -76,18 +44,11 @@
                         "children": [
                           {
                             "type": "AppText",
-                            "props": {
-                              "text": "Network Protected",
-                              "variant": "bodyMedium"
-                            }
+                            "props": {"text": "Network Protected", "variant": "bodyMedium"}
                           },
                           {
                             "type": "AppText",
-                            "props": {
-                              "text": "All security features active",
-                              "variant": "bodySmall",
-                              "color": "onSurfaceVariant"
-                            }
+                            "props": {"text": "All security features active", "variant": "bodySmall", "color": "onSurfaceVariant"}
                           }
                         ]
                       }
@@ -100,9 +61,7 @@
         },
         {
           "type": "AppGap",
-          "props": {
-            "size": "md"
-          }
+          "props": {"size": "md"}
         },
         {
           "type": "Row",
@@ -116,18 +75,11 @@
                   "children": [
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "15",
-                        "variant": "headlineMedium",
-                        "color": "error"
-                      }
+                      "props": {"text": "15", "variant": "headlineMedium", "color": "error"}
                     },
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "Blocked",
-                        "variant": "bodySmall"
-                      }
+                      "props": {"text": "Blocked", "variant": "bodySmall"}
                     }
                   ]
                 }
@@ -139,18 +91,11 @@
                   "children": [
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "0",
-                        "variant": "headlineMedium",
-                        "color": "success"
-                      }
+                      "props": {"text": "0", "variant": "headlineMedium", "color": "success"}
                     },
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "Threats",
-                        "variant": "bodySmall"
-                      }
+                      "props": {"text": "Threats", "variant": "bodySmall"}
                     }
                   ]
                 }
@@ -162,18 +107,11 @@
                   "children": [
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "99.8%",
-                        "variant": "headlineMedium",
-                        "color": "primary"
-                      }
+                      "props": {"text": "99.8%", "variant": "headlineMedium", "color": "primary"}
                     },
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": "Uptime",
-                        "variant": "bodySmall"
-                      }
+                      "props": {"text": "Uptime", "variant": "bodySmall"}
                     }
                   ]
                 }
@@ -183,37 +121,17 @@
         },
         {
           "type": "AppGap",
-          "props": {
-            "size": "lg"
-          }
+          "props": {"size": "lg"}
         },
         {
-          "type": "Row",
+          "type": "AppButton",
           "props": {
-            "mainAxisAlignment": "spaceEvenly",
-            "children": [
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "Scan Network",
-                  "variant": "highlight",
-                  "size": "small",
-                  "onTap": {
-                    "$action": "security_scan"
-                  }
-                }
-              },
-              {
-                "type": "AppButton",
-                "props": {
-                  "label": "View Logs",
-                  "onTap": {
-                    "$action": "navigate",
-                    "destination": "security_logs"
-                  }
-                }
-              }
-            ]
+            "label": "Scan Network",
+            "variant": "highlight",
+            "size": "small",
+            "onTap": {
+              "$action": "security_scan"
+            }
           }
         }
       ]
