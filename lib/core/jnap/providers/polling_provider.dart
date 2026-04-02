@@ -52,8 +52,6 @@ class CoreTransactionData extends Equatable {
 class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
   static Timer? _timer;
   bool _paused = false;
-  int _consecutiveFailures = 0;
-  static const _maxFailuresBeforeLogout = 3;
   set paused(bool value) {
     _paused = value;
     if (_paused) {
@@ -132,20 +130,16 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
               data: Map.fromEntries(data),
             ))
         .onError((error, stackTrace) {
-      _consecutiveFailures++;
-      logger.e('Polling error ($_consecutiveFailures/$_maxFailuresBeforeLogout): $error');
-      if (_consecutiveFailures >= _maxFailuresBeforeLogout) {
-        logger.f('[Auth]: Force to log out after $_consecutiveFailures consecutive polling failures');
-        _consecutiveFailures = 0;
-        ref.read(authProvider.notifier).logout();
-      }
+      logger.e('Polling error: $error, $stackTrace');
+      logger.f('[Auth]: Force to log out because of failed polling');
+      ref.read(authProvider.notifier).logout();
+
       throw error ?? '';
     });
 
     state = await AsyncValue.guard(
       () => fetchFuture.then(
         (result) async {
-          _consecutiveFailures = 0; // Reset on success
           // Update Fernet key from device info
           try {
             final deviceInfoResult = result.data[JNAPAction.getDeviceInfo];
@@ -163,7 +157,6 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             logger.e('Failed to update Fernet key: $e');
           }
 
-          await _fetchNodesWirelessConnections(repository);
           await _additionalPolling();
           return result.copyWith(isReady: true);
         },
@@ -174,30 +167,6 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     );
 
     benchMark.end();
-  }
-
-  /// Fetch GetNodesWirelessNetworkConnections separately from the main
-  /// transaction. This call depends on devicedb, which may not be running
-  /// (e.g. after a clean flash or on non-mesh devices). If it fails, the
-  /// main polling data is still usable — we just won't have per-node
-  /// wireless client data.
-  Future _fetchNodesWirelessConnections(RouterRepository repository) async {
-    try {
-      final result = await repository.send(
-        JNAPAction.getNodesWirelessNetworkConnections,
-        auth: true,
-        fetchRemote: true,
-      );
-      // Merge into current state
-      final current = state.value;
-      if (current != null) {
-        final updatedData = Map<JNAPAction, JNAPResult>.from(current.data);
-        updatedData[JNAPAction.getNodesWirelessNetworkConnections] = result;
-        state = AsyncValue.data(current.copyWith(data: updatedData));
-      }
-    } catch (e) {
-      logger.w('GetNodesWirelessNetworkConnections failed (non-fatal): $e');
-    }
   }
 
   Future _additionalPolling() async {
@@ -272,10 +241,8 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       {String? mode}) {
     final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
 
-    // Note: GetNodesWirelessNetworkConnections is fetched separately in
-    // _fetchNodesWirelessConnections() because it depends on devicedb, which
-    // may not be running. A failure here would abort the entire transaction.
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [
+      const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
       const MapEntry(JNAPAction.getNetworkConnections, {}),
       const MapEntry(JNAPAction.getRadioInfo, {}),
       if (isSupportGuestWiFi)
