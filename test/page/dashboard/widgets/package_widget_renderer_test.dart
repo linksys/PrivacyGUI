@@ -415,7 +415,7 @@ void main() {
       expect(find.byIcon(Icons.refresh), findsOneWidget);
     });
 
-    testWidgets('shows info button when description exists', (tester) async {
+    testWidgets('shows description as tooltip on title when description exists', (tester) async {
       final template = PackageWidgetTemplate(
         widgetId: 'info_test',
         displayName: 'Info Widget',
@@ -438,7 +438,9 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      // Verify the title is wrapped with a Tooltip containing the description
+      expect(find.byTooltip('Some description'), findsOneWidget);
+      expect(find.text('Info Widget'), findsOneWidget);
     });
 
     testWidgets('shows navigate button when navigateTo is set', (tester) async {
