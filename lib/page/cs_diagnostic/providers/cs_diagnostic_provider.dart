@@ -23,11 +23,16 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
   CsDiagnosticState build() => const CsDiagnosticState();
 
   /// Helper: send a JNAP action via RouterRepository with diagnostic auth headers.
-  Future<Map<String, dynamic>> _send(JNAPAction action, {bool auth = true}) async {
+  Future<Map<String, dynamic>> _send(
+    JNAPAction action, {
+    bool auth = true,
+    Map<String, dynamic> data = const {},
+  }) async {
     final repo = ref.read(routerRepositoryProvider);
     final headers = auth ? ref.read(diagnosticAuthProvider).authHeaders : const <String, String>{};
     final result = await repo.send(
       action,
+      data: data,
       extraHeaders: headers,
       fetchRemote: true,
       cacheLevel: CacheLevel.noCache,
@@ -196,6 +201,128 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
     }
   }
 
+  // ── Speed Test (JNAP HealthCheck) ──────────────────────────────────
+
+  Future<void> runSpeedTest() async {
+    state = state.copyWith(
+      speedTestStep: 'latency',
+      clearSpeedTestLatency: true,
+      clearSpeedTestDownload: true,
+      clearSpeedTestUpload: true,
+      clearSpeedTestError: true,
+    );
+
+    try {
+      // 1. Trigger RunHealthCheck
+      final runResult = await _send(
+        JNAPAction.runHealthCheck,
+        data: {'runHealthCheckModule': 'SpeedTest'},
+      );
+      if (runResult['resultID'] == null) {
+        state = state.copyWith(
+          speedTestStep: 'error',
+          speedTestError: 'Router returned empty resultID',
+        );
+        return;
+      }
+
+      // 2. Poll GetHealthCheckStatus until done
+      const pollInterval = Duration(milliseconds: 500);
+      const maxPolls = 120; // 60 seconds max
+      for (var i = 0; i < maxPolls; i++) {
+        await Future<void>.delayed(pollInterval);
+
+        Map<String, dynamic> statusData;
+        try {
+          statusData = await _send(JNAPAction.getHealthCheckStatus);
+        } catch (e) {
+          dev.log('Instant-Help: speed test poll error: $e');
+          continue; // Transient failure, keep polling
+        }
+
+        final speedResult = statusData['speedTestResult'] as Map<String, dynamic>?;
+        if (speedResult == null) continue;
+
+        final exitCode = speedResult['exitCode'] as String?;
+
+        // Check for error exit codes
+        if (exitCode != null && exitCode != 'Success' && exitCode != 'Unavailable') {
+          state = state.copyWith(
+            speedTestStep: 'error',
+            speedTestError: exitCode,
+          );
+          return;
+        }
+
+        // Update progress based on which fields are populated
+        final latency = speedResult['latency'] as int?;
+        final download = speedResult['downloadBandwidth'] as int?;
+        final upload = speedResult['uploadBandwidth'] as int?;
+
+        if (upload != null && upload != 0) {
+          state = state.copyWith(
+            speedTestStep: 'upload',
+            speedTestLatencyMs: latency,
+            speedTestDownloadKbps: download,
+            speedTestUploadKbps: upload,
+          );
+        } else if (download != null && download != 0) {
+          state = state.copyWith(
+            speedTestStep: 'download',
+            speedTestLatencyMs: latency,
+            speedTestDownloadKbps: download,
+          );
+        } else if (latency != null && latency != 0) {
+          state = state.copyWith(
+            speedTestStep: 'latency',
+            speedTestLatencyMs: latency,
+          );
+        }
+
+        // Check if test is done
+        if (exitCode == 'Success') {
+          state = state.copyWith(
+            speedTestStep: 'complete',
+            speedTestLatencyMs: latency,
+            speedTestDownloadKbps: download,
+            speedTestUploadKbps: upload,
+          );
+          return;
+        }
+
+        final stillRunning = statusData['healthCheckModuleCurrentlyRunning'];
+        if (stillRunning == false || stillRunning == null) {
+          // Module stopped but exitCode wasn't 'Success' — treat as complete with whatever we have
+          state = state.copyWith(
+            speedTestStep: 'complete',
+            speedTestLatencyMs: latency,
+            speedTestDownloadKbps: download,
+            speedTestUploadKbps: upload,
+          );
+          return;
+        }
+      }
+
+      // Timed out
+      state = state.copyWith(
+        speedTestStep: 'error',
+        speedTestError: 'Speed test timed out',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        speedTestStep: 'error',
+        speedTestError: 'Failed to start speed test: $e',
+      );
+    }
+  }
+
+  Future<void> stopSpeedTest() async {
+    try {
+      await _send(JNAPAction.stopHealthCheck);
+    } catch (_) {}
+    state = state.copyWith(speedTestStep: 'idle');
+  }
+
   void toggleMock() {
     _useMock = !_useMock;
     fetch();
@@ -224,7 +351,7 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
     return map;
   }
 
-  /// Build a lookup of MAC address → {hostname, ipAddress, txRate, rxRate} from GetDevices3.
+  /// Build a lookup of MAC address → {hostname, ipAddress, txRate, rxRate, deviceType} from GetDevices3.
   Map<String, Map<String, String?>> _buildDeviceMap(Map<String, dynamic> data) {
     final map = <String, Map<String, String?>>{};
     final devices = data['devices'] as List? ?? [];
@@ -233,12 +360,19 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
       final friendlyName = d['friendlyName'] as String?;
       final hostname = d['hostname'] as String?;
       final name = friendlyName ?? hostname;
+      // Device type from model.deviceType (e.g. "Mobile", "Computer", "")
+      final deviceType = (d['model'] as Map<String, dynamic>?)?['deviceType'] as String?;
 
       for (final conn in connections) {
         final mac = (conn['macAddress'] as String?)?.toUpperCase();
         final ip = conn['ipAddress'] as String?;
         if (mac != null) {
           final entry = <String, String?>{'hostname': name, 'ipAddress': ip};
+
+          // Device type
+          if (deviceType != null && deviceType.isNotEmpty) {
+            entry['deviceType'] = deviceType;
+          }
 
           // GetDevices has txRate/rxRate in wirelessConnectionInfo (not in GetNodesWireless)
           final wcInfo = conn['wirelessConnectionInfo'] as Map<String, dynamic>?;
@@ -281,11 +415,14 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
         }
 
         if (wireless != null) {
-          // TX/RX: prefer wireless object, fallback to GetDevices wirelessConnectionInfo
+          // TX/RX: prefer wireless object, fallback to negotiatedMbps, then GetDevices
           final txWireless = wireless['txRate'] as int?;
           final rxWireless = wireless['rxRate'] as int?;
           final txFromDevices = devInfo?['txRate'] != null ? int.tryParse(devInfo!['txRate']!) : null;
           final rxFromDevices = devInfo?['rxRate'] != null ? int.tryParse(devInfo!['rxRate']!) : null;
+          // negotiatedMbps is in Kbps (despite the name) — convert to Mbps
+          final negotiated = conn['negotiatedMbps'] as int?;
+          final negotiatedMbps = negotiated != null ? negotiated ~/ 1000 : null;
 
           clients.add(DiagnosticClient(
             macAddress: mac,
@@ -293,9 +430,10 @@ class CsDiagnosticNotifier extends Notifier<CsDiagnosticState> {
             ipAddress: devInfo?['ipAddress'],
             band: (wireless['band'] as String?) ?? 'Unknown',
             signalDecibels: wireless['signalDecibels'] as int?,
-            txRateMbps: txWireless ?? txFromDevices,
-            rxRateMbps: rxWireless ?? rxFromDevices,
+            txRateMbps: txWireless ?? txFromDevices ?? negotiatedMbps,
+            rxRateMbps: rxWireless ?? rxFromDevices ?? negotiatedMbps,
             isWireless: true,
+            deviceType: devInfo?['deviceType'],
           ));
         }
       }

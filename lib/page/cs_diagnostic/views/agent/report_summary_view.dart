@@ -58,18 +58,19 @@ class ReportSummaryView extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
                 child: SelectableText(
                   report,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'monospace',
                     fontSize: 12,
                     height: 1.5,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -104,9 +105,11 @@ class ReportSummaryView extends StatelessWidget {
 
     // Router Info
     buf.writeln('--- Router ---');
-    final model = state.deviceInfo?['description'] ?? state.deviceInfo?['modelNumber'] ?? 'Unknown';
+    final model = state.deviceInfo?['modelNumber'] ?? state.deviceInfo?['description'] ?? 'Unknown';
     final fw = state.deviceInfo?['firmwareVersion'] ?? 'Unknown';
+    final serial = state.deviceInfo?['serialNumber'] ?? '';
     buf.writeln('Model: $model');
+    if (serial.isNotEmpty) buf.writeln('Serial: $serial');
     buf.writeln('Firmware: $fw');
     buf.writeln('Uptime: ${_formatUptime(state.routerUptimeSeconds)}');
     buf.writeln();
@@ -151,6 +154,21 @@ class ReportSummaryView extends StatelessWidget {
         final width = radio['settings']?['channelWidth'] ?? '?';
         final mode = radio['settings']?['mode'] ?? '?';
         buf.writeln('$band: Ch $ch ($width) — $mode');
+      }
+      buf.writeln();
+    }
+
+    // Speed Test Results
+    if (state.speedTestStep == 'complete') {
+      buf.writeln('--- Speed Test (WAN) ---');
+      if (state.speedTestLatencyMs != null) {
+        buf.writeln('Latency: ${state.speedTestLatencyMs} ms');
+      }
+      if (state.speedTestDownloadMbps != null) {
+        buf.writeln('Download: ${state.speedTestDownloadMbps!.toStringAsFixed(1)} Mbps');
+      }
+      if (state.speedTestUploadMbps != null) {
+        buf.writeln('Upload: ${state.speedTestUploadMbps!.toStringAsFixed(1)} Mbps');
       }
       buf.writeln();
     }

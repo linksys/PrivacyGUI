@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
@@ -24,7 +25,7 @@ class DnsCheckResult extends Equatable {
   List<Object?> get props => [resolved, latencyMs];
 }
 
-/// Placeholder speed test result (will integrate LibreSpeed later).
+/// Internet speed test result (device → Cloudflare CDN → device).
 class SpeedTestResult extends Equatable {
   final double downloadMbps;
   final double uploadMbps;
@@ -42,17 +43,30 @@ class SpeedTestResult extends Equatable {
   List<Object?> get props => [downloadMbps, uploadMbps, latencyMs, jitterMs];
 }
 
+/// Router-to-client WiFi throughput test result.
+class RouterSpeedResult extends Equatable {
+  final int latencyMs;
+  final double? throughputMbps;
+
+  const RouterSpeedResult({required this.latencyMs, this.throughputMbps});
+
+  @override
+  List<Object?> get props => [latencyMs, throughputMbps];
+}
+
 /// Combined result of all browser-based diagnostics.
 class BrowserDiagnosticResult extends Equatable {
   final GatewayPingResult? gatewayPing;
   final DnsCheckResult? dnsCheck;
   final SpeedTestResult? speedTest;
+  final RouterSpeedResult? routerSpeed;
   final DateTime timestamp;
 
   BrowserDiagnosticResult({
     this.gatewayPing,
     this.dnsCheck,
     this.speedTest,
+    this.routerSpeed,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
@@ -80,26 +94,26 @@ class BrowserDiagnosticResult extends Equatable {
   }
 
   @override
-  List<Object?> get props => [gatewayPing, dnsCheck, speedTest, timestamp];
+  List<Object?> get props => [gatewayPing, dnsCheck, speedTest, routerSpeed, timestamp];
 }
 
 /// Browser-based diagnostic service that runs tests from the customer device.
 class BrowserDiagnosticService {
-  /// Use HTTPS to match page origin and avoid mixed-content blocks.
-  /// The router's self-signed cert will cause a TLS error, but the HTTP
-  /// library still throws — we catch it and treat "connected but TLS error"
-  /// as reachable (the TCP handshake succeeded).
   static const _gatewayUrl = 'https://192.168.1.1';
-  /// Cloudflare endpoint — fast, reliable, and returns CORS headers.
   static const _dnsTestUrl = 'https://1.1.1.1/cdn-cgi/trace';
-  /// Fallback: Google's generate_204 (may lack CORS headers but worth trying).
   static const _dnsTestFallback = 'https://www.google.com/generate_204';
   static const _timeout = Duration(seconds: 5);
 
-  /// HTTP HEAD to the gateway. On a self-signed cert router, the TLS
-  /// handshake may fail — but if it fails quickly (<timeout), the gateway
-  /// is reachable (TCP connected, TLS rejected). Only a timeout or network
-  /// error means truly unreachable.
+  // Cloudflare speed test endpoints (support CORS from any origin)
+  static const _cfDownUrl = 'https://speed.cloudflare.com/__down';
+  static const _cfUpUrl = 'https://speed.cloudflare.com/__up';
+
+  // Download payload sizes for progressive speed test
+  static const _downloadBytes = 10000000; // 10 MB
+  static const _uploadBytes = 5000000; // 5 MB
+
+  /// HTTP HEAD to the gateway. Self-signed cert TLS errors that come back fast
+  /// still indicate the gateway is reachable (TCP connected).
   Future<GatewayPingResult> pingGateway() async {
     final stopwatch = Stopwatch()..start();
     try {
@@ -109,8 +123,6 @@ class BrowserDiagnosticService {
     } catch (e) {
       stopwatch.stop();
       final elapsed = stopwatch.elapsedMilliseconds;
-      // If error came back fast (< timeout), the TCP connection worked but
-      // TLS/CORS rejected it — gateway IS reachable.
       if (elapsed < _timeout.inMilliseconds - 500) {
         return GatewayPingResult(reachable: true, latencyMs: elapsed);
       }
@@ -118,58 +130,246 @@ class BrowserDiagnosticService {
     }
   }
 
-  /// Fetch a known URL to verify DNS resolution and internet connectivity.
-  /// Tries primary (Cloudflare), then fallback (Google). A successful HTTP
-  /// response at any status code means DNS resolved and internet is reachable.
-  /// CORS errors in browsers can mask successful DNS resolution, so we try
-  /// multiple endpoints before declaring failure.
+  /// Verify DNS resolution and internet connectivity via known endpoints.
   Future<DnsCheckResult> checkDns() async {
     for (final url in [_dnsTestUrl, _dnsTestFallback]) {
       final stopwatch = Stopwatch()..start();
       try {
         await http.get(Uri.parse(url)).timeout(_timeout);
         stopwatch.stop();
-        // Any HTTP response (even 4xx) means DNS + internet worked
         return DnsCheckResult(resolved: true, latencyMs: stopwatch.elapsedMilliseconds);
       } catch (_) {
         stopwatch.stop();
-        // Try next endpoint — CORS may have blocked this one
       }
     }
     return const DnsCheckResult(resolved: false);
   }
 
-  /// Placeholder speed test returning mock values. Will integrate LibreSpeed later.
-  Future<SpeedTestResult> runSpeedTest() async {
-    // Simulate test duration
-    await Future<void>.delayed(const Duration(seconds: 2));
-    return const SpeedTestResult(
-      downloadMbps: 85.3,
-      uploadMbps: 11.2,
-      latencyMs: 18,
-      jitterMs: 3,
+  // ── Internet Speed Test (Cloudflare) ─────────────────────────────────
+
+  /// Real internet speed test using Cloudflare CDN endpoints.
+  /// [onStep] callback receives step name: 'latency', 'download', 'upload', 'complete'.
+  Future<SpeedTestResult> runInternetSpeedTest({
+    void Function(String step)? onStep,
+  }) async {
+    // 1. Latency — multiple pings to Cloudflare, take median
+    onStep?.call('latency');
+    final latencies = await _measureLatencies(_dnsTestUrl, samples: 5);
+    final latencyMs = latencies.isNotEmpty ? _median(latencies) : 0;
+    final jitterMs = latencies.length >= 2 ? _computeJitter(latencies) : 0;
+
+    // 2. Download — fetch 10MB payload from Cloudflare
+    onStep?.call('download');
+    double downloadMbps = 0;
+    try {
+      final sw = Stopwatch()..start();
+      final response = await http.get(
+        Uri.parse('$_cfDownUrl?bytes=$_downloadBytes'),
+      ).timeout(const Duration(seconds: 30));
+      sw.stop();
+      final bytes = response.bodyBytes.length;
+      if (bytes > 0 && sw.elapsedMilliseconds > 0) {
+        downloadMbps = (bytes * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
+      }
+    } catch (_) {
+      // Cloudflare download failed — try fallback with smaller payload
+      try {
+        downloadMbps = await _fallbackDownloadTest();
+      } catch (_) {}
+    }
+
+    // 3. Upload — POST data to Cloudflare
+    // Note: Custom Content-Type triggers CORS preflight which may fail.
+    // Use default content type (application/x-www-form-urlencoded) to avoid preflight.
+    onStep?.call('upload');
+    double uploadMbps = 0;
+    try {
+      // Generate a string payload — avoids needing octet-stream Content-Type
+      final payload = String.fromCharCodes(
+        List.generate(_uploadBytes, (i) => 65 + (i % 26)), // ASCII A-Z repeated
+      );
+      final sw = Stopwatch()..start();
+      await http.post(
+        Uri.parse('$_cfUpUrl?measId=${DateTime.now().millisecondsSinceEpoch}'),
+        body: payload,
+      ).timeout(const Duration(seconds: 30));
+      sw.stop();
+      if (sw.elapsedMilliseconds > 0) {
+        uploadMbps = (_uploadBytes * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
+      }
+    } catch (_) {
+      // Upload test failed — try smaller payload as fallback
+      try {
+        final smallPayload = 'x' * 1000000; // 1MB
+        final sw = Stopwatch()..start();
+        await http.post(
+          Uri.parse(_dnsTestUrl),
+          body: smallPayload,
+        ).timeout(const Duration(seconds: 15));
+        sw.stop();
+        if (sw.elapsedMilliseconds > 0) {
+          uploadMbps = (1000000 * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
+        }
+      } catch (_) {}
+    }
+
+    onStep?.call('complete');
+    return SpeedTestResult(
+      downloadMbps: downloadMbps,
+      uploadMbps: uploadMbps,
+      latencyMs: latencyMs,
+      jitterMs: jitterMs,
     );
   }
 
-  /// Run all diagnostics and return a combined result.
-  Future<BrowserDiagnosticResult> runAll() async {
+  /// Fallback download test using multiple Cloudflare trace requests in parallel.
+  Future<double> _fallbackDownloadTest() async {
+    const parallel = 10;
+    final sw = Stopwatch()..start();
+    final futures = List.generate(parallel, (_) =>
+      http.get(Uri.parse(_dnsTestUrl)).timeout(const Duration(seconds: 10)),
+    );
+    final responses = await Future.wait(futures);
+    sw.stop();
+    final totalBytes = responses.fold<int>(0, (sum, r) => sum + r.bodyBytes.length);
+    if (totalBytes == 0 || sw.elapsedMilliseconds == 0) return 0;
+    return (totalBytes * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
+  }
+
+  // ── Router-to-Client Speed Test ──────────────────────────────────────
+
+  /// Measures WiFi throughput from router to this device by downloading a
+  /// known-size asset served by the router's web server.
+  /// [onStep] receives: 'latency', 'throughput', 'complete'.
+  Future<RouterSpeedResult> runRouterSpeedTest({
+    void Function(String step)? onStep,
+  }) async {
+    // Determine router URL — same origin as the page we're running on
+    final baseUrl = kIsWeb ? Uri.base.origin : _gatewayUrl;
+
+    // 1. Latency to router
+    onStep?.call('latency');
+    final latencies = await _measureLatencies('$baseUrl/', samples: 5);
+    final latencyMs = latencies.isNotEmpty ? _median(latencies) : 0;
+
+    // 2. Throughput — discover a servable file, then do parallel downloads
+    //    In production: main.dart.js (2-5 MB). In debug: flutter.js or bootstrap.
+    //    Fall back to parallel small fetches of the root page.
+    onStep?.call('throughput');
+    double? throughputMbps;
+    final bust = DateTime.now().millisecondsSinceEpoch;
+
+    // Find a usable file
+    String? throughputUrl;
+    for (final file in ['main.dart.js', 'flutter.js', 'flutter_bootstrap.js', 'index.html']) {
+      try {
+        final probe = await http.get(
+          Uri.parse('$baseUrl/$file?_=$bust'),
+        ).timeout(const Duration(seconds: 5));
+        if (probe.statusCode == 200 && probe.bodyBytes.length > 1000) {
+          throughputUrl = '$baseUrl/$file';
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // Measure throughput with parallel downloads
+    if (throughputUrl != null) {
+      try {
+        final sw = Stopwatch()..start();
+        final futures = List.generate(5, (i) =>
+          http.get(
+            Uri.parse('$throughputUrl?_=${bust + i}'),
+          ).timeout(const Duration(seconds: 20)),
+        );
+        final responses = await Future.wait(futures);
+        sw.stop();
+        final totalBytes = responses.fold<int>(0, (sum, r) => sum + r.bodyBytes.length);
+        if (totalBytes > 0 && sw.elapsedMilliseconds > 0) {
+          throughputMbps = (totalBytes * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
+        }
+      } catch (_) {}
+    } else {
+      // No single file found — do parallel fetches of root page
+      try {
+        final sw = Stopwatch()..start();
+        final futures = List.generate(20, (i) =>
+          http.get(Uri.parse('$baseUrl/?_=${bust + i}')).timeout(const Duration(seconds: 10)),
+        );
+        final responses = await Future.wait(futures);
+        sw.stop();
+        final totalBytes = responses.fold<int>(0, (sum, r) => sum + r.bodyBytes.length);
+        if (totalBytes > 0 && sw.elapsedMilliseconds > 0) {
+          throughputMbps = (totalBytes * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
+        }
+      } catch (_) {}
+    }
+
+    onStep?.call('complete');
+    return RouterSpeedResult(
+      latencyMs: latencyMs,
+      throughputMbps: throughputMbps,
+    );
+  }
+
+  // ── Legacy: run all diagnostics ──────────────────────────────────────
+
+  /// Run all diagnostics: gateway ping, DNS check, and internet speed test.
+  Future<BrowserDiagnosticResult> runAll({
+    void Function(String step)? onStep,
+  }) async {
+    onStep?.call('gateway');
     final gateway = await pingGateway();
+
+    onStep?.call('dns');
     final dns = await checkDns();
-    final speed = await runSpeedTest();
+
+    final speed = await runInternetSpeedTest(onStep: onStep);
+
     return BrowserDiagnosticResult(
       gatewayPing: gateway,
       dnsCheck: dns,
       speedTest: speed,
     );
   }
+
+  // ── Helpers ──────────────────────────────────────────────────────────
+
+  /// Measure round-trip latency to a URL, N times.
+  Future<List<int>> _measureLatencies(String url, {int samples = 5}) async {
+    final results = <int>[];
+    for (var i = 0; i < samples; i++) {
+      final sw = Stopwatch()..start();
+      try {
+        await http.get(Uri.parse(url)).timeout(_timeout);
+        sw.stop();
+        results.add(sw.elapsedMilliseconds);
+      } catch (e) {
+        sw.stop();
+        // If error came fast, TCP connected but TLS/CORS failed — still valid latency
+        if (sw.elapsedMilliseconds < _timeout.inMilliseconds - 500) {
+          results.add(sw.elapsedMilliseconds);
+        }
+      }
+    }
+    return results;
+  }
+
+  /// Median of a list of integers.
+  int _median(List<int> values) {
+    final sorted = [...values]..sort();
+    final mid = sorted.length ~/ 2;
+    return sorted.length.isOdd ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) ~/ 2;
+  }
+
+  /// Jitter = average absolute deviation from the median.
+  int _computeJitter(List<int> latencies) {
+    final med = _median(latencies);
+    final deviations = latencies.map((l) => (l - med).abs());
+    return (deviations.reduce((a, b) => a + b) / latencies.length).round();
+  }
 }
 
 final browserDiagnosticServiceProvider = Provider<BrowserDiagnosticService>((ref) {
   return BrowserDiagnosticService();
-});
-
-/// Async provider that runs all browser diagnostics on read.
-final browserDiagnosticResultProvider = FutureProvider.autoDispose<BrowserDiagnosticResult>((ref) async {
-  final service = ref.read(browserDiagnosticServiceProvider);
-  return service.runAll();
 });

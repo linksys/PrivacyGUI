@@ -11,6 +11,7 @@ class DiagnosticClient extends Equatable {
   final int? txRateMbps;
   final int? rxRateMbps;
   final bool isWireless;
+  final String? deviceType;
 
   const DiagnosticClient({
     required this.macAddress,
@@ -21,6 +22,7 @@ class DiagnosticClient extends Equatable {
     this.txRateMbps,
     this.rxRateMbps,
     required this.isWireless,
+    this.deviceType,
   });
 
   String get displayName => hostname ?? macAddress;
@@ -57,7 +59,7 @@ class DiagnosticClient extends Equatable {
   }
 
   @override
-  List<Object?> get props => [macAddress, hostname, ipAddress, band, signalDecibels, txRateMbps, rxRateMbps, isWireless];
+  List<Object?> get props => [macAddress, hostname, ipAddress, band, signalDecibels, txRateMbps, rxRateMbps, isWireless, deviceType];
 }
 
 /// Common OUI prefixes (MAC first 3 octets) → manufacturer.

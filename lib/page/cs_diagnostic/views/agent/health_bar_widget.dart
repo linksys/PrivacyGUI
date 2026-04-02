@@ -10,15 +10,37 @@ class HealthBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final model = state.deviceInfo?['modelNumber'] as String? ?? '';
+    final serial = state.deviceInfo?['serialNumber'] as String? ?? '';
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       child: Row(
         children: [
+          // Health indicators — compact, close together
           _indicator(context, 'WiFi', _wifiStatus),
+          const SizedBox(width: 4),
           _indicator(context, 'WAN', _wanStatus),
+          const SizedBox(width: 4),
           _indicator(context, 'DHCP', _dhcpStatus),
+          const SizedBox(width: 4),
           _indicator(context, 'Router', _routerStatus),
+          if (state.firmwareUpdateAvailable) ...[
+            const SizedBox(width: 4),
+            _indicator(context, 'FW Update', HealthStatus.yellow),
+          ],
+          const Spacer(),
+          // Model + serial in top right
+          if (model.isNotEmpty || serial.isNotEmpty)
+            Text(
+              [model, serial].where((s) => s.isNotEmpty).join(' / '),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
         ],
       ),
     );
@@ -59,15 +81,13 @@ class HealthBarWidget extends StatelessWidget {
       HealthStatus.yellow => Colors.amber,
       HealthStatus.red => Colors.red,
     };
-    return Expanded(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.circle, size: 10, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-        ],
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.circle, size: 10, color: color),
+        const SizedBox(width: 3),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }

@@ -10,10 +10,12 @@ class FlowSlowDeviceView extends ConsumerStatefulWidget {
 }
 
 class _FlowSlowDeviceViewState extends ConsumerState<FlowSlowDeviceView> {
-  SpeedTestResult? _speedResult;
   GatewayPingResult? _gatewayResult;
+  RouterSpeedResult? _routerResult;
+  SpeedTestResult? _internetResult;
   bool _running = false;
-  String? _currentStep;
+  String _currentStep = '';
+  double _progress = 0;
 
   @override
   void initState() {
@@ -24,24 +26,86 @@ class _FlowSlowDeviceViewState extends ConsumerState<FlowSlowDeviceView> {
   Future<void> _runDiagnostics() async {
     setState(() {
       _running = true;
-      _speedResult = null;
       _gatewayResult = null;
+      _routerResult = null;
+      _internetResult = null;
+      _currentStep = 'Checking router connection...';
+      _progress = 0;
     });
 
     final service = ref.read(browserDiagnosticServiceProvider);
 
-    setState(() => _currentStep = 'Checking gateway...');
+    // Step 1: Gateway ping
+    setState(() { _currentStep = 'Checking router connection...'; _progress = 0.05; });
     final gateway = await service.pingGateway();
 
-    setState(() => _currentStep = 'Running speed test...');
-    final speed = await service.runSpeedTest();
+    // Step 2: Router-to-client WiFi speed test
+    setState(() { _currentStep = 'Measuring WiFi speed to router...'; _progress = 0.1; });
+    final routerSpeed = await service.runRouterSpeedTest(
+      onStep: (step) {
+        if (!mounted) return;
+        setState(() {
+          switch (step) {
+            case 'latency':
+              _currentStep = 'Measuring WiFi latency to router...';
+              _progress = 0.15;
+            case 'throughput':
+              _currentStep = 'Measuring WiFi throughput...';
+              _progress = 0.3;
+            case 'complete':
+              _progress = 0.45;
+          }
+        });
+      },
+    );
 
+    // Step 3: Internet speed (for comparison)
+    final internetSpeed = await service.runInternetSpeedTest(
+      onStep: (step) {
+        if (!mounted) return;
+        setState(() {
+          switch (step) {
+            case 'latency':
+              _currentStep = 'Measuring internet latency...';
+              _progress = 0.5;
+            case 'download':
+              _currentStep = 'Testing internet download...';
+              _progress = 0.65;
+            case 'upload':
+              _currentStep = 'Testing internet upload...';
+              _progress = 0.85;
+            case 'complete':
+              _progress = 1.0;
+          }
+        });
+      },
+    );
+
+    if (!mounted) return;
     setState(() {
       _gatewayResult = gateway;
-      _speedResult = speed;
+      _routerResult = routerSpeed;
+      _internetResult = internetSpeed;
       _running = false;
-      _currentStep = null;
     });
+  }
+
+  /// Determine where the bottleneck is
+  _DeviceDiagnosis get _diagnosis {
+    if (_gatewayResult?.reachable != true) return _DeviceDiagnosis.noRouter;
+    final routerThroughput = _routerResult?.throughputMbps;
+    final internetDown = _internetResult?.downloadMbps ?? 0;
+
+    if (routerThroughput != null && routerThroughput < 25 && internetDown >= 25) {
+      return _DeviceDiagnosis.wifiBottleneck;
+    }
+    if (internetDown < 25 && (routerThroughput == null || routerThroughput >= 25)) {
+      return _DeviceDiagnosis.internetSlow;
+    }
+    if (routerThroughput != null && routerThroughput < 25 && internetDown < 25) {
+      return _DeviceDiagnosis.bothSlow;
+    }
+    return _DeviceDiagnosis.healthy;
   }
 
   @override
@@ -56,14 +120,19 @@ class _FlowSlowDeviceViewState extends ConsumerState<FlowSlowDeviceView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Testing speed from this device. If other devices work fine, the issue is likely with this device or its WiFi connection.',
+                  'Testing your WiFi connection to the router AND your internet speed. '
+                  'This helps identify if the problem is WiFi or your internet plan.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)),
                 ),
                 const SizedBox(height: 24),
                 if (_running) _buildRunning(context),
-                if (_speedResult != null) ...[
-                  _buildDeviceResults(context),
+                if (!_running && _gatewayResult != null) ...[
+                  _buildDiagnosisCard(context),
+                  const SizedBox(height: 20),
+                  _buildComparisonCards(context),
+                  const SizedBox(height: 20),
+                  _buildDetailedResults(context),
                   const SizedBox(height: 24),
                   _buildDeviceTips(context),
                   const SizedBox(height: 24),
@@ -90,75 +159,172 @@ class _FlowSlowDeviceViewState extends ConsumerState<FlowSlowDeviceView> {
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
-            const CircularProgressIndicator(),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: _progress,
+                minHeight: 8,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              ),
+            ),
             const SizedBox(height: 20),
-            Text(_currentStep ?? 'Running diagnostics...',
+            Text(_currentStep,
                 style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 8),
+            Text('Testing WiFi and internet speed...',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDeviceResults(BuildContext context) {
-    final speed = _speedResult!;
-    final gateway = _gatewayResult;
+  Widget _buildDiagnosisCard(BuildContext context) {
+    final diag = _diagnosis;
+    final isHealthy = diag == _DeviceDiagnosis.healthy;
+    final color = isHealthy ? Colors.green : Colors.orange;
+    final bgColor = isHealthy ? Colors.green.shade50 : Colors.orange.shade50;
+    final textColor = isHealthy ? Colors.green.shade900 : Colors.orange.shade900;
 
-    final downloadOk = speed.downloadMbps >= 25;
-    final latencyOk = speed.latencyMs <= 50;
-    final gatewayOk = gateway?.reachable == true;
-    final isHealthy = downloadOk && latencyOk && gatewayOk;
+    final message = switch (diag) {
+      _DeviceDiagnosis.noRouter =>
+        'Cannot reach your router. This device may not be connected to WiFi.',
+      _DeviceDiagnosis.wifiBottleneck =>
+        'Your internet is fast, but the WiFi link to this device is slow. '
+        'The problem is between your device and the router.',
+      _DeviceDiagnosis.internetSlow =>
+        'Your WiFi link is fine, but internet speed is slow. '
+        'This is likely an ISP issue, not a device problem.',
+      _DeviceDiagnosis.bothSlow =>
+        'Both your WiFi link and internet speed are slow. '
+        'Start by moving closer to the router.',
+      _DeviceDiagnosis.healthy =>
+        'This device is performing well on both WiFi and internet.',
+    };
 
-    String summary;
-    if (!gatewayOk) {
-      summary = 'Cannot reach your router. This device may have a weak WiFi signal or be disconnected.';
-    } else if (!downloadOk) {
-      summary = 'This device is getting ${speed.downloadMbps.toStringAsFixed(1)} Mbps — below expected. The issue is likely between this device and the router.';
-    } else if (!latencyOk) {
-      summary = 'Speed is OK but latency is high (${speed.latencyMs} ms). WiFi interference or distance from the router may be the cause.';
-    } else {
-      summary = 'This device is performing well (${speed.downloadMbps.toStringAsFixed(1)} Mbps, ${speed.latencyMs} ms). If it still feels slow, the issue may be app-specific.';
-    }
+    return Card(
+      color: bgColor,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              isHealthy ? Icons.check_circle : Icons.warning_amber,
+              color: color.shade700,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message, style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+            ))),
+          ],
+        ),
+      ),
+    );
+  }
 
+  /// Side-by-side comparison: WiFi speed vs Internet speed
+  Widget _buildComparisonCards(BuildContext context) {
+    final wifiMbps = _routerResult?.throughputMbps;
+    final internetMbps = _internetResult?.downloadMbps ?? 0;
+
+    return Row(
+      children: [
+        Expanded(child: _metricCard(
+          context,
+          icon: Icons.wifi,
+          label: 'WiFi to Router',
+          value: wifiMbps != null ? wifiMbps.toStringAsFixed(0) : '—',
+          unit: wifiMbps != null ? 'Mbps' : '',
+          isGood: wifiMbps != null && wifiMbps >= 25,
+          sublabel: wifiMbps == null ? 'Could not measure' : null,
+        )),
+        const SizedBox(width: 12),
+        Expanded(child: _metricCard(
+          context,
+          icon: Icons.public,
+          label: 'Internet',
+          value: internetMbps > 0 ? internetMbps.toStringAsFixed(0) : '—',
+          unit: internetMbps > 0 ? 'Mbps' : '',
+          isGood: internetMbps >= 25,
+          sublabel: internetMbps == 0 ? 'Could not measure' : null,
+        )),
+      ],
+    );
+  }
+
+  Widget _metricCard(BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required String unit,
+    required bool isGood,
+    String? sublabel,
+  }) {
+    final color = value == '—' ? Colors.grey : (isGood ? Colors.green : Colors.orange);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(value, style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color.shade700,
+            )),
+            if (unit.isNotEmpty)
+              Text(unit, style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              )),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+            if (sublabel != null)
+              Text(sublabel, style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailedResults(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Card(
-          color: isHealthy ? Colors.green.shade50 : Colors.red.shade50,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  isHealthy ? Icons.check_circle : Icons.warning_amber,
-                  color: isHealthy ? Colors.green.shade700 : Colors.red.shade700,
-                  size: 28,
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Text(summary,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: isHealthy ? Colors.green.shade900 : Colors.red.shade900,
-                      fontWeight: FontWeight.w500,
-                    ))),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text('Device Test Results',
+        Text('Detailed Results',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        _resultRow(context, 'Router Reachable', gatewayOk,
-            gatewayOk ? '${gateway!.latencyMs} ms' : 'No'),
-        _resultRow(context, 'Download', downloadOk,
-            '${speed.downloadMbps.toStringAsFixed(1)} Mbps'),
-        _resultRow(context, 'Upload', speed.uploadMbps >= 5,
-            '${speed.uploadMbps.toStringAsFixed(1)} Mbps'),
-        _resultRow(context, 'Latency', latencyOk,
-            '${speed.latencyMs} ms'),
-        _resultRow(context, 'Jitter', speed.jitterMs <= 10,
-            '${speed.jitterMs} ms'),
+        _resultRow(context, 'Router Reachable',
+            _gatewayResult?.reachable == true,
+            _gatewayResult?.reachable == true ? '${_gatewayResult!.latencyMs} ms' : 'No'),
+        _resultRow(context, 'WiFi Latency to Router',
+            _routerResult != null && _routerResult!.latencyMs <= 10,
+            '${_routerResult?.latencyMs ?? "—"} ms'),
+        if (_routerResult?.throughputMbps != null)
+          _resultRow(context, 'WiFi Download from Router',
+              _routerResult!.throughputMbps! >= 25,
+              '${_routerResult!.throughputMbps!.toStringAsFixed(1)} Mbps'),
+        _resultRow(context, 'Internet Download',
+            (_internetResult?.downloadMbps ?? 0) >= 25,
+            '${_internetResult?.downloadMbps.toStringAsFixed(1) ?? "—"} Mbps'),
+        _resultRow(context, 'Internet Upload',
+            (_internetResult?.uploadMbps ?? 0) >= 5,
+            '${_internetResult?.uploadMbps.toStringAsFixed(1) ?? "—"} Mbps'),
+        _resultRow(context, 'Internet Latency',
+            (_internetResult?.latencyMs ?? 999) <= 50,
+            '${_internetResult?.latencyMs ?? "—"} ms'),
+        _resultRow(context, 'Jitter',
+            (_internetResult?.jitterMs ?? 999) <= 10,
+            '${_internetResult?.jitterMs ?? "—"} ms'),
       ],
     );
   }
@@ -186,27 +352,27 @@ class _FlowSlowDeviceViewState extends ConsumerState<FlowSlowDeviceView> {
 
   Widget _buildDeviceTips(BuildContext context) {
     final tips = <String>[];
-    final speed = _speedResult!;
-    final gateway = _gatewayResult;
+    final diag = _diagnosis;
 
-    if (gateway?.reachable != true) {
-      tips.add('Turn WiFi off and back on in your device settings.');
-      tips.add('Make sure you are connected to your home network, not a neighbor\'s.');
-    }
-
-    if (speed.downloadMbps < 25) {
-      tips.add('Move closer to the router and test again.');
-      tips.add('If you are on 2.4 GHz, try switching to 5 GHz for faster speed.');
-      tips.add('Close background apps that may be using bandwidth.');
-    }
-
-    if (speed.latencyMs > 50) {
-      tips.add('WiFi interference from microwaves, baby monitors, or Bluetooth can cause high latency.');
-      tips.add('Try a wired Ethernet connection if available.');
-    }
-
-    if (speed.jitterMs > 10) {
-      tips.add('High jitter can cause video calls to stutter. Try moving to a less crowded area.');
+    switch (diag) {
+      case _DeviceDiagnosis.noRouter:
+        tips.add('Turn WiFi off and back on in your device settings.');
+        tips.add('Make sure you are connected to your home network.');
+      case _DeviceDiagnosis.wifiBottleneck:
+        tips.add('Move closer to the router — WiFi speed drops with distance.');
+        tips.add('Switch from 2.4 GHz to 5 GHz if available for faster speeds.');
+        tips.add('Check for interference — microwaves, baby monitors, and Bluetooth can slow WiFi.');
+        tips.add('If this device is far from the router, consider a mesh WiFi node for better coverage.');
+      case _DeviceDiagnosis.internetSlow:
+        tips.add('Your WiFi is fine — this is an ISP or internet issue.');
+        tips.add('Restart your modem — unplug for 30 seconds, then plug back in.');
+        tips.add('Check if other devices also have slow internet — if so, contact your ISP.');
+      case _DeviceDiagnosis.bothSlow:
+        tips.add('Move closer to the router and test again.');
+        tips.add('Restart both your router and modem.');
+        tips.add('Disconnect devices you are not using.');
+      case _DeviceDiagnosis.healthy:
+        tips.add('Your connection looks good. If a specific app feels slow, the issue may be on their end.');
     }
 
     tips.add('Restart your device — this clears the WiFi connection and gets a fresh one.');
@@ -232,4 +398,12 @@ class _FlowSlowDeviceViewState extends ConsumerState<FlowSlowDeviceView> {
       ],
     );
   }
+}
+
+enum _DeviceDiagnosis {
+  noRouter,
+  wifiBottleneck,
+  internetSlow,
+  bothSlow,
+  healthy,
 }

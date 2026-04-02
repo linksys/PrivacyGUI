@@ -23,6 +23,13 @@ class CsDiagnosticState extends Equatable {
   final Map<String, dynamic>? ethernetPorts;
   final String? errorMessage;
 
+  // Speed test state (JNAP HealthCheck)
+  final String speedTestStep; // 'idle', 'latency', 'download', 'upload', 'complete', 'error'
+  final int? speedTestLatencyMs;
+  final int? speedTestDownloadKbps;
+  final int? speedTestUploadKbps;
+  final String? speedTestError;
+
   const CsDiagnosticState({
     this.loadState = DiagnosticLoadState.idle,
     this.clients = const [],
@@ -42,6 +49,11 @@ class CsDiagnosticState extends Equatable {
     this.channelInfo,
     this.ethernetPorts,
     this.errorMessage,
+    this.speedTestStep = 'idle',
+    this.speedTestLatencyMs,
+    this.speedTestDownloadKbps,
+    this.speedTestUploadKbps,
+    this.speedTestError,
   });
 
   CsDiagnosticState copyWith({
@@ -63,6 +75,15 @@ class CsDiagnosticState extends Equatable {
     Map<String, dynamic>? channelInfo,
     Map<String, dynamic>? ethernetPorts,
     String? errorMessage,
+    String? speedTestStep,
+    int? speedTestLatencyMs,
+    bool clearSpeedTestLatency = false,
+    int? speedTestDownloadKbps,
+    bool clearSpeedTestDownload = false,
+    int? speedTestUploadKbps,
+    bool clearSpeedTestUpload = false,
+    String? speedTestError,
+    bool clearSpeedTestError = false,
   }) => CsDiagnosticState(
     loadState: loadState ?? this.loadState,
     clients: clients ?? this.clients,
@@ -82,6 +103,11 @@ class CsDiagnosticState extends Equatable {
     channelInfo: channelInfo ?? this.channelInfo,
     ethernetPorts: ethernetPorts ?? this.ethernetPorts,
     errorMessage: errorMessage,
+    speedTestStep: speedTestStep ?? this.speedTestStep,
+    speedTestLatencyMs: clearSpeedTestLatency ? null : (speedTestLatencyMs ?? this.speedTestLatencyMs),
+    speedTestDownloadKbps: clearSpeedTestDownload ? null : (speedTestDownloadKbps ?? this.speedTestDownloadKbps),
+    speedTestUploadKbps: clearSpeedTestUpload ? null : (speedTestUploadKbps ?? this.speedTestUploadKbps),
+    speedTestError: clearSpeedTestError ? null : (speedTestError ?? this.speedTestError),
   );
 
   double get dhcpUtilization => dhcpPoolLimit > 0 ? dhcpLeasesCount / dhcpPoolLimit : 0;
@@ -161,6 +187,19 @@ class CsDiagnosticState extends Equatable {
         networkSecurity!['wpaPersonalSettings']?['securityMode'] as String?;
   }
 
+  /// Speed test download in Mbps (from kbps).
+  double? get speedTestDownloadMbps =>
+      speedTestDownloadKbps != null ? speedTestDownloadKbps! / 1000.0 : null;
+
+  /// Speed test upload in Mbps (from kbps).
+  double? get speedTestUploadMbps =>
+      speedTestUploadKbps != null ? speedTestUploadKbps! / 1000.0 : null;
+
+  bool get isSpeedTestRunning =>
+      speedTestStep == 'latency' ||
+      speedTestStep == 'download' ||
+      speedTestStep == 'upload';
+
   @override
-  List<Object?> get props => [loadState, clients, wanStatus, routerHealth, deviceInfo, dhcpLeasesCount, dhcpPoolLimit, radioInfo, guestNetwork, firmwareUpdate, backhaulInfo, macFilter, networkSecurity, parentalControls, wirelessSchedule, channelInfo, ethernetPorts, errorMessage];
+  List<Object?> get props => [loadState, clients, wanStatus, routerHealth, deviceInfo, dhcpLeasesCount, dhcpPoolLimit, radioInfo, guestNetwork, firmwareUpdate, backhaulInfo, macFilter, networkSecurity, parentalControls, wirelessSchedule, channelInfo, ethernetPorts, errorMessage, speedTestStep, speedTestLatencyMs, speedTestDownloadKbps, speedTestUploadKbps, speedTestError];
 }

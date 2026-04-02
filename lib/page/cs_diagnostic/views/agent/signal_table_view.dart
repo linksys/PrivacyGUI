@@ -18,11 +18,6 @@ class SignalTableView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: Text('Connected Devices (${clients.length})',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-        ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
@@ -47,7 +42,7 @@ class SignalTableView extends StatelessWidget {
                   child: Text(client.displayNameWithOui, overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontWeight: client.isFlagged ? FontWeight.bold : FontWeight.normal)),
                 )),
-                DataCell(Text(client.manufacturer ?? '—',
+                DataCell(Text(client.deviceType ?? client.manufacturer ?? '—',
                     style: TextStyle(fontSize: 11,
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.grey.shade400
