@@ -163,6 +163,7 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
             logger.e('Failed to update Fernet key: $e');
           }
 
+          await _fetchNodesWirelessConnections(repository);
           await _additionalPolling();
           return result.copyWith(isReady: true);
         },
@@ -173,6 +174,30 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
     );
 
     benchMark.end();
+  }
+
+  /// Fetch GetNodesWirelessNetworkConnections separately from the main
+  /// transaction. This call depends on devicedb, which may not be running
+  /// (e.g. after a clean flash or on non-mesh devices). If it fails, the
+  /// main polling data is still usable — we just won't have per-node
+  /// wireless client data.
+  Future _fetchNodesWirelessConnections(RouterRepository repository) async {
+    try {
+      final result = await repository.send(
+        JNAPAction.getNodesWirelessNetworkConnections,
+        auth: true,
+        fetchRemote: true,
+      );
+      // Merge into current state
+      final current = state.value;
+      if (current != null) {
+        final updatedData = Map<JNAPAction, JNAPResult>.from(current.data);
+        updatedData[JNAPAction.getNodesWirelessNetworkConnections] = result;
+        state = AsyncValue.data(current.copyWith(data: updatedData));
+      }
+    } catch (e) {
+      logger.w('GetNodesWirelessNetworkConnections failed (non-fatal): $e');
+    }
   }
 
   Future _additionalPolling() async {
@@ -247,8 +272,10 @@ class PollingNotifier extends AsyncNotifier<CoreTransactionData> {
       {String? mode}) {
     final isSupportGuestWiFi = serviceHelper.isSupportGuestNetwork();
 
+    // Note: GetNodesWirelessNetworkConnections is fetched separately in
+    // _fetchNodesWirelessConnections() because it depends on devicedb, which
+    // may not be running. A failure here would abort the entire transaction.
     List<MapEntry<JNAPAction, Map<String, dynamic>>> commands = [
-      const MapEntry(JNAPAction.getNodesWirelessNetworkConnections, {}),
       const MapEntry(JNAPAction.getNetworkConnections, {}),
       const MapEntry(JNAPAction.getRadioInfo, {}),
       if (isSupportGuestWiFi)
