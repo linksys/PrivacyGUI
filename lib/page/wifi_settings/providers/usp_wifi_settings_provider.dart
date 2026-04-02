@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
@@ -87,11 +88,11 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     final WifiData wifiData;
     try {
       wifiData = await ref.read(wifiDataProvider.future);
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.w('[USP][WiFi] WiFi data fetch failed: $e');
       return (
         null,
-        WifiSettingsStatus(errorMessage: 'WiFi data unavailable'),
+        WifiSettingsStatus(errorMessage: '$e'),
       );
     }
     final (:radios, :ssids, :accessPoints) = wifiData.codegenContext.raw;
@@ -154,7 +155,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       return await super.save();
       // super.save() calls performSave() → markAsSaved() → fetch().
       // fetch() rebuilds status with a fresh WifiSettingsStatus (isSaving = false).
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][WiFi] Save failed', error: e);
       rethrow;
     } finally {

@@ -246,5 +246,4 @@ void main() {
       expect(mapUspErrorToServiceError(raw), isA<UnexpectedError>());
     });
   });
-
 }

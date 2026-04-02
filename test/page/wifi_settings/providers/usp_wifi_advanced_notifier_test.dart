@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
@@ -152,6 +153,71 @@ void main() {
             radioPaths: any(named: 'radioPaths'),
             enabled: any(named: 'enabled'),
           ));
+      container.dispose();
+    });
+
+    // -----------------------------------------------------------------------
+    // Error handling
+    // -----------------------------------------------------------------------
+
+    test('build sets AsyncError when service throws ServiceError', () async {
+      when(() => mockService.fetchIeee80211h())
+          .thenThrow(const NetworkError(message: 'timeout'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspWifiAdvancedProvider);
+      expect(state.hasError, isTrue);
+      expect(state.error, isA<NetworkError>());
+      container.dispose();
+    });
+
+    test('setIeee80211hEnabled rethrows ServiceError from service', () async {
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': false,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+          )).thenThrow(const InvalidInputError(message: 'read-only'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      expect(
+        () => notifier.setIeee80211hEnabled(true),
+        throwsA(isA<InvalidInputError>()),
+      );
+      container.dispose();
+    });
+
+    test('setIeee80211hEnabled does not update state when service throws',
+        () async {
+      when(() => mockService.fetchIeee80211h()).thenAnswer((_) async => {
+            'Device.WiFi.Radio.1.': false,
+          });
+      when(() => mockService.setIeee80211hEnabled(
+            radioPaths: any(named: 'radioPaths'),
+            enabled: any(named: 'enabled'),
+          )).thenThrow(const NetworkError(message: 'connection refused'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspWifiAdvancedProvider.notifier);
+
+      try {
+        await notifier.setIeee80211hEnabled(true);
+      } on ServiceError catch (_) {
+        // expected
+      }
+
+      // State should remain unchanged (still false)
+      final state = container.read(uspWifiAdvancedProvider).requireValue;
+      expect(state.ieee80211hByRadio['Device.WiFi.Radio.1.'], isFalse);
       container.dispose();
     });
   });

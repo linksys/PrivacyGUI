@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 
@@ -99,6 +100,69 @@ void main() {
       verify(() => mockUsp.set({
             'Device.WiFi.Radio.1.IEEE80211hEnabled': false,
           })).called(1);
+    });
+
+    test('throws NetworkError when USP set throws transport error', () async {
+      when(() => mockUsp.set(any()))
+          .thenThrow('Set failed: Transport error: Request timeout');
+
+      expect(
+        () => svc.setIeee80211hEnabled(
+          radioPaths: ['Device.WiFi.Radio.1.'],
+          enabled: true,
+        ),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Error handling
+  // -------------------------------------------------------------------------
+
+  group('UspWifiAdvancedService - error handling', () {
+    test('fetchIeee80211h maps USP protocol error to ServiceError', () {
+      when(() => mockUsp.get(any())).thenThrow(
+        'Get failed: Protocol error: Decoding error: '
+        'Path (Device.WiFi.Radio) does not exist (code: 7026)',
+      );
+
+      expect(
+        () => svc.fetchIeee80211h(),
+        throwsA(isA<ResourceNotFoundError>()),
+      );
+    });
+
+    test('fetchIeee80211h maps USP auth error to ServiceError', () {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Authentication error: Session expired');
+
+      expect(
+        () => svc.fetchIeee80211h(),
+        throwsA(isA<SessionTokenExpiredError>()),
+      );
+    });
+
+    test('fetchIeee80211h maps non-USP error to UnexpectedError', () {
+      when(() => mockUsp.get(any())).thenThrow('some random error');
+
+      expect(
+        () => svc.fetchIeee80211h(),
+        throwsA(isA<UnexpectedError>()),
+      );
+    });
+
+    test('setIeee80211hEnabled maps USP transport error to ServiceError', () {
+      when(() => mockUsp.set(any()))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      expect(
+        () => svc.setIeee80211hEnabled(
+          radioPaths: ['Device.WiFi.Radio.1.'],
+          enabled: true,
+        ),
+        throwsA(isA<ConnectivityError>()),
+      );
     });
   });
 }

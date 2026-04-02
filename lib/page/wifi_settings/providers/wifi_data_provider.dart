@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
@@ -117,7 +119,9 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
 
   Future<WifiData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ConnectivityError(message: 'USP service not available');
+    }
 
     // Parallel fetch all WiFi data. No overall timeout here — the throttler's
     // per-request timeout (15s) protects each individual request. An overall
@@ -125,12 +129,17 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
     // queue wait time in the throttler. With ~14 normal-priority requests
     // ahead and fetchWifiClients at low priority, queue time alone can exceed
     // 12s, leaving insufficient time for the actual request.
-    final results = await Future.wait([
-      WiFiRadios.fetch(usp),
-      WiFiSsids.fetch(usp),
-      WiFiAccessPoints.fetch(usp),
-      fetchWifiClients(usp),
-    ]);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        WiFiRadios.fetch(usp),
+        WiFiSsids.fetch(usp),
+        WiFiAccessPoints.fetch(usp),
+        fetchWifiClients(usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     final radios = results[0] as WiFiRadios;
     final ssids = results[1] as WiFiSsids;
@@ -184,26 +193,34 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
 
   Future<void> toggleWifiRadio(String instancePath, bool enable) async {
     final usp = ref.read(uspServiceProvider)!;
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await WiFiRadios.update(
-          usp, WiFiRadioUpdate(instancePath: instancePath, enable: enable));
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await WiFiRadios.update(
+            usp, WiFiRadioUpdate(instancePath: instancePath, enable: enable));
+      });
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
     ref.invalidateSelf();
   }
 
   Future<void> updateWifiRadioChannel(
       String instancePath, int channel, bool autoChannel) async {
     final usp = ref.read(uspServiceProvider)!;
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await WiFiRadios.update(
-        usp,
-        WiFiRadioUpdate(
-          instancePath: instancePath,
-          channel: channel,
-          autoChannelEnable: autoChannel,
-        ),
-      );
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await WiFiRadios.update(
+          usp,
+          WiFiRadioUpdate(
+            instancePath: instancePath,
+            channel: channel,
+            autoChannelEnable: autoChannel,
+          ),
+        );
+      });
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
     ref.invalidateSelf();
   }
 }

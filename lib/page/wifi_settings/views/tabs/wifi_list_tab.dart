@@ -282,11 +282,11 @@ class UspWifiListTab extends ConsumerWidget {
                         ),
                       );
                     }
-                  } catch (_) {
+                  } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Failed to save settings'),
+                        SnackBar(
+                          content: Text('Failed to save: $e'),
                         ),
                       );
                     }

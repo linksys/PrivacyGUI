@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
@@ -533,8 +534,110 @@ void main() {
       expect(notifier.effectiveNetwork('Device.WiFi.SSID.99.'), isNull);
       container.dispose();
     });
+
+    // -----------------------------------------------------------------------
+    // Error handling — performFetch
+    // -----------------------------------------------------------------------
+
+    test(
+        'performFetch returns error status when wifiDataProvider throws ServiceError',
+        () async {
+      final container = ProviderContainer(
+        overrides: [
+          uspWifiSettingsServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          uspServiceProvider.overrideWithValue(mockUsp),
+          uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
+          wifiDataProvider.overrideWith(() =>
+              _ErrorWifiDataNotifier(const NetworkError(message: 'timeout'))),
+        ],
+      );
+      container.listen(uspWifiSettingsProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      final state = container.read(uspWifiSettingsProvider);
+      expect(state.status.errorMessage, isNotNull);
+      expect(state.status.errorMessage, contains('Network error'));
+      expect(state.settings.current.networks, isEmpty);
+      container.dispose();
+    });
+
+    // -----------------------------------------------------------------------
+    // Error handling — save
+    // -----------------------------------------------------------------------
+
+    test('save rethrows ServiceError from service', () async {
+      final networks = WifiSettingsTestData.createNetworks();
+      when(() => mockService.buildWifiNetworks(
+            ssids: any(named: 'ssids'),
+            accessPoints: any(named: 'accessPoints'),
+            radios: any(named: 'radios'),
+          )).thenReturn(networks);
+      when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+        main: null,
+        guest: null,
+        isQuickSetup: false,
+      ));
+      when(() => mockService.saveAdvanced(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(const NetworkError(message: 'HTTP 504'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspWifiSettingsProvider.notifier);
+      notifier.updateNetworkField('Device.WiFi.SSID.1.', ssid: 'Changed');
+
+      expect(
+        () => notifier.save(),
+        throwsA(isA<NetworkError>()),
+      );
+      container.dispose();
+    });
+
+    test('save resets isSaving flag after ServiceError', () async {
+      final networks = WifiSettingsTestData.createNetworks();
+      when(() => mockService.buildWifiNetworks(
+            ssids: any(named: 'ssids'),
+            accessPoints: any(named: 'accessPoints'),
+            radios: any(named: 'radios'),
+          )).thenReturn(networks);
+      when(() => mockService.buildQuickSetupNetworks(any())).thenReturn((
+        main: null,
+        guest: null,
+        isQuickSetup: false,
+      ));
+      when(() => mockService.saveAdvanced(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(const NetworkError(message: 'HTTP 504'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspWifiSettingsProvider.notifier);
+      notifier.updateNetworkField('Device.WiFi.SSID.1.', ssid: 'Changed');
+
+      try {
+        await notifier.save();
+      } on ServiceError catch (_) {
+        // expected
+      }
+
+      final state = container.read(uspWifiSettingsProvider);
+      expect(state.status.isSaving, isFalse);
+      container.dispose();
+    });
   });
 }
+
+// ---------------------------------------------------------------------------
+// Fake WifiDataNotifier that returns pre-built data without real USP calls
+// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // Fake WifiDataNotifier that returns pre-built data without real USP calls
@@ -547,6 +650,26 @@ class _FakeWifiDataNotifier extends AsyncNotifier<WifiData>
 
   @override
   Future<WifiData> build() async => _data;
+
+  @override
+  Future<void> toggleWifiRadio(String instancePath, bool enable) async {}
+
+  @override
+  Future<void> updateWifiRadioChannel(
+      String instancePath, int channel, bool autoChannel) async {}
+}
+
+// ---------------------------------------------------------------------------
+// Fake WifiDataNotifier that throws ServiceError on build
+// ---------------------------------------------------------------------------
+
+class _ErrorWifiDataNotifier extends AsyncNotifier<WifiData>
+    implements WifiDataNotifier {
+  final ServiceError _error;
+  _ErrorWifiDataNotifier(this._error);
+
+  @override
+  Future<WifiData> build() async => throw _error;
 
   @override
   Future<void> toggleWifiRadio(String instancePath, bool enable) async {}
