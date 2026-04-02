@@ -1063,30 +1063,31 @@ final class UnexpectedError extends ServiceError {
 
 **Responsibility**: The Service layer is the **only** place allowed to directly catch underlying exceptions (USP/WASM), and is responsible for converting them to `ServiceError`.
 
-**Correct Example**:
+> **Important — USP errors are raw `String`, not `Exception`:**
+> The WASM client throws plain `String` values across the JS→Dart interop boundary, not `Exception` or `Error` objects. Therefore, Service methods MUST use `catch (e)` (catch-all), **not** `on Exception catch (e)` — the latter silently misses all USP errors.
+
+**Standard Pattern — use `mapUspErrorToServiceError()`**
+
+All USP Service methods MUST use the centralized `mapUspErrorToServiceError()` utility. This function parses the structured USP error string, extracts fault codes and HTTP status, and maps to the appropriate `ServiceError` subtype. Do NOT manually parse USP error strings.
+
 ```dart
-// lib/page/wifi/services/wifi_service.dart
-Future<WifiState> fetchSettings() async {
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+
+// ✅ Correct: USP Service uses mapUspErrorToServiceError()
+Future<DmzSettings> fetchSettings() async {
   try {
-    final ssids = await WifiSsids.fetch(_usp);  // codegen call, may throw underlying exception
-    return WifiState(ssidModels: ssids.items.map(_toUIModel).toList());
+    final dmz = await Dmz.fetch(_usp);
+    return _toUIModel(dmz);
   } catch (e) {
-    // ✅ Convert all underlying exceptions to ServiceError in Service layer
-    throw UnexpectedError(originalError: e);
+    throw mapUspErrorToServiceError(e);
   }
 }
-```
 
-For known business rule violations, convert to a specific `ServiceError` subtype:
-```dart
-Future<void> updatePassword(String newPassword) async {
+Future<void> update({required String instancePath, required DmzUIModel model}) async {
   try {
-    await AdminSettings.update(_usp, AdminSettingsUpdate(password: newPassword));
+    await Dmz.update(_usp, DmzEntryUpdate(...));
   } catch (e) {
-    if (e.toString().contains('ErrorInvalidPassword')) {
-      throw const InvalidAdminPasswordError();
-    }
-    throw UnexpectedError(originalError: e);
+    throw mapUspErrorToServiceError(e);
   }
 }
 ```
@@ -1104,9 +1105,12 @@ Future<WifiState> fetchSettings() async {
 
 **Section 13.4: Provider Layer Error Handling**
 
-**Responsibility**: The Provider layer only handles `ServiceError` types. `build()` exceptions are automatically wrapped as `AsyncError` state by `AsyncNotifier`; mutation methods require explicit error handling.
+**Responsibility**: The Provider layer only handles `ServiceError` types. MUST NOT catch generic exceptions or underlying error types.
 
-**Correct Example**:
+**13.4.1: AsyncNotifier Pattern (Type C pages)**
+
+`build()` exceptions are automatically wrapped as `AsyncError` state by `AsyncNotifier`; mutation methods require explicit error handling.
+
 ```dart
 // lib/page/wifi/providers/wifi_notifier.dart
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -1134,17 +1138,88 @@ Future<void> updatePassword(String newPassword) async {
 }
 ```
 
+**13.4.2: Preservable Pattern (Type A / Type B pages)**
+
+Pages using `PreservableAutoDisposeNotifierMixin` handle errors in `performFetch()` and `performSave()`:
+
+```dart
+import 'package:privacy_gui/core/errors/service_error.dart';
+
+// performFetch: catch ServiceError → return (null, errorStatus)
+// Do NOT rethrow — the mixin's fetch() handles null settings gracefully.
+@override
+Future<(DmzSettings?, DmzStatus?)> performFetch({
+  bool forceRemote = false,
+  bool updateStatusOnly = false,
+}) async {
+  try {
+    final (settings, status) = await _svc.fetch();
+    return (settings, status);
+  } on ServiceError catch (e) {
+    logger.e('[USP][DMZ] Fetch failed', error: e);
+    return (null, DmzStatus(isLoading: false, errorMessage: '$e'));
+  }
+}
+
+// performSave: catch ServiceError → log + rethrow
+// The mixin's save() will catch the rethrown error and handle UI state.
+@override
+Future<void> performSave() async {
+  try {
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.update(instancePath: path, model: pending);
+    });
+  } on ServiceError catch (e) {
+    logger.e('[USP][DMZ] Save failed', error: e);
+    rethrow;
+  }
+}
+```
+
 **Wrong Example**:
 ```dart
 // ❌ Wrong: Provider swallows generic exceptions without converting
-Future<void> updatePassword(String newPassword) async {
+Future<void> performSave() async {
   try {
-    await svc.updatePassword(newPassword);
-  } catch (e) {  // ❌ Absorbs all exceptions — UI won't know the operation failed
+    await _svc.update(...);
+  } catch (e) {  // ❌ Catches everything — bypasses ServiceError contract
     logger.e(e);
   }
 }
 ```
+
+---
+
+**Section 13.5: USP Error Handling Infrastructure**
+
+All USP error parsing and `ServiceError` mapping is centralized in a single utility file. Individual USP Services MUST NOT implement their own parsing logic.
+
+**File Location**: `lib/core/usp/errors/usp_error.dart`
+
+**Key utilities**:
+
+| Function | Purpose |
+|----------|---------|
+| `parseUspError(Object error)` | Parses raw USP error string into structured `UspError` (operation, category, fault code, HTTP status) |
+| `mapUspErrorToServiceError(Object error)` | Parses + maps to `ServiceError` subtype — **the only function USP Services need to call** |
+
+**Mapping summary**:
+
+| USP Error Category | Mapped ServiceError |
+|--------------------|---------------------|
+| Authentication (Invalid credentials) | `InvalidCredentialsError` |
+| Authentication (Session expired) | `SessionTokenExpiredError` |
+| Authentication (Permission denied) | `UnauthorizedError` |
+| Transport (HTTP 401) | `NotAuthenticatedError` |
+| Transport (HTTP 5xx, timeout) | `NetworkError` |
+| Transport (Connection refused) | `ConnectivityError` |
+| Protocol (fault 7026, 9005) | `ResourceNotFoundError` |
+| Protocol (fault 7004, 9008) | `InvalidInputError` |
+| Protocol (fault 9001) | `UnauthorizedError` |
+| Validation | `InvalidInputError` |
+| Unrecognized | `UnexpectedError` |
+
+**Reference implementation**: `lib/page/dmz/services/usp_dmz_service.dart`
 
 ---
 
