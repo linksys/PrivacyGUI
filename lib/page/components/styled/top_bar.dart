@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
@@ -77,6 +78,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
             children: [
               Row(
                 children: [
+                  // Brand logo (icon)
                   ref
                       .watch(brandAssetProvider(
                           (modelNumber: modelNumber, asset: BrandAsset.logo)))
@@ -99,8 +101,44 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                         loading: () => const SizedBox.shrink(),
                         error: (_, __) => const SizedBox.shrink(),
                       ),
-                  AppText.titleLarge(loc(context).appTitle,
-                      color: Color(neutralTonal.get(100))),
+                  // Brand text logo or fallback text
+                  ref
+                      .watch(brandAssetProvider((
+                        modelNumber: modelNumber,
+                        asset: BrandAsset.textLogo
+                      )))
+                      .when(
+                        data: (textLogoPath) {
+                          if (textLogoPath != null) {
+                            // Use brand text logo if available
+                            if (textLogoPath.endsWith('.svg')) {
+                              return SvgPicture.asset(
+                                textLogoPath,
+                                height: 32,
+                                colorFilter: ColorFilter.mode(
+                                  Color(neutralTonal.get(100)),
+                                  BlendMode.srcIn,
+                                ),
+                              );
+                            } else {
+                              return Image.asset(
+                                textLogoPath,
+                                height: 32,
+                                color: Color(neutralTonal.get(100)),
+                              );
+                            }
+                          } else {
+                            // Fallback to text if no text logo available
+                            return AppText.titleLarge(loc(context).appTitle,
+                                color: Color(neutralTonal.get(100)));
+                          }
+                        },
+                        loading: () => AppText.titleLarge(loc(context).appTitle,
+                            color: Color(neutralTonal.get(100))),
+                        error: (_, __) => AppText.titleLarge(
+                            loc(context).appTitle,
+                            color: Color(neutralTonal.get(100))),
+                      ),
                 ],
               ),
               MenuHolder(type: MenuDisplay.top),
