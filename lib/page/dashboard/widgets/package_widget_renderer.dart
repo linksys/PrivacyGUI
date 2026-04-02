@@ -197,7 +197,8 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
 
   /// Handle widget actions from template UI components.
   void _handleWidgetAction(Map<String, dynamic> actionData) {
-    final actionType = (actionData[r'$action'] ?? actionData['action']) as String?;
+    final actionType =
+        (actionData[r'$action'] ?? actionData['action']) as String?;
     if (actionType == null) return;
 
     logger.d('[PkgWidget] ${widget.template.widgetId} action: $actionType');
@@ -269,8 +270,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
     final rawBody = actionData['body'] as Map<String, dynamic>?;
     final widgetData =
         ref.read(packageWidgetDataProvider(widget.template.widgetId));
-    final body =
-        rawBody != null ? resolveBindings(rawBody, widgetData) : null;
+    final body = rawBody != null ? resolveBindings(rawBody, widgetData) : null;
 
     try {
       final throttler = ref.read(bridgeRequestThrottlerProvider);
@@ -507,9 +507,8 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
     final destination = _extractDestination();
     final badgeText = _resolveStringOrBind(t.headerBadge, data);
     final extraText = _resolveStringOrBind(t.headerExtra, data);
-    final iconColor = t.iconColor != null
-        ? parseColor(t.iconColor, context)
-        : null;
+    final iconColor =
+        t.iconColor != null ? parseColor(t.iconColor, context) : null;
 
     return AppCard(
       child: Column(

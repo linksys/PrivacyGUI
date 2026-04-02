@@ -69,8 +69,8 @@ class PackageWidgetTemplate extends Equatable {
       navigateTo: json['navigateTo'] as String?,
       icon: json['icon'] as String?,
       iconColor: json['iconColor'] as String?,
-      headerBadge: json['headerBadge'],  // String | Map | null
-      headerExtra: json['headerExtra'],  // String | Map | null
+      headerBadge: json['headerBadge'], // String | Map | null
+      headerExtra: json['headerExtra'], // String | Map | null
       template: json['template'] as Map<String, dynamic>? ?? {},
     );
   }

@@ -441,8 +441,7 @@ void main() {
       expect(find.byIcon(Icons.info_outline), findsOneWidget);
     });
 
-    testWidgets('shows navigate button when navigateTo is set',
-        (tester) async {
+    testWidgets('shows navigate button when navigateTo is set', (tester) async {
       final template = PackageWidgetTemplate(
         widgetId: 'nav_test',
         displayName: 'Nav Widget',

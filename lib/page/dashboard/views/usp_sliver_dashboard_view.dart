@@ -315,9 +315,7 @@ class _UspSliverDashboardViewState
         trashHoverDelay: const Duration(milliseconds: 600),
         onItemsDeleted: (items) {
           // The overlay already called controller.removeItems — persist.
-          ref
-              .read(uspSliverDashboardControllerProvider.notifier)
-              .saveLayout();
+          ref.read(uspSliverDashboardControllerProvider.notifier).saveLayout();
         },
         child: CustomScrollView(
           controller: scrollController,
