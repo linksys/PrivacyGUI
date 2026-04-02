@@ -415,7 +415,8 @@ void main() {
       expect(find.byIcon(Icons.refresh), findsOneWidget);
     });
 
-    testWidgets('shows description as tooltip on title when description exists', (tester) async {
+    testWidgets('shows description as tooltip on title when description exists',
+        (tester) async {
       final template = PackageWidgetTemplate(
         widgetId: 'info_test',
         displayName: 'Info Widget',
