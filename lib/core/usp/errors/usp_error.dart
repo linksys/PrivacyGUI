@@ -141,8 +141,9 @@ ServiceError mapUspErrorToServiceError(Object error) {
 
 ServiceError _mapAuthError(UspError e) {
   final msg = e.message;
-  if (msg.contains('Invalid credentials'))
+  if (msg.contains('Invalid credentials')) {
     return const InvalidCredentialsError();
+  }
   if (msg.contains('Session expired')) return const SessionTokenExpiredError();
   if (msg.contains('Invalid token')) return const InvalidSessionTokenError();
   if (msg.contains('Permission denied')) return const UnauthorizedError();
