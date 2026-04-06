@@ -1,10 +1,14 @@
-# WiFi Troubleshooter
+# Instant-Help (formerly WiFi Troubleshooter)
 
 ## What This Is
 
-Customer-facing WiFi diagnostic tool. Targets end customers and Linksys support agents.
+Customer-facing WiFi diagnostic tool branded **Instant-Help**. Two modes:
+1. **Customer self-help** — unauthenticated, runs browser-based speed/gateway/DNS tests
+2. **Support agent dashboard** — authenticated via router admin, pulls JNAP data for deep diagnostics
 
-**Not** an engineering tool. No SSH. No serial. No router admin credentials. No TR standards.
+Built as a new route (`/troubleshoot`) inside the existing `linksys/PrivacyGUI` Flutter Web app at `http://192.168.1.1`.
+
+**Not** an engineering tool. No SSH. No serial. No TR standards.
 
 ## What This Is Not
 
@@ -74,6 +78,46 @@ See `Plans/architecture.md` → "Per-Platform Diagnostic Capability Reality" for
 ## Privacy
 
 Every field collected is enumerated in `Plans/architecture.md` → "Data & Privacy Model". MAC addresses, IPs, and SSIDs are GDPR PII. Session-only unless user explicitly shares a report.
+
+## Implementation Status
+
+Code lives in `~/Projects/PrivacyGUI/lib/page/cs_diagnostic/`. Key paths:
+
+| Component | Path |
+|-----------|------|
+| JNAP service | `services/jnap_diagnostic_service.dart` |
+| Browser diagnostics | `services/browser_diagnostic_service.dart` |
+| Mock data | `services/mock_diagnostic_data.dart` |
+| State + provider | `providers/cs_diagnostic_state.dart`, `cs_diagnostic_provider.dart` |
+| Agent dashboard | `views/agent/agent_dashboard_view.dart` |
+| Flow analysis (6 tabs) | `views/agent/flow_analysis_view.dart` |
+| Customer home | `views/customer/customer_home_view.dart` |
+| Client model + OUI | `models/diagnostic_client.dart` |
+| Route registration | `lib/route/router_provider.dart` (bypass redirect for `/troubleshoot`) |
+
+### JNAP Calls Used
+- `core/GetDeviceInfo` (no auth) — model, firmware, serial
+- `router/GetWANStatus` (no auth) — WAN connection, IP
+- `diagnostics/GetSystemStats` — uptime, CPU, memory
+- `networkconnections/GetNetworkConnections` — client list (fallback)
+- `nodes/networkconnections/GetNodesWirelessNetworkConnections` — client list (mesh, primary)
+- `router/GetDHCPClientLeases` — DHCP usage
+- `devicelist/GetDevices3` — device names (may fail, optional)
+- `wirelessap/GetRadioInfo3` — radio config, band steering
+- `guestnetwork/GetGuestNetworkSettings` — guest network status
+- `firmwareupdate/GetFirmwareUpdateStatus` — firmware update availability
+- `nodes/diagnostics/GetBackhaulInfo` — mesh backhaul info
+
+### Dev Testing
+```bash
+# From PrivacyGUI repo:
+~/.pub-cache/bin/fvm flutter run -d web-server --web-port 8080
+
+# CORS-disabled Chrome (must quit Chrome first):
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --disable-web-security --user-data-dir=/tmp/chrome-cors-dev \
+  http://localhost:8080/#/troubleshoot
+```
 
 ## Open Questions
 
