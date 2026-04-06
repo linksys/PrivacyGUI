@@ -126,9 +126,7 @@ final menus = [
     path: RoutePath.menuInstantVerify,
     config:
         LinksysRouteConfig(column: ColumnGrid(column: 12), noNaviRail: false),
-    builder: (context, state) => InstantVerifyView(
-      args: state.extra as Map<String, dynamic>? ?? const {},
-    ),
+    builder: (context, state) => const InstantVerifyPivotView(),
   ),
   LinksysRoute(
     name: RouteNamed.devicePicker,
