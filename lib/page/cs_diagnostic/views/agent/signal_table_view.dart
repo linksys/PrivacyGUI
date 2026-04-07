@@ -31,8 +31,8 @@ class SignalTableView extends StatelessWidget {
               DataColumn(label: Text('IP', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Band', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Signal', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('TX', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('RX', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Tooltip(message: 'TX Link Rate (Mbps)', child: Text('TX', style: TextStyle(fontWeight: FontWeight.bold)))),
+              DataColumn(label: Tooltip(message: 'RX Link Rate (Mbps)', child: Text('RX', style: TextStyle(fontWeight: FontWeight.bold)))),
               DataColumn(label: Text('\u26a0', style: TextStyle(fontWeight: FontWeight.bold))),
             ],
             rows: clients.map((client) => DataRow(

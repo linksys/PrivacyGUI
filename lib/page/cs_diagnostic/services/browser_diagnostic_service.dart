@@ -273,27 +273,36 @@ class BrowserDiagnosticService {
       } catch (_) {}
     }
 
-    // Measure throughput with parallel downloads
+    // Measure throughput with multiple waves of parallel downloads.
+    // We run several waves to give the connection time to ramp up and
+    // saturate the link, then take the best wave as the result.
     if (throughputUrl != null) {
       try {
-        final sw = Stopwatch()..start();
-        final futures = List.generate(5, (i) =>
-          http.get(
-            Uri.parse('$throughputUrl?_=${bust + i}'),
-          ).timeout(const Duration(seconds: 20)),
-        );
-        final responses = await Future.wait(futures);
-        sw.stop();
-        final totalBytes = responses.fold<int>(0, (sum, r) => sum + r.bodyBytes.length);
-        if (totalBytes > 0 && sw.elapsedMilliseconds > 0) {
-          throughputMbps = (totalBytes * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
+        double bestWaveMbps = 0;
+        // Wave 1: 10 parallel downloads (warm-up + measurement)
+        for (var wave = 0; wave < 3; wave++) {
+          final waveOffset = wave * 10;
+          final sw = Stopwatch()..start();
+          final futures = List.generate(10, (i) =>
+            http.get(
+              Uri.parse('$throughputUrl?_=${bust + waveOffset + i}'),
+            ).timeout(const Duration(seconds: 20)),
+          );
+          final responses = await Future.wait(futures);
+          sw.stop();
+          final totalBytes = responses.fold<int>(0, (sum, r) => sum + r.bodyBytes.length);
+          if (totalBytes > 0 && sw.elapsedMilliseconds > 0) {
+            final waveMbps = (totalBytes * 8) / (sw.elapsedMilliseconds / 1000) / 1000000;
+            if (waveMbps > bestWaveMbps) bestWaveMbps = waveMbps;
+          }
         }
+        if (bestWaveMbps > 0) throughputMbps = bestWaveMbps;
       } catch (_) {}
     } else {
       // No single file found — do parallel fetches of root page
       try {
         final sw = Stopwatch()..start();
-        final futures = List.generate(20, (i) =>
+        final futures = List.generate(30, (i) =>
           http.get(Uri.parse('$baseUrl/?_=${bust + i}')).timeout(const Duration(seconds: 10)),
         );
         final responses = await Future.wait(futures);

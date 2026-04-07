@@ -5,11 +5,11 @@ import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
 /// Main entry point for the Instant Verify pivot.
 ///
 /// Takes over [menuInstantVerify] inside the authenticated PrivacyGUI.
-/// Tab structure:
-///   0: Overview       — customer self-service (auto-run diagnostics + actions)
-///   1: Clients        — device table + radio config + WiFi quality (agent/advanced)
-///   2: Network        — WAN, connectivity, ping, traceroute, ports (agent/advanced)
-///   3: Tools          — restart, Ookla speed test, logs, email (agent)
+/// Tab structure (PRD v0.7):
+///   0: Instant-Test   — one-touch automated diagnostics + auto-fix actions
+///   1: My Devices     — device list with signal quality + device-specific help
+///   2: My Network     — mesh nodes, internet connection, WiFi overview
+///   3: Help Me Fix It — 5 guided flows for issues needing investigation
 class InstantVerifyPivotView extends ConsumerStatefulWidget {
   const InstantVerifyPivotView({super.key});
 
@@ -39,35 +39,39 @@ class _InstantVerifyPivotViewState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Instant Verify'),
+        title: const Text('Instant Help'),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
           tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Clients'),
-            Tab(text: 'Network'),
-            Tab(text: 'Tools'),
+            Tab(text: 'Instant-Test'),
+            Tab(text: 'My Devices'),
+            Tab(text: 'My Network'),
+            Tab(text: 'Help Me Fix It'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          const OverviewTab(),
-          const _ComingSoonTab(
-            label: 'Clients & Wireless',
-            description:
-                'Device list with WiFi signal quality, radio configuration, and local speed test.',
+          OverviewTab(
+            onViewClients: () => _tabController.animateTo(1),
+            onNavigateToFlow: (flowIndex) => _tabController.animateTo(3),
           ),
           const _ComingSoonTab(
-            label: 'Network & Connectivity',
+            label: 'My Devices',
             description:
-                'WAN status, IPv4/IPv6, DNS, firewall, port status, ping, and traceroute.',
+                'See all connected devices, check signal quality, and get device-specific help.',
           ),
           const _ComingSoonTab(
-            label: 'Tools',
+            label: 'My Network',
             description:
-                'Restart router, Ookla speed test, debug logs, and email diagnostic report.',
+                'See your mesh nodes, internet connection, and WiFi overview.',
+          ),
+          const _ComingSoonTab(
+            label: 'Help Me Fix It',
+            description:
+                '5 guided flows: internet not working, slow internet, device issues, weak signal, and connection drops.',
           ),
         ],
       ),

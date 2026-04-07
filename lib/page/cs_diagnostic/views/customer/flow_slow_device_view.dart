@@ -191,13 +191,13 @@ class _FlowSlowDeviceViewState extends ConsumerState<FlowSlowDeviceView> {
       _DeviceDiagnosis.noRouter =>
         'Cannot reach your router. This device may not be connected to WiFi.',
       _DeviceDiagnosis.wifiBottleneck =>
-        'Your internet is fast, but the WiFi link to this device is slow. '
-        'The problem is between your device and the router.',
+        'Your internet is fast, but data transfer from the router is slow. '
+        'The problem is between your device and the router — try moving closer.',
       _DeviceDiagnosis.internetSlow =>
-        'Your WiFi link is fine, but internet speed is slow. '
+        'Your router connection is fine, but internet speed is slow. '
         'This is likely an ISP issue, not a device problem.',
       _DeviceDiagnosis.bothSlow =>
-        'Both your WiFi link and internet speed are slow. '
+        'Both your router connection and internet speed are slow. '
         'Start by moving closer to the router.',
       _DeviceDiagnosis.healthy =>
         'This device is performing well on both WiFi and internet.',
@@ -227,32 +227,45 @@ class _FlowSlowDeviceViewState extends ConsumerState<FlowSlowDeviceView> {
     );
   }
 
-  /// Side-by-side comparison: WiFi speed vs Internet speed
+  /// Side-by-side comparison: Router throughput vs Internet speed
   Widget _buildComparisonCards(BuildContext context) {
-    final wifiMbps = _routerResult?.throughputMbps;
+    final routerMbps = _routerResult?.throughputMbps;
     final internetMbps = _internetResult?.downloadMbps ?? 0;
 
-    return Row(
+    return Column(
       children: [
-        Expanded(child: _metricCard(
-          context,
-          icon: Icons.wifi,
-          label: 'WiFi to Router',
-          value: wifiMbps != null ? wifiMbps.toStringAsFixed(0) : '—',
-          unit: wifiMbps != null ? 'Mbps' : '',
-          isGood: wifiMbps != null && wifiMbps >= 25,
-          sublabel: wifiMbps == null ? 'Could not measure' : null,
-        )),
-        const SizedBox(width: 12),
-        Expanded(child: _metricCard(
-          context,
-          icon: Icons.public,
-          label: 'Internet',
-          value: internetMbps > 0 ? internetMbps.toStringAsFixed(0) : '—',
-          unit: internetMbps > 0 ? 'Mbps' : '',
-          isGood: internetMbps >= 25,
-          sublabel: internetMbps == 0 ? 'Could not measure' : null,
-        )),
+        Row(
+          children: [
+            Expanded(child: _metricCard(
+              context,
+              icon: Icons.router,
+              label: 'Router Throughput',
+              value: routerMbps != null ? routerMbps.toStringAsFixed(0) : '—',
+              unit: routerMbps != null ? 'Mbps' : '',
+              isGood: routerMbps != null && routerMbps >= 25,
+              sublabel: routerMbps == null ? 'Could not measure' : null,
+            )),
+            const SizedBox(width: 12),
+            Expanded(child: _metricCard(
+              context,
+              icon: Icons.public,
+              label: 'Internet Speed',
+              value: internetMbps > 0 ? internetMbps.toStringAsFixed(0) : '—',
+              unit: internetMbps > 0 ? 'Mbps' : '',
+              isGood: internetMbps >= 25,
+              sublabel: internetMbps == 0 ? 'Could not measure' : null,
+            )),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Router throughput measures real data transfer over your WiFi connection. '
+          'Actual WiFi link speed may be higher.',
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
       ],
     );
   }
@@ -306,11 +319,11 @@ class _FlowSlowDeviceViewState extends ConsumerState<FlowSlowDeviceView> {
         _resultRow(context, 'Router Reachable',
             _gatewayResult?.reachable == true,
             _gatewayResult?.reachable == true ? '${_gatewayResult!.latencyMs} ms' : 'No'),
-        _resultRow(context, 'WiFi Latency to Router',
+        _resultRow(context, 'Latency to Router',
             _routerResult != null && _routerResult!.latencyMs <= 10,
             '${_routerResult?.latencyMs ?? "—"} ms'),
         if (_routerResult?.throughputMbps != null)
-          _resultRow(context, 'WiFi Download from Router',
+          _resultRow(context, 'Router Throughput (HTTP)',
               _routerResult!.throughputMbps! >= 25,
               '${_routerResult!.throughputMbps!.toStringAsFixed(1)} Mbps'),
         _resultRow(context, 'Internet Download',

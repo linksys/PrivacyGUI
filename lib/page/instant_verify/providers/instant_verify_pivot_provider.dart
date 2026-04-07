@@ -7,6 +7,7 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/cs_diagnostic/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/cs_diagnostic/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
+import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 
@@ -91,8 +92,10 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         dev.log('InstantVerifyPivot: DHCP failed: $e');
       }
 
-      // Build device name map
+      // Build device name map + extract mesh node data
       var deviceMap = <String, Map<String, String?>>{};
+      var meshNodesList = <MeshNodeInfo>[];
+      var clientToNodeIdMap = <String, String>{};
       if (netConns.isNotEmpty) {
         deviceMap = _buildDeviceMapFromConnections(netConns);
       }
@@ -102,6 +105,10 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         for (final entry in richMap.entries) {
           deviceMap[entry.key] = entry.value;
         }
+        // Build client→node map from parentDeviceID
+        clientToNodeIdMap = _buildClientToNodeMap(deviceList);
+        // Extract infrastructure nodes (nodeType field present = mesh node)
+        meshNodesList = _parseMeshNodes(deviceList);
       } catch (_) {}
 
       // Parse clients
@@ -150,15 +157,23 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       final firmwareVersion =
           firmwareData?['availableUpdate']?['firmwareVersion'] as String?;
 
+      // Merge backhaul data into mesh nodes
+      final backhaulRaw = orNull(supplementary[3]);
+      if (backhaulRaw != null && meshNodesList.isNotEmpty) {
+        meshNodesList = _mergeBackhaul(meshNodesList, backhaulRaw);
+      }
+
       // Compute device scores
       final scores = clients.map(DeviceScore.compute).toList()
         ..sort((a, b) => a.score.compareTo(b.score));
 
       // Phase 1 verdict (preliminary — no speed data yet)
       final wanConnected = _isWanConnected(wanData);
+      final wanIpAddress = (wanData['wanConnection'] as Map<String, dynamic>?)?['ipAddress'] as String?;
       final phase1Verdict = VerdictEngine.compute(
         gatewayReachable: null, // browser test pending
         wanConnected: wanConnected,
+        wanIpAddress: wanIpAddress,
         dnsWorking: null, // browser test pending
         downloadMbps: null, // browser test pending
         latencyMs: null, // browser test pending
@@ -166,6 +181,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         firmwareVersion: firmwareVersion,
         uptimeSeconds: uptimeSeconds,
         deviceScores: scores,
+        clients: clients,
+        meshNodes: meshNodesList,
         planSpeedMbps: state.planSpeedMbps,
       );
 
@@ -190,6 +207,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         wirelessSchedule: orNull(supplementary[7]),
         channelInfo: orNull(supplementary[8]),
         ethernetPorts: orNull(supplementary[9]),
+        meshNodes: meshNodesList,
+        clientToNodeId: clientToNodeIdMap,
         deviceScores: scores,
         verdict: phase1Verdict,
         verdictIsPreliminary: true,
@@ -248,6 +267,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     final verdict = VerdictEngine.compute(
       gatewayReachable: s.gatewayPing?.reachable,
       wanConnected: s.wanStatus != null ? s.wanConnected : null,
+      wanIpAddress: s.wanIpAddress,
       dnsWorking: s.dnsCheck?.resolved,
       downloadMbps: s.speedTest?.downloadMbps,
       latencyMs: s.speedTest?.latencyMs,
@@ -255,6 +275,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       firmwareVersion: s.availableFirmwareVersion,
       uptimeSeconds: s.uptimeSeconds > 0 ? s.uptimeSeconds : null,
       deviceScores: s.deviceScores,
+      clients: s.clients,
+      meshNodes: s.meshNodes,
       planSpeedMbps: s.planSpeedMbps,
     );
     state = state.copyWith(verdict: verdict, verdictIsPreliminary: preliminary);
@@ -280,6 +302,101 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       dev.log('InstantVerifyPivot: firmware update failed: $e');
       state = state.copyWith(isUpdatingFirmware: false);
     }
+  }
+
+  /// Injects a realistic failure scenario for UI testing — no router calls made.
+  void loadMockFails() {
+    final mockClients = [
+      const DiagnosticClient(
+        macAddress: 'AA:BB:CC:11:22:33',
+        hostname: 'Devens-iPhone',
+        ipAddress: '192.168.1.101',
+        band: '2.4 GHz',
+        signalDecibels: -82,
+        txRateMbps: 12,
+        rxRateMbps: 8,
+        isWireless: true,
+      ),
+      const DiagnosticClient(
+        macAddress: 'AA:BB:CC:44:55:66',
+        hostname: 'Smart-TV-Living',
+        ipAddress: '192.168.1.102',
+        band: '5 GHz',
+        signalDecibels: -78,
+        txRateMbps: 25,
+        rxRateMbps: 20,
+        isWireless: true,
+      ),
+      const DiagnosticClient(
+        macAddress: 'AA:BB:CC:77:88:99',
+        hostname: 'Laptop-Office',
+        ipAddress: '192.168.1.103',
+        band: '5 GHz',
+        signalDecibels: -55,
+        txRateMbps: 300,
+        rxRateMbps: 250,
+        isWireless: true,
+      ),
+    ];
+    final mockScores = mockClients.map(DeviceScore.compute).toList();
+    const mockGateway = GatewayPingResult(reachable: true, latencyMs: 3);
+    const mockDns = DnsCheckResult(resolved: false);
+    const mockSpeed = SpeedTestResult(
+      downloadMbps: 3.2,
+      uploadMbps: 1.1,
+      latencyMs: 148,
+      jitterMs: 22,
+    );
+    const mockWanIp = '10.83.68.45';
+    final mockVerdict = VerdictEngine.compute(
+      gatewayReachable: true,
+      wanConnected: true,
+      wanIpAddress: mockWanIp,
+      dnsWorking: false,
+      downloadMbps: 3.2,
+      latencyMs: 148,
+      firmwareUpdateAvailable: true,
+      firmwareVersion: '1.0.8.220100',
+      uptimeSeconds: 38 * 86400,
+      deviceScores: mockScores,
+      clients: mockClients,
+      meshNodes: const [],
+      planSpeedMbps: 200,
+    );
+    state = InstantVerifyPivotState(
+      phase: PivotLoadPhase.complete,
+      deviceInfo: {
+        'modelNumber': 'MX6200 (Mock)',
+        'firmwareVersion': '1.0.6.215469',
+        'serialNumber': 'SN-MOCK-12345',
+        'macAddress': 'AA:BB:CC:DD:EE:FF',
+      },
+      wanStatus: {
+        'wanStatus': 'Connected',
+        'wanConnection': {
+          'ipAddress': mockWanIp,
+          'gateway': '10.83.71.254',
+        },
+      },
+      routerHealth: {
+        'uptimeInSeconds': 38 * 86400,
+        'cpuLoad': 42,
+        'memoryLoad': 71,
+      },
+      clients: mockClients,
+      dhcpLeasesCount: 14,
+      firmwareUpdate: {
+        'firmwareUpdateStatus': 'UpdateAvailable',
+        'availableUpdate': {'firmwareVersion': '1.0.8.220100'},
+      },
+      gatewayPing: mockGateway,
+      dnsCheck: mockDns,
+      speedTest: mockSpeed,
+      browserTestStep: 'complete',
+      deviceScores: mockScores,
+      verdict: mockVerdict,
+      verdictIsPreliminary: false,
+    );
   }
 
   void setPlanSpeed(double? mbps) {
@@ -447,5 +564,78 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       ));
     }
     return clients;
+  }
+
+  /// Builds a MAC → parentDeviceID map from GetDevices3 response.
+  Map<String, String> _buildClientToNodeMap(Map<String, dynamic> data) {
+    final map = <String, String>{};
+    final devices = data['devices'] as List? ?? [];
+    for (final d in devices) {
+      for (final conn in (d['connections'] as List? ?? [])) {
+        final mac = (conn['macAddress'] as String?)?.toUpperCase();
+        final parent = conn['parentDeviceID'] as String?;
+        if (mac != null && parent != null) {
+          map[mac] = parent;
+        }
+      }
+    }
+    return map;
+  }
+
+  /// Extracts mesh nodes from GetDevices3 — devices with a nodeType field.
+  List<MeshNodeInfo> _parseMeshNodes(Map<String, dynamic> data) {
+    final nodes = <MeshNodeInfo>[];
+    final devices = data['devices'] as List? ?? [];
+    for (final d in devices) {
+      final nodeType = d['nodeType'] as String?;
+      if (nodeType == null) continue; // not a mesh node
+
+      final deviceId = d['deviceID'] as String? ?? '';
+      final friendlyName = d['friendlyName'] as String?;
+      final unit = d['unit'] as Map<String, dynamic>?;
+      final model = d['model'] as Map<String, dynamic>?;
+
+      nodes.add(MeshNodeInfo(
+        deviceId: deviceId,
+        name: friendlyName ?? model?['modelNumber'] as String? ?? 'Node',
+        model: model?['modelNumber'] as String?,
+        firmware: unit?['firmwareVersion'] as String?,
+        serialNumber: unit?['serialNumber'] as String?,
+        isController: (d['isAuthority'] as bool?) ?? false,
+      ));
+    }
+    // Sort: controller first
+    nodes.sort((a, b) => b.isController ? 1 : -1);
+    return nodes;
+  }
+
+  /// Merges backhaul RSSI/type from GetBackhaulInfo into parsed mesh nodes.
+  List<MeshNodeInfo> _mergeBackhaul(
+      List<MeshNodeInfo> nodes, Map<String, dynamic> backhaulData) {
+    final backhaulDevices = backhaulData['backhaulDevices'] as List? ?? [];
+    if (backhaulDevices.isEmpty) return nodes;
+
+    // Build lookup: deviceUUID → backhaul info
+    final backhaulMap = <String, Map<String, dynamic>>{};
+    for (final b in backhaulDevices) {
+      final uuid = b['deviceUUID'] as String?;
+      if (uuid != null) backhaulMap[uuid] = b as Map<String, dynamic>;
+    }
+
+    return nodes.map((node) {
+      final backhaul = backhaulMap[node.deviceId];
+      if (backhaul == null) return node;
+      return MeshNodeInfo(
+        deviceId: node.deviceId,
+        name: node.name,
+        model: node.model,
+        firmware: node.firmware,
+        serialNumber: node.serialNumber,
+        isController: node.isController,
+        backhaulType: backhaul['connectionType'] as String?,
+        backhaulRssi: backhaul['rssi'] as int?,
+        backhaulSpeedMbps: backhaul['speedMbps'] as int?,
+      );
+    }).toList();
   }
 }

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
+import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 
 class OverviewTab extends ConsumerStatefulWidget {
-  const OverviewTab({super.key});
+  final VoidCallback? onViewClients;
+  final void Function(int flowIndex)? onNavigateToFlow;
+  const OverviewTab({super.key, this.onViewClients, this.onNavigateToFlow});
 
   @override
   ConsumerState<OverviewTab> createState() => _OverviewTabState();
@@ -13,13 +17,19 @@ class OverviewTab extends ConsumerStatefulWidget {
 
 class _OverviewTabState extends ConsumerState<OverviewTab> {
   bool _findingsExpanded = false;
+  bool _checksExpanded = false;
   int _restartCountdown = 0;
+  bool _hasRestarted = false;
 
   @override
   void initState() {
     super.initState();
+    // Only auto-run on first mount (idle phase). Tab switches preserve state.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(instantVerifyPivotProvider.notifier).fetch();
+      final phase = ref.read(instantVerifyPivotProvider).phase;
+      if (phase == PivotLoadPhase.idle) {
+        ref.read(instantVerifyPivotProvider.notifier).fetch();
+      }
     });
   }
 
@@ -33,32 +43,78 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HeaderBar(state: state),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          // Router light guide link (PRD v0.7 S-1)
+          _LightGuideLink(
+            showInlineCallout: state.phase != PivotLoadPhase.idle &&
+                state.phase != PivotLoadPhase.loading &&
+                !state.wanConnected,
+          ),
+          const SizedBox(height: 12),
           _StatusCard(
             state: state,
             findingsExpanded: _findingsExpanded,
+            checksExpanded: _checksExpanded,
             onToggleFindings: () =>
                 setState(() => _findingsExpanded = !_findingsExpanded),
+            onToggleChecks: () =>
+                setState(() => _checksExpanded = !_checksExpanded),
             onAction: _handleAction,
+            onViewClients: widget.onViewClients,
+            onNavigateToFlow: widget.onNavigateToFlow,
+            hasRestarted: _hasRestarted,
           ),
           if (state.issueDevices.isNotEmpty) ...[
             const SizedBox(height: 16),
             _DeviceIssuesCard(state: state),
           ],
+          if (state.isMeshNetwork) ...[
+            const SizedBox(height: 16),
+            _MeshCard(state: state),
+          ],
+          // Restart countdown with reassurance (PRD v0.7 D-23)
+          if (_restartCountdown > 0) ...[
+            const SizedBox(height: 16),
+            _RestartCountdown(secondsRemaining: _restartCountdown),
+          ],
           const SizedBox(height: 24),
           Center(
             child: OutlinedButton.icon(
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Run Tests Again'),
-              onPressed: state.phase == PivotLoadPhase.loading
+              label: Text(_hasRestarted ? 'Check Again' : 'Run Again'),
+              onPressed: state.phase == PivotLoadPhase.loading ||
+                      state.phase == PivotLoadPhase.jnapLoaded ||
+                      _restartCountdown > 0
                   ? null
                   : () {
-                      setState(() => _findingsExpanded = false);
+                      setState(() {
+                        _findingsExpanded = false;
+                        _checksExpanded = false;
+                      });
                       ref.read(instantVerifyPivotProvider.notifier).fetch();
                     },
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor:
+                    Theme.of(context).colorScheme.onSurfaceVariant,
+                textStyle:
+                    const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              ),
+              onPressed: () {
+                setState(() {
+                  _findingsExpanded = false;
+                  _checksExpanded = false;
+                });
+                ref.read(instantVerifyPivotProvider.notifier).loadMockFails();
+              },
+              child: const Text('Simulate failures'),
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -67,9 +123,12 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
   Future<void> _handleAction(String actionKey) async {
     final notifier = ref.read(instantVerifyPivotProvider.notifier);
     if (actionKey == VerdictEngine.actionRestartRouter) {
+      // Post-restart escalation (PRD v0.7 D-26): don't offer restart again
+      if (_hasRestarted) return;
       final confirmed = await _confirmRestart(context);
       if (confirmed == true) {
         await notifier.restartRouter();
+        setState(() => _hasRestarted = true);
         _startRestartCountdown();
       }
     } else if (actionKey == VerdictEngine.actionFirmwareUpdate) {
@@ -96,7 +155,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       builder: (ctx) => AlertDialog(
         title: const Text('Restart Router?'),
         content: const Text(
-          'All devices will disconnect for about 2 minutes while your router restarts. Continue?',
+          'This will disconnect all devices for about 2 minutes. Continue?',
         ),
         actions: [
           TextButton(
@@ -120,8 +179,14 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       builder: (ctx) => AlertDialog(
         title: Text('Install $version?'),
         content: const Text(
-          'Your router will restart during the update. All devices will lose internet '
-          'for about 5 minutes.\n\nMake sure your router stays plugged in during the update.',
+          'This update takes about 5 minutes.\n\n'
+          'During the update:\n'
+          '\u2022 Your WiFi will turn off\n'
+          '\u2022 All devices will disconnect\n'
+          '\u2022 This page will stop responding\n\n'
+          'Your router will restart automatically when done. '
+          'Your devices will reconnect on their own.\n\n'
+          'Don\'t unplug your router during the update.',
         ),
         actions: [
           TextButton(
@@ -146,46 +211,83 @@ class _HeaderBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isLoading = state.phase == PivotLoadPhase.idle ||
+        state.phase == PivotLoadPhase.loading;
+
     final model = state.routerModel ?? 'Router';
     final fw = state.routerFirmware;
-    final wan = state.wanConnected ? 'Connected' : 'Disconnected';
+    final serial = state.routerSerial;
+    final mac = state.routerMac;
     final upDays = state.uptimeSeconds > 0
         ? '${state.uptimeSeconds ~/ 86400}d ${(state.uptimeSeconds % 86400) ~/ 3600}h'
         : null;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 4,
+          // Row 1: model + WAN chip
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(model,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 15)),
+                    if (!isLoading)
+                      _chip(
+                        context,
+                        state.wanConnected ? 'Internet: Connected' : 'Internet: Disconnected',
+                        state.wanConnected ? Colors.green : Colors.red,
+                      )
+                    else
+                      _chip(context, 'Checking...', Colors.grey),
+                    if (upDays != null && !isLoading)
+                      Text('Up $upDays',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: scheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // Row 2: FW, Serial, MAC
+          if (fw != null || serial != null || mac != null) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 16,
+              runSpacing: 2,
               children: [
-                Text(model,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 if (fw != null)
-                  Text('FW: $fw',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                _chip(context, wan,
-                    state.wanConnected ? Colors.green : Colors.red),
-                if (upDays != null)
-                  Text('Up: $upDays',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  _metaText(context, 'FW: $fw'),
+                if (serial != null)
+                  _metaText(context, 'S/N: $serial'),
+                if (mac != null)
+                  _metaText(context, 'MAC: $mac'),
               ],
             ),
-          ),
+          ],
         ],
       ),
     );
+  }
+
+  Widget _metaText(BuildContext context, String text) {
+    return Text(text,
+        style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurfaceVariant));
   }
 
   Widget _chip(BuildContext context, String label, Color color) {
@@ -207,49 +309,44 @@ class _HeaderBar extends StatelessWidget {
 class _StatusCard extends StatelessWidget {
   final InstantVerifyPivotState state;
   final bool findingsExpanded;
+  final bool checksExpanded;
   final VoidCallback onToggleFindings;
+  final VoidCallback onToggleChecks;
   final Future<void> Function(String actionKey) onAction;
+  final VoidCallback? onViewClients;
+  final void Function(int flowIndex)? onNavigateToFlow;
+  final bool hasRestarted;
 
   const _StatusCard({
     required this.state,
     required this.findingsExpanded,
+    required this.checksExpanded,
     required this.onToggleFindings,
+    required this.onToggleChecks,
     required this.onAction,
+    this.onViewClients,
+    this.onNavigateToFlow,
+    this.hasRestarted = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    // Loading state
-    if (state.phase == PivotLoadPhase.loading) {
+    // Loading / preliminary state — show individual check progress
+    if (state.phase == PivotLoadPhase.idle ||
+        state.phase == PivotLoadPhase.loading ||
+        (state.phase == PivotLoadPhase.jnapLoaded &&
+            state.verdictIsPreliminary)) {
       return _card(
         context,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: scheme.primary),
-              ),
-              const SizedBox(width: 12),
-              const Text('Checking your connection...',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-            ]),
-            const SizedBox(height: 8),
-            Text('Running diagnostics — this takes about 30 seconds.',
-                style: TextStyle(color: scheme.onSurfaceVariant)),
-          ],
-        ),
+        child: _ChecklistProgress(state: state),
       );
     }
 
     final verdict = state.verdict;
 
-    // All clear state
+    // All clear state — "We didn't detect any issues" + flow cards (PRD v0.7 D-16)
     if (verdict == null || verdict.isAllClear) {
       return _card(
         context,
@@ -264,7 +361,7 @@ class _StatusCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Your connection looks healthy',
+                    const Text("We didn't detect any issues",
                         style: TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 16)),
                     if (verdict != null && verdict.checksRun > 0)
@@ -276,32 +373,48 @@ class _StatusCard extends StatelessWidget {
                 ),
               ),
             ]),
+            const SizedBox(height: 16),
+            Text(
+              'Still having a problem? Tell us what\'s happening and we\'ll help:',
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
             const SizedBox(height: 12),
-            Text('Internet speed, WiFi signal, and your router all look normal.',
-                style: TextStyle(color: scheme.onSurfaceVariant)),
-            if (state.verdictIsPreliminary) ...[
-              const SizedBox(height: 8),
-              _PreliminaryBadge(),
-            ],
-            const Divider(height: 24),
-            const Text('Still having trouble?',
-                style: TextStyle(fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
+            // Flow cards — 2x2 grid + 1 (PRD v0.7)
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Restart Router'),
-                  onPressed: () => onAction(VerdictEngine.actionRestartRouter),
+                _FlowCard(
+                  icon: Icons.public_off,
+                  label: 'My internet\nisn\'t working',
+                  onTap: () => onNavigateToFlow?.call(0),
                 ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.devices, size: 16),
-                  label: const Text('Check Devices'),
-                  onPressed: null, // navigates to Clients tab — wired from parent
+                _FlowCard(
+                  icon: Icons.slow_motion_video,
+                  label: 'My internet\nis slow',
+                  onTap: () => onNavigateToFlow?.call(1),
+                ),
+                _FlowCard(
+                  icon: Icons.wifi_off,
+                  label: 'A device won\'t\nconnect',
+                  onTap: () => onNavigateToFlow?.call(2),
+                ),
+                _FlowCard(
+                  icon: Icons.signal_wifi_bad,
+                  label: 'WiFi doesn\'t\nreach a room',
+                  onTap: () => onNavigateToFlow?.call(3),
+                ),
+                _FlowCard(
+                  icon: Icons.sync_problem,
+                  label: 'My connection\nkeeps cutting out',
+                  onTap: () => onNavigateToFlow?.call(4),
                 ),
               ],
+            ),
+            _CheckResultsExpand(
+              state: state,
+              expanded: checksExpanded,
+              onToggle: onToggleChecks,
             ),
           ],
         ),
@@ -339,8 +452,27 @@ class _StatusCard extends StatelessWidget {
                 style: TextStyle(color: scheme.onSurfaceVariant)),
           ),
 
-          // Primary action button
-          if (primary.hasAutoFix) ...[
+          // Primary action button — or ISP escalation after restart (D-26)
+          if (hasRestarted && primary.postRestartEscalation != null) ...[
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.only(left: 32),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  primary.postRestartEscalation!,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ] else if (primary.hasAutoFix) ...[
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.only(left: 32),
@@ -349,14 +481,6 @@ class _StatusCard extends StatelessWidget {
                 label: Text(primary.actionLabel!),
                 onPressed: () => onAction(primary.actionKey!),
               ),
-            ),
-          ],
-
-          if (state.verdictIsPreliminary) ...[
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.only(left: 32),
-              child: _PreliminaryBadge(),
             ),
           ],
 
@@ -408,6 +532,12 @@ class _StatusCard extends StatelessWidget {
                     onAction: onAction,
                   )),
           ],
+
+          _CheckResultsExpand(
+            state: state,
+            expanded: checksExpanded,
+            onToggle: onToggleChecks,
+          ),
         ],
       ),
     );
@@ -547,7 +677,6 @@ class _DeviceIssuesCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final issueDevices = state.issueDevices;
 
-    // All far vs all interference — determine advice
     final tooFarCount = issueDevices
         .where((d) => (d.client.signalDecibels ?? 0) < -75)
         .length;
@@ -570,42 +699,7 @@ class _DeviceIssuesCard extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           ),
           const SizedBox(height: 12),
-          ...issueDevices.take(5).map((d) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      d.client.displayNameWithOui,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    d.client.band,
-                    style: TextStyle(
-                        fontSize: 12, color: scheme.onSurfaceVariant),
-                  ),
-                  const SizedBox(width: 8),
-                  if (d.client.signalDecibels != null)
-                    Text(
-                      '${d.client.signalDecibels} dBm',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.red.shade700,
-                          fontWeight: FontWeight.w500),
-                    ),
-                ]),
-              )),
+          ...issueDevices.take(5).map((d) => _DeviceIssueRow(score: d)),
           if (issueDevices.length > 5)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -625,33 +719,962 @@ class _DeviceIssuesCard extends StatelessWidget {
   }
 }
 
-// ── Preliminary badge ────────────────────────────────────────────────────────
+// ── Device issue row ──────────────────────────────────────────────────────────
 
-class _PreliminaryBadge extends StatelessWidget {
-  const _PreliminaryBadge();
+class _DeviceIssueRow extends StatelessWidget {
+  final DeviceScore score;
+  const _DeviceIssueRow({required this.score});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    final scheme = Theme.of(context).colorScheme;
+    final client = score.client;
+
+    // Determine primary issue reason
+    final bool weakSignal =
+        client.signalDecibels != null && client.signalDecibels! < -75;
+    final bool slowRate = (client.txRateMbps != null && client.txRateMbps! < 10) ||
+        (client.rxRateMbps != null && client.rxRateMbps! < 10);
+
+    // Build detail string: signal + rate
+    final parts = <String>[];
+    if (client.signalDecibels != null) {
+      parts.add('${client.signalDecibels} dBm');
+    }
+    if (client.txRateMbps != null || client.rxRateMbps != null) {
+      final tx = client.txRateMbps;
+      final rx = client.rxRateMbps;
+      if (tx != null && rx != null) {
+        parts.add('↓${rx}  ↑${tx} Mbps');
+      } else if (tx != null) {
+        parts.add('↑${tx} Mbps');
+      }
+    }
+    final detail = parts.join('  ·  ');
+
+    final issueColor =
+        weakSignal && slowRate ? Colors.red : Colors.orange.shade700;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: issueColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                client.displayNameWithOui,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              client.band,
+              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+            ),
+          ]),
+          if (detail.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 18, top: 2),
+              child: Text(
+                detail,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: weakSignal || slowRate
+                      ? issueColor
+                      : scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Mesh network card ─────────────────────────────────────────────────────────
+
+class _MeshCard extends StatelessWidget {
+  final InstantVerifyPivotState state;
+  const _MeshCard({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final nodes = state.meshNodes;
+    final satelliteCount = nodes.where((n) => !n.isController).length;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.hub_outlined, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Mesh Network — ${nodes.length} node${nodes.length == 1 ? '' : 's'}',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$satelliteCount satellite${satelliteCount == 1 ? '' : 's'}',
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          ...nodes.map((node) => _MeshNodeRow(
+                node: node,
+                clientCount: state.clientCountForNode(node.deviceId),
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+class _MeshNodeRow extends StatelessWidget {
+  final MeshNodeInfo node;
+  final int clientCount;
+  const _MeshNodeRow({required this.node, required this.clientCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    // Signal quality indicator for backhaul
+    Color backhaulColor = Colors.green;
+    IconData backhaulIcon = Icons.check_circle;
+    if (node.isController) {
+      backhaulIcon = Icons.router;
+      backhaulColor = scheme.primary;
+    } else if (node.hasWeakBackhaul) {
+      backhaulIcon = Icons.warning_amber;
+      backhaulColor = Colors.orange;
+    } else if (node.hasWiredBackhaul) {
+      backhaulIcon = Icons.cable;
+      backhaulColor = Colors.green;
+    } else {
+      backhaulIcon = Icons.wifi;
+      backhaulColor = Colors.green;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(backhaulIcon, size: 18, color: backhaulColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Expanded(
+                    child: Text(
+                      node.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w500, fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (clientCount > 0)
+                    Text(
+                      '$clientCount device${clientCount == 1 ? '' : 's'}',
+                      style: TextStyle(
+                          fontSize: 11, color: scheme.onSurfaceVariant),
+                    ),
+                ]),
+                const SizedBox(height: 2),
+                Row(children: [
+                  if (node.model != null)
+                    Text(node.model!,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: scheme.onSurfaceVariant)),
+                  if (node.model != null && !node.isController)
+                    Text(' · ', style: TextStyle(color: scheme.outlineVariant)),
+                  if (!node.isController)
+                    Text(
+                      node.backhaulLabel,
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: node.hasWeakBackhaul
+                              ? Colors.orange.shade700
+                              : scheme.onSurfaceVariant),
+                    ),
+                ]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Check results expand (post-completion) ────────────────────────────────────
+
+class _CheckResultsExpand extends StatelessWidget {
+  final InstantVerifyPivotState state;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  const _CheckResultsExpand({
+    required this.state,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 12,
-          height: 12,
-          child: CircularProgressIndicator(
-            strokeWidth: 1.5,
-            color: Theme.of(context).colorScheme.primary,
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(children: [
+              Icon(
+                expanded ? Icons.expand_less : Icons.expand_more,
+                size: 16,
+                color: scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                expanded ? 'Hide test details' : 'View test details',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant),
+              ),
+            ]),
           ),
         ),
-        const SizedBox(width: 6),
-        Text(
-          'Speed test in progress...',
-          style: TextStyle(
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        if (expanded) ...[
+          const SizedBox(height: 8),
+          _ChecklistSummary(state: state),
+        ],
+      ],
+    );
+  }
+}
+
+class _ChecklistSummary extends StatefulWidget {
+  final InstantVerifyPivotState state;
+  const _ChecklistSummary({required this.state});
+
+  @override
+  State<_ChecklistSummary> createState() => _ChecklistSummaryState();
+}
+
+class _ChecklistSummaryState extends State<_ChecklistSummary> {
+  int? _expandedIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final state = widget.state;
+
+    // Firmware 3-state (PRD v0.7): pass / update available / not a failure
+    final bool fwUpToDate = !state.firmwareUpdateAvailable;
+    final String fwLabel = state.firmwareUpdateAvailable
+        ? 'Software update available'
+        : 'Software is up to date';
+    // Use a special "available" state icon — not pass, not fail
+    final _CheckDisplayState fwState = state.firmwareUpdateAvailable
+        ? _CheckDisplayState.available
+        : _CheckDisplayState.pass;
+
+    final rows = <_SummaryRow>[
+      _SummaryRow(
+        label: 'Router reached',
+        state: _CheckDisplayState.pass,
+        detail: state.routerModel ?? '',
+        expandedDetail:
+            'We connected to your router at 192.168.1.1. '
+            'This means your device can communicate with your router over WiFi or Ethernet.',
+      ),
+      _SummaryRow(
+        label: 'Internet connected',
+        state: state.wanConnected ? _CheckDisplayState.pass : _CheckDisplayState.fail,
+        detail: state.wanConnected ? 'Connected' : 'No internet service',
+        expandedDetail: state.wanConnected
+            ? 'Your router has an active connection to your internet provider. '
+              'Data can flow between your home and the internet.'
+            : 'Your router is not receiving a signal from your internet provider. '
+              'Check that the cable from your provider\'s box to your router is firmly plugged in.',
+      ),
+      _SummaryRow(
+        label: 'Websites loading',
+        state: state.dnsCheck == null
+            ? _CheckDisplayState.skipped
+            : state.dnsCheck!.resolved
+                ? _CheckDisplayState.pass
+                : _CheckDisplayState.fail,
+        detail: state.dnsCheck == null
+            ? 'Not tested'
+            : state.dnsCheck!.resolved
+                ? 'Internet reachable'
+                : 'Internet not responding',
+        expandedDetail: state.dnsCheck?.resolved == true
+            ? 'We sent a request to look up a website address (like google.com). '
+              'Your router found it \u2014 websites should load normally.'
+            : 'We tried to look up a website address and your router couldn\'t find it. '
+              'This means websites may not load even though your router shows connected.',
+      ),
+      _SummaryRow(
+        label: 'Speed check',
+        state: state.speedTest == null ? _CheckDisplayState.skipped : _CheckDisplayState.pass,
+        detail: state.speedTest == null
+            ? 'Not completed'
+            : '\u2193 ${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps  '
+                '\u2191 ${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
+                '${state.speedTest!.latencyMs}ms delay',
+        expandedDetail: state.speedTest != null
+            ? 'We measured how fast data can travel between your device and the internet.\n\n'
+              'Speed can vary based on time of day, how many devices are active, '
+              'and your distance from the router.'
+            : 'The speed test did not complete. Try running again.',
+      ),
+      _SummaryRow(
+        label: 'Devices checked',
+        state: state.clients.isNotEmpty ? _CheckDisplayState.pass : _CheckDisplayState.skipped,
+        detail: state.clients.isEmpty
+            ? 'No devices found'
+            : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} \u2014 '
+                '${state.issueDevices.length} with weak signal',
+        expandedDetail: state.clients.isEmpty
+            ? 'No connected devices were detected.'
+            : 'We checked the WiFi signal strength and speed for each connected device. '
+              '${state.issueDevices.isEmpty ? 'All devices have a good connection.' : '${state.issueDevices.length} device${state.issueDevices.length == 1 ? ' has' : 's have'} a weak signal \u2014 tap My Devices for details.'}',
+      ),
+      _SummaryRow(
+        label: fwLabel,
+        state: fwState,
+        detail: fwUpToDate ? '' : state.availableFirmwareVersion ?? '',
+        expandedDetail: fwUpToDate
+            ? 'Your router is running the latest software. '
+              'Updates improve performance and security.'
+            : 'A newer version of your router\'s software is available. '
+              'Updates improve performance, fix bugs, and improve security.',
+      ),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: rows.asMap().entries.map((entry) {
+          final index = entry.key;
+          final row = entry.value;
+          return _SummaryRowWidget(
+            row: row,
+            isExpanded: _expandedIndex == index,
+            onTap: () => setState(() {
+              _expandedIndex = _expandedIndex == index ? null : index;
+            }),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+enum _CheckDisplayState { pass, fail, skipped, available }
+
+class _SummaryRow {
+  final String label;
+  final _CheckDisplayState state;
+  final String detail;
+  final String expandedDetail;
+  const _SummaryRow({
+    required this.label,
+    required this.state,
+    required this.detail,
+    required this.expandedDetail,
+  });
+}
+
+class _SummaryRowWidget extends StatelessWidget {
+  final _SummaryRow row;
+  final bool isExpanded;
+  final VoidCallback onTap;
+  const _SummaryRowWidget({
+    required this.row,
+    required this.isExpanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    IconData iconData;
+    Color iconColor;
+    switch (row.state) {
+      case _CheckDisplayState.pass:
+        iconData = Icons.check_circle;
+        iconColor = Colors.green;
+      case _CheckDisplayState.fail:
+        iconData = Icons.cancel;
+        iconColor = Colors.red;
+      case _CheckDisplayState.skipped:
+        iconData = Icons.remove_circle_outline;
+        iconColor = scheme.outlineVariant;
+      case _CheckDisplayState.available:
+        iconData = Icons.arrow_circle_up;
+        iconColor = Colors.blue;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8, top: 2),
+            child: Row(children: [
+              Icon(iconData, size: 16, color: iconColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(row.label,
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w500)),
+              ),
+              if (row.detail.isNotEmpty)
+                Text(
+                  row.detail,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: row.state == _CheckDisplayState.fail
+                          ? Colors.red.shade700
+                          : scheme.onSurfaceVariant),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              const SizedBox(width: 4),
+              Icon(
+                isExpanded ? Icons.expand_less : Icons.expand_more,
+                size: 14,
+                color: scheme.onSurfaceVariant,
+              ),
+            ]),
+          ),
+        ),
+        // Progressive disclosure (PRD v0.7 S-5)
+        if (isExpanded)
+          Padding(
+            padding: const EdgeInsets.only(left: 24, bottom: 12, right: 8),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+              ),
+              child: Text(
+                row.expandedDetail,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Checklist progress (loading + preliminary phase) ─────────────────────────
+
+enum _CheckStatus { pending, running, pass, fail }
+
+class _ChecklistProgress extends StatelessWidget {
+  final InstantVerifyPivotState state;
+  const _ChecklistProgress({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final step = state.browserTestStep;
+
+    final routerStatus = state.phase == PivotLoadPhase.idle ||
+            state.phase == PivotLoadPhase.loading
+        ? _CheckStatus.running
+        : _CheckStatus.pass;
+
+    final internetStatus = state.phase == PivotLoadPhase.loading ||
+            state.phase == PivotLoadPhase.idle
+        ? _CheckStatus.pending
+        : state.wanConnected
+            ? _CheckStatus.pass
+            : _CheckStatus.fail;
+
+    _CheckStatus gatewayStatus;
+    String gatewayDetail = '';
+    if (state.phase == PivotLoadPhase.loading ||
+        state.phase == PivotLoadPhase.idle) {
+      gatewayStatus = _CheckStatus.pending;
+    } else if (step == 'gateway') {
+      gatewayStatus = _CheckStatus.running;
+    } else if (state.gatewayPing != null) {
+      gatewayStatus =
+          state.gatewayPing!.reachable ? _CheckStatus.pass : _CheckStatus.fail;
+      if (state.gatewayPing!.reachable &&
+          state.gatewayPing!.latencyMs != null) {
+        gatewayDetail = '${state.gatewayPing!.latencyMs}ms';
+      } else if (!state.gatewayPing!.reachable) {
+        gatewayDetail = 'Could not reach router';
+      }
+    } else if (step == 'dns' ||
+        step.startsWith('speed') ||
+        step == 'complete') {
+      gatewayStatus = _CheckStatus.pass;
+    } else {
+      gatewayStatus = _CheckStatus.pending;
+    }
+
+    _CheckStatus dnsStatus;
+    String dnsDetail = '';
+    if (state.phase == PivotLoadPhase.loading ||
+        state.phase == PivotLoadPhase.idle ||
+        step == 'gateway' ||
+        step == 'idle') {
+      dnsStatus = _CheckStatus.pending;
+    } else if (step == 'dns') {
+      dnsStatus = _CheckStatus.running;
+    } else if (state.dnsCheck != null) {
+      dnsStatus =
+          state.dnsCheck!.resolved ? _CheckStatus.pass : _CheckStatus.fail;
+      dnsDetail = state.dnsCheck!.resolved
+          ? 'Internet reachable'
+          : 'Internet not responding';
+    } else if (step.startsWith('speed') || step == 'complete') {
+      dnsStatus = _CheckStatus.pass;
+    } else {
+      dnsStatus = _CheckStatus.pending;
+    }
+
+    _CheckStatus speedStatus;
+    String speedDetail = '';
+    if (!step.startsWith('speed') && step != 'complete' && state.speedTest == null) {
+      speedStatus = _CheckStatus.pending;
+    } else if (step.startsWith('speed:')) {
+      speedStatus = _CheckStatus.running;
+      final substep = step.split(':').last;
+      speedDetail = switch (substep) {
+        'latency' => 'Measuring latency...',
+        'download' => 'Testing download speed...',
+        'upload' => 'Testing upload speed...',
+        _ => 'Running speed test...',
+      };
+    } else if (state.speedTest != null) {
+      speedStatus = _CheckStatus.pass;
+      speedDetail =
+          '${state.speedTest!.downloadMbps.toStringAsFixed(0)} Mbps down';
+    } else if (step == 'error') {
+      speedStatus = _CheckStatus.fail;
+      speedDetail = 'Speed test could not complete';
+    } else {
+      speedStatus = _CheckStatus.pending;
+    }
+
+    final deviceStatus = state.phase == PivotLoadPhase.loading ||
+            state.phase == PivotLoadPhase.idle
+        ? _CheckStatus.pending
+        : _CheckStatus.pass;
+    final deviceDetail = state.clients.isEmpty
+        ? ''
+        : '${state.clients.length} device${state.clients.length == 1 ? '' : 's'} found';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Checking your connection',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+        const SizedBox(height: 16),
+        _CheckRow(label: 'Router', status: routerStatus,
+            detail: state.routerModel ?? ''),
+        _CheckRow(
+            label: 'Internet',
+            status: internetStatus,
+            detail: state.wanConnected
+                ? 'Connected'
+                : state.phase == PivotLoadPhase.loading
+                    ? ''
+                    : 'No internet service'),
+        _CheckRow(
+            label: 'Gateway response',
+            status: gatewayStatus,
+            detail: gatewayDetail),
+        _CheckRow(
+            label: 'Website access', status: dnsStatus, detail: dnsDetail),
+        _CheckRow(
+            label: 'Speed test', status: speedStatus, detail: speedDetail),
+        _CheckRow(
+            label: 'Your devices',
+            status: deviceStatus,
+            detail: deviceDetail),
+      ],
+    );
+  }
+}
+
+class _CheckRow extends StatelessWidget {
+  final String label;
+  final _CheckStatus status;
+  final String detail;
+
+  const _CheckRow({
+    required this.label,
+    required this.status,
+    required this.detail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    Widget icon;
+    Color labelColor = scheme.onSurface;
+
+    switch (status) {
+      case _CheckStatus.pending:
+        icon = Icon(Icons.radio_button_unchecked,
+            size: 18, color: scheme.outlineVariant);
+        labelColor = scheme.onSurfaceVariant;
+      case _CheckStatus.running:
+        icon = SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: scheme.primary),
+        );
+      case _CheckStatus.pass:
+        icon = const Icon(Icons.check_circle, size: 18, color: Colors.green);
+      case _CheckStatus.fail:
+        icon = const Icon(Icons.cancel, size: 18, color: Colors.red);
+        labelColor = Colors.red;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(children: [
+        icon,
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 140,
+          child: Text(label,
+              style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: labelColor,
+                  fontSize: 14)),
+        ),
+        Expanded(
+          child: Text(
+            detail,
+            style: TextStyle(
+                fontSize: 13,
+                color: status == _CheckStatus.fail
+                    ? Colors.red.shade700
+                    : scheme.onSurfaceVariant),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Router light guide (PRD v0.7 S-1) ───────────────────────────────────────
+
+class _LightGuideLink extends StatelessWidget {
+  final bool showInlineCallout;
+  const _LightGuideLink({this.showInlineCallout = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Inline WAN-down callout
+        if (showInlineCallout)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'No internet connection detected.',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: Colors.red,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Check your router's light. What color is it?",
+                  style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => _showLightGuide(context),
+                  child: Text(
+                    'What does my light mean?',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: scheme.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Persistent link (always visible)
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            icon: Icon(Icons.lightbulb_outline, size: 16, color: scheme.primary),
+            label: Text(
+              'What does my router light mean?',
+              style: TextStyle(fontSize: 12, color: scheme.primary),
+            ),
+            onPressed: () => _showLightGuide(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  static void _showLightGuide(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'What does my router light mean?',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: scheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // LED patterns from Pinnacle LED spec r20260109a
+            _lightRow(Colors.white, 'Solid white',
+                'Everything is fine \u2014 connected to internet'),
+            _lightRow(Colors.blue, 'Pulsing blue',
+                'Starting up \u2014 wait about a minute'),
+            _lightRow(Colors.red, 'Solid red',
+                'No internet \u2014 check your cables'),
+            _lightRow(Colors.yellow.shade700, 'Solid yellow',
+                'Needs attention \u2014 a check found a problem'),
+            _lightRow(Colors.green, 'Solid green',
+                'Instant-Test passed \u2014 everything looks good'),
+            _lightRow(Colors.black, 'Off',
+                'No power, or Night Mode is enabled'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _lightRow(Color color, String label, String meaning) {
+    final isBlack = color == Colors.black;
+    final isWhite = color == Colors.white;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 16,
+            height: 16,
+            margin: const EdgeInsets.only(top: 2),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: (isWhite || isBlack)
+                  ? Border.all(color: Colors.grey.shade400, width: 1)
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(meaning,
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.grey.shade600)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Flow card (all-clear state — PRD v0.7 D-16) ────────────────────────────
+
+class _FlowCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  const _FlowCard({
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 155,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: scheme.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Restart countdown with reassurance (PRD v0.7 D-23) ─────────────────────
+
+class _RestartCountdown extends StatelessWidget {
+  final int secondsRemaining;
+  const _RestartCountdown({required this.secondsRemaining});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final minutes = secondsRemaining ~/ 60;
+    final seconds = secondsRemaining % 60;
+    final timeStr = '$minutes:${seconds.toString().padLeft(2, '0')}';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: scheme.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Restarting your router\u2026  $timeStr remaining',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          Text(
+            "Don't worry \u2014 this is normal. Your devices will "
+            'disconnect for a couple minutes, then reconnect '
+            "on their own. You don't need to do anything.\n\n"
+            'This page will reload automatically when your '
+            'router is back online.',
+            style: TextStyle(
+              fontSize: 13,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

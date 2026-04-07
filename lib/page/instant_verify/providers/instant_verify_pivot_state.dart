@@ -2,10 +2,14 @@ import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/cs_diagnostic/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/cs_diagnostic/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
+import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 
 enum PivotLoadPhase {
-  /// Initial state — JNAP data not yet received.
+  /// Initial state — tests have not been triggered yet.
+  idle,
+
+  /// JNAP data loading.
   loading,
 
   /// JNAP data loaded (<1s). Verdict can surface device/firmware/WAN findings.
@@ -50,6 +54,13 @@ class InstantVerifyPivotState extends Equatable {
   // ── Agent-provided context (optional inputs) ─────────────────────────
   final double? planSpeedMbps;
 
+  // ── Mesh topology ─────────────────────────────────────────────────────
+  /// All mesh nodes (including the main router). Empty = single router, data pending.
+  final List<MeshNodeInfo> meshNodes;
+
+  /// Maps client MAC address → deviceId of the node it's connected to.
+  final Map<String, String> clientToNodeId;
+
   // ── Computed values ───────────────────────────────────────────────────
   final List<DeviceScore> deviceScores;
   final Verdict? verdict;
@@ -67,7 +78,7 @@ class InstantVerifyPivotState extends Equatable {
   final String? errorMessage;
 
   const InstantVerifyPivotState({
-    this.phase = PivotLoadPhase.loading,
+    this.phase = PivotLoadPhase.idle,
     this.deviceInfo,
     this.wanStatus,
     this.routerHealth,
@@ -91,6 +102,8 @@ class InstantVerifyPivotState extends Equatable {
     this.routerSpeed,
     this.browserTestStep = 'idle',
     this.planSpeedMbps,
+    this.meshNodes = const [],
+    this.clientToNodeId = const {},
     this.deviceScores = const [],
     this.verdict,
     this.verdictIsPreliminary = true,
@@ -127,6 +140,8 @@ class InstantVerifyPivotState extends Equatable {
     RouterSpeedResult? routerSpeed,
     String? browserTestStep,
     double? planSpeedMbps,
+    List<MeshNodeInfo>? meshNodes,
+    Map<String, String>? clientToNodeId,
     List<DeviceScore>? deviceScores,
     Verdict? verdict,
     bool? verdictIsPreliminary,
@@ -162,6 +177,8 @@ class InstantVerifyPivotState extends Equatable {
       routerSpeed: routerSpeed ?? this.routerSpeed,
       browserTestStep: browserTestStep ?? this.browserTestStep,
       planSpeedMbps: planSpeedMbps ?? this.planSpeedMbps,
+      meshNodes: meshNodes ?? this.meshNodes,
+      clientToNodeId: clientToNodeId ?? this.clientToNodeId,
       deviceScores: deviceScores ?? this.deviceScores,
       verdict: verdict ?? this.verdict,
       verdictIsPreliminary: verdictIsPreliminary ?? this.verdictIsPreliminary,
@@ -198,10 +215,31 @@ class InstantVerifyPivotState extends Equatable {
 
   String? get routerModel => deviceInfo?['modelNumber'] as String?;
   String? get routerSerial => deviceInfo?['serialNumber'] as String?;
+  String? get routerMac => deviceInfo?['macAddress'] as String?;
   String? get routerFirmware => deviceInfo?['firmwareVersion'] as String?;
-  String? get wanIpAddress => wanStatus?['ipAddress'] as String?;
+
+  // WAN IP and gateway are nested inside wanConnection in the JNAP response
+  String? get wanIpAddress =>
+      (wanStatus?['wanConnection'] as Map<String, dynamic>?)?['ipAddress'] as String? ??
+      wanStatus?['ipAddress'] as String?; // fallback for older firmware shapes
+  String? get wanGateway =>
+      (wanStatus?['wanConnection'] as Map<String, dynamic>?)?['gateway'] as String?;
   String? get wanConnectionType => wanStatus?['detectedWANType'] as String?
       ?? wanStatus?['wanType'] as String?;
+
+  int get twoPointFourGhzCount =>
+      clients.where((c) => c.isWireless && c.band.contains('2.4')).length;
+  int get fiveGhzCount =>
+      clients.where((c) => c.isWireless && !c.band.contains('2.4')).length;
+
+  bool get isMeshNetwork => meshNodes.length > 1;
+
+  /// Count of wireless clients connected to a specific node.
+  int clientCountForNode(String deviceId) =>
+      clientToNodeId.values.where((id) => id == deviceId).length;
+
+  List<MeshNodeInfo> get weakBackhaulNodes =>
+      meshNodes.where((n) => n.hasWeakBackhaul).toList();
 
   int get issueDeviceCount => deviceScores.where((d) => d.isIssue).length;
   int get atRiskDeviceCount => deviceScores.where((d) => d.isAtRisk).length;
@@ -247,6 +285,8 @@ class InstantVerifyPivotState extends Equatable {
         routerSpeed,
         browserTestStep,
         planSpeedMbps,
+        meshNodes,
+        clientToNodeId,
         deviceScores,
         verdict,
         verdictIsPreliminary,

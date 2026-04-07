@@ -126,6 +126,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       pnpTroubleshootingRoute,
       addNodesRoute,
       csDiagnosticRoute,
+      // Dev bypass: /iv-dev skips auth and goes directly to pivot view
+      GoRoute(
+        path: '/iv-dev',
+        builder: (context, state) => const InstantVerifyPivotView(),
+      ),
     ],
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
@@ -139,6 +144,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         // bypass auto parent first login page
         return state.uri.toString();
       } else if (state.matchedLocation.startsWith('/troubleshoot')) {
+        return null;
+      } else if (state.matchedLocation.startsWith('/iv-dev')) {
         return null;
       }
       return router._redirectLogic(state);
