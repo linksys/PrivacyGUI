@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/models/sse_notification.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
@@ -26,8 +28,13 @@ import '../providers/package_widget_data_provider.dart';
 /// 4. On dispose: unsubscribe SSE / cancel poll timer
 class PackageWidgetRenderer extends ConsumerStatefulWidget {
   final PackageWidgetTemplate template;
+  final bool showHeader;
 
-  const PackageWidgetRenderer({super.key, required this.template});
+  const PackageWidgetRenderer({
+    super.key,
+    required this.template,
+    this.showHeader = false,
+  });
 
   @override
   ConsumerState<PackageWidgetRenderer> createState() =>
@@ -188,113 +195,119 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
   // Action Handling
   // ---------------------------------------------------------------------------
 
-  /// Handle widget actions triggered by user interactions.
-  ///
-  /// This method processes actions from UI components and routes them to
-  /// appropriate handlers based on the action type.
+  /// Handle widget actions from template UI components.
   void _handleWidgetAction(Map<String, dynamic> actionData) {
-    final actionType = actionData['action'] as String?;
-    if (actionType == null) {
-      logger.w('[PkgWidget] Action missing type: $actionData');
-      return;
-    }
+    final actionType =
+        (actionData[r'$action'] ?? actionData['action']) as String?;
+    if (actionType == null) return;
 
     logger.d('[PkgWidget] ${widget.template.widgetId} action: $actionType');
 
-    try {
-      switch (actionType) {
-        case 'pressed':
-        case 'tapped':
-          _handleTapAction(actionData);
-          break;
-        case 'changed':
-        case 'toggled':
-          _handleValueChangedAction(actionData);
-          break;
-        case 'selected':
-          _handleSelectionAction(actionData);
-          break;
-        case 'save_settings':
-          _handleSaveSettingsAction(actionData);
-          break;
-        case 'navigate':
-          _handleNavigationAction(actionData);
-          break;
-        case 'refresh_data':
-          _handleRefreshDataAction(actionData);
-          break;
-        default:
-          logger.w('[PkgWidget] Unknown action type: $actionType');
-          // For unknown actions, just log the data for debugging
-          logger.d('[PkgWidget] Action data: $actionData');
-      }
-    } catch (e) {
-      logger.w('[PkgWidget] Error handling action $actionType: $e');
+    switch (actionType) {
+      case 'refresh_data':
+        _handleRefreshDataAction();
+      case 'navigate':
+        _handleNavigationAction(actionData['destination'] as String?);
+      case 'cgi_call':
+        _handleCgiCallAction(actionData);
+      default:
+        logger.d('[PkgWidget] Unhandled action: $actionData');
     }
   }
 
-  /// Handle tap/press actions from buttons and interactive elements.
-  void _handleTapAction(Map<String, dynamic> actionData) {
-    final elementType =
-        actionData['button'] ?? actionData['title'] ?? 'unknown';
-    logger.d('[PkgWidget] Tap action on: $elementType');
+  Future<void> _handleNavigationAction(String? destination) async {
+    if (destination == null || destination.isEmpty) return;
+    if (!mounted) return;
+    logger.d('[PkgWidget] Open app page: $destination');
+    try {
+      final url = Uri.parse('${Uri.base.origin}/$destination/');
+      logger.d('[PkgWidget] Full URL: $url');
 
-    // Add specific tap handling logic here
-    // For example: trigger data refresh, show dialog, etc.
+      final canLaunch = await canLaunchUrl(url);
+      if (canLaunch) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+        if (mounted) {
+          showSuccessSnackBar(context, 'Opened app page');
+        }
+      } else {
+        logger.w('[PkgWidget] Cannot launch URL: $url');
+        if (mounted) {
+          showFailedSnackBar(context, 'Cannot open page');
+        }
+      }
+    } catch (e) {
+      logger.w('[PkgWidget] Open page failed: $e');
+      if (mounted) {
+        showFailedSnackBar(context, 'Failed to open page');
+      }
+    }
   }
 
-  /// Handle value change actions from form inputs.
-  void _handleValueChangedAction(Map<String, dynamic> actionData) {
-    final newValue = actionData['value'];
-    logger.d('[PkgWidget] Value changed to: $newValue');
-
-    // Add value change handling logic here
-    // For example: update local state, validate input, etc.
-  }
-
-  /// Handle selection actions from dropdowns, tabs, etc.
-  void _handleSelectionAction(Map<String, dynamic> actionData) {
-    final selectedValue = actionData['value'] ?? actionData['index'];
-    logger.d('[PkgWidget] Selection changed to: $selectedValue');
-
-    // Add selection handling logic here
-    // For example: update filter settings, change view mode, etc.
-  }
-
-  /// Handle save settings action with validation and persistence.
-  void _handleSaveSettingsAction(Map<String, dynamic> actionData) {
-    final section = actionData['section'] as String?;
-    final shouldValidate = actionData['validate'] as bool? ?? true;
-
-    logger.d(
-        '[PkgWidget] Save settings: section=$section, validate=$shouldValidate');
-
-    // Add save settings logic here
-    // For example: validate form data, call USP API, show success message, etc.
-  }
-
-  /// Handle navigation actions to other pages or dialogs.
-  void _handleNavigationAction(Map<String, dynamic> actionData) {
-    final destination = actionData['destination'] as String?;
-    final params = actionData['params'] as Map<String, dynamic>?;
-
-    logger.d('[PkgWidget] Navigate to: $destination with params: $params');
-
-    // Add navigation handling logic here
-    // For example: use GoRouter to navigate, show modal dialog, etc.
-  }
-
-  /// Handle data refresh action to reload widget content.
-  void _handleRefreshDataAction(Map<String, dynamic> actionData) {
-    logger.d('[PkgWidget] Refresh data requested');
-
-    // Trigger data refresh based on widget's data source type
+  Future<void> _handleRefreshDataAction() async {
     if (widget.template.subscription != null) {
-      // USP data source - trigger fresh GET request
-      _refreshUspData();
+      await _refreshUspData();
     } else if (widget.template.dataSource != null) {
-      // HTTP data source - trigger immediate fetch
-      _fetchHttpData(widget.template.dataSource!);
+      await _fetchHttpData(widget.template.dataSource!);
+    }
+    if (mounted) {
+      showSuccessSnackBar(context, 'Data refreshed');
+    }
+  }
+
+  /// POST to a whitelisted CGI endpoint, auto-refresh on success.
+  Future<void> _handleCgiCallAction(Map<String, dynamic> actionData) async {
+    final url = actionData['url'] as String?;
+    if (url == null || url.isEmpty) return;
+
+    // Security: same whitelist as _fetchHttpData
+    final uri = Uri.parse(url);
+    if (uri.hasAuthority || !url.startsWith('/cgi-bin/')) {
+      logger.w('[CGI][PkgWidget] Blocked non-local URL: $url');
+      return;
+    }
+
+    // Resolve $bind expressions in body against current widget data
+    final rawBody = actionData['body'] as Map<String, dynamic>?;
+    final widgetData =
+        ref.read(packageWidgetDataProvider(widget.template.widgetId));
+    final body = rawBody != null ? resolveBindings(rawBody, widgetData) : null;
+
+    try {
+      final throttler = ref.read(bridgeRequestThrottlerProvider);
+      final client = ref.read(httpClientProvider);
+      final targetUrl = Uri.parse('${Uri.base.origin}$url');
+
+      final token = ref.read(uspServiceProvider)?.sessionToken;
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await throttler.enqueue<http.Response>(
+        cacheKey: 'cgi:$url',
+        priority: RequestPriority.low,
+        action: () => client.post(
+          targetUrl,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        showSuccessSnackBar(context, 'Action completed');
+        _handleRefreshDataAction();
+      } else {
+        logger.w('[CGI][PkgWidget] $url returned ${response.statusCode}');
+        showFailedSnackBar(context, 'Action failed (${response.statusCode})');
+      }
+    } catch (e) {
+      logger.w('[CGI][PkgWidget] Call error for '
+          '${widget.template.widgetId}: $e');
+      if (mounted) {
+        showFailedSnackBar(context, 'Action failed');
+      }
     }
   }
 
@@ -380,6 +393,59 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
     }
   }
 
+  Widget _buildContentOnly(
+    BuildContext context,
+    Map<String, dynamic> template,
+    Map<String, dynamic> data,
+  ) {
+    try {
+      // Create UI Kit template renderer
+      final renderer = UiKitTemplateRenderer(
+        template: template,
+        data: data,
+        builders: {
+          ...UiKitCatalog.standardBuilders,
+          ...PackageWidgetBuilders.all,
+        },
+        onAction: _handleWidgetAction,
+      );
+
+      // Get template root properties for card configuration
+      final rootProps = template['props'] as Map<String, dynamic>? ?? template;
+      final hasChildren = (rootProps['children'] as List?)?.isNotEmpty ?? false;
+
+      // Extract card padding from template
+      final padding = rootProps['padding'] != null
+          ? EdgeInsets.all((rootProps['padding'] as num).toDouble())
+          : null;
+
+      if (hasChildren) {
+        // Root has children → wrap in scrollable container (no card)
+        return Padding(
+          padding: padding ?? EdgeInsets.zero,
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: renderer.build(context),
+          ),
+        );
+      } else {
+        // No children → render directly with optional padding
+        final renderedWidget = renderer.build(context);
+        return padding != null
+            ? Padding(padding: padding, child: renderedWidget)
+            : renderedWidget;
+      }
+    } catch (e) {
+      logger.w('[USP][PkgWidget] Render error '
+          '${widget.template.widgetId}: $e');
+      return Center(
+        child: AppText.bodySmall(
+          'Widget error: ${widget.template.displayName}',
+        ),
+      );
+    }
+  }
+
   void _startHttpPolling(HttpDataSourceConfig ds) {
     if (ds.refreshInterval <= 0) return;
     _pollTimer = Timer.periodic(
@@ -403,6 +469,115 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
   }
 
   // ---------------------------------------------------------------------------
+  // Build with header
+  // ---------------------------------------------------------------------------
+
+  /// Extract the navigate destination — prefer top-level `navigateTo`,
+  /// fall back to legacy `onTap.$action=navigate` in template root.
+  String? _extractDestination() {
+    if (widget.template.navigateTo != null) {
+      return widget.template.navigateTo;
+    }
+    final rootProps =
+        widget.template.template['props'] as Map<String, dynamic>?;
+    if (rootProps == null) return null;
+    final onTap = rootProps['onTap'] as Map<String, dynamic>?;
+    if (onTap == null) return null;
+    if (onTap[r'$action'] == 'navigate') {
+      return onTap['destination'] as String?;
+    }
+    return null;
+  }
+
+  /// Resolve a field that can be `String`, `Map` ($bind/$compute), or null.
+  String? _resolveStringOrBind(Object? value, Map<String, dynamic> data) {
+    if (value == null) return null;
+    if (value is String) return value;
+    if (value is Map<String, dynamic>) {
+      final resolved = resolveBindings({'_': value}, data);
+      return resolved['_']?.toString();
+    }
+    return null;
+  }
+
+  Widget _buildWidgetWithHeader(
+      BuildContext context, Map<String, dynamic> data) {
+    final t = widget.template;
+    final hasDataSource = t.subscription != null || t.dataSource != null;
+    final destination = _extractDestination();
+    final badgeText = _resolveStringOrBind(t.headerBadge, data);
+    final extraText = _resolveStringOrBind(t.headerExtra, data);
+    final iconColor =
+        t.iconColor != null ? parseColor(t.iconColor, context) : null;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row: [icon] title [badge] ... buttons
+          Row(
+            children: [
+              if (t.icon != null) ...[
+                AppIcon.font(
+                  parseIconData(t.icon),
+                  size: 20,
+                  color: iconColor,
+                ),
+                AppGap.xs(),
+              ],
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: t.description != null
+                          ? Tooltip(
+                              message: t.description!,
+                              child: AppText.titleMedium(t.displayName),
+                            )
+                          : AppText.titleMedium(t.displayName),
+                    ),
+                    if (badgeText != null) ...[
+                      AppGap.xs(),
+                      AppTag(label: badgeText),
+                    ],
+                  ],
+                ),
+              ),
+              if (hasDataSource) ...[
+                AppGap.xs(),
+                AppIconButton(
+                  icon: const Icon(Icons.refresh, size: 16),
+                  size: AppButtonSize.small,
+                  onTap: _handleRefreshDataAction,
+                ),
+              ],
+              if (destination != null) ...[
+                AppGap.xs(),
+                AppIconButton(
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  size: AppButtonSize.small,
+                  onTap: () => _handleNavigationAction(destination),
+                ),
+              ],
+            ],
+          ),
+          // Extra subtitle
+          if (extraText != null)
+            AppText.bodySmall(
+              extraText,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          AppGap.sm(),
+          // Widget content
+          Expanded(
+            child: _buildContentOnly(context, t.template, data),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
@@ -417,8 +592,12 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
       );
     }
 
-    // Delegate rendering to UI Kit template engine with integrated card wrapper
-    return _buildCardWithContent(context, widget.template.template, data);
+    if (widget.showHeader) {
+      return _buildWidgetWithHeader(context, data);
+    } else {
+      // Delegate rendering to UI Kit template engine with integrated card wrapper
+      return _buildCardWithContent(context, widget.template.template, data);
+    }
   }
 }
 

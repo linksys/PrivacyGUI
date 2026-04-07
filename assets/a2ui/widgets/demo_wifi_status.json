@@ -1,0 +1,157 @@
+{
+  "widgetId": "demo_wifi_status",
+  "displayName": "WiFi Status Monitor",
+  "description": "Real-time WiFi network status with connected devices and signal strength monitoring",
+  "icon": "wifi",
+  "navigateTo": "/wifi-manager/",
+  "headerBadge": {
+    "$compute": {
+      "op": "conditional",
+      "condition": {
+        "$compute": {
+          "op": "eq",
+          "left": {"$bind": "Device.WiFi.SSID.1.Status"},
+          "right": "Up"
+        }
+      },
+      "ifTrue": "Online",
+      "ifFalse": "Offline"
+    }
+  },
+  "headerExtra": {"$bind": "Device.WiFi.SSID.1.SSID"},
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 6,
+    "preferredColumns": 4,
+    "minRows": 3,
+    "maxRows": 5,
+    "preferredRows": 4
+  },
+  "subscription": {
+    "paths": [
+      "Device.WiFi.SSID.1.SSID",
+      "Device.WiFi.SSID.1.Status",
+      "Device.WiFi.Radio.1.OperatingChannelBandwidth",
+      "Device.WiFi.AccessPoint.1.AssociatedDeviceNumberOfEntries"
+    ],
+    "interval": 5000,
+    "priority": "high"
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "AppCard",
+          "props": {
+            "padding": 12,
+            "backgroundColor": {
+              "$compute": {
+                "op": "conditional",
+                "condition": {
+                  "$compute": {
+                    "op": "eq",
+                    "left": {"$bind": "Device.WiFi.SSID.1.Status"},
+                    "right": "Up"
+                  }
+                },
+                "ifTrue": "successContainer",
+                "ifFalse": "errorContainer"
+              }
+            },
+            "children": [
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "start",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": {
+                          "$compute": {
+                            "op": "conditional",
+                            "condition": {
+                              "$compute": {
+                                "op": "eq",
+                                "left": {"$bind": "Device.WiFi.SSID.1.Status"},
+                                "right": "Up"
+                              }
+                            },
+                            "ifTrue": "Network Online",
+                            "ifFalse": "Network Offline"
+                          }
+                        },
+                        "variant": "bodyMedium"
+                      }
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {"size": "xs"}
+                    },
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisAlignment": "spaceBetween",
+                        "children": [
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": {
+                                "$compute": {
+                                  "op": "concat",
+                                  "values": [
+                                    {"$bind": "Device.WiFi.AccessPoint.1.AssociatedDeviceNumberOfEntries"},
+                                    " devices connected"
+                                  ]
+                                }
+                              },
+                              "variant": "bodySmall"
+                            }
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": {
+                                "$compute": {
+                                  "op": "concat",
+                                  "values": [
+                                    {"$bind": "Device.WiFi.Radio.1.OperatingChannelBandwidth"},
+                                    " MHz"
+                                  ]
+                                }
+                              },
+                              "variant": "bodySmall"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "lg"}
+        },
+        {
+          "type": "AppButton",
+          "props": {
+            "label": "Restart WiFi",
+            "variant": "tonal",
+            "size": "small",
+            "icon": "refresh",
+            "onTap": {
+              "$action": "restart_wifi_interface",
+              "interface": "WiFi.SSID.1"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

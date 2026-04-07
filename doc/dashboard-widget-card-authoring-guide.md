@@ -19,13 +19,15 @@
 
 ## Overview
 
-Dashboard Widget Card is a JSON-configured dynamic UI component system that integrates the latest **UI Kit v2.16.1** features, supporting:
+Dashboard Widget Card is a JSON-configured dynamic UI component system that integrates the latest **UI Kit v2.16.2** features, supporting:
 
-- 🎯 **Action System**: Complete user interaction handling
-- 📊 **Chart Support**: 5 chart types (Line, Bar, Pie, Radar, Heatmap)
+- 🎯 **Action System**: Refresh data, external navigation, and CGI calls
+- 📊 **Chart Support**: 5 chart types (Line, Bar, Pie, Radar, Heatmap)  
 - 🎨 **Theme Consistency**: Automatic app theme adaptation
 - 📱 **Responsive Layout**: Flexible grid constraint system
 - 🔗 **Data Binding**: USP and HTTP data source support
+- ✨ **Rich Headers**: Icons, badges, navigation buttons, and dynamic content
+- 🚀 **External Integration**: Seamless package app navigation
 
 ---
 
@@ -37,7 +39,15 @@ Dashboard Widget Card is a JSON-configured dynamic UI component system that inte
 {
   "widgetId": "string",          // Required: Unique identifier
   "displayName": "string",       // Required: Display name
-  "description": "string",       // Optional: Description
+  "description": "string",       // Optional: Description (hover tooltip on title)
+  
+  // Header configuration (optional)
+  "icon": "string",              // Optional: Icon name (e.g., "wifi", "router")
+  "iconColor": "string",         // Optional: Hex color (e.g., "#2196F3")
+  "navigateTo": "string",        // Optional: Package app ID for external navigation
+  "headerBadge": "string|object", // Optional: Static text or dynamic binding
+  "headerExtra": "string|object", // Optional: Subtitle text or dynamic binding
+  
   "constraints": {               // Required: Layout constraints
     "minColumns": 2,
     "maxColumns": 8,
@@ -69,6 +79,11 @@ Dashboard Widget Card is a JSON-configured dynamic UI component system that inte
 | `widgetId` | String | ✅ | Unique, 3-50 characters, alphanumeric with underscores |
 | `displayName` | String | ✅ | 1-100 characters |
 | `description` | String | ❌ | Maximum 500 characters |
+| `icon` | String | ❌ | Valid icon name from icon library |
+| `iconColor` | String | ❌ | Valid hex color (e.g., "#FF5722") |
+| `navigateTo` | String | ❌ | Package app ID for external navigation |
+| `headerBadge` | String/Object | ❌ | Static text or data binding object |
+| `headerExtra` | String/Object | ❌ | Static text or data binding object |
 | `constraints` | Object | ✅ | Valid layout constraints |
 | `template` | Object | ✅ | Valid UI Kit component tree |
 
@@ -103,7 +118,64 @@ Dashboard Widget Card is a JSON-configured dynamic UI component system that inte
 - 1-100 characters
 - Multi-language support (future version)
 
-### 3. Template
+### 3. Header Configuration (Optional)
+
+#### Icon Display
+```json
+{
+  "icon": "wifi",
+  "iconColor": "#2196F3"
+}
+```
+
+#### Navigation Integration
+```json
+{
+  "navigateTo": "speed-test"
+}
+```
+
+#### Dynamic Header Elements
+```json
+{
+  "headerBadge": "Online",
+  "headerExtra": "192.168.1.1"
+}
+```
+
+**Badge and Extra Support:**
+- **Static String**: `"headerBadge": "Active"`
+- **Dynamic Binding**: `"headerBadge": {"$bind": "Device.Status"}`
+- **Computed Values**: `"headerExtra": {"$compute": {...}}`
+
+#### Complete Header Example
+```json
+{
+  "widgetId": "wifi_status",
+  "displayName": "WiFi Status",
+  "description": "Monitor WiFi network status and connected devices",
+  "icon": "wifi",
+  "iconColor": "#66BB6A",
+  "navigateTo": "wifi-manager",
+  "headerBadge": {
+    "$compute": {
+      "op": "conditional",
+      "condition": {"$bind": "Device.WiFi.Status"},
+      "ifTrue": "Online",
+      "ifFalse": "Offline"
+    }
+  },
+  "headerExtra": {"$bind": "Device.WiFi.SSID"}
+}
+```
+
+**Header Layout:**
+```
+[Icon] Title [Badge]                    [Refresh] [Navigate]
+       Subtitle (headerExtra)
+```
+
+### 4. Template
 
 ```json
 {
@@ -324,9 +396,11 @@ Based on actual implementations, these patterns are commonly used:
 
 ## Action System
 
-### Basic Action Structure
+### Overview
 
-All actions use the `$action` keyword:
+The action system enables user interactions within package widgets. Actions are defined using the `$action` keyword and handled by `PackageWidgetRenderer`.
+
+### Basic Action Structure
 
 ```json
 {
@@ -346,89 +420,117 @@ All actions use the `$action` keyword:
 
 #### 1. Data Refresh
 
+Triggers a refresh of the widget's data source (USP or HTTP).
+
 ```json
 {
   "$action": "refresh_data"
 }
 ```
 
-#### 2. Settings Save
+**Features:**
+- Automatically calls USP GET or HTTP request
+- Shows success/failure toast feedback
+- No additional parameters required
 
-```json
-{
-  "$action": "save_settings",
-  "section": "network",      // Settings section
-  "validate": true,          // Whether to validate
-  "showConfirm": true       // Whether to show confirmation
-}
-```
+#### 2. External Navigation
 
-#### 3. Navigation Action
+Opens external package app pages in a new browser tab/window.
 
 ```json
 {
   "$action": "navigate",
-  "destination": "advanced_settings",
-  "params": {
-    "section": "wifi",
-    "tab": "security"
+  "destination": "wifi-manager"
+}
+```
+
+**Supported destinations:**
+- `"speed-test"` → `/speed-test/`
+- `"wifi-manager"` → `/wifi-manager/`
+- `"whereismyip"` → `/whereismyip/`
+- `"adguard-home"` → `/adguard-home/`
+- `"wireguard-manager"` → `/wireguard-manager/`
+
+**Alternative approach** - Use top-level `navigateTo` field:
+```json
+{
+  "widgetId": "wifi_status",
+  "navigateTo": "wifi-manager",
+  "template": { ... }
+}
+```
+
+#### 3. CGI Call
+
+Executes server-side actions via CGI endpoints with security protection.
+
+```json
+{
+  "$action": "cgi_call",
+  "url": "/cgi-bin/network-restart",
+  "body": {
+    "interface": {"$bind": "selectedInterface"},
+    "force": true
   }
 }
 ```
 
-#### 4. Form Change
+**Security features:**
+- URL whitelist (only `/cgi-bin/` paths allowed)
+- JWT authentication (automatic)
+- Request throttling
+- `$bind` resolution in request body
+- Automatic data refresh on success
+- Toast feedback for results
 
+**Example with user input:**
 ```json
 {
-  "$action": "field_changed",
-  "field": "deviceName",
-  "validation": "required"
-}
-```
-
-#### 5. Settings Toggle
-
-```json
-{
-  "$action": "setting_toggled", 
-  "setting": "autoConnect",
-  "requiresReboot": false
-}
-```
-
-#### 6. Custom Action
-
-```json
-{
-  "$action": "custom_action",
-  "handler": "networkDiagnostic",
-  "timeout": 30000,
-  "data": {
-    "testType": "connectivity",
-    "target": "internet"
+  "$action": "cgi_call",
+  "url": "/cgi-bin/wifi-password",
+  "body": {
+    "ssid": {"$bind": "currentSSID"},
+    "password": {"$bind": "userInput.password"}
   }
 }
 ```
 
 ### Action Response Handling
 
-Actions are handled in `PackageWidgetRenderer._handleWidgetAction()`:
+Actions are processed in `PackageWidgetRenderer._handleWidgetAction()`:
 
 ```dart
 void _handleWidgetAction(Map<String, dynamic> actionData) {
-  final actionType = actionData['action'] as String?;
+  // Support both $action and action keys
+  final actionType = (actionData[r'$action'] ?? actionData['action']) as String?;
   
   switch (actionType) {
-    case 'save_settings':
-      _handleSaveSettingsAction(actionData);
-      break;
-    case 'refresh_data': 
-      _handleRefreshDataAction(actionData);
-      break;
-    // ... more action types
+    case 'refresh_data':
+      _handleRefreshDataAction();
+    case 'navigate':
+      _handleNavigationAction(actionData['destination']);
+    case 'cgi_call':
+      _handleCgiCallAction(actionData);
   }
 }
 ```
+
+### Best Practices
+
+1. **Use appropriate action types:**
+   - `refresh_data` for live data updates
+   - `navigate` for external package apps  
+   - `cgi_call` for server-side operations
+
+2. **Security considerations:**
+   - Always validate CGI endpoints on server side
+   - Use `$bind` for dynamic data, not direct user input
+   - Test all CGI actions thoroughly
+
+3. **User experience:**
+   - Provide clear button labels
+   - Handle loading states appropriately
+   - Show appropriate feedback messages
 
 ---
 
@@ -618,8 +720,8 @@ QR code generator for WiFi credentials and other data:
     "data": {
       "$compute": {
         "op": "template",
-        "template": "WIFI:T:{mode};S:{ssid};P:{pass};;",
-        "data": {
+        "format": "WIFI:T:{mode};S:{ssid};P:{pass};;",
+        "values": {
           "mode": { "$bind": "wifi.security_mode" },
           "ssid": { "$bind": "wifi.ssid" },
           "pass": { "$bind": "wifi.password" }
@@ -648,11 +750,9 @@ Circular gauge for displaying metrics and system status:
   "type": "AppGauge",
   "props": {
     "value": { "$bind": "system.cpu_usage" },
-    "min": 0,
-    "max": 100,
     "size": 120,
-    "strokeWidth": 12,
-    "centerContent": {
+    "markers": [0, 25, 50, 75, 100],
+    "centerBuilder": {
       "type": "Column",
       "props": {
         "mainAxisAlignment": "center",
@@ -679,14 +779,14 @@ Circular gauge for displaying metrics and system status:
 ```
 
 **AppGauge Properties:**
-- `value`: Current gauge value (number or binding)
-- `min`: Minimum value (default: 0)
-- `max`: Maximum value (default: 100)
-- `size`: Gauge diameter in pixels (default: 100)
-- `strokeWidth`: Arc thickness in pixels (default: 8)
-- `centerContent`: Widget to display in gauge center
-- `color`: Gauge color (automatic based on value if not specified)
-- `backgroundColor`: Background arc color
+- `value`: Current gauge value — any numeric range; normalized internally via `markers` (e.g., 0–100 when markers are `[0, 25, 50, 75, 100]`)
+- `size`: Gauge diameter in pixels (default: 200)
+- `markers`: List of marker values defining the gauge range and tick positions (e.g., `[0, 25, 50, 75, 100]`). When empty, assumes 0–100
+- `centerBuilder`: **Required.** Widget tree to display in gauge center (receives animated value at runtime)
+- `bottomBuilder`: Optional widget tree displayed below gauge arc
+- `indicatorPathStrokeWidth`: Arc thickness override (uses theme default if not set)
+- `displayIndicatorValues`: Show marker values as text labels
+- `markerRadius`: Marker dot size override
 
 ### Component Standards
 
@@ -1012,14 +1112,14 @@ All charts support touch interactions, automatically generating action events:
 
 #### Basic Binding
 
-Use `$bind:` syntax in templates to bind data:
+Use `$bind` object syntax in templates to bind data:
 
 ```json
 {
   "type": "AppText",
   "props": {
-    "text": "$bind:device.name",          // Simple binding
-    "color": "$bind:status.color"      // Status color binding
+    "text": {"$bind": "device.name"},          // Simple binding
+    "color": {"$bind": "status.color"}      // Status color binding
   }
 }
 ```
@@ -1046,8 +1146,8 @@ Complex computations using multiple data sources:
         "falseValue": {
           "$compute": {
             "op": "template",
-            "template": "Blocked: {{blocked}} | Queries: {{queries}}",
-            "data": {
+            "format": "Blocked: {blocked} | Queries: {queries}",
+            "values": {
               "blocked": { "$bind": "blocked_today" },
               "queries": { "$bind": "queries_today" }
             }
@@ -1061,13 +1161,19 @@ Complex computations using multiple data sources:
 
 ### Data Transformation
 
-#### Simple Transform (Legacy Syntax)
+#### Simple Transform (Function Mode)
 
 ```json
 {
   "type": "AppText", 
   "props": {
-    "text": "$transform:bandwidth|formatBytes:precision:2"
+    "text": {
+      "$transform": {
+        "input": {"$bind": "bandwidth"},
+        "fn": "formatBytes",
+        "precision": 2
+      }
+    }
   }
 }
 ```
@@ -1135,8 +1241,8 @@ Complex computations using multiple data sources:
     "data": {
       "$compute": {
         "op": "template",
-        "template": "WIFI:T:{mode};S:{ssid};P:{pass};;",
-        "data": {
+        "format": "WIFI:T:{mode};S:{ssid};P:{pass};;",
+        "values": {
           "mode": { "$bind": "Device.WiFi.AccessPoint.1.Security.ModeEnabled" },
           "ssid": { "$bind": "Device.WiFi.SSID.1.SSID" },
           "pass": { "$bind": "Device.WiFi.AccessPoint.1.Security.KeyPassphrase" }
@@ -1195,14 +1301,53 @@ Control widget visibility based on data conditions:
 **Available Transform Functions:**
 - `formatBandwidth`: Bandwidth formatting (Mbps/Gbps)
 - `formatBytes`: Byte formatting (KB/MB/GB)  
-- `formatDuration`: Duration formatting
+- `formatDuration`: Duration formatting (e.g., `2h 15m 30s`)
+- `formatPercent`: Percentage formatting (e.g., `75.0%`)
+- `formatNumber`: Number formatting with thousands separator (e.g., `1,234`)
+- `formatSpeed`: Speed formatting (Kbps/Mbps/Gbps)
 - `cidrToNetmask`: CIDR to netmask conversion
 
 ---
 
 ## Best Practices
 
-### 1. Design Principles
+### 1. Header Design Guidelines
+
+#### Icon Selection
+- Use meaningful icons that represent the widget's function
+- Prefer standard material icons over custom ones
+- Keep icon colors consistent with app theme
+
+```json
+// ✅ Good: Clear, functional icons
+"icon": "wifi",           // For WiFi-related widgets
+"icon": "router",         // For network devices
+"icon": "speed",          // For performance metrics
+
+// ❌ Avoid: Decorative or unclear icons
+"icon": "star",           // Generic, unclear purpose
+"icon": "emoji_emotions"  // Too playful for network tools
+```
+
+#### Badge and Extra Text Usage
+- **headerBadge**: Short status indicators (1-2 words)
+- **headerExtra**: Contextual information or metrics
+
+```json
+// ✅ Good: Clear, relevant information
+"headerBadge": {"$bind": "connection.status"},  // "Online", "Offline"
+"headerExtra": {"$bind": "device.name"}         // "Router-5G", "192.168.1.1"
+
+// ❌ Avoid: Redundant or too verbose
+"headerBadge": "This device is currently online and functioning normally"
+```
+
+#### Navigation Design
+- Use `navigateTo` for related external tools/apps
+- Ensure target package apps exist and are accessible
+- Provide clear visual indication of external navigation
+
+### 2. Design Principles
 
 #### Visual Consistency
 ```json
@@ -1307,7 +1452,7 @@ Control widget visibility based on data conditions:
 {
   "type": "AppText",
   "props": {
-    "text": "$bind:networkStatus|default:'Connecting...'"
+    "text": {"$bind": "networkStatus"}
   }
 }
 ```
@@ -1330,11 +1475,11 @@ Control widget visibility based on data conditions:
 
 #### Externalize Text
 ```json
-// ✅ Recommended: Use i18n keys
+// ✅ Recommended: Use i18n keys (future feature)
 {
   "type": "AppText",
   "props": {
-    "text": "$i18n:network.status.title"
+    "text": "Network Status"
   }
 }
 
@@ -1351,7 +1496,186 @@ Control widget visibility based on data conditions:
 
 ## Common Examples
 
-### 1. Simple Status Card
+### 1. Full-Featured Widget with Header
+
+Example showing all header features and action types:
+
+```json
+{
+  "widgetId": "wifi_management_pro",
+  "displayName": "WiFi Management",
+  "description": "Complete WiFi network management with real-time monitoring and control features",
+  "icon": "router",
+  "iconColor": "#1976D2",
+  "navigateTo": "wifi-manager",
+  "headerBadge": {
+    "$compute": {
+      "op": "conditional",
+      "condition": {
+        "$compute": {
+          "op": "eq",
+          "left": {"$bind": "Device.WiFi.Radio.1.Status"},
+          "right": "Up"
+        }
+      },
+      "ifTrue": "Active",
+      "ifFalse": "Inactive"
+    }
+  },
+  "headerExtra": {
+    "$compute": {
+      "op": "concat",
+      "values": [
+        {"$bind": "Device.WiFi.AccessPoint.1.AssociatedDeviceNumberOfEntries"},
+        " devices connected"
+      ]
+    }
+  },
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 6,
+    "preferredColumns": 4,
+    "minRows": 3,
+    "maxRows": 5,
+    "preferredRows": 4
+  },
+  "subscription": {
+    "paths": [
+      "Device.WiFi.Radio.1.Status",
+      "Device.WiFi.SSID.1.SSID",
+      "Device.WiFi.AccessPoint.1.AssociatedDeviceNumberOfEntries"
+    ],
+    "interval": 5000
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "AppCard",
+          "props": {
+            "padding": 16,
+            "backgroundColor": "surfaceVariant",
+            "children": [
+              {
+                "type": "Row",
+                "props": {
+                  "mainAxisAlignment": "spaceBetween",
+                  "children": [
+                    {
+                      "type": "Column",
+                      "props": {
+                        "crossAxisAlignment": "start",
+                        "children": [
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": {"$bind": "Device.WiFi.SSID.1.SSID"},
+                              "variant": "titleMedium"
+                            }
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {
+                              "text": "2.4GHz + 5GHz",
+                              "variant": "bodySmall"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "AppSwitch",
+                      "props": {
+                        "value": {
+                          "$compute": {
+                            "op": "eq",
+                            "left": {"$bind": "Device.WiFi.Radio.1.Enable"},
+                            "right": true
+                          }
+                        },
+                        "onChanged": {
+                          "$action": "cgi_call",
+                          "url": "/cgi-bin/wifi-toggle",
+                          "body": {
+                            "interface": "Radio.1",
+                            "enable": {"$bind": "newValue"}
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "md"}
+        },
+        {
+          "type": "Row",
+          "props": {
+            "children": [
+              {
+                "type": "Expanded",
+                "props": {
+                  "child": {
+                    "type": "AppButton",
+                    "props": {
+                      "label": "Restart WiFi",
+                      "variant": "tonal",
+                      "icon": "refresh",
+                      "onTap": {
+                        "$action": "cgi_call",
+                        "url": "/cgi-bin/wifi-restart",
+                        "body": {
+                          "interfaces": ["Radio.1", "Radio.2"]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "AppGap",
+                "props": {"size": "sm"}
+              },
+              {
+                "type": "Expanded",
+                "props": {
+                  "child": {
+                    "type": "AppButton",
+                    "props": {
+                      "label": "Settings",
+                      "variant": "outline",
+                      "icon": "settings",
+                      "onTap": {
+                        "$action": "navigate",
+                        "destination": "wifi-manager"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+**Header Layout Result:**
+```
+[Router Icon] WiFi Management [Active Badge]    [Refresh] [Navigate]
+              12 devices connected
+```
+
+### 2. Simple Status Card
 
 ```json
 {
@@ -1386,7 +1710,7 @@ Control widget visibility based on data conditions:
         {
           "type": "AppText",
           "props": {
-            "text": "$bind:network.status",
+            "text": {"$bind": "network.status"},
             "variant": "titleMedium",
             "textAlign": "center"
           }
@@ -1394,7 +1718,7 @@ Control widget visibility based on data conditions:
         {
           "type": "AppText",
           "props": {
-            "text": "$bind:network.ssid|default:'Not connected'",
+            "text": {"$bind": "network.ssid"},
             "variant": "bodySmall",
             "textAlign": "center"
           }
@@ -1444,9 +1768,9 @@ Control widget visibility based on data conditions:
           "type": "AppTextField",
           "props": {
             "label": "Network Name (SSID)",
-            "value": "$bind:wifi.ssid",
+            "value": {"$bind": "wifi.ssid"},
             "onChanged": {
-              "$action": "field_changed",
+              "$action": "changed",
               "field": "ssid"
             }
           }
@@ -1470,9 +1794,9 @@ Control widget visibility based on data conditions:
               {
                 "type": "AppSwitch",
                 "props": {
-                  "value": "$bind:wifi.enable5ghz|default:true",
+                  "value": {"$bind": "wifi.enable5ghz"},
                   "onChanged": {
-                    "$action": "setting_toggled",
+                    "$action": "toggled",
                     "setting": "enable5ghz"
                   }
                 }
@@ -1566,20 +1890,20 @@ Control widget visibility based on data conditions:
             "series": [
               {
                 "label": "Download",
-                "data": "$bind:traffic.download",
+                "data": {"$bind": "traffic.download"},
                 "color": "#4CAF50",
                 "filled": true
               },
               {
                 "label": "Upload", 
-                "data": "$bind:traffic.upload",
+                "data": {"$bind": "traffic.upload"},
                 "color": "#FF5722"
               }
             ],
-            "xLabels": "$bind:traffic.timestamps",
+            "xLabels": {"$bind": "traffic.timestamps"},
             "yAxis": {
               "min": 0,
-              "max": "$bind:traffic.maxBandwidth|default:100"
+              "max": {"$bind": "traffic.maxBandwidth"}
             },
             "showGrid": true,
             "showTooltip": true,
@@ -1603,7 +1927,12 @@ Control widget visibility based on data conditions:
                     {
                       "type": "AppText",
                       "props": {
-                        "text": "$bind:traffic.currentDownload|formatBandwidth",
+                        "text": {
+                          "$transform": {
+                            "input": {"$bind": "traffic.currentDownload"},
+                            "fn": "formatBandwidth"
+                          }
+                        },
                         "variant": "titleMedium"
                       }
                     },
@@ -1625,7 +1954,12 @@ Control widget visibility based on data conditions:
                     {
                       "type": "AppText",
                       "props": {
-                        "text": "$bind:traffic.currentUpload|formatBandwidth", 
+                        "text": {
+                          "$transform": {
+                            "input": {"$bind": "traffic.currentUpload"},
+                            "fn": "formatBandwidth"
+                          }
+                        }, 
                         "variant": "titleMedium"
                       }
                     },
@@ -1751,8 +2085,8 @@ Advanced status widget with conditional logic and complex data binding:
                       "falseValue": {
                         "$compute": {
                           "op": "template",
-                          "template": "Blocked: {{blocked}} | Queries: {{queries}}",
-                          "data": {
+                          "format": "Blocked: {blocked} | Queries: {queries}",
+                          "values": {
                             "blocked": { "$bind": "blocked_today" },
                             "queries": { "$bind": "queries_today" }
                           }
@@ -1839,8 +2173,8 @@ Dynamic QR code generation with USP data and advanced transforms:
             "data": {
               "$compute": {
                 "op": "template",
-                "template": "WIFI:T:{mode};S:{ssid};P:{pass};;",
-                "data": {
+                "format": "WIFI:T:{mode};S:{ssid};P:{pass};;",
+                "values": {
                   "mode": {
                     "$transform": {
                       "input": { "$bind": "Device.WiFi.AccessPoint.1.Security.ModeEnabled" },
@@ -1942,7 +2276,7 @@ Multi-gauge system monitoring with computed values:
                     }
                   },
                   "size": 80,
-                  "centerContent": {
+                  "centerBuilder": {
                     "type": "Column",
                     "props": {
                       "mainAxisAlignment": "center",
@@ -1983,7 +2317,7 @@ Multi-gauge system monitoring with computed values:
                     }
                   },
                   "size": 80,
-                  "centerContent": {
+                  "centerBuilder": {
                     "type": "Column",
                     "props": {
                       "mainAxisAlignment": "center",
@@ -2124,17 +2458,74 @@ Multi-gauge system monitoring with computed values:
 // ❌ Error: Action type misspelled
 {
   "onTap": {
-    "$action": "save_setting"  // Should be save_settings
+    "$action": "refresh_dat"  // Should be refresh_data
   }
 }
 
 // ✅ Correct
 {
   "onTap": {
-    "$action": "save_settings",
-    "section": "network"
+    "$action": "refresh_data"
   }
 }
+```
+
+#### 5. External Navigation Issues
+
+**Symptoms**: Navigate button shows "Page not found" or doesn't open
+
+**Solutions:**
+- Verify package app is installed and accessible
+- Check `navigateTo` value matches actual package app ID
+- Ensure URL format is correct (no leading slash needed)
+
+```json
+// ❌ Error: Incorrect format
+"navigateTo": "/speed-test/"
+
+// ✅ Correct
+"navigateTo": "speed-test"
+```
+
+#### 6. CGI Call Failures
+
+**Symptoms**: CGI actions show "Action failed" toast
+
+**Solutions:**
+- Verify CGI endpoint exists and is accessible
+- Check URL follows `/cgi-bin/` format requirement
+- Ensure proper authentication is configured
+- Validate `$bind` references point to existing data
+
+```json
+// ❌ Error: Non-CGI URL blocked
+{
+  "$action": "cgi_call",
+  "url": "/api/restart"  // Blocked by security
+}
+
+// ✅ Correct
+{
+  "$action": "cgi_call", 
+  "url": "/cgi-bin/restart"
+}
+```
+
+#### 7. Header Display Problems
+
+**Symptoms**: Icons don't show, badges appear as `[object Object]`
+
+**Solutions:**
+- Check icon name exists in icon library
+- Ensure `headerBadge`/`headerExtra` use proper data binding
+- Verify color values are valid hex format
+
+```json
+// ❌ Error: Invalid icon color
+"iconColor": "blue"  // Should be hex
+
+// ✅ Correct  
+"iconColor": "#2196F3"
 ```
 
 #### 5. Data Binding Failure
@@ -2149,12 +2540,12 @@ Multi-gauge system monitoring with computed values:
 ```json
 // ❌ Error: Incorrect binding syntax
 {
-  "text": "bind:device.name"  // Missing $
+  "text": "$bind:device.name"  // Should be object format
 }
 
 // ✅ Correct  
 {
-  "text": "$bind:device.name"
+  "text": {"$bind": "device.name"}
 }
 ```
 
@@ -2209,7 +2600,7 @@ Use online JSON validation tools:
 
 ## Version Updates
 
-### v2.16.1 New Features
+### v2.16.2 New Features
 
 1. **Enhanced Template Engine**: 
    - Added `onAction` callback support
@@ -2227,7 +2618,7 @@ Use online JSON validation tools:
 
 ### Backward Compatibility
 
-- ✅ Fully compatible with v2.15.x
+- ✅ Fully compatible with v2.16.x
 - ✅ Existing widgets require no changes
 - ✅ All APIs remain unchanged
 
@@ -2238,7 +2629,7 @@ Use online JSON validation tools:
 ui_kit_library:
   git:
     url: https://github.com/linksys/privacyGUI-UI-kit.git
-    ref: v2.16.1
+    ref: v2.16.2
 ```
 
 2. Run `flutter pub get`
@@ -2266,11 +2657,9 @@ The Dashboard Widget Card system provides a powerful and flexible way to create 
 - Implement complex data transformation and validation logic
 
 For more help, refer to:
-- [UI Kit Component Documentation](./ui-kit-components.md)
-- [Action System Deep Dive](./package-widget-action-system.md)  
-- [Data Binding Guide](./data-binding-guide.md)
+- [Action System Deep Dive](./package-widget-action-system.md)
 
 ---
 
-*Last updated: March 31, 2026*
-*Version: v2.16.1*
+*Last updated: April 02, 2026*
+*Version: v2.16.2*

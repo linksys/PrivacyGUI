@@ -16,7 +16,9 @@ import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
 import 'demo_router_provider.dart';
+import 'demo_package_widget_loader.dart';
 
 /// Demo provider overrides for the Demo application.
 ///
@@ -55,6 +57,9 @@ class DemoProviders {
       // 8. USP Auth Coordinator: Uses DemoUspService (always authenticated)
       uspAuthCoordinatorProvider.overrideWith(
           (ref) => UspAuthCoordinator(demoUsp, const FlutterSecureStorage())),
+
+      // 9. Package Widget Loader: Use demo templates from assets
+      packageWidgetLoaderProvider.overrideWith(() => DemoPackageWidgetLoader()),
     ];
   }
 }

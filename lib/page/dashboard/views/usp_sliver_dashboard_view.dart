@@ -7,7 +7,7 @@ import 'package:privacy_gui/page/dashboard/factories/usp_widget_factory.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_dashboard_preset.dart';
 import 'package:privacy_gui/page/dashboard/models/usp_layout_preferences.dart';
-import 'package:privacy_gui/page/dashboard/models/usp_widget_specs.dart';
+import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
 import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
 import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
 import 'package:privacy_gui/page/dashboard/orchestrator/dashboard_orchestrator.dart';
@@ -306,6 +306,17 @@ class _UspSliverDashboardViewState
         onItemResizeEnd: (item) {
           _handleResizeEnd(context, item);
         },
+        // Drag-to-trash for widget removal in edit mode.
+        trashBuilder: !_isEditMode
+            ? null
+            : (context, isHovered, isActive, activeItemId) {
+                return _buildTrashZone(context, isHovered, isActive);
+              },
+        trashHoverDelay: const Duration(milliseconds: 600),
+        onItemsDeleted: (items) {
+          // The overlay already called controller.removeItems — persist.
+          ref.read(uspSliverDashboardControllerProvider.notifier).saveLayout();
+        },
         child: CustomScrollView(
           controller: scrollController,
           slivers: [
@@ -329,6 +340,70 @@ class _UspSliverDashboardViewState
         ),
       );
     });
+  }
+
+  /// Build package widget with header (title + info icon)
+  Widget _buildPackageWidgetWithHeader(
+    BuildContext context,
+    PackageWidgetTemplate template,
+  ) {
+    return PackageWidgetRenderer(
+      template: template,
+      showHeader: true,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Trash Zone (drag-to-delete)
+  // ---------------------------------------------------------------------------
+
+  Widget _buildTrashZone(
+    BuildContext context,
+    bool isHovered,
+    bool isActive,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        height: 56,
+        width: 180,
+        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: isActive
+              ? colorScheme.error
+              : (isHovered
+                  ? colorScheme.error.withValues(alpha: 0.8)
+                  : colorScheme.errorContainer),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 8,
+            ),
+          ],
+          border: isHovered
+              ? Border.all(color: colorScheme.onError, width: 2)
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isActive ? Icons.delete_forever : Icons.delete_outline,
+              color: isActive || isHovered
+                  ? colorScheme.onError
+                  : colorScheme.onErrorContainer,
+              size: isActive ? 28 : 24,
+            ),
+            AppGap.sm(),
+            AppText.bodyMedium(
+              isActive ? 'Release to Remove' : 'Drag Here to Remove',
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -426,17 +501,15 @@ class _UspSliverDashboardViewState
       final templates = ref.read(packageWidgetLoaderProvider).valueOrNull;
       final template = templates?[item.id];
       if (template != null) {
-        resolvedWidget = PackageWidgetRenderer(template: template);
+        resolvedWidget = _buildPackageWidgetWithHeader(context, template);
       }
     }
 
-    if (resolvedWidget == null) {
-      return AppCard(
-        child: Center(
-          child: AppText.bodyMedium('Unknown widget: ${item.id}'),
-        ),
-      );
-    }
+    resolvedWidget ??= AppCard(
+      child: Center(
+        child: AppText.bodyMedium('Unknown widget: ${item.id}'),
+      ),
+    );
 
     // SizedBox.expand ensures cards fill their grid cell.
     // ClipRect prevents content from visually overflowing the cell boundary.
@@ -444,58 +517,15 @@ class _UspSliverDashboardViewState
         SizedBox.expand(child: ClipRect(child: resolvedWidget));
 
     if (isEditMode) {
-      final spec = UspWidgetSpecs.getById(item.id);
-      final canHide = spec?.canHide ?? true;
-
+      // In edit mode: AbsorbPointer blocks content interactions while keeping
+      // the area hittable for DashboardOverlay's drag/resize detection.
+      // Widget removal is handled via drag-to-trash (trashBuilder on the
+      // overlay), NOT via in-cell tap — a GestureDetector here conflicts with
+      // the overlay's raw Listener and causes accidental deletions.
       return JiggleShake(
         active: true,
-        child: Stack(
-          fit: StackFit.expand,
-          clipBehavior: Clip.none,
-          children: [
-            IgnorePointer(
-              ignoring: true,
-              child: displayedWidget,
-            ),
-            if (canHide)
-              Positioned(
-                left: 8,
-                top: 8,
-                child: GestureDetector(
-                  onTap: () async {
-                    await ref
-                        .read(uspSliverDashboardControllerProvider.notifier)
-                        .removeWidget(item.id);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Removed ${item.id}'),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.error,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 4,
-                        )
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.close,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.onError,
-                    ),
-                  ),
-                ),
-              ),
-          ],
+        child: AbsorbPointer(
+          child: displayedWidget,
         ),
       );
     }

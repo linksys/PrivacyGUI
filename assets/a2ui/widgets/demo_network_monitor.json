@@ -1,22 +1,21 @@
 {
-  "widgetId": "a2ui_system_health",
-  "displayName": "System Health",
-  "description": "Shows router system health status with diagnostic actions",
-  "icon": "monitor_heart",
-  "navigateTo": "/apps/system-health/",
-  "headerBadge": "Excellent",
+  "widgetId": "demo_network_monitor",
+  "displayName": "Network Monitor Pro",
+  "description": "Real-time network monitoring with speed tests and connection analysis",
+  "icon": "speed",
+  "headerBadge": "ONLINE",
   "constraints": {
     "minColumns": 3,
     "maxColumns": 6,
     "preferredColumns": 4,
-    "minRows": 2,
-    "maxRows": 3,
-    "preferredRows": 3
+    "preferredRows": 4,
+    "minRows": 3,
+    "maxRows": 6
   },
   "template": {
     "type": "Column",
     "props": {
-      "mainAxisAlignment": "spaceBetween",
+      "mainAxisAlignment": "start",
       "crossAxisAlignment": "stretch",
       "children": [
         {
@@ -28,17 +27,15 @@
                 "type": "Column",
                 "props": {
                   "crossAxisAlignment": "start",
-                  "mainAxisSize": "min",
                   "children": [
                     {
                       "type": "Row",
                       "props": {
                         "mainAxisSize": "min",
-                        "crossAxisAlignment": "center",
                         "children": [
                           {
                             "type": "AppIcon",
-                            "props": {"icon": "memory", "size": 16, "color": "success"}
+                            "props": {"name": "download", "size": 16, "color": "primary"}
                           },
                           {
                             "type": "AppGap",
@@ -46,10 +43,7 @@
                           },
                           {
                             "type": "AppText",
-                            "props": {
-                              "text": {"$bind": "system.cpuUsage"},
-                              "variant": "bodySmall"
-                            }
+                            "props": {"text": "450 Mbps", "variant": "bodyMedium"}
                           }
                         ]
                       }
@@ -62,11 +56,10 @@
                       "type": "Row",
                       "props": {
                         "mainAxisSize": "min",
-                        "crossAxisAlignment": "center",
                         "children": [
                           {
                             "type": "AppIcon",
-                            "props": {"icon": "storage", "size": 16, "color": "warning"}
+                            "props": {"name": "upload", "size": 16, "color": "secondary"}
                           },
                           {
                             "type": "AppGap",
@@ -74,10 +67,7 @@
                           },
                           {
                             "type": "AppText",
-                            "props": {
-                              "text": {"$bind": "system.memoryUsage"},
-                              "variant": "bodySmall"
-                            }
+                            "props": {"text": "125 Mbps", "variant": "bodyMedium"}
                           }
                         ]
                       }
@@ -89,31 +79,10 @@
                 "type": "Column",
                 "props": {
                   "crossAxisAlignment": "end",
-                  "mainAxisSize": "min",
                   "children": [
                     {
-                      "type": "Row",
-                      "props": {
-                        "mainAxisSize": "min",
-                        "crossAxisAlignment": "center",
-                        "children": [
-                          {
-                            "type": "AppIcon",
-                            "props": {"icon": "device_thermostat", "size": 16, "color": "success"}
-                          },
-                          {
-                            "type": "AppGap",
-                            "props": {"size": "xs"}
-                          },
-                          {
-                            "type": "AppText",
-                            "props": {
-                              "text": {"$bind": "system.temperature"},
-                              "variant": "bodySmall"
-                            }
-                          }
-                        ]
-                      }
+                      "type": "AppText",
+                      "props": {"text": "Ping: 12ms", "variant": "bodySmall"}
                     },
                     {
                       "type": "AppGap",
@@ -121,16 +90,27 @@
                     },
                     {
                       "type": "AppText",
-                      "props": {
-                        "text": {"$bind": "system.uptime"},
-                        "variant": "bodySmall",
-                        "color": "onSurfaceVariant"
-                      }
+                      "props": {"text": "24 devices", "variant": "bodySmall"}
                     }
                   ]
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "lg"}
+        },
+        {
+          "type": "AppButton",
+          "props": {
+            "label": "Run Speed Test",
+            "variant": "highlight",
+            "icon": "speed",
+            "onTap": {
+              "$action": "run_speed_test"
+            }
           }
         }
       ]

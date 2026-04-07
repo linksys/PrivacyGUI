@@ -167,6 +167,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
             ref,
             title: 'App Widget Cards',
             specs: appWidgetSpecs,
+            isAppWidgetCard: true,
           ),
         ],
 
@@ -180,6 +181,7 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
     WidgetRef ref, {
     required String title,
     required List<WidgetSpec> specs,
+    bool isAppWidgetCard = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,26 +194,69 @@ class UspLayoutSettingsPanel extends ConsumerWidget {
           padding: EdgeInsets.zero,
           child: Column(
             children: specs.map((spec) {
-              return ListTile(
-                title: AppText.bodyMedium(spec.displayName),
-                trailing: AppIconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  onTap: () async {
-                    await ref
-                        .read(uspSliverDashboardControllerProvider.notifier)
-                        .addWidget(spec.id, spec: spec);
-
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Added ${spec.displayName}'),
-                          duration: const Duration(seconds: 1),
+              if (isAppWidgetCard) {
+                // Enhanced display for App Widget Cards
+                return ListTile(
+                  title: AppText.bodyMedium(spec.displayName),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (spec.description != null) ...[
+                        Tooltip(
+                          message: spec.description!,
+                          child: Icon(
+                            Icons.info_outline,
+                            size: 20,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      );
-                    }
-                  },
-                ),
-              );
+                        const SizedBox(width: 8),
+                      ],
+                      AppIconButton(
+                        icon: const Icon(Icons.add_circle_outline),
+                        onTap: () async {
+                          await ref
+                              .read(
+                                  uspSliverDashboardControllerProvider.notifier)
+                              .addWidget(spec.id, spec: spec);
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Added ${spec.displayName}'),
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                // Standard display for Built-in Widgets
+                return ListTile(
+                  title: AppText.bodyMedium(spec.displayName),
+                  trailing: AppIconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onTap: () async {
+                      await ref
+                          .read(uspSliverDashboardControllerProvider.notifier)
+                          .addWidget(spec.id, spec: spec);
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Added ${spec.displayName}'),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                );
+              }
             }).toList(),
           ),
         ),

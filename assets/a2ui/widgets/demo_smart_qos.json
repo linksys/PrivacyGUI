@@ -1,0 +1,158 @@
+{
+  "widgetId": "demo_smart_qos",
+  "displayName": "Smart QoS Manager",
+  "description": "AI-powered Quality of Service optimization with real-time bandwidth management",
+  "icon": "tune",
+  "headerBadge": "ON",
+  "headerExtra": "AI Optimization Active",
+  "constraints": {
+    "minColumns": 4,
+    "maxColumns": 8,
+    "preferredColumns": 6,
+    "preferredRows": 5,
+    "minRows": 4,
+    "maxRows": 8
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "mainAxisAlignment": "start",
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "end",
+            "children": [
+              {
+                "type": "AppSwitch",
+                "props": {
+                  "value": true,
+                  "onChanged": {"$action": "toggle_smart_qos"}
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "sm"}
+        },
+        {
+          "type": "AppText",
+          "props": {"text": "Bandwidth Allocation", "variant": "titleSmall"}
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "sm"}
+        },
+        {
+          "type": "Column",
+          "props": {
+            "children": [
+              {
+                "type": "Row",
+                "props": {
+                  "mainAxisAlignment": "spaceBetween",
+                  "children": [
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {"type": "AppIcon", "props": {"name": "circle", "color": "primary", "size": 12}},
+                          {"type": "AppGap", "props": {"size": "xs"}},
+                          {"type": "AppText", "props": {"text": "Gaming", "variant": "bodyMedium"}}
+                        ]
+                      }
+                    },
+                    {"type": "AppText", "props": {"text": "35%", "variant": "bodyMedium"}}
+                  ]
+                }
+              },
+              {"type": "AppGap", "props": {"size": "xs"}},
+              {
+                "type": "Row",
+                "props": {
+                  "mainAxisAlignment": "spaceBetween",
+                  "children": [
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {"type": "AppIcon", "props": {"name": "circle", "color": "secondary", "size": 12}},
+                          {"type": "AppGap", "props": {"size": "xs"}},
+                          {"type": "AppText", "props": {"text": "Streaming", "variant": "bodyMedium"}}
+                        ]
+                      }
+                    },
+                    {"type": "AppText", "props": {"text": "28%", "variant": "bodyMedium"}}
+                  ]
+                }
+              },
+              {"type": "AppGap", "props": {"size": "xs"}},
+              {
+                "type": "Row",
+                "props": {
+                  "mainAxisAlignment": "spaceBetween",
+                  "children": [
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisSize": "min",
+                        "children": [
+                          {"type": "AppIcon", "props": {"name": "circle", "color": "tertiary", "size": 12}},
+                          {"type": "AppGap", "props": {"size": "xs"}},
+                          {"type": "AppText", "props": {"text": "General", "variant": "bodyMedium"}}
+                        ]
+                      }
+                    },
+                    {"type": "AppText", "props": {"text": "37%", "variant": "bodyMedium"}}
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "lg"}
+        },
+        {
+          "type": "AppCard",
+          "props": {
+            "padding": 12,
+            "backgroundColor": "surfaceVariant",
+            "children": [
+              {
+                "type": "Row",
+                "props": {
+                  "children": [
+                    {"type": "AppIcon", "props": {"name": "auto_awesome", "color": "primary", "size": 20}},
+                    {"type": "AppGap", "props": {"size": "sm"}},
+                    {
+                      "type": "Expanded",
+                      "props": {
+                        "child": {
+                          "type": "Column",
+                          "props": {
+                            "crossAxisAlignment": "start",
+                            "children": [
+                              {"type": "AppText", "props": {"text": "AI Recommendation", "variant": "bodyMedium"}},
+                              {"type": "AppText", "props": {"text": "Consider increasing gaming priority during peak hours (7-10 PM)", "variant": "bodySmall", "color": "onSurfaceVariant"}}
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

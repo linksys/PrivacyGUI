@@ -1,0 +1,140 @@
+{
+  "widgetId": "demo_device_overview",
+  "displayName": "Connected Devices",
+  "description": "Overview of all connected devices with quick access to device management features",
+  "icon": "devices",
+  "navigateTo": "/apps/device-overview/",
+  "headerBadge": "24 TOTAL",
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 6,
+    "preferredColumns": 4,
+    "minRows": 3,
+    "maxRows": 5,
+    "preferredRows": 4
+  },
+  "_comments": {
+    "realWorldUsage": "In production, this would use USP subscription:",
+    "subscription": {
+      "paths": [
+        "Device.Hosts.HostNumberOfEntries",
+        "Device.WiFi.AccessPoint.*.AssociatedDeviceNumberOfEntries",
+        "Device.Ethernet.Interface.*.Stats.BytesSent"
+      ],
+      "interval": 10000
+    }
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceBetween",
+            "children": [
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "center",
+                  "children": [
+                    {
+                      "type": "AppIcon",
+                      "props": {"name": "wifi", "color": "primary", "size": 32}
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {"size": "xs"}
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {"text": "18", "variant": "headlineSmall"}
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {"text": "WiFi", "variant": "bodySmall"}
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "center",
+                  "children": [
+                    {
+                      "type": "AppIcon",
+                      "props": {"name": "cable", "color": "secondary", "size": 32}
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {"size": "xs"}
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {"text": "6", "variant": "headlineSmall"}
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {"text": "Wired", "variant": "bodySmall"}
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "md"}
+        },
+        {
+          "type": "AppCard",
+          "props": {
+            "padding": 12,
+            "backgroundColor": "surfaceVariant",
+            "children": [
+              {
+                "type": "Row",
+                "props": {
+                  "children": [
+                    {
+                      "type": "AppIcon",
+                      "props": {"name": "security", "color": "success", "size": 20}
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {"size": "sm"}
+                    },
+                    {
+                      "type": "Expanded",
+                      "props": {
+                        "child": {
+                          "type": "Column",
+                          "props": {
+                            "crossAxisAlignment": "start",
+                            "children": [
+                              {
+                                "type": "AppText",
+                                "props": {"text": "All devices secured", "variant": "bodyMedium"}
+                              },
+                              {
+                                "type": "AppText",
+                                "props": {"text": "3 new devices detected today", "variant": "bodySmall", "color": "onSurfaceVariant"}
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
