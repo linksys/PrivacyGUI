@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/vendor_log_files.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -16,8 +17,12 @@ class UspSystemLogService {
 
   /// Fetch vendor log files and transform to UI models.
   Future<List<LogFileUIModel>> fetch() async {
-    final data = await VendorLogFiles.fetch(_usp);
-    return _buildLogFileUIModels(data);
+    try {
+      final data = await VendorLogFiles.fetch(_usp);
+      return _buildLogFileUIModels(data);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   List<LogFileUIModel> _buildLogFileUIModels(VendorLogFiles data) {

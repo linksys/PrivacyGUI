@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
@@ -13,12 +14,12 @@ class MockUspFirewallService extends Mock implements UspFirewallService {}
 /// Test-only notifier that returns canned data instead of real fetch.
 class _TestFirewallDataNotifier extends FirewallDataNotifier {
   final FirewallData _testData;
-  final bool shouldThrow;
-  _TestFirewallDataNotifier(this._testData, {this.shouldThrow = false});
+  final ServiceError? errorToThrow;
+  _TestFirewallDataNotifier(this._testData, {this.errorToThrow});
 
   @override
   Future<FirewallData> build() async {
-    if (shouldThrow) throw Exception('data provider error');
+    if (errorToThrow != null) throw errorToThrow!;
     return _testData;
   }
 }
@@ -61,11 +62,13 @@ void main() {
   }
 
   group('UspFirewallNotifier', () {
-    test('build returns initial loading state', () {
+    test('build returns initial loading state', () async {
       final container = createContainer();
 
       final state = container.read(uspFirewallProvider);
       expect(state.status.isLoading, isTrue);
+
+      await Future.delayed(Duration.zero);
       container.dispose();
     });
 
@@ -149,28 +152,40 @@ void main() {
     });
 
     test('fetch error sets error status', () async {
-      final errorData = FirewallData(
-        firewallModel: const FirewallUIModel(),
-        ruleContext: FirewallRuleContext.empty,
-        ruleSummaries: const [],
-        dmzModel: const DmzUIModel.disabled(),
-        dmzSummaries: const [],
-      );
-      // Override firewallDataProvider to throw on read.
       final container = ProviderContainer(
         overrides: [
           uspFirewallServiceProvider.overrideWithValue(mockService),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-          firewallDataProvider.overrideWith(() {
-            return _TestFirewallDataNotifier(errorData, shouldThrow: true);
-          }),
+          firewallDataProvider.overrideWith(() => _TestFirewallDataNotifier(
+                testData,
+                errorToThrow: const NetworkError(message: 'timeout'),
+              )),
         ],
       );
       container.listen(uspFirewallProvider, (_, __) {});
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspFirewallProvider);
-      expect(state.status.errorMessage, isNotNull);
+      expect(state.status.errorMessage, contains('Network error'));
+      container.dispose();
+    });
+
+    test('performSave rethrows ServiceError and clears isSaving', () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+            context: any(named: 'context'),
+          )).thenThrow(const NetworkError(message: 'save failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspFirewallProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(isIPv6FirewallEnabled: true));
+
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+
+      expect(container.read(uspFirewallProvider).status.isSaving, isFalse);
       container.dispose();
     });
   });

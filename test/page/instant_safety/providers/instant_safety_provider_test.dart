@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
@@ -111,14 +112,16 @@ void main() {
       container.dispose();
     });
 
-    test('build sets error state when service throws', () async {
-      when(() => mockService.fetch()).thenThrow(Exception('network error'));
+    test('build sets error state when service throws ServiceError', () async {
+      when(() => mockService.fetch())
+          .thenThrow(const NetworkError(message: 'timeout'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspInstantSafetyProvider);
       expect(state.hasError, isTrue);
+      expect(state.error, isA<NetworkError>());
       container.dispose();
     });
 
@@ -208,7 +211,8 @@ void main() {
     test('save resets isSaving on error', () async {
       when(() => mockService.fetch()).thenAnswer(
           (_) async => const SafeBrowsingUIModel(type: SafeBrowsingType.off));
-      when(() => mockService.save(any())).thenThrow(Exception('save failed'));
+      when(() => mockService.save(any()))
+          .thenThrow(const NetworkError(message: 'save failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -218,7 +222,7 @@ void main() {
 
       expect(
         () => notifier.save(),
-        throwsA(isA<Exception>()),
+        throwsA(isA<ServiceError>()),
       );
 
       await Future.delayed(Duration.zero);

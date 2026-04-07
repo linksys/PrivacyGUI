@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/system_log/models/log_file_ui_model.dart';
 import 'package:privacy_gui/page/system_log/providers/usp_system_log_notifier.dart';
 import 'package:privacy_gui/page/system_log/services/usp_system_log_service.dart';
@@ -75,6 +76,23 @@ void main() {
       await container.read(uspSystemLogProvider.future);
       final state = container.read(uspSystemLogProvider);
       expect(state.valueOrNull, isEmpty);
+      container.dispose();
+    });
+
+    test('build sets AsyncError with ServiceError when service throws',
+        () async {
+      when(() => mockService.fetch())
+          .thenThrow(const NetworkError(message: 'timeout'));
+      final container = createContainer();
+
+      try {
+        await container.read(uspSystemLogProvider.future);
+      } catch (_) {}
+
+      final state = container.read(uspSystemLogProvider);
+      expect(state.hasError, isTrue);
+      expect(state.error, isA<NetworkError>());
+      expect(state.error.toString(), 'Network error: timeout');
       container.dispose();
     });
   });

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_notifier.dart';
 import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
@@ -62,7 +63,8 @@ void main() {
     });
 
     test('build error sets AsyncError', () async {
-      when(() => mockService.fetchAll()).thenThrow(Exception('fetch failed'));
+      when(() => mockService.fetchAll())
+          .thenThrow(const NetworkError(message: 'fetch failed'));
       final container = createContainer();
 
       try {
@@ -137,14 +139,14 @@ void main() {
       when(() => mockService.fetchAll())
           .thenAnswer((_) async => disabledResult);
       when(() => mockService.enable(any(), any()))
-          .thenThrow(Exception('enable failed'));
+          .thenThrow(const NetworkError(message: 'enable failed'));
 
       final container = createContainer();
       await container.read(uspInstantPrivacyProvider.future);
 
       expect(
         () => container.read(uspInstantPrivacyProvider.notifier).enable(),
-        throwsA(isA<Exception>()),
+        throwsA(isA<ServiceError>()),
       );
       await Future.delayed(Duration.zero);
 

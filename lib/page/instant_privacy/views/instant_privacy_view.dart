@@ -32,21 +32,26 @@ class InstantPrivacyView extends ConsumerWidget {
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => _buildError(context, ref),
+          error: (error, _) => _buildError(context, ref, error),
           data: (state) => _buildContent(context, ref, state),
         );
       },
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref) {
+  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          AppIcon.font(Icons.error_outline,
+              size: 48, color: Theme.of(context).colorScheme.error),
+          AppGap.xl(),
           AppText.titleMedium('Unable to load Instant Privacy settings'),
           AppGap.md(),
-          AppButton.text(
+          AppText.bodyMedium(error.toString()),
+          AppGap.xxl(),
+          AppButton(
             label: 'Retry',
             onTap: () => ref.invalidate(uspInstantPrivacyProvider),
           ),

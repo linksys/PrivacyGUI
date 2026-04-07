@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/admin_users.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
@@ -22,8 +23,12 @@ class UspAdminService {
 
   /// Fetch admin users and return the admin user UI model.
   Future<AdminUserUIModel> fetchAdmin() async {
-    final adminUsers = await AdminUsers.fetch(_usp);
-    return _buildAdminUserUIModel(adminUsers);
+    try {
+      final adminUsers = await AdminUsers.fetch(_usp);
+      return _buildAdminUserUIModel(adminUsers);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Update the admin user password.
@@ -31,10 +36,36 @@ class UspAdminService {
     required String instancePath,
     required String newPassword,
   }) async {
-    await AdminUsers.update(
-      _usp,
-      AdminUserUpdate(instancePath: instancePath, password: newPassword),
-    );
+    try {
+      await AdminUsers.update(
+        _usp,
+        AdminUserUpdate(instancePath: instancePath, password: newPassword),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // System Operations
+  // ---------------------------------------------------------------------------
+
+  /// Reboot the router.
+  Future<void> reboot() async {
+    try {
+      await _usp.operate('Device.Reboot()');
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Factory reset the router.
+  Future<void> factoryReset() async {
+    try {
+      await _usp.operate('Device.FactoryReset()');
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ---------------------------------------------------------------------------

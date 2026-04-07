@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
@@ -132,6 +133,25 @@ void main() {
       final captured = verify(() => mockUsp.set(captureAny())).captured;
       final params = captured.first as Map<String, dynamic>;
       expect(params['Device.DHCPv4.Server.Pool.1.DNSServers'], '');
+    });
+  });
+
+  group('UspInstantSafetyService — error handling', () {
+    test('fetch maps USP error to ServiceError', () {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Request timeout');
+
+      expect(() => service.fetch(), throwsA(isA<NetworkError>()));
+    });
+
+    test('save maps USP error to ServiceError', () {
+      when(() => mockUsp.set(any()))
+          .thenThrow('Set failed: Authentication error: Session expired');
+
+      expect(
+        () => service.save(SafeBrowsingType.openDNS),
+        throwsA(isA<SessionTokenExpiredError>()),
+      );
     });
   });
 }

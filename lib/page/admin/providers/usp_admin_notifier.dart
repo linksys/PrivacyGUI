@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
@@ -12,25 +12,23 @@ final uspAdminProvider =
 );
 
 class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
-  UspService get _usp {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-    return usp;
-  }
-
   UspAdminService get _svc => ref.read(uspAdminServiceProvider);
 
   @override
   Future<UspAdminState> build() async {
-    // Time settings from shared data provider.
-    final timeData = await ref.watch(timeDataProvider.future);
+    try {
+      // Time settings from shared data provider.
+      final timeData = await ref.watch(timeDataProvider.future);
+      final adminUser = await _svc.fetchAdmin();
 
-    final adminUser = await _svc.fetchAdmin();
-
-    return UspAdminState(
-      adminUser: adminUser,
-      timeSettings: timeData.model,
-    );
+      return UspAdminState(
+        adminUser: adminUser,
+        timeSettings: timeData.model,
+      );
+    } on ServiceError catch (e) {
+      logger.e('[USP][Admin] Fetch failed', error: e);
+      rethrow;
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -38,12 +36,17 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   // ---------------------------------------------------------------------------
 
   Future<void> setAdminPassword(String newPassword) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _svc.updatePassword(
-        instancePath: state.requireValue.adminUser.instancePath,
-        newPassword: newPassword,
-      );
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.updatePassword(
+          instancePath: state.requireValue.adminUser.instancePath,
+          newPassword: newPassword,
+        );
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][Admin] Password update failed', error: e);
+      rethrow;
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -65,18 +68,28 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   }
 
   // ---------------------------------------------------------------------------
-  // Reboot / Factory Reset (direct USP operate — not codegen)
+  // Reboot / Factory Reset — delegates to service
   // ---------------------------------------------------------------------------
 
   Future<void> reboot() async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _usp.operate('Device.Reboot()');
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.reboot();
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][Admin] Reboot failed', error: e);
+      rethrow;
+    }
   }
 
   Future<void> factoryReset() async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _usp.operate('Device.FactoryReset()');
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.factoryReset();
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][Admin] Factory reset failed', error: e);
+      rethrow;
+    }
   }
 }

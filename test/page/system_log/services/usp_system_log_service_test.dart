@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/system_log/services/usp_system_log_service.dart';
 
@@ -60,6 +61,30 @@ void main() {
       expect(result[1].name, 'crashlog');
       expect(result[1].maximumSize, 65536);
       expect(result[1].persistent, isFalse);
+    });
+  });
+
+  group('UspSystemLogService — error handling', () {
+    test('fetch maps USP transport error to NetworkError', () {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Request timeout');
+
+      expect(() => service.fetch(), throwsA(isA<NetworkError>()));
+    });
+
+    test('fetch maps USP protocol error to ResourceNotFoundError', () {
+      when(() => mockUsp.get(any())).thenThrow(
+        'Get failed: Protocol error: Decoding error: '
+        'Path (Device.DeviceInfo.VendorLogFile) does not exist (code: 7026)',
+      );
+
+      expect(() => service.fetch(), throwsA(isA<ResourceNotFoundError>()));
+    });
+
+    test('fetch maps non-USP error to UnexpectedError', () {
+      when(() => mockUsp.get(any())).thenThrow('random error');
+
+      expect(() => service.fetch(), throwsA(isA<UnexpectedError>()));
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
@@ -162,10 +163,15 @@ class UspInstantPrivacyService {
 
   /// Fetch all data needed for Instant Privacy and return UI-safe result.
   Future<InstantPrivacyFetchResult> fetchAll() async {
-    final results = await Future.wait([
-      ConnectedDevices.fetch(_usp),
-      MacFilterAccessPoints.fetch(_usp),
-    ]);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        ConnectedDevices.fetch(_usp),
+        MacFilterAccessPoints.fetch(_usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     final devices = results[0] as ConnectedDevices;
     final macAps = results[1] as MacFilterAccessPoints;
@@ -197,23 +203,35 @@ class UspInstantPrivacyService {
 
   /// Enable MAC filtering on all APs with the given MAC whitelist.
   Future<void> enable(List<String> macs, MacFilterContext ctx) async {
-    final updates = buildEnableUpdates(macs, ctx._data);
-    await MacFilterAccessPoints.updateMany(_usp, updates);
+    try {
+      final updates = buildEnableUpdates(macs, ctx._data);
+      await MacFilterAccessPoints.updateMany(_usp, updates);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Disable MAC filtering on all APs.
   Future<void> disable(MacFilterContext ctx) async {
-    final updates = buildDisableUpdates(ctx._data);
-    await MacFilterAccessPoints.updateMany(_usp, updates);
+    try {
+      final updates = buildDisableUpdates(ctx._data);
+      await MacFilterAccessPoints.updateMany(_usp, updates);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Add a MAC address to the allowed list across all APs.
   /// Returns true if the MAC was added, false if already present.
   Future<bool> addMac(String mac, MacFilterContext ctx) async {
-    final updates = buildAddMacUpdates(mac, ctx._data);
-    if (updates.isEmpty) return false;
-    await MacFilterAccessPoints.updateMany(_usp, updates);
-    return true;
+    try {
+      final updates = buildAddMacUpdates(mac, ctx._data);
+      if (updates.isEmpty) return false;
+      await MacFilterAccessPoints.updateMany(_usp, updates);
+      return true;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ---------------------------------------------------------------------------

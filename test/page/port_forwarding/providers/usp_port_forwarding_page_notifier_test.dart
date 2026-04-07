@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
@@ -70,7 +71,7 @@ void main() {
   }
 
   group('UspPortForwardingPageNotifier', () {
-    test('build returns initial loading state', () {
+    test('build returns initial loading state', () async {
       stubFetch();
       final container = createContainer();
 
@@ -78,6 +79,7 @@ void main() {
       expect(state.status.isLoading, isTrue);
       expect(state.settings.current.forwardingRules, isEmpty);
       expect(state.settings.current.triggeringRules, isEmpty);
+      await Future.delayed(Duration.zero);
       container.dispose();
     });
 
@@ -96,7 +98,7 @@ void main() {
 
     test('fetch error sets error status', () async {
       when(() => mockService.fetchForwardingRules())
-          .thenThrow(Exception('timeout'));
+          .thenThrow(const NetworkError(message: 'timeout'));
       when(() => mockService.fetchTriggeringRules())
           .thenAnswer((_) async => [pt1]);
       final container = createContainer();
@@ -277,6 +279,30 @@ void main() {
           .current
           .triggeringRules;
       expect(rules[0].enabled, isFalse);
+      container.dispose();
+    });
+
+    test('performSave rethrows ServiceError and clears isSaving', () async {
+      stubFetch();
+      when(() => mockService.saveForwardingBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(const NetworkError(message: 'save failed'));
+      when(() => mockService.saveTriggeringBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenAnswer((_) async => (added: 0, updated: 0, deleted: 0));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspPortForwardingPageProvider.notifier);
+      notifier.addForwardingRule(pf2);
+
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+
+      expect(container.read(uspPortForwardingPageProvider).status.isSaving,
+          isFalse);
       container.dispose();
     });
 

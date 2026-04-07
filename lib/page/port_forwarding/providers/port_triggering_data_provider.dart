@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
@@ -35,12 +37,18 @@ class PortTriggeringDataNotifier extends AsyncNotifier<PortTriggeringData> {
 
   Future<PortTriggeringData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-    final codegen = await PortTriggering.fetch(usp);
-    final svc = ref.read(uspDeviceServiceProvider);
-    return PortTriggeringData(
-      ruleModels: svc.buildPortTriggeringRuleUIModels(codegen),
-    );
+    if (usp == null) {
+      throw const ConnectivityError(message: 'USP service not available');
+    }
+    try {
+      final codegen = await PortTriggering.fetch(usp);
+      final svc = ref.read(uspDeviceServiceProvider);
+      return PortTriggeringData(
+        ruleModels: svc.buildPortTriggeringRuleUIModels(codegen),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -153,7 +161,9 @@ class PortTriggeringDataNotifier extends AsyncNotifier<PortTriggeringData> {
 
   UspService get _usp {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ConnectivityError(message: 'USP service not available');
+    }
     return usp;
   }
 }

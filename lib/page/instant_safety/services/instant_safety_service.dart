@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -26,14 +27,22 @@ class UspInstantSafetyService {
 
   /// Fetch LAN network info and transform to safe browsing UI model.
   Future<SafeBrowsingUIModel> fetch() async {
-    final data = await LanNetworkInfo.fetch(_usp);
-    return buildUIModel(data);
+    try {
+      final data = await LanNetworkInfo.fetch(_usp);
+      return buildUIModel(data);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Save safe browsing DNS setting.
   Future<void> save(SafeBrowsingType type) async {
-    final dnsValue = dnsValueForType(type);
-    await LanNetworkInfo.save(_usp, dnsServers: dnsValue);
+    try {
+      final dnsValue = dnsValueForType(type);
+      await LanNetworkInfo.save(_usp, dnsServers: dnsValue);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ─── Transform ─────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
@@ -425,6 +426,45 @@ void main() {
       expect(result.deleted, 1);
       expect(result.added, 1);
       expect(result.updated, 1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Error handling
+  // ---------------------------------------------------------------------------
+
+  group('UspStaticRoutingService — error handling', () {
+    test('fetch maps USP error to ServiceError', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => service.fetch(),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('saveBatch maps USP error to ServiceError', () async {
+      when(() => mockUsp.delete(any())).thenThrow(
+          'Delete failed: Protocol error: invalid path (code: 7004)');
+
+      final original = [
+        StaticRouteUIModel(
+          instancePath: 'path.1.',
+          enabled: true,
+          name: 'Route1',
+          destIpAddress: '10.0.0.0',
+          destSubnetMask: '255.255.255.0',
+          gatewayIpAddress: '192.168.1.1',
+          interfaceName: 'Internet',
+          interfacePath: 'Device.IP.Interface.2',
+        ),
+      ];
+
+      expect(
+        () => service.saveBatch(original: original, current: []),
+        throwsA(isA<ServiceError>()),
+      );
     });
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -27,28 +28,36 @@ class UspLocalNetworkService {
     required LocalNetworkUIModel original,
     required LocalNetworkUIModel pending,
   }) async {
-    await LanNetworkInfo.save(
-      _usp,
-      ipAddress:
-          original.ipAddress != pending.ipAddress ? pending.ipAddress : null,
-      subnetMask:
-          original.subnetMask != pending.subnetMask ? pending.subnetMask : null,
-      hostName: original.hostName != pending.hostName ? pending.hostName : null,
-      dhcpEnabled: original.dhcpEnabled != pending.dhcpEnabled
-          ? pending.dhcpEnabled
-          : null,
-      minAddress:
-          original.minAddress != pending.minAddress ? pending.minAddress : null,
-      maxAddress:
-          original.maxAddress != pending.maxAddress ? pending.maxAddress : null,
-      leaseTime: original.leaseTimeMinutes != pending.leaseTimeMinutes
-          ? pending.leaseTimeMinutes * 60
-          : null,
-      dnsServers: _dnsChanged(original, pending)
-          ? joinDnsServers(
-              pending.dnsServer1, pending.dnsServer2, pending.dnsServer3)
-          : null,
-    );
+    try {
+      await LanNetworkInfo.save(
+        _usp,
+        ipAddress:
+            original.ipAddress != pending.ipAddress ? pending.ipAddress : null,
+        subnetMask: original.subnetMask != pending.subnetMask
+            ? pending.subnetMask
+            : null,
+        hostName:
+            original.hostName != pending.hostName ? pending.hostName : null,
+        dhcpEnabled: original.dhcpEnabled != pending.dhcpEnabled
+            ? pending.dhcpEnabled
+            : null,
+        minAddress: original.minAddress != pending.minAddress
+            ? pending.minAddress
+            : null,
+        maxAddress: original.maxAddress != pending.maxAddress
+            ? pending.maxAddress
+            : null,
+        leaseTime: original.leaseTimeMinutes != pending.leaseTimeMinutes
+            ? pending.leaseTimeMinutes * 60
+            : null,
+        dnsServers: _dnsChanged(original, pending)
+            ? joinDnsServers(
+                pending.dnsServer1, pending.dnsServer2, pending.dnsServer3)
+            : null,
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   static bool _dnsChanged(LocalNetworkUIModel o, LocalNetworkUIModel p) {

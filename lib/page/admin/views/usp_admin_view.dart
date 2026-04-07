@@ -165,20 +165,28 @@ class UspAdminView extends ConsumerWidget {
       if (context.mounted) showSuccessSnackBar(context, 'Timezone updated');
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to update timezone');
+        showFailedSnackBar(context, 'Failed to update timezone: $e');
       }
     }
   }
 
   Future<void> _changePassword(BuildContext context, WidgetRef ref) async {
-    final result = await showChangePasswordDialog(
-      context,
-      onSave: (newPassword) async {
-        await ref.read(uspAdminProvider.notifier).setAdminPassword(newPassword);
-      },
-    );
-    if (result == true && context.mounted) {
-      showSuccessSnackBar(context, 'Password updated');
+    try {
+      final result = await showChangePasswordDialog(
+        context,
+        onSave: (newPassword) async {
+          await ref
+              .read(uspAdminProvider.notifier)
+              .setAdminPassword(newPassword);
+        },
+      );
+      if (result == true && context.mounted) {
+        showSuccessSnackBar(context, 'Password updated');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, 'Failed to update password: $e');
+      }
     }
   }
 
@@ -195,7 +203,7 @@ class UspAdminView extends ConsumerWidget {
       await ref.read(uspAdminProvider.notifier).reboot();
       if (context.mounted) showSuccessSnackBar(context, 'Reboot command sent');
     } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Reboot failed');
+      if (context.mounted) showFailedSnackBar(context, 'Reboot failed: $e');
     }
   }
 
@@ -214,7 +222,9 @@ class UspAdminView extends ConsumerWidget {
         showSuccessSnackBar(context, 'Factory reset command sent');
       }
     } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Factory reset failed');
+      if (context.mounted) {
+        showFailedSnackBar(context, 'Factory reset failed: $e');
+      }
     }
   }
 }

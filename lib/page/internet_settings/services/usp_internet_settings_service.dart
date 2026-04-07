@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/ipv6settings.g.dart';
 import 'package:privacy_gui/generated/ppp_interface.g.dart';
@@ -25,30 +26,34 @@ class UspInternetSettingsService {
 
   /// Fetch WAN, IPv6, PPP, and VLAN settings in parallel.
   Future<InternetSettingsFetchResult> fetchSettings() async {
-    final results = await Future.wait([
-      WanSettings.fetch(_usp),
-      Ipv6Settings.fetch(_usp),
-      PppInterface.fetch(_usp),
-      VlanTermination.fetch(_usp),
-    ]);
-    final wan = results[0] as WanSettings;
-    final ipv6 = results[1] as Ipv6Settings;
-    final ppp = results[2] as PppInterface;
-    final vlan = results[3] as VlanTermination;
+    try {
+      final results = await Future.wait([
+        WanSettings.fetch(_usp),
+        Ipv6Settings.fetch(_usp),
+        PppInterface.fetch(_usp),
+        VlanTermination.fetch(_usp),
+      ]);
+      final wan = results[0] as WanSettings;
+      final ipv6 = results[1] as Ipv6Settings;
+      final ppp = results[2] as PppInterface;
+      final vlan = results[3] as VlanTermination;
 
-    final pppInstance = ppp.items.isNotEmpty ? ppp.items.first : null;
-    final vlanInstance = vlan.items.isNotEmpty ? vlan.items.first : null;
+      final pppInstance = ppp.items.isNotEmpty ? ppp.items.first : null;
+      final vlanInstance = vlan.items.isNotEmpty ? vlan.items.first : null;
 
-    return InternetSettingsFetchResult(
-      form: _buildForm(wan, ipv6, pppInstance, vlanInstance),
-      readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance),
-      pppInstancePath: pppInstance?.instancePath,
-      vlanInstancePath: vlanInstance?.instancePath,
-      debugAddressingType: wan.addressingType,
-      debugBridgeEnabled: wan.bridgeEnabled,
-      debugMtu: wan.mtu,
-      debugIpv6Enabled: ipv6.ipv6Enabled,
-    );
+      return InternetSettingsFetchResult(
+        form: _buildForm(wan, ipv6, pppInstance, vlanInstance),
+        readOnlyInfo: _buildReadOnlyInfo(wan, pppInstance),
+        pppInstancePath: pppInstance?.instancePath,
+        vlanInstancePath: vlanInstance?.instancePath,
+        debugAddressingType: wan.addressingType,
+        debugBridgeEnabled: wan.bridgeEnabled,
+        debugMtu: wan.mtu,
+        debugIpv6Enabled: ipv6.ipv6Enabled,
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -128,36 +133,40 @@ class UspInternetSettingsService {
     String? pppInstancePath,
     String? vlanInstancePath,
   }) async {
-    // Step 1: PPP lifecycle
-    final pppPath = await _handlePppLifecycle(
-      original,
-      edited,
-      currentInstancePath: pppInstancePath,
-    );
+    try {
+      // Step 1: PPP lifecycle
+      final pppPath = await _handlePppLifecycle(
+        original,
+        edited,
+        currentInstancePath: pppInstancePath,
+      );
 
-    // Step 2: VLAN lifecycle
-    final vlanPath = await _handleVlanLifecycle(
-      original,
-      edited,
-      currentInstancePath: vlanInstancePath,
-    );
+      // Step 2: VLAN lifecycle
+      final vlanPath = await _handleVlanLifecycle(
+        original,
+        edited,
+        currentInstancePath: vlanInstancePath,
+      );
 
-    // Step 3: Singleton WAN fields
-    await _saveWanSettings(original, edited);
+      // Step 3: Singleton WAN fields
+      await _saveWanSettings(original, edited);
 
-    // Step 4: PPP instance fields
-    if (pppPath != null &&
-        edited.connectionType == UspWanConnectionType.pppoe) {
-      await _savePppSettings(original, edited, pppPath);
+      // Step 4: PPP instance fields
+      if (pppPath != null &&
+          edited.connectionType == UspWanConnectionType.pppoe) {
+        await _savePppSettings(original, edited, pppPath);
+      }
+
+      // Step 5: VLAN instance fields
+      if (vlanPath != null && edited.vlanEnabled) {
+        await _saveVlanSettings(original, edited, vlanPath);
+      }
+
+      // Step 6: IPv6 fields
+      await _saveIpv6Settings(original, edited);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
     }
-
-    // Step 5: VLAN instance fields
-    if (vlanPath != null && edited.vlanEnabled) {
-      await _saveVlanSettings(original, edited, vlanPath);
-    }
-
-    // Step 6: IPv6 fields
-    await _saveIpv6Settings(original, edited);
   }
 
   // ---------------------------------------------------------------------------
@@ -330,8 +339,21 @@ class UspInternetSettingsService {
   // DHCP Renewal
   // ---------------------------------------------------------------------------
 
-  Future<void> renewDhcpLease() => WanOperations.renewDhcpLease(_usp);
-  Future<void> renewDhcpv6Lease() => WanOperations.renewDhcpv6Lease(_usp);
+  Future<void> renewDhcpLease() async {
+    try {
+      await WanOperations.renewDhcpLease(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  Future<void> renewDhcpv6Lease() async {
+    try {
+      await WanOperations.renewDhcpv6Lease(_usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Helpers

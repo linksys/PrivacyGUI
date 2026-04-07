@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
@@ -40,23 +42,29 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
 
   Future<TimeData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ConnectivityError(message: 'USP service not available');
+    }
 
-    final ts = await TimeSettings.fetch(usp);
+    try {
+      final ts = await TimeSettings.fetch(usp);
 
-    logger.d('[USP][TimeData] Fetched — '
-        'enable: ${ts.enable}, status: ${ts.status}');
+      logger.d('[USP][TimeData] Fetched — '
+          'enable: ${ts.enable}, status: ${ts.status}');
 
-    return TimeData(
-      model: TimeSettingsUIModel(
-        enable: ts.enable,
-        status: ts.status,
-        currentLocalTime: ts.currentLocalTime,
-        localTimeZone: ts.localTimeZone,
-        ntpServer1: ts.ntpServer1,
-        ntpServer2: ts.ntpServer2,
-      ),
-    );
+      return TimeData(
+        model: TimeSettingsUIModel(
+          enable: ts.enable,
+          status: ts.status,
+          currentLocalTime: ts.currentLocalTime,
+          localTimeZone: ts.localTimeZone,
+          ntpServer1: ts.ntpServer1,
+          ntpServer2: ts.ntpServer2,
+        ),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -71,16 +79,22 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
     String? ntpServer2,
   }) async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ConnectivityError(message: 'USP service not available');
+    }
 
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await TimeSettings.save(
-        usp,
-        enable: enable,
-        ntpServer1: ntpServer1,
-        ntpServer2: ntpServer2,
-      );
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await TimeSettings.save(
+          usp,
+          enable: enable,
+          ntpServer1: ntpServer1,
+          ntpServer2: ntpServer2,
+        );
+      });
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     ref.invalidateSelf();
   }
@@ -93,17 +107,23 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
     bool? enable,
   }) async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ConnectivityError(message: 'USP service not available');
+    }
 
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await TimeSettings.save(
-        usp,
-        localTimeZone: localTimeZone,
-        ntpServer1: ntpServer1,
-        ntpServer2: ntpServer2,
-        enable: enable,
-      );
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await TimeSettings.save(
+          usp,
+          localTimeZone: localTimeZone,
+          ntpServer1: ntpServer1,
+          ntpServer2: ntpServer2,
+          enable: enable,
+        );
+      });
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     ref.invalidateSelf();
   }

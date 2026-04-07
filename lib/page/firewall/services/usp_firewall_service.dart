@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -57,15 +58,19 @@ class UspFirewallService {
     required FirewallUIModel pending,
     required FirewallRuleContext context,
   }) async {
-    final updates = buildSetPayload(
-      original: original,
-      pending: pending,
-      rules: context._ruleMap,
-    );
-    if (updates.isNotEmpty) {
-      await FirewallChainRules.updateMany(_usp, updates);
+    try {
+      final updates = buildSetPayload(
+        original: original,
+        pending: pending,
+        rules: context._ruleMap,
+      );
+      if (updates.isNotEmpty) {
+        await FirewallChainRules.updateMany(_usp, updates);
+      }
+      return updates.length;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
     }
-    return updates.length;
   }
 
   // -------------------------------------------------------------------------
