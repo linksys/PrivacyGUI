@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/cs_diagnostic/models/diagnostic_client.dart';
-import 'package:privacy_gui/page/cs_diagnostic/services/browser_diagnostic_service.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';

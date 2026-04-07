@@ -1,4 +1,4 @@
-import 'package:privacy_gui/page/cs_diagnostic/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 
 enum DeviceScoreBucket { good, atRisk, issue }
 

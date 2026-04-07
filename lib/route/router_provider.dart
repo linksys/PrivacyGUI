@@ -54,7 +54,6 @@ import 'package:privacy_gui/page/select_network/_select_network.dart';
 import 'package:privacy_gui/page/instant_verify/views/instant_verify_pivot_view.dart';
 import 'package:privacy_gui/page/support/faq_list_view.dart';
 import 'package:privacy_gui/page/instant_topology/views/instant_topology_view.dart';
-import 'package:privacy_gui/page/cs_diagnostic/_cs_diagnostic.dart';
 import 'package:privacy_gui/page/troubleshooting/_troubleshooting.dart';
 import 'package:privacy_gui/page/vpn/views/vpn_settings_page.dart';
 import 'package:privacy_gui/page/wifi_settings/_wifi_settings.dart';
@@ -80,8 +79,6 @@ part 'route_otp.dart';
 part 'route_pnp.dart';
 part 'route_add_nodes.dart';
 part 'route_menu.dart';
-part 'route_cs_diagnostic.dart';
-
 // init path enum
 enum LocalWhereToGo {
   pnp,
@@ -125,12 +122,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       pnpRoute,
       pnpTroubleshootingRoute,
       addNodesRoute,
-      csDiagnosticRoute,
-      // Dev bypass: /iv-dev skips auth and goes directly to pivot view
-      GoRoute(
-        path: '/iv-dev',
-        builder: (context, state) => const InstantVerifyPivotView(),
-      ),
     ],
     redirect: (context, state) {
       if (state.matchedLocation == '/') {
@@ -143,10 +134,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       } else if (state.matchedLocation.startsWith('/autoParentFirstLogin')) {
         // bypass auto parent first login page
         return state.uri.toString();
-      } else if (state.matchedLocation.startsWith('/troubleshoot')) {
-        return null;
-      } else if (state.matchedLocation.startsWith('/iv-dev')) {
-        return null;
       }
       return router._redirectLogic(state);
     },

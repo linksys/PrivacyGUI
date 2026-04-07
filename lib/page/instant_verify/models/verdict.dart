@@ -1,4 +1,4 @@
-import 'package:privacy_gui/page/cs_diagnostic/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 

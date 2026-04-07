@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/page/cs_diagnostic/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 
 DiagnosticClient _client({
