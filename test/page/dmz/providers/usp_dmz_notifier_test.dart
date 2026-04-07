@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
@@ -48,7 +49,7 @@ void main() {
   }
 
   group('UspDmzNotifier', () {
-    test('build returns initial loading state', () {
+    test('build returns initial loading state', () async {
       when(() => mockService.fetch())
           .thenAnswer((_) async => (testSettings, testStatus));
       final container = createContainer();
@@ -56,6 +57,9 @@ void main() {
       final state = container.read(uspDmzProvider);
       expect(state.status.isLoading, isTrue);
       expect(state.settings.current, const DmzSettings.empty());
+
+      // Let microtask (Future.microtask in build) complete before disposing.
+      await Future.delayed(Duration.zero);
       container.dispose();
     });
 
@@ -76,13 +80,14 @@ void main() {
     });
 
     test('fetch error sets error status, no settings change', () async {
-      when(() => mockService.fetch()).thenThrow(Exception('network error'));
+      when(() => mockService.fetch())
+          .thenThrow(const NetworkError(message: 'network error'));
       final container = createContainer();
 
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspDmzProvider);
-      expect(state.status.errorMessage, contains('network error'));
+      expect(state.status.errorMessage, contains('Network error'));
       // Settings remain empty (initial) since performFetch returned null.
       expect(state.settings.current, const DmzSettings.empty());
       container.dispose();
@@ -229,7 +234,7 @@ void main() {
       when(() => mockService.update(
             instancePath: any(named: 'instancePath'),
             model: any(named: 'model'),
-          )).thenThrow(Exception('save failed'));
+          )).thenThrow(const NetworkError(message: 'save failed'));
       when(() => mockService.validateForm(any())).thenReturn({});
 
       final container = createContainer();
@@ -238,7 +243,7 @@ void main() {
       final notifier = container.read(uspDmzProvider.notifier);
       notifier.updateSetting((m) => m.copyWith(destIp: '10.0.0.1'));
 
-      await expectLater(notifier.save(), throwsA(isA<Exception>()));
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
 
       expect(container.read(uspDmzProvider).status.isSaving, isFalse);
       container.dispose();

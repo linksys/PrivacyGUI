@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
@@ -22,19 +23,23 @@ class UspWifiAdvancedService {
   /// Returns a map of radio instance path → enabled flag.
   /// e.g. `{"Device.WiFi.Radio.1." : true, "Device.WiFi.Radio.2." : false}`
   Future<Map<String, bool>> fetchIeee80211h() async {
-    final response = await _usp.get([_ieee80211hPath]);
+    try {
+      final response = await _usp.get([_ieee80211hPath]);
 
-    final result = <String, bool>{};
-    for (final key in response.keys) {
-      if (key.startsWith('Device.WiFi.Radio.') &&
-          key.endsWith('.IEEE80211hEnabled')) {
-        final radioPath =
-            key.substring(0, key.length - 'IEEE80211hEnabled'.length);
-        final val = response[key];
-        result[radioPath] = val == true || val == 'true' || val == '1';
+      final result = <String, bool>{};
+      for (final key in response.keys) {
+        if (key.startsWith('Device.WiFi.Radio.') &&
+            key.endsWith('.IEEE80211hEnabled')) {
+          final radioPath =
+              key.substring(0, key.length - 'IEEE80211hEnabled'.length);
+          final val = response[key];
+          result[radioPath] = val == true || val == 'true' || val == '1';
+        }
       }
+      return result;
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
     }
-    return result;
   }
 
   /// Sets IEEE 802.11h on all given radio paths.
@@ -43,9 +48,13 @@ class UspWifiAdvancedService {
     required bool enabled,
   }) async {
     if (radioPaths.isEmpty) return;
-    final params = <String, dynamic>{
-      for (final path in radioPaths) '${path}IEEE80211hEnabled': enabled,
-    };
-    await _usp.set(params);
+    try {
+      final params = <String, dynamic>{
+        for (final path in radioPaths) '${path}IEEE80211hEnabled': enabled,
+      };
+      await _usp.set(params);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 }

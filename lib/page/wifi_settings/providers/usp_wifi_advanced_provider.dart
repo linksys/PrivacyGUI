@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_state.dart';
@@ -17,11 +18,14 @@ class UspWifiAdvancedNotifier
   Future<UspWifiAdvancedState> build() async {
     logger.d('[USP][WiFi][Advanced]Fetching advanced settings...');
 
-    final ieee80211h = await _svc.fetchIeee80211h();
-
-    logger.d('[USP][WiFi][Advanced]radios=${ieee80211h.length}');
-
-    return UspWifiAdvancedState(ieee80211hByRadio: ieee80211h);
+    try {
+      final ieee80211h = await _svc.fetchIeee80211h();
+      logger.d('[USP][WiFi][Advanced]radios=${ieee80211h.length}');
+      return UspWifiAdvancedState(ieee80211hByRadio: ieee80211h);
+    } on ServiceError catch (e) {
+      logger.e('[USP][WiFi][Advanced] Fetch failed', error: e);
+      rethrow;
+    }
   }
 
   /// Toggles IEEE 802.11h (DFS + TPC) on ALL known radios simultaneously.
@@ -29,12 +33,17 @@ class UspWifiAdvancedNotifier
     final paths = state.requireValue.ieee80211hByRadio.keys.toList();
     if (paths.isEmpty) return;
 
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _svc.setIeee80211hEnabled(radioPaths: paths, enabled: enabled);
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.setIeee80211hEnabled(radioPaths: paths, enabled: enabled);
+      });
 
-    state = AsyncData(state.requireValue.copyWith(
-      ieee80211hByRadio: {for (final path in paths) path: enabled},
-    ));
+      state = AsyncData(state.requireValue.copyWith(
+        ieee80211hByRadio: {for (final path in paths) path: enabled},
+      ));
+    } on ServiceError catch (e) {
+      logger.e('[USP][WiFi][Advanced] Set IEEE80211h failed', error: e);
+      rethrow;
+    }
   }
 }

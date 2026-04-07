@@ -29,6 +29,32 @@
 /// ```
 sealed class ServiceError implements Exception {
   const ServiceError();
+
+  /// Human-readable label derived from the class name.
+  ///
+  /// `NetworkError` → `Network error`, `VPNNotConnectedError` → `VPN not connected`.
+  /// Subtypes with a `message` field override this to append details.
+  @override
+  String toString() {
+    final name = runtimeType.toString();
+    final base =
+        name.endsWith('Error') ? name.substring(0, name.length - 5) : name;
+    // Split into words: before uppercase after lowercase/digit, and before
+    // an uppercase letter followed by lowercase after an uppercase run.
+    final spaced = base
+        .replaceAllMapped(RegExp(r'(?<=[a-z\d])(?=[A-Z])'), (_) => ' ')
+        .replaceAllMapped(RegExp(r'(?<=[A-Z])(?=[A-Z][a-z])'), (_) => ' ');
+    if (spaced.isEmpty) return 'Unknown error';
+    // Lowercase each word unless it's all-uppercase (acronym like VPN, DNS, IP).
+    final words = spaced.split(' ');
+    final result = words.asMap().entries.map((e) {
+      final word = e.value;
+      if (word == word.toUpperCase() && word.length > 1) return word;
+      if (e.key == 0) return word;
+      return word.toLowerCase();
+    }).join(' ');
+    return result;
+  }
 }
 
 // ============================================================================
@@ -270,6 +296,15 @@ final class InvalidInputError extends ServiceError {
   final String? field;
   final String? message;
   const InvalidInputError({this.field, this.message});
+
+  @override
+  String toString() {
+    final detail = [
+      if (field != null) field,
+      if (message != null) message,
+    ].join(': ');
+    return detail.isNotEmpty ? 'Invalid input: $detail' : super.toString();
+  }
 }
 
 /// Unexpected error (fallback for unmapped errors)
@@ -277,12 +312,20 @@ final class UnexpectedError extends ServiceError {
   final Object? originalError;
   final String? message;
   const UnexpectedError({this.originalError, this.message});
+
+  @override
+  String toString() =>
+      message != null ? 'Unexpected error: $message' : super.toString();
 }
 
 /// Network communication error
 final class NetworkError extends ServiceError {
   final String? message;
   const NetworkError({this.message});
+
+  @override
+  String toString() =>
+      message != null ? 'Network error: $message' : super.toString();
 }
 
 /// Storage operation error
@@ -307,6 +350,10 @@ final class SerialNumberMismatchError extends ServiceError {
 final class ConnectivityError extends ServiceError {
   final String? message;
   const ConnectivityError({this.message});
+
+  @override
+  String toString() =>
+      message != null ? 'Connectivity error: $message' : super.toString();
 }
 
 // ============================================================================

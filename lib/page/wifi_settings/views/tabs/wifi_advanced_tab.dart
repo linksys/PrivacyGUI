@@ -79,7 +79,17 @@ class UspWifiAdvancedTab extends ConsumerWidget {
                   'will automatically switch to an unoccupied channel, which '
                   'may cause a brief interruption in connectivity.',
               value: state.isDfsEnabled,
-              onChanged: (v) => notifier.setIeee80211hEnabled(v),
+              onChanged: (v) async {
+                try {
+                  await notifier.setIeee80211hEnabled(v);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to save: $e')),
+                    );
+                  }
+                }
+              },
             ),
             AppGap.lg(),
           ],

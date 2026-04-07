@@ -455,6 +455,137 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
+  // Error Probe — systematically trigger USP errors to capture error formats
+  // ════════════════════════════════════════════════════════════════════════════
+
+  bool _probeRunning = false;
+
+  Future<void> _runErrorProbe() async {
+    if (_service == null) {
+      _log('ERROR: Not connected — cannot run probe');
+      return;
+    }
+    if (_probeRunning) return;
+    setState(() => _probeRunning = true);
+
+    _log('');
+    _log('═══════════════════════════════════════════');
+    _log('  ERROR PROBE — Capturing USP error formats');
+    _log('═══════════════════════════════════════════');
+
+    final probes = <(String label, Future<void> Function() action)>[
+      // --- GET errors ---
+      (
+        'GET non-existent path (expect fault 9005)',
+        () => _service!.get(['Device.Bogus.NonExistent.Path']),
+      ),
+      (
+        'GET unimplemented module: DynamicDNS (expect fault 9005)',
+        () => _service!.get(['Device.DynamicDNS.']),
+      ),
+      (
+        'GET unimplemented module: UPnP (expect fault 9005)',
+        () => _service!.get(['Device.UPnP.']),
+      ),
+      (
+        'GET invalid path format (no Device. prefix)',
+        () => _service!.get(['InvalidPath']),
+      ),
+      (
+        'GET empty path',
+        () => _service!.get(['']),
+      ),
+
+      // --- SET errors ---
+      (
+        'SET read-only param: DeviceInfo.Manufacturer (expect fault 9008)',
+        () => _service!.set({'Device.DeviceInfo.Manufacturer': 'TestValue'}),
+      ),
+      (
+        'SET read-only param: Ethernet.Link.1.MACAddress (expect fault 9008)',
+        () => _service!
+            .set({'Device.Ethernet.Link.1.MACAddress': 'AA:BB:CC:DD:EE:FF'}),
+      ),
+      (
+        'SET non-existent path (expect fault 9005)',
+        () => _service!.set({'Device.Bogus.Param': 'value'}),
+      ),
+      (
+        'SET empty value to valid writable param',
+        () => _service!.set({'Device.Time.NTPServer5': ''}),
+      ),
+
+      // --- ADD errors ---
+      (
+        'ADD to non-addable object: Device.DeviceInfo.',
+        () => _service!.add('Device.DeviceInfo.', {}),
+      ),
+      (
+        'ADD to non-existent object path',
+        () => _service!.add('Device.Bogus.Object.', {}),
+      ),
+
+      // --- DELETE errors ---
+      (
+        'DELETE non-existent instance: Device.NAT.PortMapping.99999.',
+        () => _service!.delete('Device.NAT.PortMapping.99999.'),
+      ),
+      (
+        'DELETE non-deletable path: Device.DeviceInfo.',
+        () => _service!.delete('Device.DeviceInfo.'),
+      ),
+
+      // --- OPERATE errors ---
+      (
+        'OPERATE non-existent command: Device.BogusCommand()',
+        () => _service!.operate('Device.BogusCommand()'),
+      ),
+      (
+        'OPERATE valid command with bad args: Ping with empty host',
+        () => _service!.operate('Device.IP.Diagnostics.IPPing()',
+            args: {'Host': '', 'NumberOfRepetitions': '1'}),
+      ),
+    ];
+
+    for (final (label, action) in probes) {
+      _log('');
+      _log('--- PROBE: $label');
+      try {
+        await action();
+        _log('  RESULT: No error thrown (success or silent failure)');
+      } catch (e) {
+        _log('  runtimeType: ${e.runtimeType}');
+        _log('  toString(): $e');
+        // Try to extract more info if available
+        if (e is Error) {
+          _log('  stackTrace available: ${e.stackTrace != null}');
+        }
+      }
+    }
+
+    // --- Auth error (separate — uses a throwaway service) ---
+    _log('');
+    _log('--- PROBE: LOGIN with wrong password');
+    try {
+      final throwaway = UspService(_service!.baseUrl);
+      await throwaway.login('definitely_wrong_password_12345');
+      _log('  RESULT: No error thrown');
+      throwaway.dispose();
+    } catch (e) {
+      _log('  runtimeType: ${e.runtimeType}');
+      _log('  toString(): $e');
+    }
+
+    _log('');
+    _log('═══════════════════════════════════════════');
+    _log('  ERROR PROBE COMPLETE');
+    _log('═══════════════════════════════════════════');
+    _log('');
+
+    setState(() => _probeRunning = false);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
   // Bridge: Turbo Channel
   // ════════════════════════════════════════════════════════════════════════════
 
@@ -547,6 +678,8 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
                           _buildOperateSection(),
                           const Divider(height: 32),
                           _buildHealthSection(),
+                          const Divider(height: 32),
+                          _buildErrorProbeSection(),
                           const Divider(height: 32),
                           _buildSseSection(),
                           const Divider(height: 32),
@@ -876,6 +1009,25 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
       children: [
         _buildSectionTitle('Bridge Health'),
         AppButton.primary(label: 'Health Check', onTap: _doHealth),
+      ],
+    );
+  }
+
+  Widget _buildErrorProbeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionTitle('Error Probe'),
+        AppText.bodySmall(
+          'Systematically triggers USP errors to capture error string formats. '
+          'Results appear in the log panel.',
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(height: 8),
+        AppButton.primary(
+          label: _probeRunning ? 'Running...' : 'Run Error Probe',
+          onTap: _probeRunning ? null : _runErrorProbe,
+        ),
       ],
     );
   }

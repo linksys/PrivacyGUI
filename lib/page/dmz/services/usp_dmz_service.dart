@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -26,28 +27,36 @@ class UspDmzService {
 
   /// Fetch DMZ data from the router and transform into UI types.
   Future<(DmzSettings, DmzStatus)> fetch() async {
-    final dmzData = await Dmz.fetch(_usp);
-    final uiModel = buildUIModel(dmzData);
-    final instancePath =
-        dmzData.items.isNotEmpty ? dmzData.items.first.instancePath : null;
-    return (
-      DmzSettings(model: uiModel, instancePath: instancePath),
-      const DmzStatus(isLoading: false),
-    );
+    try {
+      final dmzData = await Dmz.fetch(_usp);
+      final uiModel = buildUIModel(dmzData);
+      final instancePath =
+          dmzData.items.isNotEmpty ? dmzData.items.first.instancePath : null;
+      return (
+        DmzSettings(model: uiModel, instancePath: instancePath),
+        const DmzStatus(isLoading: false),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Add a new DMZ entry.
   Future<void> add({required DmzUIModel model}) async {
-    final sourcePrefix = model.sourceType == DmzSourceType.any
-        ? '0.0.0.0/0'
-        : model.sourcePrefix;
-    await Dmz.add(
-      _usp,
-      enable: true,
-      destIp: model.destIp,
-      sourcePrefix: sourcePrefix,
-      description: 'DMZ',
-    );
+    try {
+      final sourcePrefix = model.sourceType == DmzSourceType.any
+          ? '0.0.0.0/0'
+          : model.sourcePrefix;
+      await Dmz.add(
+        _usp,
+        enable: true,
+        destIp: model.destIp,
+        sourcePrefix: sourcePrefix,
+        description: 'DMZ',
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Update an existing DMZ entry.
@@ -55,18 +64,22 @@ class UspDmzService {
     required String instancePath,
     required DmzUIModel model,
   }) async {
-    final sourcePrefix = model.sourceType == DmzSourceType.any
-        ? '0.0.0.0/0'
-        : model.sourcePrefix;
-    await Dmz.update(
-      _usp,
-      DmzEntryUpdate(
-        instancePath: instancePath,
-        enable: model.isEnabled,
-        destIp: model.destIp,
-        sourcePrefix: sourcePrefix,
-      ),
-    );
+    try {
+      final sourcePrefix = model.sourceType == DmzSourceType.any
+          ? '0.0.0.0/0'
+          : model.sourcePrefix;
+      await Dmz.update(
+        _usp,
+        DmzEntryUpdate(
+          instancePath: instancePath,
+          enable: model.isEnabled,
+          destIp: model.destIp,
+          sourcePrefix: sourcePrefix,
+        ),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ---------------------------------------------------------------------------
