@@ -8,6 +8,19 @@ Customer-facing WiFi diagnostic tool branded **Instant-Help**. Two modes:
 
 Built as a new route (`/troubleshoot`) inside the existing `linksys/PrivacyGUI` Flutter Web app at `http://192.168.1.1`.
 
+## Git Remote
+
+This local planning repo (`WiFi_Troubleshooter/`) pushes to **`linksys/PrivacyGUI`** — the same repo where the Flutter code lives.
+
+```bash
+git remote add origin https://github.com/linksys/PrivacyGUI.git
+```
+
+Active branches on that remote:
+- `feature/wifi-troubleshooter` — original feature branch
+- `feature/wifi-troubleshooter-with-tests` — branch with test additions
+- `feature/instant-test` — current PRD work (v0.7)
+
 **Not** an engineering tool. No SSH. No serial. No TR standards.
 
 ## What This Is Not
