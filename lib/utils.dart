@@ -674,7 +674,8 @@ extension NodeSignalLevelExt on NodeSignalLevel {
 
 enum BrandAsset {
   logo('brand_logo'),
-  imgSup('brand_img_sup');
+  imgSup('brand_img_sup'),
+  textLogo('brand_text_logo');
 
   final String filename;
   const BrandAsset(this.filename);
@@ -720,13 +721,19 @@ class BrandUtils {
     await _loadManifest();
 
     final isDark = basePath.endsWith('_dark');
-    // Priority 1: .webp
+    // Priority 1: .svg
+    final svg = '$basePath.svg';
+    if (_manifestAssets!.contains(svg)) {
+      return svg;
+    }
+
+    // Priority 2: .webp
     final webp = '$basePath.webp';
     if (_manifestAssets!.contains(webp)) {
       return webp;
     }
 
-    // Priority 2: .png
+    // Priority 3: .png
     final png = '$basePath.png';
     if (_manifestAssets!.contains(png)) {
       return png;

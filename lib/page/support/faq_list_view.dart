@@ -1,5 +1,6 @@
 import 'package:privacy_gui/utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/components/widgets/brand_asset_widget.dart';
 import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:privacy_gui/constants/url_links.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
@@ -61,8 +62,8 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
                   .when(
                     data: (path) {
                       if (path != null) {
-                        return Image.asset(
-                          path,
+                        return BrandAssetWidget(
+                          path: path,
                           height: 48,
                         );
                       }

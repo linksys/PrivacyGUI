@@ -9,6 +9,7 @@ import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/page/components/widgets/brand_asset_widget.dart';
 import 'package:privacy_gui/providers/brand_asset_provider.dart';
 import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
@@ -77,6 +78,7 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
             children: [
               Row(
                 children: [
+                  // Brand logo (icon)
                   ref
                       .watch(brandAssetProvider(
                           (modelNumber: modelNumber, asset: BrandAsset.logo)))
@@ -86,8 +88,8 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                             return Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Image.asset(
-                                  path,
+                                BrandAssetWidget(
+                                  path: path,
                                   height: 48,
                                 ),
                                 AppGap.small2(),
@@ -99,8 +101,37 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                         loading: () => const SizedBox.shrink(),
                         error: (_, __) => const SizedBox.shrink(),
                       ),
-                  AppText.titleLarge(loc(context).appTitle,
-                      color: Color(neutralTonal.get(100))),
+                  // Brand text logo or fallback text
+                  ref
+                      .watch(brandAssetProvider((
+                        modelNumber: modelNumber,
+                        asset: BrandAsset.textLogo
+                      )))
+                      .when(
+                        data: (textLogoPath) {
+                          if (textLogoPath != null) {
+                            // Use brand text logo if available
+                            return BrandAssetWidget(
+                              path: textLogoPath,
+                              height: 32,
+                              color: Color(neutralTonal.get(100)),
+                              colorFilter: ColorFilter.mode(
+                                Color(neutralTonal.get(100)),
+                                BlendMode.srcIn,
+                              ),
+                            );
+                          } else {
+                            // Fallback to text if no text logo available
+                            return AppText.titleLarge(loc(context).appTitle,
+                                color: Color(neutralTonal.get(100)));
+                          }
+                        },
+                        loading: () => AppText.titleLarge(loc(context).appTitle,
+                            color: Color(neutralTonal.get(100))),
+                        error: (_, __) => AppText.titleLarge(
+                            loc(context).appTitle,
+                            color: Color(neutralTonal.get(100))),
+                      ),
                 ],
               ),
               MenuHolder(type: MenuDisplay.top),
