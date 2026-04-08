@@ -149,7 +149,9 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         clients = [];
       }
 
-      final dhcpLeases = (dhcpData['dhcpLeases'] as List?)?.length ??
+      // HW-6: MX firmware returns 'clientLeases' (not 'dhcpClientLeases')
+      final dhcpLeases = (dhcpData['clientLeases'] as List?)?.length ??
+          (dhcpData['dhcpLeases'] as List?)?.length ??
           (dhcpData['leases'] as List?)?.length ??
           (dhcpData['dhcpClientLeases'] as List?)?.length ??
           0;
@@ -320,8 +322,15 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
           },
         );
         if (_stale()) return;
-        _lastSpeedTestTime = DateTime.now();
-        state = state.copyWith(speedTest: speedResult);
+        // QA-1: Only store result if download > 0 — a zero result means the CDN
+        // was unreachable (not that the internet is actually 0 Mbps).
+        // A zero stored as SpeedTestResult would fire a false "0 Mbps" critical finding.
+        if (speedResult.downloadMbps > 0) {
+          _lastSpeedTestTime = DateTime.now();
+          state = state.copyWith(speedTest: speedResult);
+        } else {
+          dev.log('InstantVerifyPivot: speed test returned 0 — CDN unreachable, discarding result');
+        }
       } catch (e) {
         dev.log('InstantVerifyPivot: speed test failed: $e');
       }
@@ -338,7 +347,10 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       verdictIsPreliminary: false,
     );
 
-    // Final verdict with all data
+    // QA-3: Check staleness one final time before verdict write —
+    // a concurrent fetch() completing Phase 1 between the state write above
+    // and this verdict write would otherwise get stomped.
+    if (_stale()) return;
     _recomputeVerdict(preliminary: false);
   }
 
@@ -351,20 +363,18 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     final isInstantPrivacyOn = s.isMacFilterEnabled;
     final isInstantPauseActive = s.parentalControls != null &&
         ((s.parentalControls!['isParentalControlEnabled'] as bool?) ??
+         (s.parentalControls!['isParentalControlsEnabled'] as bool?) ??
          (s.parentalControls!['enabled'] as bool?) ?? false);
     final cpuLoadPct = s.routerHealth?['cpuLoad'] as int?;
     final memoryLoadPct = s.routerHealth?['memoryLoad'] as int?;
-    int? wifiSnrDb;
-    final radios = s.radioInfo?['radios'] as List?;
-    if (radios != null) {
-      for (final r in radios) {
-        final band = ((r as Map<String, dynamic>)['band'] as String?) ?? '';
-        if (band.contains('5')) {
-          final snr = (r['signalToNoiseRatio'] as int?) ?? (r['snr'] as int?);
-          if (snr != null && (wifiSnrDb == null || snr < wifiSnrDb!)) wifiSnrDb = snr;
-        }
-      }
-    }
+
+    // HW-2: signalToNoiseRatio does NOT exist in GetRadioInfo3 on any platform.
+    // GetRadioInfo3 is a config API, not a live RF metrics API.
+    // SNR/interference detection via this field is permanently null.
+    // Check 14 passes null → no firing. Keep as null until an alternative source
+    // is identified (e.g., client signal spread, GetSelectedChannels on supported FW).
+    const int? wifiSnrDb = null;
+
     final isPmfRequired = s.networkSecurity != null &&
         (s.networkSecurity!.values.whereType<String>().any(
           (v) => v.toUpperCase().contains('PMF') && v.toUpperCase().contains('REQUIRED')
@@ -388,16 +398,15 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     }
 
     // Ethernet no-link (item 30): wired device with port showing no physical link
+    // HW-3: GetEthernetPortConnections real response shape:
+    //   { 'wanPortConnection': 'Connected', 'lanPortConnections': ['Connected', 'Disconnected', ...] }
+    // NOT a list of objects with isConnected/macAddress fields.
     bool? hasEthernetNoLink;
     if (s.ethernetPorts != null) {
-      final ports = s.ethernetPorts!['ports'] as List?;
-      if (ports != null) {
-        hasEthernetNoLink = ports.any((p) {
-          final connected = (p as Map<String, dynamic>)['isConnected'] as bool?;
-          final hasDevice = (p)['macAddress'] != null;
-          // Port has a device associated but shows disconnected = bad cable
-          return hasDevice && connected == false;
-        });
+      final lanPorts = s.ethernetPorts!['lanPortConnections'] as List?;
+      if (lanPorts != null) {
+        hasEthernetNoLink = lanPorts.any(
+            (p) => (p as String?)?.toLowerCase() == 'disconnected');
       }
     }
 
@@ -474,9 +483,13 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     if (state.macFilter == null) return;
     final payload = Map<String, dynamic>.from(state.macFilter!);
     payload['macFilterMode'] = 'Disabled';
+    // QA-2: capture generation before async work to guard against concurrent fetch()
+    final gen = _fetchGeneration;
     try {
       await _send(JNAPAction.setMACFilterSettings, data: payload);
-      state = state.copyWith(macFilter: payload);
+      if (_fetchGeneration == gen) {
+        state = state.copyWith(macFilter: payload);
+      }
     } catch (e) {
       dev.log('InstantVerifyPivot: disableMacFilter failed: $e');
     }
@@ -484,13 +497,14 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
 
   Future<void> setGuestNetworkEnabled(bool enabled) async {
     if (state.guestNetwork == null) return;
-    // Clone current settings and flip the enable flag
     final payload = Map<String, dynamic>.from(state.guestNetwork!);
     payload['isGuestNetworkEnabled'] = enabled;
+    final gen = _fetchGeneration;
     try {
       await _send(JNAPAction.setGuestNetworkSettings, data: payload);
-      // Update local state to reflect the change immediately
-      state = state.copyWith(guestNetwork: payload);
+      if (_fetchGeneration == gen) {
+        state = state.copyWith(guestNetwork: payload);
+      }
     } catch (e) {
       dev.log('InstantVerifyPivot: setGuestNetwork failed: $e');
     }
@@ -686,6 +700,15 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
 
   // ── Helpers ───────────────────────────────────────────────────────────
 
+  /// HW-5: GetNetworkConnections returns rates in Kbps; convert to Mbps.
+  /// Returns null if raw is null.
+  int? _kbpsToMbps(dynamic raw) {
+    if (raw == null) return null;
+    final kbps = raw is int ? raw : int.tryParse('$raw');
+    if (kbps == null) return null;
+    return kbps ~/ 1000;
+  }
+
   bool _isWanConnected(Map<String, dynamic> wanData) {
     final status = wanData['wanStatus'] as String?;
     return status == 'Connected' || status == 'connected';
@@ -811,8 +834,9 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
             : 'Wired',
         signalDecibels:
             isWireless ? wireless['signalDecibels'] as int? : null,
-        txRateMbps: isWireless ? wireless['txRate'] as int? : null,
-        rxRateMbps: isWireless ? wireless['rxRate'] as int? : null,
+        // HW-5: GetNetworkConnections returns txRate in Kbps, convert to Mbps
+        txRateMbps: isWireless ? _kbpsToMbps(wireless['txRate']) : null,
+        rxRateMbps: isWireless ? _kbpsToMbps(wireless['rxRate']) : null,
         isWireless: isWireless,
       ));
     }
@@ -887,7 +911,9 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         isController: node.isController,
         backhaulType: backhaul['connectionType'] as String?,
         backhaulRssi: backhaul['rssi'] as int?,
-        backhaulSpeedMbps: backhaul['speedMbps'] as int?,
+        // HW-1: firmware returns speedMbps as a numeric String, not int
+        backhaulSpeedMbps: int.tryParse(
+            (backhaul['speedMbps'] ?? '').toString()),
       );
     }).toList();
   }
