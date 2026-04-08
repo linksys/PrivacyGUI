@@ -15,10 +15,17 @@ import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_serv
 /// Item 6: _SatisfactionPrompt — satisfaction rating at terminal screens.
 class HelpMeFixItTab extends ConsumerStatefulWidget {
   /// When set, opening this tab immediately launches the indicated flow (1-5).
-  /// After consuming the value, the notifier is reset to null.
+  /// -1 = reset to landing menu (fired when tab is re-tapped while active).
   final ValueNotifier<int?>? pendingFlowNotifier;
 
-  const HelpMeFixItTab({super.key, this.pendingFlowNotifier});
+  /// Navigates to My Devices tab (Tab 1) — wired from pivot view.
+  final VoidCallback? onNavigateToMyDevices;
+
+  const HelpMeFixItTab({
+    super.key,
+    this.pendingFlowNotifier,
+    this.onNavigateToMyDevices,
+  });
 
   @override
   ConsumerState<HelpMeFixItTab> createState() => _HelpMeFixItTabState();
@@ -44,9 +51,13 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
 
   void _onPendingFlow() {
     final flow = widget.pendingFlowNotifier?.value;
-    if (flow != null && mounted) {
+    if (flow == null || !mounted) return;
+    widget.pendingFlowNotifier!.value = null; // consume
+    if (flow == -1) {
+      // -1 = reset to landing (tab re-selected while in a flow)
+      setState(() => _activeFlow = null);
+    } else {
       setState(() => _activeFlow = flow);
-      widget.pendingFlowNotifier!.value = null; // consume
     }
   }
 
@@ -69,7 +80,10 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           onNavigateToFlow: _launchFlow,
         );
       case 3:
-        flowWidget = _Flow3(onDone: _exitFlow);
+        flowWidget = _Flow3(
+          onDone: _exitFlow,
+          onNavigateToMyDevices: widget.onNavigateToMyDevices,
+        );
       case 4:
         flowWidget = _Flow4(onDone: _exitFlow);
       case 5:
@@ -294,19 +308,75 @@ Widget _infoBox(BuildContext context, String text,
   );
 }
 
+/// Static numbered-step item — not interactive, use for sequential instructions.
 Widget _checklistItem(BuildContext context, String text) => Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_box_outline_blank, size: 20),
-          const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(Icons.arrow_right,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary),
+          ),
+          const SizedBox(width: 4),
           Expanded(
               child: SelectableText(text,
                   style: Theme.of(context).textTheme.bodyMedium)),
         ],
       ),
     );
+
+/// Tappable checklist item — customer marks each step as done.
+class _ClickChecklistItem extends StatefulWidget {
+  final String text;
+  const _ClickChecklistItem(this.text);
+
+  @override
+  State<_ClickChecklistItem> createState() => _ClickChecklistItemState();
+}
+
+class _ClickChecklistItemState extends State<_ClickChecklistItem> {
+  bool _done = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => setState(() => _done = !_done),
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              _done ? Icons.check_box : Icons.check_box_outline_blank,
+              size: 20,
+              color: _done
+                  ? Colors.green
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                widget.text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      decoration: _done
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      color: _done
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : null,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// ISP or Linksys support script — always SelectableText so customer can copy it.
 Widget _ispScript(BuildContext context, String script) => Container(
@@ -1312,7 +1382,9 @@ enum _ConnectIssue { keepsDropping, slowOnDevice, other }
 
 class _Flow3 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
-  const _Flow3({required this.onDone});
+  /// Called to navigate to My Devices tab (Tab 1) directly.
+  final VoidCallback? onNavigateToMyDevices;
+  const _Flow3({required this.onDone, this.onNavigateToMyDevices});
 
   @override
   ConsumerState<_Flow3> createState() => _Flow3State();
@@ -1579,8 +1651,15 @@ class _Flow3State extends ConsumerState<_Flow3> {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: widget.onDone,
-              child: const Text('Go to My Devices'),
+              // Navigate to Tab 1 (My Devices), not back to flow menu
+              onPressed: () {
+                if (widget.onNavigateToMyDevices != null) {
+                  widget.onNavigateToMyDevices!();
+                } else {
+                  widget.onDone();
+                }
+              },
+              child: const Text('Go to My Devices tab'),
             ),
           ),
         ],
@@ -1591,12 +1670,12 @@ class _Flow3State extends ConsumerState<_Flow3> {
   }
 
   List<Widget> _keepsDroppingFlow(BuildContext context, InstantVerifyPivotState state) {
-    final deviceSignal = state.deviceScores.isNotEmpty
-        ? state.deviceScores.first
-        : null;
-    final weakSignal = deviceSignal != null && deviceSignal.score < 40;
+    // Find any weak-signal devices in the current client list
+    final weakDevices = state.issueDevices;
+    final hasChannelData = state.channelInfo != null;
 
     return [
+      _backButton(context), // back to "what's happening?" step
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1605,44 +1684,225 @@ class _Flow3State extends ConsumerState<_Flow3> {
                   .textTheme
                   .titleSmall
                   ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
-          if (weakSignal)
-            _infoBox(
-              context,
-              'We noticed this device has a weak WiFi signal. Moving it closer to your router may stop the drops.',
-              icon: Icons.signal_wifi_statusbar_connected_no_internet_4,
-              color: Colors.orange,
-            ),
           const SizedBox(height: 8),
-          _checklistItem(context,
-              'Move the device closer to your router — intermittent drops are often caused by weak signal'),
-          _checklistItem(context,
-              'Check if the device is connecting to the 2.4 GHz band — it has longer range but is more prone to interference'),
-          _checklistItem(context,
-              'Try forgetting your WiFi network on this device, then reconnect fresh'),
-          _checklistItem(context,
-              'Check if other devices on the same band also drop — if yes, it\'s likely a router issue'),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _confirmAndRestart(context, ref),
-              icon: const Icon(Icons.restart_alt),
-              label: const Text('Restart Router'),
+          Text('Check each item as you try it:',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 10),
+          // Tappable checkboxes — customer marks each step done
+          const _ClickChecklistItem(
+              'Move the device closer to your router or a satellite node'),
+          const _ClickChecklistItem(
+              'Check if the device is on 2.4 GHz — try switching to 5 GHz'),
+          const _ClickChecklistItem(
+              'Forget this WiFi network on the device, then reconnect fresh'),
+          const _ClickChecklistItem(
+              'Check if other devices also drop — if yes, try restarting your router'),
+          if (weakDevices.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _infoBox(context,
+                '${weakDevices.length} device${weakDevices.length == 1 ? "" : "s"} on your network '
+                '${weakDevices.length == 1 ? "has" : "have"} a weak WiFi signal right now. '
+                'Weak signal causes drops even when the device appears connected.',
+                icon: Icons.signal_wifi_bad, color: Colors.orange),
+          ],
+        ],
+      )),
+
+      // Active actions — things the tool can do right now
+      _stepCard(context, Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Things we can try from here',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 10),
+
+          // Force reconnect — deauthenticates the device so it re-associates fresh
+          OutlinedButton.icon(
+            onPressed: () {
+              // Show device picker if multiple clients, else show single action
+              _showDeauthPicker(context, state);
+            },
+            icon: const Icon(Icons.wifi_off_outlined, size: 18),
+            label: const Text('Force reconnect a device'),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Disconnects the device from WiFi for a moment — it reconnects fresh, '
+            'which often clears a dropping connection.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+
+          if (hasChannelData) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => _showChannelChangePicker(context, state),
+              icon: const Icon(Icons.wifi_tethering, size: 18),
+              label: const Text('Switch to a less congested WiFi channel'),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'Interference from nearby networks can cause drops. Changing your '
+              'router\'s channel may fix this.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => _confirmAndRestart(context, ref),
+            icon: const Icon(Icons.restart_alt),
+            label: const Text('Restart Router'),
           ),
           const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: widget.onDone,
-              child: const Text('Device stopped dropping'),
-            ),
+          FilledButton(
+            onPressed: widget.onDone,
+            child: const Text('Device stopped dropping'),
           ),
         ],
       )),
+      const _SatisfactionPrompt(),
       _linksysSupportTile(context),
     ];
+  }
+
+  /// Show a picker of wireless devices, then deauth the selected one.
+  void _showDeauthPicker(BuildContext context, InstantVerifyPivotState state) {
+    final wirelessClients = state.clients.where((c) => c.isWireless).toList();
+    if (wirelessClients.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No wireless devices found in the device list.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Which device is dropping?',
+                style: Theme.of(ctx)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            ...wirelessClients.map((c) => ListTile(
+                  leading: const Icon(Icons.smartphone_outlined),
+                  title: Text(c.displayNameWithOui),
+                  subtitle: Text('${c.band} · ${c.signalDecibels ?? "??"} dBm'),
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _doDeauth(context, c.macAddress, c.displayNameWithOui);
+                  },
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _doDeauth(BuildContext context, String mac, String name) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Force reconnect?'),
+        content: Text('$name will briefly lose its WiFi connection and reconnect automatically.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Reconnect')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await ref.read(instantVerifyPivotProvider.notifier).deauthClient(mac);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$name disconnected — should reconnect in a moment.'),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  /// Channel change picker — shows 2.4/5 GHz options.
+  void _showChannelChangePicker(BuildContext context, InstantVerifyPivotState state) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Which band is the device on?',
+                style: Theme.of(ctx)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(
+              'This will briefly disconnect all devices on that band.',
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.wifi),
+              title: const Text('2.4 GHz — switch to channel 6'),
+              contentPadding: EdgeInsets.zero,
+              onTap: () async {
+                Navigator.pop(ctx);
+                final ok = await ref
+                    .read(instantVerifyPivotProvider.notifier)
+                    .changeRadioChannel('RADIO_2.4GHz', 6);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(ok
+                      ? '2.4 GHz channel changed. Devices reconnecting…'
+                      : 'Could not change channel on this router.'),
+                  behavior: SnackBarBehavior.floating,
+                ));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.wifi),
+              title: const Text('5 GHz — switch to channel 36'),
+              contentPadding: EdgeInsets.zero,
+              onTap: () async {
+                Navigator.pop(ctx);
+                final ok = await ref
+                    .read(instantVerifyPivotProvider.notifier)
+                    .changeRadioChannel('RADIO_5GHz', 36);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(ok
+                      ? '5 GHz channel changed. Devices reconnecting…'
+                      : 'Could not change channel on this router.'),
+                  behavior: SnackBarBehavior.floating,
+                ));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   List<Widget> _step1CantConnect(BuildContext context) {
@@ -1838,24 +2098,40 @@ class _Flow3State extends ConsumerState<_Flow3> {
         _infoBox(context, 'Device blocklist turned off. Try connecting again.',
             icon: Icons.check_circle_outline, color: Colors.green),
       const SizedBox(height: 8),
-      _stepCard(context, Column(children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => _confirmAndRestart(context, ref),
-            icon: const Icon(Icons.restart_alt),
-            label: const Text('Try restarting your router'),
+      _stepCard(context, Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Still not connecting?',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text(
+            'If the steps above haven\'t worked, restarting your router often '
+            'fixes connection issues that nothing else does.',
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: widget.onDone,
-            child: const Text('Device is connected now'),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _confirmAndRestart(context, ref),
+              icon: const Icon(Icons.restart_alt),
+              label: const Text('Restart Router'),
+            ),
           ),
-        ),
-      ])),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: widget.onDone,
+              child: const Text('Device is connected now'),
+            ),
+          ),
+        ],
+      )),
+      const _SatisfactionPrompt(),
       _linksysSupportTile(context),
     ];
   }
@@ -2670,28 +2946,30 @@ class _SatisfactionPromptState extends State<_SatisfactionPrompt> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 6),
         Row(children: [
-          _ratingBtn(context, 0, '✓ Fixed it', Colors.green),
+          _ratingBtn(context, 0, 'Fixed it', Icons.check_circle_outline, Colors.green),
           const SizedBox(width: 6),
-          _ratingBtn(context, 1, '~ Partly', Colors.orange),
+          _ratingBtn(context, 1, 'Partly', Icons.remove_circle_outline, Colors.orange),
           const SizedBox(width: 6),
-          _ratingBtn(context, 2, '✗ Didn\'t help', Colors.red),
+          _ratingBtn(context, 2, 'Still broken', Icons.cancel_outlined, Colors.red),
         ]),
       ],
     );
   }
 
-  Widget _ratingBtn(BuildContext context, int rating, String label, Color color) {
+  Widget _ratingBtn(BuildContext context, int rating, String label,
+      IconData icon, Color color) {
     return Expanded(
-      child: OutlinedButton(
+      child: OutlinedButton.icon(
         style: OutlinedButton.styleFrom(
           foregroundColor: color,
           side: BorderSide(color: color.withOpacity(0.4)),
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          minimumSize: const Size(0, 32),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          minimumSize: const Size(0, 36),
           textStyle: const TextStyle(fontSize: 11),
         ),
+        icon: Icon(icon, size: 15),
+        label: Text(label),
         onPressed: () => setState(() => _rating = rating),
-        child: Text(label),
       ),
     );
   }
