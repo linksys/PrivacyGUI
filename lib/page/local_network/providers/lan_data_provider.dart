@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -42,14 +44,22 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
 
   Future<LanData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
+    }
 
     // LanNetworkInfo.fetch includes IPv6Enable (merged in YAML v1.2.0).
     // IPv6 addresses still need a separate multi-instance query.
-    final results = await Future.wait([
-      LanNetworkInfo.fetch(usp),
-      _fetchLanIpv6Addresses(usp),
-    ]);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        LanNetworkInfo.fetch(usp),
+        _fetchLanIpv6Addresses(usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     final lanInfo = results[0] as LanNetworkInfo;
     final ipv6Addresses = results[1] as List<String>;

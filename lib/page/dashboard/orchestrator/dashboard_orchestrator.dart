@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/utils/usp_subscriptions.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
@@ -112,13 +113,14 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   Future<DashboardOrchestratorState> _buildImpl() async {
     final usp = ref.watch(uspServiceProvider);
     if (usp == null) {
-      throw StateError('USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
     // On page reload WASM state is lost — attempt session restore
     if (!usp.isAuthenticated) {
       await ref.read(uspAuthCoordinatorProvider).restoreSession();
       if (!usp.isAuthenticated) {
-        throw StateError('USP not authenticated after restore attempt');
+        throw const NotAuthenticatedError();
       }
     }
 

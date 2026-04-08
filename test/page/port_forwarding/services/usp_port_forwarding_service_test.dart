@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
@@ -549,6 +550,74 @@ void main() {
 
       expect(result.deleted, 2);
       verify(() => mockUsp.delete(any())).called(2);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Error handling
+  // ---------------------------------------------------------------------------
+
+  group('UspPortForwardingService — error handling', () {
+    test('fetchForwardingRules maps USP error to ServiceError', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => service.fetchForwardingRules(),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('fetchTriggeringRules maps USP error to ServiceError', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => service.fetchTriggeringRules(),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('saveForwardingBatch maps USP error to ServiceError', () async {
+      when(() => mockUsp.delete(any())).thenThrow(
+          'Delete failed: Protocol error: invalid path (code: 7004)');
+
+      final original = [
+        PortForwardingRuleUIModel(
+          instancePath: 'path.1.',
+          description: 'HTTP',
+          externalPort: 80,
+          internalPort: 80,
+          internalClient: '192.168.1.100',
+          protocol: 'TCP',
+          enabled: true,
+        ),
+      ];
+
+      expect(
+        () => service.saveForwardingBatch(original: original, current: []),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('saveTriggeringBatch maps USP error to ServiceError', () async {
+      when(() => mockUsp.delete(any())).thenThrow(
+          'Delete failed: Protocol error: invalid path (code: 7004)');
+
+      final original = [
+        PortTriggeringRuleUIModel(
+          instancePath: 'path.1.',
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'TCP',
+        ),
+      ];
+
+      expect(
+        () => service.saveTriggeringBatch(original: original, current: []),
+        throwsA(isA<ServiceError>()),
+      );
     });
   });
 }

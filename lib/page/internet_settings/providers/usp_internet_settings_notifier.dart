@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -33,7 +34,10 @@ final preservableUspInternetSettingsProvider = AutoDisposeProvider<
 final uspInternetSettingsServiceProvider =
     Provider.autoDispose<UspInternetSettingsService>((ref) {
   final usp = ref.watch(uspServiceProvider);
-  if (usp == null) throw StateError('USP service not available');
+  if (usp == null) {
+    throw const ServiceNotInitializedError(
+        message: 'USP service not available');
+  }
   return UspInternetSettingsService(usp);
 });
 
@@ -75,13 +79,17 @@ class UspInternetSettingsNotifier
   }) async {
     try {
       final usp = ref.read(uspServiceProvider);
-      if (usp == null) throw StateError('USP service not available');
+      if (usp == null) {
+        throw const ServiceNotInitializedError(
+            message: 'USP service not available');
+      }
 
       // Session restore on page reload (WASM state may be lost)
       if (!usp.isAuthenticated) {
         await ref.read(uspAuthCoordinatorProvider).restoreSession();
         if (!usp.isAuthenticated) {
-          throw StateError('USP not authenticated after restore attempt');
+          throw const ConnectivityError(
+              message: 'USP not authenticated after restore attempt');
         }
       }
 
@@ -116,7 +124,7 @@ class UspInternetSettingsNotifier
           vlanInstancePath: result.vlanInstancePath,
         ),
       );
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][Network][WAN] Fetch failed', error: e);
       return (
         null,
@@ -162,7 +170,7 @@ class UspInternetSettingsNotifier
           clearActiveMutation: true,
         ),
       );
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][Network][WAN] Save failed', error: e);
       rethrow;
     } finally {

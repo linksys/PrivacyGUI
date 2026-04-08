@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
@@ -98,6 +99,43 @@ void main() {
       final model = service.buildTimeSettingsUIModel(ts);
 
       expect(model.isSynchronized, isFalse);
+    });
+  });
+
+  group('UspAdminService — error handling', () {
+    test('fetchAdmin maps USP error to ServiceError', () {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Request timeout');
+
+      expect(() => service.fetchAdmin(), throwsA(isA<NetworkError>()));
+    });
+
+    test('updatePassword maps USP error to ServiceError', () {
+      when(() => mockUsp.set(any()))
+          .thenThrow('Set failed: Authentication error: Permission denied');
+
+      expect(
+        () => service.updatePassword(
+          instancePath: 'Device.Users.User.1.',
+          newPassword: 'test',
+        ),
+        throwsA(isA<UnauthorizedError>()),
+      );
+    });
+
+    test('reboot maps USP error to ServiceError', () {
+      when(() => mockUsp.operate(any()))
+          .thenThrow('Operate failed: Transport error: Connection refused');
+
+      expect(() => service.reboot(), throwsA(isA<ConnectivityError>()));
+    });
+
+    test('factoryReset maps USP error to ServiceError', () {
+      when(() => mockUsp.operate(any()))
+          .thenThrow('Operate failed: Authentication error: Session expired');
+
+      expect(() => service.factoryReset(),
+          throwsA(isA<SessionTokenExpiredError>()));
     });
   });
 }

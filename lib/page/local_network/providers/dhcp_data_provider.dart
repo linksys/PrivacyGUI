@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
@@ -55,47 +57,54 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
 
   Future<DhcpData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
+    }
 
-    final results = await Future.wait([
-      DhcpClients.fetch(usp),
-      DhcpReservations.fetch(usp),
-    ]);
+    try {
+      final results = await Future.wait([
+        DhcpClients.fetch(usp),
+        DhcpReservations.fetch(usp),
+      ]);
 
-    final clients = results[0] as DhcpClients;
-    final reservations = results[1] as DhcpReservations;
+      final clients = results[0] as DhcpClients;
+      final reservations = results[1] as DhcpReservations;
 
-    // Hostname enrichment: read pre-computed map from devices provider.
-    final devicesData = ref.read(devicesDataProvider).valueOrNull;
-    final hostNameByMac = devicesData?.hostNameByMac ?? const {};
+      // Hostname enrichment: read pre-computed map from devices provider.
+      final devicesData = ref.read(devicesDataProvider).valueOrNull;
+      final hostNameByMac = devicesData?.hostNameByMac ?? const {};
 
-    final clientModels = clients.items
-        .map((c) => DhcpClientUIModel(
-              mac: c.chaddr,
-              ip: c.ipAddress,
-              active: c.active,
-              hostName: hostNameByMac[c.chaddr.trim().toUpperCase()] ?? '',
-              leaseExpiry: c.leaseTimeRemaining,
-            ))
-        .toList();
+      final clientModels = clients.items
+          .map((c) => DhcpClientUIModel(
+                mac: c.chaddr,
+                ip: c.ipAddress,
+                active: c.active,
+                hostName: hostNameByMac[c.chaddr.trim().toUpperCase()] ?? '',
+                leaseExpiry: c.leaseTimeRemaining,
+              ))
+          .toList();
 
-    final reservationModels = reservations.items
-        .map((r) => DhcpReservationUIModel(
-              instancePath: r.instancePath,
-              mac: r.chaddr,
-              ip: r.yiaddr,
-              enable: r.enable,
-            ))
-        .toList();
+      final reservationModels = reservations.items
+          .map((r) => DhcpReservationUIModel(
+                instancePath: r.instancePath,
+                mac: r.chaddr,
+                ip: r.yiaddr,
+                enable: r.enable,
+              ))
+          .toList();
 
-    logger.d('[USP][DhcpData] Fetched — '
-        'clients: ${clients.items.length}, '
-        'reservations: ${reservations.items.length}');
+      logger.d('[USP][DhcpData] Fetched — '
+          'clients: ${clients.items.length}, '
+          'reservations: ${reservations.items.length}');
 
-    return DhcpData(
-      clientModels: clientModels,
-      reservationModels: reservationModels,
-    );
+      return DhcpData(
+        clientModels: clientModels,
+        reservationModels: reservationModels,
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   void _debouncedInvalidate() {

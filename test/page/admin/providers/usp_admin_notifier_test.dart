@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -92,7 +93,7 @@ void main() {
 
     test('build error sets AsyncError', () async {
       when(() => mockAdminService.fetchAdmin())
-          .thenThrow(Exception('admin fetch failed'));
+          .thenThrow(const NetworkError(message: 'admin fetch failed'));
       final container = createContainer();
 
       try {
@@ -101,7 +102,7 @@ void main() {
 
       final state = container.read(uspAdminProvider);
       expect(state.hasError, isTrue);
-      expect(state.error.toString(), contains('admin fetch failed'));
+      expect(state.error, isA<NetworkError>());
       container.dispose();
     });
 
@@ -141,31 +142,87 @@ void main() {
       container.dispose();
     });
 
-    test('reboot calls USP operate Device.Reboot()', () async {
+    test('reboot calls service reboot', () async {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
-      when(() => mockUsp.operate(any())).thenAnswer((_) async => {});
+      when(() => mockAdminService.reboot()).thenAnswer((_) async {});
 
       final container = createContainer();
       await container.read(uspAdminProvider.future);
 
       await container.read(uspAdminProvider.notifier).reboot();
 
-      verify(() => mockUsp.operate('Device.Reboot()')).called(1);
+      verify(() => mockAdminService.reboot()).called(1);
       container.dispose();
     });
 
-    test('factoryReset calls USP operate Device.FactoryReset()', () async {
+    test('factoryReset calls service factoryReset', () async {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
-      when(() => mockUsp.operate(any())).thenAnswer((_) async => {});
+      when(() => mockAdminService.factoryReset()).thenAnswer((_) async {});
 
       final container = createContainer();
       await container.read(uspAdminProvider.future);
 
       await container.read(uspAdminProvider.notifier).factoryReset();
 
-      verify(() => mockUsp.operate('Device.FactoryReset()')).called(1);
+      verify(() => mockAdminService.factoryReset()).called(1);
+      container.dispose();
+    });
+
+    // -----------------------------------------------------------------------
+    // Error handling
+    // -----------------------------------------------------------------------
+
+    test('setAdminPassword rethrows ServiceError', () async {
+      when(() => mockAdminService.fetchAdmin())
+          .thenAnswer((_) async => testAdmin);
+      when(() => mockAdminService.updatePassword(
+            instancePath: any(named: 'instancePath'),
+            newPassword: any(named: 'newPassword'),
+          )).thenThrow(const NetworkError(message: 'timeout'));
+
+      final container = createContainer();
+      await container.read(uspAdminProvider.future);
+
+      expect(
+        () => container
+            .read(uspAdminProvider.notifier)
+            .setAdminPassword('new123'),
+        throwsA(isA<NetworkError>()),
+      );
+      container.dispose();
+    });
+
+    test('reboot rethrows ServiceError', () async {
+      when(() => mockAdminService.fetchAdmin())
+          .thenAnswer((_) async => testAdmin);
+      when(() => mockAdminService.reboot())
+          .thenThrow(const ConnectivityError(message: 'connection refused'));
+
+      final container = createContainer();
+      await container.read(uspAdminProvider.future);
+
+      expect(
+        () => container.read(uspAdminProvider.notifier).reboot(),
+        throwsA(isA<ConnectivityError>()),
+      );
+      container.dispose();
+    });
+
+    test('factoryReset rethrows ServiceError', () async {
+      when(() => mockAdminService.fetchAdmin())
+          .thenAnswer((_) async => testAdmin);
+      when(() => mockAdminService.factoryReset())
+          .thenThrow(const SessionTokenExpiredError());
+
+      final container = createContainer();
+      await container.read(uspAdminProvider.future);
+
+      expect(
+        () => container.read(uspAdminProvider.notifier).factoryReset(),
+        throwsA(isA<SessionTokenExpiredError>()),
+      );
       container.dispose();
     });
   });

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/page/ipv6_port_service/providers/usp_ipv6_port_service_notifier.dart';
@@ -51,13 +52,14 @@ void main() {
   }
 
   group('UspIpv6PortServiceNotifier', () {
-    test('build returns initial loading state', () {
+    test('build returns initial loading state', () async {
       when(() => mockService.fetch()).thenAnswer((_) async => [rule1]);
       final container = createContainer();
 
       final state = container.read(uspIpv6PortServiceProvider);
       expect(state.status.isLoading, isTrue);
       expect(state.settings.current.rules, isEmpty);
+      await Future.delayed(Duration.zero);
       container.dispose();
     });
 
@@ -74,7 +76,8 @@ void main() {
     });
 
     test('fetch error sets error status', () async {
-      when(() => mockService.fetch()).thenThrow(Exception('fetch failed'));
+      when(() => mockService.fetch())
+          .thenThrow(const NetworkError(message: 'fetch failed'));
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
@@ -158,6 +161,26 @@ void main() {
           container.read(uspIpv6PortServiceProvider).settings.current.rules;
       expect(rules, hasLength(1));
       expect(rules[0].description, 'DNS');
+      container.dispose();
+    });
+
+    test('performSave rethrows ServiceError and clears isSaving', () async {
+      when(() => mockService.fetch()).thenAnswer((_) async => [rule1]);
+      when(() => mockService.saveBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(const NetworkError(message: 'save failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspIpv6PortServiceProvider.notifier);
+      notifier.addRule(rule2);
+
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+
+      expect(
+          container.read(uspIpv6PortServiceProvider).status.isSaving, isFalse);
       container.dispose();
     });
 

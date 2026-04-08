@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
@@ -115,13 +117,21 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
   Future<DevicesData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
+    }
 
     // Fetch ConnectedDevices immediately; mesh topology in background.
     // DataElements (mesh) uses 9 deep-wildcard paths that often timeout
     // (15s) on single-router setups where it always returns empty.
     // Don't block devices on it — show devices first, update mesh later.
-    final connectedDevices = await ConnectedDevices.fetch(usp);
+    final ConnectedDevices connectedDevices;
+    try {
+      connectedDevices = await ConnectedDevices.fetch(usp);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     // Cache raw for WiFi listener rebuild.
     _rawConnectedDevices = connectedDevices;

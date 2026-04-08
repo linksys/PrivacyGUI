@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/page/static_routing/providers/usp_static_routing_notifier.dart';
@@ -53,13 +54,14 @@ void main() {
   }
 
   group('UspStaticRoutingNotifier', () {
-    test('build returns initial loading state', () {
+    test('build returns initial loading state', () async {
       when(() => mockService.fetch()).thenAnswer((_) async => [route1]);
       final container = createContainer();
 
       final state = container.read(uspStaticRoutingProvider);
       expect(state.status.isLoading, isTrue);
       expect(state.settings.current.routes, isEmpty);
+      await Future.delayed(Duration.zero);
       container.dispose();
     });
 
@@ -76,7 +78,8 @@ void main() {
     });
 
     test('fetch error sets error status', () async {
-      when(() => mockService.fetch()).thenThrow(Exception('connection lost'));
+      when(() => mockService.fetch())
+          .thenThrow(const NetworkError(message: 'connection lost'));
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
@@ -163,12 +166,12 @@ void main() {
       container.dispose();
     });
 
-    test('performSave rethrows on error and clears isSaving', () async {
+    test('performSave rethrows ServiceError and clears isSaving', () async {
       when(() => mockService.fetch()).thenAnswer((_) async => [route1]);
       when(() => mockService.saveBatch(
             original: any(named: 'original'),
             current: any(named: 'current'),
-          )).thenThrow(Exception('save failed'));
+          )).thenThrow(const NetworkError(message: 'save failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -176,7 +179,7 @@ void main() {
       final notifier = container.read(uspStaticRoutingProvider.notifier);
       notifier.addRoute(route2);
 
-      await expectLater(notifier.save(), throwsA(isA<Exception>()));
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
 
       expect(container.read(uspStaticRoutingProvider).status.isSaving, isFalse);
       container.dispose();

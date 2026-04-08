@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
@@ -30,7 +31,8 @@ class UspNetworkDiagnosticsNotifier
   SseOperationAwaiter get _awaiter {
     final awaiter = ref.read(sseOperationAwaiterProvider);
     if (awaiter == null) {
-      throw StateError('SseOperationAwaiter not available');
+      throw const ConnectivityError(
+          message: 'SseOperationAwaiter not available');
     }
     return awaiter;
   }

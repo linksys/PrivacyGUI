@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_ui_model.dart';
@@ -14,12 +15,12 @@ class MockUspLocalNetworkService extends Mock
 /// Test-only notifier that returns canned data.
 class _TestLanDataNotifier extends LanDataNotifier {
   final LanData _testData;
-  final bool shouldThrow;
-  _TestLanDataNotifier(this._testData, {this.shouldThrow = false});
+  final ServiceError? errorToThrow;
+  _TestLanDataNotifier(this._testData, {this.errorToThrow});
 
   @override
   Future<LanData> build() async {
-    if (shouldThrow) throw Exception('lan data error');
+    if (errorToThrow != null) throw errorToThrow!;
     return _testData;
   }
 }
@@ -66,11 +67,14 @@ void main() {
   }
 
   group('UspLocalNetworkNotifier', () {
-    test('build returns initial loading state', () {
+    test('build returns initial loading state', () async {
       final container = createContainer();
 
       final state = container.read(uspLocalNetworkProvider);
       expect(state.status.isLoading, isTrue);
+
+      // Let microtask (Future.microtask in build) complete before disposing.
+      await Future.delayed(Duration.zero);
       container.dispose();
     });
 
@@ -175,15 +179,17 @@ void main() {
         overrides: [
           uspLocalNetworkServiceProvider.overrideWithValue(mockService),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-          lanDataProvider.overrideWith(
-              () => _TestLanDataNotifier(testLanData, shouldThrow: true)),
+          lanDataProvider.overrideWith(() => _TestLanDataNotifier(
+                testLanData,
+                errorToThrow: const NetworkError(message: 'timeout'),
+              )),
         ],
       );
       container.listen(uspLocalNetworkProvider, (_, __) {});
       await Future.delayed(Duration.zero);
 
       final state = container.read(uspLocalNetworkProvider);
-      expect(state.status.errorMessage, contains('lan data error'));
+      expect(state.status.errorMessage, contains('Network error'));
       container.dispose();
     });
 
@@ -203,6 +209,23 @@ void main() {
             original: any(named: 'original'),
             pending: any(named: 'pending'),
           )).called(1);
+      container.dispose();
+    });
+
+    test('performSave rethrows ServiceError and clears isSaving', () async {
+      when(() => mockService.save(
+            original: any(named: 'original'),
+            pending: any(named: 'pending'),
+          )).thenThrow(const NetworkError(message: 'save failed'));
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspLocalNetworkProvider.notifier);
+      notifier.updateSetting((m) => m.copyWith(hostName: 'NewRouter'));
+
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+
+      expect(container.read(uspLocalNetworkProvider).status.isSaving, isFalse);
       container.dispose();
     });
   });

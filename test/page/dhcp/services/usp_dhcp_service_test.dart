@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/services/usp_dhcp_service.dart';
@@ -269,6 +270,41 @@ void main() {
       // Second add should be at least 200ms after first (300ms delay, allow margin)
       final gap = addTimes[1].difference(addTimes[0]);
       expect(gap.inMilliseconds, greaterThanOrEqualTo(200));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Error handling
+  // ---------------------------------------------------------------------------
+
+  group('UspDhcpService — error handling', () {
+    test('fetchReservations maps USP error to ServiceError', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => service.fetchReservations(),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('saveBatch maps USP error to ServiceError', () async {
+      when(() => mockUsp.delete(any())).thenThrow(
+          'Delete failed: Protocol error: invalid path (code: 7004)');
+
+      final original = [
+        DhcpReservationUIModel(
+          instancePath: 'path.1.',
+          mac: 'AA:BB:CC:DD:EE:FF',
+          ip: '192.168.1.100',
+          enable: true,
+        ),
+      ];
+
+      expect(
+        () => service.saveBatch(original: original, current: []),
+        throwsA(isA<ServiceError>()),
+      );
     });
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -49,7 +50,7 @@ void main() {
       container.dispose();
     });
 
-    test('build throws when usp is null', () async {
+    test('build throws ServiceNotInitializedError when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
           uspServiceProvider.overrideWithValue(null),
@@ -58,7 +59,7 @@ void main() {
 
       expect(
         container.read(timeDataProvider.future),
-        throwsA(isA<StateError>()),
+        throwsA(isA<ServiceNotInitializedError>()),
       );
       container.dispose();
     });
@@ -95,6 +96,55 @@ void main() {
       // Same model → equal
       expect(data1, equals(data2));
       expect(data1.props, isNotEmpty);
+      container.dispose();
+    });
+
+    // -----------------------------------------------------------------------
+    // Error handling
+    // -----------------------------------------------------------------------
+
+    test('fetch maps USP error to ServiceError', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Request timeout');
+
+      final container = createContainer();
+
+      expect(
+        container.read(timeDataProvider.future),
+        throwsA(isA<NetworkError>()),
+      );
+      container.dispose();
+    });
+
+    test('updateTimeSettings maps USP error to ServiceError', () async {
+      final container = createContainer();
+      await container.read(timeDataProvider.future);
+
+      when(() => mockUsp.set(any()))
+          .thenThrow('Set failed: Authentication error: Session expired');
+
+      expect(
+        () => container
+            .read(timeDataProvider.notifier)
+            .updateTimeSettings(enable: false),
+        throwsA(isA<SessionTokenExpiredError>()),
+      );
+      container.dispose();
+    });
+
+    test('updateTimezone maps USP error to ServiceError', () async {
+      final container = createContainer();
+      await container.read(timeDataProvider.future);
+
+      when(() => mockUsp.set(any()))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      expect(
+        () => container
+            .read(timeDataProvider.notifier)
+            .updateTimezone(localTimeZone: 'US/Pacific'),
+        throwsA(isA<ConnectivityError>()),
+      );
       container.dispose();
     });
   });

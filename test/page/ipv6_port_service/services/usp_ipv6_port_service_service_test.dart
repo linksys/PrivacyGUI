@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
@@ -416,6 +417,44 @@ void main() {
       expect(result.deleted, 1);
       expect(result.added, 1);
       expect(result.updated, 1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Error handling
+  // ---------------------------------------------------------------------------
+
+  group('UspIpv6PortServiceService — error handling', () {
+    test('fetch maps USP error to ServiceError', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => service.fetch(),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('saveBatch maps USP error to ServiceError', () async {
+      when(() => mockUsp.delete(any())).thenThrow(
+          'Delete failed: Protocol error: invalid path (code: 7004)');
+
+      final original = [
+        Ipv6PortServiceRuleUIModel(
+          instancePath: 'path.1.',
+          enabled: true,
+          description: 'SSH',
+          ipv6Address: '2001:db8::1',
+          protocol: 'TCP',
+          startPort: 22,
+          endPort: 22,
+        ),
+      ];
+
+      expect(
+        () => service.saveBatch(original: original, current: []),
+        throwsA(isA<ServiceError>()),
+      );
     });
   });
 }

@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
@@ -39,30 +41,38 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
 
   Future<WanData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
+    }
 
-    // WanStatus.fetch includes IPv6Enable (merged in YAML v1.1.0).
-    // Gateway + IPv6 addresses are combined into one manual request
-    // to reduce throttler pressure (was 3 → now 2 USP requests).
-    final results = await Future.wait([
-      WanStatus.fetch(usp),
-      _fetchGatewayAndIpv6Addresses(usp),
-    ]);
+    try {
+      // WanStatus.fetch includes IPv6Enable (merged in YAML v1.1.0).
+      // Gateway + IPv6 addresses are combined into one manual request
+      // to reduce throttler pressure (was 3 → now 2 USP requests).
+      final results = await Future.wait([
+        WanStatus.fetch(usp),
+        _fetchGatewayAndIpv6Addresses(usp),
+      ]);
 
-    final wanStatus = results[0] as WanStatus;
-    final extra = results[1] as ({String gateway, List<String> ipv6Addresses});
+      final wanStatus = results[0] as WanStatus;
+      final extra =
+          results[1] as ({String gateway, List<String> ipv6Addresses});
 
-    final svc = UspDeviceService();
-    final model = svc.buildWanStatusUIModel(
-      wanStatus: wanStatus,
-      gateway: extra.gateway,
-      ipv6Addresses: extra.ipv6Addresses,
-    );
+      final svc = UspDeviceService();
+      final model = svc.buildWanStatusUIModel(
+        wanStatus: wanStatus,
+        gateway: extra.gateway,
+        ipv6Addresses: extra.ipv6Addresses,
+      );
 
-    logger.d('[USP][WanData] Fetched — ip=${wanStatus.ipAddress}, '
-        'status=${wanStatus.status}, gateway=${extra.gateway}, '
-        'ipv6=${wanStatus.ipv6Enabled}');
-    return WanData(model: model);
+      logger.d('[USP][WanData] Fetched — ip=${wanStatus.ipAddress}, '
+          'status=${wanStatus.status}, gateway=${extra.gateway}, '
+          'ipv6=${wanStatus.ipv6Enabled}');
+      return WanData(model: model);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ── Mutation ──
@@ -73,20 +83,27 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   /// Waits 2 seconds then re-fetches WAN status.
   Future<void> renewLease() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
+    }
 
     await ref.read(uspMutationLockProvider).withLock(() async {
-      await WanOperations.renewDhcpLease(usp);
-      await Future.delayed(const Duration(seconds: 2));
-      final wan = await WanStatus.fetch(usp);
-      final prev = state.valueOrNull;
-      final svc = UspDeviceService();
-      state = AsyncData(WanData(
-        model: svc.buildWanStatusUIModel(
-          wanStatus: wan,
-          gateway: prev?.model.gateway ?? '',
-        ),
-      ));
+      try {
+        await WanOperations.renewDhcpLease(usp);
+        await Future.delayed(const Duration(seconds: 2));
+        final wan = await WanStatus.fetch(usp);
+        final prev = state.valueOrNull;
+        final svc = UspDeviceService();
+        state = AsyncData(WanData(
+          model: svc.buildWanStatusUIModel(
+            wanStatus: wan,
+            gateway: prev?.model.gateway ?? '',
+          ),
+        ));
+      } catch (e) {
+        throw mapUspErrorToServiceError(e);
+      }
     });
   }
 

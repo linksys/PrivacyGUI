@@ -47,5 +47,13 @@ void main() {
           'Unexpected error: bad data');
       expect('${const UnexpectedError()}', 'Unexpected');
     });
+
+    test('ServiceNotInitializedError appends message when present', () {
+      expect(
+          '${const ServiceNotInitializedError(message: 'USP service not available')}',
+          'Service not initialized: USP service not available');
+      expect(
+          '${const ServiceNotInitializedError()}', 'Service not initialized');
+    });
   });
 }

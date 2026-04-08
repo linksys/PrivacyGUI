@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -70,7 +71,7 @@ class UspDhcpReservationsNotifier
         DhcpReservationList(reservations: reservations),
         const DhcpReservationsStatus(),
       );
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][DHCP][Reservations] Fetch failed', error: e);
       return (
         null,
@@ -106,7 +107,7 @@ class UspDhcpReservationsNotifier
 
       // Invalidate Layer 1 provider to refresh dashboard card
       ref.invalidate(dhcpDataProvider);
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][DHCP][Reservations] Save failed', error: e);
       rethrow;
     } finally {

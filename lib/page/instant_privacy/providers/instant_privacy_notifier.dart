@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/instant_privacy/providers/instant_privacy_state.dart';
@@ -15,18 +16,23 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
 
   @override
   Future<UspInstantPrivacyState> build() async {
-    final result = await _svc.fetchAll();
+    try {
+      final result = await _svc.fetchAll();
 
-    logger.d('[USP] Instant Privacy fetched — '
-        'activeDevices: ${result.connectedDevices.length}, '
-        'isEnabled: ${result.isEnabled}');
+      logger.d('[USP][Privacy] Fetched — '
+          'activeDevices: ${result.connectedDevices.length}, '
+          'isEnabled: ${result.isEnabled}');
 
-    return UspInstantPrivacyState(
-      isEnabled: result.isEnabled,
-      connectedDevices: result.connectedDevices,
-      allowedDevices: result.allowedDevices,
-      macFilterContext: result.macFilterContext,
-    );
+      return UspInstantPrivacyState(
+        isEnabled: result.isEnabled,
+        connectedDevices: result.connectedDevices,
+        allowedDevices: result.allowedDevices,
+        macFilterContext: result.macFilterContext,
+      );
+    } on ServiceError catch (e) {
+      logger.e('[USP][Privacy] Fetch failed', error: e);
+      rethrow;
+    }
   }
 
   /// Enables Instant Privacy by snapshotting currently connected devices
@@ -41,9 +47,10 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.enable(macs, s.macFilterContext);
       });
-      logger.d('[USP] Instant Privacy enabled — ${macs.length} MACs');
+      logger.d('[USP][Privacy] Enabled — ${macs.length} MACs');
       ref.invalidateSelf();
-    } catch (e) {
+    } on ServiceError catch (e) {
+      logger.e('[USP][Privacy] Enable failed', error: e);
       state = AsyncData(s.copyWith(isToggleLocked: false));
       rethrow;
     }
@@ -59,9 +66,10 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.disable(s.macFilterContext);
       });
-      logger.d('[USP] Instant Privacy disabled');
+      logger.d('[USP][Privacy] Disabled');
       ref.invalidateSelf();
-    } catch (e) {
+    } on ServiceError catch (e) {
+      logger.e('[USP][Privacy] Disable failed', error: e);
       state = AsyncData(s.copyWith(isToggleLocked: false));
       rethrow;
     }
@@ -81,9 +89,10 @@ class UspInstantPrivacyNotifier extends AsyncNotifier<UspInstantPrivacyState> {
         state = AsyncData(s.copyWith(isToggleLocked: false));
         return;
       }
-      logger.d('[USP] Instant Privacy addMac — $mac');
+      logger.d('[USP][Privacy] addMac — $mac');
       ref.invalidateSelf();
-    } catch (e) {
+    } on ServiceError catch (e) {
+      logger.e('[USP][Privacy] addMac failed', error: e);
       state = AsyncData(s.copyWith(isToggleLocked: false));
       rethrow;
     }

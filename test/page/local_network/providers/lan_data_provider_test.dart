@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
@@ -68,7 +69,7 @@ void main() {
       container.dispose();
     });
 
-    test('build throws when usp is null', () async {
+    test('build throws ServiceNotInitializedError when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
           uspServiceProvider.overrideWithValue(null),
@@ -77,7 +78,7 @@ void main() {
 
       expect(
         container.read(lanDataProvider.future),
-        throwsA(isA<StateError>()),
+        throwsA(isA<ServiceNotInitializedError>()),
       );
       container.dispose();
     });
@@ -130,6 +131,19 @@ void main() {
 
       const empty = LanData.empty();
       expect(data1, isNot(equals(empty)));
+      container.dispose();
+    });
+
+    test('fetch maps USP transport error to ServiceError', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: Request timeout');
+
+      final container = createContainer();
+
+      expect(
+        container.read(lanDataProvider.future),
+        throwsA(isA<NetworkError>()),
+      );
       container.dispose();
     });
   });

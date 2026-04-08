@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
@@ -308,6 +309,58 @@ void main() {
       await service.renewDhcpv6Lease();
 
       verify(() => mockUsp.operate('Device.DHCPv6.Client.1.Renew()')).called(1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Error handling
+  // ---------------------------------------------------------------------------
+
+  group('UspInternetSettingsService — error handling', () {
+    test('fetchSettings maps USP error to ServiceError', () async {
+      when(() => mockUsp.get(any()))
+          .thenThrow('Get failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => service.fetchSettings(),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('saveAll maps USP error to ServiceError', () async {
+      when(() => mockUsp.set(any()))
+          .thenThrow('Set failed: Protocol error: invalid value (code: 9008)');
+
+      final form = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+      );
+      final edited = form.copyWith(mtu: 1400);
+
+      expect(
+        () => service.saveAll(form, edited),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('renewDhcpLease maps USP error to ServiceError', () async {
+      when(() => mockUsp.operate(any()))
+          .thenThrow('Operate failed: Transport error: Connection refused');
+
+      expect(
+        () => service.renewDhcpLease(),
+        throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('renewDhcpv6Lease maps USP error to ServiceError', () async {
+      when(() => mockUsp.operate(any()))
+          .thenThrow('Operate failed: Transport error: Connection refused');
+
+      expect(
+        () => service.renewDhcpv6Lease(),
+        throwsA(isA<ServiceError>()),
+      );
     });
   });
 }

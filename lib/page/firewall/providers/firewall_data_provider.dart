@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
@@ -111,12 +113,20 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
 
   Future<FirewallData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
+    }
 
-    final results = await Future.wait([
-      FirewallChainRules.fetch(usp),
-      Dmz.fetch(usp),
-    ]);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        FirewallChainRules.fetch(usp),
+        Dmz.fetch(usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     final chainRules = results[0] as FirewallChainRules;
     final dmzRaw = results[1] as Dmz;

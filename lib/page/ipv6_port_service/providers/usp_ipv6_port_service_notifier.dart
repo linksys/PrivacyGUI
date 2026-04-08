@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
@@ -63,7 +64,7 @@ class UspIpv6PortServiceNotifier
         Ipv6PortServiceRuleList(rules: rules),
         const Ipv6PortServiceStatus(),
       );
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][Firewall][IPv6Port] Fetch failed', error: e);
       return (
         null,
@@ -96,7 +97,7 @@ class UspIpv6PortServiceNotifier
             'added: ${result.added}, updated: ${result.updated}, '
             'deleted: ${result.deleted}');
       });
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][Firewall][IPv6Port] Save failed', error: e);
       rethrow;
     } finally {

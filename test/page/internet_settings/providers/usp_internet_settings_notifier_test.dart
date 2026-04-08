@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
@@ -15,9 +17,12 @@ class MockUspService extends Mock implements UspService {}
 class MockUspInternetSettingsService extends Mock
     implements UspInternetSettingsService {}
 
+class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
+
 void main() {
   late MockUspService mockUsp;
   late MockUspInternetSettingsService mockService;
+  late MockUspAuthCoordinator mockAuthCoordinator;
 
   final testForm = UspInternetSettingsForm(
     connectionType: UspWanConnectionType.dhcp,
@@ -37,6 +42,7 @@ void main() {
   setUp(() {
     mockUsp = MockUspService();
     mockService = MockUspInternetSettingsService();
+    mockAuthCoordinator = MockUspAuthCoordinator();
     when(() => mockUsp.isAuthenticated).thenReturn(true);
   });
 
@@ -46,6 +52,7 @@ void main() {
         uspServiceProvider.overrideWithValue(mockUsp),
         uspInternetSettingsServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+        uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
       ],
     );
     container.listen(uspInternetSettingsProvider, (_, __) {});
@@ -53,13 +60,14 @@ void main() {
   }
 
   group('UspInternetSettingsNotifier', () {
-    test('build returns initial loading state', () {
+    test('build returns initial loading state', () async {
       when(() => mockService.fetchSettings())
           .thenAnswer((_) async => testFetchResult);
       final container = createContainer();
 
       final state = container.read(uspInternetSettingsProvider);
       expect(state.status.isLoading, isTrue);
+      await Future.delayed(Duration.zero);
       container.dispose();
     });
 
@@ -80,7 +88,7 @@ void main() {
 
     test('fetch error sets error status', () async {
       when(() => mockService.fetchSettings())
-          .thenThrow(Exception('bridge unreachable'));
+          .thenThrow(const NetworkError(message: 'bridge unreachable'));
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
@@ -273,11 +281,11 @@ void main() {
       container.dispose();
     });
 
-    test('performSave rethrows on error and clears isSaving', () async {
+    test('performSave rethrows ServiceError and clears isSaving', () async {
       when(() => mockService.fetchSettings())
           .thenAnswer((_) async => testFetchResult);
       when(() => mockService.saveAll(any(), any()))
-          .thenThrow(Exception('save failed'));
+          .thenThrow(const NetworkError(message: 'save failed'));
 
       final container = createContainer();
       await Future.delayed(Duration.zero);
@@ -285,7 +293,7 @@ void main() {
       final notifier = container.read(uspInternetSettingsProvider.notifier);
       notifier.updateField((f) => f.copyWith(mtu: 9000));
 
-      await expectLater(notifier.save(), throwsA(isA<Exception>()));
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
 
       expect(
           container.read(uspInternetSettingsProvider).status.isSaving, isFalse);
@@ -294,6 +302,7 @@ void main() {
 
     test('fetch with unauthenticated service sets error status', () async {
       when(() => mockUsp.isAuthenticated).thenReturn(false);
+      when(() => mockAuthCoordinator.restoreSession()).thenAnswer((_) async {});
       when(() => mockService.fetchSettings())
           .thenAnswer((_) async => testFetchResult);
 

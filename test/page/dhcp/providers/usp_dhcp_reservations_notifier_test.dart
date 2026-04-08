@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
@@ -44,7 +45,7 @@ void main() {
   }
 
   group('UspDhcpReservationsNotifier', () {
-    test('build returns initial loading state', () {
+    test('build returns initial loading state', () async {
       when(() => mockService.fetchReservations())
           .thenAnswer((_) async => [r1, r2]);
       final container = createContainer();
@@ -52,6 +53,7 @@ void main() {
       final state = container.read(uspDhcpReservationsProvider);
       expect(state.status.isLoading, isTrue);
       expect(state.settings.current.reservations, isEmpty);
+      await Future.delayed(Duration.zero);
       container.dispose();
     });
 
@@ -70,7 +72,7 @@ void main() {
 
     test('fetch error sets error status', () async {
       when(() => mockService.fetchReservations())
-          .thenThrow(Exception('timeout'));
+          .thenThrow(const NetworkError(message: 'timeout'));
       final container = createContainer();
       await Future.delayed(Duration.zero);
 
@@ -157,6 +159,26 @@ void main() {
       final state = container.read(uspDhcpReservationsProvider);
       expect(state.settings.current.reservations, hasLength(1));
       expect(state.settings.current.reservations[0].mac, r2.mac);
+      container.dispose();
+    });
+
+    test('performSave rethrows ServiceError and clears isSaving', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
+      when(() => mockService.saveBatch(
+            original: any(named: 'original'),
+            current: any(named: 'current'),
+          )).thenThrow(const NetworkError(message: 'save failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      final notifier = container.read(uspDhcpReservationsProvider.notifier);
+      notifier.addReservation(r2);
+
+      await expectLater(notifier.save(), throwsA(isA<ServiceError>()));
+
+      expect(
+          container.read(uspDhcpReservationsProvider).status.isSaving, isFalse);
       container.dispose();
     });
 
