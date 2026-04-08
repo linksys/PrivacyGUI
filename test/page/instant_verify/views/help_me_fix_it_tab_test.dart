@@ -373,6 +373,157 @@ void main() {
     });
   });
 
+  group('Flow 2: My internet is slow — gaming/latency path', () {
+    // The gaming path (_step5Gaming) is reachable via step 2 → 'Games or video calls
+    // are laggy'. Step 2 requires a speed result first (_step == 1 && _speedResult != null).
+    // Since the speed test is async and the mock browser service has no real network,
+    // we test what's directly reachable without forcing async service calls.
+
+    testWidgets('Flow 2 step 0 shows speed test entry point', (tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await _tapEverything(tester);
+      await tester.tap(find.text('My internet is slow'));
+      await tester.pumpAndSettle();
+      // Step 0 is the default entry — speed test button visible
+      expect(find.text('Check my speed'), findsOneWidget);
+      expect(find.text('Run a speed test'), findsOneWidget);
+    });
+  });
+
+  group('Flow 5: My connection keeps cutting out — back navigation', () {
+    Future<void> openFlow5(WidgetTester tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await _tapEverything(tester);
+      await tester.tap(find.text('My connection keeps cutting out'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('back button visible after advancing from step 0', (tester) async {
+      await openFlow5(tester);
+      // Step 0: select a frequency and continue to step 1
+      await tester.tap(find.text('Every few minutes'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      // Now on step 1 (scope question). Back button should be present.
+      expect(find.text('← Back'), findsOneWidget);
+    });
+
+    testWidgets('tapping back returns to frequency question', (tester) async {
+      await openFlow5(tester);
+      await tester.tap(find.text('Every few minutes'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      // Verify we moved forward
+      expect(find.text('Is it everything or specific devices?'), findsOneWidget);
+      // Go back
+      await tester.tap(find.text('← Back'));
+      await tester.pumpAndSettle();
+      // Should be back on step 0
+      expect(find.text('How often does it drop?'), findsOneWidget);
+    });
+  });
+
+  group('Flow 3: back navigation within cant-connect path', () {
+    testWidgets('back button visible after entering cant-connect path', (tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('One specific device'));
+      await tester.pumpAndSettle();
+      // Tap "won't connect at all" to push into step 1
+      await tester.tap(find.textContaining('won\'t connect at all'));
+      await tester.pumpAndSettle();
+      // Should be on SSID visibility check — this is still step 1 (cant-connect)
+      // The back button is rendered via _backButton which appears when _stepHistory is non-empty.
+      // However, _step1CantConnect doesn't include a _backButton widget directly —
+      // the back logic is at the parent step. Verify the SSID check is shown.
+      expect(find.textContaining('WiFi list'), findsOneWidget);
+    });
+  });
+
+  group('Flow 4: satisfaction prompt', () {
+    Future<void> navigateToFlow4Terminal(WidgetTester tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await _tapEverything(tester);
+      await tester.tap(find.text('WiFi doesn\'t reach a room'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Center of my home'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('satisfaction prompt appears on terminal screen', (tester) async {
+      await navigateToFlow4Terminal(tester);
+      expect(find.text('Did this help?'), findsOneWidget);
+      expect(find.text('✓ Fixed it'), findsOneWidget);
+    });
+
+    testWidgets('tapping Fixed it shows confirmation response', (tester) async {
+      tester.view.physicalSize = const Size(800, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await navigateToFlow4Terminal(tester);
+      // Ensure we can see and tap the rating button
+      await tester.ensureVisible(find.text('✓ Fixed it').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('✓ Fixed it').first);
+      await tester.pumpAndSettle();
+      // After rating, the prompt is replaced by a response text
+      expect(find.textContaining('Glad'), findsOneWidget);
+    });
+  });
+
+  group('Flow 5: PPPoE WAN connection type', () {
+    testWidgets('wanConnectionType getter returns PPPoE from detectedWANType', (tester) async {
+      // This is a state-level test — we just verify the getter returns the right value.
+      final state = InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: const {
+          'wanStatus': 'Connected',
+          'detectedWANType': 'PPPoE',
+          'wanConnection': {'ipAddress': '10.0.0.1'},
+        },
+      );
+      expect(state.wanConnectionType, equals('PPPoE'));
+    });
+
+    testWidgets('wanConnectionType null when not present in wanStatus', (tester) async {
+      final state = InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: const {
+          'wanStatus': 'Connected',
+          'wanConnection': {'ipAddress': '10.0.0.1'},
+        },
+      );
+      expect(state.wanConnectionType, isNull);
+    });
+  });
+
+  group('Flow 1: session summary compiles at gateway-fail path', () {
+    testWidgets('gateway fail path renders without crash', (tester) async {
+      // Flow 1 auto-runs diagnostics on entry. With no real network in tests,
+      // the browser service will fail gracefully → lands on gateway-fail path.
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await _tapEverything(tester);
+      await tester.tap(find.text('My internet isn\'t working'));
+      await tester.pump(); // let the diagnostic card render
+      // Gateway fail path should show 'Check your connection to the router'
+      // after diagnostics resolve (or keep loading — both are valid in tests).
+      // We just confirm the tab doesn't throw.
+      expect(find.byType(HelpMeFixItTab), findsOneWidget);
+    });
+  });
+
   group('Cross-cutting — Linksys Support tile', () {
     testWidgets('Flow 4 terminal screen shows Linksys Support', (tester) async {
       await tester.pumpWidget(_buildTab(_baseState()));

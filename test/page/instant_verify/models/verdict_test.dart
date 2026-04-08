@@ -21,6 +21,17 @@ Verdict _compute({
   List<DiagnosticClient> clients = const [],
   List<MeshNodeInfo> meshNodes = const [],
   double? planSpeedMbps,
+  bool? isWifiScheduleBlocking,
+  bool? isInstantPrivacyOn,
+  bool? isInstantPauseActive,
+  int? cpuLoadPct,
+  int? memoryLoadPct,
+  int? wifiSnrDb,
+  bool? isPmfRequired,
+  bool? isBandSteeringMissteer,
+  bool? hasEthernetNoLink,
+  bool? hasZombieMeshNode,
+  int? dhcpPoolUtilizationPct,
 }) {
   return VerdictEngine.compute(
     gatewayReachable: gatewayReachable,
@@ -36,6 +47,17 @@ Verdict _compute({
     clients: clients,
     meshNodes: meshNodes,
     planSpeedMbps: planSpeedMbps,
+    isWifiScheduleBlocking: isWifiScheduleBlocking,
+    isInstantPrivacyOn: isInstantPrivacyOn,
+    isInstantPauseActive: isInstantPauseActive,
+    cpuLoadPct: cpuLoadPct,
+    memoryLoadPct: memoryLoadPct,
+    wifiSnrDb: wifiSnrDb,
+    isPmfRequired: isPmfRequired,
+    isBandSteeringMissteer: isBandSteeringMissteer,
+    hasEthernetNoLink: hasEthernetNoLink,
+    hasZombieMeshNode: hasZombieMeshNode,
+    dhcpPoolUtilizationPct: dhcpPoolUtilizationPct,
   );
 }
 
@@ -761,6 +783,201 @@ void main() {
       final v = _compute(dnsWorking: false);
       final finding = v.findings.firstWhere((f) => f.checkNumber == 4);
       expect(finding.postRestartEscalation, contains('restarting'));
+    });
+  });
+
+  // ── New checks (items 12–19) ──────────────────────────────────────────────
+
+  group('VerdictEngine — new checks (items 12-19)', () {
+    // ── Check 12: WiFi access restrictions ───────────────────────────────────
+
+    test('WiFi schedule blocking → fires warning', () {
+      final v = _compute(isWifiScheduleBlocking: true);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('schedule'));
+      expect(finding.priority, VerdictPriority.info);
+    });
+
+    test('WiFi schedule null → no check', () {
+      final v = _compute(isWifiScheduleBlocking: null);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('schedule')), isEmpty);
+    });
+
+    test('Instant Privacy on → fires warning', () {
+      final v = _compute(isInstantPrivacyOn: true);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.contains('Instant Privacy'));
+      expect(finding.priority, VerdictPriority.warning);
+    });
+
+    test('Instant Pause active → fires warning', () {
+      final v = _compute(isInstantPauseActive: true);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('paused'));
+      expect(finding.priority, VerdictPriority.warning);
+    });
+
+    // ── Check 13: CPU/Memory ─────────────────────────────────────────────────
+
+    test('CPU > 80% → fires warning', () {
+      final v = _compute(cpuLoadPct: 85);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('high load'));
+      expect(finding.priority, VerdictPriority.warning);
+    });
+
+    test('CPU = 80% → no finding', () {
+      final v = _compute(cpuLoadPct: 80);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('high load')), isEmpty);
+    });
+
+    test('Memory > 85% → fires warning', () {
+      final v = _compute(memoryLoadPct: 90);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('memory'));
+      expect(finding.priority, VerdictPriority.warning);
+    });
+
+    test('both CPU and memory null → no finding', () {
+      final v = _compute(cpuLoadPct: null, memoryLoadPct: null);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('memory') ||
+              f.headline.toLowerCase().contains('high load')), isEmpty);
+    });
+
+    // ── Check 14: SNR ────────────────────────────────────────────────────────
+
+    test('SNR < 20 → fires info', () {
+      final v = _compute(wifiSnrDb: 15);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('interference'));
+      expect(finding.priority, VerdictPriority.info);
+    });
+
+    test('SNR = 25 → no finding', () {
+      final v = _compute(wifiSnrDb: 25);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('interference')), isEmpty);
+    });
+
+    test('SNR null → no check', () {
+      final v = _compute(wifiSnrDb: null);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('interference')), isEmpty);
+    });
+
+    // ── Check 15: PMF Required ───────────────────────────────────────────────
+
+    test('PMF Required → fires warning', () {
+      final v = _compute(isPmfRequired: true);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('security'));
+      expect(finding.priority, VerdictPriority.warning);
+    });
+
+    test('PMF not required → no finding', () {
+      final v = _compute(isPmfRequired: false);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('security')), isEmpty);
+    });
+
+    // ── Check 3b: CGNAT / Double-NAT ─────────────────────────────────────────
+
+    test('CGNAT IP → fires CGNAT finding', () {
+      final v = _compute(wanConnected: true, wanIpAddress: '100.64.1.1');
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.contains('CGNAT'));
+      expect(finding, isNotNull);
+    });
+
+    test('double-NAT IP → fires double-NAT finding', () {
+      final v = _compute(wanConnected: true, wanIpAddress: '10.0.0.1');
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('double'));
+      expect(finding, isNotNull);
+    });
+
+    test('public IP → no double-NAT finding', () {
+      final v = _compute(wanConnected: true, wanIpAddress: '98.137.11.163');
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('double') ||
+              f.headline.contains('CGNAT')), isEmpty);
+    });
+
+    test('CGNAT but WAN disconnected → no finding', () {
+      final v = _compute(wanConnected: false, wanIpAddress: '100.64.1.1');
+      expect(v.findings.where(
+          (f) => f.headline.contains('CGNAT')), isEmpty);
+    });
+
+    // ── Check 16: Band steering ──────────────────────────────────────────────
+
+    test('band steering missteer → fires warning', () {
+      final v = _compute(isBandSteeringMissteer: true);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('stuck') ||
+              f.headline.toLowerCase().contains('band'));
+      expect(finding.priority, VerdictPriority.warning);
+    });
+
+    test('no missteer → no finding', () {
+      final v = _compute(isBandSteeringMissteer: false);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('stuck')), isEmpty);
+    });
+
+    // ── Check 17: Ethernet no-link ────────────────────────────────────────────
+
+    test('ethernet no link → fires warning', () {
+      final v = _compute(hasEthernetNoLink: true);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('no network link'));
+      expect(finding.priority, VerdictPriority.warning);
+    });
+
+    test('all ports fine → no finding', () {
+      final v = _compute(hasEthernetNoLink: false);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('no network link')), isEmpty);
+    });
+
+    // ── Check 18: Zombie mesh node ────────────────────────────────────────────
+
+    test('zombie node → fires warning', () {
+      final v = _compute(hasZombieMeshNode: true);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.contains('not working well'));
+      expect(finding.priority, VerdictPriority.warning);
+    });
+
+    test('no zombie → no finding', () {
+      final v = _compute(hasZombieMeshNode: false);
+      // Zombie finding has unique text 'not working well' in the headline
+      expect(v.findings.where(
+          (f) => f.headline.contains('not working well')), isEmpty);
+    });
+
+    // ── Check 19: DHCP exhaustion ─────────────────────────────────────────────
+
+    test('DHCP 90%+ → fires warning', () {
+      final v = _compute(dhcpPoolUtilizationPct: 95);
+      final finding = v.findings.firstWhere(
+          (f) => f.headline.toLowerCase().contains('address pool'));
+      expect(finding.priority, VerdictPriority.warning);
+    });
+
+    test('DHCP 89% → no finding (boundary)', () {
+      final v = _compute(dhcpPoolUtilizationPct: 89);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('address pool')), isEmpty);
+    });
+
+    test('DHCP null → no check', () {
+      final v = _compute(dhcpPoolUtilizationPct: null);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('address pool')), isEmpty);
     });
   });
 

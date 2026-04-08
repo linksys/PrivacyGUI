@@ -110,13 +110,13 @@ InstantVerifyPivotState _guestDeviceState() {
   );
 }
 
-Widget _buildTab(InstantVerifyPivotState state) {
+Widget _buildTab(InstantVerifyPivotState state, {ValueChanged<int>? onNavigateToFlow}) {
   final notifier = MockInstantVerifyPivotNotifier(state);
   return testableWidget(
     overrides: [
       instantVerifyPivotProvider.overrideWith(() => notifier),
     ],
-    child: const MyDevicesTab(),
+    child: MyDevicesTab(onNavigateToFlow: onNavigateToFlow),
   );
 }
 
@@ -296,6 +296,34 @@ void main() {
       await tester.tap(find.text('Samsung TV'));
       await tester.pumpAndSettle();
       expect(find.textContaining('5 GHz'), findsAtLeast(1));
+    });
+
+    testWidgets('Troubleshoot this device calls onNavigateToFlow with 3',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      int? capturedFlow;
+      await tester.pumpWidget(_buildTab(
+        _flatListState(),
+        onNavigateToFlow: (flow) { capturedFlow = flow; },
+      ));
+      await tester.pumpAndSettle();
+
+      // Open device detail sheet for the first device (sorted: Poor first → Old Laptop)
+      // Use "Deven's iPhone" which is a Good-signal device in the flat list
+      await tester.tap(find.text("Deven's iPhone"));
+      await tester.pumpAndSettle();
+
+      // Scroll the sheet to make 'Troubleshoot this device' visible
+      await tester.ensureVisible(find.text('Troubleshoot this device'));
+      await tester.pumpAndSettle();
+
+      // Tap 'Troubleshoot this device'
+      await tester.tap(find.text('Troubleshoot this device'));
+      await tester.pumpAndSettle();
+
+      expect(capturedFlow, equals(3));
     });
 
     testWidgets('mesh device shows node connection info', (tester) async {

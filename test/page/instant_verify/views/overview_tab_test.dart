@@ -559,4 +559,91 @@ void main() {
       expect(find.text('Restart'), findsOneWidget);
     });
   });
+
+  group('OverviewTab — status chip label states', () {
+    testWidgets('WAN connected, DNS not run → shows "Connected to ISP"',
+        (tester) async {
+      final state = InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: const {'wanStatus': 'Connected', 'wanConnection': {'ipAddress': '192.168.50.105'}},
+        deviceInfo: const {'modelNumber': 'MX6200'},
+        verdict: const Verdict(findings: [], checksRun: 4),
+        verdictIsPreliminary: false,
+      );
+      await tester.pumpWidget(_buildOverviewTab(state));
+      await tester.pump();
+
+      expect(find.text('Connected to ISP'), findsOneWidget);
+    });
+
+    testWidgets('WAN connected, DNS resolved → shows "Internet: Working"',
+        (tester) async {
+      final state = InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: const {'wanStatus': 'Connected', 'wanConnection': {'ipAddress': '192.168.50.105'}},
+        deviceInfo: const {'modelNumber': 'MX6200'},
+        dnsCheck: const DnsCheckResult(resolved: true, latencyMs: 10),
+        verdict: const Verdict(findings: [], checksRun: 4),
+        verdictIsPreliminary: false,
+      );
+      await tester.pumpWidget(_buildOverviewTab(state));
+      await tester.pump();
+
+      expect(find.text('Internet: Working'), findsOneWidget);
+    });
+
+    testWidgets(
+        'WAN connected, DNS failed → shows "Connected to ISP — websites aren\'t loading"',
+        (tester) async {
+      final state = InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: const {'wanStatus': 'Connected', 'wanConnection': {'ipAddress': '192.168.50.105'}},
+        deviceInfo: const {'modelNumber': 'MX6200'},
+        dnsCheck: const DnsCheckResult(resolved: false, latencyMs: 0),
+        verdict: const Verdict(findings: [], checksRun: 4),
+        verdictIsPreliminary: false,
+      );
+      await tester.pumpWidget(_buildOverviewTab(state));
+      await tester.pump();
+
+      expect(find.textContaining('Connected to ISP'), findsAtLeast(1));
+      expect(find.textContaining("websites aren't loading"), findsAtLeast(1));
+    });
+
+    testWidgets('WAN disconnected → shows "Not connected to ISP"',
+        (tester) async {
+      await tester.pumpWidget(_buildOverviewTab(_wanDownState()));
+      await tester.pump();
+
+      expect(find.text('Not connected to ISP'), findsOneWidget);
+    });
+  });
+
+  group('OverviewTab — primary CTA annotation', () {
+    // 'Start here' annotation appears when there are 2+ findings AND
+    // the primary finding has an auto-fix (actionKey != null).
+
+    testWidgets('multiple findings with auto-fix show start-here annotation',
+        (tester) async {
+      // _multipleFindingsState() has 4 findings; primary has actionKey 'restart_router'
+      // → hasAutoFix = true → annotation should appear.
+      await tester.pumpWidget(_buildOverviewTab(_multipleFindingsState()));
+      await tester.pump();
+
+      expect(find.textContaining('Start here'), findsOneWidget);
+    });
+
+    testWidgets('single finding does not show start-here annotation',
+        (tester) async {
+      // _criticalFindingState() has exactly 1 finding.
+      // visible.length == 1 and hidden.isEmpty → condition is false.
+      await tester.pumpWidget(_buildOverviewTab(_criticalFindingState()));
+      await tester.pump();
+
+      expect(find.textContaining('Start here'), findsNothing);
+    });
+  });
 }

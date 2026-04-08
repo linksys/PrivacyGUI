@@ -531,6 +531,18 @@ class _StatusCard extends StatelessWidget {
             ),
           ] else if (primary.hasAutoFix) ...[
             const SizedBox(height: 12),
+            if ((visible.length > 1 || hidden.isNotEmpty) && primary.hasAutoFix)
+              Padding(
+                padding: const EdgeInsets.only(left: 32, bottom: 4),
+                child: Text(
+                  'Start here — fixing this may help the others too',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.only(left: 32),
               child: FilledButton.icon(

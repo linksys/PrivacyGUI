@@ -267,6 +267,32 @@ void main() {
       expect(find.text('2 devices connected'), findsOneWidget);
       expect(find.text('0 devices connected'), findsAtLeast(1));
     });
+
+    testWidgets('backhaul speed shown when available', (tester) async {
+      final state = const InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        wanStatus: {'wanStatus': 'Connected', 'wanConnection': {'ipAddress': '10.0.0.1'}},
+        deviceInfo: {'modelNumber': 'MX6200'},
+        routerHealth: {'uptimeInSeconds': 3600},
+        firmwareUpdate: {'firmwareUpdateStatus': 'UpToDate'},
+        meshNodes: [
+          MeshNodeInfo(deviceId: 'router', name: 'Router', isController: true),
+          MeshNodeInfo(
+            deviceId: 'sat-1',
+            name: 'Living Room',
+            isController: false,
+            backhaulType: 'Wireless',
+            backhaulRssi: -55,
+            backhaulSpeedMbps: 350,
+          ),
+        ],
+        clients: [],
+      );
+      await tester.pumpWidget(_buildTab(state));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('350 Mbps'), findsAtLeast(1));
+    });
   });
 
   group('MyNetworkTab — WiFi Overview', () {
