@@ -915,133 +915,188 @@ class _Flow2State extends ConsumerState<_Flow2> {
     ];
   }
 
+  /// Returns a plain-English description of what activities this speed supports.
+  String _speedCapability(double mbps) {
+    if (mbps >= 100) return 'Plenty fast — handles 4K streaming, gaming, and video calls for the whole household.';
+    if (mbps >= 50) return 'Good — supports HD streaming, gaming, and video calls on multiple devices at once.';
+    if (mbps >= 25) return 'Solid — handles HD video, gaming, and calls for 1–2 people at a time.';
+    if (mbps >= 10) return 'Basic — works for browsing and standard streaming, but may struggle with multiple devices.';
+    if (mbps >= 5) return 'Limited — enough for light browsing and calls, but video may buffer.';
+    return 'Very slow — video calls and streaming will likely have trouble.';
+  }
+
   List<Widget> _step1(BuildContext context) {
     final mbps = _mbps!;
-    final slow = mbps < 25;
+    // Flag as potentially problematic only below 10 Mbps — not marginal slow
+    final actuallyProblematic = mbps < 10;
+
     return [
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Your speed result',
+          Text('Here\'s what your connection can do',
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
                   ?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              SelectableText('${mbps.toStringAsFixed(0)} Mbps',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: slow ? Colors.orange : Colors.green,
-                      )),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(_tier(mbps),
-                    style: Theme.of(context).textTheme.bodyMedium),
-              ),
-            ],
+          // Lead with capability, not raw number
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: actuallyProblematic
+                  ? Colors.orange.withOpacity(0.08)
+                  : Colors.green.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  color: actuallyProblematic
+                      ? Colors.orange.withOpacity(0.3)
+                      : Colors.green.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_speedCapability(mbps),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        )),
+                const SizedBox(height: 6),
+                // Show the number as supporting context, not the headline
+                SelectableText(
+                  'Measured speed from this device: ${mbps.toStringAsFixed(0)} Mbps',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           SelectableText(
-            'Speed measured from this device. Speed can vary based on time of day, '
-            'how many devices are active, and your distance from the router. '
-            'A device experiencing issues may be faster or slower than this reading.',
+            'Speed varies by time of day, distance from router, and how many '
+            'devices are active. This was measured from your current device — '
+            'other devices may get different speeds.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
-          const SizedBox(height: 12),
-          _SpeedTierTable(currentMbps: mbps),
         ],
       )),
+
+      // Only show the "not enough?" question — don't ask about ISP plan
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Is this close to what you\'re paying for?',
+          Text('Does this feel fast enough for what you\'re trying to do?',
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
                   ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Text(
-            'Check your internet plan to see what speed you should be getting.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
           const SizedBox(height: 12),
-          Row(children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => _pushStep(2),
-                child: const Text('No — it\'s slower than expected'),
-              ),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: widget.onDone,
+              child: const Text('Yes — it feels fine'),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: FilledButton(
-                onPressed: () {
-                  // Speed is fine — may be a device-specific issue
-                  widget.onNavigateToFlow(3);
-                },
-                child: const Text('Yes — seems normal'),
-              ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              // "Still slow" → check specific devices / factors
+              onPressed: () => _pushStep(2),
+              child: const Text('No — something still feels slow'),
             ),
-          ]),
+          ),
           const SizedBox(height: 8),
           TextButton.icon(
             onPressed: _runSpeedTest,
             icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Run again'),
+            label: const Text('Run test again'),
           ),
         ],
       )),
     ];
   }
 
-  List<Widget> _step2(BuildContext context) => [
-        _stepCard(context, Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _backButton(context),
-            Text('Is it all devices or just one?',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _pushStep(3),
-                icon: const Icon(Icons.devices),
-                label: const Text('All devices are slow'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => widget.onNavigateToFlow(3),
-                icon: const Icon(Icons.smartphone),
-                label: const Text('Just one device — go to Device Issues'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _pushStep(5),
-                icon: const Icon(Icons.sports_esports),
-                label: const Text('Games or video calls are laggy'),
-              ),
-            ),
+  List<Widget> _step2(BuildContext context) {
+    final state = ref.watch(instantVerifyPivotProvider);
+    final weakDevices = state.issueDevices;
+    final jitterMs = _speedResult?.jitterMs ?? 0;
+    final highJitter = jitterMs > 20;
+
+    return [
+      _stepCard(context, Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _backButton(context),
+          Text('Let\'s figure out what\'s slow',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+
+          // Show jitter warning if relevant (gaming/call lag)
+          if (highJitter) ...[
+            _infoBox(context,
+                'Your connection has variable response time (${jitterMs}ms). '
+                'This causes the stuttering you feel during games and video calls '
+                'even when your download speed looks fine.',
+                icon: Icons.timer_outlined, color: Colors.orange),
+            const SizedBox(height: 10),
           ],
-        )),
-      ];
+
+          // Show weak device signal if we detected any
+          if (weakDevices.isNotEmpty) ...[
+            _infoBox(context,
+                '${weakDevices.length} device${weakDevices.length == 1 ? "" : "s"} on your network '
+                '${weakDevices.length == 1 ? "has" : "have"} a weak WiFi signal. '
+                'A weak signal reduces speed even when your overall internet is fine.',
+                icon: Icons.signal_wifi_statusbar_connected_no_internet_4,
+                color: Colors.orange),
+            const SizedBox(height: 10),
+          ],
+
+          Text('Where is it slow?',
+              style: Theme.of(context)
+                  .textTheme
+                  .labelMedium
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _pushStep(3),
+              icon: const Icon(Icons.devices),
+              label: const Text('Everything in my home is slow'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              // Route to device connectivity issues flow
+              onPressed: () => widget.onNavigateToFlow(3),
+              icon: const Icon(Icons.smartphone),
+              label: const Text('Just one specific device'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _pushStep(5),
+              icon: const Icon(Icons.sports_esports),
+              label: const Text('Games or video calls are laggy'),
+            ),
+          ),
+        ],
+      )),
+    ];
+  }
 
   List<Widget> _step3(BuildContext context) => [
         _stepCard(context, Column(
@@ -1310,6 +1365,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
         if (_step == 0) ..._step0(context),
         if (_step == 1 && _connectState == _ConnectState.canConnect) ..._step1Connected(context),
         if (_step == 2 && _connectIssue == _ConnectIssue.keepsDropping) ..._keepsDroppingFlow(context, state),
+        if (_step == 2 && _connectIssue == _ConnectIssue.slowOnDevice) ..._slowDevicePath(context, state),
         if (_step == 1 && _connectState == _ConnectState.cantConnect) ..._step1CantConnect(context),
         if (_step == 3) ..._pathA(context, state),
         if (_step == 4) ..._pathB(context, state),
@@ -1412,25 +1468,127 @@ class _Flow3State extends ConsumerState<_Flow3> {
             ),
           ],
         )),
-        if (_step == 2 && _connectIssue == _ConnectIssue.slowOnDevice) ...[
-          _stepCard(context, Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _infoBox(context,
-                  'For slow speed on a specific device, go to My Devices → tap the device to see its signal quality and get tailored advice.',
-                  icon: Icons.info_outline),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: widget.onDone,
-                  child: const Text('Go to My Devices'),
-                ),
-              ),
-            ],
-          )),
-        ],
       ];
+
+  /// Device-specific slow internet path — checks signal, band, node backhaul.
+  List<Widget> _slowDevicePath(BuildContext context, InstantVerifyPivotState state) {
+    // Find what we know about this device from JNAP data
+    // (limited context here — we don't know which specific device the customer means)
+    final weakDevices = state.issueDevices;
+    final has24GhzClients = state.twoPointFourGhzCount > 0;
+    final weakBackhaulNodes = state.weakBackhaulNodes;
+
+    return [
+      _backButton(context),
+      _stepCard(context, Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Let\'s look at your device',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text(
+            'A device that\'s connected but slow usually has a WiFi signal problem, '
+            'is on the slower 2.4 GHz band, or is connected through a satellite node '
+            'with a weak link.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      )),
+
+      // Show what we know about device signal quality
+      if (weakDevices.isNotEmpty)
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Devices with weak signal detected',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            for (final d in weakDevices.take(3))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(children: [
+                  Icon(Icons.warning_amber, color: Colors.orange, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${d.client.displayNameWithOui} — '
+                      '${d.client.signalDecibels != null ? "${d.client.signalDecibels} dBm · " : ""}'
+                      '${d.client.band}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ]),
+              ),
+            const SizedBox(height: 4),
+            Text(
+              'Check these devices in the My Devices tab for detailed signal info.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        )),
+
+      // 2.4 GHz tip
+      if (has24GhzClients)
+        _stepCard(context,
+          _infoBox(context,
+            'Some devices on your network are on the 2.4 GHz band, which is slower than 5 GHz. '
+            'If your slow device is on 2.4 GHz, try connecting it to the 5 GHz network instead.',
+          )),
+
+      // Weak backhaul tip
+      if (weakBackhaulNodes.isNotEmpty)
+        _stepCard(context,
+          _infoBox(context,
+            'One of your satellite nodes has a weak connection to your router. '
+            'Devices connected through that node will be slower. '
+            'Try moving the node closer or connecting it with an Ethernet cable.',
+            icon: Icons.hub_outlined, color: Colors.orange,
+          )),
+
+      // Checklist of things to try
+      _stepCard(context, Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Things to try',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          _checklistItem(context,
+              'Move the device closer to your router or a satellite node'),
+          _checklistItem(context,
+              'Switch from 2.4 GHz to 5 GHz in the device\'s WiFi settings'),
+          _checklistItem(context,
+              'Close apps or downloads running in the background on the device'),
+          _checklistItem(context,
+              'Restart the device — not just the router'),
+          const SizedBox(height: 12),
+          Text('Open My Devices to see this device\'s signal strength and get tailored advice.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: widget.onDone,
+              child: const Text('Go to My Devices'),
+            ),
+          ),
+        ],
+      )),
+      const _SatisfactionPrompt(),
+      _linksysSupportTile(context),
+    ];
+  }
 
   List<Widget> _keepsDroppingFlow(BuildContext context, InstantVerifyPivotState state) {
     final deviceSignal = state.deviceScores.isNotEmpty

@@ -887,26 +887,28 @@ void main() {
 
     // ── Check 3b: CGNAT / Double-NAT ─────────────────────────────────────────
 
-    test('CGNAT IP → fires shared-connection finding', () {
+    // Double-NAT / CGNAT detection temporarily disabled (support team decision).
+    // Tests updated to expect NO findings for these IPs while disabled.
+    // Re-enable when team validates bridge mode guidance flow.
+
+    test('CGNAT IP → no finding while detection disabled', () {
       final v = _compute(wanConnected: true, wanIpAddress: '100.64.1.1');
-      final finding = v.findings.firstWhere(
+      expect(v.findings.where(
           (f) => f.headline.toLowerCase().contains('shared') ||
-              f.headline.toLowerCase().contains('cgnat'));
-      expect(finding, isNotNull);
+              f.headline.toLowerCase().contains('cgnat')), isEmpty);
     });
 
-    test('double-NAT IP (10.x) → fires two-routers finding', () {
+    test('double-NAT IP (10.x) → no finding while detection disabled', () {
       final v = _compute(wanConnected: true, wanIpAddress: '10.0.0.1');
-      final finding = v.findings.firstWhere(
+      expect(v.findings.where(
           (f) => f.headline.toLowerCase().contains('two router') ||
-              f.headline.toLowerCase().contains('double'));
-      expect(finding, isNotNull);
-      expect(finding.actionKey, equals('bridge_mode_help'));
+              f.headline.toLowerCase().contains('double')), isEmpty);
     });
 
-    test('double-NAT IP (192.168.x) → fires two-routers finding', () {
+    test('double-NAT IP (192.168.x) → no finding while detection disabled', () {
       final v = _compute(wanConnected: true, wanIpAddress: '192.168.1.50');
-      expect(v.findings.any((f) => f.headline.contains('two router')), isTrue);
+      expect(v.findings.where(
+          (f) => f.headline.contains('two router')), isEmpty);
     });
 
     test('link-local IP → no double-NAT finding', () {

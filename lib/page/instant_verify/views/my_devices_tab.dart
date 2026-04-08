@@ -441,11 +441,23 @@ void _showDeviceDetail(
   );
 }
 
-class _DeviceDetailSheet extends StatelessWidget {
+class _DeviceDetailSheet extends ConsumerStatefulWidget {
   final DiagnosticClient client;
   final InstantVerifyPivotState state;
   final ValueChanged<int>? onNavigateToFlow;
   const _DeviceDetailSheet({required this.client, required this.state, this.onNavigateToFlow});
+
+  @override
+  ConsumerState<_DeviceDetailSheet> createState() => _DeviceDetailSheetState();
+}
+
+class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
+  bool _isDisconnecting = false;
+  bool _isChangingChannel = false;
+
+  DiagnosticClient get client => widget.client;
+  InstantVerifyPivotState get state => widget.state;
+  ValueChanged<int>? get onNavigateToFlow => widget.onNavigateToFlow;
 
   @override
   Widget build(BuildContext context) {
@@ -717,9 +729,13 @@ class _DeviceDetailSheet extends StatelessWidget {
   }
 
   Widget _actions(BuildContext context, ColorScheme colors) {
+    final badge = _badgeFor(client);
+    final isWeak = badge == _SignalBadge.poor || badge == _SignalBadge.weak;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Troubleshoot
         OutlinedButton.icon(
           onPressed: () {
             Navigator.pop(context);
@@ -728,8 +744,7 @@ class _DeviceDetailSheet extends StatelessWidget {
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                      'Go to Help Me Fix It → Device connectivity issues'),
+                  content: Text('Go to Help Me Fix It → Device connectivity issues'),
                   duration: Duration(seconds: 3),
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -739,7 +754,141 @@ class _DeviceDetailSheet extends StatelessWidget {
           icon: const Icon(Icons.build_outlined, size: 18),
           label: const Text('Troubleshoot this device'),
         ),
+
+        // Disconnect/Reconnect — useful for weak signal devices and all wireless
+        if (client.isWireless) ...[
+          const SizedBox(height: 8),
+          _isDisconnecting
+              ? OutlinedButton.icon(
+                  onPressed: null,
+                  icon: const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  label: const Text('Disconnecting…'),
+                )
+              : OutlinedButton.icon(
+                  onPressed: () => _disconnectDevice(context),
+                  icon: const Icon(Icons.wifi_off_outlined, size: 18),
+                  label: const Text('Disconnect and reconnect this device'),
+                ),
+          if (isWeak)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Reconnecting forces the device to re-select its WiFi connection, '
+                'which can improve a weak signal.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant),
+              ),
+            ),
+        ],
+
+        // Channel change — shown when channel data is available and signal is weak
+        if (isWeak && state.channelInfo != null) ...[
+          const SizedBox(height: 8),
+          _isChangingChannel
+              ? OutlinedButton.icon(
+                  onPressed: null,
+                  icon: const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  label: const Text('Changing channel…'),
+                )
+              : OutlinedButton.icon(
+                  onPressed: () => _triggerChannelRescan(context),
+                  icon: const Icon(Icons.wifi_tethering, size: 18),
+                  label: const Text('Try a cleaner WiFi channel'),
+                ),
+        ],
       ],
+    );
+  }
+
+  Future<void> _disconnectDevice(BuildContext context) async {
+    // Show warning before disconnecting
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disconnect this device?'),
+        content: const Text(
+            'This will briefly disconnect the device from WiFi. '
+            'It will reconnect automatically within a few seconds, '
+            'which may improve its connection quality.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _isDisconnecting = true);
+    await ref
+        .read(instantVerifyPivotProvider.notifier)
+        .deauthClient(client.macAddress);
+    if (!mounted) return;
+    setState(() => _isDisconnecting = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+            '${client.displayNameWithOui} disconnected — '
+            'it should reconnect automatically.'),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _triggerChannelRescan(BuildContext context) async {
+    // Determine which radio this client is on and pick a better channel
+    final band = client.band;
+    final is24 = band.contains('2.4');
+    final radioID = is24 ? 'RADIO_2.4GHz' : 'RADIO_5GHz';
+    // Use channel 6 (2.4 GHz) or 36 (5 GHz) as fallback clean channels
+    final betterChannel = is24 ? 6 : 36;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Change WiFi channel?'),
+        content: Text(
+            'Your router will switch to a less congested channel on the '
+            '${is24 ? "2.4 GHz" : "5 GHz"} band. '
+            'All devices on that band will briefly disconnect and reconnect.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Change Channel'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _isChangingChannel = true);
+    final success = await ref
+        .read(instantVerifyPivotProvider.notifier)
+        .changeRadioChannel(radioID, betterChannel);
+    if (!mounted) return;
+    setState(() => _isChangingChannel = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success
+            ? 'Channel changed. Devices will reconnect in a moment.'
+            : 'Could not change channel — your router may not support this.'),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 

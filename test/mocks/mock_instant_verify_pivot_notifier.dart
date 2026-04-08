@@ -22,6 +22,12 @@ class MockInstantVerifyPivotNotifier extends InstantVerifyPivotNotifier
   Future<void> triggerFirmwareUpdate() async {}
 
   @override
+  Future<void> deauthClient(String macAddress) async {}
+
+  @override
+  Future<bool> changeRadioChannel(String radioID, int channel) async => false;
+
+  @override
   Future<void> disableMacFilter() async {}
 
   @override

@@ -690,6 +690,50 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     );
   }
 
+  /// Deauthenticate a client device — forces it to disconnect and reconnect.
+  /// The device will lose internet for 5-15 seconds while it reassociates.
+  Future<void> deauthClient(String macAddress) async {
+    try {
+      await _send(JNAPAction.clientDeauth, data: {'macAddress': macAddress});
+      dev.log('InstantVerifyPivot: deauthed $macAddress');
+    } catch (e) {
+      dev.log('InstantVerifyPivot: clientDeauth failed: $e');
+    }
+  }
+
+  /// Change the operating channel on a specific radio.
+  /// Pass radioID (e.g., 'RADIO_2.4GHz') and the desired channel number.
+  /// The router will briefly restart that radio — clients may disconnect for a few seconds.
+  Future<bool> changeRadioChannel(String radioID, int channel) async {
+    try {
+      // GetRadioInfo3 to read current settings first — we must send the full settings object
+      final current = await _sendOptional(JNAPAction.getRadioInfo);
+      if (current.isEmpty) return false;
+      final radios = current['radios'] as List?;
+      if (radios == null) return false;
+
+      // Find the target radio and build updated settings
+      final updated = radios.map((r) {
+        final radioMap = r as Map<String, dynamic>;
+        if (radioMap['radioID'] == radioID) {
+          final settings = Map<String, dynamic>.from(
+              radioMap['settings'] as Map<String, dynamic>? ?? {});
+          settings['channel'] = channel;
+          return {...radioMap, 'settings': settings};
+        }
+        return radioMap;
+      }).toList();
+
+      await _send(JNAPAction.setRadioSettings,
+          data: {'radios': updated});
+      dev.log('InstantVerifyPivot: changed $radioID to channel $channel');
+      return true;
+    } catch (e) {
+      dev.log('InstantVerifyPivot: changeRadioChannel failed: $e');
+      return false;
+    }
+  }
+
   void setPlanSpeed(double? mbps) {
     state = state.copyWith(planSpeedMbps: mbps);
     if (state.phase != PivotLoadPhase.loading) {

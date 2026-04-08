@@ -181,52 +181,13 @@ class VerdictEngine {
     }
 
     // ── Check 3b: Double-NAT / CGNAT detection ───────────────────────────────
-    // Suppress when device is in AP mode — RFC1918 WAN IP is intentional there.
-    if (wanConnected == true &&
-        wanIpAddress != null &&
-        wanIpAddress.isNotEmpty &&
-        isDeviceInApMode != true) {
-      final parts = wanIpAddress.split('.');
-      // Skip link-local (169.254/16) — that means DHCP failed, not double-NAT
-      final isLinkLocal = parts.length == 4 &&
-          int.tryParse(parts[0]) == 169 &&
-          int.tryParse(parts[1]) == 254;
-      if (!isLinkLocal && parts.length == 4) {
-        final first = int.tryParse(parts[0]) ?? 0;
-        final second = int.tryParse(parts[1]) ?? 0;
-        // RFC 6598 Shared Address Space — carrier-grade NAT (ISP-side, can't fix)
-        final isCgnat = first == 100 && second >= 64 && second <= 127;
-        // RFC 1918 private — most likely a combo ISP gateway in router mode.
-        // 192.168.x and 172.16-31.x are high-confidence double-NAT.
-        // 10.x is ambiguous (some ISPs use for CGNAT) but still show the finding.
-        final isDoubleNat = first == 10 ||
-            (first == 192 && second == 168) ||
-            (first == 172 && second >= 16 && second <= 31);
-        if (isCgnat) {
-          findings.add(const VerdictFinding(
-            priority: VerdictPriority.info,
-            headline: 'Your internet company uses a shared connection',
-            explanation:
-                'Your internet provider is using a shared IP address. '
-                'Port forwarding and some online games won\'t work. '
-                'If you need these features, contact your internet provider '
-                'and ask for a dedicated public IP address.',
-          ));
-        } else if (isDoubleNat) {
-          findings.add(VerdictFinding(
-            priority: VerdictPriority.info,
-            headline: 'Your network has two routers',
-            explanation:
-                'Your Linksys router is connected behind another router '
-                '(usually your internet company\'s equipment). '
-                'This can cause port forwarding, gaming, and VoIP issues. '
-                'You can fix this by switching the upstream device to bridge mode, '
-                'or by setting your Linksys to work as a WiFi access point.',
-            actionLabel: 'Get help with this',
-            actionKey: actionBridgeModeHelp,
-          ));
-        }
-      }
+    // TEMPORARILY DISABLED: Support team determined double-NAT/CGNAT are not
+    // actionable support issues at this time. Bridge mode guidance (Flow 6)
+    // also disabled. Re-enable when support team validates the guidance.
+    // Detection logic preserved for future use — see Context/jnap-field-index.md.
+    // ignore: dead_code
+    if (false && wanConnected == true && wanIpAddress != null) {
+      // double-NAT/CGNAT detection suppressed — support team decision
     }
 
     // ── Check 4: Internet reachable (DNS/website access) ─────────────────
