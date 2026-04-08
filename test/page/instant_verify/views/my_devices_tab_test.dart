@@ -413,4 +413,129 @@ void main() {
       expect(find.text('Weak'), findsOneWidget);
     });
   });
+
+  group('MyDevicesTab — disconnect/reconnect handler', () {
+    Future<void> _openWeakDeviceSheet(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_buildTab(_flatListState()));
+      await tester.pumpAndSettle();
+      // Old Laptop has signal -80 = Poor → weak, so disconnect button should show
+      await tester.tap(find.text('Old Laptop'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('disconnect button visible for wireless weak device', (tester) async {
+      await _openWeakDeviceSheet(tester);
+      expect(find.text('Disconnect and reconnect this device'), findsOneWidget);
+    });
+
+    testWidgets('disconnect button shows confirmation dialog', (tester) async {
+      await _openWeakDeviceSheet(tester);
+      await tester.ensureVisible(find.text('Disconnect and reconnect this device'));
+      await tester.tap(find.text('Disconnect and reconnect this device'));
+      await tester.pumpAndSettle();
+      expect(find.text('Disconnect this device?'), findsOneWidget);
+      expect(find.textContaining('briefly disconnect'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Disconnect'), findsOneWidget);
+    });
+
+    testWidgets('cancel dismisses disconnect dialog', (tester) async {
+      await _openWeakDeviceSheet(tester);
+      await tester.ensureVisible(find.text('Disconnect and reconnect this device'));
+      await tester.tap(find.text('Disconnect and reconnect this device'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Disconnect this device?'), findsNothing);
+    });
+
+    testWidgets('disconnect button not shown for wired device', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_buildTab(_flatListState()));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Desktop PC'));
+      await tester.tap(find.text('Desktop PC'));
+      await tester.pumpAndSettle();
+      // Wired device — no disconnect button
+      expect(find.text('Disconnect and reconnect this device'), findsNothing);
+    });
+  });
+
+  group('MyDevicesTab — channel change handler', () {
+    InstantVerifyPivotState _stateWithChannelData() {
+      return InstantVerifyPivotState(
+        phase: PivotLoadPhase.complete,
+        browserTestStep: 'complete',
+        clients: [
+          _client(mac: '00:00:00:00:00:01', hostname: 'Weak Device',
+              band: '2.4GHz', signal: -80, txRate: 5),
+        ],
+        channelInfo: const {
+          'selectedChannels': [
+            {
+              'deviceID': 'router-1',
+              'channels': [
+                {'radioID': 'RADIO_2.4GHz', 'band': '2.4GHz', 'channel': 13},
+                {'radioID': 'RADIO_5GHz', 'band': '5GHz', 'channel': 36},
+              ],
+            }
+          ],
+        },
+      );
+    }
+
+    testWidgets('channel change button visible for weak wireless device with channel data',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_buildTab(_stateWithChannelData()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Weak Device'));
+      await tester.pumpAndSettle();
+      expect(find.text('Try a cleaner WiFi channel'), findsOneWidget);
+    });
+
+    testWidgets('channel change shows confirmation dialog', (tester) async {
+      tester.view.physicalSize = const Size(800, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(_buildTab(_stateWithChannelData()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Weak Device'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Try a cleaner WiFi channel'));
+      await tester.tap(find.text('Try a cleaner WiFi channel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Change WiFi channel?'), findsOneWidget);
+      expect(find.textContaining('briefly disconnect and reconnect'), findsOneWidget);
+    });
+
+    testWidgets('channel change not shown without channel data', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // _flatListState has no channelInfo
+      await tester.pumpWidget(_buildTab(_flatListState()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Old Laptop'));
+      await tester.pumpAndSettle();
+      expect(find.text('Try a cleaner WiFi channel'), findsNothing);
+    });
+  });
 }
