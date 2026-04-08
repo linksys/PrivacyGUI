@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/instant_verify/views/help_me_fix_it_tab.dart';
+import 'package:privacy_gui/page/instant_verify/views/my_devices_tab.dart';
+import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
 import 'package:privacy_gui/page/instant_verify/views/overview_tab.dart';
 
 /// Main entry point for the Instant Verify pivot.
@@ -22,6 +25,9 @@ class _InstantVerifyPivotViewState
     extends ConsumerState<InstantVerifyPivotView>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  /// Notifier used to open a specific flow directly in HelpMeFixItTab.
+  /// Tab 0 flow cards set this before switching to Tab 3.
+  final _helpMeFlowNotifier = ValueNotifier<int?>(null);
 
   @override
   void initState() {
@@ -32,6 +38,7 @@ class _InstantVerifyPivotViewState
   @override
   void dispose() {
     _tabController.dispose();
+    _helpMeFlowNotifier.dispose();
     super.dispose();
   }
 
@@ -56,23 +63,15 @@ class _InstantVerifyPivotViewState
         children: [
           OverviewTab(
             onViewClients: () => _tabController.animateTo(1),
-            onNavigateToFlow: (flowIndex) => _tabController.animateTo(3),
+            onNavigateToFlow: (flowIndex) {
+              // flowIndex 0-4 maps to HelpMeFixIt flows 1-5
+              _helpMeFlowNotifier.value = flowIndex + 1;
+              _tabController.animateTo(3);
+            },
           ),
-          const _ComingSoonTab(
-            label: 'My Devices',
-            description:
-                'See all connected devices, check signal quality, and get device-specific help.',
-          ),
-          const _ComingSoonTab(
-            label: 'My Network',
-            description:
-                'See your mesh nodes, internet connection, and WiFi overview.',
-          ),
-          const _ComingSoonTab(
-            label: 'Help Me Fix It',
-            description:
-                '5 guided flows: internet not working, slow internet, device issues, weak signal, and connection drops.',
-          ),
+          const MyDevicesTab(),
+          const MyNetworkTab(),
+          HelpMeFixItTab(pendingFlowNotifier: _helpMeFlowNotifier),
         ],
       ),
     );

@@ -130,6 +130,27 @@ class BrowserDiagnosticService {
     }
   }
 
+  /// Test internet-layer connectivity by reaching a known public IP address
+  /// without relying on DNS. Uses Cloudflare (1.1.1.1) and Google (8.8.8.8).
+  /// A successful response proves the WAN/internet layer is functional.
+  Future<GatewayPingResult> pingPublicIp() async {
+    for (final url in ['https://1.1.1.1/cdn-cgi/trace', 'https://8.8.8.8']) {
+      final stopwatch = Stopwatch()..start();
+      try {
+        await http.head(Uri.parse(url)).timeout(_timeout);
+        stopwatch.stop();
+        return GatewayPingResult(reachable: true, latencyMs: stopwatch.elapsedMilliseconds);
+      } catch (e) {
+        stopwatch.stop();
+        // TLS/cert errors still indicate TCP connectivity — counts as reachable
+        if (stopwatch.elapsedMilliseconds < _timeout.inMilliseconds - 500) {
+          return GatewayPingResult(reachable: true, latencyMs: stopwatch.elapsedMilliseconds);
+        }
+      }
+    }
+    return const GatewayPingResult(reachable: false);
+  }
+
   /// Verify DNS resolution and internet connectivity via known endpoints.
   Future<DnsCheckResult> checkDns() async {
     for (final url in [_dnsTestUrl, _dnsTestFallback]) {

@@ -266,18 +266,21 @@ void main() {
       expect(navigatedFlow, 1);
     });
 
-    testWidgets('shows "View test details" expand link', (tester) async {
+    testWidgets('shows test details section always visible', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('View test details'), findsOneWidget);
+      // Test details are always shown — no toggle needed
+      expect(find.text('Test details'), findsOneWidget);
+      expect(find.text('Router reached'), findsOneWidget);
     });
 
     testWidgets('shows router model in header', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('MX6200'), findsOneWidget);
+      // MX6200 appears in header + in test details checklist
+      expect(find.text('MX6200'), findsAtLeast(1));
     });
 
     testWidgets('shows "Internet: Connected" chip', (tester) async {
@@ -503,19 +506,12 @@ void main() {
   });
 
   group('OverviewTab — progressive disclosure (S-5)', () {
-    testWidgets('tapping "View test details" shows checklist summary',
+    testWidgets('test details always shows checklist summary',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      // Checklist detail rows should not be visible yet
-      expect(find.text('Router reached'), findsNothing);
-
-      // Tap expand
-      await tester.tap(find.text('View test details'));
-      await tester.pump();
-
-      // Now checklist rows should appear
+      // Checklist rows always visible (no toggle)
       expect(find.text('Router reached'), findsOneWidget);
       expect(find.text('Internet connected'), findsOneWidget);
       expect(find.text('Websites loading'), findsOneWidget);
@@ -526,10 +522,6 @@ void main() {
     testWidgets('tapping a checklist row expands its detail',
         (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
-      await tester.pump();
-
-      // Expand test details first
-      await tester.tap(find.text('View test details'));
       await tester.pump();
 
       // Detail text should not be visible yet

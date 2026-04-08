@@ -250,6 +250,41 @@ class InstantVerifyPivotState extends Equatable {
   double get dhcpUtilization =>
       dhcpPoolLimit > 0 ? dhcpLeasesCount / dhcpPoolLimit : 0;
 
+  /// SSID of the first radio from GetRadioInfo3.
+  String? get wifiSsid {
+    final radios = radioInfo?['radios'] as List?;
+    if (radios == null || radios.isEmpty) return null;
+    final settings =
+        (radios.first as Map<String, dynamic>)['settings'] as Map<String, dynamic>?;
+    return settings?['ssid'] as String?;
+  }
+
+  /// WPA passphrase of the first radio from GetRadioInfo3.
+  String? get wifiPassword {
+    final radios = radioInfo?['radios'] as List?;
+    if (radios == null || radios.isEmpty) return null;
+    final settings =
+        (radios.first as Map<String, dynamic>)['settings'] as Map<String, dynamic>?;
+    final wpa = settings?['wpaPersonalSettings'] as Map<String, dynamic>?;
+    return wpa?['passphrase'] as String?;
+  }
+
+  /// True if the MAC address filter (device blocklist) is active.
+  bool get isMacFilterEnabled {
+    if (macFilter == null) return false;
+    final mode = macFilter!['macFilterMode'] as String?;
+    return mode != null && mode != 'Disabled';
+  }
+
+  /// True if router is configured for WPA3-only (no WPA2 fallback).
+  /// Smart home devices with WPA3-only may fail to connect.
+  bool get isWpa3Only {
+    if (networkSecurity == null) return false;
+    return networkSecurity!.values.whereType<String>().any(
+          (v) => v.toUpperCase().contains('WPA3') && !v.toUpperCase().contains('WPA2'),
+        );
+  }
+
   List<DeviceScore> get issueDevices =>
       deviceScores.where((d) => d.isIssue).toList()
         ..sort((a, b) => a.score.compareTo(b.score));

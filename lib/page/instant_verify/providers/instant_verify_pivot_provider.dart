@@ -304,6 +304,32 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     }
   }
 
+  Future<void> disableMacFilter() async {
+    if (state.macFilter == null) return;
+    final payload = Map<String, dynamic>.from(state.macFilter!);
+    payload['macFilterMode'] = 'Disabled';
+    try {
+      await _send(JNAPAction.setMACFilterSettings, data: payload);
+      state = state.copyWith(macFilter: payload);
+    } catch (e) {
+      dev.log('InstantVerifyPivot: disableMacFilter failed: $e');
+    }
+  }
+
+  Future<void> setGuestNetworkEnabled(bool enabled) async {
+    if (state.guestNetwork == null) return;
+    // Clone current settings and flip the enable flag
+    final payload = Map<String, dynamic>.from(state.guestNetwork!);
+    payload['isGuestNetworkEnabled'] = enabled;
+    try {
+      await _send(JNAPAction.setGuestNetworkSettings, data: payload);
+      // Update local state to reflect the change immediately
+      state = state.copyWith(guestNetwork: payload);
+    } catch (e) {
+      dev.log('InstantVerifyPivot: setGuestNetwork failed: $e');
+    }
+  }
+
   /// Injects a realistic failure scenario for UI testing — no router calls made.
   void loadMockFails() {
     final mockClients = [

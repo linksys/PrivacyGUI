@@ -22,5 +22,11 @@ class MockInstantVerifyPivotNotifier extends InstantVerifyPivotNotifier
   Future<void> triggerFirmwareUpdate() async {}
 
   @override
+  Future<void> disableMacFilter() async {}
+
+  @override
+  Future<void> setGuestNetworkEnabled(bool enabled) async {}
+
+  @override
   void loadMockFails() {}
 }

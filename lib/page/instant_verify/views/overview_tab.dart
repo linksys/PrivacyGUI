@@ -934,6 +934,7 @@ class _MeshNodeRow extends StatelessWidget {
 
 class _CheckResultsExpand extends StatelessWidget {
   final InstantVerifyPivotState state;
+  // expanded and onToggle kept for API compat but toggle is removed — always visible
   final bool expanded;
   final VoidCallback onToggle;
 
@@ -945,37 +946,19 @@ class _CheckResultsExpand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 12),
-        InkWell(
-          onTap: onToggle,
-          borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(children: [
-              Icon(
-                expanded ? Icons.expand_less : Icons.expand_more,
-                size: 16,
-                color: scheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                expanded ? 'Hide test details' : 'View test details',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurfaceVariant),
-              ),
-            ]),
-          ),
+        Text(
+          'Test details',
+          style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500),
         ),
-        if (expanded) ...[
-          const SizedBox(height: 8),
-          _ChecklistSummary(state: state),
-        ],
+        const SizedBox(height: 6),
+        _ChecklistSummary(state: state),
       ],
     );
   }
@@ -1495,71 +1478,149 @@ class _LightGuideLink extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'What does my router light mean?',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: scheme.onSurface,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (_, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
+              Text(
+                'What does my router light mean?',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  color: scheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 20),
             // LED patterns from Pinnacle LED spec r20260109a
             _lightRow(Colors.white, 'Solid white',
-                'Everything is fine \u2014 connected to internet'),
+                'Everything is fine \u2014 connected to internet',
+                animated: false),
+            _lightRow(Colors.white, 'Pulsing white',
+                'Starting up or WPS pairing in progress \u2014 wait about a minute',
+                animated: true, animationType: 'pulse'),
+            _lightRow(Colors.white, 'Flashing white',
+                'Factory reset in progress \u2014 do not unplug',
+                animated: true, animationType: 'flash'),
             _lightRow(Colors.blue, 'Pulsing blue',
-                'Starting up \u2014 wait about a minute'),
+                'Booting up \u2014 wait about a minute',
+                animated: true, animationType: 'pulse'),
             _lightRow(Colors.red, 'Solid red',
-                'No internet \u2014 check your cables'),
+                'No internet \u2014 check your cables',
+                animated: false),
             _lightRow(Colors.yellow.shade700, 'Solid yellow',
-                'Needs attention \u2014 a check found a problem'),
+                'Needs attention \u2014 a check found a problem',
+                animated: false),
             _lightRow(Colors.green, 'Solid green',
-                'Instant-Test passed \u2014 everything looks good'),
+                'Instant-Test passed \u2014 everything looks good',
+                animated: false),
             _lightRow(Colors.black, 'Off',
-                'No power, or Night Mode is enabled'),
+                'No power, or Night Mode is enabled',
+                animated: false),
           ],
+        ),
         ),
       ),
     );
   }
 
-  static Widget _lightRow(Color color, String label, String meaning) {
+  static Widget _lightRow(Color color, String label, String meaning, {
+    bool animated = false,
+    String animationType = 'pulse', // 'pulse' or 'flash'
+  }) {
     final isBlack = color == Colors.black;
     final isWhite = color == Colors.white;
+
+    Widget dot = Container(
+      width: 16,
+      height: 16,
+      margin: const EdgeInsets.only(top: 2),
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: (isWhite || isBlack)
+            ? Border.all(color: Colors.grey.shade400, width: 1)
+            : null,
+      ),
+    );
+
+    // For animated entries show a visual hint
+    if (animated) {
+      dot = Stack(
+        alignment: Alignment.center,
+        children: [
+          dot,
+          Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: animationType == 'flash' ? Colors.white : Colors.white54,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade400, width: 0.5),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 16,
-            height: 16,
-            margin: const EdgeInsets.only(top: 2),
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: (isWhite || isBlack)
-                  ? Border.all(color: Colors.grey.shade400, width: 1)
-                  : null,
-            ),
-          ),
+          dot,
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 13)),
+                Row(children: [
+                  Text(label,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 13)),
+                  if (animated) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        animationType == 'flash' ? 'flashing' : 'pulsing',
+                        style: TextStyle(
+                            fontSize: 10, color: Colors.grey.shade600),
+                      ),
+                    ),
+                  ],
+                ]),
                 Text(meaning,
                     style: TextStyle(
                         fontSize: 12, color: Colors.grey.shade600)),
