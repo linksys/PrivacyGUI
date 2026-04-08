@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/jnap/command/base_command.dart';
 import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/models/jnap_capability.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
@@ -239,15 +240,33 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         isDeviceInApMode: null,
       );
 
+      // Build capability map from what was actually returned by this firmware.
+      // This gates VerdictEngine checks so absent fields don't produce wrong results.
+      final routerHealthMap = {
+        'uptimeInSeconds': uptimeSeconds,
+        'cpuLoad': _parsePct(systemStats['CPULoad'] ?? systemStats['cpuUsage']),
+        'memoryLoad': _parsePct(systemStats['MemoryLoad'] ?? systemStats['memUsage']),
+      };
+      final caps = _buildCapabilityMap(
+        systemStats: systemStats,
+        radioInfo: orNull(supplementary[0]),
+        backhaulInfo: orNull(supplementary[3]),
+        networkSecurity: orNull(supplementary[5]),
+        parentalControls: orNull(supplementary[6]),
+        wirelessSchedule: orNull(supplementary[7]),
+        ethernetPorts: orNull(supplementary[9]),
+        lanSettings: orNull(supplementary[10]),
+        deviceMode: orNull(supplementary[11]),
+        meshNodes: meshNodesList,
+        clients: clients,
+      );
+      dev.log('InstantVerifyPivot: capabilities = $caps');
+
       state = state.copyWith(
         phase: PivotLoadPhase.jnapLoaded,
         wanStatus: wanData,
         deviceInfo: deviceInfoData,
-        routerHealth: {
-          'uptimeInSeconds': uptimeSeconds,
-          'cpuLoad': _parsePct(systemStats['CPULoad']),
-          'memoryLoad': _parsePct(systemStats['MemoryLoad']),
-        },
+        routerHealth: routerHealthMap,
         clients: clients,
         dhcpLeasesCount: dhcpLeases,
         dhcpPoolLimit: dhcpPoolLimit,
@@ -264,6 +283,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         meshNodes: meshNodesList,
         clientToNodeId: clientToNodeIdMap,
         deviceScores: scores,
+        jnapCapabilities: caps,
         verdict: phase1Verdict,
         verdictIsPreliminary: true,
       );
@@ -367,8 +387,20 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         ((s.parentalControls!['isParentalControlEnabled'] as bool?) ??
          (s.parentalControls!['isParentalControlsEnabled'] as bool?) ??
          (s.parentalControls!['enabled'] as bool?) ?? false);
-    final cpuLoadPct = s.routerHealth?['cpuLoad'] as int?;
-    final memoryLoadPct = s.routerHealth?['memoryLoad'] as int?;
+    // Gate CPU/memory on capability map — keys vary by firmware.
+    // Only pass values if this device confirmed returning them.
+    final int? cpuLoadPct;
+    if (s.jnapCapabilities[JnapCapability.cpuLoad] ?? false) {
+      cpuLoadPct = s.routerHealth?['cpuLoad'] as int?;
+    } else {
+      cpuLoadPct = null;
+    }
+    final int? memoryLoadPct;
+    if (s.jnapCapabilities[JnapCapability.memoryLoad] ?? false) {
+      memoryLoadPct = s.routerHealth?['memoryLoad'] as int?;
+    } else {
+      memoryLoadPct = null;
+    }
 
     // HW-2: signalToNoiseRatio does NOT exist in GetRadioInfo3 on any platform.
     // GetRadioInfo3 is a config API, not a live RF metrics API.
@@ -421,9 +453,11 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       }
     }
 
-    // Zombie mesh node (item 38): node with good RSSI but low throughput speedMbps
+    // Zombie mesh node (item 38): only check if this firmware returns speedMbps.
+    // If the capability isn't confirmed, null = skip rather than false all-clear.
     bool? hasZombieMeshNode;
-    if (s.meshNodes.length > 1) {
+    if (s.meshNodes.length > 1 &&
+        (s.jnapCapabilities[JnapCapability.backhaulSpeedMbps] ?? false)) {
       hasZombieMeshNode = s.meshNodes.any((n) =>
           !n.isController &&
           n.backhaulRssi != null &&
@@ -708,6 +742,98 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       }
     }
     state = state.copyWith(isPingRunning: false);
+  }
+
+  // ── JNAP Capability Map ───────────────────────────────────────────────
+
+  /// Builds a map of which JNAP fields were actually present on this device.
+  /// Called once per fetch() after Phase 1c supplementary calls complete.
+  /// Logged to dev console so developers can see what a specific router returns.
+  Map<String, bool> _buildCapabilityMap({
+    required Map<String, dynamic> systemStats,
+    required Map<String, dynamic>? radioInfo,
+    required Map<String, dynamic>? backhaulInfo,
+    required Map<String, dynamic>? networkSecurity,
+    required Map<String, dynamic>? parentalControls,
+    required Map<String, dynamic>? wirelessSchedule,
+    required Map<String, dynamic>? ethernetPorts,
+    required Map<String, dynamic>? lanSettings,
+    required Map<String, dynamic>? deviceMode,
+    required List<MeshNodeInfo> meshNodes,
+    required List<DiagnosticClient> clients,
+  }) {
+    final caps = <String, bool>{};
+
+    // System stats — firmware uses different key names across platforms
+    // Pinnacle/MX: cpuUsage/memUsage (float 0.0-1.0)
+    // Velop Olympus: CPULoad/MemoryLoad (may be int 0-100 or float)
+    final hasCpu = systemStats['CPULoad'] != null ||
+        systemStats['cpuUsage'] != null ||
+        systemStats['cpuLoad'] != null;
+    final hasMem = systemStats['MemoryLoad'] != null ||
+        systemStats['memUsage'] != null ||
+        systemStats['memoryLoad'] != null;
+    caps[JnapCapability.cpuLoad] = hasCpu;
+    caps[JnapCapability.memoryLoad] = hasMem;
+
+    // Radio info
+    final radios = radioInfo?['radios'] as List?;
+    caps[JnapCapability.radioInfoPresent] = radios != null && radios.isNotEmpty;
+    caps[JnapCapability.bandSteeringState] =
+        radioInfo?['isBandSteeringSupported'] != null;
+    // SNR — confirmed absent on all known Pinnacle/MX firmware
+    caps[JnapCapability.radioSnr] = false;
+
+    // Backhaul
+    final backhaulDevices = backhaulInfo?['backhaulDevices'] as List?;
+    caps[JnapCapability.backhaulDataPresent] =
+        backhaulDevices != null && backhaulDevices.isNotEmpty;
+    if (backhaulDevices != null && backhaulDevices.isNotEmpty) {
+      // Check if speedMbps field is present and parseable on first entry
+      final firstBh = backhaulDevices.first as Map<String, dynamic>?;
+      final rawSpeed = firstBh?['speedMbps'];
+      caps[JnapCapability.backhaulSpeedMbps] = rawSpeed != null &&
+          int.tryParse(rawSpeed.toString()) != null;
+      caps[JnapCapability.backhaulRssi] = firstBh?['rssi'] != null;
+    } else {
+      caps[JnapCapability.backhaulSpeedMbps] = false;
+      caps[JnapCapability.backhaulRssi] = false;
+    }
+
+    // Ethernet ports
+    final lanPorts = ethernetPorts?['lanPortConnections'] as List?;
+    caps[JnapCapability.ethernetPortStatus] =
+        lanPorts != null && lanPorts.isNotEmpty;
+
+    // LAN/DHCP pool range
+    final dhcpSettings = lanSettings?['dhcpSettings'] as Map<String, dynamic>?;
+    caps[JnapCapability.dhcpPoolRange] =
+        dhcpSettings?['firstClientIPAddress'] != null;
+
+    // Security / PMF
+    caps[JnapCapability.pmfModePresent] = networkSecurity != null &&
+        networkSecurity.isNotEmpty;
+
+    // Parental controls
+    final pcEnabled = parentalControls?['isParentalControlEnabled'] ??
+        parentalControls?['isParentalControlsEnabled'] ??
+        parentalControls?['enabled'];
+    caps[JnapCapability.parentalControlsPresent] = pcEnabled != null;
+
+    // WiFi scheduler
+    caps[JnapCapability.wifiSchedulePresent] =
+        wirelessSchedule?['isEnabled'] != null;
+
+    // Device mode
+    caps[JnapCapability.deviceModePresent] = deviceMode != null &&
+        deviceMode.isNotEmpty;
+
+    // Client tx/rx rates — verify at least one client returned rate data
+    final hasRates = clients.any(
+        (c) => c.isWireless && (c.txRateMbps != null || c.rxRateMbps != null));
+    caps[JnapCapability.clientTxRxRates] = hasRates;
+
+    return caps;
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────

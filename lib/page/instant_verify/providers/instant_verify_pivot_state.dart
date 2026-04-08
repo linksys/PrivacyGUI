@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/models/jnap_capability.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 import 'package:privacy_gui/page/instant_verify/models/device_score.dart';
 import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
@@ -68,6 +69,13 @@ class InstantVerifyPivotState extends Equatable {
   /// True while speed tests running — verdict card shows "Preliminary" badge.
   final bool verdictIsPreliminary;
 
+  // ── JNAP capability map ───────────────────────────────────────────────
+  /// Records which JNAP fields were actually present on this device/firmware.
+  /// Keys are [JnapCapability] constants. Value true = field confirmed present.
+  /// Used to gate VerdictEngine checks so absent fields produce null (skip)
+  /// rather than false all-clears.
+  final Map<String, bool> jnapCapabilities;
+
   // ── Action state ──────────────────────────────────────────────────────
   final bool isRestarting;
   final bool isUpdatingFirmware;
@@ -96,6 +104,7 @@ class InstantVerifyPivotState extends Equatable {
     this.backhaulInfo,
     this.dhcpLeasesCount = 0,
     this.dhcpPoolLimit = 150,
+    this.jnapCapabilities = const {},
     this.gatewayPing,
     this.dnsCheck,
     this.speedTest,
@@ -134,6 +143,7 @@ class InstantVerifyPivotState extends Equatable {
     Map<String, dynamic>? backhaulInfo,
     int? dhcpLeasesCount,
     int? dhcpPoolLimit,
+    Map<String, bool>? jnapCapabilities,
     GatewayPingResult? gatewayPing,
     DnsCheckResult? dnsCheck,
     SpeedTestResult? speedTest,
@@ -171,6 +181,7 @@ class InstantVerifyPivotState extends Equatable {
       backhaulInfo: backhaulInfo ?? this.backhaulInfo,
       dhcpLeasesCount: dhcpLeasesCount ?? this.dhcpLeasesCount,
       dhcpPoolLimit: dhcpPoolLimit ?? this.dhcpPoolLimit,
+      jnapCapabilities: jnapCapabilities ?? this.jnapCapabilities,
       gatewayPing: gatewayPing ?? this.gatewayPing,
       dnsCheck: dnsCheck ?? this.dnsCheck,
       speedTest: speedTest ?? this.speedTest,
@@ -314,6 +325,7 @@ class InstantVerifyPivotState extends Equatable {
         backhaulInfo,
         dhcpLeasesCount,
         dhcpPoolLimit,
+        jnapCapabilities,
         gatewayPing,
         dnsCheck,
         speedTest,
