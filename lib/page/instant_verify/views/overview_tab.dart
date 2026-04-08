@@ -98,21 +98,16 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
           ),
           const SizedBox(height: 8),
           Center(
-            child: TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor:
-                    Theme.of(context).colorScheme.onSurfaceVariant,
-                textStyle:
-                    const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            child: FilledButton.tonal(
+              onPressed: () => _showScenarioPicker(context),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.science_outlined, size: 16),
+                  SizedBox(width: 8),
+                  Text('Test scenarios'),
+                ],
               ),
-              onPressed: () {
-                setState(() {
-                  _findingsExpanded = false;
-                  _checksExpanded = false;
-                });
-                ref.read(instantVerifyPivotProvider.notifier).loadMockFails();
-              },
-              child: const Text('Simulate failures'),
             ),
           ),
           const SizedBox(height: 24),
@@ -234,6 +229,133 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       ),
     );
   }
+
+  void _showScenarioPicker(BuildContext context) {
+    final notifier = ref.read(instantVerifyPivotProvider.notifier);
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        final scenarios = [
+          _ScenarioItem(
+            index: 0,
+            icon: Icons.cable_outlined,
+            color: Colors.red,
+            title: 'No internet connection',
+            subtitle: 'WAN disconnected — critical finding + cable check',
+          ),
+          _ScenarioItem(
+            index: 1,
+            icon: Icons.public_off,
+            color: Colors.orange,
+            title: 'Websites aren\'t loading',
+            subtitle: 'Connected to ISP, DNS failure — restart CTA',
+          ),
+          _ScenarioItem(
+            index: 2,
+            icon: Icons.slow_motion_video,
+            color: Colors.orange,
+            title: 'Slow internet + weak WiFi',
+            subtitle: '3 Mbps / 148ms latency + 2 weak devices + firmware + uptime',
+          ),
+          _ScenarioItem(
+            index: 3,
+            icon: Icons.memory,
+            color: Colors.deepOrange,
+            title: 'Router overloaded + mesh issues',
+            subtitle: 'CPU 88% / Mem 90% + zombie node + ethernet no-link',
+          ),
+          _ScenarioItem(
+            index: 4,
+            icon: Icons.lock_outline,
+            color: Colors.blue,
+            title: 'Configuration blocks',
+            subtitle: '2.4 GHz crowd + schedule + privacy + PMF + DHCP 92%',
+          ),
+        ];
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Test Scenarios',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            color: scheme.onSurface)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Load mock data to exercise each workflow without a router.',
+                      style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...scenarios.map((s) => ListTile(
+                leading: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: s.color.withValues(alpha: 0.12),
+                  child: Icon(s.icon, size: 18, color: s.color),
+                ),
+                title: Text(s.title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w500, fontSize: 14)),
+                subtitle: Text(s.subtitle,
+                    style: TextStyle(
+                        fontSize: 12, color: scheme.onSurfaceVariant)),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 2),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _findingsExpanded = false;
+                    _checksExpanded = false;
+                  });
+                  notifier.loadMockScenario(s.index);
+                },
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ScenarioItem {
+  final int index;
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  const _ScenarioItem({
+    required this.index,
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+  });
 }
 
 // ── Header bar ────────────────────────────────────────────────────────────────

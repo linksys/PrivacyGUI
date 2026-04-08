@@ -588,104 +588,357 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     }
   }
 
-  /// Injects a realistic failure scenario for UI testing — no router calls made.
-  void loadMockFails() {
-    final mockClients = [
-      const DiagnosticClient(
-        macAddress: 'AA:BB:CC:11:22:33',
-        hostname: 'Devens-iPhone',
-        ipAddress: '192.168.1.101',
-        band: '2.4 GHz',
-        signalDecibels: -82,
-        txRateMbps: 12,
-        rxRateMbps: 8,
-        isWireless: true,
-      ),
-      const DiagnosticClient(
-        macAddress: 'AA:BB:CC:44:55:66',
-        hostname: 'Smart-TV-Living',
-        ipAddress: '192.168.1.102',
-        band: '5 GHz',
-        signalDecibels: -78,
-        txRateMbps: 25,
-        rxRateMbps: 20,
-        isWireless: true,
-      ),
-      const DiagnosticClient(
-        macAddress: 'AA:BB:CC:77:88:99',
-        hostname: 'Laptop-Office',
-        ipAddress: '192.168.1.103',
-        band: '5 GHz',
-        signalDecibels: -55,
-        txRateMbps: 300,
-        rxRateMbps: 250,
-        isWireless: true,
-      ),
-    ];
-    final mockScores = mockClients.map(DeviceScore.compute).toList();
-    const mockGateway = GatewayPingResult(reachable: true, latencyMs: 3);
-    const mockDns = DnsCheckResult(resolved: false);
-    const mockSpeed = SpeedTestResult(
-      downloadMbps: 3.2,
-      uploadMbps: 1.1,
-      latencyMs: 148,
-      jitterMs: 22,
+  /// Loads one of 5 pre-built mock scenarios for UI/flow testing.
+  ///
+  /// Covers all 19 VerdictEngine checks so every Tab 0 finding and
+  /// flow CTA can be exercised without a physical router. No JNAP calls.
+  ///
+  ///  0 = No internet connection      (Check 2 — WAN disconnected)
+  ///  1 = Websites aren't loading     (Check 4 — DNS failure)
+  ///  2 = Slow internet + weak WiFi   (Checks 5, 6, 7, 10, 11)
+  ///  3 = Router overloaded + mesh    (Checks 13, 17, 18)
+  ///  4 = Config blocks               (Checks 8, 12, 15, 16, 19)
+  void loadMockScenario(int index) {
+    switch (index) {
+      case 0: _mockScenarioA();
+      case 1: _mockScenarioB();
+      case 2: _mockScenarioC();
+      case 3: _mockScenarioD();
+      case 4: _mockScenarioE();
+      default: _mockScenarioC();
+    }
+  }
+
+  /// Backwards-compat alias — maps to Scenario C (slow + weak devices).
+  void loadMockFails() => loadMockScenario(2);
+
+  static const _kMockDeviceInfo = {
+    'modelNumber': 'MX6200 (Mock)',
+    'firmwareVersion': '1.0.6.215469',
+    'serialNumber': 'SN-MOCK-12345',
+    'macAddress': 'AA:BB:CC:DD:EE:FF',
+  };
+
+  /// Good-signal clients for scenarios where devices are not the issue.
+  static List<DiagnosticClient> _goodMockClients() => const [
+    DiagnosticClient(
+      macAddress: 'AA:BB:CC:11:22:33', hostname: 'Devens-MacBook',
+      ipAddress: '192.168.1.100', band: '5 GHz',
+      signalDecibels: -52, txRateMbps: 450, rxRateMbps: 400, isWireless: true,
+    ),
+    DiagnosticClient(
+      macAddress: 'AA:BB:CC:44:55:66', hostname: 'Devens-iPhone',
+      ipAddress: '192.168.1.101', band: '5 GHz',
+      signalDecibels: -58, txRateMbps: 200, rxRateMbps: 180, isWireless: true,
+    ),
+    DiagnosticClient(
+      macAddress: 'AA:BB:CC:77:88:99', hostname: 'Apple-TV',
+      ipAddress: '192.168.1.102', band: '5 GHz',
+      signalDecibels: -62, txRateMbps: 180, rxRateMbps: 150, isWireless: true,
+    ),
+  ];
+
+  /// ── Scenario A: No internet connection ──────────────────────────────────
+  /// Triggers Check 2 (WAN disconnected → critical).
+  void _mockScenarioA() {
+    final clients = _goodMockClients();
+    final scores = clients.map(DeviceScore.compute).toList();
+    final verdict = VerdictEngine.compute(
+      gatewayReachable: true,
+      wanConnected: false,
+      wanIpAddress: null,
+      dnsWorking: null,
+      downloadMbps: null,
+      latencyMs: null,
+      firmwareUpdateAvailable: false,
+      firmwareVersion: null,
+      uptimeSeconds: null,
+      deviceScores: scores,
+      clients: clients,
+      meshNodes: const [],
+      planSpeedMbps: null,
     );
-    const mockWanIp = '10.83.68.45';
-    final mockVerdict = VerdictEngine.compute(
+    state = InstantVerifyPivotState(
+      phase: PivotLoadPhase.complete,
+      deviceInfo: _kMockDeviceInfo,
+      wanStatus: {'wanStatus': 'Disconnected'},
+      routerHealth: {'uptimeInSeconds': 3 * 86400},
+      clients: clients,
+      deviceScores: scores,
+      gatewayPing: const GatewayPingResult(reachable: true, latencyMs: 2),
+      browserTestStep: 'complete',
+      verdict: verdict,
+      verdictIsPreliminary: false,
+    );
+  }
+
+  /// ── Scenario B: Connected to ISP but websites aren't loading ────────────
+  /// Triggers Check 4 (DNS failure → internet not working → critical).
+  void _mockScenarioB() {
+    final clients = _goodMockClients();
+    final scores = clients.map(DeviceScore.compute).toList();
+    const wanIp = '203.0.113.45';
+    final verdict = VerdictEngine.compute(
       gatewayReachable: true,
       wanConnected: true,
-      wanIpAddress: mockWanIp,
+      wanIpAddress: wanIp,
       dnsWorking: false,
+      downloadMbps: null,
+      latencyMs: null,
+      firmwareUpdateAvailable: false,
+      firmwareVersion: null,
+      uptimeSeconds: null,
+      deviceScores: scores,
+      clients: clients,
+      meshNodes: const [],
+      planSpeedMbps: null,
+    );
+    state = InstantVerifyPivotState(
+      phase: PivotLoadPhase.complete,
+      deviceInfo: _kMockDeviceInfo,
+      wanStatus: {
+        'wanStatus': 'Connected',
+        'wanConnection': {'ipAddress': wanIp, 'gateway': '10.83.71.254'},
+      },
+      routerHealth: {'uptimeInSeconds': 5 * 86400},
+      clients: clients,
+      deviceScores: scores,
+      gatewayPing: const GatewayPingResult(reachable: true, latencyMs: 3),
+      dnsCheck: const DnsCheckResult(resolved: false),
+      browserTestStep: 'complete',
+      verdict: verdict,
+      verdictIsPreliminary: false,
+    );
+  }
+
+  /// ── Scenario C: Slow internet + weak devices ────────────────────────────
+  /// Triggers Checks 5 (very slow, 3.2 Mbps), 6 (high latency, 148ms),
+  /// 7 (2 weak-signal devices), 10 (firmware update), 11 (38-day uptime).
+  void _mockScenarioC() {
+    final clients = [
+      const DiagnosticClient(
+        macAddress: 'AA:BB:CC:11:22:33', hostname: 'Bedroom-TV',
+        ipAddress: '192.168.1.101', band: '2.4 GHz',
+        signalDecibels: -82, txRateMbps: 12, rxRateMbps: 8, isWireless: true,
+      ),
+      const DiagnosticClient(
+        macAddress: 'AA:BB:CC:44:55:66', hostname: 'Smart-TV-Living',
+        ipAddress: '192.168.1.102', band: '5 GHz',
+        signalDecibels: -78, txRateMbps: 25, rxRateMbps: 20, isWireless: true,
+      ),
+      const DiagnosticClient(
+        macAddress: 'AA:BB:CC:77:88:99', hostname: 'Laptop-Office',
+        ipAddress: '192.168.1.103', band: '5 GHz',
+        signalDecibels: -55, txRateMbps: 300, rxRateMbps: 250, isWireless: true,
+      ),
+    ];
+    final scores = clients.map(DeviceScore.compute).toList();
+    const wanIp = '10.83.68.45';
+    final verdict = VerdictEngine.compute(
+      gatewayReachable: true,
+      wanConnected: true,
+      wanIpAddress: wanIp,
+      dnsWorking: true, // DNS ok so Check 5 (speed) fires
       downloadMbps: 3.2,
       latencyMs: 148,
       firmwareUpdateAvailable: true,
       firmwareVersion: '1.0.8.220100',
       uptimeSeconds: 38 * 86400,
-      deviceScores: mockScores,
-      clients: mockClients,
+      deviceScores: scores,
+      clients: clients,
       meshNodes: const [],
       planSpeedMbps: 200,
-      isWifiScheduleBlocking: null,
-      isInstantPrivacyOn: null,
-      isInstantPauseActive: null,
-      cpuLoadPct: null,
-      memoryLoadPct: null,
-      wifiSnrDb: null,
-      isPmfRequired: null,
     );
     state = InstantVerifyPivotState(
       phase: PivotLoadPhase.complete,
-      deviceInfo: {
-        'modelNumber': 'MX6200 (Mock)',
-        'firmwareVersion': '1.0.6.215469',
-        'serialNumber': 'SN-MOCK-12345',
-        'macAddress': 'AA:BB:CC:DD:EE:FF',
-      },
+      deviceInfo: _kMockDeviceInfo,
       wanStatus: {
         'wanStatus': 'Connected',
-        'wanConnection': {
-          'ipAddress': mockWanIp,
-          'gateway': '10.83.71.254',
-        },
+        'wanConnection': {'ipAddress': wanIp, 'gateway': '10.83.71.254'},
       },
       routerHealth: {
         'uptimeInSeconds': 38 * 86400,
         'cpuLoad': 42,
         'memoryLoad': 71,
       },
-      clients: mockClients,
+      clients: clients,
       dhcpLeasesCount: 14,
       firmwareUpdate: {
         'firmwareUpdateStatus': 'UpdateAvailable',
         'availableUpdate': {'firmwareVersion': '1.0.8.220100'},
       },
-      gatewayPing: mockGateway,
-      dnsCheck: mockDns,
-      speedTest: mockSpeed,
+      gatewayPing: const GatewayPingResult(reachable: true, latencyMs: 3),
+      dnsCheck: const DnsCheckResult(resolved: true),
+      speedTest: const SpeedTestResult(
+        downloadMbps: 3.2, uploadMbps: 1.1, latencyMs: 148, jitterMs: 22,
+      ),
       browserTestStep: 'complete',
-      deviceScores: mockScores,
-      verdict: mockVerdict,
+      deviceScores: scores,
+      planSpeedMbps: 200,
+      verdict: verdict,
+      verdictIsPreliminary: false,
+    );
+  }
+
+  /// ── Scenario D: Router overloaded + mesh issues ──────────────────────────
+  /// Triggers Check 13 (CPU 88%, memory 90%), Check 17 (ethernet no-link),
+  /// Check 18 (zombie mesh node — good RSSI but degraded throughput).
+  void _mockScenarioD() {
+    final clients = _goodMockClients();
+    final scores = clients.map(DeviceScore.compute).toList();
+    const wanIp = '10.83.68.45';
+    final meshNodes = [
+      const MeshNodeInfo(
+        deviceId: 'node-ctrl-001', name: 'MX6200 Main', model: 'MX6200',
+        firmware: '1.0.6.215469', isController: true,
+      ),
+      const MeshNodeInfo(
+        deviceId: 'node-sat-002', name: 'MX6200 Living Room', model: 'MX6200',
+        firmware: '1.0.6.215469', isController: false,
+        backhaulType: 'Wireless', backhaulRssi: -55, backhaulSpeedMbps: 480,
+      ),
+      const MeshNodeInfo(
+        deviceId: 'node-sat-003', name: 'MX6200 Bedroom', model: 'MX6200',
+        firmware: '1.0.6.215469', isController: false,
+        // Zombie: RSSI looks fine (-52 > -70) but throughput is degraded (45 < 80)
+        backhaulType: 'Wireless', backhaulRssi: -52, backhaulSpeedMbps: 45,
+      ),
+    ];
+    final verdict = VerdictEngine.compute(
+      gatewayReachable: true,
+      wanConnected: true,
+      wanIpAddress: wanIp,
+      dnsWorking: true,
+      downloadMbps: 120.0,
+      latencyMs: 18,
+      firmwareUpdateAvailable: false,
+      firmwareVersion: null,
+      uptimeSeconds: 12 * 86400,
+      deviceScores: scores,
+      clients: clients,
+      meshNodes: meshNodes,
+      planSpeedMbps: null,
+      cpuLoadPct: 88,
+      memoryLoadPct: 90,
+      hasEthernetNoLink: true,
+      hasZombieMeshNode: true,
+    );
+    state = InstantVerifyPivotState(
+      phase: PivotLoadPhase.complete,
+      deviceInfo: _kMockDeviceInfo,
+      wanStatus: {
+        'wanStatus': 'Connected',
+        'wanConnection': {'ipAddress': wanIp, 'gateway': '10.83.71.254'},
+      },
+      routerHealth: {
+        'uptimeInSeconds': 12 * 86400,
+        'cpuLoad': 88,
+        'memoryLoad': 90,
+      },
+      ethernetPorts: {
+        'wanPortConnection': 'Connected',
+        'lanPortConnections': ['Connected', 'Disconnected', 'Connected', 'Connected'],
+      },
+      clients: clients,
+      deviceScores: scores,
+      meshNodes: meshNodes,
+      gatewayPing: const GatewayPingResult(reachable: true, latencyMs: 4),
+      dnsCheck: const DnsCheckResult(resolved: true),
+      speedTest: const SpeedTestResult(
+        downloadMbps: 120.0, uploadMbps: 45.0, latencyMs: 18, jitterMs: 3,
+      ),
+      jnapCapabilities: {
+        JnapCapability.cpuLoad: true,
+        JnapCapability.memoryLoad: true,
+        JnapCapability.backhaulSpeedMbps: true,
+        JnapCapability.backhaulRssi: true,
+        JnapCapability.backhaulDataPresent: true,
+        JnapCapability.ethernetPortStatus: true,
+      },
+      browserTestStep: 'complete',
+      verdict: verdict,
+      verdictIsPreliminary: false,
+    );
+  }
+
+  /// ── Scenario E: Configuration blocks ────────────────────────────────────
+  /// Triggers Check 8 (2.4 GHz overcrowded: 8/10 wireless on 2.4),
+  /// Check 12 (WiFi schedule blocking, Instant Privacy on),
+  /// Check 15 (PMF required — breaks IoT), Check 16 (band steering missteer),
+  /// Check 19 (DHCP pool 92% full — 138/150).
+  void _mockScenarioE() {
+    // 8 of 10 wireless devices on 2.4 GHz — triggers Check 8
+    final clients = [
+      for (var i = 0; i < 8; i++)
+        DiagnosticClient(
+          macAddress: 'AA:BB:CC:EE:${i.toString().padLeft(2, '0')}:FF',
+          hostname: '2.4GHz-Device-${i + 1}',
+          ipAddress: '192.168.1.${110 + i}',
+          band: '2.4 GHz',
+          signalDecibels: -62 - i,
+          // One 5GHz-capable device (high tx rate) stuck on 2.4 — band steering missteer
+          txRateMbps: i == 0 ? 200 : 30 + i * 5,
+          rxRateMbps: i == 0 ? 180 : 25 + i * 5,
+          isWireless: true,
+        ),
+      const DiagnosticClient(
+        macAddress: 'AA:BB:CC:FF:01:01', hostname: 'Gaming-PC',
+        ipAddress: '192.168.1.120', band: '5 GHz',
+        signalDecibels: -48, txRateMbps: 650, rxRateMbps: 600, isWireless: true,
+      ),
+      const DiagnosticClient(
+        macAddress: 'AA:BB:CC:FF:01:02', hostname: 'Work-Laptop',
+        ipAddress: '192.168.1.121', band: '5 GHz',
+        signalDecibels: -55, txRateMbps: 450, rxRateMbps: 400, isWireless: true,
+      ),
+    ];
+    final scores = clients.map(DeviceScore.compute).toList();
+    const wanIp = '10.83.68.45';
+    final verdict = VerdictEngine.compute(
+      gatewayReachable: true,
+      wanConnected: true,
+      wanIpAddress: wanIp,
+      dnsWorking: true,
+      downloadMbps: 250.0,
+      latencyMs: 12,
+      firmwareUpdateAvailable: false,
+      firmwareVersion: null,
+      uptimeSeconds: 8 * 86400,
+      deviceScores: scores,
+      clients: clients,
+      meshNodes: const [],
+      planSpeedMbps: null,
+      isWifiScheduleBlocking: true,
+      isInstantPrivacyOn: true,
+      isPmfRequired: true,
+      isBandSteeringMissteer: true,
+      dhcpPoolUtilizationPct: 92,
+    );
+    state = InstantVerifyPivotState(
+      phase: PivotLoadPhase.complete,
+      deviceInfo: _kMockDeviceInfo,
+      wanStatus: {
+        'wanStatus': 'Connected',
+        'wanConnection': {'ipAddress': wanIp, 'gateway': '10.83.71.254'},
+      },
+      routerHealth: {'uptimeInSeconds': 8 * 86400},
+      clients: clients,
+      deviceScores: scores,
+      dhcpLeasesCount: 138,
+      dhcpPoolLimit: 150,
+      // macFilter set so isMacFilterEnabled = true (consistent with Instant Privacy finding)
+      macFilter: {'macFilterMode': 'BlockList'},
+      // wirelessSchedule set so isWifiScheduleBlocking = true on any re-compute
+      wirelessSchedule: {'isEnabled': true},
+      // networkSecurity with PMF required
+      networkSecurity: {'pmfMode': 'Required'},
+      gatewayPing: const GatewayPingResult(reachable: true, latencyMs: 2),
+      dnsCheck: const DnsCheckResult(resolved: true),
+      speedTest: const SpeedTestResult(
+        downloadMbps: 250.0, uploadMbps: 95.0, latencyMs: 12, jitterMs: 1,
+      ),
+      browserTestStep: 'complete',
+      verdict: verdict,
       verdictIsPreliminary: false,
     );
   }
