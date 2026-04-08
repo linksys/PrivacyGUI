@@ -137,6 +137,9 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       if (confirmed == true) {
         await notifier.triggerFirmwareUpdate();
       }
+    } else if (actionKey == VerdictEngine.actionBridgeModeHelp) {
+      // Navigate to bridge mode / two-router guidance flow (Flow 6)
+      widget.onNavigateToFlow?.call(5); // 0-indexed → Help Me Fix It flow 6
     }
   }
 
@@ -668,6 +671,8 @@ class _StatusCard extends StatelessWidget {
         return Icons.refresh;
       case VerdictEngine.actionFirmwareUpdate:
         return Icons.system_update;
+      case VerdictEngine.actionBridgeModeHelp:
+        return Icons.device_hub;
       default:
         return Icons.play_arrow;
     }

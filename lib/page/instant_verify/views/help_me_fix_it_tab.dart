@@ -77,6 +77,8 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           onDone: _exitFlow,
           onNavigateToFlow: _launchFlow,
         );
+      case 6:
+        flowWidget = _Flow6BridgeMode(onDone: _exitFlow);
       default:
         flowWidget = const SizedBox.shrink();
     }
@@ -94,6 +96,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
         3 => 'Device connectivity issues',
         4 => 'WiFi doesn\'t reach a room',
         5 => 'My connection keeps cutting out',
+        6 => 'Two routers / Combo gateway',
         _ => 'Help Me Fix It',
       };
 }
@@ -2534,4 +2537,301 @@ class _SatisfactionPromptState extends State<_SatisfactionPrompt> {
       ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Flow 6: Two routers / Combo gateway (bridge mode guidance)
+//
+// Triggered from: Tab 0 "Your network has two routers" verdict finding CTA,
+// or Help Me Fix It flow menu.
+//
+// Topology scenarios handled:
+//   A. ISP combo gateway (modem+router) → advise bridge mode or Linksys AP mode
+//   B. CGNAT from ISP → advise call ISP for dedicated IP
+// ═══════════════════════════════════════════════════════════════════════════
+
+enum _NatOption { bridgeMode, apMode, callIsp, leaveAsIs }
+
+class _Flow6BridgeMode extends ConsumerStatefulWidget {
+  final VoidCallback onDone;
+  const _Flow6BridgeMode({required this.onDone});
+
+  @override
+  ConsumerState<_Flow6BridgeMode> createState() => _Flow6BridgeModeState();
+}
+
+class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
+  int _step = 0;
+  _NatOption? _choice;
+  final List<int> _stepHistory = [];
+
+  void _pushStep(int s) => setState(() { _stepHistory.add(_step); _step = s; });
+  void _stepBack() { if (_stepHistory.isNotEmpty) setState(() => _step = _stepHistory.removeLast()); }
+
+  Widget _backBtn(BuildContext context) => _stepHistory.isNotEmpty
+      ? Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton(
+            onPressed: _stepBack,
+            child: const Text('← Back'),
+          ),
+        )
+      : const SizedBox.shrink();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(instantVerifyPivotProvider);
+    final isCgnat = _isCgnatIp(state.wanIpAddress);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_step == 0) ..._step0(context, isCgnat),
+        if (_step == 1) ..._stepBridgeMode(context),
+        if (_step == 2) ..._stepApMode(context),
+        if (_step == 3) ..._stepCallIsp(context, isCgnat),
+        if (_step == 4) ..._stepLeaveAsIs(context),
+      ],
+    );
+  }
+
+  bool _isCgnatIp(String? ip) {
+    if (ip == null || ip.isEmpty) return false;
+    final parts = ip.split('.');
+    if (parts.length != 4) return false;
+    final first = int.tryParse(parts[0]) ?? 0;
+    final second = int.tryParse(parts[1]) ?? 0;
+    return first == 100 && second >= 64 && second <= 127;
+  }
+
+  List<Widget> _step0(BuildContext context, bool isCgnat) => [
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Two routers detected',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            if (isCgnat)
+              _infoBox(context,
+                  'Your internet company is using a shared IP address (Carrier-Grade NAT). '
+                  'This is managed by your provider — you can\'t change it on the router.',
+                  icon: Icons.info_outline)
+            else
+              _infoBox(context,
+                  'Your Linksys router is connected behind another router — '
+                  'usually your internet company\'s gateway device. '
+                  'This creates a "double router" situation that can cause issues '
+                  'with port forwarding, gaming, and VoIP calls. '
+                  'Your internet works, but some features are limited.'),
+            const SizedBox(height: 12),
+            Text('What would you like to do?',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            if (!isCgnat) ...[
+              ListTile(
+                leading: const Icon(Icons.settings_ethernet),
+                title: const Text('Enable bridge mode on the ISP gateway'),
+                subtitle: const Text('Best option — makes your router the only router'),
+                onTap: () => _pushStep(1),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+              const Divider(height: 12),
+              ListTile(
+                leading: const Icon(Icons.wifi),
+                title: const Text('Switch Linksys to WiFi access point mode'),
+                subtitle: const Text('Good for extending WiFi — ISP gateway handles routing'),
+                onTap: () => _pushStep(2),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+              const Divider(height: 12),
+            ],
+            ListTile(
+              leading: const Icon(Icons.phone),
+              title: Text(isCgnat
+                  ? 'Contact my internet provider for a dedicated IP'
+                  : 'Leave it as two routers — contact my internet provider'),
+              subtitle: Text(isCgnat
+                  ? 'Required if you need port forwarding or gaming features'
+                  : 'If you need port forwarding, gaming, or VoIP to work'),
+              onTap: () => _pushStep(3),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+            ),
+            if (!isCgnat) ...[
+              const Divider(height: 12),
+              ListTile(
+                leading: const Icon(Icons.check_circle_outline),
+                title: const Text('Leave as-is — internet is working fine'),
+                subtitle: const Text('OK if you don\'t need port forwarding'),
+                onTap: () => _pushStep(4),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+            ],
+          ],
+        )),
+      ];
+
+  List<Widget> _stepBridgeMode(BuildContext context) => [
+        _backBtn(context),
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Enabling bridge mode',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _infoBox(context,
+                'Bridge mode turns off the routing features on your internet '
+                'company\'s gateway so your Linksys can handle everything. '
+                'The steps depend on your internet provider\'s equipment.'),
+            const SizedBox(height: 12),
+            _checklistItem(context,
+                'Log into your internet company\'s gateway — usually at 192.168.100.1 or printed on the device'),
+            _checklistItem(context,
+                'Look for settings labelled "Bridge Mode", "IP Passthrough", or "DMZ". The name varies by provider.'),
+            _checklistItem(context,
+                'Enter your Linksys router\'s MAC address (shown in My Network tab) when prompted'),
+            _checklistItem(context,
+                'Save and wait 2 minutes — both devices will restart'),
+            _checklistItem(context,
+                'Run the Instant-Test again to confirm you now have a public IP address'),
+            const SizedBox(height: 12),
+            SelectableText(
+              'Not sure how? Search "[your internet provider] enable bridge mode" '
+              '— or call them and say: "I want to put my gateway into bridge mode '
+              'so my third-party router handles everything."',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: widget.onDone,
+                child: const Text('Done'),
+              ),
+            ),
+          ],
+        )),
+        const _SatisfactionPrompt(),
+        _linksysSupportTile(context),
+      ];
+
+  List<Widget> _stepApMode(BuildContext context) => [
+        _backBtn(context),
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Switch Linksys to access point mode',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _infoBox(context,
+                'In access point mode, your Linksys handles WiFi but your internet '
+                'company\'s gateway handles routing. This is simpler than bridge mode '
+                'and works well if you just need better WiFi coverage.'),
+            const SizedBox(height: 8),
+            _infoBox(context,
+                'Note: In AP mode, features like parental controls, device prioritization, '
+                'and port forwarding on the Linksys won\'t work — those stay on the ISP gateway.',
+                icon: Icons.warning_amber, color: Colors.orange),
+            const SizedBox(height: 12),
+            _checklistItem(context,
+                'Open the Linksys app and go to Router Settings'),
+            _checklistItem(context,
+                'Look for "Operation Mode" or "Network Mode" and select "Access Point"'),
+            _checklistItem(context,
+                'Connect the Linksys to your internet company\'s gateway with an Ethernet cable'),
+            _checklistItem(context,
+                'Your devices will connect to the Linksys WiFi and get internet through the gateway'),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: widget.onDone,
+                child: const Text('Done'),
+              ),
+            ),
+          ],
+        )),
+        const _SatisfactionPrompt(),
+        _linksysSupportTile(context),
+      ];
+
+  List<Widget> _stepCallIsp(BuildContext context, bool isCgnat) => [
+        _backBtn(context),
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Contact your internet provider',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text(
+              isCgnat
+                  ? 'Your provider manages the shared IP system — only they can assign you a dedicated public IP.'
+                  : 'Your internet provider can help you put their device into bridge mode.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            _ispScript(context,
+                isCgnat
+                    ? 'I have a Linksys router but I\'m getting a shared IP address. I need a public static or dynamic IP to use port forwarding and online gaming. Can you assign me a dedicated IP?'
+                    : 'I connected my Linksys router to your gateway and my network has two routers. I\'d like to put your gateway into bridge mode so my Linksys handles everything. Can you walk me through that?'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: widget.onDone,
+                child: const Text('Done'),
+              ),
+            ),
+          ],
+        )),
+        _linksysSupportTile(context),
+      ];
+
+  List<Widget> _stepLeaveAsIs(BuildContext context) => [
+        _backBtn(context),
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Leaving as two routers',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _infoBox(context,
+                'That\'s fine! Two routers (double-NAT) works for normal browsing, streaming, '
+                'and most everyday use. You\'ll only notice issues if you need port '
+                'forwarding, host game servers, or use business VoIP.'),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: widget.onDone,
+                child: const Text('Got it — my internet is working'),
+              ),
+            ),
+          ],
+        )),
+        const _SatisfactionPrompt(),
+      ];
 }

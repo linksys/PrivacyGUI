@@ -32,6 +32,7 @@ Verdict _compute({
   bool? hasEthernetNoLink,
   bool? hasZombieMeshNode,
   int? dhcpPoolUtilizationPct,
+  bool? isDeviceInApMode,
 }) {
   return VerdictEngine.compute(
     gatewayReachable: gatewayReachable,
@@ -58,6 +59,7 @@ Verdict _compute({
     hasEthernetNoLink: hasEthernetNoLink,
     hasZombieMeshNode: hasZombieMeshNode,
     dhcpPoolUtilizationPct: dhcpPoolUtilizationPct,
+    isDeviceInApMode: isDeviceInApMode,
   );
 }
 
@@ -885,25 +887,50 @@ void main() {
 
     // ── Check 3b: CGNAT / Double-NAT ─────────────────────────────────────────
 
-    test('CGNAT IP → fires CGNAT finding', () {
+    test('CGNAT IP → fires shared-connection finding', () {
       final v = _compute(wanConnected: true, wanIpAddress: '100.64.1.1');
       final finding = v.findings.firstWhere(
-          (f) => f.headline.contains('CGNAT'));
+          (f) => f.headline.toLowerCase().contains('shared') ||
+              f.headline.toLowerCase().contains('cgnat'));
       expect(finding, isNotNull);
     });
 
-    test('double-NAT IP → fires double-NAT finding', () {
+    test('double-NAT IP (10.x) → fires two-routers finding', () {
       final v = _compute(wanConnected: true, wanIpAddress: '10.0.0.1');
       final finding = v.findings.firstWhere(
-          (f) => f.headline.toLowerCase().contains('double'));
+          (f) => f.headline.toLowerCase().contains('two router') ||
+              f.headline.toLowerCase().contains('double'));
       expect(finding, isNotNull);
+      expect(finding.actionKey, equals('bridge_mode_help'));
+    });
+
+    test('double-NAT IP (192.168.x) → fires two-routers finding', () {
+      final v = _compute(wanConnected: true, wanIpAddress: '192.168.1.50');
+      expect(v.findings.any((f) => f.headline.contains('two router')), isTrue);
+    });
+
+    test('link-local IP → no double-NAT finding', () {
+      final v = _compute(wanConnected: true, wanIpAddress: '169.254.1.1');
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('two router') ||
+              f.headline.toLowerCase().contains('double')), isEmpty);
     });
 
     test('public IP → no double-NAT finding', () {
       final v = _compute(wanConnected: true, wanIpAddress: '98.137.11.163');
       expect(v.findings.where(
-          (f) => f.headline.toLowerCase().contains('double') ||
-              f.headline.contains('CGNAT')), isEmpty);
+          (f) => f.headline.toLowerCase().contains('two router') ||
+              f.headline.toLowerCase().contains('double') ||
+              f.headline.toLowerCase().contains('shared connection')), isEmpty);
+    });
+
+    test('AP mode → double-NAT finding suppressed', () {
+      final v = _compute(
+          wanConnected: true,
+          wanIpAddress: '192.168.1.50',
+          isDeviceInApMode: true);
+      expect(v.findings.where(
+          (f) => f.headline.toLowerCase().contains('two router')), isEmpty);
     });
 
     test('CGNAT but WAN disconnected → no finding', () {

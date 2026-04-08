@@ -169,6 +169,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         _sendOptional(JNAPAction.getSelectedChannels), // 8
         _sendOptional(JNAPAction.getEthernetPortConnections), // 9
         _sendOptional(JNAPAction.getLANSettings), // 10 — for actual DHCP pool size
+        _sendOptional(JNAPAction.getDeviceMode), // 11 — AP mode detection
       ]);
 
       Map<String, dynamic>? orNull(Map<String, dynamic> m) =>
@@ -235,6 +236,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         hasEthernetNoLink: null,
         hasZombieMeshNode: null,
         dhcpPoolUtilizationPct: null,
+        isDeviceInApMode: null,
       );
 
       state = state.copyWith(
@@ -398,6 +400,15 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     }
 
     // Ethernet no-link (item 30): wired device with port showing no physical link
+    // AP mode detection: suppress double-NAT finding when device is intentionally in AP mode.
+    // getDeviceMode returns e.g. {'deviceMode': 'AccessPoint'} or {'mode': 'AP'}
+    final deviceModeData = s.routerHealth?['deviceMode'] as String? ??
+        (s.deviceInfo?['deviceMode'] as String?);
+    final isDeviceInApMode = deviceModeData != null &&
+        (deviceModeData.toUpperCase().contains('AP') ||
+         deviceModeData.toUpperCase().contains('ACCESSPOINT') ||
+         deviceModeData.toUpperCase().contains('ACCESS_POINT'));
+
     // HW-3: GetEthernetPortConnections real response shape:
     //   { 'wanPortConnection': 'Connected', 'lanPortConnections': ['Connected', 'Disconnected', ...] }
     // NOT a list of objects with isConnected/macAddress fields.
@@ -453,6 +464,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       hasEthernetNoLink: hasEthernetNoLink,
       hasZombieMeshNode: hasZombieMeshNode,
       dhcpPoolUtilizationPct: dhcpPoolUtilizationPct,
+      isDeviceInApMode: isDeviceInApMode,
     );
     state = state.copyWith(verdict: verdict, verdictIsPreliminary: preliminary);
   }

@@ -88,6 +88,7 @@ class Verdict {
 class VerdictEngine {
   static const String actionRestartRouter = 'restart_router';
   static const String actionFirmwareUpdate = 'firmware_update';
+  static const String actionBridgeModeHelp = 'bridge_mode_help';
 
   static Verdict compute({
     required bool? gatewayReachable,
@@ -115,6 +116,7 @@ class VerdictEngine {
     bool? hasEthernetNoLink,         // Wired device with no physical link detected
     bool? hasZombieMeshNode,         // Node with good RSSI but degraded throughput
     int? dhcpPoolUtilizationPct,     // 0-100, percentage of DHCP pool used
+    bool? isDeviceInApMode,          // Linksys is in AP mode — RFC1918 WAN IP is intentional
   }) {
     final findings = <VerdictFinding>[];
     int checksRun = 0;
@@ -179,26 +181,49 @@ class VerdictEngine {
     }
 
     // ── Check 3b: Double-NAT / CGNAT detection ───────────────────────────────
-    if (wanConnected == true && wanIpAddress != null && wanIpAddress.isNotEmpty) {
+    // Suppress when device is in AP mode — RFC1918 WAN IP is intentional there.
+    if (wanConnected == true &&
+        wanIpAddress != null &&
+        wanIpAddress.isNotEmpty &&
+        isDeviceInApMode != true) {
       final parts = wanIpAddress.split('.');
-      if (parts.length == 4) {
+      // Skip link-local (169.254/16) — that means DHCP failed, not double-NAT
+      final isLinkLocal = parts.length == 4 &&
+          int.tryParse(parts[0]) == 169 &&
+          int.tryParse(parts[1]) == 254;
+      if (!isLinkLocal && parts.length == 4) {
         final first = int.tryParse(parts[0]) ?? 0;
         final second = int.tryParse(parts[1]) ?? 0;
+        // RFC 6598 Shared Address Space — carrier-grade NAT (ISP-side, can't fix)
         final isCgnat = first == 100 && second >= 64 && second <= 127;
+        // RFC 1918 private — most likely a combo ISP gateway in router mode.
+        // 192.168.x and 172.16-31.x are high-confidence double-NAT.
+        // 10.x is ambiguous (some ISPs use for CGNAT) but still show the finding.
         final isDoubleNat = first == 10 ||
             (first == 192 && second == 168) ||
             (first == 172 && second >= 16 && second <= 31);
         if (isCgnat) {
           findings.add(const VerdictFinding(
             priority: VerdictPriority.info,
-            headline: 'Your ISP is using a shared IP address (CGNAT)',
-            explanation: 'Carrier-Grade NAT is active. Port forwarding and some online games won\'t work. Contact your ISP if you need a dedicated public IP address.',
+            headline: 'Your internet company uses a shared connection',
+            explanation:
+                'Your internet provider is using a shared IP address. '
+                'Port forwarding and some online games won\'t work. '
+                'If you need these features, contact your internet provider '
+                'and ask for a dedicated public IP address.',
           ));
         } else if (isDoubleNat) {
-          findings.add(const VerdictFinding(
+          findings.add(VerdictFinding(
             priority: VerdictPriority.info,
-            headline: 'Your router may be behind another router (double-NAT)',
-            explanation: 'Your WAN address is private — your Linksys router is connected behind another router or modem/router combo. Port forwarding won\'t work. Put the upstream device into bridge mode to fix this.',
+            headline: 'Your network has two routers',
+            explanation:
+                'Your Linksys router is connected behind another router '
+                '(usually your internet company\'s equipment). '
+                'This can cause port forwarding, gaming, and VoIP issues. '
+                'You can fix this by switching the upstream device to bridge mode, '
+                'or by setting your Linksys to work as a WiFi access point.',
+            actionLabel: 'Get help with this',
+            actionKey: actionBridgeModeHelp,
           ));
         }
       }
