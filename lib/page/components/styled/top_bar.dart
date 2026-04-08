@@ -3,13 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/core/cloud/providers/remote_assistance/remote_client_provider.dart';
 import 'package:privacy_gui/core/jnap/providers/device_manager_provider.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/styled/menus/menu_consts.dart';
 import 'package:privacy_gui/page/components/styled/menus/widgets/menu_holder.dart';
+import 'package:privacy_gui/page/components/widgets/brand_asset_widget.dart';
 import 'package:privacy_gui/providers/brand_asset_provider.dart';
 import 'package:privacy_gui/providers/global_model_number_provider.dart';
 import 'package:privacygui_widgets/theme/material/color_tonal_palettes.dart';
@@ -88,16 +88,10 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                             return Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // Handle both SVG and raster image formats
-                                path.endsWith('.svg')
-                                    ? SvgPicture.asset(
-                                        path,
-                                        height: 48,
-                                      )
-                                    : Image.asset(
-                                        path,
-                                        height: 48,
-                                      ),
+                                BrandAssetWidget(
+                                  path: path,
+                                  height: 48,
+                                ),
                                 AppGap.small2(),
                               ],
                             );
@@ -117,22 +111,15 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                         data: (textLogoPath) {
                           if (textLogoPath != null) {
                             // Use brand text logo if available
-                            if (textLogoPath.endsWith('.svg')) {
-                              return SvgPicture.asset(
-                                textLogoPath,
-                                height: 32,
-                                colorFilter: ColorFilter.mode(
-                                  Color(neutralTonal.get(100)),
-                                  BlendMode.srcIn,
-                                ),
-                              );
-                            } else {
-                              return Image.asset(
-                                textLogoPath,
-                                height: 32,
-                                color: Color(neutralTonal.get(100)),
-                              );
-                            }
+                            return BrandAssetWidget(
+                              path: textLogoPath,
+                              height: 32,
+                              color: Color(neutralTonal.get(100)),
+                              colorFilter: ColorFilter.mode(
+                                Color(neutralTonal.get(100)),
+                                BlendMode.srcIn,
+                              ),
+                            );
                           } else {
                             // Fallback to text if no text logo available
                             return AppText.titleLarge(loc(context).appTitle,
