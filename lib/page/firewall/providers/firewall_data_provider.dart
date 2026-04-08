@@ -114,7 +114,8 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
   Future<FirewallData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
 
     final List<Object> results;

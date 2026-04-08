@@ -45,7 +45,8 @@ class LanDataNotifier extends AsyncNotifier<LanData> {
   Future<LanData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
 
     // LanNetworkInfo.fetch includes IPv6Enable (merged in YAML v1.2.0).

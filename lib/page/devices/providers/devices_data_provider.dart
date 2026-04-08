@@ -118,7 +118,8 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   Future<DevicesData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
 
     // Fetch ConnectedDevices immediately; mesh topology in background.

@@ -50,7 +50,7 @@ void main() {
       container.dispose();
     });
 
-    test('build throws ConnectivityError when usp is null', () async {
+    test('build throws ServiceNotInitializedError when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
           uspServiceProvider.overrideWithValue(null),
@@ -59,7 +59,7 @@ void main() {
 
       expect(
         container.read(timeDataProvider.future),
-        throwsA(isA<ConnectivityError>()),
+        throwsA(isA<ServiceNotInitializedError>()),
       );
       container.dispose();
     });

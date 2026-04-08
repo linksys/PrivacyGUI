@@ -43,7 +43,8 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
   Future<TimeData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
 
     try {
@@ -80,7 +81,8 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
   }) async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
 
     try {
@@ -108,7 +110,8 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
   }) async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
 
     try {

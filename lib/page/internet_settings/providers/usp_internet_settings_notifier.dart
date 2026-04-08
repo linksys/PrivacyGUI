@@ -35,7 +35,8 @@ final uspInternetSettingsServiceProvider =
     Provider.autoDispose<UspInternetSettingsService>((ref) {
   final usp = ref.watch(uspServiceProvider);
   if (usp == null) {
-    throw const ConnectivityError(message: 'USP service not available');
+    throw const ServiceNotInitializedError(
+        message: 'USP service not available');
   }
   return UspInternetSettingsService(usp);
 });
@@ -79,7 +80,8 @@ class UspInternetSettingsNotifier
     try {
       final usp = ref.read(uspServiceProvider);
       if (usp == null) {
-        throw const ConnectivityError(message: 'USP service not available');
+        throw const ServiceNotInitializedError(
+            message: 'USP service not available');
       }
 
       // Session restore on page reload (WASM state may be lost)

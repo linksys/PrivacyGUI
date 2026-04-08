@@ -42,7 +42,8 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   Future<WanData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
 
     try {
@@ -83,7 +84,8 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   Future<void> renewLease() async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
 
     await ref.read(uspMutationLockProvider).withLock(() async {

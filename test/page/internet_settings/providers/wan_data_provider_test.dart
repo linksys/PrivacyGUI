@@ -119,7 +119,7 @@ void main() {
 
       final state = container.read(wanDataProvider);
       expect(state.hasError, isTrue);
-      expect(state.error, isA<ConnectivityError>());
+      expect(state.error, isA<ServiceNotInitializedError>());
       container.dispose();
     });
 

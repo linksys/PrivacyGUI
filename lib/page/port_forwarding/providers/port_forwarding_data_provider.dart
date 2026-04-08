@@ -54,7 +54,8 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
   Future<PortForwardingData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
     try {
       final codegen = await PortForwarding.fetch(usp);
@@ -147,7 +148,8 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
   UspService get _usp {
     final usp = ref.read(uspServiceProvider);
     if (usp == null) {
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
     return usp;
   }

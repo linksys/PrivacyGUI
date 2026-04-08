@@ -291,6 +291,20 @@ final class VPNUserNotFoundError extends ServiceError {
 // General Errors
 // ============================================================================
 
+/// USP service not initialized or not registered.
+///
+/// Thrown when `uspServiceProvider` returns null — the app was not properly
+/// initialized (e.g. non-Web platform or WASM not loaded). This is a setup
+/// error, not a network connectivity issue.
+final class ServiceNotInitializedError extends ServiceError {
+  final String? message;
+  const ServiceNotInitializedError({this.message});
+
+  @override
+  String toString() =>
+      message != null ? 'Service not initialized: $message' : super.toString();
+}
+
 /// Invalid input data
 final class InvalidInputError extends ServiceError {
   final String? field;

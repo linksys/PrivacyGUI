@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
@@ -69,13 +71,21 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
 
   Future<EthernetData> _fetch() async {
     final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
+    if (usp == null) {
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
+    }
 
     // Parallel: fetch Ethernet interfaces + bridge port map
-    final results = await Future.wait([
-      EthernetInterfaces.fetch(usp),
-      _fetchBridgePortMap(usp),
-    ]);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        EthernetInterfaces.fetch(usp),
+        _fetchBridgePortMap(usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
     final ethernetInterfaces = results[0] as EthernetInterfaces;
     final bridgePortMap = results[1] as Map<String, String>;
 

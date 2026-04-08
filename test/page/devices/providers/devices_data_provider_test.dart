@@ -182,7 +182,7 @@ void main() {
 
       expect(
         container.read(devicesDataProvider.future),
-        throwsA(isA<ConnectivityError>()),
+        throwsA(isA<ServiceNotInitializedError>()),
       );
       container.dispose();
     });

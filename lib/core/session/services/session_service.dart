@@ -62,7 +62,8 @@ class SessionService {
   Future<NodeDeviceInfo> _fetchUspDeviceInfo() async {
     if (_usp == null) {
       logger.e('[SessionService] USP not available');
-      throw const ConnectivityError(message: 'USP service not available');
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
     }
     if (!_usp.isAuthenticated) {
       logger.d('[SessionService] USP not authenticated');

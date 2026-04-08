@@ -42,14 +42,14 @@ class _UspNetworkDiagnosticsViewState
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: AppLoader()),
-          error: (error, _) => _buildPageError(context),
+          error: (error, _) => _buildPageError(context, error),
           data: (state) => _buildContent(context, state),
         );
       },
     );
   }
 
-  Widget _buildPageError(BuildContext context) {
+  Widget _buildPageError(BuildContext context, Object error) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -59,6 +59,8 @@ class _UspNetworkDiagnosticsViewState
           AppGap.xl(),
           AppText.titleMedium('Unable to load diagnostics'),
           AppGap.md(),
+          AppText.bodyMedium(error.toString()),
+          AppGap.xxl(),
           AppButton(
             label: 'Retry',
             onTap: () => ref.invalidate(uspNetworkDiagnosticsProvider),
