@@ -88,10 +88,16 @@ class _TopBarState extends ConsumerState<TopBar> with DebugObserver {
                             return Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Image.asset(
-                                  path,
-                                  height: 48,
-                                ),
+                                // Handle both SVG and raster image formats
+                                path.endsWith('.svg')
+                                    ? SvgPicture.asset(
+                                        path,
+                                        height: 48,
+                                      )
+                                    : Image.asset(
+                                        path,
+                                        height: 48,
+                                      ),
                                 AppGap.small2(),
                               ],
                             );
