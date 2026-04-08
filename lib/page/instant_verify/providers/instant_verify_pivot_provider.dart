@@ -3,6 +3,7 @@ import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/jnap/actions/better_action.dart';
 import 'package:privacy_gui/core/jnap/command/base_command.dart';
+import 'package:privacy_gui/core/jnap/models/ping_status.dart';
 import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
@@ -17,6 +18,14 @@ final instantVerifyPivotProvider =
 );
 
 class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
+  /// Incremented on every fetch(). _runBrowserTests checks this before each
+  /// state write — if it changed, a newer fetch started and we abort. (Fix: Item 2)
+  int _fetchGeneration = 0;
+
+  /// Timestamp of the last completed speed test. Used to skip re-running
+  /// within 3 minutes unless explicitly forced. (Fix: Item 3)
+  DateTime? _lastSpeedTestTime;
+
   @override
   InstantVerifyPivotState build() => const InstantVerifyPivotState();
 
@@ -50,8 +59,19 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
   // ── Main load ─────────────────────────────────────────────────────────
 
   /// Load all JNAP data (Phase 1) then run browser tests in background (Phase 2).
-  Future<void> fetch() async {
-    state = const InstantVerifyPivotState(phase: PivotLoadPhase.loading);
+  ///
+  /// [forceSpeedTest] bypasses the 3-minute TTL and always runs the speed test.
+  /// Use this when the user explicitly requests a re-test (e.g. after a restart
+  /// or after changing ISP plan speed). (Fix: Item 3)
+  Future<void> fetch({bool forceSpeedTest = false}) async {
+    // Increment generation to cancel any in-flight _runBrowserTests. (Fix: Item 2)
+    final generation = ++_fetchGeneration;
+    // Fresh state clears all prior JNAP data — prevents stale field carry-over. (Fix: Item 6)
+    state = InstantVerifyPivotState(
+      phase: PivotLoadPhase.loading,
+      // Preserve plan speed — user-entered, not from JNAP.
+      planSpeedMbps: state.planSpeedMbps,
+    );
 
     try {
       // Phase 1a: Core required calls
@@ -146,6 +166,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         _sendOptional(JNAPAction.getWirelessSchedulerSettings), // 7
         _sendOptional(JNAPAction.getSelectedChannels), // 8
         _sendOptional(JNAPAction.getEthernetPortConnections), // 9
+        _sendOptional(JNAPAction.getLANSettings), // 10 — for actual DHCP pool size
       ]);
 
       Map<String, dynamic>? orNull(Map<String, dynamic> m) =>
@@ -156,6 +177,23 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
           firmwareData['firmwareUpdateStatus'] == 'UpdateAvailable';
       final firmwareVersion =
           firmwareData?['availableUpdate']?['firmwareVersion'] as String?;
+
+      // Compute actual DHCP pool size from LAN settings (index 10).
+      // firstClientIPAddress..lastClientIPAddress = pool range.
+      // Falls back to 150 if GetLANSettings is unavailable. (Fix: Item 9)
+      int dhcpPoolLimit = 150;
+      final lanData = orNull(supplementary[10]);
+      if (lanData != null) {
+        final firstIp = lanData['firstClientIPAddress'] as String?;
+        final lastIp = lanData['lastClientIPAddress'] as String?;
+        if (firstIp != null && lastIp != null) {
+          final firstOctet = int.tryParse(firstIp.split('.').last) ?? 0;
+          final lastOctet = int.tryParse(lastIp.split('.').last) ?? 0;
+          if (lastOctet > firstOctet) {
+            dhcpPoolLimit = lastOctet - firstOctet + 1;
+          }
+        }
+      }
 
       // Merge backhaul data into mesh nodes
       final backhaulRaw = orNull(supplementary[3]);
@@ -184,6 +222,17 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         clients: clients,
         meshNodes: meshNodesList,
         planSpeedMbps: state.planSpeedMbps,
+        isWifiScheduleBlocking: null,
+        isInstantPrivacyOn: null,
+        isInstantPauseActive: null,
+        cpuLoadPct: null,
+        memoryLoadPct: null,
+        wifiSnrDb: null,
+        isPmfRequired: null,
+        isBandSteeringMissteer: null,
+        hasEthernetNoLink: null,
+        hasZombieMeshNode: null,
+        dhcpPoolUtilizationPct: null,
       );
 
       state = state.copyWith(
@@ -197,6 +246,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         },
         clients: clients,
         dhcpLeasesCount: dhcpLeases,
+        dhcpPoolLimit: dhcpPoolLimit,
         radioInfo: orNull(supplementary[0]),
         guestNetwork: orNull(supplementary[1]),
         firmwareUpdate: firmwareData,
@@ -215,7 +265,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       );
 
       // Phase 2: Run browser tests in background (unawaited)
-      _runBrowserTests();
+      _runBrowserTests(generation: generation, forceSpeedTest: forceSpeedTest);
     } catch (e) {
       state = state.copyWith(errorMessage: 'Failed to load: $e');
       dev.log('InstantVerifyPivot: fetch failed: $e');
@@ -224,34 +274,64 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
 
   // ── Browser tests (Phase 2) ───────────────────────────────────────────
 
-  Future<void> _runBrowserTests() async {
+  Future<void> _runBrowserTests({
+    required int generation,
+    bool forceSpeedTest = false,
+  }) async {
+    // Helper: abort if a newer fetch() has started. (Fix: Item 2)
+    bool _stale() => _fetchGeneration != generation;
+
     final service = ref.read(browserDiagnosticServiceProvider);
 
     // Gateway ping
+    if (_stale()) return;
     state = state.copyWith(browserTestStep: 'gateway');
     final gateway = await service.pingGateway();
+    if (_stale()) return;
     state = state.copyWith(gatewayPing: gateway);
 
     // DNS check
+    if (_stale()) return;
     state = state.copyWith(browserTestStep: 'dns');
     final dns = await service.checkDns();
+    if (_stale()) return;
     state = state.copyWith(dnsCheck: dns);
 
     // Recompute verdict with gateway + dns data (update before slow speed test)
     _recomputeVerdict();
 
-    // Internet speed test
-    state = state.copyWith(browserTestStep: 'speed');
-    SpeedTestResult? speedResult;
-    try {
-      speedResult = await service.runInternetSpeedTest(
-        onStep: (step) => state = state.copyWith(browserTestStep: 'speed:$step'),
-      );
-      state = state.copyWith(speedTest: speedResult);
-    } catch (e) {
-      dev.log('InstantVerifyPivot: speed test failed: $e');
+    // Internet speed test — skip if DNS failed (avoids contradictory 0-Mbps verdict),
+    // or if results are fresh and not forced. (Fixes: Item 3, Item 4)
+    final skipSpeedTest = !dns.resolved ||
+        (!forceSpeedTest &&
+            _lastSpeedTestTime != null &&
+            DateTime.now().difference(_lastSpeedTestTime!) <
+                const Duration(minutes: 3));
+
+    if (!skipSpeedTest) {
+      if (_stale()) return;
+      state = state.copyWith(browserTestStep: 'speed');
+      try {
+        final speedResult = await service.runInternetSpeedTest(
+          onStep: (step) {
+            if (!_stale()) {
+              state = state.copyWith(browserTestStep: 'speed:$step');
+            }
+          },
+        );
+        if (_stale()) return;
+        _lastSpeedTestTime = DateTime.now();
+        state = state.copyWith(speedTest: speedResult);
+      } catch (e) {
+        dev.log('InstantVerifyPivot: speed test failed: $e');
+      }
+    } else if (!dns.resolved) {
+      dev.log('InstantVerifyPivot: speed test skipped — DNS failed');
+    } else {
+      dev.log('InstantVerifyPivot: speed test skipped — result is < 3 min old');
     }
 
+    if (_stale()) return;
     state = state.copyWith(
       browserTestStep: 'complete',
       phase: PivotLoadPhase.complete,
@@ -264,6 +344,81 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
 
   void _recomputeVerdict({bool preliminary = true}) {
     final s = state;
+
+    // ── New params for Checks 12-15 ──────────────────────────────────────
+    final isWifiScheduleBlocking = s.wirelessSchedule != null &&
+        (s.wirelessSchedule!['isEnabled'] as bool? ?? false);
+    final isInstantPrivacyOn = s.isMacFilterEnabled;
+    final isInstantPauseActive = s.parentalControls != null &&
+        ((s.parentalControls!['isParentalControlEnabled'] as bool?) ??
+         (s.parentalControls!['enabled'] as bool?) ?? false);
+    final cpuLoadPct = s.routerHealth?['cpuLoad'] as int?;
+    final memoryLoadPct = s.routerHealth?['memoryLoad'] as int?;
+    int? wifiSnrDb;
+    final radios = s.radioInfo?['radios'] as List?;
+    if (radios != null) {
+      for (final r in radios) {
+        final band = ((r as Map<String, dynamic>)['band'] as String?) ?? '';
+        if (band.contains('5')) {
+          final snr = (r['signalToNoiseRatio'] as int?) ?? (r['snr'] as int?);
+          if (snr != null && (wifiSnrDb == null || snr < wifiSnrDb!)) wifiSnrDb = snr;
+        }
+      }
+    }
+    final isPmfRequired = s.networkSecurity != null &&
+        (s.networkSecurity!.values.whereType<String>().any(
+          (v) => v.toUpperCase().contains('PMF') && v.toUpperCase().contains('REQUIRED')
+        ) || (s.networkSecurity!['pmfMode'] as String?)?.toUpperCase() == 'REQUIRED');
+
+    // ── New params for Checks 16-19 ──────────────────────────────────────────
+
+    // Band steering mis-steer (item 28): 5GHz-capable device on 2.4 GHz with steering on
+    bool? isBandSteeringMissteer;
+    if (s.radioInfo != null) {
+      final steeringEnabled = s.radioInfo!['isBandSteeringSupported'] as bool? ?? false;
+      if (steeringEnabled && s.clients.isNotEmpty) {
+        // A device is likely 5GHz-capable if its max TX rate suggests 5GHz hardware
+        // (threshold: txRateMbps > 150 Mbps suggests 802.11ac/ax)
+        final misSteered = s.clients.any((c) =>
+            c.isWireless &&
+            c.band.contains('2.4') &&
+            (c.txRateMbps != null && c.txRateMbps! > 150));
+        isBandSteeringMissteer = misSteered;
+      }
+    }
+
+    // Ethernet no-link (item 30): wired device with port showing no physical link
+    bool? hasEthernetNoLink;
+    if (s.ethernetPorts != null) {
+      final ports = s.ethernetPorts!['ports'] as List?;
+      if (ports != null) {
+        hasEthernetNoLink = ports.any((p) {
+          final connected = (p as Map<String, dynamic>)['isConnected'] as bool?;
+          final hasDevice = (p)['macAddress'] != null;
+          // Port has a device associated but shows disconnected = bad cable
+          return hasDevice && connected == false;
+        });
+      }
+    }
+
+    // Zombie mesh node (item 38): node with good RSSI but low throughput speedMbps
+    bool? hasZombieMeshNode;
+    if (s.meshNodes.length > 1) {
+      hasZombieMeshNode = s.meshNodes.any((n) =>
+          !n.isController &&
+          n.backhaulRssi != null &&
+          n.backhaulRssi! > -70 && // RSSI looks fine
+          n.backhaulSpeedMbps != null &&
+          n.backhaulSpeedMbps! < 80); // but throughput is degraded
+    }
+
+    // DHCP pool utilization (item 43)
+    int? dhcpPoolUtilizationPct;
+    if (s.dhcpPoolLimit > 0) {
+      dhcpPoolUtilizationPct =
+          ((s.dhcpLeasesCount / s.dhcpPoolLimit) * 100).round().clamp(0, 100);
+    }
+
     final verdict = VerdictEngine.compute(
       gatewayReachable: s.gatewayPing?.reachable,
       wanConnected: s.wanStatus != null ? s.wanConnected : null,
@@ -278,6 +433,17 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       clients: s.clients,
       meshNodes: s.meshNodes,
       planSpeedMbps: s.planSpeedMbps,
+      isWifiScheduleBlocking: isWifiScheduleBlocking,
+      isInstantPrivacyOn: isInstantPrivacyOn,
+      isInstantPauseActive: isInstantPauseActive,
+      cpuLoadPct: cpuLoadPct,
+      memoryLoadPct: memoryLoadPct,
+      wifiSnrDb: wifiSnrDb,
+      isPmfRequired: isPmfRequired,
+      isBandSteeringMissteer: isBandSteeringMissteer,
+      hasEthernetNoLink: hasEthernetNoLink,
+      hasZombieMeshNode: hasZombieMeshNode,
+      dhcpPoolUtilizationPct: dhcpPoolUtilizationPct,
     );
     state = state.copyWith(verdict: verdict, verdictIsPreliminary: preliminary);
   }
@@ -388,6 +554,13 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       clients: mockClients,
       meshNodes: const [],
       planSpeedMbps: 200,
+      isWifiScheduleBlocking: null,
+      isInstantPrivacyOn: null,
+      isInstantPauseActive: null,
+      cpuLoadPct: null,
+      memoryLoadPct: null,
+      wifiSnrDb: null,
+      isPmfRequired: null,
     );
     state = InstantVerifyPivotState(
       phase: PivotLoadPhase.complete,
@@ -434,6 +607,9 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
 
   // ── Ping / Traceroute ─────────────────────────────────────────────────
 
+  /// Fires a JNAP ping then polls GetPingStatus every second until complete.
+  /// Previously the polling was missing — isPingRunning was set to true and
+  /// never reset, and results were never surfaced. (Fix: Item 5)
   Future<void> startPing(String host) async {
     state = state.copyWith(isPingRunning: true, pingOutput: null);
     try {
@@ -442,19 +618,70 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         'packetSizeBytes': 32,
         'pingCount': 5,
       });
+      // Poll for results
+      await _pollPingStatus();
     } catch (e) {
+      dev.log('InstantVerifyPivot: startPing failed: $e');
       state = state.copyWith(isPingRunning: false, pingOutput: 'Error: $e');
     }
+  }
+
+  Future<void> _pollPingStatus() async {
+    const maxAttempts = 30;
+    for (var i = 0; i < maxAttempts; i++) {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      if (!state.isPingRunning) return; // aborted externally
+      try {
+        final result = await _send(JNAPAction.getPingStatus);
+        final status = PingStatus.fromMap(result);
+        state = state.copyWith(pingOutput: status.pingLog);
+        if (!status.isRunning) {
+          state = state.copyWith(isPingRunning: false);
+          return;
+        }
+      } catch (e) {
+        dev.log('InstantVerifyPivot: getPingStatus failed: $e');
+        state = state.copyWith(isPingRunning: false, pingOutput: 'Error: $e');
+        return;
+      }
+    }
+    // Timeout
+    state = state.copyWith(isPingRunning: false);
   }
 
   Future<void> startTraceroute(String host) async {
     state = state.copyWith(isPingRunning: true, tracerouteOutput: null);
     try {
       await _send(JNAPAction.startTracroute, data: {'host': host});
+      // Poll for results
+      await _pollTracerouteStatus();
     } catch (e) {
-      state =
-          state.copyWith(isPingRunning: false, tracerouteOutput: 'Error: $e');
+      dev.log('InstantVerifyPivot: startTraceroute failed: $e');
+      state = state.copyWith(isPingRunning: false, tracerouteOutput: 'Error: $e');
     }
+  }
+
+  Future<void> _pollTracerouteStatus() async {
+    const maxAttempts = 60; // Traceroute can take longer
+    for (var i = 0; i < maxAttempts; i++) {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      if (!state.isPingRunning) return; // aborted externally
+      try {
+        final result = await _send(JNAPAction.getTracerouteStatus);
+        final isRunning = result['isRunning'] as bool? ?? false;
+        final log = result['tracerouteLog'] as String? ?? '';
+        state = state.copyWith(tracerouteOutput: log);
+        if (!isRunning) {
+          state = state.copyWith(isPingRunning: false);
+          return;
+        }
+      } catch (e) {
+        dev.log('InstantVerifyPivot: getTracerouteStatus failed: $e');
+        state = state.copyWith(isPingRunning: false, tracerouteOutput: 'Error: $e');
+        return;
+      }
+    }
+    state = state.copyWith(isPingRunning: false);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────

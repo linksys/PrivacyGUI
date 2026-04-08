@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart';
 import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
+import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
 
 class OverviewTab extends ConsumerStatefulWidget {
   final VoidCallback? onViewClients;
@@ -145,8 +146,35 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       await Future<void>.delayed(const Duration(seconds: 1));
       if (!mounted) return false;
       setState(() => _restartCountdown--);
-      return _restartCountdown > 0;
+      if (_restartCountdown <= 0) {
+        // Countdown done — start polling for router to come back online.
+        // (Fix: Item 10 — the "auto-reload" promise is now fulfilled)
+        _pollForReconnection();
+        return false;
+      }
+      return true;
     });
+  }
+
+  /// After restart countdown, poll every 5s until the router responds,
+  /// then automatically re-run the full diagnostic test.
+  Future<void> _pollForReconnection() async {
+    const maxPolls = 24; // 2 more minutes (5s × 24 = 120s)
+    final svc = ref.read(browserDiagnosticServiceProvider);
+    for (var i = 0; i < maxPolls; i++) {
+      await Future<void>.delayed(const Duration(seconds: 5));
+      if (!mounted) return;
+      try {
+        final ping = await svc.pingGateway();
+        if (ping.reachable) {
+          // Router is back — run tests automatically
+          ref.read(instantVerifyPivotProvider.notifier).fetch(forceSpeedTest: true);
+          return;
+        }
+      } catch (_) {}
+    }
+    // If still unreachable after 2 more minutes, enable "Run Again" so user can retry
+    if (mounted) setState(() => _restartCountdown = 0);
   }
 
   Future<bool?> _confirmRestart(BuildContext context) {
@@ -155,7 +183,9 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       builder: (ctx) => AlertDialog(
         title: const Text('Restart Router?'),
         content: const Text(
-          'This will disconnect all devices for about 2 minutes. Continue?',
+          'All devices will disconnect for about 2 minutes.\n\n'
+          'If you\'re on WiFi, this page will go blank. '
+          'Wait 2 minutes, reconnect to your WiFi, then return to 192.168.1.1.',
         ),
         actions: [
           TextButton(
@@ -245,11 +275,7 @@ class _HeaderBar extends StatelessWidget {
                         style: const TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 15)),
                     if (!isLoading)
-                      _chip(
-                        context,
-                        state.wanConnected ? 'Internet: Connected' : 'Internet: Disconnected',
-                        state.wanConnected ? Colors.green : Colors.red,
-                      )
+                      _chip(context, _connectionLabel(state), _connectionColor(state))
                     else
                       _chip(context, 'Checking...', Colors.grey),
                     if (upDays != null && !isLoading)
@@ -281,6 +307,37 @@ class _HeaderBar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Precise label based on what was actually tested (item 50).
+  /// Each state represents exactly what the diagnostics confirmed:
+  ///   - WAN status (JNAP) = router's WAN port / connection to modem
+  ///   - WAN IP = ISP assigned an address
+  ///   - DNS check (browser) = internet and name resolution working
+  static String _connectionLabel(InstantVerifyPivotState state) {
+    // DNS result is the highest confidence — it confirms end-to-end internet
+    if (state.dnsCheck != null) {
+      return state.dnsCheck!.resolved
+          ? 'Internet: Working'
+          : 'Connected to ISP \u2014 websites aren\'t loading';
+    }
+    // WAN status from JNAP — router sees modem/ISP line
+    if (state.wanStatus != null) {
+      return state.wanConnected
+          ? 'Connected to ISP'   // WAN up, DNS not yet run
+          : 'Not connected to ISP';
+    }
+    return 'Checking...';
+  }
+
+  static Color _connectionColor(InstantVerifyPivotState state) {
+    if (state.dnsCheck != null) {
+      return state.dnsCheck!.resolved ? Colors.green : Colors.orange;
+    }
+    if (state.wanStatus != null) {
+      return state.wanConnected ? Colors.blue : Colors.red;
+    }
+    return Colors.grey;
   }
 
   Widget _metaText(BuildContext context, String text) {
@@ -1036,7 +1093,7 @@ class _ChecklistSummaryState extends State<_ChecklistSummary> {
                 '\u2191 ${state.speedTest!.uploadMbps.toStringAsFixed(0)} Mbps  '
                 '${state.speedTest!.latencyMs}ms delay',
         expandedDetail: state.speedTest != null
-            ? 'We measured how fast data can travel between your device and the internet.\n\n'
+            ? 'Speed measured from this device — other devices in your home may be faster or slower. '
               'Speed can vary based on time of day, how many devices are active, '
               'and your distance from the router.'
             : 'The speed test did not complete. Try running again.',

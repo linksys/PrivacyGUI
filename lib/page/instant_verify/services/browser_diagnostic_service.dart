@@ -99,7 +99,12 @@ class BrowserDiagnosticResult extends Equatable {
 
 /// Browser-based diagnostic service that runs tests from the customer device.
 class BrowserDiagnosticService {
-  static const _gatewayUrl = 'https://192.168.1.1';
+  // Use the actual host serving this page — handles non-default LAN subnets.
+  // Falls back to 192.168.1.1 if not running in a web context.
+  static String get _gatewayUrl {
+    if (kIsWeb) return 'http://${Uri.base.host}';
+    return 'http://192.168.1.1';
+  }
   static const _dnsTestUrl = 'https://1.1.1.1/cdn-cgi/trace';
   static const _dnsTestFallback = 'https://www.google.com/generate_204';
   static const _timeout = Duration(seconds: 5);

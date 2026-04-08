@@ -10,7 +10,7 @@ import 'package:privacy_gui/page/instant_verify/models/verdict.dart';
 Verdict _compute({
   bool? gatewayReachable = true,
   bool? wanConnected = true,
-  String? wanIpAddress = '192.168.50.105',
+  String? wanIpAddress = '98.137.11.163',
   bool? dnsWorking = true,
   double? downloadMbps = 100,
   int? latencyMs = 20,

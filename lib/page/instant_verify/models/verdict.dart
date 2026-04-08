@@ -103,6 +103,18 @@ class VerdictEngine {
     required List<DiagnosticClient> clients,
     required List<MeshNodeInfo> meshNodes,
     required double? planSpeedMbps,
+    bool? isWifiScheduleBlocking,
+    bool? isInstantPrivacyOn,
+    bool? isInstantPauseActive,
+    int? cpuLoadPct,
+    int? memoryLoadPct,
+    int? wifiSnrDb,
+    bool? isPmfRequired,
+    // New checks (items 28, 30, 38, 43)
+    bool? isBandSteeringMissteer,    // 5GHz-capable device stuck on 2.4 GHz with steering on
+    bool? hasEthernetNoLink,         // Wired device with no physical link detected
+    bool? hasZombieMeshNode,         // Node with good RSSI but degraded throughput
+    int? dhcpPoolUtilizationPct,     // 0-100, percentage of DHCP pool used
   }) {
     final findings = <VerdictFinding>[];
     int checksRun = 0;
@@ -163,6 +175,32 @@ class VerdictEngine {
           ),
         ));
         return Verdict(findings: findings, checksRun: checksRun);
+      }
+    }
+
+    // ── Check 3b: Double-NAT / CGNAT detection ───────────────────────────────
+    if (wanConnected == true && wanIpAddress != null && wanIpAddress.isNotEmpty) {
+      final parts = wanIpAddress.split('.');
+      if (parts.length == 4) {
+        final first = int.tryParse(parts[0]) ?? 0;
+        final second = int.tryParse(parts[1]) ?? 0;
+        final isCgnat = first == 100 && second >= 64 && second <= 127;
+        final isDoubleNat = first == 10 ||
+            (first == 192 && second == 168) ||
+            (first == 172 && second >= 16 && second <= 31);
+        if (isCgnat) {
+          findings.add(const VerdictFinding(
+            priority: VerdictPriority.info,
+            headline: 'Your ISP is using a shared IP address (CGNAT)',
+            explanation: 'Carrier-Grade NAT is active. Port forwarding and some online games won\'t work. Contact your ISP if you need a dedicated public IP address.',
+          ));
+        } else if (isDoubleNat) {
+          findings.add(const VerdictFinding(
+            priority: VerdictPriority.info,
+            headline: 'Your router may be behind another router (double-NAT)',
+            explanation: 'Your WAN address is private — your Linksys router is connected behind another router or modem/router combo. Port forwarding won\'t work. Put the upstream device into bridge mode to fix this.',
+          ));
+        }
       }
     }
 
@@ -365,6 +403,144 @@ class VerdictEngine {
               '(${weakNodes.map((n) => '${n.backhaulRssi} dBm').join(', ')}). '
               'Moving ${count == 1 ? 'it' : 'them'} closer to your main router, '
               'or connecting via Ethernet, will improve network reliability.',
+        ));
+      }
+    }
+
+    // ── Check 12: WiFi access restrictions ───────────────────────────────────
+    if (isWifiScheduleBlocking != null) checksRun++;
+    if (isWifiScheduleBlocking == true) {
+      findings.add(const VerdictFinding(
+        priority: VerdictPriority.info,
+        headline: 'Your WiFi schedule may be blocking connections',
+        explanation: 'Your router has a WiFi schedule that turns off wireless access during certain hours. If your WiFi isn\'t working at a specific time, check your schedule settings.',
+      ));
+    }
+    if (isInstantPrivacyOn != null) checksRun++;
+    if (isInstantPrivacyOn == true) {
+      findings.add(const VerdictFinding(
+        priority: VerdictPriority.warning,
+        headline: 'Instant Privacy is blocking new devices',
+        explanation: 'Instant Privacy is on — new devices can\'t connect until it\'s turned off. Go to your router settings to disable Instant Privacy.',
+      ));
+    }
+    if (isInstantPauseActive != null) checksRun++;
+    if (isInstantPauseActive == true) {
+      findings.add(const VerdictFinding(
+        priority: VerdictPriority.warning,
+        headline: 'Internet access is paused',
+        explanation: 'A parental control pause is active. This blocks internet access for some devices. Check your parental control settings.',
+      ));
+    }
+
+    // ── Check 13: CPU / Memory ────────────────────────────────────────────────
+    if (cpuLoadPct != null || memoryLoadPct != null) checksRun++;
+    if (cpuLoadPct != null && cpuLoadPct > 80) {
+      findings.add(VerdictFinding(
+        priority: VerdictPriority.warning,
+        headline: 'Your router is under high load ($cpuLoadPct% CPU)',
+        explanation: 'An overloaded processor can drop packets and slow all devices. A restart usually clears this.',
+        actionLabel: 'Restart Router',
+        actionKey: actionRestartRouter,
+      ));
+    }
+    if (memoryLoadPct != null && memoryLoadPct > 85) {
+      findings.add(VerdictFinding(
+        priority: VerdictPriority.warning,
+        headline: 'Your router\'s memory is nearly full ($memoryLoadPct%)',
+        explanation: 'Low memory causes slowdowns and dropped connections. A restart will clear it.',
+        actionLabel: 'Restart Router',
+        actionKey: actionRestartRouter,
+      ));
+    }
+
+    // ── Check 14: Channel interference (SNR) ─────────────────────────────────
+    if (wifiSnrDb != null) {
+      checksRun++;
+      if (wifiSnrDb < 20) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.info,
+          headline: 'WiFi interference from nearby networks',
+          explanation: 'Your 5 GHz radio is experiencing interference, likely from neighboring WiFi networks. This is common in apartments and dense buildings. Contact Linksys support about adjusting your WiFi channel.',
+        ));
+      }
+    }
+
+    // ── Check 15: WPA3 PMF Required (breaks IoT devices) ─────────────────────
+    if (isPmfRequired != null) {
+      checksRun++;
+      if (isPmfRequired) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.warning,
+          headline: 'WiFi security setting may block smart home devices',
+          explanation: 'Your router has strict Protected Management Frames (PMF) enabled. Some smart home devices (Ring, Nest, smart bulbs) can\'t connect with this setting. Switch to WPA2/WPA3 compatibility mode in your WiFi Security settings.',
+        ));
+      }
+    }
+
+    // ── Check 16: Band steering mis-steer (item 28) ──────────────────────────
+    if (isBandSteeringMissteer != null) {
+      checksRun++;
+      if (isBandSteeringMissteer) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.warning,
+          headline: 'A device is stuck on the slower 2.4 GHz band',
+          explanation:
+              'Your router has automatic band selection on, but one or more '
+              '5 GHz-capable devices are on the slower 2.4 GHz band. '
+              'Moving the device closer to your router, or forgetting and '
+              'reconnecting, usually fixes this.',
+        ));
+      }
+    }
+
+    // ── Check 17: Ethernet no-link (item 30) ─────────────────────────────────
+    if (hasEthernetNoLink != null) {
+      checksRun++;
+      if (hasEthernetNoLink) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.warning,
+          headline: 'A wired device has no network link',
+          explanation:
+              'One or more devices are plugged in via Ethernet cable but '
+              'the port shows no connection. Check that the cable is firmly '
+              'plugged in at both ends. Try a different cable or port.',
+        ));
+      }
+    }
+
+    // ── Check 18: Zombie mesh node (item 38) ─────────────────────────────────
+    if (hasZombieMeshNode != null) {
+      checksRun++;
+      if (hasZombieMeshNode) {
+        findings.add(const VerdictFinding(
+          priority: VerdictPriority.warning,
+          headline: 'A satellite node is connected but not working well',
+          explanation:
+              'One of your satellite nodes is connected to your router but '
+              'its speed is much lower than expected — devices in that area '
+              'will be slow even though the node appears connected. '
+              'Try restarting your router. If it keeps happening, '
+              'move the node closer or connect it with an Ethernet cable.',
+          actionLabel: 'Restart Router',
+          actionKey: actionRestartRouter,
+        ));
+      }
+    }
+
+    // ── Check 19: DHCP pool near capacity (item 43) ────────────────────────
+    if (dhcpPoolUtilizationPct != null) {
+      checksRun++;
+      if (dhcpPoolUtilizationPct >= 90) {
+        findings.add(VerdictFinding(
+          priority: VerdictPriority.warning,
+          headline:
+              'Your network address pool is almost full ($dhcpPoolUtilizationPct% used)',
+          explanation:
+              'Your router can only support a limited number of devices. '
+              'When the pool is full, new devices will fail to connect '
+              'even with the correct password. Contact Linksys support '
+              'to increase the pool size.',
         ));
       }
     }

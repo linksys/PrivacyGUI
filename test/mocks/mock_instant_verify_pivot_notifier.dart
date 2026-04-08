@@ -13,7 +13,7 @@ class MockInstantVerifyPivotNotifier extends InstantVerifyPivotNotifier
   InstantVerifyPivotState build() => _initialState;
 
   @override
-  Future<void> fetch() async {}
+  Future<void> fetch({bool forceSpeedTest = false}) async {}
 
   @override
   Future<void> restartRouter() async {}

@@ -260,15 +260,16 @@ class _SatelliteNodeCard extends StatelessWidget {
     final isWeak = node.hasWeakBackhaul;
     final isWired = node.hasWiredBackhaul;
 
+    final speedSuffix = node.backhaulSpeedMbps != null ? ' (${node.backhaulSpeedMbps} Mbps)' : '';
     String backhaulLabel;
     Color? backhaulColor;
     if (isWired) {
-      backhaulLabel = 'Connected by Ethernet';
+      backhaulLabel = 'Connected by Ethernet$speedSuffix';
     } else if (isWeak) {
-      backhaulLabel = 'Connected wirelessly — Weak';
+      backhaulLabel = 'Connected wirelessly — Weak$speedSuffix';
       backhaulColor = Colors.orange;
     } else {
-      backhaulLabel = 'Connected wirelessly — Good';
+      backhaulLabel = 'Connected wirelessly — Good$speedSuffix';
       backhaulColor = Colors.green;
     }
 

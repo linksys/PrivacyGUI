@@ -69,7 +69,12 @@ class _InstantVerifyPivotViewState
               _tabController.animateTo(3);
             },
           ),
-          const MyDevicesTab(),
+          MyDevicesTab(
+            onNavigateToFlow: (flowIndex) {
+              _helpMeFlowNotifier.value = flowIndex;
+              _tabController.animateTo(3);
+            },
+          ),
           const MyNetworkTab(),
           HelpMeFixItTab(pendingFlowNotifier: _helpMeFlowNotifier),
         ],

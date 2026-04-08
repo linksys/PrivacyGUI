@@ -13,7 +13,8 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_s
 /// when applicable. Guest devices separated. Tapping a device opens a detail
 /// sheet with tailored advice.
 class MyDevicesTab extends ConsumerWidget {
-  const MyDevicesTab({super.key});
+  final ValueChanged<int>? onNavigateToFlow;
+  const MyDevicesTab({super.key, this.onNavigateToFlow});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,9 +62,9 @@ class MyDevicesTab extends ConsumerWidget {
 
           // ── Device list ─────────────────────────────────────────────
           if (state.isMeshNetwork)
-            _MeshGroupedList(state: state)
+            _MeshGroupedList(state: state, onNavigateToFlow: onNavigateToFlow)
           else
-            _FlatDeviceList(state: state),
+            _FlatDeviceList(state: state, onNavigateToFlow: onNavigateToFlow),
         ],
       ),
     );
@@ -185,7 +186,8 @@ List<DiagnosticClient> _sorted(List<DiagnosticClient> clients) {
 
 class _FlatDeviceList extends StatelessWidget {
   final InstantVerifyPivotState state;
-  const _FlatDeviceList({required this.state});
+  final ValueChanged<int>? onNavigateToFlow;
+  const _FlatDeviceList({required this.state, this.onNavigateToFlow});
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +196,7 @@ class _FlatDeviceList extends StatelessWidget {
       child: Column(
         children: [
           for (final client in sorted)
-            _DeviceRow(client: client, state: state),
+            _DeviceRow(client: client, state: state, onNavigateToFlow: onNavigateToFlow),
         ],
       ),
     );
@@ -207,7 +209,8 @@ class _FlatDeviceList extends StatelessWidget {
 
 class _MeshGroupedList extends StatelessWidget {
   final InstantVerifyPivotState state;
-  const _MeshGroupedList({required this.state});
+  final ValueChanged<int>? onNavigateToFlow;
+  const _MeshGroupedList({required this.state, this.onNavigateToFlow});
 
   @override
   Widget build(BuildContext context) {
@@ -236,6 +239,7 @@ class _MeshGroupedList extends StatelessWidget {
                 ? 'Main Router'
                 : 'Satellite Node ${satellites.indexOf(allNodes[i]) + 1}',
             state: state,
+            onNavigateToFlow: onNavigateToFlow,
           ),
         if (unmappedClients.isNotEmpty)
           _NodeGroup(
@@ -243,6 +247,7 @@ class _MeshGroupedList extends StatelessWidget {
             clients: _sorted(unmappedClients),
             label: 'Guest Devices',
             state: state,
+            onNavigateToFlow: onNavigateToFlow,
           ),
       ],
     );
@@ -254,12 +259,14 @@ class _NodeGroup extends StatefulWidget {
   final List<DiagnosticClient> clients;
   final String label;
   final InstantVerifyPivotState state;
+  final ValueChanged<int>? onNavigateToFlow;
 
   const _NodeGroup({
     required this.node,
     required this.clients,
     required this.label,
     required this.state,
+    this.onNavigateToFlow,
   });
 
   @override
@@ -335,7 +342,7 @@ class _NodeGroupState extends State<_NodeGroup> {
               )
             else
               for (final client in widget.clients)
-                _DeviceRow(client: client, state: widget.state),
+                _DeviceRow(client: client, state: widget.state, onNavigateToFlow: widget.onNavigateToFlow),
           ],
         ],
       ),
@@ -350,7 +357,8 @@ class _NodeGroupState extends State<_NodeGroup> {
 class _DeviceRow extends StatelessWidget {
   final DiagnosticClient client;
   final InstantVerifyPivotState state;
-  const _DeviceRow({required this.client, required this.state});
+  final ValueChanged<int>? onNavigateToFlow;
+  const _DeviceRow({required this.client, required this.state, this.onNavigateToFlow});
 
   @override
   Widget build(BuildContext context) {
@@ -358,7 +366,7 @@ class _DeviceRow extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     return InkWell(
-      onTap: () => _showDeviceDetail(context, client, state),
+      onTap: () => _showDeviceDetail(context, client, state, onNavigateToFlow: onNavigateToFlow),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
@@ -416,22 +424,28 @@ class _DeviceRow extends StatelessWidget {
 void _showDeviceDetail(
   BuildContext context,
   DiagnosticClient client,
-  InstantVerifyPivotState state,
-) {
+  InstantVerifyPivotState state, {
+  ValueChanged<int>? onNavigateToFlow,
+}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
-    builder: (context) => _DeviceDetailSheet(client: client, state: state),
+    builder: (context) => _DeviceDetailSheet(
+      client: client,
+      state: state,
+      onNavigateToFlow: onNavigateToFlow,
+    ),
   );
 }
 
 class _DeviceDetailSheet extends StatelessWidget {
   final DiagnosticClient client;
   final InstantVerifyPivotState state;
-  const _DeviceDetailSheet({required this.client, required this.state});
+  final ValueChanged<int>? onNavigateToFlow;
+  const _DeviceDetailSheet({required this.client, required this.state, this.onNavigateToFlow});
 
   @override
   Widget build(BuildContext context) {
@@ -709,15 +723,18 @@ class _DeviceDetailSheet extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: () {
             Navigator.pop(context);
-            // Show a snack guiding them to Help Me Fix It → Flow 3
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                    'Go to Help Me Fix It → Device connectivity issues'),
-                duration: Duration(seconds: 3),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            if (onNavigateToFlow != null) {
+              onNavigateToFlow!(3);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                      'Go to Help Me Fix It → Device connectivity issues'),
+                  duration: Duration(seconds: 3),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
           },
           icon: const Icon(Icons.build_outlined, size: 18),
           label: const Text('Troubleshoot this device'),

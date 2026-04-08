@@ -75,18 +75,44 @@ Widget _buildTab(InstantVerifyPivotState state) {
   );
 }
 
+/// Helper: navigate past the pre-qualifier by selecting "Everything in my home".
+/// Required for flows 1, 2, 4, 5 (network-wide issues).
+Future<void> _tapEverything(WidgetTester tester) async {
+  await tester.tap(find.text('Everything in my home'));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   mockDependencyRegister();
 
   group('HelpMeFixItTab — flow menu', () {
-    testWidgets('shows 5 flow cards', (tester) async {
+    testWidgets('shows qualifier on entry', (tester) async {
       await tester.pumpWidget(_buildTab(_baseState()));
       await tester.pumpAndSettle();
+      // Pre-qualifier shown first
+      expect(find.text('Is it affecting one specific device or everything?'), findsOneWidget);
+      expect(find.text('One specific device'), findsOneWidget);
+      expect(find.text('Everything in my home'), findsOneWidget);
+    });
+
+    testWidgets('shows 5 flow cards after selecting Everything', (tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await _tapEverything(tester);
       expect(find.text('My internet isn\'t working'), findsOneWidget);
       expect(find.text('My internet is slow'), findsOneWidget);
       expect(find.text('Device connectivity issues'), findsOneWidget);
       expect(find.text('WiFi doesn\'t reach a room'), findsOneWidget);
       expect(find.text('My connection keeps cutting out'), findsOneWidget);
+    });
+
+    testWidgets('One specific device routes directly to Flow 3', (tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('One specific device'));
+      await tester.pumpAndSettle();
+      // Should land directly in Flow 3
+      expect(find.text('Can your device connect to your WiFi?'), findsOneWidget);
     });
 
     testWidgets('shows question header', (tester) async {
@@ -100,6 +126,7 @@ void main() {
     testWidgets('tapping a flow shows back button', (tester) async {
       await tester.pumpWidget(_buildTab(_baseState()));
       await tester.pumpAndSettle();
+      await _tapEverything(tester);
       await tester.tap(find.text('WiFi doesn\'t reach a room'));
       await tester.pump(); // don't pumpAndSettle — Flow 1 auto-runs async
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
@@ -108,6 +135,7 @@ void main() {
     testWidgets('back button returns to menu', (tester) async {
       await tester.pumpWidget(_buildTab(_baseState()));
       await tester.pumpAndSettle();
+      await _tapEverything(tester);
       await tester.tap(find.text('WiFi doesn\'t reach a room'));
       await tester.pump();
       await tester.tap(find.byIcon(Icons.arrow_back));
@@ -120,6 +148,7 @@ void main() {
     Future<void> openFlow1(WidgetTester tester) async {
       await tester.pumpWidget(_buildTab(_baseState()));
       await tester.pumpAndSettle();
+      await _tapEverything(tester);
       await tester.tap(find.text('My internet isn\'t working'));
       await tester.pump(); // pump once — diagnostics auto-start
     }
@@ -143,6 +172,7 @@ void main() {
     Future<void> openFlow2(WidgetTester tester) async {
       await tester.pumpWidget(_buildTab(_baseState()));
       await tester.pumpAndSettle();
+      await _tapEverything(tester);
       await tester.tap(find.text('My internet is slow'));
       await tester.pumpAndSettle();
     }
@@ -155,10 +185,11 @@ void main() {
   });
 
   group('Flow 3: Device connectivity issues', () {
+    // Flow 3 can be reached via "One specific device" qualifier shortcut
     Future<void> openFlow3(WidgetTester tester, InstantVerifyPivotState state) async {
       await tester.pumpWidget(_buildTab(state));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Device connectivity issues'));
+      await tester.tap(find.text('One specific device')); // qualifier shortcut
       await tester.pumpAndSettle();
     }
 
@@ -189,9 +220,21 @@ void main() {
       expect(find.textContaining('forgetting your WiFi'), findsOneWidget);
     });
 
-    testWidgets('not-connecting path shows device type picker', (tester) async {
+    testWidgets('not-connecting path shows SSID visibility check first', (tester) async {
       await openFlow3(tester, _baseState());
       await tester.tap(find.textContaining('won\'t connect at all'));
+      await tester.pumpAndSettle();
+      // Item 12: SSID visibility check shown before device type picker
+      expect(find.textContaining('WiFi list'), findsOneWidget);
+      expect(find.text('Yes — I can see it'), findsOneWidget);
+      expect(find.text('No — I don\'t see it'), findsOneWidget);
+    });
+
+    testWidgets('not-connecting → can see SSID → shows device type picker', (tester) async {
+      await openFlow3(tester, _baseState());
+      await tester.tap(find.textContaining('won\'t connect at all'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Yes — I can see it'));
       await tester.pumpAndSettle();
       expect(find.text('What kind of device is it?'), findsOneWidget);
       expect(find.text('Phone or tablet'), findsOneWidget);
@@ -201,6 +244,8 @@ void main() {
     testWidgets('phone → not connecting → shows WiFi credentials', (tester) async {
       await openFlow3(tester, _wifiCredsState());
       await tester.tap(find.textContaining('won\'t connect at all'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Yes — I can see it')); // past SSID visibility
       await tester.pumpAndSettle();
       await tester.tap(find.text('Phone or tablet'));
       await tester.pumpAndSettle();
@@ -215,6 +260,8 @@ void main() {
       await openFlow3(tester, _macFilterOnState());
       await tester.tap(find.textContaining('won\'t connect at all'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Yes — I can see it')); // past SSID visibility
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Phone or tablet'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continue'));
@@ -226,6 +273,8 @@ void main() {
     testWidgets('smart home → path B shows 2.4GHz tip', (tester) async {
       await openFlow3(tester, _wifiCredsState());
       await tester.tap(find.textContaining('won\'t connect at all'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Yes — I can see it')); // past SSID visibility
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Smart home device'));
       await tester.pumpAndSettle();
@@ -240,6 +289,7 @@ void main() {
     Future<void> openFlow4(WidgetTester tester) async {
       await tester.pumpWidget(_buildTab(_baseState()));
       await tester.pumpAndSettle();
+      await _tapEverything(tester);
       await tester.tap(find.text('WiFi doesn\'t reach a room'));
       await tester.pumpAndSettle();
     }
@@ -281,6 +331,7 @@ void main() {
     Future<void> openFlow5(WidgetTester tester) async {
       await tester.pumpWidget(_buildTab(_baseState()));
       await tester.pumpAndSettle();
+      await _tapEverything(tester);
       await tester.tap(find.text('My connection keeps cutting out'));
       await tester.pumpAndSettle();
     }
@@ -326,6 +377,7 @@ void main() {
     testWidgets('Flow 4 terminal screen shows Linksys Support', (tester) async {
       await tester.pumpWidget(_buildTab(_baseState()));
       await tester.pumpAndSettle();
+      await _tapEverything(tester);
       await tester.tap(find.text('WiFi doesn\'t reach a room'));
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Center of my home'));
@@ -344,10 +396,12 @@ void main() {
 
       await tester.pumpWidget(_buildTab(_wifiCredsState()));
       await tester.pumpAndSettle();
-      // Navigate to credentials via not-connecting path
-      await tester.tap(find.text('Device connectivity issues'));
+      // Navigate via qualifier → Flow 3 → not connecting → visibility check → credentials
+      await tester.tap(find.text('One specific device'));
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('won\'t connect at all'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Yes — I can see it')); // past SSID visibility
       await tester.pumpAndSettle();
       await tester.tap(find.text('Phone or tablet'));
       await tester.pumpAndSettle();

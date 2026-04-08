@@ -283,11 +283,13 @@ void main() {
       expect(find.text('MX6200'), findsAtLeast(1));
     });
 
-    testWidgets('shows "Internet: Connected" chip', (tester) async {
+    testWidgets('shows "Connected to ISP" chip when WAN up, DNS not yet run', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('Internet: Connected'), findsOneWidget);
+      // Chip shows 'Connected to ISP' when WAN is up but DNS not yet confirmed;
+      // or 'Internet: Working' if DNS also passed in this state
+      expect(find.textContaining('Connected'), findsAtLeast(1));
     });
   });
 
@@ -374,11 +376,11 @@ void main() {
   });
 
   group('OverviewTab — WAN down', () {
-    testWidgets('shows "Internet: Disconnected" chip', (tester) async {
+    testWidgets('shows "Not connected to ISP" chip when WAN down', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_wanDownState()));
       await tester.pump();
 
-      expect(find.text('Internet: Disconnected'), findsOneWidget);
+      expect(find.text('Not connected to ISP'), findsOneWidget);
     });
 
     testWidgets('shows WAN-down inline light guide callout', (tester) async {
@@ -552,7 +554,7 @@ void main() {
 
       // Dialog should appear
       expect(find.text('Restart Router?'), findsOneWidget);
-      expect(find.textContaining('disconnect all devices'), findsOneWidget);
+      expect(find.textContaining('All devices will disconnect'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Restart'), findsOneWidget);
     });

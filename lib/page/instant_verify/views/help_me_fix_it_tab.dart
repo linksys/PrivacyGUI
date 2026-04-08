@@ -96,15 +96,82 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Flow Menu
+// Flow Menu — with pre-qualifier to route device-specific issues to Flow 3
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _FlowMenu extends StatelessWidget {
+class _FlowMenu extends StatefulWidget {
   final ValueChanged<int> onSelect;
   const _FlowMenu({required this.onSelect});
 
   @override
+  State<_FlowMenu> createState() => _FlowMenuState();
+}
+
+class _FlowMenuState extends State<_FlowMenu> {
+  /// null = show qualifier, true = show all flows, false = went to Flow 3
+  bool? _showAllFlows;
+
+  @override
   Widget build(BuildContext context) {
+    // Pre-qualifier: "Is this happening on one device or everything?" (Item 13)
+    if (_showAllFlows == null) {
+      return _qualifier(context);
+    }
+    return _flowCards(context);
+  }
+
+  Widget _qualifier(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Text(
+            'What are you running into?',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Is it affecting one specific device or everything?',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => widget.onSelect(3), // → Flow 3
+                    icon: const Icon(Icons.smartphone),
+                    label: const Text('One specific device'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => setState(() => _showAllFlows = true),
+                    icon: const Icon(Icons.devices),
+                    label: const Text('Everything in my home'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _flowCards(BuildContext context) {
     final flows = [
       (1, Icons.wifi_off, 'My internet isn\'t working',
           'Websites won\'t load, devices can\'t get online'),
@@ -144,7 +211,7 @@ class _FlowMenu extends StatelessWidget {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 13)),
               trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () => onSelect(index),
+              onTap: () => widget.onSelect(index),
             ),
           ),
       ],
@@ -301,7 +368,9 @@ Future<void> _confirmAndRestart(BuildContext context, WidgetRef ref) async {
     builder: (ctx) => AlertDialog(
       title: const Text('Restart your router?'),
       content: const Text(
-          'Your internet and all connected devices will be unavailable for about 2 minutes while your router restarts.'),
+          'All devices will disconnect for about 2 minutes.\n\n'
+          'If you\'re on WiFi, this page will go blank. '
+          'Wait 2 minutes, reconnect to your WiFi, then return to 192.168.1.1.'),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
@@ -839,7 +908,9 @@ class _Flow2State extends ConsumerState<_Flow2> {
           ),
           const SizedBox(height: 8),
           SelectableText(
-            'Speed can vary based on time of day, how many devices are active, and your distance from the router.',
+            'Speed measured from this device. Speed can vary based on time of day, '
+            'how many devices are active, and your distance from the router. '
+            'A device experiencing issues may be faster or slower than this reading.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -1091,6 +1162,8 @@ class _Flow3State extends ConsumerState<_Flow3> {
   _DeviceType? _deviceType;
   bool _isDisablingMacFilter = false;
   bool _macFilterDisabled = false;
+  // null = not yet answered, true = can see SSID, false = can't see SSID (Item 12)
+  bool? _canSeeSsid;
 
   @override
   Widget build(BuildContext context) {
@@ -1276,6 +1349,95 @@ class _Flow3State extends ConsumerState<_Flow3> {
   }
 
   List<Widget> _step1CantConnect(BuildContext context) {
+    // Step 1a (Item 12): Ask if the customer can see the SSID before showing credentials.
+    // Use the actual SSID name so the question is specific, not generic.
+    final state = ref.watch(instantVerifyPivotProvider);
+    final ssid = state.wifiSsid;
+    final ssidLabel = ssid != null ? '"$ssid"' : 'your network name';
+
+    if (_canSeeSsid == null) {
+      return [
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Can you see $ssidLabel in your device\'s WiFi list?',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            SelectableText(
+              'Open your device\'s WiFi settings and look for the network name above.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => setState(() => _canSeeSsid = true),
+                child: const Text('Yes — I can see it'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => setState(() => _canSeeSsid = false),
+                child: const Text('No — I don\'t see it'),
+              ),
+            ),
+          ],
+        )),
+      ];
+    }
+
+    // Customer can't see the SSID at all — different problem from wrong password
+    if (_canSeeSsid == false) {
+      return [
+        _stepCard(context, Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Network not visible',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            _infoBox(context,
+                'If the network name isn\'t showing on your device, the issue is with your router\'s WiFi broadcast — not the password.'),
+            const SizedBox(height: 12),
+            _checklistItem(context,
+                'Make sure your router is powered on and the WiFi light is on'),
+            _checklistItem(context,
+                'Check that WiFi is enabled in your router settings'),
+            _checklistItem(context,
+                'Move your device closer to the router and check again'),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _confirmAndRestart(context, ref),
+                icon: const Icon(Icons.restart_alt),
+                label: const Text('Restart Router'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => setState(() => _canSeeSsid = null),
+                child: const Text('Back'),
+              ),
+            ),
+          ],
+        )),
+        _linksysSupportTile(context),
+      ];
+    }
+
+    // Customer CAN see the SSID — now show device type picker
     final types = [
       (_DeviceType.phone, 'Phone or tablet'),
       (_DeviceType.laptop, 'Laptop or computer'),
