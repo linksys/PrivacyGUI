@@ -1905,6 +1905,258 @@ class _Flow3State extends ConsumerState<_Flow3> {
     );
   }
 
+  // ── SSID not visible — smart diagnostic using live router data ──────────────
+  Widget _ssidNotVisibleCard(BuildContext context, WidgetRef ref, InstantVerifyPivotState state) {
+    final colors = Theme.of(context).colorScheme;
+    final radios = state.radioInfo?['radios'] as List? ?? [];
+
+    // ── Parse live radio state ─────────────────────────────────────────────
+    // Bands confirmed active on this router
+    final activeBands = <String>[];
+    final disabledBands = <String>[];
+    bool? hiddenSsid;
+    for (final r in radios) {
+      final band = (r as Map<String, dynamic>)['band'] as String? ?? '';
+      if (band.isEmpty) continue;
+      final settings = r['settings'] as Map<String, dynamic>? ?? {};
+      final isEnabled = settings['isEnabled'] as bool? ?? settings['enabled'] as bool?;
+      if (isEnabled == false) {
+        disabledBands.add(band);
+      } else {
+        activeBands.add(band);
+      }
+      // broadcastSsid: false means the network is hidden
+      final broadcast = settings['broadcastSsid'] as bool? ?? settings['isBroadcastEnabled'] as bool?;
+      if (broadcast == false) hiddenSsid = true;
+    }
+    final hasRadioData = radios.isNotEmpty;
+
+    // ── Channel data ───────────────────────────────────────────────────────
+    // DFS channels on 5 GHz: 52–64 and 100–140. Some older devices and drivers
+    // can't see or join DFS channels while radar detection is active.
+    final dfsChannels = <String>[];
+    final channelList = (state.channelInfo?['selectedChannels'] as List? ?? []);
+    if (channelList.isNotEmpty) {
+      final channels = (channelList.first as Map<String, dynamic>?)?['channels'] as List? ?? [];
+      for (final ch in channels) {
+        final band = (ch as Map<String, dynamic>)['band'] as String? ?? '';
+        final num = int.tryParse(ch['channel']?.toString() ?? '') ?? 0;
+        if (band.contains('5') && ((num >= 52 && num <= 64) || (num >= 100 && num <= 140))) {
+          dfsChannels.add('5 GHz ch $num');
+        }
+      }
+    }
+
+    // ── Security ───────────────────────────────────────────────────────────
+    final wpa3Only = state.isWpa3Only;
+
+    // ── WiFi schedule ──────────────────────────────────────────────────────
+    final scheduleBlocking = state.wirelessSchedule != null &&
+        (state.wirelessSchedule!['isEnabled'] as bool? ?? false);
+
+    // ── Build findings list ────────────────────────────────────────────────
+    final findings = <_SsidFinding>[];
+
+    if (scheduleBlocking) {
+      findings.add(_SsidFinding(
+        icon: Icons.schedule,
+        color: Colors.orange,
+        title: 'WiFi schedule is active',
+        detail: 'Your router has a schedule that turns off WiFi at certain times. '
+            'Check your schedule settings — WiFi may be turned off right now.',
+        isBlocker: true,
+      ));
+    }
+
+    if (disabledBands.isNotEmpty) {
+      findings.add(_SsidFinding(
+        icon: Icons.wifi_off,
+        color: Colors.red,
+        title: '${disabledBands.join(' and ')} radio is turned off',
+        detail: 'The ${disabledBands.join('/')} band is disabled in your router settings. '
+            'Enable it under WiFi settings.',
+        isBlocker: true,
+      ));
+    }
+
+    if (hiddenSsid == true) {
+      findings.add(_SsidFinding(
+        icon: Icons.visibility_off,
+        color: Colors.orange,
+        title: 'Network name is hidden (SSID broadcast off)',
+        detail: 'Your router is not broadcasting the network name. '
+            'Devices need to be configured manually to join a hidden network, '
+            'or you can turn SSID broadcast back on in WiFi settings.',
+        isBlocker: true,
+      ));
+    }
+
+    if (wpa3Only) {
+      findings.add(_SsidFinding(
+        icon: Icons.lock,
+        color: Colors.orange,
+        title: 'WPA3-only security — older devices can\'t connect',
+        detail: 'Devices made before 2019 (and many smart home devices) don\'t '
+            'support WPA3. Switch to WPA2/WPA3 mixed mode in your WiFi Security settings.',
+        isBlocker: false,
+      ));
+    }
+
+    if (dfsChannels.isNotEmpty) {
+      findings.add(_SsidFinding(
+        icon: Icons.radar,
+        color: Colors.blue,
+        title: 'Operating on DFS channel (${dfsChannels.join(', ')})',
+        detail: 'DFS channels are shared with radar systems. Some older laptops, '
+            'phones, and smart home devices can\'t see or connect to DFS channels. '
+            'Switching to a non-DFS channel (36, 40, 44, or 48) may help.',
+        isBlocker: false,
+      ));
+    }
+
+    // What bands does this router support?
+    final allBands = {...activeBands, ...disabledBands}.toList();
+    final has6Ghz = allBands.any((b) => b.contains('6'));
+    final has5Ghz = allBands.any((b) => b.contains('5') && !b.contains('6'));
+    final has24Ghz = allBands.any((b) => b.contains('2.4'));
+
+    return _stepCard(context, Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Network not visible — checking your router',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+
+        // Bands summary
+        if (hasRadioData) ...[
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('WiFi radios on this router:',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600, color: colors.onSurfaceVariant)),
+                const SizedBox(height: 6),
+                if (has24Ghz)
+                  _radioStatusRow(context, '2.4 GHz', disabledBands.any((b) => b.contains('2.4'))),
+                if (has5Ghz)
+                  _radioStatusRow(context, '5 GHz', disabledBands.any((b) => b.contains('5') && !b.contains('6'))),
+                if (has6Ghz)
+                  _radioStatusRow(context, '6 GHz', disabledBands.any((b) => b.contains('6'))),
+                if (!has24Ghz && !has5Ghz && !has6Ghz)
+                  Text('Radio data not available',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Findings
+        if (findings.isEmpty) ...[
+          _infoBox(context,
+              'We didn\'t detect an obvious cause. Try moving your device closer to '
+              'the router, then check again. If it still doesn\'t appear, a router restart often helps.'),
+          const SizedBox(height: 12),
+        ] else ...[
+          for (final f in findings) ...[
+            _ssidFindingTile(context, f),
+            const SizedBox(height: 8),
+          ],
+        ],
+
+        // Note about device compatibility
+        if (has6Ghz) ...[
+          _infoBox(context,
+              '6 GHz WiFi (WiFi 6E/7) requires a compatible device — most phones and '
+              'laptops from 2021 or earlier won\'t see the 6 GHz network at all. '
+              'Check if your device supports WiFi 6E.',
+              icon: Icons.info_outline),
+          const SizedBox(height: 12),
+        ],
+
+        // Restart action
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _confirmAndRestart(context, ref),
+            icon: const Icon(Icons.restart_alt, size: 18),
+            label: const Text('Restart Router'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () => setState(() => _canSeeSsid = null),
+            child: const Text('Back'),
+          ),
+        ),
+      ],
+    ));
+  }
+
+  Widget _radioStatusRow(BuildContext context, String band, bool disabled) {
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(children: [
+        Icon(
+          disabled ? Icons.cancel : Icons.check_circle,
+          size: 14,
+          color: disabled ? Colors.red : Colors.green,
+        ),
+        const SizedBox(width: 6),
+        Text(band,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500)),
+        const SizedBox(width: 6),
+        Text(disabled ? 'Disabled' : 'Active',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: disabled ? Colors.red : Colors.green)),
+      ]),
+    );
+  }
+
+  Widget _ssidFindingTile(BuildContext context, _SsidFinding f) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: f.color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: f.color.withOpacity(0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(f.icon, size: 18, color: f.color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(f.title,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: f.isBlocker ? f.color : null)),
+                const SizedBox(height: 3),
+                Text(f.detail,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  // ── end SSID not visible ──────────────────────────────────────────────────
+
   List<Widget> _step1CantConnect(BuildContext context) {
     // Step 1a (Item 12): Ask if the customer can see the SSID before showing credentials.
     // Use the actual SSID name so the question is specific, not generic.
@@ -1950,48 +2202,9 @@ class _Flow3State extends ConsumerState<_Flow3> {
       ];
     }
 
-    // Customer can't see the SSID at all — different problem from wrong password
+    // Customer can't see the SSID at all — smart diagnostic using live router data
     if (_canSeeSsid == false) {
-      return [
-        _stepCard(context, Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Network not visible',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            _infoBox(context,
-                'If the network name isn\'t showing on your device, the issue is with your router\'s WiFi broadcast — not the password.'),
-            const SizedBox(height: 12),
-            _checklistItem(context,
-                'Make sure your router is powered on and the WiFi light is on'),
-            _checklistItem(context,
-                'Check that WiFi is enabled in your router settings'),
-            _checklistItem(context,
-                'Move your device closer to the router and check again'),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _confirmAndRestart(context, ref),
-                icon: const Icon(Icons.restart_alt),
-                label: const Text('Restart Router'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => setState(() => _canSeeSsid = null),
-                child: const Text('Back'),
-              ),
-            ),
-          ],
-        )),
-        _linksysSupportTile(context),
-      ];
+      return [_ssidNotVisibleCard(context, ref, state)];
     }
 
     // Customer CAN see the SSID — now show device type picker
@@ -3270,4 +3483,21 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
         )),
         const _SatisfactionPrompt(),
       ];
+}
+
+// ── Data class for SSID-not-visible findings ─────────────────────────────────
+
+class _SsidFinding {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String detail;
+  final bool isBlocker;
+  const _SsidFinding({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.detail,
+    required this.isBlocker,
+  });
 }
