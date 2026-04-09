@@ -657,4 +657,171 @@ void main() {
       );
     });
   });
+
+  // ── Qualifier buttons ──────────────────────────────────────────────────────
+
+  group('HelpMeFixItTab — qualifier button styling', () {
+    testWidgets('both qualifier buttons are OutlinedButton (neither pre-selected)', (tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+
+      // Find all OutlinedButton children that contain the qualifier labels
+      expect(find.text('One specific device'), findsOneWidget);
+      expect(find.text('Everything in my home'), findsOneWidget);
+
+      // Neither should be a FilledButton — FilledButton renders with filled background
+      // using a different widget type from OutlinedButton
+      final oneDeviceBtn = find.ancestor(
+        of: find.text('One specific device'),
+        matching: find.byWidgetPredicate((w) => w is OutlinedButton),
+      );
+      final everythingBtn = find.ancestor(
+        of: find.text('Everything in my home'),
+        matching: find.byWidgetPredicate((w) => w is OutlinedButton),
+      );
+
+      expect(oneDeviceBtn, findsOneWidget,
+          reason: '"One specific device" must be an OutlinedButton');
+      expect(everythingBtn, findsOneWidget,
+          reason: '"Everything in my home" must be an OutlinedButton');
+
+      // Confirm no FilledButton wraps either label
+      final oneFilledBtn = find.ancestor(
+        of: find.text('One specific device'),
+        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      );
+      final everythingFilledBtn = find.ancestor(
+        of: find.text('Everything in my home'),
+        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      );
+      expect(oneFilledBtn, findsNothing,
+          reason: '"One specific device" must NOT be a FilledButton');
+      expect(everythingFilledBtn, findsNothing,
+          reason: '"Everything in my home" must NOT be a FilledButton');
+    });
+  });
+
+  // ── SSID not visible diagnostics ──────────────────────────────────────────
+
+  /// Navigate through qualifier → Flow 3 → "No, it won't connect" → "No, I don't see it"
+  Future<void> _navigateToSsidNotVisible(WidgetTester tester) async {
+    await tester.tap(find.text('One specific device'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('won\'t connect at all'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('No — I don\'t see it'));
+    await tester.pumpAndSettle();
+  }
+
+  group('HelpMeFixItTab — Flow 3 SSID not visible diagnostics', () {
+    testWidgets('renders without crash when no radioInfo', (tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await _navigateToSsidNotVisible(tester);
+      expect(find.text('Network not visible — checking your router'), findsOneWidget);
+    });
+
+    testWidgets('shows no-data message when radioInfo is absent', (tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await _navigateToSsidNotVisible(tester);
+      // With no radioInfo, shows generic "no obvious cause" message
+      expect(find.textContaining('didn\'t detect an obvious cause'), findsOneWidget);
+    });
+
+    testWidgets('disabled 2.4 GHz radio shows disabled band finding', (tester) async {
+      final state = _baseState(radioInfo: {
+        'radios': [
+          {
+            'band': '2.4GHz',
+            'settings': {'isEnabled': false, 'ssid': 'MyNet'},
+          },
+          {
+            'band': '5GHz',
+            'settings': {'isEnabled': true, 'ssid': 'MyNet'},
+          },
+        ],
+      });
+      await tester.pumpWidget(_buildTab(state));
+      await tester.pumpAndSettle();
+      await _navigateToSsidNotVisible(tester);
+      expect(find.textContaining('radio is turned off'), findsOneWidget);
+    });
+
+    testWidgets('hidden SSID (broadcastSsid: false) shows hidden-network finding', (tester) async {
+      final state = _baseState(radioInfo: {
+        'radios': [
+          {
+            'band': '2.4GHz',
+            'settings': {
+              'isEnabled': true,
+              'ssid': 'MyNet',
+              'broadcastSsid': false,
+            },
+          },
+        ],
+      });
+      await tester.pumpWidget(_buildTab(state));
+      await tester.pumpAndSettle();
+      await _navigateToSsidNotVisible(tester);
+      expect(find.textContaining('hidden'), findsWidgets);
+    });
+
+    testWidgets('WPA3-only security shows WPA3 compatibility finding', (tester) async {
+      final state = _baseState(
+        radioInfo: {
+          'radios': [
+            {
+              'band': '5GHz',
+              'settings': {'isEnabled': true, 'ssid': 'MyNet'},
+            },
+          ],
+        },
+        networkSecurity: {'securityType': 'WPA3-Personal'},
+      );
+      await tester.pumpWidget(_buildTab(state));
+      await tester.pumpAndSettle();
+      await _navigateToSsidNotVisible(tester);
+      expect(find.textContaining('WPA3'), findsWidgets);
+    });
+
+    testWidgets('active radios show both bands with Active status', (tester) async {
+      final state = _baseState(radioInfo: {
+        'radios': [
+          {
+            'band': '2.4GHz',
+            'settings': {'isEnabled': true, 'ssid': 'MyNet'},
+          },
+          {
+            'band': '5GHz',
+            'settings': {'isEnabled': true, 'ssid': 'MyNet'},
+          },
+        ],
+      });
+      await tester.pumpWidget(_buildTab(state));
+      await tester.pumpAndSettle();
+      await _navigateToSsidNotVisible(tester);
+      // Radio status card shows bands
+      expect(find.text('2.4 GHz'), findsWidgets);
+      expect(find.text('5 GHz'), findsWidgets);
+      expect(find.text('Active'), findsWidgets);
+    });
+
+    testWidgets('Restart Router button is always present', (tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await _navigateToSsidNotVisible(tester);
+      expect(find.text('Restart Router'), findsOneWidget);
+    });
+
+    testWidgets('Back button navigates back to SSID visibility question', (tester) async {
+      await tester.pumpWidget(_buildTab(_baseState()));
+      await tester.pumpAndSettle();
+      await _navigateToSsidNotVisible(tester);
+      await tester.tap(find.text('Back'));
+      await tester.pumpAndSettle();
+      // Should return to "Can you see your network?" question
+      expect(find.textContaining('WiFi list'), findsOneWidget);
+    });
+  });
 }
