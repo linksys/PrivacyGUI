@@ -499,11 +499,11 @@ void main() {
       expect(find.text('Run Again'), findsOneWidget);
     });
 
-    testWidgets('"Simulate failures" link visible', (tester) async {
+    testWidgets('"Test scenarios" button visible', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_allClearState()));
       await tester.pump();
 
-      expect(find.text('Simulate failures'), findsOneWidget);
+      expect(find.text('Test scenarios'), findsOneWidget);
     });
   });
 

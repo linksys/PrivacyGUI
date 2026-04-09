@@ -552,25 +552,17 @@ void main() {
 
     testWidgets('satisfaction prompt appears on terminal screen', (tester) async {
       await navigateToFlow4Terminal(tester);
-      expect(find.text('Did this help?'), findsOneWidget);
-      expect(find.text('Fixed it'), findsOneWidget);
-    });
+      // Satisfaction prompt is hidden (SizedBox.shrink) pending feedback mechanism.
+      // Re-enable when prompt is wired to a real feedback destination.
+      expect(find.text('Did this help?'), findsNothing);
+    }); // satisfaction prompt hidden — see _SatisfactionPromptState.build()
 
-    testWidgets('tapping Fixed it shows confirmation response', (tester) async {
-      tester.view.physicalSize = const Size(800, 2400);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
+    testWidgets('terminal screen renders without satisfaction prompt', (tester) async {
       await navigateToFlow4Terminal(tester);
-      // Ensure we can see and tap the rating button
-      await tester.ensureVisible(find.text('Fixed it').first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Fixed it').first);
-      await tester.pumpAndSettle();
-      // After rating, the prompt is replaced by a response text
-      expect(find.textContaining('Glad'), findsOneWidget);
-    });
+      // Prompt is hidden — verify no rating buttons are shown
+      expect(find.text('Fixed it'), findsNothing);
+      expect(find.text('Did this help?'), findsNothing);
+    }); // satisfaction prompt hidden — re-enable when wired to feedback destination
   });
 
   group('Flow 5: PPPoE WAN connection type', () {
