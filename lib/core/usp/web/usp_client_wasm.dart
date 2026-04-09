@@ -118,40 +118,299 @@ class UspClientWeb {
     await _client.set(path, value).toDart;
   }
 
-  Future<void> setMultiple(Map<String, String> parameters,
+  /// Sets multiple parameters and returns structured operation result.
+  ///
+  /// Returns a Map containing:
+  /// - 'overallSuccess': bool - true if all operations succeeded
+  /// - 'hasAnySuccess': bool - true if at least one operation succeeded
+  /// - 'hasErrors': bool - true if at least one operation failed
+  /// - 'results': List<Map> - detailed results per parameter
+  Future<Map<String, dynamic>> setMultiple(Map<String, String> parameters,
       {bool allowPartial = false}) async {
-    await _client.setMultiple(parameters.jsify()!, allowPartial).toDart;
+    final result = await _client.setMultiple(parameters.jsify()!, allowPartial).toDart;
+
+    if (result == null || result.isUndefinedOrNull) {
+      // Fallback: assume success if no structured response (old WASM version)
+      return {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': parameters.keys.map((path) => {
+          'requestedPath': path,
+          'success': true,
+          'updatedInstances': [{
+            'affectedPath': _extractInstancePath(path),
+            'updatedParams': {_extractParameterName(path): parameters[path]!}
+          }]
+        }).toList(),
+      };
+    }
+
+    final map = result.dartify() as Map?;
+    if (map == null) {
+      throw StateError('Invalid setMultiple response format');
+    }
+
+    return Map<String, dynamic>.from(map);
+  }
+
+  /// Extracts instance path from full parameter path
+  /// e.g., "Device.WiFi.SSID.1.SSID" -> "Device.WiFi.SSID.1."
+  String _extractInstancePath(String fullPath) {
+    final segments = fullPath.split('.');
+    if (segments.length < 2) return fullPath;
+    return '${segments.sublist(0, segments.length - 1).join('.')}.';
+  }
+
+  /// Extracts parameter name from full path
+  /// e.g., "Device.WiFi.SSID.1.SSID" -> "SSID"
+  String _extractParameterName(String fullPath) {
+    return fullPath.split('.').last;
   }
 
   /// Creates a new object instance at the given path with initial parameters.
-  /// Returns the created instance path (e.g., "Device.NAT.PortMapping.3.").
-  Future<String> add(String objectPath, Map<String, String> parameters) async {
+  /// Returns structured operation result containing creation details.
+  Future<Map<String, dynamic>> add(String objectPath, Map<String, String> parameters) async {
     final result = await _client.add(objectPath, parameters.jsify()!).toDart;
-    return result?.dartify()?.toString() ?? '';
+
+    if (result == null || result.isUndefinedOrNull) {
+      // Fallback: create a failure result
+      return {
+        'overallSuccess': false,
+        'hasAnySuccess': false,
+        'hasErrors': true,
+        'results': [{
+          'requestedPath': objectPath,
+          'success': false,
+          'errorCode': -1,
+          'errorMessage': 'Add operation returned null or undefined'
+        }],
+      };
+    }
+
+    final map = result.dartify();
+
+    // Handle legacy response format (simple string path)
+    if (map is String) {
+      if (map.isNotEmpty) {
+        return {
+          'overallSuccess': true,
+          'hasAnySuccess': true,
+          'hasErrors': false,
+          'results': [{
+            'requestedPath': objectPath,
+            'success': true,
+            'createdInstances': [{
+              'affectedPath': map,
+              'initialParams': parameters,
+            }]
+          }],
+        };
+      } else {
+        return {
+          'overallSuccess': false,
+          'hasAnySuccess': false,
+          'hasErrors': true,
+          'results': [{
+            'requestedPath': objectPath,
+            'success': false,
+            'errorCode': -1,
+            'errorMessage': 'Add operation returned empty path'
+          }],
+        };
+      }
+    }
+
+    // Handle structured response format
+    if (map is Map) {
+      return Map<String, dynamic>.from(map);
+    }
+
+    throw StateError('Invalid add response format: ${map.runtimeType}');
   }
 
   /// Creates multiple object instances.
   /// Each object should have `path` (String) and `parameters` (Map<String, String>).
-  /// Returns a list of created instance paths.
-  Future<List<String>> addMultiple(List<Map<String, dynamic>> objects,
+  /// Returns structured operation result containing creation details.
+  Future<Map<String, dynamic>> addMultiple(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
     final jsObjects = objects.map((obj) => obj.jsify()!).toList().toJS;
     final result = await _client.addMultiple(jsObjects, allowPartial).toDart;
-    final list = result.dartify() as List?;
-    if (list == null) return [];
-    return list.map((e) => e.toString()).toList();
+
+    if (result == null || result.isUndefinedOrNull) {
+      // Fallback: create failure result
+      return {
+        'overallSuccess': false,
+        'hasAnySuccess': false,
+        'hasErrors': true,
+        'results': objects.map((obj) => {
+          'requestedPath': obj['path'] as String? ?? 'unknown',
+          'success': false,
+          'errorCode': -1,
+          'errorMessage': 'AddMultiple operation returned null or undefined'
+        }).toList(),
+      };
+    }
+
+    final dartResult = result.dartify();
+
+    // Handle legacy response format (List<String> of created paths)
+    if (dartResult is List) {
+      final pathList = dartResult.map((e) => e.toString()).toList();
+      if (pathList.length == objects.length) {
+        // All objects created successfully
+        final results = <Map<String, dynamic>>[];
+        for (var i = 0; i < objects.length; i++) {
+          final obj = objects[i];
+          final createdPath = pathList[i];
+          results.add({
+            'requestedPath': obj['path'] as String? ?? 'unknown',
+            'success': createdPath.isNotEmpty,
+            if (createdPath.isNotEmpty) 'createdInstances': [{
+              'affectedPath': createdPath,
+              'initialParams': obj['parameters'] as Map<String, String>? ?? <String, String>{},
+            }],
+            if (createdPath.isEmpty) ...{
+              'errorCode': -1,
+              'errorMessage': 'Empty path returned for object creation'
+            },
+          });
+        }
+
+        final successCount = results.where((r) => r['success'] == true).length;
+        return {
+          'overallSuccess': successCount == objects.length,
+          'hasAnySuccess': successCount > 0,
+          'hasErrors': successCount < objects.length,
+          'results': results,
+        };
+      }
+    }
+
+    // Handle structured response format
+    if (dartResult is Map) {
+      return Map<String, dynamic>.from(dartResult);
+    }
+
+    throw StateError('Invalid addMultiple response format: ${dartResult.runtimeType}');
   }
 
   /// Deletes an object instance at the given path.
-  Future<void> delete(String path) async {
-    await _client.delete_(path).toDart;
+  /// Returns structured operation result containing deletion details.
+  Future<Map<String, dynamic>> delete(String path) async {
+    try {
+      final result = await _client.delete_(path).toDart;
+
+      if (result == null || result.isUndefinedOrNull) {
+        // Fallback: assume success for legacy WASM version
+        return {
+          'overallSuccess': true,
+          'hasAnySuccess': true,
+          'hasErrors': false,
+          'results': [{
+            'requestedPath': path,
+            'success': true,
+            'deletedInstances': [{
+              'affectedPath': path,
+            }]
+          }],
+        };
+      }
+
+      final map = result.dartify();
+
+      // Handle structured response format
+      if (map is Map) {
+        return Map<String, dynamic>.from(map);
+      }
+
+      // Handle void/success response (legacy)
+      return {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': path,
+          'success': true,
+          'deletedInstances': [{
+            'affectedPath': path,
+          }]
+        }],
+      };
+    } catch (e) {
+      // Convert exception to structured error result
+      return {
+        'overallSuccess': false,
+        'hasAnySuccess': false,
+        'hasErrors': true,
+        'results': [{
+          'requestedPath': path,
+          'success': false,
+          'errorCode': -1,
+          'errorMessage': e.toString(),
+        }],
+      };
+    }
   }
 
   /// Deletes multiple object instances.
-  Future<void> deleteMultiple(List<String> paths,
+  /// Returns structured operation result containing deletion details.
+  Future<Map<String, dynamic>> deleteMultiple(List<String> paths,
       {bool allowPartial = false}) async {
-    final jsPaths = paths.map((p) => p.toJS).toList().toJS;
-    await _client.deleteMultiple(jsPaths, allowPartial).toDart;
+    try {
+      final jsPaths = paths.map((p) => p.toJS).toList().toJS;
+      final result = await _client.deleteMultiple(jsPaths, allowPartial).toDart;
+
+      if (result == null || result.isUndefinedOrNull) {
+        // Fallback: assume success for legacy WASM version
+        return {
+          'overallSuccess': true,
+          'hasAnySuccess': true,
+          'hasErrors': false,
+          'results': paths.map((path) => {
+            'requestedPath': path,
+            'success': true,
+            'deletedInstances': [{
+              'affectedPath': path,
+            }]
+          }).toList(),
+        };
+      }
+
+      final map = result.dartify();
+
+      // Handle structured response format
+      if (map is Map) {
+        return Map<String, dynamic>.from(map);
+      }
+
+      // Handle void/success response (legacy)
+      return {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': paths.map((path) => {
+          'requestedPath': path,
+          'success': true,
+          'deletedInstances': [{
+            'affectedPath': path,
+          }]
+        }).toList(),
+      };
+    } catch (e) {
+      // Convert exception to structured error result
+      return {
+        'overallSuccess': false,
+        'hasAnySuccess': false,
+        'hasErrors': true,
+        'results': paths.map((path) => {
+          'requestedPath': path,
+          'success': false,
+          'errorCode': -1,
+          'errorMessage': e.toString(),
+        }).toList(),
+      };
+    }
   }
 
   /// Executes a USP Operate command.

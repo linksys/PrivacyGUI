@@ -34,21 +34,21 @@ class UspClientWeb {
   Future<void> set(String path, String value) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<void> setMultiple(Map<String, String> parameters,
+  Future<Map<String, dynamic>> setMultiple(Map<String, String> parameters,
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<String> add(String objectPath, Map<String, String> parameters) =>
+  Future<Map<String, dynamic>> add(String objectPath, Map<String, String> parameters) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<List<String>> addMultiple(List<Map<String, dynamic>> objects,
+  Future<Map<String, dynamic>> addMultiple(List<Map<String, dynamic>> objects,
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<void> delete(String path) =>
+  Future<Map<String, dynamic>> delete(String path) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<void> deleteMultiple(List<String> paths,
+  Future<Map<String, dynamic>> deleteMultiple(List<String> paths,
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 

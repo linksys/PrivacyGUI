@@ -2,6 +2,8 @@
 
 This document describes the YAML format supported by `usp-codegen`, based on the current implementation (parser, AST, generators).
 
+> **Version Update (v0.11.0)**: All generated methods now return structured response objects instead of simple success/failure types. This implements the "Never Lose Information" principle, preserving all firmware response data. See [Step 1 & 2 Implementation Report](../STEP_1_2_IMPLEMENTATION_REPORT.md) for details.
+
 ---
 
 ## Table of Contents
@@ -29,6 +31,7 @@ This document describes the YAML format supported by `usp-codegen`, based on the
 - [5. Naming Conventions](#5-naming-conventions)
 - [6. CLI Options](#6-cli-options)
 - [7. Full Examples](#7-full-examples)
+- [8. Structured Response Format](#8-structured-response-format)
 
 ---
 
@@ -529,21 +532,23 @@ class ConnectedDevices {
   factory ConnectedDevices._fromResponse(Map<String, dynamic> response) { ... }
 
   /// Update a single instance via USP Set
-  static Future<void> update(UspService client, ConnectedDeviceUpdate update) async {
+  static Future<Map<String, dynamic>> update(UspService client, ConnectedDeviceUpdate update) async {
     final params = <String, dynamic>{};
     if (update.hostName != null) params['${update.instancePath}HostName'] = update.hostName;
     if (update.active != null) params['${update.instancePath}Active'] = update.active;
-    if (params.isNotEmpty) await client.set(params);
+    if (params.isNotEmpty) return await client.set(params);
+    return {'overallSuccess': true, 'hasAnySuccess': false, 'hasErrors': false, 'results': []};
   }
 
   /// Update multiple instances in a single USP Set
-  static Future<void> updateMany(UspService client, List<ConnectedDeviceUpdate> updates, {bool allowPartial = false}) async {
+  static Future<Map<String, dynamic>> updateMany(UspService client, List<ConnectedDeviceUpdate> updates, {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.hostName != null) params['${update.instancePath}HostName'] = update.hostName;
       if (update.active != null) params['${update.instancePath}Active'] = update.active;
     }
-    if (params.isNotEmpty) await client.set(params, allowPartial: allowPartial);
+    if (params.isNotEmpty) return await client.set(params, allowPartial: allowPartial);
+    return {'overallSuccess': true, 'hasAnySuccess': false, 'hasErrors': false, 'results': []};
   }
 }
 ```
@@ -578,20 +583,22 @@ export async function fetchConnectedDevices(client: UspClient): Promise<Connecte
   return { items };
 }
 
-export async function updateConnectedDevice(client: UspClient, update: ConnectedDeviceUpdate): Promise<void> {
+export async function updateConnectedDevice(client: UspClient, update: ConnectedDeviceUpdate): Promise<any> {
   const params: Record<string, any> = {};
   if (update.hostName !== undefined) params[`${update.instancePath}HostName`] = update.hostName;
   if (update.active !== undefined) params[`${update.instancePath}Active`] = update.active;
-  if (Object.keys(params).length > 0) await client.setMultiple(params, false);
+  if (Object.keys(params).length > 0) return await client.setMultiple(params, false);
+  return {overallSuccess: true, hasAnySuccess: false, hasErrors: false, results: []};
 }
 
-export async function updateConnectedDevices(client: UspClient, updates: ConnectedDeviceUpdate[], allowPartial = false): Promise<void> {
+export async function updateConnectedDevices(client: UspClient, updates: ConnectedDeviceUpdate[], allowPartial = false): Promise<any> {
   const params: Record<string, any> = {};
   for (const update of updates) {
     if (update.hostName !== undefined) params[`${update.instancePath}HostName`] = update.hostName;
     if (update.active !== undefined) params[`${update.instancePath}Active`] = update.active;
   }
-  if (Object.keys(params).length > 0) await client.setMultiple(params, allowPartial);
+  if (Object.keys(params).length > 0) return await client.setMultiple(params, allowPartial);
+  return {overallSuccess: true, hasAnySuccess: false, hasErrors: false, results: []};
 }
 ```
 
@@ -623,22 +630,26 @@ public class ConnectedDevices {
 
     public static func fetch(client: UspClient) async throws -> ConnectedDevices { ... }
 
-    public static func update(client: UspClient, _ update: ConnectedDeviceUpdate) async throws {
+    public static func update(client: UspClient, _ update: ConnectedDeviceUpdate) async throws -> [String: Any] {
         var params: [String: Any] = [:]
         if let hostName = update.hostName { params["\(update.instancePath)HostName"] = hostName }
         if let active = update.active { params["\(update.instancePath)Active"] = active }
-        guard !params.isEmpty else { return }
-        try await client.set(params)
+        guard !params.isEmpty else { 
+            return ["overallSuccess": true, "hasAnySuccess": false, "hasErrors": false, "results": []]
+        }
+        return try await client.set(params)
     }
 
-    public static func updateMany(client: UspClient, _ updates: [ConnectedDeviceUpdate], allowPartial: Bool = false) async throws {
+    public static func updateMany(client: UspClient, _ updates: [ConnectedDeviceUpdate], allowPartial: Bool = false) async throws -> [String: Any] {
         var params: [String: Any] = [:]
         for update in updates {
             if let hostName = update.hostName { params["\(update.instancePath)HostName"] = hostName }
             if let active = update.active { params["\(update.instancePath)Active"] = active }
         }
-        guard !params.isEmpty else { return }
-        try await client.set(params, allowPartial: allowPartial)
+        guard !params.isEmpty else { 
+            return ["overallSuccess": true, "hasAnySuccess": false, "hasErrors": false, "results": []]
+        }
+        return try await client.set(params, allowPartial: allowPartial)
     }
 }
 ```
@@ -750,7 +761,7 @@ Only **writable** parameters are included in the `add()` method signature. Read-
 
 **Dart:**
 ```dart
-static Future<String> add(UspService client, {
+static Future<Map<String, dynamic>> add(UspService client, {
   required String protocol,
   required int externalPort,
   bool? enabled,
@@ -762,8 +773,8 @@ static Future<String> add(UspService client, {
   return await client.add('Device.NAT.PortMapping.', params);
 }
 
-static Future<void> delete(UspService client, String instancePath) async {
-  await client.delete(instancePath);
+static Future<Map<String, dynamic>> delete(UspService client, String instancePath) async {
+  return await client.delete(instancePath);
 }
 ```
 
@@ -773,7 +784,7 @@ export async function addPortForwardingRule(client: UspClient, params: {
   protocol: string;
   externalPort: number;
   enabled?: boolean;
-}): Promise<string> {
+}): Promise<any> {
   const setParams: Record<string, any> = {};
   setParams['Protocol'] = params.protocol;
   setParams['ExternalPort'] = params.externalPort;
@@ -781,14 +792,14 @@ export async function addPortForwardingRule(client: UspClient, params: {
   return await client.add('Device.NAT.PortMapping.', setParams);
 }
 
-export async function deletePortForwardingRule(client: UspClient, instancePath: string): Promise<void> {
-  await client.delete(instancePath);
+export async function deletePortForwardingRule(client: UspClient, instancePath: string): Promise<any> {
+  return await client.delete(instancePath);
 }
 ```
 
 **Swift:**
 ```swift
-public static func add(client: UspClient, protocol: String, externalPort: Int, enabled: Bool? = nil) async throws -> String {
+public static func add(client: UspClient, protocol: String, externalPort: Int, enabled: Bool? = nil) async throws -> [String: Any] {
     var params: [String: Any] = [:]
     params["Protocol"] = `protocol`
     params["ExternalPort"] = externalPort
@@ -796,8 +807,8 @@ public static func add(client: UspClient, protocol: String, externalPort: Int, e
     return try await client.add("Device.NAT.PortMapping.", params)
 }
 
-public static func delete(client: UspClient, instancePath: String) async throws {
-    try await client.delete(instancePath)
+public static func delete(client: UspClient, instancePath: String) async throws -> [String: Any] {
+    return try await client.delete(instancePath)
 }
 ```
 
@@ -866,7 +877,7 @@ class WifiSettings {
     return WifiSettings._fromResponse(response);
   }
 
-  static Future<void> save(UspService client, {
+  static Future<Map<String, dynamic>> save(UspService client, {
     String? ssid,
     bool? enabled,
     String? securityMode,
@@ -877,7 +888,8 @@ class WifiSettings {
     if (enabled != null) params['Device.WiFi.SSID.1.Enable'] = enabled;
     if (securityMode != null) params['Device.WiFi.AccessPoint.1.Security.ModeEnabled'] = securityMode;
     if (passphrase != null) params['Device.WiFi.AccessPoint.1.Security.KeyPassphrase'] = passphrase;
-    if (params.isNotEmpty) await client.set(params);
+    if (params.isNotEmpty) return await client.set(params);
+    return {'overallSuccess': true, 'hasAnySuccess': false, 'hasErrors': false, 'results': []};
   }
 }
 ```
@@ -973,7 +985,7 @@ class DiagnosticsOperate {
 export async function startSpeedTest(client: UspClient, params: {
   downloadUrl: string;
   connections?: number;
-}): Promise<Record<string, any>> {
+}): Promise<any> {
   const inputs: Record<string, any> = {};
   inputs['DownloadURL'] = params.downloadUrl;
   if (params.connections !== undefined) inputs['NumberOfConnections'] = params.connections;
@@ -981,7 +993,7 @@ export async function startSpeedTest(client: UspClient, params: {
 }
 
 /** Stop speed test */
-export async function stopSpeedTest(client: UspClient): Promise<Record<string, any>> {
+export async function stopSpeedTest(client: UspClient): Promise<any> {
   return await client.operate('Device.IP.Diagnostics.DownloadDiagnostics.Stop()', {});
 }
 ```
@@ -1140,8 +1152,8 @@ children:
 
 Generated (Dart):
 ```dart
-static Future<String> addRule(UspService client, String parentInstancePath, {String? name}) async { ... }
-static Future<void> deleteRule(UspService client, String instancePath) async { ... }
+static Future<Map<String, dynamic>> addRule(UspService client, String parentInstancePath, {String? name}) async { ... }
+static Future<Map<String, dynamic>> deleteRule(UspService client, String instancePath) async { ... }
 ```
 
 #### Multi-Level Nesting
@@ -1823,6 +1835,87 @@ parameters:
     type: boolean
     writable: true
     description: Whether the device is currently active
+```
+
+---
+
+## 8. Structured Response Format
+
+Starting with version 0.11.0, all generated USP operation methods (`set`, `add`, `delete`, `get`, `operate`) return structured response objects that preserve complete firmware response information, implementing the "Never Lose Information" principle.
+
+### Return Type Structure
+
+All operations now return a consistent structure across all languages:
+
+**Dart:** `Future<Map<String, dynamic>>`
+**TypeScript:** `Promise<any>` 
+**Swift:** `async throws -> [String: Any]`
+
+### Response Object Schema
+
+```typescript
+interface UspOperationResult {
+  overallSuccess: boolean;      // True if all requested operations succeeded
+  hasAnySuccess: boolean;       // True if at least one operation succeeded  
+  hasErrors: boolean;           // True if at least one operation failed
+  results: Array<{              // Detailed results per requested path
+    requestedPath: string;      // The path that was requested
+    success: boolean;           // Whether this specific path succeeded
+    
+    // Success-specific fields (operation type dependent):
+    updatedInstances?: Array<UpdatedInstance>;      // SET operations
+    createdInstances?: Array<CreatedInstance>;      // ADD operations
+    deletedInstances?: Array<DeletedInstance>;      // DELETE operations 
+    retrievedParams?: Array<RetrievedParam>;        // GET operations
+    commandKey?: string;                             // OPERATE operations
+    outputArgs?: Record<string, any>;               // OPERATE operations
+    
+    // Error-specific fields:
+    errorCode?: number;         // USP error code when success=false
+    errorMessage?: string;      // Human-readable error message
+  }>;
+}
+```
+
+### Benefits
+
+1. **Complete Information Preservation**: All firmware response data is available to application logic
+2. **Partial Success Handling**: Applications can detect and handle scenarios where some operations succeed and others fail
+3. **Detailed Error Information**: Specific error codes and messages for each failed operation
+4. **Consistent Interface**: Same structure across SET, ADD, DELETE, GET, and OPERATE operations
+5. **Backward Compatibility**: Existing code can check `overallSuccess` for simple success/failure logic
+
+### Migration Guide
+
+**Before (v0.10.x):**
+```dart
+// Simple success/failure
+await client.set({'Device.WiFi.SSID.1.SSID': 'NewNetwork'});
+String instancePath = await client.add('Device.NAT.PortMapping.', params);
+```
+
+**After (v0.11.0+):**
+```dart
+// Structured response with detailed information
+final result = await client.set({'Device.WiFi.SSID.1.SSID': 'NewNetwork'});
+if (result['overallSuccess']) {
+  // Success - access detailed results if needed
+  final results = result['results'] as List;
+} else {
+  // Handle partial success or complete failure
+  final results = result['results'] as List;
+  for (final item in results) {
+    if (!item['success']) {
+      print('Error ${item['errorCode']}: ${item['errorMessage']}');
+    }
+  }
+}
+
+final addResult = await client.add('Device.NAT.PortMapping.', params);
+if (addResult['overallSuccess']) {
+  final createdInstances = addResult['results'][0]['createdInstances'];
+  final instancePath = createdInstances[0]['affectedPath'];
+}
 ```
 
 ---

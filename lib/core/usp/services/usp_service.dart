@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'bridge_request_throttler.dart';
+import '../models/usp_operation_result.dart';
 
 // Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
 import '../stub/usp_client_stub.dart'
@@ -14,6 +15,8 @@ import '../stub/usp_client_stub.dart'
 export 'usp_response_helpers.dart';
 // Export RequestPriority so generated fetch() methods can accept priority.
 export 'bridge_request_throttler.dart' show RequestPriority;
+// Export USP operation result types for application layer use.
+export '../models/usp_operation_result.dart';
 
 // ===========================================================================
 // USP Subscription types (used by codegen-generated subscribe methods)
@@ -278,18 +281,33 @@ class UspService {
     return raw;
   }
 
-  Future<void> set(Map<String, dynamic> parameters,
+  /// Sets multiple USP parameters and returns structured operation result.
+  ///
+  /// Returns a Map containing:
+  /// - 'overallSuccess': bool - true if all operations succeeded
+  /// - 'hasAnySuccess': bool - true if at least one operation succeeded
+  /// - 'hasErrors': bool - true if at least one operation failed
+  /// - 'results': List<Map> - detailed results per parameter
+  Future<Map<String, dynamic>> set(Map<String, dynamic> parameters,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final Map<String, String> stringParams =
         parameters.map((key, value) => MapEntry(key, value.toString()));
-    await _withAuthRetry(
+    final result = await _withAuthRetry(
         () => _client.setMultiple(stringParams, allowPartial: allowPartial));
     sw.stop();
     logger.d('[USP][Service]#$id SET ${_paramSummary(parameters)} '
         '${parameters.length} params'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
+
+    // Log result summary
+    final overallSuccess = result['overallSuccess'] as bool? ?? false;
+    final hasErrors = result['hasErrors'] as bool? ?? false;
+    final results = result['results'] as List? ?? [];
+    logger.d('[USP][Service]#$id SET result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+
+    return result;
   }
 
   // Legacy multiple getters
@@ -297,9 +315,9 @@ class UspService {
     return _withAuthRetry(() => _client.getMultiple(paths));
   }
 
-  Future<void> setMultiple(Map<String, String> parameters,
+  Future<Map<String, dynamic>> setMultiple(Map<String, String> parameters,
       {bool allowPartial = false}) async {
-    await _withAuthRetry(
+    return await _withAuthRetry(
         () => _client.setMultiple(parameters, allowPartial: allowPartial));
   }
 
@@ -311,8 +329,8 @@ class UspService {
   ///
   /// [objectPath] must end with "." (e.g., "Device.NAT.PortMapping.").
   /// [parameters] are the initial parameter values for the new instance.
-  /// Returns the full path of the created instance (e.g., "Device.NAT.PortMapping.3.").
-  Future<String> add(String objectPath, Map<String, dynamic> parameters) async {
+  /// Returns structured operation result containing creation details.
+  Future<Map<String, dynamic>> add(String objectPath, Map<String, dynamic> parameters) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final stringParams = parameters.map((k, v) => MapEntry(k, v.toString()));
@@ -321,8 +339,23 @@ class UspService {
     sw.stop();
     final shortPath =
         objectPath.startsWith('Device.') ? objectPath.substring(7) : objectPath;
+
+    // Extract created instance path for logging compatibility
+    final overallSuccess = result['overallSuccess'] as bool? ?? false;
+    String createdPath = 'unknown';
+    final results = result['results'] as List? ?? [];
+    if (overallSuccess && results.isNotEmpty) {
+      final firstResult = results.first as Map<String, dynamic>? ?? {};
+      final createdInstances = firstResult['createdInstances'] as List? ?? [];
+      if (createdInstances.isNotEmpty) {
+        final firstInstance = createdInstances.first as Map<String, dynamic>? ?? {};
+        createdPath = firstInstance['affectedPath'] as String? ?? 'unknown';
+      }
+    }
+
     logger.d('[USP][Service]#$id ADD $shortPath — '
-        '${parameters.length} params → $result (${sw.elapsedMilliseconds}ms)');
+        '${parameters.length} params → $createdPath (${sw.elapsedMilliseconds}ms)');
+
     return result;
   }
 
@@ -332,16 +365,21 @@ class UspService {
   /// - `path` (String): object path ending with "."
   /// - `parameters` (Map<String, String>): initial parameter values
   ///
-  /// Returns a list of created instance paths.
-  Future<List<String>> addMultiple(List<Map<String, dynamic>> objects,
+  /// Returns structured operation result containing creation details.
+  Future<Map<String, dynamic>> addMultiple(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final result = await _withAuthRetry(
         () => _client.addMultiple(objects, allowPartial: allowPartial));
     sw.stop();
+
+    // Extract created count for logging compatibility
+    final results = result['results'] as List? ?? [];
+    final createdCount = results.where((r) => r['success'] == true).length;
+
     logger.d('[USP][Service]#$id ADD_MULTI ${objects.length} objects '
-        '→ ${result.length} created'
+        '→ $createdCount created'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
     return result;
   }
@@ -353,27 +391,31 @@ class UspService {
   /// Deletes the object instance at the given path.
   ///
   /// [path] must be a specific instance path (e.g., "Device.NAT.PortMapping.3.").
-  Future<void> delete(String path) async {
+  /// Returns structured operation result containing deletion details.
+  Future<Map<String, dynamic>> delete(String path) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
-    await _withAuthRetry(() => _client.delete(path));
+    final result = await _withAuthRetry(() => _client.delete(path));
     sw.stop();
     final shortPath = path.startsWith('Device.') ? path.substring(7) : path;
     logger.d(
         '[USP][Service]#$id DELETE $shortPath (${sw.elapsedMilliseconds}ms)');
+    return result;
   }
 
   /// Deletes multiple object instances in a single operation.
-  Future<void> deleteMultiple(List<String> paths,
+  /// Returns structured operation result containing deletion details.
+  Future<Map<String, dynamic>> deleteMultiple(List<String> paths,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
-    await _withAuthRetry(
+    final result = await _withAuthRetry(
         () => _client.deleteMultiple(paths, allowPartial: allowPartial));
     sw.stop();
     logger.d('[USP][Service]#$id DELETE_MULTI ${_pathSummary(paths)} '
         '${paths.length} paths'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
+    return result;
   }
 
   // ===========================================================================
@@ -447,12 +489,25 @@ class UspService {
         .toSet();
 
     // Step 2: Add subscription instance
-    final created = await _withAuthRetry(() => _client.add(objectPath, {}));
+    final addResult = await _withAuthRetry(() => _client.add(objectPath, {}));
 
-    // Step 3: Resolve instance path (WASM add may return empty for LocalAgent)
+    // Step 3: Resolve instance path from structured result
     String instancePath;
-    if (created.startsWith('Device.')) {
-      instancePath = created.endsWith('.') ? created : '$created.';
+
+    // Try to extract created path from structured response
+    String? createdPath;
+    final results = addResult['results'] as List? ?? [];
+    if (results.isNotEmpty) {
+      final firstResult = results.first as Map<String, dynamic>? ?? {};
+      final createdInstances = firstResult['createdInstances'] as List? ?? [];
+      if (createdInstances.isNotEmpty) {
+        final firstInstance = createdInstances.first as Map<String, dynamic>? ?? {};
+        createdPath = firstInstance['affectedPath'] as String?;
+      }
+    }
+
+    if (createdPath != null && createdPath.startsWith('Device.')) {
+      instancePath = createdPath.endsWith('.') ? createdPath : '$createdPath.';
     } else {
       // Discover new instance via GET diff
       final after =
@@ -785,6 +840,84 @@ class UspService {
       current[segments.last] = entry.value;
     }
     return const JsonEncoder.withIndent('  ').convert(nested);
+  }
+
+  // ===========================================================================
+  // Application Layer封裝方法 - 返回強型別結果
+  // ===========================================================================
+
+  /// 應用層SET操作封裝，返回強型別結果
+  Future<UspSetResult> setWithResult(
+    Map<String, dynamic> parameters,
+    {bool allowPartial = false}
+  ) async {
+    try {
+      final resultMap = await set(parameters, allowPartial: allowPartial);
+      return UspResultParser.parseSetResult(resultMap);
+    } catch (e) {
+      return UspResultParser.createFailureFromException<void>(
+        e,
+        parameters.keys.join(', '),
+      );
+    }
+  }
+
+  /// 應用層ADD操作封裝，返回強型別結果
+  Future<UspAddResult> addWithResult(String objectPath, Map<String, String> params) async {
+    try {
+      final resultMap = await add(objectPath, params);
+      return UspResultParser.parseAddResult(resultMap);
+    } catch (e) {
+      return UspResultParser.createFailureFromException<List<String>>(
+        e,
+        objectPath,
+      );
+    }
+  }
+
+  /// 應用層DELETE操作封裝，返回強型別結果
+  Future<UspDeleteResult> deleteWithResult(String instancePath) async {
+    try {
+      final resultMap = await delete(instancePath);
+      return UspResultParser.parseDeleteResult(resultMap);
+    } catch (e) {
+      return UspResultParser.createFailureFromException<void>(
+        e,
+        instancePath,
+      );
+    }
+  }
+
+  /// 應用層批量DELETE操作封裝，返回強型別結果
+  Future<UspDeleteResult> deleteMultipleWithResult(
+    List<String> paths,
+    {bool allowPartial = false}
+  ) async {
+    try {
+      final resultMap = await deleteMultiple(paths, allowPartial: allowPartial);
+      return UspResultParser.parseDeleteResult(resultMap);
+    } catch (e) {
+      return UspResultParser.createFailureFromException<void>(
+        e,
+        paths.join(', '),
+      );
+    }
+  }
+
+  /// 應用層批量ADD操作封裝，返回強型別結果
+  Future<UspAddResult> addMultipleWithResult(
+    List<Map<String, dynamic>> objects,
+    {bool allowPartial = false}
+  ) async {
+    try {
+      final resultMap = await addMultiple(objects, allowPartial: allowPartial);
+      return UspResultParser.parseAddResult(resultMap);
+    } catch (e) {
+      return UspResultParser.createFailureFromException<List<String>>(
+        e,
+        objects.map((obj) => obj['path'] as String? ?? 'unknown').join(', '),
+      );
+    }
   }
 
   void dispose() {
