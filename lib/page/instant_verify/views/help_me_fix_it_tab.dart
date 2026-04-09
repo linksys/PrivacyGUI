@@ -3134,6 +3134,9 @@ class _SatisfactionPromptState extends State<_SatisfactionPrompt> {
 
   @override
   Widget build(BuildContext context) {
+    // Hidden — satisfaction prompts removed until feedback mechanism is defined
+    return const SizedBox.shrink();
+    // ignore: dead_code
     if (_rating != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
