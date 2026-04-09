@@ -177,7 +177,7 @@ class _FlowMenuState extends State<_FlowMenu> {
                 const SizedBox(height: 8),
                 SizedBox(
                   width: double.infinity,
-                  child: FilledButton.icon(
+                  child: OutlinedButton.icon(
                     onPressed: () => setState(() => _showAllFlows = true),
                     icon: const Icon(Icons.devices),
                     label: const Text('Everything in my home'),
