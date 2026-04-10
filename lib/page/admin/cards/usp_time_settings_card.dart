@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
+import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
@@ -74,7 +75,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
                           ref,
                           loadingKey: 'time',
                           mutation: () => ref
-                              .read(timeDataProvider.notifier)
+                              .read(uspAdminProvider.notifier)
                               .updateTimeSettings(enable: value),
                         ),
               ),
@@ -96,7 +97,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'time',
-      mutation: () => ref.read(timeDataProvider.notifier).updateTimeSettings(
+      mutation: () => ref.read(uspAdminProvider.notifier).updateTimeSettings(
             enable: result.enable,
             ntpServer1: result.ntpServer1,
             ntpServer2: result.ntpServer2,

@@ -22,18 +22,6 @@ class _TestTimeDataNotifier extends TimeDataNotifier {
 
   @override
   Future<TimeData> build() async => _data;
-
-  bool updateTimezoneCalled = false;
-
-  @override
-  Future<void> updateTimezone({
-    String? localTimeZone,
-    String? ntpServer1,
-    String? ntpServer2,
-    bool? enable,
-  }) async {
-    updateTimezoneCalled = true;
-  }
 }
 
 void main() {
@@ -128,9 +116,16 @@ void main() {
       container.dispose();
     });
 
-    test('updateTimezone delegates to timeDataProvider notifier', () async {
+    test('updateTimezone delegates to admin service', () async {
       when(() => mockAdminService.fetchAdmin())
           .thenAnswer((_) async => testAdmin);
+      when(() => mockAdminService.updateTimezone(
+            localTimeZone: any(named: 'localTimeZone'),
+            ntpServer1: any(named: 'ntpServer1'),
+            ntpServer2: any(named: 'ntpServer2'),
+            enable: any(named: 'enable'),
+          )).thenAnswer((_) async {});
+
       final container = createContainer();
       await container.read(uspAdminProvider.future);
 
@@ -138,7 +133,12 @@ void main() {
             localTimeZone: 'Asia/Tokyo',
           );
 
-      expect(testTimeNotifier.updateTimezoneCalled, isTrue);
+      verify(() => mockAdminService.updateTimezone(
+            localTimeZone: 'Asia/Tokyo',
+            ntpServer1: null,
+            ntpServer2: null,
+            enable: null,
+          )).called(1);
       container.dispose();
     });
 

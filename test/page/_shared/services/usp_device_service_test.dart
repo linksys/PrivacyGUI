@@ -3,45 +3,15 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
-import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
-import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
-
-SystemInfo _sysInfo({
-  String manufacturer = 'Linksys',
-  String modelName = 'M60TB',
-  String serialNumber = 'SN123',
-  String hardwareVersion = '1.0',
-  String softwareVersion = '2.0.0',
-  int uptime = 3600,
-  int totalMemory = 512000,
-  int freeMemory = 256000,
-  int cpuUsage = 25,
-  String activeFirmwareImage = '',
-  String bootFirmwareImage = '',
-}) =>
-    SystemInfo(
-      manufacturer: manufacturer,
-      modelName: modelName,
-      serialNumber: serialNumber,
-      hardwareVersion: hardwareVersion,
-      softwareVersion: softwareVersion,
-      uptime: uptime,
-      totalMemory: totalMemory,
-      freeMemory: freeMemory,
-      cpuUsage: cpuUsage,
-      activeFirmwareImage: activeFirmwareImage,
-      bootFirmwareImage: bootFirmwareImage,
-    );
 
 ConnectedDevice _device({
   String instancePath = 'Device.Hosts.Host.1.',
@@ -71,121 +41,8 @@ void main() {
     service = UspDeviceService();
   });
 
-  // ---------------------------------------------------------------------------
-  // buildSystemInfoUIModel
-  // ---------------------------------------------------------------------------
-
-  group('UspDeviceService — buildSystemInfoUIModel', () {
-    test('maps all fields correctly', () {
-      final info = _sysInfo();
-      final result = service.buildSystemInfoUIModel(info);
-
-      expect(result.manufacturer, 'Linksys');
-      expect(result.modelName, 'M60TB');
-      expect(result.serialNumber, 'SN123');
-      expect(result.hardwareVersion, '1.0');
-      expect(result.softwareVersion, '2.0.0');
-      expect(result.uptime, 3600);
-      expect(result.totalMemory, 512000);
-      expect(result.freeMemory, 256000);
-      expect(result.cpuUsage, 25);
-      expect(result.firmwareImages, isEmpty);
-    });
-
-    test('includes firmware images when provided', () {
-      final images = [
-        FirmwareImageUIModel(
-          instancePath: 'p.1.',
-          name: 'fw1',
-          version: '1.0',
-          status: 'active',
-          available: true,
-        ),
-      ];
-      final result =
-          service.buildSystemInfoUIModel(_sysInfo(), firmwareImages: images);
-      expect(result.firmwareImages, hasLength(1));
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // buildFirmwareImageUIModels
-  // ---------------------------------------------------------------------------
-
-  group('UspDeviceService — buildFirmwareImageUIModels', () {
-    test('identifies active and boot target images', () {
-      final data = FirmwareImages(items: [
-        FirmwareImage(
-          instancePath: 'Device.FW.1.',
-          name: 'fw1',
-          version: '1.0',
-          status: 'active',
-          available: true,
-        ),
-        FirmwareImage(
-          instancePath: 'Device.FW.2.',
-          name: 'fw2',
-          version: '2.0',
-          status: 'inactive',
-          available: true,
-        ),
-      ]);
-
-      final result = service.buildFirmwareImageUIModels(
-        data: data,
-        activeRef: 'Device.FW.1.',
-        bootRef: 'Device.FW.2.',
-      );
-
-      expect(result[0].isActive, isTrue);
-      expect(result[0].isBootTarget, isFalse);
-      expect(result[1].isActive, isFalse);
-      expect(result[1].isBootTarget, isTrue);
-    });
-
-    test('strips trailing dot for comparison', () {
-      final data = FirmwareImages(items: [
-        FirmwareImage(
-          instancePath: 'Device.FW.1.',
-          name: 'fw1',
-          version: '1.0',
-          status: 'active',
-          available: true,
-        ),
-      ]);
-
-      // activeRef without trailing dot should still match
-      final result = service.buildFirmwareImageUIModels(
-        data: data,
-        activeRef: 'Device.FW.1',
-        bootRef: '',
-      );
-
-      expect(result[0].isActive, isTrue);
-      expect(result[0].isBootTarget, isFalse);
-    });
-
-    test('empty refs mark nothing as active/boot', () {
-      final data = FirmwareImages(items: [
-        FirmwareImage(
-          instancePath: 'Device.FW.1.',
-          name: 'fw1',
-          version: '1.0',
-          status: 'inactive',
-          available: true,
-        ),
-      ]);
-
-      final result = service.buildFirmwareImageUIModels(
-        data: data,
-        activeRef: '',
-        bootRef: '',
-      );
-
-      expect(result[0].isActive, isFalse);
-      expect(result[0].isBootTarget, isFalse);
-    });
-  });
+  // buildSystemInfoUIModel — moved to UspSystemInfoDataService
+  // buildFirmwareImageUIModels — moved to UspSystemInfoDataService
 
   // ---------------------------------------------------------------------------
   // buildDeviceUIModels
@@ -280,29 +137,7 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // buildTimeSettingsUIModel
-  // ---------------------------------------------------------------------------
-
-  group('UspDeviceService — buildTimeSettingsUIModel', () {
-    test('maps all fields', () {
-      final settings = TimeSettings(
-        enable: true,
-        status: 'Synchronized',
-        currentLocalTime: '2026-03-23T12:00:00',
-        localTimeZone: 'Asia/Taipei',
-        ntpServer1: 'pool.ntp.org',
-        ntpServer2: 'time.google.com',
-      );
-
-      final result = service.buildTimeSettingsUIModel(settings);
-
-      expect(result.enable, isTrue);
-      expect(result.status, 'Synchronized');
-      expect(result.localTimeZone, 'Asia/Taipei');
-      expect(result.ntpServer1, 'pool.ntp.org');
-    });
-  });
+  // buildTimeSettingsUIModel — moved to UspTimeDataService
 
   // ---------------------------------------------------------------------------
   // buildDhcpClientUIModels

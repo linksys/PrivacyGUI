@@ -3,13 +3,10 @@ import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
-import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
-import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
@@ -18,7 +15,6 @@ import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -36,58 +32,6 @@ final uspDeviceServiceProvider = Provider<UspDeviceService>(
 /// import codegen types directly (constitution Section 5.3).
 class UspDeviceService {
   // ---------------------------------------------------------------------------
-  // SystemInfo
-  // ---------------------------------------------------------------------------
-
-  SystemInfoUIModel buildSystemInfoUIModel(
-    SystemInfo info, {
-    List<FirmwareImageUIModel> firmwareImages = const [],
-  }) {
-    return SystemInfoUIModel(
-      manufacturer: info.manufacturer,
-      modelName: info.modelName,
-      serialNumber: info.serialNumber,
-      hardwareVersion: info.hardwareVersion,
-      softwareVersion: info.softwareVersion,
-      uptime: info.uptime,
-      totalMemory: info.totalMemory,
-      freeMemory: info.freeMemory,
-      cpuUsage: info.cpuUsage,
-      firmwareImages: firmwareImages,
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Firmware Images
-  // ---------------------------------------------------------------------------
-
-  List<FirmwareImageUIModel> buildFirmwareImageUIModels({
-    required FirmwareImages data,
-    required String activeRef,
-    required String bootRef,
-  }) {
-    final normalizedActive = _stripTrailingDot(activeRef);
-    final normalizedBoot = _stripTrailingDot(bootRef);
-    return data.items.map((img) {
-      final normalizedPath = _stripTrailingDot(img.instancePath);
-      return FirmwareImageUIModel(
-        instancePath: img.instancePath,
-        name: img.name,
-        version: img.version,
-        status: img.status,
-        available: img.available,
-        isActive:
-            normalizedActive.isNotEmpty && normalizedPath == normalizedActive,
-        isBootTarget:
-            normalizedBoot.isNotEmpty && normalizedPath == normalizedBoot,
-      );
-    }).toList();
-  }
-
-  static String _stripTrailingDot(String path) =>
-      path.endsWith('.') ? path.substring(0, path.length - 1) : path;
-
-  // ---------------------------------------------------------------------------
   // ConnectedDevices
   // ---------------------------------------------------------------------------
 
@@ -103,21 +47,6 @@ class UspDeviceService {
         .map((d) => _toDeviceUIModel(
             d, wifiClientMap, connectionDetailMap, meshTopology, gatewayName))
         .toList();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Time Settings
-  // ---------------------------------------------------------------------------
-
-  TimeSettingsUIModel buildTimeSettingsUIModel(TimeSettings settings) {
-    return TimeSettingsUIModel(
-      enable: settings.enable,
-      status: settings.status,
-      currentLocalTime: settings.currentLocalTime,
-      localTimeZone: settings.localTimeZone,
-      ntpServer1: settings.ntpServer1,
-      ntpServer2: settings.ntpServer2,
-    );
   }
 
   // ---------------------------------------------------------------------------

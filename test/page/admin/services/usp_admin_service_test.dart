@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
-import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
 
 class MockUspService extends Mock implements UspService {}
@@ -64,43 +63,7 @@ void main() {
     });
   });
 
-  group('UspAdminService — buildTimeSettingsUIModel', () {
-    test('maps all TimeSettings fields to UIModel', () {
-      final ts = TimeSettings(
-        enable: true,
-        status: 'Synchronized',
-        ntpServer1: 'pool.ntp.org',
-        ntpServer2: 'time.google.com',
-        localTimeZone: 'CST-8',
-        currentLocalTime: '2026-03-23T10:30:00Z',
-      );
-
-      final model = service.buildTimeSettingsUIModel(ts);
-
-      expect(model.enable, isTrue);
-      expect(model.status, 'Synchronized');
-      expect(model.ntpServer1, 'pool.ntp.org');
-      expect(model.ntpServer2, 'time.google.com');
-      expect(model.localTimeZone, 'CST-8');
-      expect(model.currentLocalTime, '2026-03-23T10:30:00Z');
-      expect(model.isSynchronized, isTrue);
-    });
-
-    test('isSynchronized is false when status is not Synchronized', () {
-      final ts = TimeSettings(
-        enable: true,
-        status: 'Unsynchronized',
-        ntpServer1: '',
-        ntpServer2: '',
-        localTimeZone: '',
-        currentLocalTime: '',
-      );
-
-      final model = service.buildTimeSettingsUIModel(ts);
-
-      expect(model.isSynchronized, isFalse);
-    });
-  });
+  // buildTimeSettingsUIModel — moved to UspTimeDataService
 
   group('UspAdminService — error handling', () {
     test('fetchAdmin maps USP error to ServiceError', () {

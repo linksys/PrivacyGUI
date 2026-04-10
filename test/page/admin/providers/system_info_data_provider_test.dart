@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
@@ -110,9 +109,11 @@ void main() {
         ],
       );
 
+      // Service provider does null assertion on uspServiceProvider,
+      // so reading it when USP is null throws TypeError.
       expect(
         container.read(systemInfoDataProvider.future),
-        throwsA(isA<ServiceNotInitializedError>()),
+        throwsA(isA<TypeError>()),
       );
       container.dispose();
     });

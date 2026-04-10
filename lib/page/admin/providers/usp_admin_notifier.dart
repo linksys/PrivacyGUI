@@ -50,21 +50,42 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   }
 
   // ---------------------------------------------------------------------------
-  // Timezone — delegates to shared timeDataProvider
+  // Time Settings — delegates to Service, then invalidates L1
   // ---------------------------------------------------------------------------
 
+  /// Update time settings (enable toggle, NTP servers).
+  /// Called from Dashboard card.
+  Future<void> updateTimeSettings({
+    bool? enable,
+    String? ntpServer1,
+    String? ntpServer2,
+  }) async {
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.updateTimeSettings(
+        enable: enable,
+        ntpServer1: ntpServer1,
+        ntpServer2: ntpServer2,
+      );
+    });
+    ref.invalidate(timeDataProvider);
+  }
+
+  /// Update timezone (used by admin timezone edit dialog).
   Future<void> updateTimezone({
     String? localTimeZone,
     String? ntpServer1,
     String? ntpServer2,
     bool? enable,
   }) async {
-    await ref.read(timeDataProvider.notifier).updateTimezone(
-          localTimeZone: localTimeZone,
-          ntpServer1: ntpServer1,
-          ntpServer2: ntpServer2,
-          enable: enable,
-        );
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.updateTimezone(
+        localTimeZone: localTimeZone,
+        ntpServer1: ntpServer1,
+        ntpServer2: ntpServer2,
+        enable: enable,
+      );
+    });
+    ref.invalidate(timeDataProvider);
   }
 
   // ---------------------------------------------------------------------------
