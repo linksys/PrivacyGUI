@@ -10,9 +10,6 @@ import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
-import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
-import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
-import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
@@ -23,7 +20,6 @@ import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/wifi_client_enricher.dart';
@@ -107,56 +103,6 @@ class UspDeviceService {
         .map((d) => _toDeviceUIModel(
             d, wifiClientMap, connectionDetailMap, meshTopology, gatewayName))
         .toList();
-  }
-
-  // ---------------------------------------------------------------------------
-  // WiFi Radios
-  // ---------------------------------------------------------------------------
-
-  List<WifiRadioUIModel> buildWifiRadioUIModels({
-    required WiFiRadios radios,
-    required WiFiSsids ssids,
-    required WiFiAccessPoints accessPoints,
-  }) {
-    final ssidByPath = {
-      for (final s in ssids.items) _ensureTrailingDot(s.instancePath): s,
-    };
-
-    // Group APs by radio: AP.ssidReference → SSID.lowerLayers → Radio
-    final apsByRadioPath = <String, List<_ApWithSsid>>{};
-    for (final ap in accessPoints.items) {
-      final ssid = ssidByPath[_ensureTrailingDot(ap.ssidReference)];
-      if (ssid == null) continue;
-      final radioPath = _ensureTrailingDot(ssid.lowerLayers);
-      apsByRadioPath
-          .putIfAbsent(radioPath, () => [])
-          .add(_ApWithSsid(ap, ssid));
-    }
-
-    return radios.items.map((radio) {
-      final radioAps =
-          apsByRadioPath[_ensureTrailingDot(radio.instancePath)] ?? [];
-      return WifiRadioUIModel(
-        instancePath: radio.instancePath,
-        band: radio.operatingFrequencyBand,
-        enable: radio.enable,
-        transmitPower: radio.transmitPower,
-        maxBitRate: radio.maxBitRate,
-        channel: radio.channel,
-        autoChannelEnable: radio.autoChannelEnable,
-        channelBandwidth: radio.operatingChannelBandwidth,
-        supportedStandards: radio.supportedStandards,
-        accessPoints: radioAps
-            .map((a) => WifiAccessPointUIModel(
-                  enable: a.ap.enable,
-                  ssidName:
-                      a.ssid.ssid.isNotEmpty ? a.ssid.ssid : a.ap.ssidReference,
-                  securityMode: a.ap.securityModeEnabled,
-                  encryptionMode: a.ap.encryptionMode,
-                ))
-            .toList(),
-      );
-    }).toList();
   }
 
   // ---------------------------------------------------------------------------
@@ -508,11 +454,4 @@ class UspDeviceService {
     if (path.isEmpty) return path;
     return path.endsWith('.') ? path : '$path.';
   }
-}
-
-/// Internal helper to pair AP with its resolved SSID.
-class _ApWithSsid {
-  final WiFiAccessPoint ap;
-  final WiFiSsid ssid;
-  const _ApWithSsid(this.ap, this.ssid);
 }

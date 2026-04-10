@@ -6,6 +6,7 @@ import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/dashboard/views/dialogs/wifi_channel_dialog.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -66,8 +67,8 @@ class UspWifiStatusCard extends ConsumerWidget {
                           ref,
                           loadingKey: 'wifi',
                           mutation: () => ref
-                              .read(wifiDataProvider.notifier)
-                              .toggleWifiRadio(radio.instancePath, value),
+                              .read(uspWifiSettingsProvider.notifier)
+                              .toggleRadio(radio.instancePath, value),
                         ),
               ),
             ],
@@ -157,10 +158,10 @@ class UspWifiStatusCard extends ConsumerWidget {
       ref,
       loadingKey: 'wifi',
       mutation: () =>
-          ref.read(wifiDataProvider.notifier).updateWifiRadioChannel(
+          ref.read(uspWifiSettingsProvider.notifier).updateRadioChannel(
                 radio.instancePath,
-                result.channel,
-                result.autoChannel,
+                channel: result.channel,
+                autoChannel: result.autoChannel,
               ),
       successMessage: 'Channel updated',
     );
