@@ -14,12 +14,7 @@ import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/lan_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
-import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
-import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
-import 'package:privacy_gui/page/_shared/providers/wifi_client_enricher.dart';
-import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 /// Service provider — stateless, per Article VI.
 final uspDeviceServiceProvider = Provider<UspDeviceService>(
@@ -31,24 +26,6 @@ final uspDeviceServiceProvider = Provider<UspDeviceService>(
 /// All Data → UI conversion is consolidated here so that UI widgets never
 /// import codegen types directly (constitution Section 5.3).
 class UspDeviceService {
-  // ---------------------------------------------------------------------------
-  // ConnectedDevices
-  // ---------------------------------------------------------------------------
-
-  List<DeviceUIModel> buildDeviceUIModels({
-    required ConnectedDevices connectedDevices,
-    required Map<String, WifiClientUIModel> wifiClientMap,
-    required Map<String, ClientConnectionDetail> connectionDetailMap,
-    required MeshTopologyInfo meshTopology,
-    required String gatewayName,
-  }) {
-    return connectedDevices.items
-        .where((d) => d.interface_.isNotEmpty)
-        .map((d) => _toDeviceUIModel(
-            d, wifiClientMap, connectionDetailMap, meshTopology, gatewayName))
-        .toList();
-  }
-
   // ---------------------------------------------------------------------------
   // DHCP Clients (active leases)
   // ---------------------------------------------------------------------------
@@ -269,115 +246,8 @@ class UspDeviceService {
     return result;
   }
 
-  // ---------------------------------------------------------------------------
-  // Mesh Nodes
-  // ---------------------------------------------------------------------------
-
-  List<NodeUIModel> buildNodeUIModels({
-    required MeshTopologyInfo meshTopology,
-    required List<DeviceUIModel> deviceModels,
-    required SystemInfoUIModel systemInfo,
-  }) {
-    // Non-mesh / DataElements unsupported: create a synthetic gateway node
-    // from SystemInfo so the node detail page has something to display.
-    if (meshTopology.isEmpty) {
-      return [
-        NodeUIModel(
-          deviceId: 'gateway',
-          model: systemInfo.modelName,
-          manufacturer: systemInfo.manufacturer,
-          serialNumber: systemInfo.serialNumber,
-          softwareVersion: systemInfo.softwareVersion,
-          isMaster: true,
-          connectedDeviceCount: deviceModels.where((d) => d.isActive).length,
-        ),
-      ];
-    }
-
-    return meshTopology.nodes.asMap().entries.map((entry) {
-      final index = entry.key;
-      final node = entry.value;
-      final isMaster = index == 0;
-
-      final connectedCount = deviceModels
-          .where((d) =>
-              d.isActive &&
-              d.parentNodeId != null &&
-              d.parentNodeId!.toUpperCase() == node.deviceId.toUpperCase())
-          .length;
-
-      return NodeUIModel(
-        deviceId: node.deviceId,
-        model: node.model,
-        manufacturer: node.manufacturer,
-        serialNumber: node.serialNumber,
-        softwareVersion: node.softwareVersion,
-        isMaster: isMaster,
-        connectedDeviceCount: connectedCount,
-      );
-    }).toList();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
-
-  DeviceUIModel _toDeviceUIModel(
-    ConnectedDevice device,
-    Map<String, WifiClientUIModel> wifiClientMap,
-    Map<String, ClientConnectionDetail> connectionDetailMap,
-    MeshTopologyInfo meshTopology,
-    String gatewayName,
-  ) {
-    final mac = device.macAddress.trim().toUpperCase();
-    final isWifi = device.interface_.toLowerCase().contains('wifi');
-    final wifiClient = wifiClientMap[mac];
-    final detail = connectionDetailMap[mac];
-
-    String? parentNodeId;
-    String? parentNodeName;
-    if (meshTopology.isEmpty) {
-      if (device.isActive) parentNodeName = gatewayName;
-    } else {
-      parentNodeId = meshTopology.clientToNodeMap[mac];
-      if (parentNodeId != null) {
-        final isGateway = meshTopology.nodes.isNotEmpty &&
-            meshTopology.nodes.first.deviceId == parentNodeId;
-        if (isGateway) {
-          parentNodeName = gatewayName;
-        } else {
-          final matchingNode = meshTopology.nodes
-              .where((n) => n.deviceId == parentNodeId)
-              .firstOrNull;
-          parentNodeName = matchingNode?.model.isNotEmpty == true
-              ? matchingNode!.model
-              : parentNodeId;
-        }
-      } else {
-        parentNodeName = gatewayName;
-      }
-    }
-
-    return DeviceUIModel(
-      mac: mac,
-      ip: device.ipAddress,
-      hostName: device.hostName,
-      isActive: device.isActive,
-      isWifi: isWifi,
-      layer1Interface: device.interface_,
-      ipv6Addresses: device.ipv6Addresses
-          .map((e) => e.address)
-          .where((a) => a.isNotEmpty)
-          .toList(),
-      signalStrength: isWifi ? wifiClient?.signalStrength : null,
-      downlinkRate: isWifi ? wifiClient?.lastDataDownlinkRate : null,
-      uplinkRate: isWifi ? wifiClient?.lastDataUplinkRate : null,
-      band: detail?.band,
-      ssidName: detail?.ssidName,
-      parentNodeId: parentNodeId,
-      parentNodeName: parentNodeName,
-    );
-  }
+  // buildNodeUIModels — moved to UspDevicesDataService
+  // buildDeviceUIModels — moved to UspDevicesDataService
 
   static String _ensureTrailingDot(String path) {
     if (path.isEmpty) return path;
