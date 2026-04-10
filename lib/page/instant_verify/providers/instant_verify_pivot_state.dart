@@ -238,6 +238,28 @@ class InstantVerifyPivotState extends Equatable {
   String? get wanConnectionType => wanStatus?['detectedWANType'] as String?
       ?? wanStatus?['wanType'] as String?;
 
+  /// DNS servers assigned to this router (from GetWANStatus wanConnection).
+  /// Filters out empty/0.0.0.0 entries.
+  List<String> get wanDnsServers {
+    final conn = wanStatus?['wanConnection'] as Map<String, dynamic>?;
+    if (conn == null) return [];
+    final raw = [
+      conn['dnsServer1'] as String?,
+      conn['dnsServer2'] as String?,
+      conn['dnsServer3'] as String?,
+    ];
+    return raw
+        .whereType<String>()
+        .where((s) => s.isNotEmpty && s != '0.0.0.0')
+        .toList();
+  }
+
+  /// True if IPv6 WAN is connected (from GetWANStatus wanIPv6Status).
+  bool get wanIpv6Connected {
+    final v6 = wanStatus?['wanIPv6Status'] as String?;
+    return v6 == 'Connected' || v6 == 'connected';
+  }
+
   int get twoPointFourGhzCount =>
       clients.where((c) => c.isWireless && c.band.contains('2.4')).length;
   int get fiveGhzCount =>

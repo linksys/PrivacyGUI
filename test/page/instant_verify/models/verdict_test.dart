@@ -296,7 +296,8 @@ void main() {
       final v = _compute(dnsWorking: false);
       final finding = v.findings.firstWhere((f) => f.checkNumber == 4);
       expect(finding.priority, VerdictPriority.critical);
-      expect(finding.headline, contains('internet'));
+      expect(finding.headline.toLowerCase(),
+          anyOf(contains('website'), contains('internet')));
       expect(finding.explanation, contains('WAN IP assigned'));
       expect(finding.postRestartEscalation, isNotNull);
       expect(finding.postRestartEscalation, contains('websites'));

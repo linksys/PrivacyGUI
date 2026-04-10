@@ -531,6 +531,9 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       hasZombieMeshNode: hasZombieMeshNode,
       dhcpPoolUtilizationPct: dhcpPoolUtilizationPct,
       isDeviceInApMode: isDeviceInApMode,
+      dnsServers: s.wanDnsServers.isNotEmpty ? s.wanDnsServers : null,
+      wanIpv6Connected: s.wanStatus != null ? s.wanIpv6Connected : null,
+      wanType: s.wanConnectionType,
     );
     state = state.copyWith(verdict: verdict, verdictIsPreliminary: preliminary);
   }
@@ -673,11 +676,12 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
   }
 
   /// ── Scenario B: Connected to ISP but websites aren't loading ────────────
-  /// Triggers Check 4 (DNS failure → internet not working → critical).
+  /// Triggers Check 4 (DNS failure) with ISP-assigned DNS servers surfaced.
   void _mockScenarioB() {
     final clients = _goodMockClients();
     final scores = clients.map(DeviceScore.compute).toList();
     const wanIp = '203.0.113.45';
+    const mockDns = ['172.30.1.105', '172.30.1.106']; // ISP-assigned
     final verdict = VerdictEngine.compute(
       gatewayReachable: true,
       wanConnected: true,
@@ -692,13 +696,23 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       clients: clients,
       meshNodes: const [],
       planSpeedMbps: null,
+      dnsServers: mockDns,
+      wanIpv6Connected: false,
+      wanType: 'DHCP',
     );
     state = InstantVerifyPivotState(
       phase: PivotLoadPhase.complete,
       deviceInfo: _kMockDeviceInfo,
       wanStatus: {
         'wanStatus': 'Connected',
-        'wanConnection': {'ipAddress': wanIp, 'gateway': '10.83.71.254'},
+        'detectedWANType': 'DHCP',
+        'wanIPv6Status': 'Disconnected',
+        'wanConnection': {
+          'ipAddress': wanIp,
+          'gateway': '10.83.71.254',
+          'dnsServer1': mockDns[0],
+          'dnsServer2': mockDns[1],
+        },
       },
       routerHealth: {'uptimeInSeconds': 5 * 86400},
       clients: clients,

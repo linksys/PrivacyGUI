@@ -100,6 +100,13 @@ class VerdictEngine {
     required bool? firmwareUpdateAvailable,
     required String? firmwareVersion,
     required int? uptimeSeconds,
+    /// DNS servers the router is using (from GetWANStatus wanConnection).
+    /// When provided, Check 4 surfaces server addresses + targeted advice.
+    List<String>? dnsServers,
+    /// IPv6 WAN status — shown alongside DNS failure for context.
+    bool? wanIpv6Connected,
+    /// WAN connection type (DHCP/PPPoE/Static) — PPPoE may need re-auth.
+    String? wanType,
     required List<DeviceScore> deviceScores,
     required List<DiagnosticClient> clients,
     required List<MeshNodeInfo> meshNodes,
@@ -194,26 +201,68 @@ class VerdictEngine {
     if (dnsWorking != null && wanConnected != false) {
       checksRun++;
       if (!dnsWorking) {
-        // We know: WAN connected ✓, router IP ✓, router LAN reachable ✓
-        // Gateway (ISP side) reachability: we can't browser-ping the ISP gateway,
-        // but we can tell the customer what we verified.
         final ipText = (wanIpAddress != null && wanIpAddress.isNotEmpty)
             ? 'WAN IP assigned ($wanIpAddress)'
             : 'WAN connected';
+
+        // ── DNS server info ──────────────────────────────────────────────
+        final dnsBlock = StringBuffer();
+        if (dnsServers != null && dnsServers.isNotEmpty) {
+          dnsBlock.write('\n\nDNS servers your router is using:');
+          for (final s in dnsServers) {
+            dnsBlock.write('\n  \u2022 $s  (${_labelDnsServer(s)})');
+          }
+          // Categorise: all ISP-assigned vs custom
+          final allIsp = dnsServers.every(_isIspOrPrivateDns);
+          final hasCustom = dnsServers.any((s) => !_isIspOrPrivateDns(s));
+          if (allIsp) {
+            dnsBlock.write(
+                '\n\nThese are assigned by your ISP. If their DNS servers are down, '
+                'websites won\'t load even though your router is connected.');
+          } else if (hasCustom) {
+            dnsBlock.write(
+                '\n\nYou\'re using custom DNS servers. If they\'re unreachable '
+                'from your location, try switching back to automatic (ISP) DNS.');
+          }
+        }
+
+        // ── WAN type note ────────────────────────────────────────────────
+        String wanTypeNote = '';
+        if (wanType == 'PPPoE' || wanType == 'PPTP' || wanType == 'L2TP') {
+          wanTypeNote = '\n\nYour connection type is $wanType — '
+              'if the session dropped, a restart re-establishes it.';
+        }
+
+        // ── Parental controls / pause note ───────────────────────────────
+        final pcNote = isInstantPauseActive == true
+            ? '\n\nParental controls are active — internet access may be '
+              'paused for some devices.'
+            : '';
+
+        // ── IPv6 note ────────────────────────────────────────────────────
+        final ipv6Note = (wanIpv6Connected == false)
+            ? '\n\nIPv6 is not connected — this is normal for most home '
+              'connections and is not the cause of this issue.'
+            : '';
+
         findings.add(VerdictFinding(
           priority: VerdictPriority.critical,
-          headline: 'Your internet isn\'t working',
+          headline: 'Websites aren\'t loading',
           explanation:
-              'Verified: Router reachable \u2713  $ipText \u2713  Websites: not loading \u2717\n\n'
-              'Your router is connected but can\'t reach websites. '
-              'Try restarting your router. If it keeps happening, '
-              'the problem may be with your provider\'s network.',
+              'Verified: Router reachable \u2713  $ipText \u2713  '
+              'Website access: not working \u2717'
+              '$dnsBlock'
+              '\n\nPossible causes:'
+              '\n  \u2022 ISP DNS servers temporarily down'
+              '\n  \u2022 ISP network issue between router and DNS'
+              '\n  \u2022 DNS cache on router needs clearing (restart fixes this)'
+              '$wanTypeNote'
+              '$pcNote'
+              '$ipv6Note',
           actionLabel: 'Restart Router',
           actionKey: actionRestartRouter,
           checkNumber: 4,
-          postRestartEscalation: _ispEscalation(
-            'websites won\'t load',
-          ),
+          postRestartEscalation: _ispEscalation('websites won\'t load'),
         ));
       }
     }
@@ -571,6 +620,35 @@ class VerdictEngine {
       findings: findings,
       checksRun: checksRun > 0 ? checksRun : 8,
     );
+  }
+
+  /// True if [ip] looks like an ISP-assigned or private-network DNS server.
+  /// Private: 10.x, 172.16-31.x, 192.168.x.
+  /// ISP infra: 172.30.x (common Comcast/Cox range visible in tests).
+  static bool _isIspOrPrivateDns(String ip) {
+    final parts = ip.split('.');
+    if (parts.length != 4) return false;
+    final a = int.tryParse(parts[0]) ?? -1;
+    final b = int.tryParse(parts[1]) ?? -1;
+    if (a == 10) return true;
+    if (a == 172 && b >= 16 && b <= 31) return true;
+    if (a == 192 && b == 168) return true;
+    return false;
+  }
+
+  /// Human-readable label for a DNS server address.
+  static String _labelDnsServer(String ip) {
+    switch (ip) {
+      case '8.8.8.8': return 'Google Public DNS';
+      case '8.8.4.4': return 'Google Public DNS';
+      case '1.1.1.1': return 'Cloudflare DNS';
+      case '1.0.0.1': return 'Cloudflare DNS';
+      case '208.67.222.222': return 'OpenDNS';
+      case '208.67.220.220': return 'OpenDNS';
+      case '9.9.9.9': return 'Quad9';
+      case '149.112.112.112': return 'Quad9';
+    }
+    return _isIspOrPrivateDns(ip) ? 'assigned by your ISP' : 'custom DNS';
   }
 
   /// Generates ISP escalation text (PRD v0.7 D-26, D-31, D-32).
