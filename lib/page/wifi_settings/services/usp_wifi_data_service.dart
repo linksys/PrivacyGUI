@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
@@ -16,7 +17,14 @@ import 'package:privacy_gui/page/_shared/providers/wifi_client_enricher.dart';
 // ---------------------------------------------------------------------------
 
 final uspWifiDataServiceProvider = Provider<UspWifiDataService>(
-  (ref) => UspWifiDataService(ref.read(uspServiceProvider)!),
+  (ref) {
+    final usp = ref.read(uspServiceProvider);
+    if (usp == null) {
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
+    }
+    return UspWifiDataService(usp);
+  },
 );
 
 // ---------------------------------------------------------------------------
