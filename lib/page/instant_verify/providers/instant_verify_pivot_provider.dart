@@ -323,19 +323,22 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     if (_stale()) return;
     state = state.copyWith(dnsCheck: dns);
 
-    // Public DNS check — run silently when ISP DNS fails to distinguish
-    // "ISP DNS servers are down" from "internet is completely unreachable".
-    // Uses Google's DoH at 8.8.8.8 by IP (bypasses system DNS entirely).
+    // Recompute verdict immediately so the customer sees a finding right away.
+    // The public DNS refinement will update it a few seconds later.
+    _recomputeVerdict();
+
+    // Public DNS check — runs AFTER showing the initial finding so the customer
+    // isn't blocked waiting for it. When done, recomputes verdict to refine the
+    // message: "ISP DNS down" vs "internet fully unreachable".
+    // Uses Google's DoH at 8.8.8.8 by IP — bypasses system DNS entirely.
     if (!dns.resolved) {
       if (_stale()) return;
       final publicDns = await service.checkPublicDns();
       if (!_stale()) {
         state = state.copyWith(publicDnsCheck: publicDns);
+        _recomputeVerdict(); // update finding with refined diagnosis
       }
     }
-
-    // Recompute verdict with gateway + dns data (update before slow speed test)
-    _recomputeVerdict();
 
     // Internet speed test — skip if DNS failed (avoids contradictory 0-Mbps verdict),
     // or if results are fresh and not forced. (Fixes: Item 3, Item 4)
