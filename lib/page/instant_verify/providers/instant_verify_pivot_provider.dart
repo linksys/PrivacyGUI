@@ -327,16 +327,29 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     // The public DNS refinement will update it a few seconds later.
     _recomputeVerdict();
 
-    // Public DNS check — runs AFTER showing the initial finding so the customer
-    // isn't blocked waiting for it. When done, recomputes verdict to refine the
-    // message: "ISP DNS down" vs "internet fully unreachable".
-    // Uses Google's DoH at 8.8.8.8 by IP — bypasses system DNS entirely.
+    // Parallel DNS diagnostics — run AFTER showing initial finding so the
+    // customer isn't blocked. Both checks run concurrently:
+    //   • checkPublicDns()     — DoH to 8.8.8.8, tests internet connectivity
+    //   • _pingFromRouter()    — JNAP ping to configured DNS IPs, tests routing
+    // Together they give three-way diagnosis (see VerdictEngine Check 4).
     if (!dns.resolved) {
       if (_stale()) return;
-      final publicDns = await service.checkPublicDns();
+      final dnsIps = state.wanDnsServers;
+      // Start both futures concurrently
+      final publicDnsFuture = service.checkPublicDns();
+      final pingFuture = dnsIps.isNotEmpty
+          ? _pingFromRouter(dnsIps.first)
+          : Future<bool?>.value(null);
+      // Await results (both were already running)
+      final publicDns = await publicDnsFuture;
+      if (_stale()) return;
+      final dnsReachable = await pingFuture;
       if (!_stale()) {
-        state = state.copyWith(publicDnsCheck: publicDns);
-        _recomputeVerdict(); // update finding with refined diagnosis
+        state = state.copyWith(
+          publicDnsCheck: publicDns,
+          configuredDnsReachable: dnsReachable,
+        );
+        _recomputeVerdict();
       }
     }
 
@@ -549,6 +562,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       wanIpv6Connected: s.wanStatus != null ? s.wanIpv6Connected : null,
       wanType: s.wanConnectionType,
       publicDnsWorking: s.publicDnsCheck?.resolved,
+      configuredDnsReachable: s.configuredDnsReachable,
     );
     state = state.copyWith(verdict: verdict, verdictIsPreliminary: preliminary);
   }
@@ -714,7 +728,8 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       dnsServers: mockDns,
       wanIpv6Connected: false,
       wanType: 'DHCP',
-      publicDnsWorking: true, // internet works — only ISP DNS is broken
+      publicDnsWorking: true,       // internet works
+      configuredDnsReachable: true, // DNS servers up but service broken
     );
     state = InstantVerifyPivotState(
       phase: PivotLoadPhase.complete,
@@ -1021,6 +1036,39 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     state = state.copyWith(planSpeedMbps: mbps);
     if (state.phase != PivotLoadPhase.loading) {
       _recomputeVerdict(preliminary: state.verdictIsPreliminary);
+    }
+  }
+
+  // ── Internal router ping (diagnostic, no state side-effects) ─────────
+
+  /// Pings [ip] from the router via JNAP and returns whether it responded.
+  /// Uses only 2 packets to stay fast (~2-3s). Returns null on error.
+  /// Does NOT touch isPingRunning / pingOutput state — purely internal.
+  Future<bool?> _pingFromRouter(String ip) async {
+    try {
+      await _send(JNAPAction.startPing, data: {
+        'host': ip,
+        'packetSizeBytes': 32,
+        'pingCount': 2,
+      });
+      // Poll for completion (max ~6s for 2-packet ping)
+      for (var i = 0; i < 8; i++) {
+        await Future<void>.delayed(const Duration(seconds: 1));
+        try {
+          final result = await _send(JNAPAction.getPingStatus);
+          final status = PingStatus.fromMap(result);
+          if (!status.isRunning) {
+            // Success: at least one packet received (0% packet loss line present)
+            return status.pingLog.contains('0% packet loss') ||
+                status.pingLog.contains('bytes from') ||
+                status.pingLog.contains('ttl=');
+          }
+        } catch (_) {}
+      }
+      return null; // timed out polling
+    } catch (e) {
+      dev.log('InstantVerifyPivot: _pingFromRouter($ip) failed: $e');
+      return null;
     }
   }
 

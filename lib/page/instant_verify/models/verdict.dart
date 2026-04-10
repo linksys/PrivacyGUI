@@ -112,6 +112,12 @@ class VerdictEngine {
     /// False = public DNS also failed → broader internet connectivity issue.
     /// Null = check not run (DNS was OK, or check skipped).
     bool? publicDnsWorking,
+    /// Whether configured DNS server IPs respond to ICMP ping from the router.
+    /// Combined with [publicDnsWorking] for three-way root-cause diagnosis:
+    ///   public=true + ping=true  → DNS service broken, routing OK
+    ///   public=true + ping=false → Cannot reach DNS servers at all
+    ///   public=false             → Internet appears unreachable
+    bool? configuredDnsReachable,
     required List<DeviceScore> deviceScores,
     required List<DiagnosticClient> clients,
     required List<MeshNodeInfo> meshNodes,
@@ -250,31 +256,60 @@ class VerdictEngine {
               'connections and is not the cause of this issue.'
             : '';
 
-        // ── Root cause differentiation via public DNS check ──────────────
-        // publicDnsWorking = true  → internet works, ISP DNS specifically broken
-        // publicDnsWorking = false → internet appears completely unreachable
-        // publicDnsWorking = null  → inconclusive
+        // ── Three-way root-cause differentiation ─────────────────────────
+        // publicDnsWorking=true + configuredDnsReachable=true
+        //   → DNS IPs are up but DNS service is broken (process/port 53 issue)
+        // publicDnsWorking=true + configuredDnsReachable=false
+        //   → Can't reach ISP DNS servers at all — routing issue
+        // publicDnsWorking=true + configuredDnsReachable=null
+        //   → Internet works, ISP DNS broken (can't narrow further)
+        // publicDnsWorking=false
+        //   → Internet appears unreachable — possible ISP outage
         final String rootCauseContext;
         final String postRestartMsg;
         if (publicDnsWorking == true) {
-          // Internet connectivity is fine — only ISP DNS is broken
-          rootCauseContext =
-              '\n\nYour internet connection is working — only the DNS lookup '
-              'service is failing. Restarting your router clears the DNS cache '
-              'and re-establishes the connection to your ISP\'s DNS servers.';
-          postRestartMsg =
-              'Since restarting didn\'t fix it, your ISP\'s DNS servers may '
-              'be having an outage. Contact your provider and say: '
-              '"My router is connected but websites won\'t load. '
-              'Your DNS servers appear to be down."';
+          if (configuredDnsReachable == true) {
+            // DNS servers are reachable by IP but DNS service isn't working
+            rootCauseContext =
+                '\n\nDiagnosis: DNS servers are online but not responding to '
+                'queries — likely a DNS service issue on your ISP\'s side. '
+                'Restarting your router clears the DNS cache.';
+            postRestartMsg =
+                'Since restarting didn\'t fix it, your ISP\'s DNS service is '
+                'likely having an issue. Contact your provider and say: '
+                '"My router can reach your DNS servers by IP but DNS queries '
+                'are failing. It looks like a DNS service outage."';
+          } else if (configuredDnsReachable == false) {
+            // Can't even ping the ISP DNS IPs — routing is broken
+            rootCauseContext =
+                '\n\nDiagnosis: Cannot reach your ISP\'s DNS servers — there '
+                'may be a routing issue between your router and your provider. '
+                'Try restarting both your modem and router (modem first, '
+                'wait 30 seconds, then the router).';
+            postRestartMsg =
+                'Since restarting didn\'t fix it, there\'s likely a routing '
+                'issue between your modem and ISP. Contact your provider and '
+                'say: "My router cannot reach your DNS servers at all. '
+                'I\'ve restarted both modem and router."';
+          } else {
+            // Public DNS works, configured DNS status unknown
+            rootCauseContext =
+                '\n\nYour internet connection is working — only the DNS lookup '
+                'service is failing. Restarting your router clears the DNS cache.';
+            postRestartMsg =
+                'Since restarting didn\'t fix it, your ISP\'s DNS servers may '
+                'be having an outage. Contact your provider and say: '
+                '"My router is connected but websites won\'t load. '
+                'Your DNS servers appear to be down."';
+          }
         } else if (publicDnsWorking == false) {
-          // Internet appears unreachable — broader than just DNS
           rootCauseContext =
-              '\n\nYour internet connection appears to be unreachable — not '
-              'just DNS. This may be a wider outage from your provider.';
+              '\n\nDiagnosis: Internet appears to be unreachable — not just '
+              'DNS. This may be a wider outage from your provider. '
+              'Check that all cables are firmly connected, then restart '
+              'your modem and router.';
           postRestartMsg = _ispEscalation('websites won\'t load');
         } else {
-          // Unknown — generic guidance
           rootCauseContext = '';
           postRestartMsg = _ispEscalation('websites won\'t load');
         }

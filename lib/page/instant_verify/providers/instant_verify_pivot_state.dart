@@ -50,6 +50,9 @@ class InstantVerifyPivotState extends Equatable {
   /// Null = not yet run. Only populated when [dnsCheck] resolved = false.
   /// Used internally to distinguish ISP DNS failure from full internet outage.
   final DnsCheckResult? publicDnsCheck;
+  /// Whether the configured DNS server IPs respond to ICMP ping from the router.
+  /// Null = not checked. Combined with [publicDnsCheck] for three-way diagnosis.
+  final bool? configuredDnsReachable;
   final SpeedTestResult? speedTest;
   final RouterSpeedResult? routerSpeed;
 
@@ -112,6 +115,7 @@ class InstantVerifyPivotState extends Equatable {
     this.gatewayPing,
     this.dnsCheck,
     this.publicDnsCheck,
+    this.configuredDnsReachable,
     this.speedTest,
     this.routerSpeed,
     this.browserTestStep = 'idle',
@@ -152,6 +156,7 @@ class InstantVerifyPivotState extends Equatable {
     GatewayPingResult? gatewayPing,
     DnsCheckResult? dnsCheck,
     DnsCheckResult? publicDnsCheck,
+    bool? configuredDnsReachable,
     SpeedTestResult? speedTest,
     RouterSpeedResult? routerSpeed,
     String? browserTestStep,
@@ -191,6 +196,7 @@ class InstantVerifyPivotState extends Equatable {
       gatewayPing: gatewayPing ?? this.gatewayPing,
       dnsCheck: dnsCheck ?? this.dnsCheck,
       publicDnsCheck: publicDnsCheck ?? this.publicDnsCheck,
+      configuredDnsReachable: configuredDnsReachable ?? this.configuredDnsReachable,
       speedTest: speedTest ?? this.speedTest,
       routerSpeed: routerSpeed ?? this.routerSpeed,
       browserTestStep: browserTestStep ?? this.browserTestStep,
@@ -358,6 +364,7 @@ class InstantVerifyPivotState extends Equatable {
         gatewayPing,
         dnsCheck,
         publicDnsCheck,
+        configuredDnsReachable,
         speedTest,
         routerSpeed,
         browserTestStep,
