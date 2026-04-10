@@ -1009,7 +1009,7 @@ class _MeshCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final nodes = state.meshNodes;
-    final satelliteCount = nodes.where((n) => !n.isController).length;
+    final deviceCount = nodes.length;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1025,13 +1025,8 @@ class _MeshCard extends StatelessWidget {
             const Icon(Icons.hub_outlined, size: 18),
             const SizedBox(width: 8),
             Text(
-              'Mesh Network — ${nodes.length} node${nodes.length == 1 ? '' : 's'}',
+              'Mesh Network — $deviceCount device${deviceCount == 1 ? '' : 's'}',
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '$satelliteCount satellite${satelliteCount == 1 ? '' : 's'}',
-              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
             ),
           ]),
           const SizedBox(height: 12),
@@ -1054,35 +1049,112 @@ class _MeshNodeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    // Signal quality indicator for backhaul
-    Color backhaulColor = Colors.green;
-    IconData backhaulIcon = Icons.check_circle;
+    // ── Role icon + color ──────────────────────────────────────────────────
+    final IconData roleIcon;
+    final Color roleColor;
     if (node.isController) {
-      backhaulIcon = Icons.router;
-      backhaulColor = scheme.primary;
-    } else if (node.hasWeakBackhaul) {
-      backhaulIcon = Icons.warning_amber;
-      backhaulColor = Colors.orange;
+      roleIcon = Icons.router;
+      roleColor = scheme.primary;
     } else if (node.hasWiredBackhaul) {
-      backhaulIcon = Icons.cable;
-      backhaulColor = Colors.green;
+      roleIcon = Icons.cable;
+      roleColor = Colors.green;
     } else {
-      backhaulIcon = Icons.wifi;
-      backhaulColor = Colors.green;
+      switch (node.backhaulHealth) {
+        case BackhaulHealth.strong:
+          roleIcon = Icons.wifi;
+          roleColor = Colors.green;
+        case BackhaulHealth.moderate:
+          roleIcon = Icons.wifi;
+          roleColor = Colors.orange;
+        case BackhaulHealth.weak:
+        case BackhaulHealth.critical:
+          roleIcon = Icons.warning_amber;
+          roleColor = Colors.red;
+        case BackhaulHealth.unknown:
+          roleIcon = Icons.wifi;
+          roleColor = Colors.green;
+      }
+    }
+
+    // ── Backhaul health label + detail for child nodes ─────────────────────
+    String? healthLabel;
+    String? healthDetail;
+    Color healthColor = scheme.onSurfaceVariant;
+
+    if (!node.isController) {
+      final speed = node.backhaulSpeedMbps;
+      final rssi = node.backhaulApRssi ?? node.backhaulRssi;
+
+      // Build compact data string: "201 Mbps · -33 dBm"
+      final parts = <String>[];
+      if (speed != null) parts.add('$speed Mbps');
+      if (rssi != null) parts.add('$rssi dBm');
+      final dataStr = parts.join(' · ');
+
+      switch (node.backhaulHealth) {
+        case BackhaulHealth.strong:
+          healthLabel = 'Good connection';
+          healthDetail = dataStr.isNotEmpty ? dataStr : null;
+          healthColor = Colors.green.shade700;
+        case BackhaulHealth.moderate:
+          healthLabel = 'Moderate';
+          healthDetail = '${dataStr.isNotEmpty ? '$dataStr — ' : ''}'
+              'may cause occasional slowness under load';
+          healthColor = Colors.orange.shade700;
+        case BackhaulHealth.weak:
+          healthLabel = 'Weak backhaul';
+          healthDetail = '${dataStr.isNotEmpty ? '$dataStr — ' : ''}'
+              'likely causing slowness, jitter, or drops. '
+              'Move ${node.name} closer to the main router.';
+          healthColor = Colors.red.shade700;
+        case BackhaulHealth.critical:
+          healthLabel = 'Critical backhaul';
+          healthDetail = '${dataStr.isNotEmpty ? '$dataStr — ' : ''}'
+              'backhaul too poor to be reliable. '
+              'Move ${node.name} much closer to the main router, '
+              'or connect it by Ethernet cable.';
+          healthColor = Colors.red.shade800;
+        case BackhaulHealth.unknown:
+          healthLabel = node.hasWiredBackhaul ? 'Wired — optimal' : null;
+          healthDetail = dataStr.isNotEmpty ? dataStr : null;
+          healthColor = Colors.green.shade700;
+      }
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(backhaulIcon, size: 18, color: backhaulColor),
+          Icon(roleIcon, size: 18, color: roleColor),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Name row + role badge + client count
                 Row(children: [
+                  // Role badge: "Parent" or "Child"
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      color: node.isController
+                          ? scheme.primaryContainer
+                          : scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      node.isController ? 'Parent' : 'Child',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: node.isController
+                            ? scheme.onPrimaryContainer
+                            : scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
                   Expanded(
                     child: Text(
                       node.name,
@@ -1098,25 +1170,50 @@ class _MeshNodeRow extends StatelessWidget {
                           fontSize: 11, color: scheme.onSurfaceVariant),
                     ),
                 ]),
-                const SizedBox(height: 2),
-                Row(children: [
-                  if (node.model != null)
-                    Text(node.model!,
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: scheme.onSurfaceVariant)),
-                  if (node.model != null && !node.isController)
-                    Text(' · ', style: TextStyle(color: scheme.outlineVariant)),
-                  if (!node.isController)
-                    Text(
-                      node.backhaulLabel,
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: node.hasWeakBackhaul
-                              ? Colors.orange.shade700
-                              : scheme.onSurfaceVariant),
-                    ),
-                ]),
+
+                // Model + backhaul health
+                const SizedBox(height: 3),
+                Wrap(
+                  spacing: 4,
+                  children: [
+                    if (node.model != null)
+                      Text(node.model!,
+                          style: TextStyle(
+                              fontSize: 11, color: scheme.onSurfaceVariant)),
+                    if (node.model != null && healthLabel != null)
+                      Text('·',
+                          style: TextStyle(color: scheme.outlineVariant, fontSize: 11)),
+                    if (healthLabel != null)
+                      Text(healthLabel,
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: healthColor)),
+                  ],
+                ),
+
+                // Health detail (only for moderate/weak/critical)
+                if (healthDetail != null &&
+                    node.backhaulHealth != BackhaulHealth.strong &&
+                    node.backhaulHealth != BackhaulHealth.unknown) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    healthDetail,
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: healthColor,
+                        height: 1.3),
+                  ),
+                ] else if (healthDetail != null &&
+                    (node.backhaulHealth == BackhaulHealth.strong ||
+                        node.backhaulHealth == BackhaulHealth.unknown)) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    healthDetail,
+                    style: TextStyle(
+                        fontSize: 11, color: scheme.onSurfaceVariant),
+                  ),
+                ],
               ],
             ),
           ),

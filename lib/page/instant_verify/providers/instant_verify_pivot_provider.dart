@@ -1369,6 +1369,15 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     return nodes.map((node) {
       final backhaul = backhaulMap[node.deviceId];
       if (backhaul == null) return node;
+
+      // GetBackhaulInfo2 nests signal/channel data inside wirelessConnectionInfo.
+      // GetBackhaulInfo (v1) put rssi at the top level — keep backward compat.
+      final wci = backhaul['wirelessConnectionInfo'] as Map<String, dynamic>?;
+      final apRssi = wci?['apRSSI'] as int? ?? backhaul['rssi'] as int?;
+      final stationRssi = wci?['stationRSSI'] as int?;
+      final channel = wci?['channel'] as int?;
+      final radioId = wci?['radioID'] as String?;
+
       return MeshNodeInfo(
         deviceId: node.deviceId,
         name: node.name,
@@ -1377,10 +1386,14 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         serialNumber: node.serialNumber,
         isController: node.isController,
         backhaulType: backhaul['connectionType'] as String?,
-        backhaulRssi: backhaul['rssi'] as int?,
+        backhaulRssi: apRssi,
         // HW-1: firmware returns speedMbps as a numeric String, not int
         backhaulSpeedMbps: int.tryParse(
             (backhaul['speedMbps'] ?? '').toString()),
+        backhaulApRssi: apRssi,
+        backhaulStationRssi: stationRssi,
+        backhaulChannel: channel,
+        backhaulRadioId: radioId,
       );
     }).toList();
   }

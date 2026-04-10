@@ -451,11 +451,15 @@ void main() {
       expect(find.text('Bedroom'), findsOneWidget);
     });
 
-    testWidgets('shows satellite count', (tester) async {
+    testWidgets('shows device count and parent/child labels', (tester) async {
       await tester.pumpWidget(_buildOverviewTab(_meshState()));
       await tester.pump();
 
-      expect(find.text('2 satellites'), findsOneWidget);
+      // Header shows total device count (not "nodes")
+      expect(find.text('Mesh Network — 3 devices'), findsOneWidget);
+      // Role labels shown per node
+      expect(find.text('Parent'), findsOneWidget);
+      expect(find.text('Child'), findsWidgets);
     });
 
     testWidgets('no mesh card for single router', (tester) async {
