@@ -5,7 +5,6 @@ import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
-import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 
 final uspAdminServiceProvider = Provider<UspAdminService>(
   (ref) => UspAdminService(ref.read(uspServiceProvider)!),
@@ -47,6 +46,48 @@ class UspAdminService {
   }
 
   // ---------------------------------------------------------------------------
+  // Time Settings — mutations (from Dashboard card + Admin page)
+  // ---------------------------------------------------------------------------
+
+  /// Update time settings (enable toggle, NTP servers).
+  Future<void> updateTimeSettings({
+    bool? enable,
+    String? ntpServer1,
+    String? ntpServer2,
+  }) async {
+    try {
+      await TimeSettings.save(
+        _usp,
+        enable: enable,
+        ntpServer1: ntpServer1,
+        ntpServer2: ntpServer2,
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Update timezone and optionally NTP servers / enable.
+  Future<void> updateTimezone({
+    String? localTimeZone,
+    String? ntpServer1,
+    String? ntpServer2,
+    bool? enable,
+  }) async {
+    try {
+      await TimeSettings.save(
+        _usp,
+        localTimeZone: localTimeZone,
+        ntpServer1: ntpServer1,
+        ntpServer2: ntpServer2,
+        enable: enable,
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // System Operations
   // ---------------------------------------------------------------------------
 
@@ -68,10 +109,6 @@ class UspAdminService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Transform
-  // ---------------------------------------------------------------------------
-
   AdminUserUIModel _buildAdminUserUIModel(AdminUsers users) {
     final admin = users.items.firstWhere(
       (u) => u.username == 'admin',
@@ -81,17 +118,6 @@ class UspAdminService {
       instancePath: admin.instancePath,
       username: admin.username,
       enable: admin.enable,
-    );
-  }
-
-  TimeSettingsUIModel buildTimeSettingsUIModel(TimeSettings ts) {
-    return TimeSettingsUIModel(
-      enable: ts.enable,
-      status: ts.status,
-      currentLocalTime: ts.currentLocalTime,
-      localTimeZone: ts.localTimeZone,
-      ntpServer1: ts.ntpServer1,
-      ntpServer2: ts.ntpServer2,
     );
   }
 }

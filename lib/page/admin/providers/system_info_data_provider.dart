@@ -1,14 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/generated/firmware_images.g.dart';
-import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
+import 'package:privacy_gui/page/admin/services/usp_system_info_data_service.dart';
 
 // ── Data Model ──
 
@@ -40,52 +34,13 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
   }
 
   Future<SystemInfoData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) {
-      throw const ServiceNotInitializedError(
-          message: 'USP service not available');
-    }
-
-    // SystemInfo.fetch now includes ActiveFirmwareImage + BootFirmwareImage
-    // (merged in YAML v1.1.0), reducing from 3 → 2 USP requests.
-    final List<Object> results;
-    try {
-      results = await Future.wait([
-        SystemInfo.fetch(usp),
-        _fetchFirmwareImages(usp),
-      ]);
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-
-    final systemInfo = results[0] as SystemInfo;
-    final fwImages = results[1] as FirmwareImages;
-
-    final svc = UspDeviceService();
-    final fwModels = svc.buildFirmwareImageUIModels(
-      data: fwImages,
-      activeRef: systemInfo.activeFirmwareImage,
-      bootRef: systemInfo.bootFirmwareImage,
-    );
-    final model = svc.buildSystemInfoUIModel(
-      systemInfo,
-      firmwareImages: fwModels,
-    );
+    final svc = ref.read(uspSystemInfoDataServiceProvider);
+    final model = await svc.fetch();
 
     logger.d('[USP][SystemInfoData] Fetched — '
-        'model=${systemInfo.modelName}, '
-        'fw=${systemInfo.softwareVersion}');
-    return SystemInfoData(model: model);
-  }
+        'model=${model.modelName}, '
+        'fw=${model.softwareVersion}');
 
-  /// Fetches firmware image partitions (multi-instance).
-  Future<FirmwareImages> _fetchFirmwareImages(UspService usp) async {
-    try {
-      return await FirmwareImages.fetch(usp)
-          .timeout(const Duration(seconds: 20));
-    } catch (e) {
-      logger.w('[USP][SystemInfoData] Firmware images fetch failed: $e');
-      return FirmwareImages(items: []);
-    }
+    return SystemInfoData(model: model);
   }
 }
