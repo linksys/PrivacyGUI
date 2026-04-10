@@ -194,8 +194,8 @@ void main() {
       await tester.pumpWidget(_buildTab(_meshState()));
       await tester.pumpAndSettle();
       expect(find.text('Main Router'), findsOneWidget);
-      expect(find.text('Satellite Node 1'), findsOneWidget);
-      expect(find.text('Satellite Node 2'), findsOneWidget);
+      expect(find.text('Child Node 1'), findsOneWidget);
+      expect(find.text('Child Node 2'), findsOneWidget);
     });
 
     testWidgets('shows device count per node', (tester) async {
@@ -238,10 +238,7 @@ void main() {
     testWidgets('guest device name visible when group expanded', (tester) async {
       await tester.pumpWidget(_buildTab(_guestDeviceState()));
       await tester.pumpAndSettle();
-      // Guest Devices group won't auto-expand (signal is good)
-      // Tap to expand
-      await tester.tap(find.text('Guest Devices'));
-      await tester.pumpAndSettle();
+      // Groups are always expanded — device visible without tapping
       expect(find.text('Guest Phone'), findsOneWidget);
     });
   });
@@ -332,17 +329,12 @@ void main() {
 
       await tester.pumpWidget(_buildTab(_meshState()));
       await tester.pumpAndSettle();
-      // Satellite Node 1 group not auto-expanded (no issues), tap to expand
-      await tester.ensureVisible(find.text('Satellite Node 1'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Satellite Node 1'));
-      await tester.pumpAndSettle();
-      // Nest Hub should now be visible
+      // Groups always expanded — Nest Hub visible immediately
       await tester.ensureVisible(find.text('Nest Hub'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Nest Hub'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Satellite Node 1'), findsAtLeast(1));
+      expect(find.textContaining('Child Node 1'), findsAtLeast(1));
     });
   });
 

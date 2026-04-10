@@ -132,6 +132,12 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
         meshNodesList = _parseMeshNodes(deviceList);
       } catch (_) {}
 
+      // Enrich device map with DHCP lease IPs + hostnames.
+      // This fills in missing IPs when GetDevices (old) returns no ipAddress fields,
+      // which happens when the router doesn't advertise deviceList4 capability.
+      // DHCP leases are the most reliable source for current IP assignments.
+      _enrichDeviceMapWithDhcp(deviceMap, dhcpData);
+
       // Parse clients
       List<DiagnosticClient> clients;
       if (wirelessData.isNotEmpty) {
@@ -1010,16 +1016,17 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       final radios = current['radios'] as List?;
       if (radios == null) return false;
 
-      // Find the target radio and build updated settings
+      // Build settings-only payload — SetRadioSettings only accepts
+      // radioID + settings, not the full GetRadioInfo3 object (band, bssid,
+      // supportedModes, etc. cause _ErrorInvalidInput).
       final updated = radios.map((r) {
         final radioMap = r as Map<String, dynamic>;
+        final settings = Map<String, dynamic>.from(
+            radioMap['settings'] as Map<String, dynamic>? ?? {});
         if (radioMap['radioID'] == radioID) {
-          final settings = Map<String, dynamic>.from(
-              radioMap['settings'] as Map<String, dynamic>? ?? {});
           settings['channel'] = channel;
-          return {...radioMap, 'settings': settings};
         }
-        return radioMap;
+        return {'radioID': radioMap['radioID'], 'settings': settings};
       }).toList();
 
       await _send(JNAPAction.setRadioSettings,
@@ -1244,6 +1251,40 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────
+
+  /// Supplement [deviceMap] with IP address and hostname from DHCP leases.
+  ///
+  /// GetDevices (old version, used when router doesn't advertise deviceList4)
+  /// does not return ipAddress in its connection objects. DHCP leases are
+  /// the most reliable fallback — they always contain MAC + current IP.
+  void _enrichDeviceMapWithDhcp(
+    Map<String, Map<String, String?>> deviceMap,
+    Map<String, dynamic> dhcpData,
+  ) {
+    final leases = dhcpData['leases'] as List?
+        ?? dhcpData['clientLeases'] as List?
+        ?? dhcpData['dhcpLeases'] as List?
+        ?? dhcpData['dhcpClientLeases'] as List?
+        ?? [];
+    for (final lease in leases) {
+      final mac = (lease['macAddress'] as String?)?.toUpperCase();
+      if (mac == null) continue;
+      final ip = lease['ipAddress'] as String?;
+      final hostname = lease['hostName'] as String?
+          ?? lease['hostname'] as String?;
+      if (deviceMap.containsKey(mac)) {
+        final existing = deviceMap[mac]!;
+        if (existing['ipAddress'] == null && ip != null) {
+          existing['ipAddress'] = ip;
+        }
+        if (existing['hostname'] == null && hostname != null) {
+          existing['hostname'] = hostname;
+        }
+      } else {
+        deviceMap[mac] = {'ipAddress': ip, 'hostname': hostname};
+      }
+    }
+  }
 
   /// HW-5: GetNetworkConnections returns rates in Kbps; convert to Mbps.
   /// Returns null if raw is null.

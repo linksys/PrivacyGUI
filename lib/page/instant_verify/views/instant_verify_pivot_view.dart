@@ -33,17 +33,8 @@ class _InstantVerifyPivotViewState
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    // When the Help Me Fix It tab is re-tapped while already active,
-    // reset to the landing menu (-1 = reset signal).
-    int _previousTab = 0;
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        if (_tabController.index == 3 && _previousTab == 3) {
-          _helpMeFlowNotifier.value = -1;
-        }
-        _previousTab = _tabController.index;
-      }
-    });
+    // Re-tap detection is handled via TabBar.onTap — addListener doesn't
+    // fire when the user taps the already-active tab (no animation change).
   }
 
   @override
@@ -61,6 +52,12 @@ class _InstantVerifyPivotViewState
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
+          onTap: (index) {
+            // Re-tapping Help Me Fix It while already on it resets to landing
+            if (index == 3 && _tabController.index == 3) {
+              _helpMeFlowNotifier.value = -1;
+            }
+          },
           tabs: const [
             Tab(text: 'Instant-Test'),
             Tab(text: 'My Devices'),

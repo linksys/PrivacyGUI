@@ -1839,8 +1839,34 @@ class _Flow3State extends ConsumerState<_Flow3> {
     );
   }
 
-  /// Channel change picker — shows 2.4/5 GHz options.
+  /// Channel change picker — built from live radioInfo so IDs are accurate.
+  /// Suggested channels are non-overlapping / non-DFS best-practice values:
+  ///   2.4 GHz → channel 6 (one of 3 non-overlapping: 1, 6, 11)
+  ///   5 GHz   → channel 36 (first non-DFS channel in low band)
   void _showChannelChangePicker(BuildContext context, InstantVerifyPivotState state) {
+    final radios = state.radioInfo?['radios'] as List? ?? [];
+    // Build (radioID, bandLabel, suggestedChannel) tuples from live data
+    final options = <(String, String, int)>[];
+    for (final r in radios) {
+      final radioId = (r as Map<String, dynamic>)['radioID'] as String?;
+      final band = r['band'] as String? ?? '';
+      if (radioId == null) continue;
+      if (band.contains('2.4')) {
+        options.add((radioId, '2.4 GHz', 6));
+      } else if (band.contains('5') && !band.contains('6')) {
+        options.add((radioId, '5 GHz', 36));
+      } else if (band.contains('6')) {
+        options.add((radioId, '6 GHz', 37));
+      }
+    }
+    // Fallback to hardcoded IDs if radioInfo unavailable
+    if (options.isEmpty) {
+      options.addAll([
+        ('RADIO_2.4GHz', '2.4 GHz', 6),
+        ('RADIO_5GHz', '5 GHz', 36),
+      ]);
+    }
+
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -1858,47 +1884,30 @@ class _Flow3State extends ConsumerState<_Flow3> {
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
-              'This will briefly disconnect all devices on that band.',
+              'Switches to a less congested channel. All devices on that band will briefly disconnect.',
               style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                     color: Theme.of(ctx).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
-            ListTile(
-              leading: const Icon(Icons.wifi),
-              title: const Text('2.4 GHz — switch to channel 6'),
-              contentPadding: EdgeInsets.zero,
-              onTap: () async {
-                Navigator.pop(ctx);
-                final ok = await ref
-                    .read(instantVerifyPivotProvider.notifier)
-                    .changeRadioChannel('RADIO_2.4GHz', 6);
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(ok
-                      ? '2.4 GHz channel changed. Devices reconnecting…'
-                      : 'Could not change channel on this router.'),
-                  behavior: SnackBarBehavior.floating,
-                ));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.wifi),
-              title: const Text('5 GHz — switch to channel 36'),
-              contentPadding: EdgeInsets.zero,
-              onTap: () async {
-                Navigator.pop(ctx);
-                final ok = await ref
-                    .read(instantVerifyPivotProvider.notifier)
-                    .changeRadioChannel('RADIO_5GHz', 36);
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(ok
-                      ? '5 GHz channel changed. Devices reconnecting…'
-                      : 'Could not change channel on this router.'),
-                  behavior: SnackBarBehavior.floating,
-                ));
-              },
-            ),
+            for (final (radioId, bandLabel, ch) in options)
+              ListTile(
+                leading: const Icon(Icons.wifi),
+                title: Text('$bandLabel — switch to channel $ch'),
+                contentPadding: EdgeInsets.zero,
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final ok = await ref
+                      .read(instantVerifyPivotProvider.notifier)
+                      .changeRadioChannel(radioId, ch);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(ok
+                        ? '$bandLabel channel changed to $ch. Devices reconnecting…'
+                        : 'Could not change channel — try restarting your router.'),
+                    behavior: SnackBarBehavior.floating,
+                  ));
+                },
+              ),
           ],
         ),
       ),
