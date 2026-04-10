@@ -275,7 +275,12 @@ void main() {
     });
 
     test('delete removes missing items', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         Ipv6PortServiceRuleUIModel(
@@ -299,7 +304,19 @@ void main() {
     });
 
     test('add creates items with null instancePath', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.Firewall.Chain.1.Rule.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.Firewall.Chain.1.Rule.26.',
+            'initialParams': {}
+          }]
+        }]
+      });
 
       final current = [
         Ipv6PortServiceRuleUIModel(
@@ -329,7 +346,12 @@ void main() {
 
     test('update detects changed content', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         Ipv6PortServiceRuleUIModel(
@@ -363,10 +385,32 @@ void main() {
     });
 
     test('mixed batch: delete + add + update', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.Firewall.Chain.1.Rule.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.Firewall.Chain.1.Rule.27.',
+            'initialParams': {}
+          }]
+        }]
+      });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         Ipv6PortServiceRuleUIModel(

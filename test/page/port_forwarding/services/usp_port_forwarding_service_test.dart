@@ -124,7 +124,12 @@ void main() {
     });
 
     test('delete removes items missing from current', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         PortForwardingRuleUIModel(
@@ -148,7 +153,19 @@ void main() {
     });
 
     test('add creates items with null instancePath', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.NAT.PortMapping.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.NAT.PortMapping.1.',
+            'initialParams': {}
+          }]
+        }]
+      });
 
       final current = [
         PortForwardingRuleUIModel(
@@ -177,7 +194,12 @@ void main() {
 
     test('update detects changed content', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         PortForwardingRuleUIModel(
@@ -211,10 +233,32 @@ void main() {
     });
 
     test('mixed batch: delete + add + update', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.NAT.PortMapping.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.NAT.PortMapping.2.',
+            'initialParams': {}
+          }]
+        }]
+      });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         PortForwardingRuleUIModel(
@@ -267,7 +311,12 @@ void main() {
     });
 
     test('multi-item delete uses sequential delay', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         PortForwardingRuleUIModel(
@@ -300,7 +349,19 @@ void main() {
     });
 
     test('multi-item add uses sequential delay', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.NAT.PortMapping.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.NAT.PortMapping.1.',
+            'initialParams': {}
+          }]
+        }]
+      });
 
       final current = [
         PortForwardingRuleUIModel(
@@ -365,7 +426,12 @@ void main() {
     });
 
     test('delete removes items missing from current', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         PortTriggeringRuleUIModel(
@@ -387,8 +453,19 @@ void main() {
     });
 
     test('add creates parent + forward rules', () async {
-      when(() => mockUsp.add(any(), any()))
-          .thenAnswer((_) async => 'Device.NAT.PortTrigger.5.');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.NAT.PortTrigger.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.NAT.PortTrigger.5.',
+            'initialParams': {}
+          }]
+        }]
+      });
 
       final current = [
         PortTriggeringRuleUIModel(
@@ -421,8 +498,19 @@ void main() {
     });
 
     test('add with no forward rules creates parent only', () async {
-      when(() => mockUsp.add(any(), any()))
-          .thenAnswer((_) async => 'Device.NAT.PortTrigger.5.');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.NAT.PortTrigger.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.NAT.PortTrigger.5.',
+            'initialParams': {}
+          }]
+        }]
+      });
 
       final current = [
         PortTriggeringRuleUIModel(
@@ -444,7 +532,12 @@ void main() {
 
     test('update detects changed parent fields', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         PortTriggeringRuleUIModel(
@@ -474,11 +567,32 @@ void main() {
     });
 
     test('mixed batch: delete + add + update', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
-      when(() => mockUsp.add(any(), any()))
-          .thenAnswer((_) async => 'Device.NAT.PortTrigger.9.');
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.NAT.PortTrigger.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.NAT.PortTrigger.9.',
+            'initialParams': {}
+          }]
+        }]
+      });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         PortTriggeringRuleUIModel(
@@ -523,7 +637,12 @@ void main() {
     });
 
     test('multi-item delete uses sequential delay', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         PortTriggeringRuleUIModel(

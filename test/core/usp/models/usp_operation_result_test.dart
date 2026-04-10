@@ -4,13 +4,23 @@ import 'package:privacy_gui/core/usp/models/usp_operation_result.dart';
 void main() {
   group('UspOperationResult sealed class', () {
     test('UspSuccess should indicate complete success', () {
-      const result = UspSuccess<void>([]);
+      // Test with actual successful operations
+      const successDetails = [
+        UspSuccessDetail(requestedPath: 'Device.Test.Path'),
+      ];
+      const result = UspSuccess<void>(successDetails);
 
       expect(result.hasAnySuccess, true);
       expect(result.isCompleteSuccess, true);
       expect(result.hasErrors, false);
       expect(result.isSuccessfulInContext(), true);
       expect(result.isSuccessfulInContext(allowPartial: true), true);
+
+      // Test empty success case separately
+      const emptyResult = UspSuccess<void>([]);
+      expect(emptyResult.hasAnySuccess, false); // No actual operations
+      expect(emptyResult.isCompleteSuccess, true); // But still complete success (no errors)
+      expect(emptyResult.hasErrors, false);
     });
 
     test('UspPartialSuccess should indicate partial success', () {

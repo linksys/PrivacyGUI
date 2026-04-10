@@ -102,7 +102,12 @@ void main() {
     });
 
     test('delete removes items missing from current', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         DhcpReservationUIModel(
@@ -125,7 +130,12 @@ void main() {
     });
 
     test('multiple deletes use sequential delay', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         DhcpReservationUIModel(
@@ -153,7 +163,19 @@ void main() {
     });
 
     test('add creates items with null instancePath', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+            'initialParams': {}
+          }]
+        }]
+      });
 
       final current = [
         DhcpReservationUIModel(
@@ -177,7 +199,12 @@ void main() {
     });
 
     test('update detects changed content on same path', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {});
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         DhcpReservationUIModel(
@@ -205,9 +232,31 @@ void main() {
     });
 
     test('mixed batch: delete + add + update', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.3.',
+            'initialParams': {}
+          }]
+        }]
+      });
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         DhcpReservationUIModel(
@@ -253,7 +302,19 @@ void main() {
       final addTimes = <DateTime>[];
       when(() => mockUsp.add(any(), any())).thenAnswer((_) async {
         addTimes.add(DateTime.now());
-        return '';
+        return {
+          'overallSuccess': true,
+          'hasAnySuccess': true,
+          'hasErrors': false,
+          'results': [{
+            'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+            'success': true,
+            'createdInstances': [{
+              'affectedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+              'initialParams': {}
+            }]
+          }]
+        };
       });
 
       final current = [

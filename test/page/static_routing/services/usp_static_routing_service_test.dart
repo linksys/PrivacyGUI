@@ -275,7 +275,12 @@ void main() {
     });
 
     test('delete removes items missing from current', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         StaticRouteUIModel(
@@ -300,7 +305,19 @@ void main() {
     });
 
     test('add creates items with null instancePath', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.Routing.Router.1.IPv4Forwarding.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.Routing.Router.1.IPv4Forwarding.1.',
+            'initialParams': {}
+          }]
+        }]
+      });
 
       final current = [
         StaticRouteUIModel(
@@ -330,7 +347,12 @@ void main() {
 
     test('update detects changed content', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         StaticRouteUIModel(
@@ -366,10 +388,32 @@ void main() {
     });
 
     test('mixed batch: delete + add + update', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.Routing.Router.1.IPv4Forwarding.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.Routing.Router.1.IPv4Forwarding.2.',
+            'initialParams': {}
+          }]
+        }]
+      });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       final original = [
         StaticRouteUIModel(

@@ -177,8 +177,16 @@ class UspInternetSettingsService {
     if (!wasPppoe && isPppoe && currentInstancePath == null) {
       // Switching TO PPPoE and no instance exists — Add
       logger.d('[USP][WAN] Adding PPP.Interface instance for PPPoE');
-      final path = await PppInterface.add(_usp);
-      return path;
+      final result = await PppInterface.add(_usp);
+      // Extract instance path from structured response
+      final parsedResult = UspResultParser.parseAddResult(result);
+      if (parsedResult is UspSuccess<List<String>>) {
+        final createdInstances = parsedResult.allCreatedInstances;
+        if (createdInstances.isNotEmpty) {
+          return createdInstances.first.affectedPath;
+        }
+      }
+      return null;
     } else if (wasPppoe && !isPppoe && currentInstancePath != null) {
       // Switching AWAY from PPPoE — Delete
       logger
@@ -208,8 +216,16 @@ class UspInternetSettingsService {
     if (!wasEnabled && isEnabled && currentInstancePath == null) {
       // Enabling VLAN and no instance exists — Add
       logger.d('[USP][WAN] Adding VLANTermination instance');
-      final path = await VlanTermination.add(_usp);
-      return path;
+      final result = await VlanTermination.add(_usp);
+      // Extract instance path from structured response
+      final parsedResult = UspResultParser.parseAddResult(result);
+      if (parsedResult is UspSuccess<List<String>>) {
+        final createdInstances = parsedResult.allCreatedInstances;
+        if (createdInstances.isNotEmpty) {
+          return createdInstances.first.affectedPath;
+        }
+      }
+      return null;
     } else if (wasEnabled && !isEnabled && currentInstancePath != null) {
       // Disabling VLAN — Delete
       logger.d(

@@ -249,7 +249,19 @@ void main() {
 
   group('UspDmzService — add', () {
     test('add with sourceType.any sends 0.0.0.0/0', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.Firewall.DMZ.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.Firewall.DMZ.1.',
+            'initialParams': {}
+          }]
+        }]
+      });
 
       await service.add(
         model: DmzUIModel(
@@ -268,7 +280,19 @@ void main() {
     });
 
     test('add with sourceType.cidr sends the CIDR value', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': [{
+          'requestedPath': 'Device.Firewall.DMZ.',
+          'success': true,
+          'createdInstances': [{
+            'affectedPath': 'Device.Firewall.DMZ.1.',
+            'initialParams': {}
+          }]
+        }]
+      });
 
       await service.add(
         model: DmzUIModel(
@@ -288,7 +312,12 @@ void main() {
 
   group('UspDmzService — update', () {
     test('update with sourceType.any sends 0.0.0.0/0', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {});
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       await service.update(
         instancePath: 'Device.Firewall.DMZ.1.',
@@ -305,7 +334,12 @@ void main() {
     });
 
     test('update with sourceType.cidr sends the CIDR value', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {});
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+        'overallSuccess': true,
+        'hasAnySuccess': true,
+        'hasErrors': false,
+        'results': []
+      });
 
       await service.update(
         instancePath: 'Device.Firewall.DMZ.1.',

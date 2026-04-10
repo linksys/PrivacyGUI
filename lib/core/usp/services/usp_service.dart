@@ -186,14 +186,6 @@ class UspService {
     }
   }
 
-  // Legacy single getters if needed
-  Future<String?> getSingle(String path) async {
-    return _withAuthRetry(() => _client.get(path));
-  }
-
-  Future<void> setSingle(String path, String value) async {
-    await _withAuthRetry(() => _client.set(path, value));
-  }
 
   /// Fetches multiple USP paths in a single getMultiple call.
   ///
@@ -307,13 +299,34 @@ class UspService {
     final results = result['results'] as List? ?? [];
     logger.d('[USP][Service]#$id SET result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
 
+    // Log detailed results in debug mode
+    if (kDebugMode && results.isNotEmpty) {
+      for (var i = 0; i < results.length; i++) {
+        final detail = results[i] as Map<String, dynamic>? ?? {};
+        final requestedPath = detail['requestedPath'] ?? 'unknown';
+        final success = detail['success'] ?? false;
+
+        if (success) {
+          final updatedInstances = detail['updatedInstances'] as List? ?? [];
+          logger.d('[USP][Service]#$id SET[$i] ✅ $requestedPath → ${updatedInstances.length} instances updated');
+
+          for (var instance in updatedInstances) {
+            final instanceMap = instance as Map<String, dynamic>? ?? {};
+            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
+            final updatedParams = instanceMap['updatedParams'] as Map? ?? {};
+            logger.d('[USP][Service]#$id SET[$i]   📝 $affectedPath: ${updatedParams.keys.join(', ')}');
+          }
+        } else {
+          final errorCode = detail['errorCode'] ?? 'unknown';
+          final errorMessage = detail['errorMessage'] ?? 'unknown error';
+          logger.w('[USP][Service]#$id SET[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+        }
+      }
+    }
+
     return result;
   }
 
-  // Legacy multiple getters
-  Future<Map<String, String>> getMultiple(List<String> paths) async {
-    return _withAuthRetry(() => _client.getMultiple(paths));
-  }
 
   Future<Map<String, dynamic>> setMultiple(Map<String, String> parameters,
       {bool allowPartial = false}) async {
@@ -356,6 +369,37 @@ class UspService {
     logger.d('[USP][Service]#$id ADD $shortPath — '
         '${parameters.length} params → $createdPath (${sw.elapsedMilliseconds}ms)');
 
+    // Log detailed results in debug mode
+    if (kDebugMode) {
+      final overallSuccess = result['overallSuccess'] as bool? ?? false;
+      final hasErrors = result['hasErrors'] as bool? ?? false;
+      final results = result['results'] as List? ?? [];
+
+      logger.d('[USP][Service]#$id ADD result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+
+      for (var i = 0; i < results.length; i++) {
+        final detail = results[i] as Map<String, dynamic>? ?? {};
+        final requestedPath = detail['requestedPath'] ?? 'unknown';
+        final success = detail['success'] ?? false;
+
+        if (success) {
+          final createdInstances = detail['createdInstances'] as List? ?? [];
+          logger.d('[USP][Service]#$id ADD[$i] ✅ $requestedPath → ${createdInstances.length} instances created');
+
+          for (var instance in createdInstances) {
+            final instanceMap = instance as Map<String, dynamic>? ?? {};
+            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
+            final initialParams = instanceMap['initialParams'] as Map? ?? {};
+            logger.d('[USP][Service]#$id ADD[$i]   🆕 $affectedPath with ${initialParams.length} params: ${initialParams.keys.join(', ')}');
+          }
+        } else {
+          final errorCode = detail['errorCode'] ?? 'unknown';
+          final errorMessage = detail['errorMessage'] ?? 'unknown error';
+          logger.w('[USP][Service]#$id ADD[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+        }
+      }
+    }
+
     return result;
   }
 
@@ -381,6 +425,35 @@ class UspService {
     logger.d('[USP][Service]#$id ADD_MULTI ${objects.length} objects '
         '→ $createdCount created'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
+
+    // Log detailed results in debug mode
+    if (kDebugMode && results.isNotEmpty) {
+      final overallSuccess = result['overallSuccess'] as bool? ?? false;
+      final hasErrors = result['hasErrors'] as bool? ?? false;
+      logger.d('[USP][Service]#$id ADD_MULTI result: success=$overallSuccess, errors=$hasErrors');
+
+      for (var i = 0; i < results.length; i++) {
+        final detail = results[i] as Map<String, dynamic>? ?? {};
+        final requestedPath = detail['requestedPath'] ?? 'unknown';
+        final success = detail['success'] ?? false;
+
+        if (success) {
+          final createdInstances = detail['createdInstances'] as List? ?? [];
+          logger.d('[USP][Service]#$id ADD_MULTI[$i] ✅ $requestedPath → ${createdInstances.length} instances');
+
+          for (var instance in createdInstances) {
+            final instanceMap = instance as Map<String, dynamic>? ?? {};
+            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
+            logger.d('[USP][Service]#$id ADD_MULTI[$i]   🆕 $affectedPath');
+          }
+        } else {
+          final errorCode = detail['errorCode'] ?? 'unknown';
+          final errorMessage = detail['errorMessage'] ?? 'unknown error';
+          logger.w('[USP][Service]#$id ADD_MULTI[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+        }
+      }
+    }
+
     return result;
   }
 
@@ -400,6 +473,37 @@ class UspService {
     final shortPath = path.startsWith('Device.') ? path.substring(7) : path;
     logger.d(
         '[USP][Service]#$id DELETE $shortPath (${sw.elapsedMilliseconds}ms)');
+
+    // Log detailed results in debug mode
+    if (kDebugMode) {
+      final overallSuccess = result['overallSuccess'] as bool? ?? false;
+      final hasErrors = result['hasErrors'] as bool? ?? false;
+      final results = result['results'] as List? ?? [];
+
+      logger.d('[USP][Service]#$id DELETE result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+
+      for (var i = 0; i < results.length; i++) {
+        final detail = results[i] as Map<String, dynamic>? ?? {};
+        final requestedPath = detail['requestedPath'] ?? 'unknown';
+        final success = detail['success'] ?? false;
+
+        if (success) {
+          final deletedInstances = detail['deletedInstances'] as List? ?? [];
+          logger.d('[USP][Service]#$id DELETE[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
+
+          for (var instance in deletedInstances) {
+            final instanceMap = instance as Map<String, dynamic>? ?? {};
+            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
+            logger.d('[USP][Service]#$id DELETE[$i]   🗑️ $affectedPath');
+          }
+        } else {
+          final errorCode = detail['errorCode'] ?? 'unknown';
+          final errorMessage = detail['errorMessage'] ?? 'unknown error';
+          logger.w('[USP][Service]#$id DELETE[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+        }
+      }
+    }
+
     return result;
   }
 
@@ -415,6 +519,37 @@ class UspService {
     logger.d('[USP][Service]#$id DELETE_MULTI ${_pathSummary(paths)} '
         '${paths.length} paths'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
+
+    // Log detailed results in debug mode
+    if (kDebugMode) {
+      final overallSuccess = result['overallSuccess'] as bool? ?? false;
+      final hasErrors = result['hasErrors'] as bool? ?? false;
+      final results = result['results'] as List? ?? [];
+
+      logger.d('[USP][Service]#$id DELETE_MULTI result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+
+      for (var i = 0; i < results.length; i++) {
+        final detail = results[i] as Map<String, dynamic>? ?? {};
+        final requestedPath = detail['requestedPath'] ?? 'unknown';
+        final success = detail['success'] ?? false;
+
+        if (success) {
+          final deletedInstances = detail['deletedInstances'] as List? ?? [];
+          logger.d('[USP][Service]#$id DELETE_MULTI[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
+
+          for (var instance in deletedInstances) {
+            final instanceMap = instance as Map<String, dynamic>? ?? {};
+            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
+            logger.d('[USP][Service]#$id DELETE_MULTI[$i]   🗑️ $affectedPath');
+          }
+        } else {
+          final errorCode = detail['errorCode'] ?? 'unknown';
+          final errorMessage = detail['errorMessage'] ?? 'unknown error';
+          logger.w('[USP][Service]#$id DELETE_MULTI[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+        }
+      }
+    }
+
     return result;
   }
 

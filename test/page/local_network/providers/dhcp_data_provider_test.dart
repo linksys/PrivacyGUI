@@ -49,9 +49,31 @@ void main() {
       }
       return dhcpClientsResponse;
     });
-    when(() => mockUsp.set(any())).thenAnswer((_) async {});
-    when(() => mockUsp.add(any(), any())).thenAnswer((_) async => 'new.1.');
-    when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+    when(() => mockUsp.set(any())).thenAnswer((_) async => {
+      'overallSuccess': true,
+      'hasAnySuccess': true,
+      'hasErrors': false,
+      'results': []
+    });
+    when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+      'overallSuccess': true,
+      'hasAnySuccess': true,
+      'hasErrors': false,
+      'results': [{
+        'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+        'success': true,
+        'createdInstances': [{
+          'affectedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+          'initialParams': {}
+        }]
+      }]
+    });
+    when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+      'overallSuccess': true,
+      'hasAnySuccess': true,
+      'hasErrors': false,
+      'results': []
+    });
   });
 
   ProviderContainer createContainer({

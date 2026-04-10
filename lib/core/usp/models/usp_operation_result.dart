@@ -6,7 +6,8 @@ sealed class UspOperationResult<T> {
 
   /// 便利方法：檢查是否有任何成功操作
   bool get hasAnySuccess => switch (this) {
-    UspSuccess() || UspPartialSuccess() => true,
+    UspSuccess(details: final details) => details.isNotEmpty,
+    UspPartialSuccess(successes: final successes) => successes.isNotEmpty,
     UspFailure() => false,
   };
 

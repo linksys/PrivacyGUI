@@ -70,7 +70,7 @@ class PortTriggeringDataNotifier extends AsyncNotifier<PortTriggeringData> {
   }) async {
     await ref.read(uspMutationLockProvider).withLock(() async {
       final usp = _usp;
-      final parentPath = await PortTriggering.add(
+      final result = await PortTriggering.add(
         usp,
         enabled: enabled,
         triggerPort: triggerPort,
@@ -78,7 +78,18 @@ class PortTriggeringDataNotifier extends AsyncNotifier<PortTriggeringData> {
         triggerProtocol: triggerProtocol,
         description: description,
       );
-      if (forwardPort != null) {
+
+      // Extract instance path from structured response
+      final parsedResult = UspResultParser.parseAddResult(result);
+      String? parentPath;
+      if (parsedResult is UspSuccess<List<String>>) {
+        final createdInstances = parsedResult.allCreatedInstances;
+        if (createdInstances.isNotEmpty) {
+          parentPath = createdInstances.first.affectedPath;
+        }
+      }
+
+      if (forwardPort != null && parentPath != null) {
         await PortTriggering.addPortTriggerForwardRule(
           usp,
           parentPath,

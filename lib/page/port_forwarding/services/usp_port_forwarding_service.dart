@@ -143,7 +143,7 @@ class UspPortForwardingService {
     // 2. Add (parent + forward rules)
     final toAdd = current.where((r) => r.instancePath == null).toList();
     for (final r in toAdd) {
-      final parentPath = await PortTriggering.add(
+      final result = await PortTriggering.add(
         _usp,
         enabled: r.enabled,
         description: r.description,
@@ -151,14 +151,27 @@ class UspPortForwardingService {
         triggerPortEndRange: r.triggerPortEndRange,
         triggerProtocol: r.triggerProtocol,
       );
-      for (final fr in r.forwardRules) {
-        await PortTriggering.addPortTriggerForwardRule(
-          _usp,
-          parentPath,
-          forwardPort: fr.forwardPort,
-          forwardPortEndRange: fr.forwardPortEndRange,
-          forwardProtocol: fr.forwardProtocol,
-        );
+
+      // Extract instance path from structured response
+      final parsedResult = UspResultParser.parseAddResult(result);
+      String? parentPath;
+      if (parsedResult is UspSuccess<List<String>>) {
+        final createdInstances = parsedResult.allCreatedInstances;
+        if (createdInstances.isNotEmpty) {
+          parentPath = createdInstances.first.affectedPath;
+        }
+      }
+
+      if (parentPath != null) {
+        for (final fr in r.forwardRules) {
+          await PortTriggering.addPortTriggerForwardRule(
+            _usp,
+            parentPath,
+            forwardPort: fr.forwardPort,
+            forwardPortEndRange: fr.forwardPortEndRange,
+            forwardProtocol: fr.forwardProtocol,
+          );
+        }
       }
     }
 

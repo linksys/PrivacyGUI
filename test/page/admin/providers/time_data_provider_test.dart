@@ -23,7 +23,12 @@ void main() {
   setUp(() {
     mockUsp = MockUspService();
     when(() => mockUsp.get(any())).thenAnswer((_) async => timeResponse);
-    when(() => mockUsp.set(any())).thenAnswer((_) async {});
+    when(() => mockUsp.set(any())).thenAnswer((_) async => {
+      'overallSuccess': true,
+      'hasAnySuccess': true,
+      'hasErrors': false,
+      'results': []
+    });
   });
 
   ProviderContainer createContainer() {
