@@ -46,6 +46,10 @@ class InstantVerifyPivotState extends Equatable {
   // ── Browser test results (Phase 2 — arrive over 20-30s) ──────────────
   final GatewayPingResult? gatewayPing;
   final DnsCheckResult? dnsCheck;
+  /// Result of a silent check against Google's public DNS (8.8.8.8 DoH).
+  /// Null = not yet run. Only populated when [dnsCheck] resolved = false.
+  /// Used internally to distinguish ISP DNS failure from full internet outage.
+  final DnsCheckResult? publicDnsCheck;
   final SpeedTestResult? speedTest;
   final RouterSpeedResult? routerSpeed;
 
@@ -107,6 +111,7 @@ class InstantVerifyPivotState extends Equatable {
     this.jnapCapabilities = const {},
     this.gatewayPing,
     this.dnsCheck,
+    this.publicDnsCheck,
     this.speedTest,
     this.routerSpeed,
     this.browserTestStep = 'idle',
@@ -146,6 +151,7 @@ class InstantVerifyPivotState extends Equatable {
     Map<String, bool>? jnapCapabilities,
     GatewayPingResult? gatewayPing,
     DnsCheckResult? dnsCheck,
+    DnsCheckResult? publicDnsCheck,
     SpeedTestResult? speedTest,
     RouterSpeedResult? routerSpeed,
     String? browserTestStep,
@@ -184,6 +190,7 @@ class InstantVerifyPivotState extends Equatable {
       jnapCapabilities: jnapCapabilities ?? this.jnapCapabilities,
       gatewayPing: gatewayPing ?? this.gatewayPing,
       dnsCheck: dnsCheck ?? this.dnsCheck,
+      publicDnsCheck: publicDnsCheck ?? this.publicDnsCheck,
       speedTest: speedTest ?? this.speedTest,
       routerSpeed: routerSpeed ?? this.routerSpeed,
       browserTestStep: browserTestStep ?? this.browserTestStep,
@@ -350,6 +357,7 @@ class InstantVerifyPivotState extends Equatable {
         jnapCapabilities,
         gatewayPing,
         dnsCheck,
+        publicDnsCheck,
         speedTest,
         routerSpeed,
         browserTestStep,

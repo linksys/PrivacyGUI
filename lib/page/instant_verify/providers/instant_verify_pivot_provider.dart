@@ -323,6 +323,17 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
     if (_stale()) return;
     state = state.copyWith(dnsCheck: dns);
 
+    // Public DNS check — run silently when ISP DNS fails to distinguish
+    // "ISP DNS servers are down" from "internet is completely unreachable".
+    // Uses Google's DoH at 8.8.8.8 by IP (bypasses system DNS entirely).
+    if (!dns.resolved) {
+      if (_stale()) return;
+      final publicDns = await service.checkPublicDns();
+      if (!_stale()) {
+        state = state.copyWith(publicDnsCheck: publicDns);
+      }
+    }
+
     // Recompute verdict with gateway + dns data (update before slow speed test)
     _recomputeVerdict();
 
@@ -534,6 +545,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       dnsServers: s.wanDnsServers.isNotEmpty ? s.wanDnsServers : null,
       wanIpv6Connected: s.wanStatus != null ? s.wanIpv6Connected : null,
       wanType: s.wanConnectionType,
+      publicDnsWorking: s.publicDnsCheck?.resolved,
     );
     state = state.copyWith(verdict: verdict, verdictIsPreliminary: preliminary);
   }
@@ -699,6 +711,7 @@ class InstantVerifyPivotNotifier extends Notifier<InstantVerifyPivotState> {
       dnsServers: mockDns,
       wanIpv6Connected: false,
       wanType: 'DHCP',
+      publicDnsWorking: true, // internet works — only ISP DNS is broken
     );
     state = InstantVerifyPivotState(
       phase: PivotLoadPhase.complete,

@@ -156,6 +156,42 @@ class BrowserDiagnosticService {
     return const GatewayPingResult(reachable: false);
   }
 
+  /// Test DNS resolution via Google's public DNS-over-HTTPS server at 8.8.8.8.
+  ///
+  /// Queries by IP address directly — bypasses the ISP DNS resolver entirely,
+  /// so this works even when the system/ISP DNS is broken. Used internally to
+  /// distinguish "ISP DNS is down" from "internet is completely unreachable".
+  ///
+  /// Not surfaced to customers — only used to sharpen the verdict message.
+  Future<DnsCheckResult> checkPublicDns() async {
+    // Google's DoH endpoint — cert SANs include the literal IP 8.8.8.8
+    // so TLS handshake succeeds without needing DNS to resolve the hostname.
+    const dohUrl =
+        'https://8.8.8.8/resolve?name=connectivitycheck.gstatic.com&type=A';
+    final stopwatch = Stopwatch()..start();
+    try {
+      final response = await http.get(
+        Uri.parse(dohUrl),
+        headers: {'Accept': 'application/dns-json'},
+      ).timeout(_timeout);
+      stopwatch.stop();
+      // DoH JSON response: {"Status":0,...,"Answer":[...]} means NOERROR
+      if (response.statusCode == 200) {
+        final body = response.body;
+        final ok = body.contains('"Status":0') ||
+            body.contains('"Status": 0') ||
+            body.contains('"Answer"');
+        if (ok) {
+          return DnsCheckResult(
+              resolved: true, latencyMs: stopwatch.elapsedMilliseconds);
+        }
+      }
+    } catch (_) {
+      stopwatch.stop();
+    }
+    return const DnsCheckResult(resolved: false);
+  }
+
   /// Verify DNS resolution and internet connectivity via known endpoints.
   Future<DnsCheckResult> checkDns() async {
     for (final url in [_dnsTestUrl, _dnsTestFallback]) {

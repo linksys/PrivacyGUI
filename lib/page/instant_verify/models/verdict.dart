@@ -107,6 +107,11 @@ class VerdictEngine {
     bool? wanIpv6Connected,
     /// WAN connection type (DHCP/PPPoE/Static) — PPPoE may need re-auth.
     String? wanType,
+    /// Result of silent public DNS check (Google DoH at 8.8.8.8).
+    /// True = public DNS resolved → ISP DNS specifically is the problem.
+    /// False = public DNS also failed → broader internet connectivity issue.
+    /// Null = check not run (DNS was OK, or check skipped).
+    bool? publicDnsWorking,
     required List<DeviceScore> deviceScores,
     required List<DiagnosticClient> clients,
     required List<MeshNodeInfo> meshNodes,
@@ -245,6 +250,35 @@ class VerdictEngine {
               'connections and is not the cause of this issue.'
             : '';
 
+        // ── Root cause differentiation via public DNS check ──────────────
+        // publicDnsWorking = true  → internet works, ISP DNS specifically broken
+        // publicDnsWorking = false → internet appears completely unreachable
+        // publicDnsWorking = null  → inconclusive
+        final String rootCauseContext;
+        final String postRestartMsg;
+        if (publicDnsWorking == true) {
+          // Internet connectivity is fine — only ISP DNS is broken
+          rootCauseContext =
+              '\n\nYour internet connection is working — only the DNS lookup '
+              'service is failing. Restarting your router clears the DNS cache '
+              'and re-establishes the connection to your ISP\'s DNS servers.';
+          postRestartMsg =
+              'Since restarting didn\'t fix it, your ISP\'s DNS servers may '
+              'be having an outage. Contact your provider and say: '
+              '"My router is connected but websites won\'t load. '
+              'Your DNS servers appear to be down."';
+        } else if (publicDnsWorking == false) {
+          // Internet appears unreachable — broader than just DNS
+          rootCauseContext =
+              '\n\nYour internet connection appears to be unreachable — not '
+              'just DNS. This may be a wider outage from your provider.';
+          postRestartMsg = _ispEscalation('websites won\'t load');
+        } else {
+          // Unknown — generic guidance
+          rootCauseContext = '';
+          postRestartMsg = _ispEscalation('websites won\'t load');
+        }
+
         findings.add(VerdictFinding(
           priority: VerdictPriority.critical,
           headline: 'Websites aren\'t loading',
@@ -252,6 +286,7 @@ class VerdictEngine {
               'Verified: Router reachable \u2713  $ipText \u2713  '
               'Website access: not working \u2717'
               '$dnsBlock'
+              '$rootCauseContext'
               '\n\nPossible causes:'
               '\n  \u2022 ISP DNS servers temporarily down'
               '\n  \u2022 ISP network issue between router and DNS'
@@ -262,7 +297,7 @@ class VerdictEngine {
           actionLabel: 'Restart Router',
           actionKey: actionRestartRouter,
           checkNumber: 4,
-          postRestartEscalation: _ispEscalation('websites won\'t load'),
+          postRestartEscalation: postRestartMsg,
         ));
       }
     }
