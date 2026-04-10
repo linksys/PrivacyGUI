@@ -38,7 +38,8 @@ class UspClientWeb {
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<Map<String, dynamic>> add(String objectPath, Map<String, String> parameters) =>
+  Future<Map<String, dynamic>> add(
+          String objectPath, Map<String, String> parameters) =>
       throw UnsupportedError('USP is only available on Web');
 
   Future<Map<String, dynamic>> addMultiple(List<Map<String, dynamic>> objects,

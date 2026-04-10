@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspInstantSafetyService service;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     service = UspInstantSafetyService(mockUsp);
   });
 

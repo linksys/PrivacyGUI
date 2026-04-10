@@ -1,6 +1,6 @@
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/data_elements_network.g.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Info about a mesh node — lightweight view of codegen's MeshNode.
 ///
@@ -53,7 +53,7 @@ class MeshTopologyInfo {
 ///
 /// Returns [MeshTopologyInfo.empty] if the router doesn't support DataElements
 /// or the subtree is empty (non-mesh / single router).
-Future<MeshTopologyInfo> fetchMeshNodes(UspService client) async {
+Future<MeshTopologyInfo> fetchMeshNodes(UspClient client) async {
   try {
     // DataElements uses 9 deep-wildcard paths that can be slow on OBUSPA.
     // Domain-ready gating (dashboardDomainReadyProvider) ensures lighter

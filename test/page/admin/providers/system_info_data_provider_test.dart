@@ -1,14 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
 
   /// Canned response covering SystemInfo (includes firmware refs since YAML v1.1.0).
   /// Two get() calls: SystemInfo.fetch (includes refs), FirmwareImages.fetch.
@@ -45,7 +45,7 @@ void main() {
   };
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     // The notifier makes 2 concurrent get() calls:
     // 1) SystemInfo.fetch → systemInfoResponse (includes firmware refs)
     // 2) FirmwareImages.fetch → firmwareImagesResponse
@@ -63,7 +63,7 @@ void main() {
   ProviderContainer createContainer() {
     return ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
       ],
     );
   }
@@ -105,7 +105,7 @@ void main() {
     test('build throws when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
-          uspServiceProvider.overrideWithValue(null),
+          uspClientProvider.overrideWithValue(null),
         ],
       );
 

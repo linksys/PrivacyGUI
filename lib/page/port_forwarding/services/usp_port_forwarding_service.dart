@@ -1,22 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
 
 final uspPortForwardingServiceProvider = Provider<UspPortForwardingService>(
   (ref) => UspPortForwardingService(
-    ref.read(uspServiceProvider)!,
+    ref.read(uspClientProvider)!,
     ref.read(uspDeviceServiceProvider),
   ),
 );
 
 /// Service layer for Port Forwarding + Port Triggering — encapsulates codegen CRUD + transform.
 class UspPortForwardingService {
-  final UspService _usp;
+  final UspClient _usp;
   final UspDeviceService _deviceSvc;
 
   UspPortForwardingService(this._usp, this._deviceSvc);

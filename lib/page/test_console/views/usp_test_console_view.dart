@@ -8,10 +8,10 @@ import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/web/usp_wasm_init.dart';
 import 'package:privacy_gui/generated/tr181_paths.g.dart';
 import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
@@ -19,7 +19,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shell-compatible USP test console integrated into the USP menu.
 ///
-/// Reuses the shared [UspService] session when available, with manual
+/// Reuses the shared [UspClient] session when available, with manual
 /// override for connecting to a different endpoint.
 class UspTestConsoleView extends ConsumerStatefulWidget {
   const UspTestConsoleView({super.key});
@@ -44,7 +44,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   final _subPathController = TextEditingController(text: 'Device.Hosts.Host.');
   final _logScrollController = ScrollController();
 
-  UspService? _service;
+  UspClient? _service;
   UspBridgeClient? _bridgeClient;
   bool _isConnected = false;
   bool _usingSharedSession = false;
@@ -61,14 +61,14 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   @override
   void initState() {
     super.initState();
-    // Try to inject shared UspService from the app's provider tree.
+    // Try to inject shared UspClient from the app's provider tree.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _tryInjectSharedService();
     });
   }
 
   void _tryInjectSharedService() {
-    final shared = ref.read(uspServiceProvider);
+    final shared = ref.read(uspClientProvider);
     if (shared != null && shared.isAuthenticated) {
       _service = shared;
       _bridgeClient = UspBridgeClient(shared);
@@ -116,7 +116,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
         return;
       }
       _log('WASM client ready');
-      final svc = UspService(url);
+      final svc = UspClient(url);
       _service = svc;
       _bridgeClient = UspBridgeClient(svc);
       _log('Client created for $url');
@@ -183,7 +183,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
 
   /// Switch back to shared session (if available)
   void _useSharedSession() {
-    final shared = ref.read(uspServiceProvider);
+    final shared = ref.read(uspClientProvider);
     if (shared != null && shared.isAuthenticated) {
       _service = shared;
       _bridgeClient = UspBridgeClient(shared);
@@ -567,7 +567,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     _log('');
     _log('--- PROBE: LOGIN with wrong password');
     try {
-      final throwaway = UspService(_service!.baseUrl);
+      final throwaway = UspClient(_service!.baseUrl);
       await throwaway.login('definitely_wrong_password_12345');
       _log('  RESULT: No error thrown');
       throwaway.dispose();

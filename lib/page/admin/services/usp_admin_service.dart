@@ -1,18 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/admin_users.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 
 final uspAdminServiceProvider = Provider<UspAdminService>(
-  (ref) => UspAdminService(ref.read(uspServiceProvider)!),
+  (ref) => UspAdminService(ref.read(uspClientProvider)!),
 );
 
 /// Service layer for Admin — encapsulates codegen CRUD + transform.
 class UspAdminService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspAdminService(this._usp);
 

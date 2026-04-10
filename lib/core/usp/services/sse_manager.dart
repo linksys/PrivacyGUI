@@ -8,7 +8,7 @@ import 'sse_event_router.dart';
 import 'sse_subscription_registry.dart';
 import 'sse_unload_handler.dart';
 import 'usp_bridge_client.dart';
-import 'usp_service.dart';
+import 'usp_client.dart';
 
 /// Facade that composes [SseConnectionManager], [SseSubscriptionRegistry],
 /// and [SseEventRouter] into a single entry point.
@@ -35,7 +35,7 @@ import 'usp_service.dart';
 /// await manager.dispose();
 /// ```
 class SseManager {
-  final UspService _usp;
+  final UspClient _usp;
   final UspBridgeClient _bridge;
   final SseConnectionManager connection;
   final SseSubscriptionRegistry registry;
@@ -46,7 +46,7 @@ class SseManager {
   bool _coreSubsDeferred = false;
 
   SseManager({
-    required UspService usp,
+    required UspClient usp,
     required UspBridgeClient bridge,
   })  : _usp = usp,
         _bridge = bridge,
@@ -129,7 +129,7 @@ class SseManager {
     return router.addWildcardHandler(handler);
   }
 
-  /// SSE delegate implementation injected into [UspService].
+  /// SSE delegate implementation injected into [UspClient].
   ///
   /// Uses wildcard handler + path prefix matching because the CPE delivers
   /// events using its own internal subscription_id (e.g., "cpe-5"), not the

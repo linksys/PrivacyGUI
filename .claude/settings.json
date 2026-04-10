@@ -1,4 +1,11 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(find lib/ test/ -name \"*.dart\" -exec grep -l \"uspServiceProvider\" {} \\\\;)",
+      "Bash(find lib/ test/ -name \"*.dart\" -exec grep -l \"usp_service_provider.dart\" {} \\\\;)",
+      "Bash(find lib/ test/ -name \"*.dart\" -exec grep -l \"UspService[^A-Za-z]\" {} \\\\;)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {

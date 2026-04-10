@@ -4,7 +4,7 @@ import 'package:privacy_gui/generated/ppp_interface.g.dart';
 import 'package:privacy_gui/generated/vlan_termination.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_settings.g.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
@@ -15,7 +15,7 @@ import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_typ
 /// Handles PPP/VLAN multi-instance lifecycle (Add/Delete) and
 /// DNS comma-separated conversion.
 class UspInternetSettingsService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspInternetSettingsService(this._usp);
 

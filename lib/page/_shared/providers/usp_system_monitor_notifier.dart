@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 
@@ -66,7 +66,7 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
   Future<void> fetchNow() => _fetchAndAppend();
 
   Future<void> _fetchAndAppend() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null || !usp.isAuthenticated) return;
 
     state = state.copyWith(isFetching: true);

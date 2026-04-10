@@ -1,12 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 
 final uspFirewallServiceProvider = Provider<UspFirewallService>(
-  (ref) => UspFirewallService(ref.read(uspServiceProvider)!),
+  (ref) => UspFirewallService(ref.read(uspClientProvider)!),
 );
 
 /// Opaque wrapper around parsed firewall rule data.
@@ -35,7 +35,7 @@ class FirewallRuleContext extends Equatable {
 /// - Accept rules: feature ON = rule disabled (bypass rule inactive)
 /// - Drop rules: block ON = rule enabled (drop rule active)
 class UspFirewallService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspFirewallService(this._usp);
   // -------------------------------------------------------------------------

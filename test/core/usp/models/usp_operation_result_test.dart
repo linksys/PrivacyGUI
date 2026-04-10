@@ -19,7 +19,8 @@ void main() {
       // Test empty success case separately
       const emptyResult = UspSuccess<void>([]);
       expect(emptyResult.hasAnySuccess, false); // No actual operations
-      expect(emptyResult.isCompleteSuccess, true); // But still complete success (no errors)
+      expect(emptyResult.isCompleteSuccess,
+          true); // But still complete success (no errors)
       expect(emptyResult.hasErrors, false);
     });
 
@@ -42,7 +43,8 @@ void main() {
       expect(result.isSuccessfulInContext(), false);
       expect(result.isSuccessfulInContext(allowPartial: true), true);
 
-      expect(result.errorSummary, 'Device.WiFi.SSID.1.Enable: Parameter not writable');
+      expect(result.errorSummary,
+          'Device.WiFi.SSID.1.Enable: Parameter not writable');
       expect(result.successSummary, 'Device.WiFi.SSID.1.SSID');
     });
 
@@ -105,7 +107,10 @@ void main() {
       (int, int) getCounts(UspOperationResult result) {
         return switch (result) {
           UspSuccess(details: final details) => (details.length, 0),
-          UspPartialSuccess(successes: final s, failures: final f) => (s.length, f.length),
+          UspPartialSuccess(successes: final s, failures: final f) => (
+              s.length,
+              f.length
+            ),
           UspFailure(errors: final errors) => (0, errors.length),
         };
       }
@@ -115,7 +120,8 @@ void main() {
         UspSuccessDetail(requestedPath: 'path2'),
       ];
       const failures = [
-        UspErrorDetail(requestedPath: 'path3', errorCode: 7004, errorMessage: 'error'),
+        UspErrorDetail(
+            requestedPath: 'path3', errorCode: 7004, errorMessage: 'error'),
       ];
       const result = UspPartialSuccess<void>(successes, failures);
 
@@ -175,7 +181,8 @@ void main() {
       expect(success.details, hasLength(1));
       expect(success.details.first.requestedPath, 'Device.WiFi.SSID.1.SSID');
       expect(success.allUpdatedInstances, hasLength(1));
-      expect(success.allUpdatedInstances.first.affectedPath, 'Device.WiFi.SSID.1.');
+      expect(success.allUpdatedInstances.first.affectedPath,
+          'Device.WiFi.SSID.1.');
     });
 
     test('should parse partial success result', () {

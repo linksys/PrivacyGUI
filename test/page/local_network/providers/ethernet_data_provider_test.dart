@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
@@ -10,12 +10,12 @@ import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/ethernet_data_provider.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 class MockUspDeviceService extends Mock implements UspDeviceService {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late MockUspDeviceService mockDeviceSvc;
 
   setUpAll(() {
@@ -43,7 +43,7 @@ void main() {
   };
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     mockDeviceSvc = MockUspDeviceService();
 
     when(() => mockUsp.get(any())).thenAnswer((_) async {
@@ -67,7 +67,7 @@ void main() {
   }) {
     return ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
         uspDeviceServiceProvider.overrideWithValue(mockDeviceSvc),
         devicesDataProvider.overrideWith(
           () => _TestDevicesDataNotifier(devicesData ?? const DevicesData()),
@@ -95,7 +95,7 @@ void main() {
     test('build throws when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
-          uspServiceProvider.overrideWithValue(null),
+          uspClientProvider.overrideWithValue(null),
           uspDeviceServiceProvider.overrideWithValue(mockDeviceSvc),
           devicesDataProvider.overrideWith(
             () => _TestDevicesDataNotifier(const DevicesData()),
@@ -143,7 +143,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          uspServiceProvider.overrideWithValue(mockUsp),
+          uspClientProvider.overrideWithValue(mockUsp),
           uspDeviceServiceProvider.overrideWithValue(mockDeviceSvc),
           devicesDataProvider.overrideWith(() => _MutableDevicesDataNotifier()),
         ],

@@ -2,21 +2,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 class MockUspInternetSettingsService extends Mock
     implements UspInternetSettingsService {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late MockUspInternetSettingsService mockService;
 
   final testForm = UspInternetSettingsForm(
@@ -35,7 +35,7 @@ void main() {
   });
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     mockService = MockUspInternetSettingsService();
     when(() => mockUsp.isAuthenticated).thenReturn(true);
   });
@@ -43,7 +43,7 @@ void main() {
   ProviderContainer createContainer() {
     final container = ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
         uspInternetSettingsServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
       ],

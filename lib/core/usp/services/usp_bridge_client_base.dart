@@ -1,4 +1,4 @@
-import 'usp_service.dart';
+import 'usp_client.dart';
 
 /// Stub implementation of [UspBridgeClient] for non-Web platforms (Dart VM / tests).
 ///
@@ -6,7 +6,7 @@ import 'usp_service.dart';
 /// All methods throw [UnsupportedError] since SSE/bridge functionality
 /// requires the browser Fetch API.
 class UspBridgeClient {
-  UspBridgeClient(UspService usp);
+  UspBridgeClient(UspClient usp);
 
   Future<Map<String, dynamic>> health() =>
       throw UnsupportedError('UspBridgeClient is only available on Web');

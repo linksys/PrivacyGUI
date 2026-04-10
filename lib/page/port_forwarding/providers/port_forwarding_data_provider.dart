@@ -6,8 +6,8 @@ import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 
 /// Shared data provider for Port Forwarding rules.
@@ -50,7 +50,7 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
   }
 
   Future<PortForwardingData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
     final codegen = await PortForwarding.fetch(usp);
     final svc = ref.read(uspDeviceServiceProvider);
@@ -136,8 +136,8 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
     });
   }
 
-  UspService get _usp {
-    final usp = ref.read(uspServiceProvider);
+  UspClient get _usp {
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
     return usp;
   }

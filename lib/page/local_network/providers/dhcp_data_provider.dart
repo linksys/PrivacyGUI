@@ -7,7 +7,7 @@ import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
@@ -54,7 +54,7 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
   }
 
   Future<DhcpData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
 
     final results = await Future.wait([
@@ -109,7 +109,7 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
 
   Future<void> toggleReservation(String instancePath, bool enable) async {
     await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = ref.read(uspServiceProvider)!;
+      final usp = ref.read(uspClientProvider)!;
       await DhcpReservations.update(
         usp,
         DhcpReservationUpdate(instancePath: instancePath, enable: enable),
@@ -124,7 +124,7 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     bool enable = true,
   }) async {
     await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = ref.read(uspServiceProvider)!;
+      final usp = ref.read(uspClientProvider)!;
       await DhcpReservations.add(usp, enable: enable, chaddr: mac, yiaddr: ip);
     });
     ref.invalidateSelf();
@@ -137,7 +137,7 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     bool? enable,
   }) async {
     await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = ref.read(uspServiceProvider)!;
+      final usp = ref.read(uspClientProvider)!;
       await DhcpReservations.update(
         usp,
         DhcpReservationUpdate(
@@ -153,7 +153,7 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
 
   Future<void> deleteReservation(String instancePath) async {
     await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = ref.read(uspServiceProvider)!;
+      final usp = ref.read(uspClientProvider)!;
       await DhcpReservations.delete(usp, instancePath);
     });
     ref.invalidateSelf();

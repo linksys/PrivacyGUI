@@ -33,7 +33,7 @@ enum NotifType {
 }
 
 /// SSE subscription delegate. Set by [SseManager] to enable SSE-backed
-/// subscriptions. When null, [UspService.subscribe] falls back to polling.
+/// subscriptions. When null, [UspClient.subscribe] falls back to polling.
 typedef SseSubscribeDelegate = Future<
         ({
           void Function() removeHandler,
@@ -68,11 +68,11 @@ class Subscription<T> {
 }
 
 /// Platform-agnostic Service for interacting with the router via USP.
-class UspService {
+class UspClient {
   late final UspClientWeb _client;
   final String _baseUrl;
 
-  UspService(String baseUrl) : _baseUrl = baseUrl {
+  UspClient(String baseUrl) : _baseUrl = baseUrl {
     if (!kIsWeb) {
       throw UnsupportedError('This POC only supports Web platforms currently.');
     }
@@ -102,7 +102,7 @@ class UspService {
 
   /// Optional request throttler. When set, all [get] calls are routed through
   /// the throttler to limit concurrent outbound requests to the router.
-  /// Set by [uspServiceProvider] during initialization.
+  /// Set by [uspClientProvider] during initialization.
   BridgeRequestThrottler? throttler;
 
   Future<void> login(String password) async {
@@ -185,7 +185,6 @@ class UspService {
       return await action();
     }
   }
-
 
   /// Fetches multiple USP paths in a single getMultiple call.
   ///
@@ -297,7 +296,8 @@ class UspService {
     final overallSuccess = result['overallSuccess'] as bool? ?? false;
     final hasErrors = result['hasErrors'] as bool? ?? false;
     final results = result['results'] as List? ?? [];
-    logger.d('[USP][Service]#$id SET result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+    logger.d(
+        '[USP][Service]#$id SET result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
 
     // Log detailed results in debug mode
     if (kDebugMode && results.isNotEmpty) {
@@ -308,25 +308,27 @@ class UspService {
 
         if (success) {
           final updatedInstances = detail['updatedInstances'] as List? ?? [];
-          logger.d('[USP][Service]#$id SET[$i] ✅ $requestedPath → ${updatedInstances.length} instances updated');
+          logger.d(
+              '[USP][Service]#$id SET[$i] ✅ $requestedPath → ${updatedInstances.length} instances updated');
 
           for (var instance in updatedInstances) {
             final instanceMap = instance as Map<String, dynamic>? ?? {};
             final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
             final updatedParams = instanceMap['updatedParams'] as Map? ?? {};
-            logger.d('[USP][Service]#$id SET[$i]   📝 $affectedPath: ${updatedParams.keys.join(', ')}');
+            logger.d(
+                '[USP][Service]#$id SET[$i]   📝 $affectedPath: ${updatedParams.keys.join(', ')}');
           }
         } else {
           final errorCode = detail['errorCode'] ?? 'unknown';
           final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w('[USP][Service]#$id SET[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+          logger.w(
+              '[USP][Service]#$id SET[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
         }
       }
     }
 
     return result;
   }
-
 
   Future<Map<String, dynamic>> setMultiple(Map<String, String> parameters,
       {bool allowPartial = false}) async {
@@ -343,7 +345,8 @@ class UspService {
   /// [objectPath] must end with "." (e.g., "Device.NAT.PortMapping.").
   /// [parameters] are the initial parameter values for the new instance.
   /// Returns structured operation result containing creation details.
-  Future<Map<String, dynamic>> add(String objectPath, Map<String, dynamic> parameters) async {
+  Future<Map<String, dynamic>> add(
+      String objectPath, Map<String, dynamic> parameters) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final stringParams = parameters.map((k, v) => MapEntry(k, v.toString()));
@@ -361,7 +364,8 @@ class UspService {
       final firstResult = results.first as Map<String, dynamic>? ?? {};
       final createdInstances = firstResult['createdInstances'] as List? ?? [];
       if (createdInstances.isNotEmpty) {
-        final firstInstance = createdInstances.first as Map<String, dynamic>? ?? {};
+        final firstInstance =
+            createdInstances.first as Map<String, dynamic>? ?? {};
         createdPath = firstInstance['affectedPath'] as String? ?? 'unknown';
       }
     }
@@ -375,7 +379,8 @@ class UspService {
       final hasErrors = result['hasErrors'] as bool? ?? false;
       final results = result['results'] as List? ?? [];
 
-      logger.d('[USP][Service]#$id ADD result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+      logger.d(
+          '[USP][Service]#$id ADD result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
 
       for (var i = 0; i < results.length; i++) {
         final detail = results[i] as Map<String, dynamic>? ?? {};
@@ -384,18 +389,21 @@ class UspService {
 
         if (success) {
           final createdInstances = detail['createdInstances'] as List? ?? [];
-          logger.d('[USP][Service]#$id ADD[$i] ✅ $requestedPath → ${createdInstances.length} instances created');
+          logger.d(
+              '[USP][Service]#$id ADD[$i] ✅ $requestedPath → ${createdInstances.length} instances created');
 
           for (var instance in createdInstances) {
             final instanceMap = instance as Map<String, dynamic>? ?? {};
             final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
             final initialParams = instanceMap['initialParams'] as Map? ?? {};
-            logger.d('[USP][Service]#$id ADD[$i]   🆕 $affectedPath with ${initialParams.length} params: ${initialParams.keys.join(', ')}');
+            logger.d(
+                '[USP][Service]#$id ADD[$i]   🆕 $affectedPath with ${initialParams.length} params: ${initialParams.keys.join(', ')}');
           }
         } else {
           final errorCode = detail['errorCode'] ?? 'unknown';
           final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w('[USP][Service]#$id ADD[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+          logger.w(
+              '[USP][Service]#$id ADD[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
         }
       }
     }
@@ -430,7 +438,8 @@ class UspService {
     if (kDebugMode && results.isNotEmpty) {
       final overallSuccess = result['overallSuccess'] as bool? ?? false;
       final hasErrors = result['hasErrors'] as bool? ?? false;
-      logger.d('[USP][Service]#$id ADD_MULTI result: success=$overallSuccess, errors=$hasErrors');
+      logger.d(
+          '[USP][Service]#$id ADD_MULTI result: success=$overallSuccess, errors=$hasErrors');
 
       for (var i = 0; i < results.length; i++) {
         final detail = results[i] as Map<String, dynamic>? ?? {};
@@ -439,7 +448,8 @@ class UspService {
 
         if (success) {
           final createdInstances = detail['createdInstances'] as List? ?? [];
-          logger.d('[USP][Service]#$id ADD_MULTI[$i] ✅ $requestedPath → ${createdInstances.length} instances');
+          logger.d(
+              '[USP][Service]#$id ADD_MULTI[$i] ✅ $requestedPath → ${createdInstances.length} instances');
 
           for (var instance in createdInstances) {
             final instanceMap = instance as Map<String, dynamic>? ?? {};
@@ -449,7 +459,8 @@ class UspService {
         } else {
           final errorCode = detail['errorCode'] ?? 'unknown';
           final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w('[USP][Service]#$id ADD_MULTI[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+          logger.w(
+              '[USP][Service]#$id ADD_MULTI[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
         }
       }
     }
@@ -480,7 +491,8 @@ class UspService {
       final hasErrors = result['hasErrors'] as bool? ?? false;
       final results = result['results'] as List? ?? [];
 
-      logger.d('[USP][Service]#$id DELETE result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+      logger.d(
+          '[USP][Service]#$id DELETE result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
 
       for (var i = 0; i < results.length; i++) {
         final detail = results[i] as Map<String, dynamic>? ?? {};
@@ -489,7 +501,8 @@ class UspService {
 
         if (success) {
           final deletedInstances = detail['deletedInstances'] as List? ?? [];
-          logger.d('[USP][Service]#$id DELETE[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
+          logger.d(
+              '[USP][Service]#$id DELETE[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
 
           for (var instance in deletedInstances) {
             final instanceMap = instance as Map<String, dynamic>? ?? {};
@@ -499,7 +512,8 @@ class UspService {
         } else {
           final errorCode = detail['errorCode'] ?? 'unknown';
           final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w('[USP][Service]#$id DELETE[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+          logger.w(
+              '[USP][Service]#$id DELETE[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
         }
       }
     }
@@ -526,7 +540,8 @@ class UspService {
       final hasErrors = result['hasErrors'] as bool? ?? false;
       final results = result['results'] as List? ?? [];
 
-      logger.d('[USP][Service]#$id DELETE_MULTI result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+      logger.d(
+          '[USP][Service]#$id DELETE_MULTI result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
 
       for (var i = 0; i < results.length; i++) {
         final detail = results[i] as Map<String, dynamic>? ?? {};
@@ -535,7 +550,8 @@ class UspService {
 
         if (success) {
           final deletedInstances = detail['deletedInstances'] as List? ?? [];
-          logger.d('[USP][Service]#$id DELETE_MULTI[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
+          logger.d(
+              '[USP][Service]#$id DELETE_MULTI[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
 
           for (var instance in deletedInstances) {
             final instanceMap = instance as Map<String, dynamic>? ?? {};
@@ -545,7 +561,8 @@ class UspService {
         } else {
           final errorCode = detail['errorCode'] ?? 'unknown';
           final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w('[USP][Service]#$id DELETE_MULTI[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+          logger.w(
+              '[USP][Service]#$id DELETE_MULTI[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
         }
       }
     }
@@ -636,7 +653,8 @@ class UspService {
       final firstResult = results.first as Map<String, dynamic>? ?? {};
       final createdInstances = firstResult['createdInstances'] as List? ?? [];
       if (createdInstances.isNotEmpty) {
-        final firstInstance = createdInstances.first as Map<String, dynamic>? ?? {};
+        final firstInstance =
+            createdInstances.first as Map<String, dynamic>? ?? {};
         createdPath = firstInstance['affectedPath'] as String?;
       }
     }
@@ -982,10 +1000,8 @@ class UspService {
   // ===========================================================================
 
   /// 應用層SET操作封裝，返回強型別結果
-  Future<UspSetResult> setWithResult(
-    Map<String, dynamic> parameters,
-    {bool allowPartial = false}
-  ) async {
+  Future<UspSetResult> setWithResult(Map<String, dynamic> parameters,
+      {bool allowPartial = false}) async {
     try {
       final resultMap = await set(parameters, allowPartial: allowPartial);
       return UspResultParser.parseSetResult(resultMap);
@@ -998,7 +1014,8 @@ class UspService {
   }
 
   /// 應用層ADD操作封裝，返回強型別結果
-  Future<UspAddResult> addWithResult(String objectPath, Map<String, String> params) async {
+  Future<UspAddResult> addWithResult(
+      String objectPath, Map<String, String> params) async {
     try {
       final resultMap = await add(objectPath, params);
       return UspResultParser.parseAddResult(resultMap);
@@ -1024,10 +1041,8 @@ class UspService {
   }
 
   /// 應用層批量DELETE操作封裝，返回強型別結果
-  Future<UspDeleteResult> deleteMultipleWithResult(
-    List<String> paths,
-    {bool allowPartial = false}
-  ) async {
+  Future<UspDeleteResult> deleteMultipleWithResult(List<String> paths,
+      {bool allowPartial = false}) async {
     try {
       final resultMap = await deleteMultiple(paths, allowPartial: allowPartial);
       return UspResultParser.parseDeleteResult(resultMap);
@@ -1040,10 +1055,8 @@ class UspService {
   }
 
   /// 應用層批量ADD操作封裝，返回強型別結果
-  Future<UspAddResult> addMultipleWithResult(
-    List<Map<String, dynamic>> objects,
-    {bool allowPartial = false}
-  ) async {
+  Future<UspAddResult> addMultipleWithResult(List<Map<String, dynamic>> objects,
+      {bool allowPartial = false}) async {
     try {
       final resultMap = await addMultiple(objects, allowPartial: allowPartial);
       return UspResultParser.parseAddResult(resultMap);

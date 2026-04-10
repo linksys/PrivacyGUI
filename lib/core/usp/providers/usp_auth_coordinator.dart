@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Coordinates USP authentication alongside JNAP authentication.
 ///
@@ -19,7 +19,7 @@ import 'package:privacy_gui/core/usp/services/usp_service.dart';
 /// USP login failure never blocks JNAP operations — [ProtocolResolver] falls
 /// back to JNAP when `isAuthenticated` is false.
 class UspAuthCoordinator {
-  final UspService? _usp;
+  final UspClient? _usp;
   final FlutterSecureStorage _storage;
 
   UspAuthCoordinator(this._usp, this._storage) {
@@ -56,7 +56,7 @@ class UspAuthCoordinator {
   /// stored password from FlutterSecureStorage and re-authenticates USP.
   Future<void> restoreSession() async {
     if (_usp == null) {
-      logger.w('[USP][Auth]restoreSession skipped: UspService is null');
+      logger.w('[USP][Auth]restoreSession skipped: UspClient is null');
       return;
     }
     if (_usp.isAuthenticated) {
@@ -83,7 +83,7 @@ class UspAuthCoordinator {
   /// Returns true if USP login succeeds and is authenticated.
   Future<bool> tryUspLogin(String password) async {
     if (_usp == null) {
-      logger.w('[USP][Auth]tryUspLogin skipped: UspService is null');
+      logger.w('[USP][Auth]tryUspLogin skipped: UspClient is null');
       return false;
     }
     try {
@@ -113,7 +113,7 @@ class UspAuthCoordinator {
 
 final uspAuthCoordinatorProvider = Provider<UspAuthCoordinator>((ref) {
   return UspAuthCoordinator(
-    ref.watch(uspServiceProvider),
+    ref.watch(uspClientProvider),
     const FlutterSecureStorage(),
   );
 });

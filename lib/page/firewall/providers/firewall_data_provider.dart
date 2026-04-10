@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
@@ -110,7 +110,7 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
   }
 
   Future<FirewallData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
 
     final results = await Future.wait([

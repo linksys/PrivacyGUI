@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_feature_state.dart';
@@ -29,10 +29,10 @@ final preservableUspInternetSettingsProvider = AutoDisposeProvider<
   (ref) => ref.watch(uspInternetSettingsProvider.notifier),
 );
 
-/// Service provider — stateless, created from the current UspService.
+/// Service provider — stateless, created from the current UspClient.
 final uspInternetSettingsServiceProvider =
     Provider.autoDispose<UspInternetSettingsService>((ref) {
-  final usp = ref.watch(uspServiceProvider);
+  final usp = ref.watch(uspClientProvider);
   if (usp == null) throw StateError('USP service not available');
   return UspInternetSettingsService(usp);
 });
@@ -74,7 +74,7 @@ class UspInternetSettingsNotifier
     bool updateStatusOnly = false,
   }) async {
     try {
-      final usp = ref.read(uspServiceProvider);
+      final usp = ref.read(uspClientProvider);
       if (usp == null) throw StateError('USP service not available');
 
       // Session restore on page reload (WASM state may be lost)

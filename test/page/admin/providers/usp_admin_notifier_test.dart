@@ -2,15 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/services/usp_admin_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 class MockUspAdminService extends Mock implements UspAdminService {}
 
@@ -36,7 +36,7 @@ class _TestTimeDataNotifier extends TimeDataNotifier {
 }
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late MockUspAdminService mockAdminService;
   late _TestTimeDataNotifier testTimeNotifier;
 
@@ -58,7 +58,7 @@ void main() {
   final testTimeData = TimeData(model: testTimeSettings);
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     mockAdminService = MockUspAdminService();
     testTimeNotifier = _TestTimeDataNotifier(testTimeData);
 
@@ -68,7 +68,7 @@ void main() {
   ProviderContainer createContainer() {
     final container = ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
         uspAdminServiceProvider.overrideWithValue(mockAdminService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         timeDataProvider.overrideWith(() => testTimeNotifier),

@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 
 /// Service provider — per Article VI.
 final uspInstantSafetyServiceProvider = Provider<UspInstantSafetyService>(
-  (ref) => UspInstantSafetyService(ref.read(uspServiceProvider)!),
+  (ref) => UspInstantSafetyService(ref.read(uspClientProvider)!),
 );
 
 /// Transforms codegen [LanNetworkInfo] into [SafeBrowsingUIModel] and provides
@@ -14,7 +14,7 @@ final uspInstantSafetyServiceProvider = Provider<UspInstantSafetyService>(
 ///
 /// OpenDNS Family Shield IPs are identical to the JNAP version (NOW-713).
 class UspInstantSafetyService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspInstantSafetyService(this._usp);
 

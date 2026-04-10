@@ -6,22 +6,22 @@ sealed class UspOperationResult<T> {
 
   /// 便利方法：檢查是否有任何成功操作
   bool get hasAnySuccess => switch (this) {
-    UspSuccess(details: final details) => details.isNotEmpty,
-    UspPartialSuccess(successes: final successes) => successes.isNotEmpty,
-    UspFailure() => false,
-  };
+        UspSuccess(details: final details) => details.isNotEmpty,
+        UspPartialSuccess(successes: final successes) => successes.isNotEmpty,
+        UspFailure() => false,
+      };
 
   /// 便利方法：檢查是否完全成功
   bool get isCompleteSuccess => switch (this) {
-    UspSuccess() => true,
-    UspPartialSuccess() || UspFailure() => false,
-  };
+        UspSuccess() => true,
+        UspPartialSuccess() || UspFailure() => false,
+      };
 
   /// 便利方法：檢查是否有錯誤
   bool get hasErrors => switch (this) {
-    UspSuccess() => false,
-    UspPartialSuccess() || UspFailure() => true,
-  };
+        UspSuccess() => false,
+        UspPartialSuccess() || UspFailure() => true,
+      };
 
   /// 在允許部分成功的情境中檢查是否成功
   bool isSuccessfulInContext({bool allowPartial = false}) {
@@ -36,16 +36,19 @@ final class UspSuccess<T> extends UspOperationResult<T> {
   const UspSuccess(this.details);
 
   /// 取得所有成功更新的實例
-  List<UspUpdatedInstance> get allUpdatedInstances =>
-    details.expand((d) => d.updatedInstances ?? <UspUpdatedInstance>[]).toList();
+  List<UspUpdatedInstance> get allUpdatedInstances => details
+      .expand((d) => d.updatedInstances ?? <UspUpdatedInstance>[])
+      .toList();
 
   /// 取得所有創建的實例
-  List<UspCreatedInstance> get allCreatedInstances =>
-    details.expand((d) => d.createdInstances ?? <UspCreatedInstance>[]).toList();
+  List<UspCreatedInstance> get allCreatedInstances => details
+      .expand((d) => d.createdInstances ?? <UspCreatedInstance>[])
+      .toList();
 
   /// 取得所有刪除的實例
-  List<UspDeletedInstance> get allDeletedInstances =>
-    details.expand((d) => d.deletedInstances ?? <UspDeletedInstance>[]).toList();
+  List<UspDeletedInstance> get allDeletedInstances => details
+      .expand((d) => d.deletedInstances ?? <UspDeletedInstance>[])
+      .toList();
 
   @override
   String toString() => 'UspSuccess(${details.length} details)';
@@ -59,17 +62,15 @@ final class UspPartialSuccess<T> extends UspOperationResult<T> {
   const UspPartialSuccess(this.successes, this.failures);
 
   /// 錯誤摘要
-  String get errorSummary => failures
-    .map((f) => '${f.requestedPath}: ${f.errorMessage}')
-    .join('; ');
+  String get errorSummary =>
+      failures.map((f) => '${f.requestedPath}: ${f.errorMessage}').join('; ');
 
   /// 成功操作摘要
-  String get successSummary => successes
-    .map((s) => s.requestedPath)
-    .join(', ');
+  String get successSummary => successes.map((s) => s.requestedPath).join(', ');
 
   @override
-  String toString() => 'UspPartialSuccess(${successes.length} successes, ${failures.length} failures)';
+  String toString() =>
+      'UspPartialSuccess(${successes.length} successes, ${failures.length} failures)';
 }
 
 /// 完全失敗：所有操作都失敗
@@ -79,13 +80,12 @@ final class UspFailure<T> extends UspOperationResult<T> {
   const UspFailure(this.errors);
 
   /// 錯誤摘要
-  String get errorSummary => errors
-    .map((e) => '${e.requestedPath}: ${e.errorMessage}')
-    .join('; ');
+  String get errorSummary =>
+      errors.map((e) => '${e.requestedPath}: ${e.errorMessage}').join('; ');
 
   /// 取得特定錯誤碼的錯誤
   List<UspErrorDetail> getErrorsByCode(int errorCode) =>
-    errors.where((e) => e.errorCode == errorCode).toList();
+      errors.where((e) => e.errorCode == errorCode).toList();
 
   @override
   String toString() => 'UspFailure(${errors.length} errors)';
@@ -130,19 +130,25 @@ class UspSuccessDetail {
   static List<UspUpdatedInstance>? _parseUpdatedInstances(dynamic data) {
     if (data == null) return null;
     final list = data as List<dynamic>;
-    return list.map((item) => UspUpdatedInstance.fromMap(item as Map<String, dynamic>)).toList();
+    return list
+        .map((item) => UspUpdatedInstance.fromMap(item as Map<String, dynamic>))
+        .toList();
   }
 
   static List<UspCreatedInstance>? _parseCreatedInstances(dynamic data) {
     if (data == null) return null;
     final list = data as List<dynamic>;
-    return list.map((item) => UspCreatedInstance.fromMap(item as Map<String, dynamic>)).toList();
+    return list
+        .map((item) => UspCreatedInstance.fromMap(item as Map<String, dynamic>))
+        .toList();
   }
 
   static List<UspDeletedInstance>? _parseDeletedInstances(dynamic data) {
     if (data == null) return null;
     final list = data as List<dynamic>;
-    return list.map((item) => UspDeletedInstance.fromMap(item as Map<String, dynamic>)).toList();
+    return list
+        .map((item) => UspDeletedInstance.fromMap(item as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -181,16 +187,17 @@ class UspErrorDetail {
 
   /// 檢查錯誤是否可重試（非致命性錯誤）
   bool get isRetryable => switch (errorCode) {
-    // 網路相關錯誤通常可重試
-    7001 || 7002 || 7003 => true,
-    // 參數錯誤通常不可重試
-    7004 || 7005 || 7006 || 7026 || 7027 => false,
-    // 未知錯誤預設可重試
-    _ => true,
-  };
+        // 網路相關錯誤通常可重試
+        7001 || 7002 || 7003 => true,
+        // 參數錯誤通常不可重試
+        7004 || 7005 || 7006 || 7026 || 7027 => false,
+        // 未知錯誤預設可重試
+        _ => true,
+      };
 
   @override
-  String toString() => 'UspErrorDetail($requestedPath: $errorCode - $errorMessage)';
+  String toString() =>
+      'UspErrorDetail($requestedPath: $errorCode - $errorMessage)';
 }
 
 // =============================================================================
@@ -215,7 +222,8 @@ class UspUpdatedInstance {
   }
 
   @override
-  String toString() => 'UspUpdatedInstance($affectedPath: ${updatedParams.length} params)';
+  String toString() =>
+      'UspUpdatedInstance($affectedPath: ${updatedParams.length} params)';
 }
 
 /// 創建的實例資訊
@@ -236,7 +244,8 @@ class UspCreatedInstance {
   }
 
   @override
-  String toString() => 'UspCreatedInstance($affectedPath: ${initialParams.length} params)';
+  String toString() =>
+      'UspCreatedInstance($affectedPath: ${initialParams.length} params)';
 }
 
 /// 刪除的實例資訊
@@ -301,7 +310,8 @@ class UspResultParser {
   }
 
   /// 通用結果解析邏輯
-  static UspOperationResult<T> _parseGenericResult<T>(Map<String, dynamic> map) {
+  static UspOperationResult<T> _parseGenericResult<T>(
+      Map<String, dynamic> map) {
     final overallSuccess = map['overallSuccess'] as bool? ?? false;
     final hasErrors = map['hasErrors'] as bool? ?? false;
     final results = map['results'] as List<dynamic>? ?? [];

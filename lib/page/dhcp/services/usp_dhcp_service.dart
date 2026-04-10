@@ -1,16 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 
 final uspDhcpServiceProvider = Provider<UspDhcpService>(
-  (ref) => UspDhcpService(ref.read(uspServiceProvider)!),
+  (ref) => UspDhcpService(ref.read(uspClientProvider)!),
 );
 
 /// Service layer for DHCP Reservations — encapsulates codegen CRUD + transform.
 class UspDhcpService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspDhcpService(this._usp);
 

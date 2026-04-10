@@ -1,6 +1,6 @@
-/// Mock UspService for Demo mode.
+/// Mock UspClient for Demo mode.
 ///
-/// Extends [UspService] and overrides all public methods to return data
+/// Extends [UspClient] and overrides all public methods to return data
 /// from [DemoUspDataLoader] instead of making real WASM/HTTP calls.
 ///
 /// Includes a [_DynamicSimulator] that injects time-varying values for
@@ -13,13 +13,13 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-class DemoUspService extends UspService {
+class DemoUspClient extends UspClient {
   final DemoUspDataLoader _loader;
   final _DynamicSimulator _sim = _DynamicSimulator();
 
-  DemoUspService(this._loader) : super('https://localhost');
+  DemoUspClient(this._loader) : super('https://localhost');
 
   @override
   bool get isAuthenticated => true;
@@ -92,7 +92,9 @@ class DemoUspService extends UspService {
         'updatedInstances': [
           {
             'affectedPath': _extractInstancePath(entry.key),
-            'updatedParams': {_extractParamName(entry.key): entry.value.toString()}
+            'updatedParams': {
+              _extractParamName(entry.key): entry.value.toString()
+            }
           }
         ]
       });
@@ -111,7 +113,8 @@ class DemoUspService extends UspService {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<Map<String, dynamic>> add(String objectPath, Map<String, dynamic> parameters) async {
+  Future<Map<String, dynamic>> add(
+      String objectPath, Map<String, dynamic> parameters) async {
     await Future.delayed(const Duration(milliseconds: 20));
     final nextId = _loader.nextInstanceId(objectPath);
     final normalized = objectPath.endsWith('.') ? objectPath : '$objectPath.';
@@ -133,10 +136,7 @@ class DemoUspService extends UspService {
           'requestedPath': objectPath,
           'success': true,
           'createdInstances': [
-            {
-              'affectedPath': instancePath,
-              'initialParams': initialParams
-            }
+            {'affectedPath': instancePath, 'initialParams': initialParams}
           ]
         }
       ]
@@ -155,7 +155,8 @@ class DemoUspService extends UspService {
       final result = await add(path, params);
       // Extract the result details from the structured response
       if (result['results'] != null && (result['results'] as List).isNotEmpty) {
-        results.addAll((result['results'] as List).cast<Map<String, dynamic>>());
+        results
+            .addAll((result['results'] as List).cast<Map<String, dynamic>>());
       }
     }
 
@@ -201,7 +202,8 @@ class DemoUspService extends UspService {
       final result = await delete(path);
       // Extract the result details from the structured response
       if (result['results'] != null && (result['results'] as List).isNotEmpty) {
-        results.addAll((result['results'] as List).cast<Map<String, dynamic>>());
+        results
+            .addAll((result['results'] as List).cast<Map<String, dynamic>>());
       }
     }
 
@@ -318,7 +320,7 @@ class DemoUspService extends UspService {
   }
 
   // ---------------------------------------------------------------------------
-  // Value coercion (matches UspService._coerceValue)
+  // Value coercion (matches UspClient._coerceValue)
   // ---------------------------------------------------------------------------
 
   dynamic _coerce(String path, String? raw) {

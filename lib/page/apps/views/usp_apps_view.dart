@@ -5,7 +5,7 @@ import 'package:privacy_gui/page/apps/models/app_info_ui_model.dart';
 import 'package:privacy_gui/page/apps/providers/usp_apps_notifier.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/route/constants.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/util/url_helper/url_helper.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -92,8 +92,7 @@ class UspAppsView extends ConsumerWidget {
                 label: 'Store',
                 icon: AppIcon.font(Icons.storefront),
                 onTap: () {
-                  final token =
-                      ref.read(uspServiceProvider)?.sessionToken ?? '';
+                  final token = ref.read(uspClientProvider)?.sessionToken ?? '';
                   openUrl('${Uri.base.origin}/app-store/?token=$token');
                 },
               ),
@@ -145,7 +144,7 @@ class _AppGridCard extends ConsumerWidget {
     return AppCard(
       onTap: app.link.isNotEmpty
           ? () {
-              final token = ref.read(uspServiceProvider)?.sessionToken ?? '';
+              final token = ref.read(uspClientProvider)?.sessionToken ?? '';
               final separator = app.link.contains('?') ? '&' : '?';
               openUrl('${app.link}${separator}token=$token');
             }

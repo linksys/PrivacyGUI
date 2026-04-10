@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Tests for USP structured response core functionality
 /// Focus on result parsing logic, sealed class conversion, and error handling
 void main() {
   group('USP Structured Response Parsing Tests', () {
-
     group('UspResultParser parsing logic', () {
-      test('parseSetResult() should create UspSuccess for complete success', () {
+      test('parseSetResult() should create UspSuccess for complete success',
+          () {
         // Arrange - mock response with all operations successful
         final mockResponse = {
           'overallSuccess': true,
@@ -36,8 +36,10 @@ void main() {
         expect(success.details, hasLength(1));
         expect(success.details[0].requestedPath, 'Device.WiFi.SSID.1.SSID');
         expect(success.allUpdatedInstances, hasLength(1));
-        expect(success.allUpdatedInstances[0].affectedPath, 'Device.WiFi.SSID.1.');
-        expect(success.allUpdatedInstances[0].updatedParams['SSID'], 'NewNetwork');
+        expect(
+            success.allUpdatedInstances[0].affectedPath, 'Device.WiFi.SSID.1.');
+        expect(
+            success.allUpdatedInstances[0].updatedParams['SSID'], 'NewNetwork');
 
         // Test context-aware success methods
         expect(success.isSuccessfulInContext(), true);
@@ -45,7 +47,8 @@ void main() {
         expect(success.isSuccessfulInContext(allowPartial: true), true);
       });
 
-      test('parseSetResult() should create UspPartialSuccess for mixed results', () {
+      test('parseSetResult() should create UspPartialSuccess for mixed results',
+          () {
         // Arrange - mock response with both success and failure operations
         final mockResponse = {
           'overallSuccess': false,
@@ -81,7 +84,8 @@ void main() {
         expect(partial.successes, hasLength(1));
         expect(partial.failures, hasLength(1));
         expect(partial.successes[0].requestedPath, 'Device.WiFi.SSID.1.SSID');
-        expect(partial.failures[0].requestedPath, 'Device.WiFi.SSID.1.InvalidParam');
+        expect(partial.failures[0].requestedPath,
+            'Device.WiFi.SSID.1.InvalidParam');
         expect(partial.failures[0].errorCode, 7004);
         expect(partial.failures[0].isParameterNotWritable, true);
 
@@ -93,7 +97,8 @@ void main() {
         expect(partial.isSuccessfulInContext(allowPartial: false), false);
       });
 
-      test('parseSetResult() should create UspFailure for complete failure', () {
+      test('parseSetResult() should create UspFailure for complete failure',
+          () {
         // Arrange - mock response with all operations failed
         final mockResponse = {
           'overallSuccess': false,
@@ -201,7 +206,8 @@ void main() {
         final success = result as UspSuccess;
 
         expect(success.allDeletedInstances, hasLength(1));
-        expect(success.allDeletedInstances[0].affectedPath, 'Device.NAT.PortMapping.3.');
+        expect(success.allDeletedInstances[0].affectedPath,
+            'Device.NAT.PortMapping.3.');
       });
 
       test('createEmptySuccess() should return empty success result', () {
@@ -217,7 +223,9 @@ void main() {
         expect(success.hasErrors, false);
       });
 
-      test('createFailureFromException() should convert exceptions to UspFailure', () {
+      test(
+          'createFailureFromException() should convert exceptions to UspFailure',
+          () {
         // Arrange - exception and requested path context
         final exception = Exception('Network connection timeout');
         const requestedPath = 'Device.WiFi.SSID.1.SSID';
@@ -235,15 +243,23 @@ void main() {
         expect(failure.errors, hasLength(1));
         expect(failure.errors[0].requestedPath, requestedPath);
         expect(failure.errors[0].errorCode, -1); // Default exception error code
-        expect(failure.errors[0].errorMessage, contains('Network connection timeout'));
+        expect(failure.errors[0].errorMessage,
+            contains('Network connection timeout'));
       });
     });
 
     group('Sealed Class Pattern Matching Tests', () {
       test('pattern matching should work with all result types', () {
         // Arrange - non-empty results for meaningful testing
-        const successDetails = [UspSuccessDetail(requestedPath: 'test.success')];
-        const errorDetails = [UspErrorDetail(requestedPath: 'test.error', errorCode: 7004, errorMessage: 'error')];
+        const successDetails = [
+          UspSuccessDetail(requestedPath: 'test.success')
+        ];
+        const errorDetails = [
+          UspErrorDetail(
+              requestedPath: 'test.error',
+              errorCode: 7004,
+              errorMessage: 'error')
+        ];
 
         final results = <UspOperationResult<void>>[
           UspSuccess(successDetails),
@@ -262,12 +278,14 @@ void main() {
           // Use type-based assertions instead of runtime type checking
           if (result is UspSuccess) {
             expect(type, 'success');
-            expect(result.hasAnySuccess, true);  // Has actual successful operations
+            expect(
+                result.hasAnySuccess, true); // Has actual successful operations
             expect(result.isCompleteSuccess, true);
             expect(result.hasErrors, false);
           } else if (result is UspPartialSuccess) {
             expect(type, 'partial');
-            expect(result.hasAnySuccess, true);  // Has actual successful operations
+            expect(
+                result.hasAnySuccess, true); // Has actual successful operations
             expect(result.isCompleteSuccess, false);
             expect(result.hasErrors, true);
           } else if (result is UspFailure) {
@@ -281,8 +299,15 @@ void main() {
 
       test('pattern matching should extract data correctly', () {
         // Arrange - test data with known counts
-        const successDetails = [UspSuccessDetail(requestedPath: 'success-path')];
-        const errorDetails = [UspErrorDetail(requestedPath: 'error-path', errorCode: 7004, errorMessage: 'error')];
+        const successDetails = [
+          UspSuccessDetail(requestedPath: 'success-path')
+        ];
+        const errorDetails = [
+          UspErrorDetail(
+              requestedPath: 'error-path',
+              errorCode: 7004,
+              errorMessage: 'error')
+        ];
 
         final results = <UspOperationResult<void>>[
           UspSuccess(successDetails),
@@ -294,7 +319,10 @@ void main() {
         for (final result in results) {
           final (successCount, errorCount) = switch (result) {
             UspSuccess(details: final details) => (details.length, 0),
-            UspPartialSuccess(successes: final s, failures: final f) => (s.length, f.length),
+            UspPartialSuccess(successes: final s, failures: final f) => (
+                s.length,
+                f.length
+              ),
             UspFailure(errors: final errors) => (0, errors.length),
           };
 
@@ -325,18 +353,30 @@ void main() {
           (9999, false, false, false, false, false), // Unknown error
         ];
 
-        for (final (code, isNotWritable, isInvalidName, isInvalidValue, isParamNotFound, isObjNotFound) in testCases) {
+        for (final (
+              code,
+              isNotWritable,
+              isInvalidName,
+              isInvalidValue,
+              isParamNotFound,
+              isObjNotFound
+            ) in testCases) {
           final error = UspErrorDetail(
             requestedPath: 'test',
             errorCode: code,
             errorMessage: 'Test error $code',
           );
 
-          expect(error.isParameterNotWritable, isNotWritable, reason: 'Error $code isParameterNotWritable');
-          expect(error.isInvalidParameterName, isInvalidName, reason: 'Error $code isInvalidParameterName');
-          expect(error.isInvalidParameterValue, isInvalidValue, reason: 'Error $code isInvalidParameterValue');
-          expect(error.isParameterNotFound, isParamNotFound, reason: 'Error $code isParameterNotFound');
-          expect(error.isObjectNotFound, isObjNotFound, reason: 'Error $code isObjectNotFound');
+          expect(error.isParameterNotWritable, isNotWritable,
+              reason: 'Error $code isParameterNotWritable');
+          expect(error.isInvalidParameterName, isInvalidName,
+              reason: 'Error $code isInvalidParameterName');
+          expect(error.isInvalidParameterValue, isInvalidValue,
+              reason: 'Error $code isInvalidParameterValue');
+          expect(error.isParameterNotFound, isParamNotFound,
+              reason: 'Error $code isParameterNotFound');
+          expect(error.isObjectNotFound, isObjNotFound,
+              reason: 'Error $code isObjectNotFound');
         }
       });
 
@@ -352,7 +392,8 @@ void main() {
             errorCode: code,
             errorMessage: 'Retryable error',
           );
-          expect(error.isRetryable, true, reason: 'Error $code should be retryable');
+          expect(error.isRetryable, true,
+              reason: 'Error $code should be retryable');
         }
 
         for (final code in nonRetryableErrors) {
@@ -361,7 +402,8 @@ void main() {
             errorCode: code,
             errorMessage: 'Non-retryable error',
           );
-          expect(error.isRetryable, false, reason: 'Error $code should not be retryable');
+          expect(error.isRetryable, false,
+              reason: 'Error $code should not be retryable');
         }
       });
     });
@@ -377,7 +419,12 @@ void main() {
 
       test('UspPartialSuccess toString should include counts', () {
         const successes = [UspSuccessDetail(requestedPath: 'success.path')];
-        const failures = [UspErrorDetail(requestedPath: 'error.path', errorCode: 7004, errorMessage: 'error')];
+        const failures = [
+          UspErrorDetail(
+              requestedPath: 'error.path',
+              errorCode: 7004,
+              errorMessage: 'error')
+        ];
         const result = UspPartialSuccess<void>(successes, failures);
 
         expect(result.toString(), contains('UspPartialSuccess'));
@@ -386,7 +433,12 @@ void main() {
       });
 
       test('UspFailure toString should include error count', () {
-        const errors = [UspErrorDetail(requestedPath: 'error.path', errorCode: 7004, errorMessage: 'error')];
+        const errors = [
+          UspErrorDetail(
+              requestedPath: 'error.path',
+              errorCode: 7004,
+              errorMessage: 'error')
+        ];
         const result = UspFailure<void>(errors);
 
         expect(result.toString(), contains('UspFailure'));
@@ -417,7 +469,9 @@ void main() {
         expect(error.isErrorCode(7005), false);
       });
 
-      test('UspUpdatedInstance toString should show affected path and param count', () {
+      test(
+          'UspUpdatedInstance toString should show affected path and param count',
+          () {
         const instance = UspUpdatedInstance(
           affectedPath: 'Device.WiFi.SSID.1.',
           updatedParams: {'SSID': 'TestNetwork', 'Enable': 'true'},
@@ -427,7 +481,9 @@ void main() {
         expect(instance.toString(), contains('2 params'));
       });
 
-      test('UspCreatedInstance toString should show affected path and param count', () {
+      test(
+          'UspCreatedInstance toString should show affected path and param count',
+          () {
         const instance = UspCreatedInstance(
           affectedPath: 'Device.NAT.PortMapping.3.',
           initialParams: {'Protocol': 'TCP', 'ExternalPort': '80'},
@@ -438,7 +494,8 @@ void main() {
       });
 
       test('UspDeletedInstance toString should show affected path', () {
-        const instance = UspDeletedInstance(affectedPath: 'Device.NAT.PortMapping.3.');
+        const instance =
+            UspDeletedInstance(affectedPath: 'Device.NAT.PortMapping.3.');
         expect(instance.toString(), contains('UspDeletedInstance'));
         expect(instance.toString(), contains('Device.NAT.PortMapping.3.'));
       });
@@ -468,7 +525,8 @@ void main() {
         expect(success.details[0].requestedPath, 'Device.WiFi.SSID.1.SSID');
       });
 
-      test('UspResultParser parseOperateResult should handle OPERATE operation', () {
+      test('UspResultParser parseOperateResult should handle OPERATE operation',
+          () {
         // Arrange - mock OPERATE operation response
         final mockResponse = {
           'overallSuccess': true,
@@ -490,7 +548,8 @@ void main() {
         expect(result, isA<UspSuccess>());
         final success = result as UspSuccess;
         expect(success.details, hasLength(1));
-        expect(success.details[0].requestedPath, 'Device.IP.Diagnostics.IPPing()');
+        expect(
+            success.details[0].requestedPath, 'Device.IP.Diagnostics.IPPing()');
       });
     });
 
@@ -561,7 +620,8 @@ void main() {
         final failure = result as UspFailure;
         expect(failure.errors, hasLength(1));
         expect(failure.errors[0].errorCode, -1); // Default fallback
-        expect(failure.errors[0].errorMessage, 'Unknown error'); // Default fallback
+        expect(failure.errors[0].errorMessage,
+            'Unknown error'); // Default fallback
       });
     });
   });

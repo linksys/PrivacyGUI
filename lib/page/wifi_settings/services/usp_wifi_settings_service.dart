@@ -4,8 +4,8 @@ import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
@@ -13,7 +13,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart'
 import 'package:privacy_gui/page/wifi_settings/services/wifi_channel_bonding.dart';
 
 final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
-  (ref) => UspWifiSettingsService(ref.read(uspServiceProvider)!),
+  (ref) => UspWifiSettingsService(ref.read(uspClientProvider)!),
 );
 
 /// Stateless service for transforming raw USP WiFi data into [WifiNetworkUIModel] list.
@@ -27,7 +27,7 @@ final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
 ///   SSID.lowerLayers  → Radio instance path
 ///   AccessPoint.ssidReference → SSID instance path
 class UspWifiSettingsService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspWifiSettingsService(this._usp);
 

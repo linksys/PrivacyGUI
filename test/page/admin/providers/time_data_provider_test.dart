@@ -2,14 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
 
   final timeResponse = <String, dynamic>{
     'Device.Time.Enable': true,
@@ -21,20 +21,20 @@ void main() {
   };
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     when(() => mockUsp.get(any())).thenAnswer((_) async => timeResponse);
     when(() => mockUsp.set(any())).thenAnswer((_) async => {
-      'overallSuccess': true,
-      'hasAnySuccess': true,
-      'hasErrors': false,
-      'results': []
-    });
+          'overallSuccess': true,
+          'hasAnySuccess': true,
+          'hasErrors': false,
+          'results': []
+        });
   });
 
   ProviderContainer createContainer() {
     return ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
       ],
     );
@@ -57,7 +57,7 @@ void main() {
     test('build throws when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
-          uspServiceProvider.overrideWithValue(null),
+          uspClientProvider.overrideWithValue(null),
         ],
       );
 

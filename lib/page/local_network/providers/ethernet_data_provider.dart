@@ -5,8 +5,8 @@ import 'package:privacy_gui/generated/ethernet_interfaces.g.dart';
 import 'package:privacy_gui/page/_shared/models/ethernet_port_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Layer 1 Ethernet Data Provider — port UI models.
 ///
@@ -68,7 +68,7 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   }
 
   Future<EthernetData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
 
     // Parallel: fetch Ethernet interfaces + bridge port map
@@ -106,7 +106,7 @@ class EthernetDataNotifier extends AsyncNotifier<EthernetData> {
   // Bridge port → Ethernet interface mapping
   // ---------------------------------------------------------------------------
 
-  Future<Map<String, String>> _fetchBridgePortMap(UspService usp) async {
+  Future<Map<String, String>> _fetchBridgePortMap(UspClient usp) async {
     try {
       final resp = await usp.get([
         'Device.Bridging.Bridge.*.Port.*.LowerLayers',

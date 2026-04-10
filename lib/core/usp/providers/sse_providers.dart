@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 
-/// Provides [UspBridgeClient] instance — depends on [UspService].
+/// Provides [UspBridgeClient] instance — depends on [UspClient].
 final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
-  final usp = ref.watch(uspServiceProvider);
+  final usp = ref.watch(uspClientProvider);
   if (usp == null) return null;
   return UspBridgeClient(usp);
 });
@@ -22,7 +22,7 @@ final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
 /// - [SseSubscriptionRegistry] — OBUSPA + bridge subscription tracking
 /// - [SseEventRouter] — event demux by subscription_id
 final sseManagerProvider = Provider<SseManager?>((ref) {
-  final usp = ref.watch(uspServiceProvider);
+  final usp = ref.watch(uspClientProvider);
   final bridge = ref.watch(uspBridgeClientProvider);
   if (usp == null || bridge == null) return null;
 
@@ -63,7 +63,7 @@ final sseConnectionStateProvider = StreamProvider<SseConnectionState>((ref) {
 /// Returns null if USP or SSE manager is not available.
 final sseOperationAwaiterProvider = Provider<SseOperationAwaiter?>((ref) {
   final manager = ref.watch(sseManagerProvider);
-  final usp = ref.watch(uspServiceProvider);
+  final usp = ref.watch(uspClientProvider);
   if (manager == null || usp == null) return null;
   return SseOperationAwaiter(manager, usp);
 });
@@ -76,7 +76,7 @@ final sseBootstrapProvider = FutureProvider<void>((ref) async {
   final manager = ref.watch(sseManagerProvider);
   if (manager == null) return;
 
-  final usp = ref.watch(uspServiceProvider);
+  final usp = ref.watch(uspClientProvider);
   if (usp == null || !usp.isAuthenticated) return;
 
   final bridge = ref.watch(uspBridgeClientProvider);

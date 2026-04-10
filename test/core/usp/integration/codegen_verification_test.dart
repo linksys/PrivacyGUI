@@ -6,9 +6,10 @@ import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 /// Tests that verify the codegen now correctly generates structured response types
 void main() {
   group('Codegen v0.11.0 Fix Verification', () {
-
     group('Compilation-Time Method Signature Verification', () {
-      test('Method signatures should compile successfully with structured responses', () {
+      test(
+          'Method signatures should compile successfully with structured responses',
+          () {
         // CRITICAL TEST: This test verifies that the codegen fix is working.
         // The key verification is that this test file compiles at all.
 
@@ -19,7 +20,8 @@ void main() {
         // classes and referencing the methods would cause compilation errors.
 
         // Verify that the classes exist and can be referenced
-        expect(PortForwarding, isNotNull, reason: 'PortForwarding class should exist');
+        expect(PortForwarding, isNotNull,
+            reason: 'PortForwarding class should exist');
         expect(WiFiSsids, isNotNull, reason: 'WiFiSsids class should exist');
 
         // The fact that we can create instances of the data classes confirms
@@ -31,7 +33,9 @@ void main() {
         expect(wifiUpdate, isNotNull);
       });
 
-      test('Return types should be Future<Map<String, dynamic>> for all CUD operations', () {
+      test(
+          'Return types should be Future<Map<String, dynamic>> for all CUD operations',
+          () {
         // This test verifies that Create, Update, Delete operations return structured responses
         // by checking that the method references can be stored in appropriately typed variables
 
@@ -41,10 +45,14 @@ void main() {
         Function updateMethodRef = WiFiSsids.update;
         Function updateManyMethodRef = PortForwarding.updateMany;
 
-        expect(addMethodRef, isNotNull, reason: 'PortForwarding.add method should exist');
-        expect(deleteMethodRef, isNotNull, reason: 'PortForwarding.delete method should exist');
-        expect(updateMethodRef, isNotNull, reason: 'WiFiSsids.update method should exist');
-        expect(updateManyMethodRef, isNotNull, reason: 'PortForwarding.updateMany method should exist');
+        expect(addMethodRef, isNotNull,
+            reason: 'PortForwarding.add method should exist');
+        expect(deleteMethodRef, isNotNull,
+            reason: 'PortForwarding.delete method should exist');
+        expect(updateMethodRef, isNotNull,
+            reason: 'WiFiSsids.update method should exist');
+        expect(updateManyMethodRef, isNotNull,
+            reason: 'PortForwarding.updateMany method should exist');
       });
 
       test('Generated methods should accept correct parameter types', () {
@@ -122,15 +130,20 @@ void main() {
     });
 
     group('Smart Empty Parameter Handling Verification', () {
-      test('Generated code should include conditional parameter processing', () {
+      test('Generated code should include conditional parameter processing',
+          () {
         // This test verifies that the codegen includes smart empty parameter handling
         // by checking that our test classes can be constructed with optional parameters
 
         // Test that we can create update objects with various combinations of parameters
         const updates = [
-          PortForwardingRuleUpdate(instancePath: 'test1'),  // No optional params
-          PortForwardingRuleUpdate(instancePath: 'test2', enabled: true),  // One param
-          PortForwardingRuleUpdate(instancePath: 'test3', enabled: false, externalPort: 80),  // Multiple params
+          PortForwardingRuleUpdate(instancePath: 'test1'), // No optional params
+          PortForwardingRuleUpdate(
+              instancePath: 'test2', enabled: true), // One param
+          PortForwardingRuleUpdate(
+              instancePath: 'test3',
+              enabled: false,
+              externalPort: 80), // Multiple params
         ];
 
         expect(updates, hasLength(3));
@@ -143,7 +156,8 @@ void main() {
         const wifiUpdates = [
           WiFiSsidUpdate(instancePath: 'wifi1'),
           WiFiSsidUpdate(instancePath: 'wifi2', ssid: 'TestNetwork'),
-          WiFiSsidUpdate(instancePath: 'wifi3', ssid: 'TestNetwork2', enable: true),
+          WiFiSsidUpdate(
+              instancePath: 'wifi3', ssid: 'TestNetwork2', enable: true),
         ];
 
         expect(wifiUpdates, hasLength(3));
@@ -154,7 +168,9 @@ void main() {
     });
 
     group('Integration with USP Structured Response System', () {
-      test('Generated method return types should be compatible with UspResultParser', () {
+      test(
+          'Generated method return types should be compatible with UspResultParser',
+          () {
         // This test verifies that the generated methods return types that are
         // compatible with our structured response parsing system
 
@@ -162,13 +178,15 @@ void main() {
         // Future<String> for add/delete, which allows them to be parsed by UspResultParser
 
         // Test that return types can be theoretically processed
-        // (We can't actually call the methods without a real UspService,
+        // (We can't actually call the methods without a real UspClient,
         // but we can verify the type compatibility)
 
-        expect(true, true, reason: 'Type compatibility with UspResultParser verified');
+        expect(true, true,
+            reason: 'Type compatibility with UspResultParser verified');
       });
 
-      test('Generated classes should work with sealed class pattern matching', () {
+      test('Generated classes should work with sealed class pattern matching',
+          () {
         // Test that our generated data classes work well with the structured response system
         const portRule = PortForwardingRule(
           instancePath: 'Device.NAT.PortMapping.1.',
@@ -210,11 +228,13 @@ void main() {
         // if the method signatures reverted to the old incorrect types:
 
         // This would fail if add() returned Future<String>:
-        Future<Map<String, dynamic>> addReturnType = Future.value(<String, dynamic>{});
+        Future<Map<String, dynamic>> addReturnType =
+            Future.value(<String, dynamic>{});
         expect(addReturnType, isA<Future<Map<String, dynamic>>>());
 
         // This would fail if delete() returned Future<void>:
-        Future<Map<String, dynamic>> deleteReturnType = Future.value(<String, dynamic>{});
+        Future<Map<String, dynamic>> deleteReturnType =
+            Future.value(<String, dynamic>{});
         expect(deleteReturnType, isA<Future<Map<String, dynamic>>>());
 
         expect(true, true, reason: 'Regression prevention check passed');

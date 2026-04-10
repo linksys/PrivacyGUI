@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/dmz/services/usp_dmz_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspDmzService service;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     service = UspDmzService(mockUsp);
   });
 
@@ -250,18 +250,22 @@ void main() {
   group('UspDmzService — add', () {
     test('add with sourceType.any sends 0.0.0.0/0', () async {
       when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': [{
-          'requestedPath': 'Device.Firewall.DMZ.',
-          'success': true,
-          'createdInstances': [{
-            'affectedPath': 'Device.Firewall.DMZ.1.',
-            'initialParams': {}
-          }]
-        }]
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.Firewall.DMZ.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath': 'Device.Firewall.DMZ.1.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
 
       await service.add(
         model: DmzUIModel(
@@ -281,18 +285,22 @@ void main() {
 
     test('add with sourceType.cidr sends the CIDR value', () async {
       when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': [{
-          'requestedPath': 'Device.Firewall.DMZ.',
-          'success': true,
-          'createdInstances': [{
-            'affectedPath': 'Device.Firewall.DMZ.1.',
-            'initialParams': {}
-          }]
-        }]
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.Firewall.DMZ.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath': 'Device.Firewall.DMZ.1.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
 
       await service.add(
         model: DmzUIModel(
@@ -313,11 +321,11 @@ void main() {
   group('UspDmzService — update', () {
     test('update with sourceType.any sends 0.0.0.0/0', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': []
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       await service.update(
         instancePath: 'Device.Firewall.DMZ.1.',
@@ -335,11 +343,11 @@ void main() {
 
     test('update with sourceType.cidr sends the CIDR value', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': []
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       await service.update(
         instancePath: 'Device.Firewall.DMZ.1.',

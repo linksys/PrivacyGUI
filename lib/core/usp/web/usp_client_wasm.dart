@@ -100,7 +100,8 @@ class UspClientWeb {
     try {
       final result = _client.getToken();
       if (kDebugMode) {
-        logger.d('[WASM]getToken(): ${result?.substring(0, 20)}...(${result?.length} chars)');
+        logger.d(
+            '[WASM]getToken(): ${result?.substring(0, 20)}...(${result?.length} chars)');
       }
       return result;
     } catch (e) {
@@ -122,7 +123,8 @@ class UspClientWeb {
   Future<void> login(String password) async {
     try {
       if (kDebugMode) {
-        logger.d('[WASM]login() called with password length: ${password.length}');
+        logger
+            .d('[WASM]login() called with password length: ${password.length}');
       }
       final result = await _client.login(password).toDart;
       if (kDebugMode) {
@@ -175,7 +177,8 @@ class UspClientWeb {
 
     // Log raw WASM response
     if (kDebugMode) {
-      logger.d('[WASM]GET_MULTI raw response: ${resultJs?.toString() ?? 'null'}');
+      logger
+          .d('[WASM]GET_MULTI raw response: ${resultJs?.toString() ?? 'null'}');
     }
 
     final map = resultJs.dartify() as Map?;
@@ -187,11 +190,12 @@ class UspClientWeb {
     if (map == null) return {};
 
     // TODO: This is a TEMPORARY compatibility fix for structured GET responses
-    // The proper solution is to modify UspService.get() to return UspOperationResult
+    // The proper solution is to modify UspClient.get() to return UspOperationResult
     // and update all calling code to use structured responses
     if (map.containsKey('overallSuccess') && map.containsKey('results')) {
       if (kDebugMode) {
-        logger.d('[WASM]GET_MULTI parsing structured response format (TEMP FIX)');
+        logger
+            .d('[WASM]GET_MULTI parsing structured response format (TEMP FIX)');
       }
       return _parseStructuredGetResponse(map);
     }
@@ -214,7 +218,7 @@ class UspClientWeb {
   }
 
   /// TEMPORARY: Parse structured GET response format into flat key-value map
-  /// TODO: Remove this once UspService.get() is updated to use UspOperationResult
+  /// TODO: Remove this once UspClient.get() is updated to use UspOperationResult
   Map<String, String> _parseStructuredGetResponse(Map map) {
     final result = <String, String>{};
     final results = map['results'] as List? ?? [];
@@ -239,7 +243,8 @@ class UspClientWeb {
             final fullPath = requestedPath.replaceAll('*', '${i + 1}');
 
             if (kDebugMode) {
-              logger.d('[WASM]GET_MULTI structured wildcard: $fullPath = $paramValue');
+              logger.d(
+                  '[WASM]GET_MULTI structured wildcard: $fullPath = $paramValue');
             }
 
             result[fullPath] = paramValue;
@@ -252,7 +257,8 @@ class UspClientWeb {
             final paramValue = paramMap['value'] as String? ?? '';
 
             if (kDebugMode) {
-              logger.d('[WASM]GET_MULTI structured single: $requestedPath = $paramValue');
+              logger.d(
+                  '[WASM]GET_MULTI structured single: $requestedPath = $paramValue');
             }
 
             result[requestedPath] = paramValue;
@@ -277,7 +283,8 @@ class UspClientWeb {
     try {
       final result = await _client.set(path, value).toDart;
       if (kDebugMode) {
-        logger.d('[WASM]SET single raw response: ${result?.toString() ?? 'null'}');
+        logger.d(
+            '[WASM]SET single raw response: ${result?.toString() ?? 'null'}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -297,11 +304,13 @@ class UspClientWeb {
   Future<Map<String, dynamic>> setMultiple(Map<String, String> parameters,
       {bool allowPartial = false}) async {
     if (kDebugMode) {
-      logger.d('[WASM]SET_MULTI called: ${parameters.length} params, allowPartial=$allowPartial');
+      logger.d(
+          '[WASM]SET_MULTI called: ${parameters.length} params, allowPartial=$allowPartial');
       logger.d('[WASM]SET_MULTI params: ${parameters.toString()}');
     }
 
-    final result = await _client.setMultiple(parameters.jsify()!, allowPartial).toDart;
+    final result =
+        await _client.setMultiple(parameters.jsify()!, allowPartial).toDart;
 
     // Log raw WASM response
     if (kDebugMode) {
@@ -309,7 +318,8 @@ class UspClientWeb {
     }
 
     if (result == null || result.isUndefinedOrNull) {
-      throw StateError('WASM client returned null/undefined - structured response required');
+      throw StateError(
+          'WASM client returned null/undefined - structured response required');
     }
 
     final map = result.dartify() as Map?;
@@ -324,12 +334,13 @@ class UspClientWeb {
     return Map<String, dynamic>.from(map);
   }
 
-
   /// Creates a new object instance at the given path with initial parameters.
   /// Returns structured operation result containing creation details.
-  Future<Map<String, dynamic>> add(String objectPath, Map<String, String> parameters) async {
+  Future<Map<String, dynamic>> add(
+      String objectPath, Map<String, String> parameters) async {
     if (kDebugMode) {
-      logger.d('[WASM]ADD called: $objectPath with ${parameters.length} params');
+      logger
+          .d('[WASM]ADD called: $objectPath with ${parameters.length} params');
       logger.d('[WASM]ADD params: ${parameters.toString()}');
     }
 
@@ -341,7 +352,8 @@ class UspClientWeb {
     }
 
     if (result == null || result.isUndefinedOrNull) {
-      throw StateError('WASM client returned null/undefined - structured response required');
+      throw StateError(
+          'WASM client returned null/undefined - structured response required');
     }
 
     final map = result.dartify();
@@ -363,7 +375,8 @@ class UspClientWeb {
   Future<Map<String, dynamic>> addMultiple(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
     if (kDebugMode) {
-      logger.d('[WASM]ADD_MULTI called: ${objects.length} objects, allowPartial=$allowPartial');
+      logger.d(
+          '[WASM]ADD_MULTI called: ${objects.length} objects, allowPartial=$allowPartial');
       for (var i = 0; i < objects.length; i++) {
         logger.d('[WASM]ADD_MULTI[$i]: ${objects[i]}');
       }
@@ -378,7 +391,8 @@ class UspClientWeb {
     }
 
     if (result == null || result.isUndefinedOrNull) {
-      throw StateError('WASM client returned null/undefined - structured response required');
+      throw StateError(
+          'WASM client returned null/undefined - structured response required');
     }
 
     final dartResult = result.dartify();
@@ -391,7 +405,8 @@ class UspClientWeb {
       return Map<String, dynamic>.from(dartResult);
     }
 
-    throw StateError('Invalid addMultiple response format: ${dartResult.runtimeType}');
+    throw StateError(
+        'Invalid addMultiple response format: ${dartResult.runtimeType}');
   }
 
   /// Deletes an object instance at the given path.
@@ -410,7 +425,8 @@ class UspClientWeb {
       }
 
       if (result == null || result.isUndefinedOrNull) {
-        throw StateError('WASM client returned null/undefined - structured response required');
+        throw StateError(
+            'WASM client returned null/undefined - structured response required');
       }
 
       final map = result.dartify();
@@ -433,12 +449,14 @@ class UspClientWeb {
         'overallSuccess': false,
         'hasAnySuccess': false,
         'hasErrors': true,
-        'results': [{
-          'requestedPath': path,
-          'success': false,
-          'errorCode': -1,
-          'errorMessage': e.toString(),
-        }],
+        'results': [
+          {
+            'requestedPath': path,
+            'success': false,
+            'errorCode': -1,
+            'errorMessage': e.toString(),
+          }
+        ],
       };
     }
   }
@@ -448,7 +466,8 @@ class UspClientWeb {
   Future<Map<String, dynamic>> deleteMultiple(List<String> paths,
       {bool allowPartial = false}) async {
     if (kDebugMode) {
-      logger.d('[WASM]DELETE_MULTI called: ${paths.length} paths, allowPartial=$allowPartial');
+      logger.d(
+          '[WASM]DELETE_MULTI called: ${paths.length} paths, allowPartial=$allowPartial');
       for (var i = 0; i < paths.length; i++) {
         logger.d('[WASM]DELETE_MULTI[$i]: ${paths[i]}');
       }
@@ -460,11 +479,13 @@ class UspClientWeb {
 
       // Log raw WASM response
       if (kDebugMode) {
-        logger.d('[WASM]DELETE_MULTI raw response: ${result?.toString() ?? 'null'}');
+        logger.d(
+            '[WASM]DELETE_MULTI raw response: ${result?.toString() ?? 'null'}');
       }
 
       if (result == null || result.isUndefinedOrNull) {
-        throw StateError('WASM client returned null/undefined - structured response required');
+        throw StateError(
+            'WASM client returned null/undefined - structured response required');
       }
 
       final map = result.dartify();
@@ -477,7 +498,8 @@ class UspClientWeb {
         return Map<String, dynamic>.from(map);
       }
 
-      throw StateError('Invalid deleteMultiple response format: ${map.runtimeType}');
+      throw StateError(
+          'Invalid deleteMultiple response format: ${map.runtimeType}');
     } catch (e) {
       if (kDebugMode) {
         logger.d('[WASM]DELETE_MULTI exception: $e');
@@ -487,12 +509,14 @@ class UspClientWeb {
         'overallSuccess': false,
         'hasAnySuccess': false,
         'hasErrors': true,
-        'results': paths.map((path) => {
-          'requestedPath': path,
-          'success': false,
-          'errorCode': -1,
-          'errorMessage': e.toString(),
-        }).toList(),
+        'results': paths
+            .map((path) => {
+                  'requestedPath': path,
+                  'success': false,
+                  'errorCode': -1,
+                  'errorMessage': e.toString(),
+                })
+            .toList(),
       };
     }
   }

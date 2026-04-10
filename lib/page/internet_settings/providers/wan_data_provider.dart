@@ -4,8 +4,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 
@@ -38,7 +38,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   }
 
   Future<WanData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
 
     // WanStatus.fetch includes IPv6Enable (merged in YAML v1.1.0).
@@ -72,7 +72,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   /// Fire-and-forget operate — firmware does NOT send OperationComplete.
   /// Waits 2 seconds then re-fetches WAN status.
   Future<void> renewLease() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
 
     await ref.read(uspMutationLockProvider).withLock(() async {
@@ -97,7 +97,7 @@ class WanDataNotifier extends AsyncNotifier<WanData> {
   /// Combines the routing table scan (for gateway) and IPv6Address
   /// multi-instance query to minimize throttler slot usage.
   Future<({String gateway, List<String> ipv6Addresses})>
-      _fetchGatewayAndIpv6Addresses(UspService usp) async {
+      _fetchGatewayAndIpv6Addresses(UspClient usp) async {
     try {
       final resp = await usp.get([
         // Gateway: scan routing table for default route on WAN interface

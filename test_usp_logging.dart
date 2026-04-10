@@ -2,7 +2,6 @@
 // 這個文件僅用於驗證日誌輸出，不會提交到 git
 
 import 'package:flutter/foundation.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
 
 void main() async {
   // 設置為 debug 模式以啟用詳細日誌
@@ -41,7 +40,10 @@ void main() async {
         'createdInstances': [
           {
             'affectedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.3.',
-            'initialParams': {'Chaddr': 'AA:BB:CC:DD:EE:FF', 'Yiaddr': '192.168.1.100'}
+            'initialParams': {
+              'Chaddr': 'AA:BB:CC:DD:EE:FF',
+              'Yiaddr': '192.168.1.100'
+            }
           }
         ]
       }
@@ -69,7 +71,8 @@ void main() async {
     ]
   };
 
-  print('\n=== Testing USP Logging (should show detailed logs in debug mode) ===\n');
+  print(
+      '\n=== Testing USP Logging (should show detailed logs in debug mode) ===\n');
 
   // 測試 kDebugMode
   print('kDebugMode: $kDebugMode');
@@ -94,7 +97,8 @@ void _logSetResult(Map<String, dynamic> result, int id) {
   final hasErrors = result['hasErrors'] as bool? ?? false;
   final results = result['results'] as List? ?? [];
 
-  print('[USP][Service]#$id SET result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+  print(
+      '[USP][Service]#$id SET result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
 
   if (results.isNotEmpty) {
     for (var i = 0; i < results.length; i++) {
@@ -104,18 +108,21 @@ void _logSetResult(Map<String, dynamic> result, int id) {
 
       if (success) {
         final updatedInstances = detail['updatedInstances'] as List? ?? [];
-        print('[USP][Service]#$id SET[$i] ✅ $requestedPath → ${updatedInstances.length} instances updated');
+        print(
+            '[USP][Service]#$id SET[$i] ✅ $requestedPath → ${updatedInstances.length} instances updated');
 
         for (var instance in updatedInstances) {
           final instanceMap = instance as Map<String, dynamic>? ?? {};
           final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
           final updatedParams = instanceMap['updatedParams'] as Map? ?? {};
-          print('[USP][Service]#$id SET[$i]   📝 $affectedPath: ${updatedParams.keys.join(', ')}');
+          print(
+              '[USP][Service]#$id SET[$i]   📝 $affectedPath: ${updatedParams.keys.join(', ')}');
         }
       } else {
         final errorCode = detail['errorCode'] ?? 'unknown';
         final errorMessage = detail['errorMessage'] ?? 'unknown error';
-        print('[USP][Service]#$id SET[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+        print(
+            '[USP][Service]#$id SET[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
       }
     }
   }
@@ -126,7 +133,8 @@ void _logAddResult(Map<String, dynamic> result, int id) {
   final hasErrors = result['hasErrors'] as bool? ?? false;
   final results = result['results'] as List? ?? [];
 
-  print('[USP][Service]#$id ADD result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+  print(
+      '[USP][Service]#$id ADD result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
 
   for (var i = 0; i < results.length; i++) {
     final detail = results[i] as Map<String, dynamic>? ?? {};
@@ -135,18 +143,21 @@ void _logAddResult(Map<String, dynamic> result, int id) {
 
     if (success) {
       final createdInstances = detail['createdInstances'] as List? ?? [];
-      print('[USP][Service]#$id ADD[$i] ✅ $requestedPath → ${createdInstances.length} instances created');
+      print(
+          '[USP][Service]#$id ADD[$i] ✅ $requestedPath → ${createdInstances.length} instances created');
 
       for (var instance in createdInstances) {
         final instanceMap = instance as Map<String, dynamic>? ?? {};
         final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
         final initialParams = instanceMap['initialParams'] as Map? ?? {};
-        print('[USP][Service]#$id ADD[$i]   🆕 $affectedPath with ${initialParams.length} params: ${initialParams.keys.join(', ')}');
+        print(
+            '[USP][Service]#$id ADD[$i]   🆕 $affectedPath with ${initialParams.length} params: ${initialParams.keys.join(', ')}');
       }
     } else {
       final errorCode = detail['errorCode'] ?? 'unknown';
       final errorMessage = detail['errorMessage'] ?? 'unknown error';
-      print('[USP][Service]#$id ADD[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+      print(
+          '[USP][Service]#$id ADD[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
     }
   }
 }
@@ -156,7 +167,8 @@ void _logDeleteResult(Map<String, dynamic> result, int id) {
   final hasErrors = result['hasErrors'] as bool? ?? false;
   final results = result['results'] as List? ?? [];
 
-  print('[USP][Service]#$id DELETE result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+  print(
+      '[USP][Service]#$id DELETE result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
 
   for (var i = 0; i < results.length; i++) {
     final detail = results[i] as Map<String, dynamic>? ?? {};
@@ -165,7 +177,8 @@ void _logDeleteResult(Map<String, dynamic> result, int id) {
 
     if (success) {
       final deletedInstances = detail['deletedInstances'] as List? ?? [];
-      print('[USP][Service]#$id DELETE[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
+      print(
+          '[USP][Service]#$id DELETE[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
 
       for (var instance in deletedInstances) {
         final instanceMap = instance as Map<String, dynamic>? ?? {};
@@ -175,7 +188,8 @@ void _logDeleteResult(Map<String, dynamic> result, int id) {
     } else {
       final errorCode = detail['errorCode'] ?? 'unknown';
       final errorMessage = detail['errorMessage'] ?? 'unknown error';
-      print('[USP][Service]#$id DELETE[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
+      print(
+          '[USP][Service]#$id DELETE[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
     }
   }
 }

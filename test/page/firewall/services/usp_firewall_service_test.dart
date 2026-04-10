@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 // Helper to build a FirewallChainRule with the given fields.
 FirewallChainRule _rule(
@@ -22,11 +22,11 @@ FirewallChainRule _rule(
     );
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspFirewallService service;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     service = UspFirewallService(mockUsp);
   });
 

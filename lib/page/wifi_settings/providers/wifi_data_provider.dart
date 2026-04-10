@@ -11,7 +11,7 @@ import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/wifi_client_enricher.dart';
@@ -118,7 +118,7 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
   }
 
   Future<WifiData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ConnectivityError(message: 'USP service not available');
     }
@@ -192,7 +192,7 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
   // ---------------------------------------------------------------------------
 
   Future<void> toggleWifiRadio(String instancePath, bool enable) async {
-    final usp = ref.read(uspServiceProvider)!;
+    final usp = ref.read(uspClientProvider)!;
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await WiFiRadios.update(
@@ -206,7 +206,7 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
 
   Future<void> updateWifiRadioChannel(
       String instancePath, int channel, bool autoChannel) async {
-    final usp = ref.read(uspServiceProvider)!;
+    final usp = ref.read(uspClientProvider)!;
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await WiFiRadios.update(

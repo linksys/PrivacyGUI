@@ -1,14 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/local_network/providers/lan_data_provider.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
 
   /// LanNetworkInfo codegen response (includes IPv6Enable since YAML v1.2.0).
   final lanInfoResponse = <String, dynamic>{
@@ -31,7 +31,7 @@ void main() {
   };
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     when(() => mockUsp.get(any())).thenAnswer((_) async {
       final paths = _.positionalArguments[0] as List;
       // IPv6 multi-instance address query (separate from LanNetworkInfo.fetch)
@@ -45,7 +45,7 @@ void main() {
   ProviderContainer createContainer() {
     return ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
       ],
     );
   }
@@ -71,7 +71,7 @@ void main() {
     test('build throws when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
-          uspServiceProvider.overrideWithValue(null),
+          uspClientProvider.overrideWithValue(null),
         ],
       );
 

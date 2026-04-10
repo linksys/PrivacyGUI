@@ -1,17 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/services/usp_dhcp_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspDhcpService service;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     service = UspDhcpService(mockUsp);
   });
 
@@ -103,11 +103,11 @@ void main() {
 
     test('delete removes items missing from current', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': []
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       final original = [
         DhcpReservationUIModel(
@@ -131,11 +131,11 @@ void main() {
 
     test('multiple deletes use sequential delay', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': []
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       final original = [
         DhcpReservationUIModel(
@@ -164,18 +164,23 @@ void main() {
 
     test('add creates items with null instancePath', () async {
       when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': [{
-          'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
-          'success': true,
-          'createdInstances': [{
-            'affectedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
-            'initialParams': {}
-          }]
-        }]
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath':
+                        'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
 
       final current = [
         DhcpReservationUIModel(
@@ -200,11 +205,11 @@ void main() {
 
     test('update detects changed content on same path', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': []
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       final original = [
         DhcpReservationUIModel(
@@ -233,30 +238,35 @@ void main() {
 
     test('mixed batch: delete + add + update', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': []
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
       when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': [{
-          'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
-          'success': true,
-          'createdInstances': [{
-            'affectedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.3.',
-            'initialParams': {}
-          }]
-        }]
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath':
+                        'Device.DHCPv4.Server.Pool.1.StaticAddress.3.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': []
-      });
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       final original = [
         DhcpReservationUIModel(
@@ -306,14 +316,19 @@ void main() {
           'overallSuccess': true,
           'hasAnySuccess': true,
           'hasErrors': false,
-          'results': [{
-            'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
-            'success': true,
-            'createdInstances': [{
-              'affectedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
-              'initialParams': {}
-            }]
-          }]
+          'results': [
+            {
+              'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+              'success': true,
+              'createdInstances': [
+                {
+                  'affectedPath':
+                      'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+                  'initialParams': {}
+                }
+              ]
+            }
+          ]
         };
       });
 

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 
 // ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
   }
 
   Future<TimeData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
 
     final ts = await TimeSettings.fetch(usp);
@@ -70,7 +70,7 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
     String? ntpServer1,
     String? ntpServer2,
   }) async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
 
     await ref.read(uspMutationLockProvider).withLock(() async {
@@ -92,7 +92,7 @@ class TimeDataNotifier extends AsyncNotifier<TimeData> {
     String? ntpServer2,
     bool? enable,
   }) async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
 
     await ref.read(uspMutationLockProvider).withLock(() async {

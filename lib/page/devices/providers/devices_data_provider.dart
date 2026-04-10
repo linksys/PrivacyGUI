@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
@@ -114,7 +114,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   }
 
   Future<DevicesData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) throw StateError('USP service not available');
 
     // Fetch ConnectedDevices immediately; mesh topology in background.
@@ -190,7 +190,7 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
 
   /// Background mesh topology fetch — updates state when complete.
   Future<void> _fetchMeshAndUpdate(
-    UspService usp,
+    UspClient usp,
     ConnectedDevices connectedDevices,
     WifiData wifiData,
     UspDeviceService svc,
