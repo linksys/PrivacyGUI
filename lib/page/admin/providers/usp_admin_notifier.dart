@@ -60,13 +60,18 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
     String? ntpServer1,
     String? ntpServer2,
   }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _svc.updateTimeSettings(
-        enable: enable,
-        ntpServer1: ntpServer1,
-        ntpServer2: ntpServer2,
-      );
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.updateTimeSettings(
+          enable: enable,
+          ntpServer1: ntpServer1,
+          ntpServer2: ntpServer2,
+        );
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][Admin] Time settings update failed', error: e);
+      rethrow;
+    }
     ref.invalidate(timeDataProvider);
   }
 
@@ -77,14 +82,19 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
     String? ntpServer2,
     bool? enable,
   }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _svc.updateTimezone(
-        localTimeZone: localTimeZone,
-        ntpServer1: ntpServer1,
-        ntpServer2: ntpServer2,
-        enable: enable,
-      );
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.updateTimezone(
+          localTimeZone: localTimeZone,
+          ntpServer1: ntpServer1,
+          ntpServer2: ntpServer2,
+          enable: enable,
+        );
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][Admin] Timezone update failed', error: e);
+      rethrow;
+    }
     ref.invalidate(timeDataProvider);
   }
 

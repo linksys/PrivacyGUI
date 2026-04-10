@@ -314,9 +314,14 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
   /// Toggles a WiFi radio on/off. Called from Dashboard card.
   Future<void> toggleRadio(String instancePath, bool enable) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _svc.toggleRadio(instancePath, enable);
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.toggleRadio(instancePath, enable);
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][WiFi] Toggle radio failed', error: e);
+      rethrow;
+    }
     ref.invalidate(wifiDataProvider);
   }
 
@@ -326,13 +331,18 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     required int channel,
     required bool autoChannel,
   }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      await _svc.updateRadioChannel(
-        instancePath,
-        channel: channel,
-        autoChannel: autoChannel,
-      );
-    });
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.updateRadioChannel(
+          instancePath,
+          channel: channel,
+          autoChannel: autoChannel,
+        );
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][WiFi] Update radio channel failed', error: e);
+      rethrow;
+    }
     ref.invalidate(wifiDataProvider);
   }
 
