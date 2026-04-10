@@ -698,10 +698,10 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
                     color: colors.onSurfaceVariant)),
           ),
           Expanded(
-            child: SelectableText(
+            child: Text(
               value,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontFamily: 'monospace',
+                  color: colors.onSurface,
                   fontWeight: FontWeight.w500),
             ),
           ),
@@ -738,7 +738,7 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
           onPressed: () {
             Navigator.pop(context);
             if (onNavigateToFlow != null) {
-              onNavigateToFlow!(3);
+              onNavigateToFlow!(30); // 30 = Flow 3 starting connected
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

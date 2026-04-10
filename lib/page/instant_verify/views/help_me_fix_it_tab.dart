@@ -84,6 +84,12 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           onDone: _exitFlow,
           onNavigateToMyDevices: widget.onNavigateToMyDevices,
         );
+      case 30: // Flow 3 launched from My Devices — device verified connected
+        flowWidget = _Flow3(
+          onDone: _exitFlow,
+          onNavigateToMyDevices: widget.onNavigateToMyDevices,
+          initialConnected: true,
+        );
       case 4:
         flowWidget = _Flow4(onDone: _exitFlow);
       case 5:
@@ -1384,7 +1390,11 @@ class _Flow3 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
   /// Called to navigate to My Devices tab (Tab 1) directly.
   final VoidCallback? onNavigateToMyDevices;
-  const _Flow3({required this.onDone, this.onNavigateToMyDevices});
+  /// When true, skip step 0 ("can your device connect?") and start directly
+  /// at the connected-but-something-wrong path — used when launching from
+  /// My Devices where the device is already verified as connected.
+  final bool initialConnected;
+  const _Flow3({required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false});
 
   @override
   ConsumerState<_Flow3> createState() => _Flow3State();
@@ -1403,6 +1413,15 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
   // Item 2: within-flow back navigation
   final List<int> _stepHistory = [];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialConnected) {
+      _step = 1;
+      _connectState = _ConnectState.canConnect;
+    }
+  }
 
   void _pushStep(int newStep) {
     setState(() {

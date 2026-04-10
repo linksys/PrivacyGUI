@@ -295,7 +295,7 @@ void main() {
       expect(find.textContaining('5 GHz'), findsAtLeast(1));
     });
 
-    testWidgets('Troubleshoot this device calls onNavigateToFlow with 3',
+    testWidgets('Troubleshoot this device calls onNavigateToFlow with 30 (connected)',
         (tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -320,7 +320,7 @@ void main() {
       await tester.tap(find.text('Troubleshoot this device'));
       await tester.pumpAndSettle();
 
-      expect(capturedFlow, equals(3));
+      expect(capturedFlow, equals(30)); // 30 = Flow 3 pre-set to connected
     });
 
     testWidgets('mesh device shows node connection info', (tester) async {
