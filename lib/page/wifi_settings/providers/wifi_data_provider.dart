@@ -2,51 +2,16 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
-import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
-import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/generated/wifi_clients.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/wifi_client_enricher.dart';
-import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
+import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.dart';
 
-// ---------------------------------------------------------------------------
-// Opaque codegen context (only WiFi-domain services can consume)
-// ---------------------------------------------------------------------------
-
-/// Opaque wrapper around raw WiFi codegen data.
-///
-/// External consumers hold this without accessing the inner codegen types.
-/// Only WiFi-domain services ([UspWifiSettingsService], [UspDeviceService])
-/// consume it via the typed accessor.
-class WifiCodegenContext extends Equatable {
-  final WiFiRadios _radios;
-  final WiFiSsids _ssids;
-  final WiFiAccessPoints _accessPoints;
-
-  const WifiCodegenContext(this._radios, this._ssids, this._accessPoints);
-
-  static const empty = WifiCodegenContext(
-    WiFiRadios(items: []),
-    WiFiSsids(items: []),
-    WiFiAccessPoints(items: []),
-  );
-
-  /// Destructure for WiFi-domain service consumption.
-  ({WiFiRadios radios, WiFiSsids ssids, WiFiAccessPoints accessPoints})
-      get raw => (radios: _radios, ssids: _ssids, accessPoints: _accessPoints);
-
-  @override
-  List<Object?> get props =>
-      [_radios.items.length, _ssids.items.length, _accessPoints.items.length];
-}
+// Re-export so existing consumers can still import WifiCodegenContext from here.
+export 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.dart'
+    show WifiCodegenContext;
 
 // ---------------------------------------------------------------------------
 // Data Model (Layer 1 — UIModel only)
@@ -118,66 +83,18 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
   }
 
   Future<WifiData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) {
-      throw const ServiceNotInitializedError(
-          message: 'USP service not available');
-    }
-
-    // Parallel fetch all WiFi data. No overall timeout here — the throttler's
-    // per-request timeout (15s) protects each individual request. An overall
-    // timeout would fire based on wall-clock time from build(), which includes
-    // queue wait time in the throttler. With ~14 normal-priority requests
-    // ahead and fetchWifiClients at low priority, queue time alone can exceed
-    // 12s, leaving insufficient time for the actual request.
-    final List<Object> results;
-    try {
-      results = await Future.wait([
-        WiFiRadios.fetch(usp),
-        WiFiSsids.fetch(usp),
-        WiFiAccessPoints.fetch(usp),
-        fetchWifiClients(usp),
-      ]);
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-
-    final radios = results[0] as WiFiRadios;
-    final ssids = results[1] as WiFiSsids;
-    final accessPoints = results[2] as WiFiAccessPoints;
-    final rawWifiClientMap = results[3] as Map<String, WifiClient>;
-
-    // Cross-reference AP → SSID → Radio to get band + SSID name per client
-    // (uses raw codegen WifiClient which has parentPath for AP lookup)
-    final connectionDetailMap = buildConnectionDetailMap(
-      wifiClientMap: rawWifiClientMap,
-      accessPoints: accessPoints,
-      ssids: ssids,
-      radios: radios,
-    );
-
-    // Convert raw codegen → UI model at the Layer 1 boundary
-    final wifiClientMap = toWifiClientUIModels(rawWifiClientMap);
-
-    // Build UI models
-    final svc = ref.read(uspDeviceServiceProvider);
-    final radioModels = svc.buildWifiRadioUIModels(
-      radios: radios,
-      ssids: ssids,
-      accessPoints: accessPoints,
-    );
+    final svc = ref.read(uspWifiDataServiceProvider);
+    final result = await svc.fetch();
 
     logger.d('[USP][WifiData] Fetched — '
-        'radios: ${radios.items.length}, '
-        'ssids: ${ssids.items.length}, '
-        'aps: ${accessPoints.items.length}, '
-        'clients: ${wifiClientMap.length}');
+        'clients: ${result.wifiClientMap.length}, '
+        'radios: ${result.radioModels.length}');
 
     return WifiData(
-      codegenContext: WifiCodegenContext(radios, ssids, accessPoints),
-      wifiClientMap: wifiClientMap,
-      connectionDetailMap: connectionDetailMap,
-      radioModels: radioModels,
+      codegenContext: result.codegenContext,
+      wifiClientMap: result.wifiClientMap,
+      connectionDetailMap: result.connectionDetailMap,
+      radioModels: result.radioModels,
     );
   }
 
@@ -186,42 +103,5 @@ class WifiDataNotifier extends AsyncNotifier<WifiData> {
     _debounce = Timer(const Duration(milliseconds: 500), () {
       ref.invalidateSelf();
     });
-  }
-
-  // ---------------------------------------------------------------------------
-  // WiFi Radio mutations
-  // ---------------------------------------------------------------------------
-
-  Future<void> toggleWifiRadio(String instancePath, bool enable) async {
-    final usp = ref.read(uspServiceProvider)!;
-    try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await WiFiRadios.update(
-            usp, WiFiRadioUpdate(instancePath: instancePath, enable: enable));
-      });
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-    ref.invalidateSelf();
-  }
-
-  Future<void> updateWifiRadioChannel(
-      String instancePath, int channel, bool autoChannel) async {
-    final usp = ref.read(uspServiceProvider)!;
-    try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await WiFiRadios.update(
-          usp,
-          WiFiRadioUpdate(
-            instancePath: instancePath,
-            channel: channel,
-            autoChannelEnable: autoChannel,
-          ),
-        );
-      });
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-    ref.invalidateSelf();
   }
 }

@@ -327,6 +327,42 @@ class UspWifiSettingsService {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Mutations — WiFi Radio quick actions (from Dashboard cards)
+  // ---------------------------------------------------------------------------
+
+  /// Toggles a WiFi radio on or off.
+  Future<void> toggleRadio(String instancePath, bool enable) async {
+    try {
+      await WiFiRadios.update(
+        _usp,
+        WiFiRadioUpdate(instancePath: instancePath, enable: enable),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Updates a WiFi radio's channel and auto-channel setting.
+  Future<void> updateRadioChannel(
+    String instancePath, {
+    required int channel,
+    required bool autoChannel,
+  }) async {
+    try {
+      await WiFiRadios.update(
+        _usp,
+        WiFiRadioUpdate(
+          instancePath: instancePath,
+          channel: channel,
+          autoChannelEnable: autoChannel,
+        ),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
   /// Returns the effective security mode to apply to a given band.
   ///
   /// 6 GHz (Wi-Fi 6E) mandates WPA3:

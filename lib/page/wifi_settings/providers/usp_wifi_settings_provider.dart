@@ -309,6 +309,34 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   }
 
   // ---------------------------------------------------------------------------
+  // Dashboard quick actions — delegate to Service, then invalidate L1
+  // ---------------------------------------------------------------------------
+
+  /// Toggles a WiFi radio on/off. Called from Dashboard card.
+  Future<void> toggleRadio(String instancePath, bool enable) async {
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.toggleRadio(instancePath, enable);
+    });
+    ref.invalidate(wifiDataProvider);
+  }
+
+  /// Updates a WiFi radio's channel. Called from Dashboard card.
+  Future<void> updateRadioChannel(
+    String instancePath, {
+    required int channel,
+    required bool autoChannel,
+  }) async {
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.updateRadioChannel(
+        instancePath,
+        channel: channel,
+        autoChannel: autoChannel,
+      );
+    });
+    ref.invalidate(wifiDataProvider);
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
