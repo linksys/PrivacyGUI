@@ -258,6 +258,9 @@ class UspInternetSettingsNotifier
         await service.renewDhcpLease();
         // Wait for lease renewal to take effect before refreshing WAN status
         await Future.delayed(const Duration(seconds: 2));
+      } on ServiceError catch (e) {
+        logger.e('[USP][Network][WAN] DHCP renew failed', error: e);
+        rethrow;
       } finally {
         state = state.copyWith(
           status: state.status.copyWith(clearActiveMutation: true),
@@ -276,6 +279,9 @@ class UspInternetSettingsNotifier
         final service = ref.read(uspInternetSettingsServiceProvider);
         logger.d('[USP][Network][WAN] Renewing DHCPv6 lease...');
         await service.renewDhcpv6Lease();
+      } on ServiceError catch (e) {
+        logger.e('[USP][Network][WAN] DHCPv6 renew failed', error: e);
+        rethrow;
       } finally {
         state = state.copyWith(
           status: state.status.copyWith(clearActiveMutation: true),
