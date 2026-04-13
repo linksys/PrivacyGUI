@@ -2,15 +2,11 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/generated/dmz.g.dart';
-import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
+import 'package:privacy_gui/page/firewall/services/usp_firewall_data_service.dart';
 import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -97,7 +93,6 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
 
   @override
   Future<FirewallData> build() async {
-    // SSE: listen for firewall / DMZ domain changes → debounce → re-fetch
     ref.listen(sseInvalidationProvider, (prev, next) {
       final domain = next.valueOrNull;
       if (domain == InvalidationDomain.firewallRules ||
@@ -112,53 +107,19 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
   }
 
   Future<FirewallData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) {
-      throw const ServiceNotInitializedError(
-          message: 'USP service not available');
-    }
-
-    final List<Object> results;
-    try {
-      results = await Future.wait([
-        FirewallChainRules.fetch(usp),
-        Dmz.fetch(usp),
-      ]);
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-
-    final chainRules = results[0] as FirewallChainRules;
-    final dmzRaw = results[1] as Dmz;
-
-    // Build firewall UIModel + opaque context via service statics.
-    final ruleMap = UspFirewallService.parseFirewallRules(chainRules);
-    final firewallModel = UspFirewallService.buildUIModel(rules: ruleMap);
-    final ruleContext = FirewallRuleContext.fromMap(ruleMap);
-
-    // Build per-rule summaries for chart display.
-    final ruleSummaries = chainRules.items
-        .map((r) => FirewallRuleSummary(target: r.target, enabled: r.enable))
-        .toList();
-
-    // Build DMZ UIModel (first entry or disabled).
-    final dmzModel = _buildDmzUIModel(dmzRaw);
-
-    // Build per-DMZ entry summaries.
-    final dmzSummaries = dmzRaw.items
-        .map((d) => DmzEntrySummary(enable: d.enable, destIp: d.destIp))
-        .toList();
+    final svc = ref.read(uspFirewallDataServiceProvider);
+    final result = await svc.fetch();
 
     logger.d('[USP][FirewallData] Fetched — '
-        'rules: ${chainRules.items.length}, '
-        'dmz: ${dmzRaw.items.length}');
+        'rules: ${result.ruleSummaries.length}, '
+        'dmz: ${result.dmzSummaries.length}');
 
     return FirewallData(
-      firewallModel: firewallModel,
-      ruleContext: ruleContext,
-      ruleSummaries: ruleSummaries,
-      dmzModel: dmzModel,
-      dmzSummaries: dmzSummaries,
+      firewallModel: result.firewallModel,
+      ruleContext: result.ruleContext,
+      ruleSummaries: result.ruleSummaries,
+      dmzModel: result.dmzModel,
+      dmzSummaries: result.dmzSummaries,
     );
   }
 
@@ -167,21 +128,5 @@ class FirewallDataNotifier extends AsyncNotifier<FirewallData> {
     _debounce = Timer(const Duration(milliseconds: 500), () {
       ref.invalidateSelf();
     });
-  }
-
-  /// Build DmzUIModel from raw codegen (inlined from UspDmzService).
-  static DmzUIModel _buildDmzUIModel(Dmz data) {
-    if (data.items.isEmpty) return const DmzUIModel.disabled();
-    final entry = data.items.first;
-    final sourceType =
-        (entry.sourcePrefix.isEmpty || entry.sourcePrefix == '0.0.0.0/0')
-            ? DmzSourceType.any
-            : DmzSourceType.cidr;
-    return DmzUIModel(
-      isEnabled: entry.enable,
-      destIp: entry.destIp,
-      sourceType: sourceType,
-      sourcePrefix: entry.sourcePrefix,
-    );
   }
 }
