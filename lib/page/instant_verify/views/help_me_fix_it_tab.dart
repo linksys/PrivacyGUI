@@ -79,7 +79,7 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
     Widget flowWidget;
     switch (_activeFlow!) {
       case 1:
-        flowWidget = _Flow1(onDone: _exitFlow);
+        flowWidget = _Flow1(onDone: _exitFlow, onNavigateToFlow: _launchFlow);
       case 2:
         flowWidget = _Flow2(
           onDone: _exitFlow,
@@ -509,7 +509,8 @@ enum _Flow1Phase { running, gatewayFail, internetFail, dnsFail, allOk }
 
 class _Flow1 extends ConsumerStatefulWidget {
   final VoidCallback onDone;
-  const _Flow1({required this.onDone});
+  final ValueChanged<int>? onNavigateToFlow;
+  const _Flow1({required this.onDone, this.onNavigateToFlow});
 
   @override
   ConsumerState<_Flow1> createState() => _Flow1State();
@@ -600,15 +601,15 @@ class _Flow1State extends ConsumerState<_Flow1> {
                 .titleSmall
                 ?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
-        _checkRow(context, 'Your device → Router',
+        _checkRow(context, 'This device reached your router',
             _phase == _Flow1Phase.running && !_gatewayOk
                 ? null
                 : _gatewayOk),
-        _checkRow(context, 'Router → Internet',
+        _checkRow(context, 'Your router reached the internet',
             _phase == _Flow1Phase.running && _gatewayOk && !_internetOk
                 ? null
                 : (_gatewayOk ? _internetOk : null)),
-        _checkRow(context, 'DNS (website names)',
+        _checkRow(context, 'Websites are loading',
             _phase == _Flow1Phase.running && _internetOk
                 ? null
                 : (_internetOk ? _dnsOk : null)),
@@ -797,36 +798,58 @@ class _Flow1State extends ConsumerState<_Flow1> {
 
   List<Widget> _allOkPath(BuildContext context) => [
         _infoBox(context,
-            'Everything looks fine right now — your device can reach the internet and DNS is working.',
+            'Everything looks fine right now — your router can reach the internet and websites are loading.',
             icon: Icons.check_circle, color: Colors.green),
         const SizedBox(height: 8),
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('What are you still seeing?',
+            Text('Still seeing an issue?',
                 style: Theme.of(context)
                     .textTheme
                     .titleSmall
                     ?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: widget.onDone,
-                icon: const Icon(Icons.check),
-                label: const Text('It\'s working now'),
+            Text(
+              'The connection looks healthy from the router\'s side. '
+              'This can happen if the problem is intermittent or affects only one device.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            // Prompt: is it just one device?
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Is this happening on just one device?',
+                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => widget.onNavigateToFlow?.call(30),
+                      icon: const Icon(Icons.devices, size: 16),
+                      label: const Text('Yes — troubleshoot a specific device'),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: _runDiagnostics,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Test again — still having issues'),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Still seeing issues — test again'),
               ),
             ),
-            const _SatisfactionPrompt(),
           ],
         )),
         _linksysSupportTile(context),
@@ -2186,7 +2209,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
     return _stepCard(context, Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Network not visible — checking your router',
+        Text('We checked your router\'s WiFi — here\'s what we found',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
 
@@ -2201,7 +2224,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('WiFi radios on this router:',
+                Text('WiFi radios — actively broadcasting:',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600, color: colors.onSurfaceVariant)),
                 const SizedBox(height: 6),
@@ -2223,8 +2246,14 @@ class _Flow3State extends ConsumerState<_Flow3> {
         // Findings
         if (findings.isEmpty) ...[
           _infoBox(context,
-              'We didn\'t detect an obvious cause. Try moving your device closer to '
-              'the router, then check again. If it still doesn\'t appear, a router restart often helps.'),
+              hasRadioData
+                  ? 'Your router\'s WiFi radios are active and broadcasting. '
+                    'If your device still doesn\'t see the network, try:\n'
+                    '  • Moving your device closer to the router or a mesh node\n'
+                    '  • Turning WiFi off and back on on the device\n'
+                    '  • Forgetting and re-scanning for networks'
+                  : 'We didn\'t detect an obvious cause. Try moving your device closer to '
+                    'the router, then check again. A router restart often helps.'),
           const SizedBox(height: 12),
         ] else ...[
           for (final f in findings) ...[

@@ -157,9 +157,9 @@ void main() {
     testWidgets('shows diagnostic progress card on entry', (tester) async {
       await openFlow1(tester);
       expect(find.text('Running diagnostics…'), findsOneWidget);
-      expect(find.text('Your device → Router'), findsOneWidget);
-      expect(find.text('Router → Internet'), findsOneWidget);
-      expect(find.text('DNS (website names)'), findsOneWidget);
+      expect(find.text('This device reached your router'), findsOneWidget);
+      expect(find.text('Your router reached the internet'), findsOneWidget);
+      expect(find.text('Websites are loading'), findsOneWidget);
     });
 
     testWidgets('never shows restart as first action', (tester) async {
@@ -719,7 +719,7 @@ void main() {
       await tester.pumpWidget(_buildTab(_baseState()));
       await tester.pumpAndSettle();
       await _navigateToSsidNotVisible(tester);
-      expect(find.text('Network not visible — checking your router'), findsOneWidget);
+      expect(find.textContaining('checked your router'), findsOneWidget);
     });
 
     testWidgets('shows no-data message when radioInfo is absent', (tester) async {

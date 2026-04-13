@@ -43,7 +43,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _HeaderBar(state: state),
+          _ConnectionChip(state: state),
           const SizedBox(height: 8),
           // Router light guide link (PRD v0.7 S-1)
           _LightGuideLink(
@@ -51,7 +51,7 @@ class _OverviewTabState extends ConsumerState<OverviewTab> {
                 state.phase != PivotLoadPhase.loading &&
                 !state.wanConnected,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _StatusCard(
             state: state,
             findingsExpanded: _findingsExpanded,
@@ -359,6 +359,39 @@ class _ScenarioItem {
 }
 
 // ── Header bar ────────────────────────────────────────────────────────────────
+
+// ── Slim connection chip — replaces the full header bar on Tab 0 ──────────────
+// Metadata (model/FW/SN/uptime) moved to the AppBar ⓘ icon in the pivot view.
+
+class _ConnectionChip extends StatelessWidget {
+  final InstantVerifyPivotState state;
+  const _ConnectionChip({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final isLoading = state.phase == PivotLoadPhase.idle ||
+        state.phase == PivotLoadPhase.loading;
+    final label = isLoading ? 'Checking...' : _HeaderBar._connectionLabel(state);
+    final color = isLoading ? Colors.grey : _HeaderBar._connectionColor(state);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 8, height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 8),
+        Text(label,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: color)),
+      ]),
+    );
+  }
+}
+
+// ── Header bar (preserved for backward compat — metadata now in AppBar ⓘ) ──────
 
 class _HeaderBar extends StatelessWidget {
   final InstantVerifyPivotState state;
