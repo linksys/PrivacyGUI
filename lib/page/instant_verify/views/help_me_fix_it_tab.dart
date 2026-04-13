@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
+import 'package:privacy_gui/page/instant_verify/models/mesh_node_info.dart' show MeshNodeInfo, BackhaulHealth;
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_provider.dart';
 import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_state.dart';
 import 'package:privacy_gui/page/instant_verify/services/browser_diagnostic_service.dart';
@@ -21,9 +23,13 @@ class HelpMeFixItTab extends ConsumerStatefulWidget {
   /// Navigates to My Devices tab (Tab 1) — wired from pivot view.
   final VoidCallback? onNavigateToMyDevices;
 
+  /// Carries the specific device selected in My Devices into the flow.
+  final ValueNotifier<DiagnosticClient?>? pendingFlowDeviceNotifier;
+
   const HelpMeFixItTab({
     super.key,
     this.pendingFlowNotifier,
+    this.pendingFlowDeviceNotifier,
     this.onNavigateToMyDevices,
   });
 
@@ -85,10 +91,13 @@ class _HelpMeFixItTabState extends ConsumerState<HelpMeFixItTab> {
           onNavigateToMyDevices: widget.onNavigateToMyDevices,
         );
       case 30: // Flow 3 launched from My Devices — device verified connected
+        final device = widget.pendingFlowDeviceNotifier?.value;
+        widget.pendingFlowDeviceNotifier?.value = null; // consume
         flowWidget = _Flow3(
           onDone: _exitFlow,
           onNavigateToMyDevices: widget.onNavigateToMyDevices,
           initialConnected: true,
+          initialDevice: device,
         );
       case 4:
         flowWidget = _Flow4(onDone: _exitFlow);
@@ -1391,10 +1400,12 @@ class _Flow3 extends ConsumerStatefulWidget {
   /// Called to navigate to My Devices tab (Tab 1) directly.
   final VoidCallback? onNavigateToMyDevices;
   /// When true, skip step 0 ("can your device connect?") and start directly
-  /// at the connected-but-something-wrong path — used when launching from
-  /// My Devices where the device is already verified as connected.
+  /// at the connected-but-something-wrong path.
   final bool initialConnected;
-  const _Flow3({required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false});
+  /// The specific device that was selected in My Devices — pre-populates
+  /// device-specific analysis in the slow device path.
+  final DiagnosticClient? initialDevice;
+  const _Flow3({required this.onDone, this.onNavigateToMyDevices, this.initialConnected = false, this.initialDevice});
 
   @override
   ConsumerState<_Flow3> createState() => _Flow3State();
@@ -1411,6 +1422,10 @@ class _Flow3State extends ConsumerState<_Flow3> {
   // null = not yet answered, true = can see SSID, false = can't see SSID (Item 12)
   bool? _canSeeSsid;
 
+  /// Device selected in My Devices or chosen via inline picker.
+  /// Enables device-specific analysis in _slowDevicePath().
+  DiagnosticClient? _selectedDevice;
+
   // Item 2: within-flow back navigation
   final List<int> _stepHistory = [];
 
@@ -1421,6 +1436,7 @@ class _Flow3State extends ConsumerState<_Flow3> {
       _step = 1;
       _connectState = _ConnectState.canConnect;
     }
+    _selectedDevice = widget.initialDevice;
   }
 
   void _pushStep(int newStep) {
@@ -1563,129 +1579,248 @@ class _Flow3State extends ConsumerState<_Flow3> {
 
   /// Device-specific slow internet path — checks signal, band, node backhaul.
   List<Widget> _slowDevicePath(BuildContext context, InstantVerifyPivotState state) {
-    // Find what we know about this device from JNAP data
-    // (limited context here — we don't know which specific device the customer means)
-    final weakDevices = state.issueDevices;
-    final has24GhzClients = state.twoPointFourGhzCount > 0;
-    final weakBackhaulNodes = state.weakBackhaulNodes;
-
     return [
       _backButton(context),
-      _stepCard(context, Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Let\'s look at your device',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Text(
-            'A device that\'s connected but slow usually has a WiFi signal problem, '
-            'is on the slower 2.4 GHz band, or is connected through a satellite node '
-            'with a weak link.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
-      )),
+      if (_selectedDevice == null)
+        // ── No device selected — show inline picker ──────────────────────
+        _devicePickerCard(context, state)
+      else
+        // ── Device known — show specific analysis ─────────────────────────
+        ..._deviceAnalysisCards(context, state, _selectedDevice!),
+    ];
+  }
 
-      // Show what we know about device signal quality
-      if (weakDevices.isNotEmpty)
-        _stepCard(context, Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Devices with weak signal detected',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            for (final d in weakDevices.take(3))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+  /// Inline device picker — replaces "Go to My Devices" to avoid the loop.
+  Widget _devicePickerCard(BuildContext context, InstantVerifyPivotState state) {
+    final colors = Theme.of(context).colorScheme;
+    final clients = state.clients.where((c) => c.isWireless).toList();
+
+    return _stepCard(context, Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Which device is slow?',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 4),
+        Text('Select it to get specific advice based on its signal and connection.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+        const SizedBox(height: 12),
+        if (clients.isEmpty)
+          Text('No wireless devices detected. Run Instant-Test first.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant))
+        else
+          for (final c in clients)
+            InkWell(
+              onTap: () => setState(() => _selectedDevice = c),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(children: [
-                  Icon(Icons.warning_amber, color: Colors.orange, size: 18),
-                  const SizedBox(width: 8),
+                  Icon(Icons.devices, size: 18, color: colors.onSurfaceVariant),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      '${d.client.displayNameWithOui} — '
-                      '${d.client.signalDecibels != null ? "${d.client.signalDecibels} dBm · " : ""}'
-                      '${d.client.band}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(c.displayNameWithOui,
+                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                      Text(
+                        '${c.band}${c.signalDecibels != null ? "  ·  ${c.signalDecibels} dBm" : ""}',
+                        style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
+                      ),
+                    ]),
                   ),
+                  Icon(Icons.chevron_right, size: 18, color: colors.outlineVariant),
                 ]),
               ),
-            const SizedBox(height: 4),
-            Text(
-              'Check these devices in the My Devices tab for detailed signal info.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
             ),
-          ],
-        )),
+      ],
+    ));
+  }
 
-      // 2.4 GHz tip
-      if (has24GhzClients)
-        _stepCard(context,
-          _infoBox(context,
-            'Some devices on your network are on the 2.4 GHz band, which is slower than 5 GHz. '
-            'If your slow device is on 2.4 GHz, try connecting it to the 5 GHz network instead.',
-          )),
+  /// Device-specific analysis — uses live signal/band/rate/node data.
+  List<Widget> _deviceAnalysisCards(
+      BuildContext context, InstantVerifyPivotState state, DiagnosticClient device) {
+    final colors = Theme.of(context).colorScheme;
+    final signal = device.signalDecibels;
+    final band = device.band;
+    final txRate = device.txRateMbps;
 
-      // Weak backhaul tip
-      if (weakBackhaulNodes.isNotEmpty)
-        _stepCard(context,
-          _infoBox(context,
-            'One of your satellite nodes has a weak connection to your router. '
-            'Devices connected through that node will be slower. '
-            'Try moving the node closer or connecting it with an Ethernet cable.',
-            icon: Icons.hub_outlined, color: Colors.orange,
-          )),
+    // Find which mesh node this device is on
+    final nodeId = state.clientToNodeId[device.macAddress];
+    final node = nodeId != null
+        ? state.meshNodes.cast<MeshNodeInfo?>().firstWhere(
+            (n) => n?.deviceId == nodeId, orElse: () => null)
+        : null;
 
-      // Checklist of things to try
+    // ── Build ranked findings ─────────────────────────────────────────────
+    final findings = <_SlowDeviceFinding>[];
+
+    // 1. Weak signal
+    if (signal != null && signal < -75) {
+      final critical = signal < -82;
+      findings.add(_SlowDeviceFinding(
+        icon: Icons.signal_wifi_off,
+        color: critical ? Colors.red : Colors.orange,
+        title: critical ? 'Very weak signal ($signal dBm)' : 'Weak signal ($signal dBm)',
+        detail: critical
+            ? 'Signal is barely enough to stay connected. Move the device much closer '
+              'to your router or the nearest mesh node.'
+            : 'Weak signal is the most likely cause of slowness. '
+              'Moving closer to your router or a mesh node should help significantly.',
+        fix: 'Move closer to your router or a mesh node',
+      ));
+    }
+
+    // 2. Stuck on 2.4 GHz when capable of 5 GHz
+    if (band.contains('2.4') && txRate != null && txRate > 80) {
+      findings.add(_SlowDeviceFinding(
+        icon: Icons.wifi,
+        color: Colors.orange,
+        title: 'On slower 2.4 GHz — capable of 5 GHz',
+        detail: 'This device has a fast link rate (${txRate}Mbps) so it\'s likely '
+            '5 GHz capable, but it\'s on the slower 2.4 GHz band. '
+            'Forget the WiFi network and reconnect — it should join 5 GHz.',
+        fix: 'Forget WiFi and reconnect to join the 5 GHz band',
+      ));
+    } else if (band.contains('2.4') && (signal == null || signal >= -75)) {
+      findings.add(_SlowDeviceFinding(
+        icon: Icons.wifi,
+        color: Colors.orange,
+        title: 'On 2.4 GHz (slower band)',
+        detail: 'The 2.4 GHz band is slower than 5 GHz. '
+            'If your router broadcasts a separate 5 GHz network, '
+            'try connecting to that instead.',
+        fix: 'Connect to the 5 GHz network if available',
+      ));
+    }
+
+    // 3. Connected through weak backhaul node
+    if (node != null && !node.isController) {
+      final health = node.backhaulHealth;
+      if (health == BackhaulHealth.weak || health == BackhaulHealth.critical) {
+        final speed = node.backhaulSpeedMbps;
+        findings.add(_SlowDeviceFinding(
+          icon: Icons.hub_outlined,
+          color: Colors.orange,
+          title: 'Connected through ${node.name} — weak backhaul',
+          detail: 'The mesh node this device uses has a slow connection back to '
+              'the main router${speed != null ? " ($speed Mbps)" : ""}. '
+              'The bottleneck is in the backhaul, not this device. '
+              'Move ${node.name} closer to the main router, or connect it '
+              'with an Ethernet cable.',
+          fix: 'Move ${node.name} closer to the main router or use Ethernet',
+        ));
+      }
+    }
+
+    // 4. Very slow link rate despite OK signal
+    if (txRate != null && txRate < 12 && (signal == null || signal >= -75)) {
+      findings.add(_SlowDeviceFinding(
+        icon: Icons.speed,
+        color: Colors.orange,
+        title: 'Very slow WiFi link ($txRate Mbps)',
+        detail: 'The WiFi link speed to this device is very low despite '
+            'a reasonable signal. This can be caused by interference, '
+            'an older device, or the device being far from the router.',
+        fix: 'Try restarting the device or moving it closer',
+      ));
+    }
+
+    // 5. No issues found from router's perspective
+    final hasIssues = findings.isNotEmpty;
+
+    return [
+      // Device summary header
       _stepCard(context, Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Things to try',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          _checklistItem(context,
-              'Move the device closer to your router or a satellite node'),
-          _checklistItem(context,
-              'Switch from 2.4 GHz to 5 GHz in the device\'s WiFi settings'),
-          _checklistItem(context,
-              'Close apps or downloads running in the background on the device'),
-          _checklistItem(context,
-              'Restart the device — not just the router'),
-          const SizedBox(height: 12),
-          Text('Open My Devices to see this device\'s signal strength and get tailored advice.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              // Navigate to Tab 1 (My Devices), not back to flow menu
-              onPressed: () {
-                if (widget.onNavigateToMyDevices != null) {
-                  widget.onNavigateToMyDevices!();
-                } else {
-                  widget.onDone();
-                }
-              },
-              child: const Text('Go to My Devices tab'),
+          Row(children: [
+            Icon(Icons.devices, size: 18, color: colors.primary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(device.displayNameWithOui,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             ),
-          ),
+            TextButton(
+              onPressed: () => setState(() => _selectedDevice = null),
+              style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 28)),
+              child: const Text('Change'),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          Wrap(spacing: 12, children: [
+            _metaChip(context, colors, band),
+            if (signal != null) _metaChip(context, colors, '$signal dBm'),
+            if (txRate != null) _metaChip(context, colors, '↑$txRate Mbps'),
+            if (node != null) _metaChip(context, colors,
+                node.isController ? 'On main router' : 'Via ${node.name}'),
+          ]),
         ],
       )),
-      const _SatisfactionPrompt(),
+
+      // Findings
+      if (!hasIssues)
+        _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+            const SizedBox(width: 8),
+            const Text('WiFi connection looks good from router\'s side',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          ]),
+          const SizedBox(height: 8),
+          Text(
+            'Signal, band, and link rate look fine. The slowness may be:\n'
+            '  • Background apps or downloads on the device\n'
+            '  • Your ISP\'s speed (run Instant-Test to check)\n'
+            '  • Network congestion — too many devices active at once',
+            style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant, height: 1.4),
+          ),
+        ]))
+      else
+        for (final f in findings)
+          _stepCard(context, Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(f.icon, size: 18, color: f.color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(f.title,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 13, color: f.color)),
+              ),
+            ]),
+            const SizedBox(height: 6),
+            Text(f.detail,
+                style: TextStyle(fontSize: 13, color: colors.onSurfaceVariant, height: 1.4)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: f.color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(children: [
+                Icon(Icons.arrow_right, size: 16, color: f.color),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(f.fix,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: f.color)),
+                ),
+              ]),
+            ),
+          ])),
+
       _linksysSupportTile(context),
     ];
+  }
+
+  Widget _metaChip(BuildContext context, ColorScheme colors, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(label,
+          style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant, fontWeight: FontWeight.w500)),
+    );
   }
 
   List<Widget> _keepsDroppingFlow(BuildContext context, InstantVerifyPivotState state) {
@@ -3517,6 +3652,21 @@ class _Flow6BridgeModeState extends ConsumerState<_Flow6BridgeMode> {
 }
 
 // ── Data class for SSID-not-visible findings ─────────────────────────────────
+
+class _SlowDeviceFinding {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String detail;
+  final String fix; // short actionable fix shown in the colored pill
+  const _SlowDeviceFinding({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.detail,
+    required this.fix,
+  });
+}
 
 class _SsidFinding {
   final IconData icon;

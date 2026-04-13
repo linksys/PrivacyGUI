@@ -13,7 +13,7 @@ import 'package:privacy_gui/page/instant_verify/providers/instant_verify_pivot_s
 /// when applicable. Guest devices separated. Tapping a device opens a detail
 /// sheet with tailored advice.
 class MyDevicesTab extends ConsumerWidget {
-  final ValueChanged<int>? onNavigateToFlow;
+  final void Function(int flow, {DiagnosticClient? device})? onNavigateToFlow;
   const MyDevicesTab({super.key, this.onNavigateToFlow});
 
   @override
@@ -186,7 +186,7 @@ List<DiagnosticClient> _sorted(List<DiagnosticClient> clients) {
 
 class _FlatDeviceList extends StatelessWidget {
   final InstantVerifyPivotState state;
-  final ValueChanged<int>? onNavigateToFlow;
+  final void Function(int flow, {DiagnosticClient? device})? onNavigateToFlow;
   const _FlatDeviceList({required this.state, this.onNavigateToFlow});
 
   @override
@@ -209,7 +209,7 @@ class _FlatDeviceList extends StatelessWidget {
 
 class _MeshGroupedList extends StatelessWidget {
   final InstantVerifyPivotState state;
-  final ValueChanged<int>? onNavigateToFlow;
+  final void Function(int flow, {DiagnosticClient? device})? onNavigateToFlow;
   const _MeshGroupedList({required this.state, this.onNavigateToFlow});
 
   @override
@@ -259,7 +259,7 @@ class _NodeGroup extends StatefulWidget {
   final List<DiagnosticClient> clients;
   final String label;
   final InstantVerifyPivotState state;
-  final ValueChanged<int>? onNavigateToFlow;
+  final void Function(int flow, {DiagnosticClient? device})? onNavigateToFlow;
 
   const _NodeGroup({
     required this.node,
@@ -355,7 +355,7 @@ class _NodeGroupState extends State<_NodeGroup> {
 class _DeviceRow extends StatelessWidget {
   final DiagnosticClient client;
   final InstantVerifyPivotState state;
-  final ValueChanged<int>? onNavigateToFlow;
+  final void Function(int flow, {DiagnosticClient? device})? onNavigateToFlow;
   const _DeviceRow({required this.client, required this.state, this.onNavigateToFlow});
 
   @override
@@ -423,7 +423,7 @@ void _showDeviceDetail(
   BuildContext context,
   DiagnosticClient client,
   InstantVerifyPivotState state, {
-  ValueChanged<int>? onNavigateToFlow,
+  void Function(int flow, {DiagnosticClient? device})? onNavigateToFlow,
 }) {
   showModalBottomSheet(
     context: context,
@@ -442,7 +442,7 @@ void _showDeviceDetail(
 class _DeviceDetailSheet extends ConsumerStatefulWidget {
   final DiagnosticClient client;
   final InstantVerifyPivotState state;
-  final ValueChanged<int>? onNavigateToFlow;
+  final void Function(int flow, {DiagnosticClient? device})? onNavigateToFlow;
   const _DeviceDetailSheet({required this.client, required this.state, this.onNavigateToFlow});
 
   @override
@@ -455,7 +455,7 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
 
   DiagnosticClient get client => widget.client;
   InstantVerifyPivotState get state => widget.state;
-  ValueChanged<int>? get onNavigateToFlow => widget.onNavigateToFlow;
+  void Function(int flow, {DiagnosticClient? device})? get onNavigateToFlow => widget.onNavigateToFlow;
 
   @override
   Widget build(BuildContext context) {
@@ -738,7 +738,7 @@ class _DeviceDetailSheetState extends ConsumerState<_DeviceDetailSheet> {
           onPressed: () {
             Navigator.pop(context);
             if (onNavigateToFlow != null) {
-              onNavigateToFlow!(30); // 30 = Flow 3 starting connected
+              onNavigateToFlow!(30, device: client); // 30 = Flow 3 pre-connected
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

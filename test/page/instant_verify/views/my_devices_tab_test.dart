@@ -110,7 +110,7 @@ InstantVerifyPivotState _guestDeviceState() {
   );
 }
 
-Widget _buildTab(InstantVerifyPivotState state, {ValueChanged<int>? onNavigateToFlow}) {
+Widget _buildTab(InstantVerifyPivotState state, {void Function(int, {DiagnosticClient? device})? onNavigateToFlow}) {
   final notifier = MockInstantVerifyPivotNotifier(state);
   return testableWidget(
     overrides: [
@@ -303,7 +303,7 @@ void main() {
       int? capturedFlow;
       await tester.pumpWidget(_buildTab(
         _flatListState(),
-        onNavigateToFlow: (flow) { capturedFlow = flow; },
+        onNavigateToFlow: (flow, {DiagnosticClient? device}) { capturedFlow = flow; },
       ));
       await tester.pumpAndSettle();
 

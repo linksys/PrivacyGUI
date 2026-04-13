@@ -247,20 +247,21 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('slow device path shows diagnostic content', (tester) async {
+    testWidgets('slow device path shows device picker when no device selected', (tester) async {
       await _navigateToSlowDevice(tester);
-      expect(find.text('Let\'s look at your device'), findsOneWidget);
+      expect(find.text('Which device is slow?'), findsOneWidget);
     });
 
-    testWidgets('slow device path shows checklist items', (tester) async {
+    testWidgets('slow device path shows wireless clients to pick from', (tester) async {
       await _navigateToSlowDevice(tester);
-      expect(find.textContaining('Move the device closer'), findsOneWidget);
-      expect(find.textContaining('2.4 GHz to 5 GHz'), findsOneWidget);
+      // Should list wireless devices for selection
+      expect(find.byType(InkWell), findsWidgets);
     });
 
-    testWidgets('slow device path shows Go to My Devices button', (tester) async {
+    testWidgets('slow device path no longer has Go to My Devices loop', (tester) async {
       await _navigateToSlowDevice(tester);
-      expect(find.textContaining('My Devices'), findsAtLeast(1));
+      // Old CTA was a loop — now replaced with inline picker
+      expect(find.text('Go to My Devices tab'), findsNothing);
     });
 
     testWidgets('slow device path is not blank', (tester) async {

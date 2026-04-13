@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/page/instant_verify/models/diagnostic_client.dart';
 import 'package:privacy_gui/page/instant_verify/views/help_me_fix_it_tab.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_devices_tab.dart';
 import 'package:privacy_gui/page/instant_verify/views/my_network_tab.dart';
@@ -26,8 +27,9 @@ class _InstantVerifyPivotViewState
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   /// Notifier used to open a specific flow directly in HelpMeFixItTab.
-  /// Tab 0 flow cards set this before switching to Tab 3.
   final _helpMeFlowNotifier = ValueNotifier<int?>(null);
+  /// Carries the specific device selected in My Devices to the flow.
+  final _helpMeFlowDeviceNotifier = ValueNotifier<DiagnosticClient?>(null);
 
   @override
   void initState() {
@@ -41,6 +43,7 @@ class _InstantVerifyPivotViewState
   void dispose() {
     _tabController.dispose();
     _helpMeFlowNotifier.dispose();
+    _helpMeFlowDeviceNotifier.dispose();
     super.dispose();
   }
 
@@ -78,7 +81,8 @@ class _InstantVerifyPivotViewState
             },
           ),
           MyDevicesTab(
-            onNavigateToFlow: (flowIndex) {
+            onNavigateToFlow: (flowIndex, {DiagnosticClient? device}) {
+              _helpMeFlowDeviceNotifier.value = device;
               _helpMeFlowNotifier.value = flowIndex;
               _tabController.animateTo(3);
             },
@@ -86,6 +90,7 @@ class _InstantVerifyPivotViewState
           const MyNetworkTab(),
           HelpMeFixItTab(
             pendingFlowNotifier: _helpMeFlowNotifier,
+            pendingFlowDeviceNotifier: _helpMeFlowDeviceNotifier,
             onNavigateToMyDevices: () => _tabController.animateTo(1),
           ),
         ],
