@@ -1,10 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
-import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 
 /// Service provider — stateless, per Article VI.
 final uspDeviceServiceProvider = Provider<UspDeviceService>(
@@ -62,30 +60,16 @@ class UspDeviceService {
         .toList();
   }
 
-  // buildLanInfoUIModel — moved to UspLanDataService
-
-  // ---------------------------------------------------------------------------
-  // WAN Status
-  // ---------------------------------------------------------------------------
-
-  WanStatusUIModel buildWanStatusUIModel({
-    required WanStatus wanStatus,
-    required String gateway,
-    List<String> ipv6Addresses = const [],
-  }) {
-    return WanStatusUIModel(
-      isUp: wanStatus.status.toLowerCase() == 'up',
-      ipAddress: wanStatus.ipAddress,
-      subnetMask: wanStatus.subnetMask,
-      addressingType: wanStatus.addressingType,
-      mtu: wanStatus.maxMtuSize,
-      gateway: gateway,
-      ipv6Enabled: wanStatus.ipv6Enabled,
-      ipv6Addresses: ipv6Addresses,
-    );
-  }
-
-  // buildEthernetPortUIModels — moved to UspEthernetDataService
-  // buildNodeUIModels — moved to UspDevicesDataService
-  // buildDeviceUIModels — moved to UspDevicesDataService
+  // Moved to dedicated L1 Services:
+  // buildWanStatusUIModel → UspWanDataService
+  // buildLanInfoUIModel → UspLanDataService
+  // buildEthernetPortUIModels → UspEthernetDataService
+  // buildNodeUIModels → UspDevicesDataService
+  // buildDeviceUIModels → UspDevicesDataService
+  // buildWifiRadioUIModels → UspWifiDataService
+  // buildSystemInfoUIModel → UspSystemInfoDataService
+  // buildFirmwareImageUIModels → UspSystemInfoDataService
+  // buildTimeSettingsUIModel → UspTimeDataService
+  // buildDhcpClientUIModels → UspDhcpDataService
+  // buildDhcpReservationUIModels → UspDhcpDataService
 }
