@@ -2399,54 +2399,15 @@ class _Flow3State extends ConsumerState<_Flow3> {
       return [_ssidNotVisibleCard(context, ref, state)];
     }
 
-    // Customer CAN see the SSID — now show device type picker
-    final types = [
-      (_DeviceType.phone, 'Phone or tablet'),
-      (_DeviceType.laptop, 'Laptop or computer'),
-      (_DeviceType.smartHome,
-          'Smart home device (thermostat, camera, smart bulb, speaker)'),
-      (_DeviceType.gaming, 'Gaming console or TV'),
-      (_DeviceType.other, 'Something else'),
-    ];
-
-    return [
-      _stepCard(context, Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('What kind of device is it?',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
-          for (final (type, label) in types)
-            RadioListTile<_DeviceType>(
-              value: type,
-              groupValue: _deviceType,
-              title: Text(label),
-              onChanged: (v) => setState(() => _deviceType = v),
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-            ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _deviceType == null
-                  ? null
-                  : () => _pushStep(_deviceType == _DeviceType.smartHome ? 4 : 3),
-              child: const Text('Continue'),
-            ),
-          ),
-        ],
-      )),
-    ];
+    // Customer CAN see the SSID — show combined connection help (no device type needed)
+    return _pathA(context, state);
   }
 
   List<Widget> _pathA(BuildContext context, InstantVerifyPivotState state) {
     final ssid = state.wifiSsid ?? '(see router settings)';
     final password = state.wifiPassword ?? '(see router settings)';
     final macActive = state.isMacFilterEnabled && !_macFilterDisabled;
+    final wpa3Only = state.isWpa3Only;
 
     return [
       _stepCard(context, Column(
@@ -2464,13 +2425,20 @@ class _Flow3State extends ConsumerState<_Flow3> {
           _wifiCredRow(context, 'Password', password),
           const SizedBox(height: 12),
           _checklistItem(context,
-              'Make sure you\'re selecting the right network name above'),
+              'Make sure you\'re selecting the exact network name shown above'),
           _checklistItem(
               context, 'Check that caps lock is off when entering the password'),
           _checklistItem(context,
               'Try forgetting the network on your device and reconnecting'),
+          _checklistItem(context,
+              'If your router has separate 2.4 GHz and 5 GHz networks, try the 2.4 GHz one — some devices only support it'),
         ],
       )),
+      if (wpa3Only)
+        _stepCard(context, _infoBox(context,
+            'Your router is set to WPA3-only security. '
+            'Older devices (phones before 2019, many smart home devices) can\'t connect with this setting. '
+            'Go to My Network → WiFi Security and enable WPA2/WPA3 compatibility mode.')),
       if (macActive)
         _stepCard(context, Column(
           crossAxisAlignment: CrossAxisAlignment.start,

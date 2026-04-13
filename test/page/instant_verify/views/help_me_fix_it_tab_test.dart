@@ -324,26 +324,22 @@ void main() {
       expect(find.text('No — I don\'t see it'), findsOneWidget);
     });
 
-    testWidgets('not-connecting → can see SSID → shows device type picker', (tester) async {
-      await openFlow3(tester, _baseState());
+    testWidgets('not-connecting → can see SSID → goes straight to WiFi credentials', (tester) async {
+      // Device type question removed — goes directly to credentials
+      await openFlow3(tester, _wifiCredsState());
       await tester.tap(find.textContaining('won\'t connect at all'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Yes — I can see it'));
       await tester.pumpAndSettle();
-      expect(find.text('What kind of device is it?'), findsOneWidget);
-      expect(find.text('Phone or tablet'), findsOneWidget);
-      expect(find.textContaining('Smart home device'), findsOneWidget);
+      expect(find.text('Check your WiFi details'), findsOneWidget);
+      expect(find.text('MyHomeNetwork'), findsOneWidget);
     });
 
-    testWidgets('phone → not connecting → shows WiFi credentials', (tester) async {
+    testWidgets('WiFi credentials shown after can-see-SSID', (tester) async {
       await openFlow3(tester, _wifiCredsState());
       await tester.tap(find.textContaining('won\'t connect at all'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Yes — I can see it')); // past SSID visibility
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Phone or tablet'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
+      await tester.tap(find.text('Yes — I can see it'));
       await tester.pumpAndSettle();
       expect(find.text('Check your WiFi details'), findsOneWidget);
       expect(find.text('MyHomeNetwork'), findsOneWidget);
@@ -354,27 +350,19 @@ void main() {
       await openFlow3(tester, _macFilterOnState());
       await tester.tap(find.textContaining('won\'t connect at all'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Yes — I can see it')); // past SSID visibility
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Phone or tablet'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
+      await tester.tap(find.text('Yes — I can see it'));
       await tester.pumpAndSettle();
       expect(find.textContaining('device blocklist'), findsOneWidget);
       expect(find.text('Turn off blocklist'), findsOneWidget);
     });
 
-    testWidgets('smart home → path B shows 2.4GHz tip', (tester) async {
+    testWidgets('2.4GHz tip shown in unified path for all device types', (tester) async {
+      // 2.4 GHz tip is now shown to everyone, not just smart home
       await openFlow3(tester, _wifiCredsState());
       await tester.tap(find.textContaining('won\'t connect at all'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Yes — I can see it')); // past SSID visibility
+      await tester.tap(find.text('Yes — I can see it'));
       await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('Smart home device'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      expect(find.text('Connect your smart home device'), findsOneWidget);
       expect(find.textContaining('2.4 GHz'), findsOneWidget);
     });
   });
@@ -638,12 +626,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('won\'t connect at all'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Yes — I can see it')); // past SSID visibility
+      await tester.tap(find.text('Yes — I can see it')); // past SSID check
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Phone or tablet'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
+      // No device type question — goes directly to credentials
 
       // SSID and password are wrapped in SelectableText
       expect(
