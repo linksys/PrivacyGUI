@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
-import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 
 void main() {
@@ -101,48 +100,5 @@ void main() {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // buildWanStatusUIModel
-  // ---------------------------------------------------------------------------
-
-  group('UspDeviceService — buildWanStatusUIModel', () {
-    test('maps fields and derives isUp from status', () {
-      final status = WanStatus(
-        status: 'Up',
-        ipAddress: '203.0.113.1',
-        subnetMask: '255.255.255.0',
-        addressingType: 'DHCP',
-        maxMtuSize: 1500,
-        ipv6Enabled: false,
-      );
-
-      final result = service.buildWanStatusUIModel(
-        wanStatus: status,
-        gateway: '203.0.113.254',
-      );
-
-      expect(result.isUp, isTrue);
-      expect(result.ipAddress, '203.0.113.1');
-      expect(result.mtu, 1500);
-      expect(result.gateway, '203.0.113.254');
-    });
-
-    test('status "down" → isUp false (case insensitive)', () {
-      final status = WanStatus(
-        status: 'Down',
-        ipAddress: '',
-        subnetMask: '',
-        addressingType: '',
-        maxMtuSize: 0,
-        ipv6Enabled: false,
-      );
-
-      final result = service.buildWanStatusUIModel(
-        wanStatus: status,
-        gateway: '',
-      );
-
-      expect(result.isUp, isFalse);
-    });
-  });
+  // buildWanStatusUIModel — moved to UspWanDataService
 }

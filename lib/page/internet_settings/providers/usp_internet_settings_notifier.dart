@@ -11,6 +11,7 @@ import 'package:privacy_gui/page/internet_settings/models/internet_settings_sett
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_status.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
+import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -255,12 +256,15 @@ class UspInternetSettingsNotifier
         final service = ref.read(uspInternetSettingsServiceProvider);
         logger.d('[USP][Network][WAN] Renewing DHCPv4 lease...');
         await service.renewDhcpLease();
+        // Wait for lease renewal to take effect before refreshing WAN status
+        await Future.delayed(const Duration(seconds: 2));
       } finally {
         state = state.copyWith(
           status: state.status.copyWith(clearActiveMutation: true),
         );
       }
     });
+    ref.invalidate(wanDataProvider);
   }
 
   Future<void> renewDhcpv6Lease() async {
