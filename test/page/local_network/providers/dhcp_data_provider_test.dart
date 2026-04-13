@@ -124,56 +124,9 @@ void main() {
       container.dispose();
     });
 
-    test('toggleReservation calls update and invalidates', () async {
-      final container = createContainer();
-      await container.read(dhcpDataProvider.future);
-
-      await container.read(dhcpDataProvider.notifier).toggleReservation(
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
-            false,
-          );
-
-      verify(() => mockUsp.set(any())).called(1);
-      container.dispose();
-    });
-
-    test('addReservation calls add and invalidates', () async {
-      final container = createContainer();
-      await container.read(dhcpDataProvider.future);
-
-      await container.read(dhcpDataProvider.notifier).addReservation(
-            mac: 'AA:BB:CC:DD:EE:99',
-            ip: '192.168.1.99',
-          );
-
-      verify(() => mockUsp.add(any(), any())).called(1);
-      container.dispose();
-    });
-
-    test('updateReservation calls set and invalidates', () async {
-      final container = createContainer();
-      await container.read(dhcpDataProvider.future);
-
-      await container.read(dhcpDataProvider.notifier).updateReservation(
-            instancePath: 'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
-            ip: '192.168.1.55',
-          );
-
-      verify(() => mockUsp.set(any())).called(1);
-      container.dispose();
-    });
-
-    test('deleteReservation calls delete and invalidates', () async {
-      final container = createContainer();
-      await container.read(dhcpDataProvider.future);
-
-      await container.read(dhcpDataProvider.notifier).deleteReservation(
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
-          );
-
-      verify(() => mockUsp.delete(any())).called(1);
-      container.dispose();
-    });
+    // Mutation tests (toggleReservation, addReservation, updateReservation,
+    // deleteReservation) moved to usp_dhcp_reservations_notifier_test.dart
+    // as immediate* methods on L2 Provider.
 
     test('empty clients and reservations', () async {
       when(() => mockUsp.get(any()))

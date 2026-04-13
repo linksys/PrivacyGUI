@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/dhcp/services/usp_dhcp_service.dart';
+import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
 class MockUspDhcpService extends Mock implements UspDhcpService {}
 
@@ -204,5 +205,170 @@ void main() {
           hasLength(1));
       container.dispose();
     });
+
+    // -------------------------------------------------------------------------
+    // Immediate mutations (Dashboard card / Device Detail)
+    // -------------------------------------------------------------------------
+
+    test('immediateToggle calls service and invalidates dhcpDataProvider',
+        () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
+      when(() => mockService.immediateToggle(any(), any()))
+          .thenAnswer((_) async {});
+
+      var dhcpDataInvalidated = false;
+      final container = ProviderContainer(
+        overrides: [
+          uspDhcpServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          dhcpDataProvider.overrideWith(() => _TestDhcpDataNotifier(
+                onInvalidate: () => dhcpDataInvalidated = true,
+              )),
+        ],
+      );
+      container.listen(uspDhcpReservationsProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      await container
+          .read(uspDhcpReservationsProvider.notifier)
+          .immediateToggle(r1.instancePath!, false);
+
+      verify(() => mockService.immediateToggle(r1.instancePath!, false))
+          .called(1);
+      expect(dhcpDataInvalidated, isTrue);
+      container.dispose();
+    });
+
+    test('immediateAdd calls service and invalidates dhcpDataProvider',
+        () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
+      when(() => mockService.immediateAdd(
+            mac: any(named: 'mac'),
+            ip: any(named: 'ip'),
+            enable: any(named: 'enable'),
+          )).thenAnswer((_) async {});
+
+      var dhcpDataInvalidated = false;
+      final container = ProviderContainer(
+        overrides: [
+          uspDhcpServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          dhcpDataProvider.overrideWith(() => _TestDhcpDataNotifier(
+                onInvalidate: () => dhcpDataInvalidated = true,
+              )),
+        ],
+      );
+      container.listen(uspDhcpReservationsProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      await container
+          .read(uspDhcpReservationsProvider.notifier)
+          .immediateAdd(mac: 'AA:BB:CC:DD:EE:99', ip: '192.168.1.99');
+
+      verify(() => mockService.immediateAdd(
+            mac: 'AA:BB:CC:DD:EE:99',
+            ip: '192.168.1.99',
+            enable: true,
+          )).called(1);
+      expect(dhcpDataInvalidated, isTrue);
+      container.dispose();
+    });
+
+    test('immediateDelete calls service and invalidates dhcpDataProvider',
+        () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
+      when(() => mockService.immediateDelete(any())).thenAnswer((_) async {});
+
+      var dhcpDataInvalidated = false;
+      final container = ProviderContainer(
+        overrides: [
+          uspDhcpServiceProvider.overrideWithValue(mockService),
+          uspMutationLockProvider.overrideWithValue(UspMutationLock()),
+          dhcpDataProvider.overrideWith(() => _TestDhcpDataNotifier(
+                onInvalidate: () => dhcpDataInvalidated = true,
+              )),
+        ],
+      );
+      container.listen(uspDhcpReservationsProvider, (_, __) {});
+      await Future.delayed(Duration.zero);
+
+      await container
+          .read(uspDhcpReservationsProvider.notifier)
+          .immediateDelete(r1.instancePath!);
+
+      verify(() => mockService.immediateDelete(r1.instancePath!)).called(1);
+      expect(dhcpDataInvalidated, isTrue);
+      container.dispose();
+    });
+
+    test('immediateToggle rethrows ServiceError', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
+      when(() => mockService.immediateToggle(any(), any()))
+          .thenThrow(const NetworkError(message: 'toggle failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      await expectLater(
+        container
+            .read(uspDhcpReservationsProvider.notifier)
+            .immediateToggle(r1.instancePath!, false),
+        throwsA(isA<ServiceError>()),
+      );
+      container.dispose();
+    });
+
+    test('immediateAdd rethrows ServiceError', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => []);
+      when(() => mockService.immediateAdd(
+            mac: any(named: 'mac'),
+            ip: any(named: 'ip'),
+            enable: any(named: 'enable'),
+          )).thenThrow(const NetworkError(message: 'add failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      await expectLater(
+        container
+            .read(uspDhcpReservationsProvider.notifier)
+            .immediateAdd(mac: 'AA:BB:CC:DD:EE:99', ip: '192.168.1.99'),
+        throwsA(isA<ServiceError>()),
+      );
+      container.dispose();
+    });
+
+    test('immediateDelete rethrows ServiceError', () async {
+      when(() => mockService.fetchReservations()).thenAnswer((_) async => [r1]);
+      when(() => mockService.immediateDelete(any()))
+          .thenThrow(const NetworkError(message: 'delete failed'));
+
+      final container = createContainer();
+      await Future.delayed(Duration.zero);
+
+      await expectLater(
+        container
+            .read(uspDhcpReservationsProvider.notifier)
+            .immediateDelete(r1.instancePath!),
+        throwsA(isA<ServiceError>()),
+      );
+      container.dispose();
+    });
   });
+}
+
+/// Test notifier that tracks invalidation.
+class _TestDhcpDataNotifier extends DhcpDataNotifier {
+  final void Function()? onInvalidate;
+
+  _TestDhcpDataNotifier({this.onInvalidate});
+
+  @override
+  Future<DhcpData> build() async {
+    ref.onDispose(() {
+      // onDispose is called when invalidated
+      onInvalidate?.call();
+    });
+    return const DhcpData(clientModels: [], reservationModels: []);
+  }
 }
