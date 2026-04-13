@@ -2,17 +2,12 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/dhcp_clients.g.dart';
-import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
+import 'package:privacy_gui/page/local_network/services/usp_dhcp_data_service.dart';
 
 // ── Data Model ──
 
@@ -56,55 +51,22 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
   }
 
   Future<DhcpData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) {
-      throw const ServiceNotInitializedError(
-          message: 'USP service not available');
-    }
+    final svc = ref.read(uspDhcpDataServiceProvider);
 
-    try {
-      final results = await Future.wait([
-        DhcpClients.fetch(usp),
-        DhcpReservations.fetch(usp),
-      ]);
+    // Hostname enrichment: read pre-computed map from devices provider.
+    final devicesData = ref.read(devicesDataProvider).valueOrNull;
+    final hostNameByMac = devicesData?.hostNameByMac ?? const {};
 
-      final clients = results[0] as DhcpClients;
-      final reservations = results[1] as DhcpReservations;
+    final result = await svc.fetch(hostNameByMac: hostNameByMac);
 
-      // Hostname enrichment: read pre-computed map from devices provider.
-      final devicesData = ref.read(devicesDataProvider).valueOrNull;
-      final hostNameByMac = devicesData?.hostNameByMac ?? const {};
+    logger.d('[USP][DhcpData] Fetched — '
+        'clients: ${result.clientModels.length}, '
+        'reservations: ${result.reservationModels.length}');
 
-      final clientModels = clients.items
-          .map((c) => DhcpClientUIModel(
-                mac: c.chaddr,
-                ip: c.ipAddress,
-                active: c.active,
-                hostName: hostNameByMac[c.chaddr.trim().toUpperCase()] ?? '',
-                leaseExpiry: c.leaseTimeRemaining,
-              ))
-          .toList();
-
-      final reservationModels = reservations.items
-          .map((r) => DhcpReservationUIModel(
-                instancePath: r.instancePath,
-                mac: r.chaddr,
-                ip: r.yiaddr,
-                enable: r.enable,
-              ))
-          .toList();
-
-      logger.d('[USP][DhcpData] Fetched — '
-          'clients: ${clients.items.length}, '
-          'reservations: ${reservations.items.length}');
-
-      return DhcpData(
-        clientModels: clientModels,
-        reservationModels: reservationModels,
-      );
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
+    return DhcpData(
+      clientModels: result.clientModels,
+      reservationModels: result.reservationModels,
+    );
   }
 
   void _debouncedInvalidate() {
@@ -112,59 +74,5 @@ class DhcpDataNotifier extends AsyncNotifier<DhcpData> {
     _debounce = Timer(const Duration(milliseconds: 500), () {
       ref.invalidateSelf();
     });
-  }
-
-  // ── Mutations ──
-
-  Future<void> toggleReservation(String instancePath, bool enable) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = ref.read(uspServiceProvider)!;
-      await DhcpReservations.update(
-        usp,
-        DhcpReservationUpdate(instancePath: instancePath, enable: enable),
-      );
-    });
-    ref.invalidateSelf();
-  }
-
-  Future<void> addReservation({
-    required String mac,
-    required String ip,
-    bool enable = true,
-  }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = ref.read(uspServiceProvider)!;
-      await DhcpReservations.add(usp, enable: enable, chaddr: mac, yiaddr: ip);
-    });
-    ref.invalidateSelf();
-  }
-
-  Future<void> updateReservation({
-    required String instancePath,
-    String? mac,
-    String? ip,
-    bool? enable,
-  }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = ref.read(uspServiceProvider)!;
-      await DhcpReservations.update(
-        usp,
-        DhcpReservationUpdate(
-          instancePath: instancePath,
-          enable: enable,
-          chaddr: mac,
-          yiaddr: ip,
-        ),
-      );
-    });
-    ref.invalidateSelf();
-  }
-
-  Future<void> deleteReservation(String instancePath) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = ref.read(uspServiceProvider)!;
-      await DhcpReservations.delete(usp, instancePath);
-    });
-    ref.invalidateSelf();
   }
 }

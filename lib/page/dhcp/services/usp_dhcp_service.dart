@@ -36,6 +36,48 @@ class UspDhcpService {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Immediate mutations (Dashboard card / Device Detail — single operations)
+  // ---------------------------------------------------------------------------
+
+  /// Toggle a single reservation's enable state.
+  Future<void> immediateToggle(String instancePath, bool enable) async {
+    try {
+      await DhcpReservations.update(
+        _usp,
+        DhcpReservationUpdate(instancePath: instancePath, enable: enable),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Add a single reservation immediately.
+  Future<void> immediateAdd({
+    required String mac,
+    required String ip,
+    bool enable = true,
+  }) async {
+    try {
+      await DhcpReservations.add(_usp, enable: enable, chaddr: mac, yiaddr: ip);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Delete a single reservation immediately.
+  Future<void> immediateDelete(String instancePath) async {
+    try {
+      await DhcpReservations.delete(_usp, instancePath);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Batch save
+  // ---------------------------------------------------------------------------
+
   /// Batch save: diff original vs current, execute delete/add/update.
   Future<({int added, int updated, int deleted})> saveBatch({
     required List<DhcpReservationUIModel> original,

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
@@ -93,8 +94,8 @@ class UspDhcpReservationsCard extends ConsumerWidget {
                       ref,
                       loadingKey: 'dhcp',
                       mutation: () => ref
-                          .read(dhcpDataProvider.notifier)
-                          .toggleReservation(reservation.instancePath!, value),
+                          .read(uspDhcpReservationsProvider.notifier)
+                          .immediateToggle(reservation.instancePath!, value),
                     ),
           ),
           AppGap.sm(),
@@ -174,11 +175,12 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'dhcp',
-      mutation: () => ref.read(dhcpDataProvider.notifier).addReservation(
-            mac: result.mac,
-            ip: result.ip,
-            enable: result.enable,
-          ),
+      mutation: () =>
+          ref.read(uspDhcpReservationsProvider.notifier).immediateAdd(
+                mac: result.mac,
+                ip: result.ip,
+                enable: result.enable,
+              ),
       successMessage: 'Reservation added',
     );
   }
@@ -206,8 +208,8 @@ class UspDhcpReservationsCard extends ConsumerWidget {
       ref,
       loadingKey: 'dhcp',
       mutation: () => ref
-          .read(dhcpDataProvider.notifier)
-          .deleteReservation(reservation.instancePath!),
+          .read(uspDhcpReservationsProvider.notifier)
+          .immediateDelete(reservation.instancePath!),
       successMessage: 'Reservation deleted',
     );
   }
