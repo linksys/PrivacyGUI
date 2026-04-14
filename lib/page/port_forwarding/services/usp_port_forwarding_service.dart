@@ -5,32 +5,35 @@ import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
-import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
+import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_data_service.dart';
+import 'package:privacy_gui/page/port_forwarding/services/usp_port_triggering_data_service.dart';
 
 final uspPortForwardingServiceProvider = Provider<UspPortForwardingService>(
   (ref) => UspPortForwardingService(
     ref.read(uspServiceProvider)!,
-    ref.read(uspDeviceServiceProvider),
+    ref.read(uspPortForwardingDataServiceProvider),
+    ref.read(uspPortTriggeringDataServiceProvider),
   ),
 );
 
 /// Service layer for Port Forwarding + Port Triggering — encapsulates codegen CRUD + transform.
 class UspPortForwardingService {
   final UspService _usp;
-  final UspDeviceService _deviceSvc;
+  final UspPortForwardingDataService _fwdDataSvc;
+  final UspPortTriggeringDataService _trgDataSvc;
 
-  UspPortForwardingService(this._usp, this._deviceSvc);
+  UspPortForwardingService(this._usp, this._fwdDataSvc, this._trgDataSvc);
 
   // ---------------------------------------------------------------------------
-  // Fetch
+  // Fetch (reuse L1 Service transform)
   // ---------------------------------------------------------------------------
 
   /// Fetch port forwarding rules and transform to UI models.
   Future<List<PortForwardingRuleUIModel>> fetchForwardingRules() async {
     try {
       final raw = await PortForwarding.fetch(_usp);
-      return _deviceSvc.buildPortForwardingRuleUIModels(raw);
+      return _fwdDataSvc.buildUIModels(raw);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -40,14 +43,74 @@ class UspPortForwardingService {
   Future<List<PortTriggeringRuleUIModel>> fetchTriggeringRules() async {
     try {
       final raw = await PortTriggering.fetch(_usp);
-      return _deviceSvc.buildPortTriggeringRuleUIModels(raw);
+      return _trgDataSvc.buildUIModels(raw);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Save — Port Forwarding
+  // Immediate mutations — Port Forwarding (Dashboard card)
+  // ---------------------------------------------------------------------------
+
+  /// Toggle a single port forwarding rule.
+  Future<void> immediateToggleForwarding(
+      String instancePath, bool enabled) async {
+    try {
+      await PortForwarding.update(
+        _usp,
+        PortForwardingRuleUpdate(instancePath: instancePath, enabled: enabled),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Add a single port forwarding rule immediately.
+  Future<void> immediateAddForwarding({
+    required int externalPort,
+    required int internalPort,
+    required String internalClient,
+    required String protocol,
+    String description = '',
+    bool enabled = true,
+    int externalPortEndRange = 0,
+  }) async {
+    try {
+      await PortForwarding.add(
+        _usp,
+        enabled: enabled,
+        externalPort: externalPort,
+        externalPortEndRange: externalPortEndRange,
+        internalPort: internalPort,
+        internalClient: internalClient,
+        protocol: protocol,
+        description: description,
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Immediate mutations — Port Triggering (Dashboard card)
+  // ---------------------------------------------------------------------------
+
+  /// Toggle a single port triggering rule.
+  Future<void> immediateToggleTriggering(
+      String instancePath, bool enabled) async {
+    try {
+      await PortTriggering.update(
+        _usp,
+        PortTriggerUpdate(instancePath: instancePath, enabled: enabled),
+      );
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Save — Port Forwarding (batch)
   // ---------------------------------------------------------------------------
 
   /// Batch save port forwarding rules: diff original vs current.
@@ -129,7 +192,7 @@ class UspPortForwardingService {
   }
 
   // ---------------------------------------------------------------------------
-  // Save — Port Triggering
+  // Save — Port Triggering (batch)
   // ---------------------------------------------------------------------------
 
   /// Batch save port triggering rules: diff original vs current.

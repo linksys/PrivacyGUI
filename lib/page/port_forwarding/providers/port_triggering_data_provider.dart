@@ -1,13 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
-import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
-import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/port_forwarding/services/usp_port_triggering_data_service.dart';
 
 /// Shared data provider for Port Triggering rules.
 ///
@@ -36,136 +30,8 @@ class PortTriggeringDataNotifier extends AsyncNotifier<PortTriggeringData> {
   }
 
   Future<PortTriggeringData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) {
-      throw const ServiceNotInitializedError(
-          message: 'USP service not available');
-    }
-    try {
-      final codegen = await PortTriggering.fetch(usp);
-      final svc = ref.read(uspDeviceServiceProvider);
-      return PortTriggeringData(
-        ruleModels: svc.buildPortTriggeringRuleUIModels(codegen),
-      );
-    } catch (e) {
-      throw mapUspErrorToServiceError(e);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Mutations
-  // ---------------------------------------------------------------------------
-
-  Future<void> toggleRule(String instancePath, bool enabled) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      await PortTriggering.update(
-        usp,
-        PortTriggerUpdate(instancePath: instancePath, enabled: enabled),
-      );
-      ref.invalidateSelf();
-    });
-  }
-
-  Future<void> addRule({
-    required int triggerPort,
-    required String triggerProtocol,
-    int triggerPortEndRange = 0,
-    String description = '',
-    bool enabled = true,
-    int? forwardPort,
-    int? forwardPortEndRange,
-    String? forwardProtocol,
-  }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      final parentPath = await PortTriggering.add(
-        usp,
-        enabled: enabled,
-        triggerPort: triggerPort,
-        triggerPortEndRange: triggerPortEndRange,
-        triggerProtocol: triggerProtocol,
-        description: description,
-      );
-      if (forwardPort != null) {
-        await PortTriggering.addPortTriggerForwardRule(
-          usp,
-          parentPath,
-          forwardPort: forwardPort,
-          forwardPortEndRange: forwardPortEndRange,
-          forwardProtocol: forwardProtocol,
-        );
-      }
-      ref.invalidateSelf();
-    });
-  }
-
-  Future<void> updateRule({
-    required String instancePath,
-    bool? enabled,
-    int? triggerPort,
-    int? triggerPortEndRange,
-    String? triggerProtocol,
-    String? description,
-  }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      await PortTriggering.update(
-        usp,
-        PortTriggerUpdate(
-          instancePath: instancePath,
-          enabled: enabled,
-          triggerPort: triggerPort,
-          triggerPortEndRange: triggerPortEndRange,
-          triggerProtocol: triggerProtocol,
-          description: description,
-        ),
-      );
-      ref.invalidateSelf();
-    });
-  }
-
-  Future<void> deleteRule(String instancePath) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      await PortTriggering.delete(usp, instancePath);
-      ref.invalidateSelf();
-    });
-  }
-
-  Future<void> addForwardRule({
-    required String parentInstancePath,
-    required int forwardPort,
-    int forwardPortEndRange = 0,
-    String forwardProtocol = 'TCP',
-  }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      await PortTriggering.addPortTriggerForwardRule(
-        usp,
-        parentInstancePath,
-        forwardPort: forwardPort,
-        forwardPortEndRange: forwardPortEndRange,
-        forwardProtocol: forwardProtocol,
-      );
-      ref.invalidateSelf();
-    });
-  }
-
-  Future<void> deleteForwardRule(String instancePath) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      await PortTriggering.deletePortTriggerForwardRule(usp, instancePath);
-      ref.invalidateSelf();
-    });
-  }
-
-  UspService get _usp {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) {
-      throw const ServiceNotInitializedError(
-          message: 'USP service not available');
-    }
-    return usp;
+    final svc = ref.read(uspPortTriggeringDataServiceProvider);
+    final ruleModels = await svc.fetch();
+    return PortTriggeringData(ruleModels: ruleModels);
   }
 }

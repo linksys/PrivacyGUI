@@ -229,6 +229,71 @@ class UspPortForwardingPageNotifier
     editTriggeringRule(rule, rule.copyWith(enabled: enabled));
   }
 
+  // ---------------------------------------------------------------------------
+  // Immediate mutations (Dashboard card — single operations)
+  // ---------------------------------------------------------------------------
+
+  /// Toggle a port forwarding rule immediately (writes to router).
+  Future<void> immediateToggleForwarding(
+      String instancePath, bool enabled) async {
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.immediateToggleForwarding(instancePath, enabled);
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][PortFwd] Immediate toggle forwarding failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(portForwardingDataProvider);
+  }
+
+  /// Add a port forwarding rule immediately (writes to router).
+  Future<void> immediateAddForwarding({
+    required int externalPort,
+    required int internalPort,
+    required String internalClient,
+    required String protocol,
+    String description = '',
+    bool enabled = true,
+    int externalPortEndRange = 0,
+  }) async {
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.immediateAddForwarding(
+          externalPort: externalPort,
+          internalPort: internalPort,
+          internalClient: internalClient,
+          protocol: protocol,
+          description: description,
+          enabled: enabled,
+          externalPortEndRange: externalPortEndRange,
+        );
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][PortFwd] Immediate add forwarding failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(portForwardingDataProvider);
+  }
+
+  /// Toggle a port triggering rule immediately (writes to router).
+  Future<void> immediateToggleTriggering(
+      String instancePath, bool enabled) async {
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.immediateToggleTriggering(instancePath, enabled);
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][PortFwd] Immediate toggle triggering failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(portTriggeringDataProvider);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Local Mutations — Port Triggering (continued)
+  // ---------------------------------------------------------------------------
+
   void deleteTriggeringRule(PortTriggeringRuleUIModel rule) {
     final rules = List<PortTriggeringRuleUIModel>.from(
         state.settings.current.triggeringRules);
