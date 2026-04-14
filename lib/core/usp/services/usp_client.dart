@@ -309,6 +309,7 @@ class UspClient {
       if (error != null) {
         logger.d('[USP][Service]#$id SET errors: ${error.keys.join(', ')}');
       }
+    }
 
     return result;
   }
