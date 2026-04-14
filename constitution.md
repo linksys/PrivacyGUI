@@ -384,8 +384,18 @@ USP pages follow a two-tier provider structure. Each tier has distinct responsib
 
 | Tier | Role | Lifecycle | Codegen Import |
 |------|------|-----------|----------------|
-| **L1 Domain Data Provider** | Repository: holds raw codegen data, responds to SSE invalidation | **NOT autoDispose** | ✅ Permitted |
+| **L1 Domain Data Provider** | Session-wide cache: holds UI models, responds to SSE invalidation | **NOT autoDispose** | ❌ Prohibited |
 | **L2 Feature Page Provider** | Holds editable working copy; coordinates save/revert | **AutoDispose** | ❌ Prohibited |
+
+**L1 Service Layer**: Each L1 provider delegates codegen calls to a dedicated **L1 Service** (`Provider<T>`, stateless). The L1 Service owns all codegen fetch calls, error mapping (`mapUspErrorToServiceError`), and codegen→UI model transformation. This ensures that codegen types and `usp_error.dart` are confined to the Service layer.
+
+```
+L1 Provider  →  L1 Service  →  Codegen (lib/generated/)
+                    ↑
+              mapUspErrorToServiceError here
+```
+
+**L2 Immediate Mutations**: When Dashboard cards or other non-page views need to perform single-operation mutations (toggle, add, delete), they call **`immediate*` methods** on the L2 Notifier. These methods delegate to the L2 Service, then `ref.invalidate()` the corresponding L1 provider. This is distinct from the batch Save mode used on feature pages.
 
 **Key Principle**: L1 and L2 serve different purposes:
 - **L1** → Persistent session cache: shared across features, SSE target, no redundant re-fetches
@@ -670,8 +680,7 @@ After completing the work, execute the following checks:
 
 # 1️⃣ Check if generated models are imported in the Provider layer
 grep -r "import.*generated/" lib/page/*/providers/
-# ✅ L2 Feature Page Providers: should return 0 results
-# ⚠️ L1 Data Providers (*_data_provider.dart): allowed per Article IV §4.1
+# ✅ Should return 0 results (both L1 and L2 providers delegate to Services)
 
 # 2️⃣ Check if generated models are imported in the UI layer
 grep -r "import.*generated/" lib/page/*/views/
@@ -796,7 +805,7 @@ Services MUST be organized as follows:
 * Provider type: Use `Provider<T>` (stateless, NOT `NotifierProvider` or `StateNotifierProvider`)
 * Dependencies: Inject via `ref.watch()` in the provider definition
 
-**Reference implementation:** `lib/page/_shared/services/usp_device_service.dart`
+**Reference implementation:** `lib/page/dmz/services/usp_dmz_service.dart`
 
 **Section 6.4: Provider-Service Separation**
 Clear separation of concerns MUST be maintained:
@@ -827,8 +836,8 @@ Services MUST have unit tests that:
 
 **Section 6.6: Reference Implementations**
 See these existing services as examples:
-* `lib/page/_shared/services/usp_device_service.dart`
-* `lib/page/dmz/services/usp_dmz_service.dart`
+* L2 Service: `lib/page/dmz/services/usp_dmz_service.dart`
+* L1 Service: `lib/page/admin/services/usp_time_data_service.dart`
 
 **Section 6.7: Distinction from Article VII**
 The Service layer is a LEGITIMATE abstraction that:
