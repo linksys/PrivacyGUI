@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
@@ -10,11 +11,18 @@ import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_da
 import 'package:privacy_gui/page/port_forwarding/services/usp_port_triggering_data_service.dart';
 
 final uspPortForwardingServiceProvider = Provider<UspPortForwardingService>(
-  (ref) => UspPortForwardingService(
-    ref.read(uspServiceProvider)!,
-    ref.read(uspPortForwardingDataServiceProvider),
-    ref.read(uspPortTriggeringDataServiceProvider),
-  ),
+  (ref) {
+    final usp = ref.read(uspServiceProvider);
+    if (usp == null) {
+      throw const ServiceNotInitializedError(
+          message: 'USP service not available');
+    }
+    return UspPortForwardingService(
+      usp,
+      ref.read(uspPortForwardingDataServiceProvider),
+      ref.read(uspPortTriggeringDataServiceProvider),
+    );
+  },
 );
 
 /// Service layer for Port Forwarding + Port Triggering — encapsulates codegen CRUD + transform.
