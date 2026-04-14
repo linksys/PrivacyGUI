@@ -6,7 +6,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
-import 'package:privacy_gui/page/_shared/providers/wifi_client_enricher.dart';
+import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.dart';
 
 // Re-export so existing consumers can still import WifiCodegenContext from here.

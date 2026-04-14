@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
@@ -7,9 +8,10 @@ import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
-import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
-import 'package:privacy_gui/page/_shared/providers/wifi_client_enricher.dart';
+import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
+import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 // ---------------------------------------------------------------------------
@@ -125,8 +127,62 @@ class UspDevicesDataService {
   }
 
   /// Fetches mesh topology via DataElements (fire-and-forget from provider).
+  ///
+  /// Delegates nested multi-instance parsing
+  /// (Device.{i} → Radio.{j} → BSS.{k} → STA.{l})
+  /// to codegen [DataElementsNetwork.fetch], then transforms the tree
+  /// into a flat [MeshTopologyInfo] with client→node mapping.
+  ///
+  /// Returns [MeshTopologyInfo.empty] if the router doesn't support
+  /// DataElements or the subtree is empty (non-mesh / single router).
   Future<MeshTopologyInfo> fetchMeshTopology() async {
-    return fetchMeshNodes(_usp);
+    try {
+      final network = await DataElementsNetwork.fetch(_usp);
+      if (network.items.isEmpty) {
+        logger.d(
+            '[USP][Dashboard]DataElements empty — not a mesh or unsupported');
+        return MeshTopologyInfo.empty;
+      }
+      return _buildTopologyInfo(network);
+    } catch (e) {
+      logger
+          .d('[USP][Dashboard]DataElements not supported or fetch failed: $e');
+      return MeshTopologyInfo.empty;
+    }
+  }
+
+  MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
+    final nodes = <MeshNodeInfo>[];
+    final clientToNodeMap = <String, String>{};
+
+    for (final node in network.items) {
+      final rawId = node.id.trim().toUpperCase();
+      final nodeDeviceId = rawId.isNotEmpty ? rawId : node.instancePath;
+
+      for (final radio in node.radios) {
+        for (final bss in radio.bssList) {
+          for (final sta in bss.stations) {
+            final mac = sta.macAddress.trim();
+            if (mac.isNotEmpty && nodeDeviceId.isNotEmpty) {
+              clientToNodeMap[mac.toUpperCase()] = nodeDeviceId;
+            }
+          }
+        }
+      }
+
+      nodes.add(MeshNodeInfo(
+        instancePath: node.instancePath,
+        deviceId: nodeDeviceId,
+        model: node.manufacturerModel.trim(),
+        manufacturer: node.manufacturer.trim(),
+        serialNumber: node.serialNumber.trim(),
+        softwareVersion: node.softwareVersion.trim(),
+      ));
+    }
+
+    logger.d('[USP][Dashboard]Mesh nodes: ${nodes.length}, '
+        'client→node mappings: ${clientToNodeMap.length}');
+    return MeshTopologyInfo(nodes: nodes, clientToNodeMap: clientToNodeMap);
   }
 
   /// Rebuilds device + node UI models with updated WiFi enrichment data.
