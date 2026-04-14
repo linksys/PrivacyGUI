@@ -292,40 +292,23 @@ class UspClient {
         '${parameters.length} params'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
 
-    // Log result summary
-    final overallSuccess = result['overallSuccess'] as bool? ?? false;
-    final hasErrors = result['hasErrors'] as bool? ?? false;
-    final results = result['results'] as List? ?? [];
+    // Log result summary for WASM v0.11.0 format
+    final success = result['success'] as bool? ?? false;
+    final resultData = result['result'] as Map<String, dynamic>? ?? {};
+    final data = resultData['data'] as Map<String, dynamic>? ?? {};
+    final error = resultData['error'] as Map<String, dynamic>?;
+    final hasErrors = error != null;
     logger.d(
-        '[USP][Service]#$id SET result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
+        '[USP][Service]#$id SET result: success=$success, errors=$hasErrors, dataKeys=${data.keys.length}');
 
     // Log detailed results in debug mode
-    if (kDebugMode && results.isNotEmpty) {
-      for (var i = 0; i < results.length; i++) {
-        final detail = results[i] as Map<String, dynamic>? ?? {};
-        final requestedPath = detail['requestedPath'] ?? 'unknown';
-        final success = detail['success'] ?? false;
-
-        if (success) {
-          final updatedInstances = detail['updatedInstances'] as List? ?? [];
-          logger.d(
-              '[USP][Service]#$id SET[$i] ✅ $requestedPath → ${updatedInstances.length} instances updated');
-
-          for (var instance in updatedInstances) {
-            final instanceMap = instance as Map<String, dynamic>? ?? {};
-            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
-            final updatedParams = instanceMap['updatedParams'] as Map? ?? {};
-            logger.d(
-                '[USP][Service]#$id SET[$i]   📝 $affectedPath: ${updatedParams.keys.join(', ')}');
-          }
-        } else {
-          final errorCode = detail['errorCode'] ?? 'unknown';
-          final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w(
-              '[USP][Service]#$id SET[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
-        }
+    if (kDebugMode) {
+      if (data.isNotEmpty) {
+        logger.d('[USP][Service]#$id SET data: ${data.keys.join(', ')}');
       }
-    }
+      if (error != null) {
+        logger.d('[USP][Service]#$id SET errors: ${error.keys.join(', ')}');
+      }
 
     return result;
   }
@@ -357,16 +340,15 @@ class UspClient {
         objectPath.startsWith('Device.') ? objectPath.substring(7) : objectPath;
 
     // Extract created instance path for logging compatibility
-    final overallSuccess = result['overallSuccess'] as bool? ?? false;
+    final success = result['success'] as bool? ?? false;
+    final resultData = result['result'] as Map<String, dynamic>? ?? {};
+    final data = resultData['data'] as Map<String, dynamic>? ?? {};
     String createdPath = 'unknown';
-    final results = result['results'] as List? ?? [];
-    if (overallSuccess && results.isNotEmpty) {
-      final firstResult = results.first as Map<String, dynamic>? ?? {};
-      final createdInstances = firstResult['createdInstances'] as List? ?? [];
-      if (createdInstances.isNotEmpty) {
-        final firstInstance =
-            createdInstances.first as Map<String, dynamic>? ?? {};
-        createdPath = firstInstance['affectedPath'] as String? ?? 'unknown';
+
+    if (success && data.containsKey('instances')) {
+      final instances = data['instances'] as List? ?? [];
+      if (instances.isNotEmpty) {
+        createdPath = instances.first as String? ?? 'unknown';
       }
     }
 
