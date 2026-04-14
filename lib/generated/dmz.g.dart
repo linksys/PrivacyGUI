@@ -125,10 +125,8 @@ class Dmz {
       params['${update.instancePath}Description'] = update.description;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params);
@@ -153,10 +151,8 @@ class Dmz {
     }
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params, allowPartial: allowPartial);
@@ -180,9 +176,43 @@ class Dmz {
     return await client.add('Device.Firewall.DMZ.', params);
   }
 
+  /// Add multiple DmzEntry instances with partial success support
+  /// Returns detailed operation result Map
+  static Future<Map<String, dynamic>> addMany(
+      UspClient client, List<Map<String, dynamic>> paramsList,
+      {bool allowPartial = false}) async {
+    if (paramsList.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.addMultiple(
+      paramsList
+          .map((p) => {'path': 'Device.Firewall.DMZ.', 'params': p})
+          .toList(),
+      allowPartial: allowPartial,
+    );
+  }
+
   /// Delete a DmzEntry instance via USP Delete message
   static Future<Map<String, dynamic>> delete(
       UspClient client, String instancePath) async {
     return await client.delete(instancePath);
+  }
+
+  /// Delete multiple DmzEntry instances with partial success support
+  /// Returns detailed operation result Map
+  static Future<Map<String, dynamic>> deleteMany(
+      UspClient client, List<String> instancePaths,
+      {bool allowPartial = false}) async {
+    if (instancePaths.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.deleteMultiple(instancePaths,
+        allowPartial: allowPartial);
   }
 }

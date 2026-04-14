@@ -1,12 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/firmware_images.g.dart';
-import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
+import 'package:privacy_gui/page/admin/services/system_info_service.dart';
 
 // ── Data Model ──
 
@@ -38,44 +34,26 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
   }
 
   Future<SystemInfoData> _fetch() async {
-    final usp = ref.read(uspClientProvider);
-    if (usp == null) throw StateError('USP service not available');
+    // Use SystemInfoService instead of direct codegen + manual logic
+    final systemInfoService = ref.read(systemInfoServiceProvider);
 
-    // SystemInfo.fetch now includes ActiveFirmwareImage + BootFirmwareImage
-    // (merged in YAML v1.1.0), reducing from 3 → 2 USP requests.
-    final results = await Future.wait([
-      SystemInfo.fetch(usp),
-      _fetchFirmwareImages(usp),
-    ]);
-
-    final systemInfo = results[0] as SystemInfo;
-    final fwImages = results[1] as FirmwareImages;
-
-    final svc = UspDeviceService();
-    final fwModels = svc.buildFirmwareImageUIModels(
-      data: fwImages,
-      activeRef: systemInfo.activeFirmwareImage,
-      bootRef: systemInfo.bootFirmwareImage,
-    );
-    final model = svc.buildSystemInfoUIModel(
-      systemInfo,
-      firmwareImages: fwModels,
-    );
-
-    logger.d('[USP][SystemInfoData] Fetched — '
-        'model=${systemInfo.modelName}, '
-        'fw=${systemInfo.softwareVersion}');
-    return SystemInfoData(model: model);
-  }
-
-  /// Fetches firmware image partitions (multi-instance).
-  Future<FirmwareImages> _fetchFirmwareImages(UspClient usp) async {
     try {
-      return await FirmwareImages.fetch(usp)
-          .timeout(const Duration(seconds: 20));
+      // SystemInfoService handles:
+      // - Multi-model aggregation (SystemInfo + FirmwareImages)
+      // - Structured error handling from WASM layer
+      // - Business logic transformation via UspDeviceService
+      // - Unified error mapping
+      final model = await systemInfoService.fetchSystemInfoData();
+
+      logger.d('[USP][SystemInfoData] Service layer fetch completed — '
+          'model=${model.modelName}, fw=${model.softwareVersion}');
+
+      return SystemInfoData(model: model);
     } catch (e) {
-      logger.w('[USP][SystemInfoData] Firmware images fetch failed: $e');
-      return FirmwareImages(items: []);
+      // SystemInfoService already converts USP/WASM errors to ServiceError
+      // Provider layer just needs to handle ServiceError types
+      logger.e('[USP][SystemInfoData] Service layer error: $e');
+      rethrow;
     }
   }
 }

@@ -31,6 +31,9 @@ class UspClientWeb {
   Future<Map<String, String>> getMultiple(List<String> paths) =>
       throw UnsupportedError('USP is only available on Web');
 
+  Future<Map<String, dynamic>> getMultipleStructured(List<String> paths) =>
+      throw UnsupportedError('USP is only available on Web');
+
   Future<void> set(String path, String value) =>
       throw UnsupportedError('USP is only available on Web');
 

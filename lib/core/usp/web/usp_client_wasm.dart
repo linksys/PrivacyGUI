@@ -159,13 +159,21 @@ class UspClientWeb {
       logger.d('[WASM]GET dartified: ${dartified?.toString() ?? 'null'}');
     }
 
-    // Check if this is structured response format
-    if (dartified is Map && dartified.containsKey('overallSuccess')) {
-      if (kDebugMode) {
-        logger.d('[WASM]GET parsing structured response format');
+    // Parse WASM v0.11.0 format: {success, result: {data, error?}}
+    if (dartified is Map) {
+      final success = dartified['success'] as bool? ?? false;
+      if (success) {
+        final resultData = dartified['result'] as Map? ?? {};
+        final data = resultData['data'] as Map? ?? {};
+        return data[path]?.toString();
+      } else {
+        if (kDebugMode) {
+          final resultData = dartified['result'] as Map? ?? {};
+          final error = resultData['error'] as Map? ?? {};
+          logger.d('[WASM]GET failed for path: $path, errors: $error');
+        }
+        return null;
       }
-      final parsedMap = _parseStructuredGetResponse(dartified);
-      return parsedMap[path];
     }
 
     return dartified?.toString();
@@ -173,7 +181,43 @@ class UspClientWeb {
 
   Future<Map<String, String>> getMultiple(List<String> paths) async {
     final jsPaths = paths.map((p) => p.toJS).toList().toJS;
-    final resultJs = await _client.getMultiple(jsPaths).toDart;
+
+    JSAny? resultJs;
+    try {
+      resultJs = await _client.getMultiple(jsPaths).toDart;
+    } catch (e) {
+      // Enhanced error logging for JavaScript exceptions
+      if (kDebugMode) {
+        logger.e('[WASM]GET_MULTI JavaScript exception: $e');
+        logger.e('[WASM]GET_MULTI Exception type: ${e.runtimeType}');
+        logger.e('[WASM]GET_MULTI Requested paths: $paths');
+
+        // Try to extract more information from the JS error
+        try {
+          final dynamic dynE = e;
+          logger.e(
+              '[WASM]GET_MULTI Dynamic error toString(): ${dynE.toString()}');
+
+          // If this is a JSObject, try to access its properties using js_util
+          if (e is JSObject) {
+            logger.e(
+                '[WASM]GET_MULTI This is a JSObject - attempting property access...');
+            try {
+              // Try accessing common JS error properties
+              final jsError = e as JSObject;
+              logger.e(
+                  '[WASM]GET_MULTI JSObject toString: ${jsError.toString()}');
+            } catch (propErr) {
+              logger.e(
+                  '[WASM]GET_MULTI JSObject property access failed: $propErr');
+            }
+          }
+        } catch (inspectErr) {
+          logger.e('[WASM]GET_MULTI Error inspection failed: $inspectErr');
+        }
+      }
+      rethrow;
+    }
 
     // Log raw WASM response
     if (kDebugMode) {
@@ -189,91 +233,80 @@ class UspClientWeb {
 
     if (map == null) return {};
 
-    // TODO: This is a TEMPORARY compatibility fix for structured GET responses
-    // The proper solution is to modify UspClient.get() to return UspOperationResult
-    // and update all calling code to use structured responses
-    if (map.containsKey('overallSuccess') && map.containsKey('results')) {
-      if (kDebugMode) {
-        logger
-            .d('[WASM]GET_MULTI parsing structured response format (TEMP FIX)');
-      }
-      return _parseStructuredGetResponse(map);
+    // Parse WASM v0.11.0 format: {success, result: {data, error?}}
+    final success = map['success'] as bool? ?? false;
+    final resultData = map['result'] as Map? ?? {};
+    final data = resultData['data'] as Map? ?? {};
+
+    if (kDebugMode) {
+      logger
+          .d('[WASM]GET_MULTI parsing WASM v0.11.0 format, success: $success');
     }
 
-    // Legacy flat format
     final result = <String, String>{};
-    for (final entry in map.entries) {
+    for (final entry in data.entries) {
       final key = entry.key?.toString() ?? '';
       final value = entry.value;
-      if (value == null) {
-        if (kDebugMode) {
-          logger.d('[WASM]GET_MULTI null value for key: $key');
-        }
-        result[key] = '';
-      } else {
-        result[key] = value.toString();
+      if (kDebugMode) {
+        logger.d('[WASM]GET_MULTI data: $key = $value');
       }
+      result[key] = value?.toString() ?? '';
     }
+
     return result;
   }
 
   /// TEMPORARY: Parse structured GET response format into flat key-value map
   /// TODO: Remove this once UspClient.get() is updated to use UspOperationResult
-  Map<String, String> _parseStructuredGetResponse(Map map) {
-    final result = <String, String>{};
-    final results = map['results'] as List? ?? [];
 
-    for (final resultItem in results) {
-      final resultMap = resultItem as Map? ?? {};
-      final requestedPath = resultMap['requestedPath'] as String? ?? '';
-      final success = resultMap['success'] as bool? ?? false;
+  /// Get multiple parameters and return WASM v0.11.0 structured result
+  Future<Map<String, dynamic>> getMultipleStructured(List<String> paths) async {
+    final jsPaths = paths.map((p) => p.toJS).toList().toJS;
 
-      if (success) {
-        final retrievedParams = resultMap['retrievedParams'] as List? ?? [];
-
-        if (requestedPath.contains('*')) {
-          // Wildcard path - need to reconstruct instance paths
-          // For now, we'll create sequential instance numbers
-          for (var i = 0; i < retrievedParams.length; i++) {
-            final param = retrievedParams[i];
-            final paramMap = param as Map? ?? {};
-            final paramValue = paramMap['value'] as String? ?? '';
-
-            // Replace * with instance number (starting from 1)
-            final fullPath = requestedPath.replaceAll('*', '${i + 1}');
-
-            if (kDebugMode) {
-              logger.d(
-                  '[WASM]GET_MULTI structured wildcard: $fullPath = $paramValue');
-            }
-
-            result[fullPath] = paramValue;
-          }
-        } else {
-          // Single parameter path
-          if (retrievedParams.isNotEmpty) {
-            final param = retrievedParams.first;
-            final paramMap = param as Map? ?? {};
-            final paramValue = paramMap['value'] as String? ?? '';
-
-            if (kDebugMode) {
-              logger.d(
-                  '[WASM]GET_MULTI structured single: $requestedPath = $paramValue');
-            }
-
-            result[requestedPath] = paramValue;
-          }
-        }
-      } else {
-        // Failed request - add empty value to maintain consistency
-        if (kDebugMode) {
-          logger.d('[WASM]GET_MULTI structured failed: $requestedPath');
-        }
-        result[requestedPath] = '';
+    JSAny? resultJs;
+    try {
+      resultJs = await _client.getMultiple(jsPaths).toDart;
+    } catch (e) {
+      if (kDebugMode) {
+        logger.e('[WASM]GET_STRUCTURED JavaScript exception: $e');
       }
+      // Return transport error in v0.11.0 format
+      return {
+        'success': false,
+        'result': {
+          'data': <String, dynamic>{},
+          'error': {
+            'transport_error': {
+              'errorCode': 9999,
+              'errorMessage': 'Transport error: $e',
+            }
+          }
+        }
+      };
     }
 
-    return result;
+    final map = resultJs?.dartify() as Map?;
+
+    if (kDebugMode) {
+      logger.d('[WASM]GET_STRUCTURED response: ${jsonEncode(map)}');
+    }
+
+    if (map == null) {
+      return {
+        'success': false,
+        'result': {
+          'data': <String, dynamic>{},
+          'error': {
+            'null_response': {
+              'errorCode': 9998,
+              'errorMessage': 'WASM client returned null response',
+            }
+          }
+        }
+      };
+    }
+
+    return Map<String, dynamic>.from(map);
   }
 
   Future<void> set(String path, String value) async {
@@ -294,13 +327,7 @@ class UspClientWeb {
     }
   }
 
-  /// Sets multiple parameters and returns structured operation result.
-  ///
-  /// Returns a Map containing:
-  /// - 'overallSuccess': bool - true if all operations succeeded
-  /// - 'hasAnySuccess': bool - true if at least one operation succeeded
-  /// - 'hasErrors': bool - true if at least one operation failed
-  /// - 'results': List<Map> - detailed results per parameter
+  /// Sets multiple parameters and returns WASM v0.11.0 structured result
   Future<Map<String, dynamic>> setMultiple(Map<String, String> parameters,
       {bool allowPartial = false}) async {
     if (kDebugMode) {

@@ -999,6 +999,32 @@ class UspClient {
   // Application Layer封裝方法 - 返回強型別結果
   // ===========================================================================
 
+  /// 應用層GET操作封裝，返回強型別結構化結果
+  Future<UspGetResult> getWithResult(List<String> paths,
+      {RequestPriority? priority}) async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+
+    try {
+      // 直接使用 WASM 客戶端的結構化方法
+      final structuredResult = await _client.getMultipleStructured(paths);
+      sw.stop();
+
+      logger.d('[USP][Client]#$id GET_STRUCTURED ${_pathSummary(paths)} '
+          '${paths.length} paths → structured result (${sw.elapsedMilliseconds}ms)');
+
+      return UspResultParser.parseGetResult(structuredResult);
+    } catch (e) {
+      sw.stop();
+      logger.e(
+          '[USP][Client]#$id GET_STRUCTURED failed: $e (${sw.elapsedMilliseconds}ms)');
+      return UspResultParser.createFailureFromException<Map<String, dynamic>>(
+        e,
+        paths.join(', '),
+      );
+    }
+  }
+
   /// 應用層SET操作封裝，返回強型別結果
   Future<UspSetResult> setWithResult(Map<String, dynamic> parameters,
       {bool allowPartial = false}) async {

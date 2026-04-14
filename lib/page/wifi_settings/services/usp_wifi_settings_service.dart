@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
@@ -203,16 +204,45 @@ class UspWifiSettingsService {
         if (aggregate == null) continue;
 
         if (aggregate.ssidInstancePaths.isNotEmpty) {
-          await WiFiSsids.updateMany(
-            _usp,
-            aggregate.ssidInstancePaths
-                .map((p) => WiFiSsidUpdate(
-                      instancePath: p,
-                      ssid: pending.ssid,
-                      enable: pending.enabled,
-                    ))
-                .toList(),
-          );
+          // REFACTORED: Use structured error handling from WiFiSettingsService pattern
+          final ssidUpdates = aggregate.ssidInstancePaths
+              .map((p) => WiFiSsidUpdate(
+                    instancePath: p,
+                    ssid: pending.ssid,
+                    enable: pending.enabled,
+                  ))
+              .toList();
+
+          // Business validation (like WiFiSettingsService.updateSsidName)
+          if (pending.ssid.isEmpty) {
+            throw InvalidInputError(message: 'SSID name cannot be empty');
+          }
+          if (pending.ssid.length > 32) {
+            throw InvalidInputError(
+                message: 'SSID name cannot exceed 32 characters');
+          }
+
+          final result = await WiFiSsids.updateMany(_usp, ssidUpdates);
+          final parsedResult = UspResultParser.parseSetResult(result);
+
+          // Strict error handling for critical WiFi operations
+          if (parsedResult case UspPartialSuccess(failures: final failures)) {
+            logger.e(
+                '[UspWifiSettingsService] SSID update partial failure: ${failures.length} errors');
+            throw UnexpectedError(
+              message:
+                  'WiFi SSID update failed: ${failures.map((f) => f.errorMessage).join('; ')}',
+            );
+          } else if (parsedResult case UspFailure(errors: final errors)) {
+            logger.e('[UspWifiSettingsService] SSID update complete failure');
+            throw NetworkError(
+              message:
+                  'WiFi configuration failed: ${errors.map((e) => e.errorMessage).join('; ')}',
+            );
+          }
+
+          logger.d(
+              '[UspWifiSettingsService] SSID updates completed successfully');
         }
         if (aggregate.apInstancePaths.isNotEmpty) {
           // Build a band lookup: AP instance path → band string.

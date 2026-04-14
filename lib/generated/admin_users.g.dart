@@ -94,10 +94,8 @@ class AdminUsers {
       params['${update.instancePath}Password'] = update.password;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params);
@@ -114,10 +112,8 @@ class AdminUsers {
     }
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params, allowPartial: allowPartial);

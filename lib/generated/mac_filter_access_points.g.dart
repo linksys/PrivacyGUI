@@ -101,10 +101,8 @@ class MacFilterAccessPoints {
           update.allowedMACAddress;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params);
@@ -125,10 +123,8 @@ class MacFilterAccessPoints {
     }
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params, allowPartial: allowPartial);

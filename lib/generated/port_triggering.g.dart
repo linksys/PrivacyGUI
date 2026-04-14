@@ -167,10 +167,8 @@ class PortTriggering {
       params['${update.instancePath}Protocol'] = update.triggerProtocol;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params);
@@ -196,10 +194,8 @@ class PortTriggering {
     }
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params, allowPartial: allowPartial);
@@ -224,10 +220,44 @@ class PortTriggering {
     return await client.add('Device.NAT.PortTrigger.', params);
   }
 
+  /// Add multiple PortTrigger instances with partial success support
+  /// Returns detailed operation result Map
+  static Future<Map<String, dynamic>> addMany(
+      UspClient client, List<Map<String, dynamic>> paramsList,
+      {bool allowPartial = false}) async {
+    if (paramsList.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.addMultiple(
+      paramsList
+          .map((p) => {'path': 'Device.NAT.PortTrigger.', 'params': p})
+          .toList(),
+      allowPartial: allowPartial,
+    );
+  }
+
   /// Delete a PortTrigger instance via USP Delete message
   static Future<Map<String, dynamic>> delete(
       UspClient client, String instancePath) async {
     return await client.delete(instancePath);
+  }
+
+  /// Delete multiple PortTrigger instances with partial success support
+  /// Returns detailed operation result Map
+  static Future<Map<String, dynamic>> deleteMany(
+      UspClient client, List<String> instancePaths,
+      {bool allowPartial = false}) async {
+    if (instancePaths.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.deleteMultiple(instancePaths,
+        allowPartial: allowPartial);
   }
 
   /// Add a new PortTriggerForwardRule instance under a parent instance

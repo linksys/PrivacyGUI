@@ -163,7 +163,8 @@ Each parameter describes a single USP data model parameter.
 | `writable` | boolean | No | Whether the parameter is writable (default: `false` = read-only) |
 | `required` | boolean | No | Whether the parameter is required for `add()` (default: `false`). Required params are non-nullable in `add()` signatures |
 | `sensitive` | boolean | No | Whether the parameter contains sensitive data (default: `false`) |
-| `default_value` | string \| number \| boolean | No | Default value |
+| `optional` | boolean | No | Whether the parameter may be absent from GET responses (default: `false`). When `true`, the generated field type becomes nullable (`String?`, `int?`, etc.). If `default_value` is also set, the field remains non-nullable and uses the default when the key is absent. See [Optional Parameters](#optional-parameters) |
+| `default_value` | string \| number \| boolean | No | Default value. When used with `optional: true`, specifies the fallback value when the key is absent from the GET response |
 
 #### Supported `type` Values
 
@@ -200,6 +201,66 @@ parameters:
     sensitive: false
     description: Hardware address
 ```
+
+#### Optional Parameters
+
+USP GET operations may return partial results — some paths succeed while others fail or are absent, especially across different device models. The `optional` field marks parameters that may not exist in the response.
+
+| YAML Configuration | Generated Type (Dart) | `_fromResponse` Behavior |
+|---|---|---|
+| No `optional` (default) | `String` / `int` / `bool` | Current behavior — implicit fallback (`''`, `0`, `false`) |
+| `optional: true`, no `default_value` | `String?` / `int?` / `bool?` | Key absent → `null` |
+| `optional: true` + `default_value: X` | `String` / `int` / `bool` | Key absent → `X` |
+
+**Language-specific nullable syntax:**
+
+| Language | Nullable Type | Constructor | Null Literal | Key Check |
+|---|---|---|---|---|
+| Dart | `String?` | `this.field,` | `null` | `response.containsKey('path')` |
+| TypeScript | `string \| undefined` | `field?: string` | `undefined` | `'path' in response` |
+| Swift | `String?` | `field: String? = nil` | `nil` | `response.keys.contains("path")` |
+
+```yaml
+parameters:
+  - path: .MaxBitRate
+    type: int
+    writable: true
+    optional: true
+    default_value: 0
+    description: Maximum bit rate (0 = auto, may not exist on all models)
+
+  - path: .Channel
+    type: int
+    optional: true
+    description: Operating channel (not available on all models)
+```
+
+**Generated Dart:**
+```dart
+class WiFiBasicSettings {
+  final int maxBitRate;     // non-nullable — default_value provides fallback
+  final int? channel;       // nullable — no default_value
+
+  const WiFiBasicSettings({
+    this.maxBitRate = 0,    // optional with default
+    this.channel,           // optional nullable
+    // ...
+  });
+
+  factory WiFiBasicSettings._fromResponse(Map<String, dynamic> response) {
+    return WiFiBasicSettings(
+      maxBitRate: response.containsKey('...MaxBitRate')
+          ? int.tryParse(response['...MaxBitRate']?.toString() ?? '') ?? 0
+          : 0,              // key absent → use default
+      channel: response.containsKey('...Channel')
+          ? int.tryParse(response['...Channel']?.toString() ?? '')
+          : null,           // key absent → null
+    );
+  }
+}
+```
+
+> **Note**: `optional` is orthogonal to `required`. `required` controls whether a parameter is mandatory in `add()` signatures. `optional` controls whether a parameter may be absent from GET responses. A parameter can be both `required: true` (must provide when adding) and `optional: true` (may be absent when reading from existing instances).
 
 ### 1.3 Presets
 
@@ -537,7 +598,7 @@ class ConnectedDevices {
     if (update.hostName != null) params['${update.instancePath}HostName'] = update.hostName;
     if (update.active != null) params['${update.instancePath}Active'] = update.active;
     if (params.isNotEmpty) return await client.set(params);
-    return {'overallSuccess': true, 'hasAnySuccess': false, 'hasErrors': false, 'results': []};
+    return {'success': true, 'result': {'data': <String, dynamic>{}}};
   }
 
   /// Update multiple instances in a single USP Set
@@ -548,7 +609,7 @@ class ConnectedDevices {
       if (update.active != null) params['${update.instancePath}Active'] = update.active;
     }
     if (params.isNotEmpty) return await client.set(params, allowPartial: allowPartial);
-    return {'overallSuccess': true, 'hasAnySuccess': false, 'hasErrors': false, 'results': []};
+    return {'success': true, 'result': {'data': <String, dynamic>{}}};
   }
 }
 ```
@@ -583,22 +644,22 @@ export async function fetchConnectedDevices(client: UspClient): Promise<Connecte
   return { items };
 }
 
-export async function updateConnectedDevice(client: UspClient, update: ConnectedDeviceUpdate): Promise<any> {
+export async function updateConnectedDevice(client: UspClient, update: ConnectedDeviceUpdate): Promise<Record<string, any>> {
   const params: Record<string, any> = {};
   if (update.hostName !== undefined) params[`${update.instancePath}HostName`] = update.hostName;
   if (update.active !== undefined) params[`${update.instancePath}Active`] = update.active;
   if (Object.keys(params).length > 0) return await client.setMultiple(params, false);
-  return {overallSuccess: true, hasAnySuccess: false, hasErrors: false, results: []};
+  return { success: true, result: { data: {} } };
 }
 
-export async function updateConnectedDevices(client: UspClient, updates: ConnectedDeviceUpdate[], allowPartial = false): Promise<any> {
+export async function updateConnectedDevices(client: UspClient, updates: ConnectedDeviceUpdate[], allowPartial = false): Promise<Record<string, any>> {
   const params: Record<string, any> = {};
   for (const update of updates) {
     if (update.hostName !== undefined) params[`${update.instancePath}HostName`] = update.hostName;
     if (update.active !== undefined) params[`${update.instancePath}Active`] = update.active;
   }
   if (Object.keys(params).length > 0) return await client.setMultiple(params, allowPartial);
-  return {overallSuccess: true, hasAnySuccess: false, hasErrors: false, results: []};
+  return { success: true, result: { data: {} } };
 }
 ```
 
@@ -635,7 +696,7 @@ public class ConnectedDevices {
         if let hostName = update.hostName { params["\(update.instancePath)HostName"] = hostName }
         if let active = update.active { params["\(update.instancePath)Active"] = active }
         guard !params.isEmpty else { 
-            return ["overallSuccess": true, "hasAnySuccess": false, "hasErrors": false, "results": []]
+            return ["success": true, "result": ["data": [:] as [String: Any]]]
         }
         return try await client.set(params)
     }
@@ -647,7 +708,7 @@ public class ConnectedDevices {
             if let active = update.active { params["\(update.instancePath)Active"] = active }
         }
         guard !params.isEmpty else { 
-            return ["overallSuccess": true, "hasAnySuccess": false, "hasErrors": false, "results": []]
+            return ["success": true, "result": ["data": [:] as [String: Any]]]
         }
         return try await client.set(params, allowPartial: allowPartial)
     }
@@ -784,7 +845,7 @@ export async function addPortForwardingRule(client: UspClient, params: {
   protocol: string;
   externalPort: number;
   enabled?: boolean;
-}): Promise<any> {
+}): Promise<Record<string, any>> {
   const setParams: Record<string, any> = {};
   setParams['Protocol'] = params.protocol;
   setParams['ExternalPort'] = params.externalPort;
@@ -792,7 +853,7 @@ export async function addPortForwardingRule(client: UspClient, params: {
   return await client.add('Device.NAT.PortMapping.', setParams);
 }
 
-export async function deletePortForwardingRule(client: UspClient, instancePath: string): Promise<any> {
+export async function deletePortForwardingRule(client: UspClient, instancePath: string): Promise<Record<string, any>> {
   return await client.delete(instancePath);
 }
 ```
@@ -889,7 +950,7 @@ class WifiSettings {
     if (securityMode != null) params['Device.WiFi.AccessPoint.1.Security.ModeEnabled'] = securityMode;
     if (passphrase != null) params['Device.WiFi.AccessPoint.1.Security.KeyPassphrase'] = passphrase;
     if (params.isNotEmpty) return await client.set(params);
-    return {'overallSuccess': true, 'hasAnySuccess': false, 'hasErrors': false, 'results': []};
+    return {'success': true, 'result': {'data': <String, dynamic>{}}};
   }
 }
 ```
@@ -985,7 +1046,7 @@ class DiagnosticsOperate {
 export async function startSpeedTest(client: UspClient, params: {
   downloadUrl: string;
   connections?: number;
-}): Promise<any> {
+}): Promise<Record<string, any>> {
   const inputs: Record<string, any> = {};
   inputs['DownloadURL'] = params.downloadUrl;
   if (params.connections !== undefined) inputs['NumberOfConnections'] = params.connections;
@@ -993,7 +1054,7 @@ export async function startSpeedTest(client: UspClient, params: {
 }
 
 /** Stop speed test */
-export async function stopSpeedTest(client: UspClient): Promise<any> {
+export async function stopSpeedTest(client: UspClient): Promise<Record<string, any>> {
   return await client.operate('Device.IP.Diagnostics.DownloadDiagnostics.Stop()', {});
 }
 ```
@@ -1848,42 +1909,38 @@ Starting with version 0.11.0, all generated USP operation methods (`set`, `add`,
 All operations now return a consistent structure across all languages:
 
 **Dart:** `Future<Map<String, dynamic>>`
-**TypeScript:** `Promise<any>` 
+**TypeScript:** `Promise<Record<string, any>>`
 **Swift:** `async throws -> [String: Any]`
 
 ### Response Object Schema
 
+All operations return a unified envelope format from usp-client v0.7.0:
+
 ```typescript
-interface UspOperationResult {
-  overallSuccess: boolean;      // True if all requested operations succeeded
-  hasAnySuccess: boolean;       // True if at least one operation succeeded  
-  hasErrors: boolean;           // True if at least one operation failed
-  results: Array<{              // Detailed results per requested path
-    requestedPath: string;      // The path that was requested
-    success: boolean;           // Whether this specific path succeeded
-    
-    // Success-specific fields (operation type dependent):
-    updatedInstances?: Array<UpdatedInstance>;      // SET operations
-    createdInstances?: Array<CreatedInstance>;      // ADD operations
-    deletedInstances?: Array<DeletedInstance>;      // DELETE operations 
-    retrievedParams?: Array<RetrievedParam>;        // GET operations
-    commandKey?: string;                             // OPERATE operations
-    outputArgs?: Record<string, any>;               // OPERATE operations
-    
-    // Error-specific fields:
-    errorCode?: number;         // USP error code when success=false
-    errorMessage?: string;      // Human-readable error message
-  }>;
+interface UspResponse {
+  success: boolean;              // At least one operation succeeded
+  result: {
+    data: Record<string, any>;   // Operation-specific result data
+    error?: Record<string, {     // Optional — only present when errors occur
+      errorCode: number;         // USP error code
+      errorMessage: string;      // Human-readable error message
+    }>;
+  };
 }
 ```
+
+**Interpreting the response:**
+- **All success:** `success === true` and `result.error` is absent or empty
+- **Partial success:** `success === true` and `result.error` has entries
+- **All failure:** `success === false`
 
 ### Benefits
 
 1. **Complete Information Preservation**: All firmware response data is available to application logic
 2. **Partial Success Handling**: Applications can detect and handle scenarios where some operations succeed and others fail
-3. **Detailed Error Information**: Specific error codes and messages for each failed operation
-4. **Consistent Interface**: Same structure across SET, ADD, DELETE, GET, and OPERATE operations
-5. **Backward Compatibility**: Existing code can check `overallSuccess` for simple success/failure logic
+3. **Detailed Error Information**: Specific error codes and messages for each failed path
+4. **Consistent Interface**: Same envelope structure across SET, ADD, DELETE, and OPERATE operations
+5. **Optional Error Field**: No `error` key when all operations succeed — clean responses for the common case
 
 ### Migration Guide
 
@@ -1896,25 +1953,23 @@ String instancePath = await client.add('Device.NAT.PortMapping.', params);
 
 **After (v0.11.0+):**
 ```dart
-// Structured response with detailed information
+// Unified response format
 final result = await client.set({'Device.WiFi.SSID.1.SSID': 'NewNetwork'});
-if (result['overallSuccess']) {
-  // Success - access detailed results if needed
-  final results = result['results'] as List;
-} else {
-  // Handle partial success or complete failure
-  final results = result['results'] as List;
-  for (final item in results) {
-    if (!item['success']) {
-      print('Error ${item['errorCode']}: ${item['errorMessage']}');
+if (result['success']) {
+  final data = result['result']['data'] as Map<String, dynamic>;
+  // Check for partial errors (error field is optional)
+  final errors = result['result']['error'] as Map<String, dynamic>?;
+  if (errors != null && errors.isNotEmpty) {
+    for (final entry in errors.entries) {
+      print('Error on ${entry.key}: ${entry.value['errorMessage']}');
     }
   }
 }
 
 final addResult = await client.add('Device.NAT.PortMapping.', params);
-if (addResult['overallSuccess']) {
-  final createdInstances = addResult['results'][0]['createdInstances'];
-  final instancePath = createdInstances[0]['affectedPath'];
+if (addResult['success']) {
+  final data = addResult['result']['data'] as Map<String, dynamic>;
+  final instances = data['instances'] as List;
 }
 ```
 

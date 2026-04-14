@@ -94,45 +94,68 @@ abstract class UspClient {
 }
 ```
 
-#### Service 層職責 (業務邏輯)
+#### Service 層職責 (業務邏輯 + 錯誤映射)
 ```dart
 class SystemInfoService {
   final UspClient _client;
   
   // 業務特定的資料獲取
   Future<SystemInfoData> fetchSystemInfoData() async {
-    final result = await SystemInfo.fetchWithResult(_client);
-    return _handleBusinessLogic(result);
+    try {
+      // 使用結構化 API
+      final result = await _client.getWithResult(['Device.DeviceInfo.*']);
+      final parsedResult = UspResultParser.parseGetResult<SystemInfo>(
+        result, 
+        (data) => SystemInfo.fromMap(data)  // 使用 codegen 的解析邏輯
+      );
+      
+      return _handleBusinessLogic(parsedResult);
+    } catch (e) {
+      // 使用現有的統一錯誤映射
+      throw mapUspErrorToServiceError(e);
+    }
   }
   
-  // 業務特定的錯誤處理策略
-  SystemInfoData _handleBusinessLogic(UspGetResult<SystemInfo> result) {
+  // 業務特定的結構化回應處理
+  SystemInfoData _handleBusinessLogic(UspOperationResult<SystemInfo> result) {
     return result.when(
-      success: (data, details) => data,
+      success: (data, details) => SystemInfoData.fromSystemInfo(data),
       partialSuccess: (data, successes, failures) {
         // 系統資訊允許部分成功，記錄警告
         logger.w('SystemInfo 部分參數獲取失敗: ${failures.length} errors');
-        return data;
+        return SystemInfoData.fromSystemInfo(data);
       },
-      failure: (errors) => throw SystemInfoException(errors),
+      failure: (errors) {
+        // 這裡不會到達，因為 WASM 錯誤已經在 try-catch 轉換為 ServiceError
+        throw UnexpectedError(message: 'Unexpected failure result');
+      },
     );
   }
 }
 ```
 
-#### Provider 層選擇 (狀態管理)
+#### Provider 層選擇 (狀態管理 + 統一錯誤處理)
 ```dart
 class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
   @override
   Future<SystemInfoData> build() async {
     final client = ref.read(uspClientProvider)!;
     
-    // 方案 A：使用 Service 層（推薦）
-    final service = SystemInfoService(client);
-    return service.fetchSystemInfoData();
+    try {
+      // 方案 A：使用 Service 層（推薦）
+      final service = SystemInfoService(client);
+      return await service.fetchSystemInfoData();
+    } on ServiceError {
+      // ServiceError 會自動被 Riverpod 轉換為 AsyncError 狀態
+      rethrow;
+    }
     
-    // 方案 B：直接使用 Codegen（簡單場景）
-    // return SystemInfo.fetch(client);
+    // 方案 B：直接使用 Codegen（簡單場景，需要手動錯誤處理）
+    // try {
+    //   return SystemInfo.fetch(client);
+    // } catch (e) {
+    //   throw mapUspErrorToServiceError(e);
+    // }
   }
 }
 ```
@@ -156,153 +179,224 @@ class SystemInfoDataNotifier extends AsyncNotifier<SystemInfoData> {
    - 確保 GET 操作回傳結構化回應（移除臨時兼容層）
 ```
 
-#### 階段 2B: Codegen 模板更新
+#### 階段 2B: Service 層架構設計 (不修改 Codegen)
 ```bash
-# 目標：所有生成的程式碼提供雙重 API
+# 目標：設計 Service 層標準實作模式，基於現有 unified error handling 架構
 
-1. ✅ 更新 codegen 模板
-   - 生成 .fetch() 方法（傳統，向後兼容）
-   - 生成 .fetchWithResult() 方法（結構化，推薦）
+1. ✅ 利用現有 ServiceError 架構
+   - lib/core/errors/service_error.dart (已存在)
+   - lib/core/usp/errors/usp_error.dart (已存在)
+   - mapUspErrorToServiceError() 函數 (已存在)
 
-2. ✅ 重新生成所有模型
-   - ./tools/usp-codegen --definitions-dir definitions/ --output-dir lib/generated/
+2. ✅ 標準 Service 層模式
+   - 使用 UspClient.getWithResult() 結構化 API
+   - 使用 UspResultParser 解析結構化回應
+   - 使用 SystemInfo.fromMap() 等 codegen 解析邏輯（不修改 codegen）
+   - 統一錯誤映射：catch → mapUspErrorToServiceError() → throw ServiceError
 
-3. ✅ 驗證生成結果
-   - SystemInfo.fetch() 和 SystemInfo.fetchWithResult() 都可用
+3. ✅ Provider 層錯誤處理
+   - 只需 catch ServiceError 子類型
+   - Riverpod 自動轉換為 AsyncError 狀態
 ```
 
 #### 階段 2C: Service 層試點實作
 ```bash
-# 目標：實作 3 個關鍵 Service 作為試點
+# 目標：實作 3 個關鍵 Service 作為試點，展示標準模式
 
 1. ✅ SystemInfoService
    - lib/page/admin/services/system_info_service.dart
-   - 處理系統資訊的業務邏輯和錯誤處理
+   - 展示讀取操作 + 部分成功容錯處理
 
 2. ✅ ConnectedDevicesService  
    - lib/page/devices/services/connected_devices_service.dart
-   - 處理設備列表的業務邏輯
+   - 展示多模型聚合 + 錯誤處理
 
 3. ✅ WiFiSettingsService
    - lib/page/wifi_settings/services/wifi_settings_service.dart
-   - 處理 Wi-Fi 設定的業務邏輯
+   - 展示寫入操作 + 嚴格錯誤處理
 
-# 每個 Service 包含：
-- fetchXxxData() 方法
-- saveXxxData() 方法  
-- 業務特定的錯誤處理策略
-- 結構化回應的 when() 處理邏輯
+# 每個 Service 標準結構：
+- fetchXxxData(): 使用 getWithResult() + UspResultParser + mapUspErrorToServiceError()
+- saveXxxData(): 使用 setWithResult() + 業務邏輯錯誤處理 + 統一錯誤映射  
+- _handleResult(): 結構化回應的 when() 處理（成功/部分成功/失敗）
+- Provider 層只需處理 ServiceError 子類型
 ```
 
 #### 階段 2D: Provider 層遷移（關鍵模組）
 ```bash
-# 目標：關鍵 Provider 遷移到 Service 層架構
+# 目標：關鍵 Provider 遷移到 Service 層架構 + 統一錯誤處理
 
 1. ✅ SystemInfoDataNotifier
    - lib/page/admin/providers/system_info_data_provider.dart
-   - 使用 SystemInfoService 替代直接 codegen 調用
+   - 從直接 codegen 調用 → SystemInfoService + ServiceError 處理
 
 2. ✅ DevicesDataNotifier
    - lib/page/devices/providers/devices_data_provider.dart
-   - 使用 ConnectedDevicesService
+   - ConnectedDevicesService + 多模型聚合錯誤處理
 
 3. ✅ WiFiDataProvider
    - lib/page/wifi_settings/providers/wifi_data_provider.dart
-   - 使用 WiFiSettingsService
+   - WiFiSettingsService + 寫入操作嚴格錯誤處理
 
 4. ✅ 寫入操作 Provider (高優先級)
    - 所有有 SET/ADD/DELETE 操作的 Provider
-   - 錯誤處理對寫入操作更重要
+   - 利用結構化回應處理部分成功場景
+   - 統一的 ServiceError 錯誤處理，UI 層一致體驗
+
+# Provider 層遷移模式：
+- 移除直接 codegen 調用和手動錯誤處理
+- 使用 Service 層 + catch ServiceError 子類型
+- Riverpod AsyncError 自動處理，UI 層統一錯誤顯示
 ```
 
-### 2.3 Service 層實作模式
+### 2.3 Service 層實作模式（基於現有 Unified Error Handling）
 
-#### 模式 A: 錯誤敏感業務邏輯
+#### 模式 A: 錯誤敏感業務邏輯（關鍵系統）
 ```dart
 class CriticalSystemService {
+  final UspClient _client;
+  
   Future<SystemData> fetchData() async {
-    final result = await SystemModel.fetchWithResult(_client);
-    
-    return result.when(
-      success: (data, details) => data,
-      partialSuccess: (data, successes, failures) {
-        // 關鍵系統：部分失敗也要拋出異常
-        throw PartialFailureException('Critical data incomplete', failures);
-      },
-      failure: (errors) => throw SystemException(errors),
-    );
+    try {
+      // 使用結構化 API + 現有 codegen 解析
+      final result = await _client.getWithResult(['Device.System.*']);
+      final parsedResult = UspResultParser.parseGetResult<SystemModel>(
+        result, 
+        (data) => SystemModel.fromMap(data)
+      );
+      
+      return parsedResult.when(
+        success: (data, details) => SystemData.fromSystemModel(data),
+        partialSuccess: (data, successes, failures) {
+          // 關鍵系統：部分失敗也要拋出 ServiceError
+          throw InvalidInputError(
+            message: 'Critical data incomplete: ${failures.length} errors'
+          );
+        },
+        failure: (errors) {
+          // 這裡不會到達（WASM 錯誤已轉換為 ServiceError）
+          throw UnexpectedError(message: 'Unexpected failure result');
+        },
+      );
+    } catch (e) {
+      // 統一錯誤映射：所有 USP 錯誤 → ServiceError
+      throw mapUspErrorToServiceError(e);
+    }
   }
 }
 ```
 
-#### 模式 B: 容錯業務邏輯
+#### 模式 B: 容錯業務邏輯（顯示資料）
 ```dart
 class DisplayDataService {
+  final UspClient _client;
+  
   Future<DisplayData> fetchData() async {
-    final result = await DisplayModel.fetchWithResult(_client);
-    
-    return result.when(
-      success: (data, details) => data,
-      partialSuccess: (data, successes, failures) {
-        // 顯示資料：允許部分成功，記錄但不中斷
-        logger.w('部分資料獲取失敗，繼續顯示可用資料');
-        return data;
-      },
-      failure: (errors) => throw DisplayException(errors),
-    );
+    try {
+      final result = await _client.getWithResult(['Device.Display.*']);
+      final parsedResult = UspResultParser.parseGetResult<DisplayModel>(
+        result, 
+        (data) => DisplayModel.fromMap(data)
+      );
+      
+      return parsedResult.when(
+        success: (data, details) => DisplayData.fromDisplayModel(data),
+        partialSuccess: (data, successes, failures) {
+          // 顯示資料：允許部分成功，記錄但不中斷
+          logger.w('部分資料獲取失敗，繼續顯示可用資料');
+          return DisplayData.fromDisplayModel(data);
+        },
+        failure: (errors) {
+          // 這裡不會到達（WASM 錯誤已轉換為 ServiceError）
+          throw UnexpectedError(message: 'Unexpected failure result');
+        },
+      );
+    } catch (e) {
+      // 統一錯誤映射
+      throw mapUspErrorToServiceError(e);
+    }
   }
 }
 ```
 
-#### 模式 C: 簡單業務邏輯
+#### 模式 C: 簡單業務邏輯（保持傳統 API）
 ```dart
 class SimpleDataNotifier extends AsyncNotifier<SimpleData> {
   @override
   Future<SimpleData> build() async {
     final client = ref.watch(uspClientProvider)!;
-    // 對於簡單場景，繼續使用傳統 API
-    return SimpleData.fetch(client);
+    
+    try {
+      // 簡單場景：繼續使用傳統 API + 手動錯誤處理
+      return await SimpleData.fetch(client);
+    } catch (e) {
+      // 手動錯誤映射到 ServiceError
+      throw mapUspErrorToServiceError(e);
+    }
   }
 }
 ```
 
-### 2.4 錯誤處理策略擴展
+### 2.4 基於現有 ServiceError 架構的錯誤處理策略
 
-#### 業務錯誤處理擴展
+#### 利用現有 ServiceError 層次結構
 ```dart
-extension UspResultBusinessLogic<T> on UspOperationResult<T> {
-  /// 允許部分成功的業務邏輯
-  T getDataOrPartial({String? context}) {
-    return when(
-      success: (data, details) => data,
+class ServiceLayerErrorHandling {
+  /// 容錯策略：部分成功可接受
+  T handleTolerantly<T>(UspOperationResult<T> result, T Function(T) transform) {
+    return result.when(
+      success: (data, details) => transform(data),
       partialSuccess: (data, successes, failures) {
-        logger.w('[$context] 部分成功: ${failures.length} 個參數失敗');
-        return data;
+        logger.w('部分成功，繼續處理: ${failures.length} 個參數失敗');
+        return transform(data);
       },
-      failure: (errors) => throw UspBusinessException(context, errors),
-    );
-  }
-  
-  /// 嚴格模式：任何錯誤都中斷
-  T getDataStrict({String? context}) {
-    return when(
-      success: (data, details) => data,
-      partialSuccess: (data, successes, failures) => 
-        throw UspPartialFailureException(context, failures),
-      failure: (errors) => throw UspBusinessException(context, errors),
-    );
-  }
-  
-  /// 容錯模式：提供預設值
-  T getDataWithFallback(T fallback, {String? context}) {
-    return when(
-      success: (data, details) => data,
-      partialSuccess: (data, successes, failures) => data,
       failure: (errors) {
-        logger.e('[$context] 資料獲取失敗，使用預設值');
-        return fallback;
+        // 這裡不會到達，因為 WASM 錯誤已轉換為 ServiceError
+        throw UnexpectedError(message: 'Unexpected failure result');
       },
     );
+  }
+  
+  /// 嚴格策略：部分失敗也拋出 ServiceError
+  T handleStrictly<T>(UspOperationResult<T> result, T Function(T) transform) {
+    return result.when(
+      success: (data, details) => transform(data),
+      partialSuccess: (data, successes, failures) {
+        // 拋出 ServiceError，讓 Provider 層統一處理
+        throw InvalidInputError(
+          message: 'Partial success not acceptable: ${failures.length} errors'
+        );
+      },
+      failure: (errors) {
+        throw UnexpectedError(message: 'Unexpected failure result');
+      },
+    );
+  }
+}
+```
+
+#### Provider 層統一錯誤處理模式
+```dart
+class ExampleDataNotifier extends AsyncNotifier<ExampleData> {
+  @override
+  Future<ExampleData> build() async {
+    final client = ref.read(uspClientProvider)!;
+    
+    try {
+      final service = ExampleService(client);
+      return await service.fetchData();
+    } on InvalidCredentialsError {
+      // 處理特定的認證錯誤
+      ref.read(authProvider.notifier).logout();
+      rethrow;
+    } on NetworkError catch (e) {
+      // 處理網路錯誤
+      logger.e('Network error: ${e.message}');
+      rethrow;
+    } on ServiceError {
+      // 其他 ServiceError 讓 Riverpod 自動轉換為 AsyncError
+      rethrow;
+    }
   }
 }
 ```

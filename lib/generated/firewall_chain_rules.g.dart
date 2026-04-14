@@ -94,10 +94,8 @@ class FirewallChainRules {
       params['${update.instancePath}Enable'] = update.enable;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params);
@@ -114,10 +112,8 @@ class FirewallChainRules {
     }
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params, allowPartial: allowPartial);

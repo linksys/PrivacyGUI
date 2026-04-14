@@ -80,6 +80,7 @@ class WanSettings {
     String? defaultGateway,
     String? dnsServers,
     bool? bridgeEnabled,
+    bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
     if (addressingType != null)
@@ -100,13 +101,11 @@ class WanSettings {
       params['Device.Bridging.Bridge.1.Enable'] = bridgeEnabled;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
-    return await client.set(params);
+    return await client.set(params, allowPartial: allowPartial);
   }
 
   @override

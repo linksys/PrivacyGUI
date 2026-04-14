@@ -76,6 +76,7 @@ class Ipv6Settings {
     String? ipv6rdPrefix,
     int? ipv6rdIpv4MaskLength,
     String? ipv6rdBorderRelay,
+    bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
     if (ipv6Enabled != null)
@@ -94,13 +95,11 @@ class Ipv6Settings {
           ipv6rdBorderRelay;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
-    return await client.set(params);
+    return await client.set(params, allowPartial: allowPartial);
   }
 
   @override

@@ -156,10 +156,8 @@ class Ipv6PortService {
       params['${update.instancePath}Target'] = update.target;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params);
@@ -191,10 +189,8 @@ class Ipv6PortService {
     }
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params, allowPartial: allowPartial);
@@ -224,9 +220,43 @@ class Ipv6PortService {
     return await client.add('Device.Firewall.Chain.1.Rule.', params);
   }
 
+  /// Add multiple Ipv6PortServiceRule instances with partial success support
+  /// Returns detailed operation result Map
+  static Future<Map<String, dynamic>> addMany(
+      UspClient client, List<Map<String, dynamic>> paramsList,
+      {bool allowPartial = false}) async {
+    if (paramsList.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.addMultiple(
+      paramsList
+          .map((p) => {'path': 'Device.Firewall.Chain.1.Rule.', 'params': p})
+          .toList(),
+      allowPartial: allowPartial,
+    );
+  }
+
   /// Delete a Ipv6PortServiceRule instance via USP Delete message
   static Future<Map<String, dynamic>> delete(
       UspClient client, String instancePath) async {
     return await client.delete(instancePath);
+  }
+
+  /// Delete multiple Ipv6PortServiceRule instances with partial success support
+  /// Returns detailed operation result Map
+  static Future<Map<String, dynamic>> deleteMany(
+      UspClient client, List<String> instancePaths,
+      {bool allowPartial = false}) async {
+    if (instancePaths.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.deleteMultiple(instancePaths,
+        allowPartial: allowPartial);
   }
 }

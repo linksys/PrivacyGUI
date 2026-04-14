@@ -135,10 +135,8 @@ class StaticRouting {
       params['${update.instancePath}Alias'] = update.alias;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params);
@@ -166,10 +164,8 @@ class StaticRouting {
     }
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
     return await client.set(params, allowPartial: allowPartial);
@@ -195,9 +191,44 @@ class StaticRouting {
     return await client.add('Device.Routing.Router.1.IPv4Forwarding.', params);
   }
 
+  /// Add multiple StaticRoute instances with partial success support
+  /// Returns detailed operation result Map
+  static Future<Map<String, dynamic>> addMany(
+      UspClient client, List<Map<String, dynamic>> paramsList,
+      {bool allowPartial = false}) async {
+    if (paramsList.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.addMultiple(
+      paramsList
+          .map((p) =>
+              {'path': 'Device.Routing.Router.1.IPv4Forwarding.', 'params': p})
+          .toList(),
+      allowPartial: allowPartial,
+    );
+  }
+
   /// Delete a StaticRoute instance via USP Delete message
   static Future<Map<String, dynamic>> delete(
       UspClient client, String instancePath) async {
     return await client.delete(instancePath);
+  }
+
+  /// Delete multiple StaticRoute instances with partial success support
+  /// Returns detailed operation result Map
+  static Future<Map<String, dynamic>> deleteMany(
+      UspClient client, List<String> instancePaths,
+      {bool allowPartial = false}) async {
+    if (instancePaths.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
+      };
+    }
+    return await client.deleteMultiple(instancePaths,
+        allowPartial: allowPartial);
   }
 }

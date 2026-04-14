@@ -309,33 +309,66 @@ class UspResultParser {
     return _parseGenericResult<Map<String, dynamic>>(map);
   }
 
-  /// 通用結果解析邏輯
+  /// 解析 WASM v0.11.0 格式：{success, result: {data, error?}}
   static UspOperationResult<T> _parseGenericResult<T>(
       Map<String, dynamic> map) {
-    final overallSuccess = map['overallSuccess'] as bool? ?? false;
-    final hasErrors = map['hasErrors'] as bool? ?? false;
-    final results = map['results'] as List<dynamic>? ?? [];
+    final success = map['success'] as bool? ?? false;
+    final result = map['result'] as Map<String, dynamic>? ?? {};
+    final data = result['data'] as Map<String, dynamic>? ?? {};
+    final error = result['error'] as Map<String, dynamic>?;
 
     final successes = <UspSuccessDetail>[];
     final failures = <UspErrorDetail>[];
 
-    for (final result in results) {
-      final resultMap = result as Map<String, dynamic>;
-      final success = resultMap['success'] as bool? ?? false;
-
-      if (success) {
-        successes.add(UspSuccessDetail.fromMap(resultMap));
-      } else {
-        failures.add(UspErrorDetail.fromMap(resultMap));
-      }
-    }
-
-    // 根據結果狀態返回適當的 sealed class 實例
-    if (overallSuccess && !hasErrors) {
+    if (success && error == null) {
+      // All success: success=true, no error field
+      successes.add(UspSuccessDetail(
+        requestedPath: 'bulk_operation',
+        retrievedParams: data,
+      ));
       return UspSuccess<T>(successes);
-    } else if (successes.isNotEmpty && failures.isNotEmpty) {
+    } else if (success && error != null) {
+      // Partial success: success=true, but has error field
+      if (data.isNotEmpty) {
+        successes.add(UspSuccessDetail(
+          requestedPath: 'bulk_operation',
+          retrievedParams: data,
+        ));
+      }
+
+      for (final entry in error.entries) {
+        final path = entry.key;
+        final errorInfo = entry.value as Map<String, dynamic>;
+        failures.add(UspErrorDetail(
+          requestedPath: path,
+          errorCode: errorInfo['errorCode'] as int? ?? -1,
+          errorMessage: errorInfo['errorMessage'] as String? ?? 'Unknown error',
+        ));
+      }
+
       return UspPartialSuccess<T>(successes, failures);
     } else {
+      // All failure: success=false
+      if (error != null) {
+        for (final entry in error.entries) {
+          final path = entry.key;
+          final errorInfo = entry.value as Map<String, dynamic>;
+          failures.add(UspErrorDetail(
+            requestedPath: path,
+            errorCode: errorInfo['errorCode'] as int? ?? -1,
+            errorMessage:
+                errorInfo['errorMessage'] as String? ?? 'Unknown error',
+          ));
+        }
+      } else {
+        // No specific error info, create generic failure
+        failures.add(const UspErrorDetail(
+          requestedPath: 'bulk_operation',
+          errorCode: -1,
+          errorMessage: 'Operation failed',
+        ));
+      }
+
       return UspFailure<T>(failures);
     }
   }

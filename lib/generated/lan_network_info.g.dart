@@ -83,6 +83,7 @@ class LanNetworkInfo {
     int? leaseTime,
     String? dnsServers,
     String? hostName,
+    bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
     if (ipAddress != null)
@@ -102,13 +103,11 @@ class LanNetworkInfo {
     if (hostName != null) params['Device.DeviceInfo.HostName'] = hostName;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
-    return await client.set(params);
+    return await client.set(params, allowPartial: allowPartial);
   }
 
   @override

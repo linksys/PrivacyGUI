@@ -58,6 +58,7 @@ class TimeSettings {
     String? ntpServer1,
     String? ntpServer2,
     String? localTimeZone,
+    bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
     if (enable != null) params['Device.Time.Enable'] = enable;
@@ -67,13 +68,11 @@ class TimeSettings {
       params['Device.Time.LocalTimeZone'] = localTimeZone;
     if (params.isEmpty) {
       return {
-        'overallSuccess': true,
-        'hasAnySuccess': false,
-        'hasErrors': false,
-        'results': []
+        'success': true,
+        'result': {'data': <String, dynamic>{}}
       };
     }
-    return await client.set(params);
+    return await client.set(params, allowPartial: allowPartial);
   }
 
   @override

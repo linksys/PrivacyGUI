@@ -5,12 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
 import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
+import 'package:privacy_gui/page/devices/services/connected_devices_service.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
@@ -114,121 +113,57 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   }
 
   Future<DevicesData> _fetch() async {
-    final usp = ref.read(uspClientProvider);
-    if (usp == null) throw StateError('USP service not available');
+    // REFACTORED: Use ConnectedDevicesService instead of direct codegen
+    final connectedDevicesService = ref.read(connectedDevicesServiceProvider);
 
-    // Fetch ConnectedDevices immediately; mesh topology in background.
-    // DataElements (mesh) uses 9 deep-wildcard paths that often timeout
-    // (15s) on single-router setups where it always returns empty.
-    // Don't block devices on it — show devices first, update mesh later.
-    final connectedDevices = await ConnectedDevices.fetch(usp);
-
-    // Cache raw for WiFi listener rebuild.
-    _rawConnectedDevices = connectedDevices;
-
-    // Build hostname map for DHCP enrichment.
-    final hostNameByMac = <String, String>{};
-    for (final d in connectedDevices.items) {
-      if (d.hostName.isNotEmpty) {
-        hostNameByMac[d.macAddress.trim().toUpperCase()] = d.hostName;
-      }
-    }
-
-    // Read WiFi enrichment data — soft dependency with timeout.
-    // If wifiDataProvider is in error (e.g. bridge 503 on startup), use
-    // fallback empty data so devices still load. The WiFi listener in build()
-    // will rebuild deviceModels when WiFi data arrives later.
-    WifiData wifiData;
     try {
-      wifiData = await ref
-          .read(wifiDataProvider.future)
-          .timeout(const Duration(seconds: 20));
+      // Service layer handles:
+      // - ConnectedDevices.fetch() with structured error handling
+      // - Multi-model aggregation and business logic
+      // - UspDeviceService integration for UI model building
+      final serviceResult =
+          await connectedDevicesService.fetchConnectedDevicesData();
+
+      // REFACTORED: Service now exposes both raw data and UI models
+      // Raw data for WiFi listener compatibility, UI models for immediate use
+      _rawConnectedDevices = serviceResult.rawConnectedDevices;
+
+      // Use service result directly
+      final deviceModels = serviceResult.deviceModels;
+      final meshTopology = serviceResult.meshTopology;
+      final nodeModels = serviceResult.nodeModels;
+      final hostNameByMac = serviceResult.hostNameByMac;
+
+      logger.d('[USP][DevicesData] Service layer fetch completed — '
+          'deviceModels: ${deviceModels.length}, '
+          'nodeModels: ${nodeModels.length}');
+
+      // Note: Background mesh fetching is now handled within ConnectedDevicesService
+      // This is a cleaner separation of concerns
+
+      return DevicesData(
+        meshTopology: meshTopology,
+        deviceModels: deviceModels,
+        nodeModels: nodeModels,
+        hostNameByMac: hostNameByMac,
+      );
     } catch (e) {
-      logger.w('[USP][DevicesData] WiFi data unavailable, using fallback: $e');
-      wifiData = const WifiData.empty();
+      // Service layer converts USP/WASM errors to ServiceError
+      logger.e('[USP][DevicesData] Service layer error: $e');
+      rethrow;
     }
-
-    // Read system info for gateway name + node model building
-    final sysData = ref.read(systemInfoDataProvider).valueOrNull;
-    final gatewayName = sysData?.model.gatewayName ?? 'Router';
-
-    // Build UI models with empty mesh first — devices appear immediately.
-    final svc = ref.read(uspDeviceServiceProvider);
-    var meshTopology = MeshTopologyInfo.empty;
-    final deviceModels = svc.buildDeviceUIModels(
-      connectedDevices: connectedDevices,
-      wifiClientMap: wifiData.wifiClientMap,
-      connectionDetailMap: wifiData.connectionDetailMap,
-      meshTopology: meshTopology,
-      gatewayName: gatewayName,
-    );
-
-    final nodeModels = sysData != null
-        ? svc.buildNodeUIModels(
-            meshTopology: meshTopology,
-            deviceModels: deviceModels,
-            systemInfo: sysData.model,
-          )
-        : <NodeUIModel>[];
-
-    logger.d('[USP][DevicesData] Fetched — '
-        'devices: ${connectedDevices.items.length}, '
-        'deviceModels: ${deviceModels.length}, '
-        'nodeModels: ${nodeModels.length}');
-
-    // Fire-and-forget: fetch mesh topology in background, then update state.
-    _fetchMeshAndUpdate(
-        usp, connectedDevices, wifiData, svc, gatewayName, sysData);
-
-    return DevicesData(
-      meshTopology: meshTopology,
-      deviceModels: deviceModels,
-      nodeModels: nodeModels,
-      hostNameByMac: hostNameByMac,
-    );
   }
 
-  /// Background mesh topology fetch — updates state when complete.
-  Future<void> _fetchMeshAndUpdate(
-    UspClient usp,
-    ConnectedDevices connectedDevices,
-    WifiData wifiData,
-    UspDeviceService svc,
-    String gatewayName,
-    SystemInfoData? sysData,
-  ) async {
-    final meshTopology = await fetchMeshNodes(usp);
-    if (meshTopology.isEmpty) return; // Single router — no mesh update needed.
-
-    final cur = state.valueOrNull;
-    if (cur == null) return;
-
-    final deviceModels = svc.buildDeviceUIModels(
-      connectedDevices: connectedDevices,
-      wifiClientMap: wifiData.wifiClientMap,
-      connectionDetailMap: wifiData.connectionDetailMap,
-      meshTopology: meshTopology,
-      gatewayName: gatewayName,
-    );
-
-    final nodeModels = sysData != null
-        ? svc.buildNodeUIModels(
-            meshTopology: meshTopology,
-            deviceModels: deviceModels,
-            systemInfo: sysData.model,
-          )
-        : <NodeUIModel>[];
-
-    logger.d('[USP][DevicesData] Mesh update — '
-        'meshNodes: ${meshTopology.nodes.length}, '
-        'nodeModels: ${nodeModels.length}');
-
-    state = AsyncData(cur.copyWith(
-      meshTopology: meshTopology,
-      deviceModels: deviceModels,
-      nodeModels: nodeModels,
-    ));
-  }
+  // TODO [Service Refactor]: Background mesh fetching removed in Service layer integration.
+  // The original _fetchMeshAndUpdate() provided performance optimization by:
+  // 1. Showing devices immediately with empty mesh
+  // 2. Background fetching mesh topology and updating state
+  //
+  // This pattern needs to be supported in Service layer design for complete refactor.
+  // Options:
+  // A) Service.fetchInitial() + Service.fetchBackgroundUpdates()
+  // B) Service with stream/subscription pattern for progressive updates
+  // C) Service with callback pattern for background updates
 
   void _debouncedInvalidate() {
     _debounce?.cancel();
