@@ -5,6 +5,7 @@ import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/page/port_forwarding/services/port_forwarding_transforms.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -39,28 +40,9 @@ class UspPortForwardingDataService {
   Future<List<PortForwardingRuleUIModel>> fetch() async {
     try {
       final raw = await PortForwarding.fetch(_usp);
-      return buildUIModels(raw);
+      return transformForwardingRules(raw);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
-  }
-
-  /// Transforms raw codegen [PortForwarding] to UI models.
-  ///
-  /// Exposed for reuse by [UspPortForwardingService] (L2) to avoid
-  /// duplicating the transform logic.
-  List<PortForwardingRuleUIModel> buildUIModels(PortForwarding data) {
-    return data.items
-        .map((r) => PortForwardingRuleUIModel(
-              instancePath: r.instancePath,
-              description: r.description,
-              externalPort: r.externalPort,
-              externalPortEndRange: r.externalPortEndRange,
-              internalPort: r.internalPort,
-              internalClient: r.internalClient,
-              protocol: r.protocol,
-              enabled: r.enabled,
-            ))
-        .toList();
   }
 }

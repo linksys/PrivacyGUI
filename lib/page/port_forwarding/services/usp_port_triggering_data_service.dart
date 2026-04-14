@@ -5,6 +5,7 @@ import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
+import 'package:privacy_gui/page/port_forwarding/services/port_forwarding_transforms.dart';
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -39,34 +40,9 @@ class UspPortTriggeringDataService {
   Future<List<PortTriggeringRuleUIModel>> fetch() async {
     try {
       final raw = await PortTriggering.fetch(_usp);
-      return buildUIModels(raw);
+      return transformTriggeringRules(raw);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
-  }
-
-  /// Transforms raw codegen [PortTriggering] to UI models.
-  ///
-  /// Exposed for reuse by [UspPortForwardingService] (L2) to avoid
-  /// duplicating the transform logic.
-  List<PortTriggeringRuleUIModel> buildUIModels(PortTriggering data) {
-    return data.items
-        .map((t) => PortTriggeringRuleUIModel(
-              instancePath: t.instancePath,
-              enabled: t.enabled,
-              description: t.description,
-              triggerPort: t.triggerPort,
-              triggerPortEndRange: t.triggerPortEndRange,
-              triggerProtocol: t.triggerProtocol,
-              forwardRules: t.rules
-                  .map((r) => PortTriggerForwardRuleUIModel(
-                        instancePath: r.instancePath,
-                        forwardPort: r.forwardPort,
-                        forwardPortEndRange: r.forwardPortEndRange,
-                        forwardProtocol: r.forwardProtocol,
-                      ))
-                  .toList(),
-            ))
-        .toList();
   }
 }
