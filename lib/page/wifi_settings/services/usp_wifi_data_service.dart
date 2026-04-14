@@ -34,7 +34,7 @@ final uspWifiDataServiceProvider = Provider<UspWifiDataService>(
 /// Opaque wrapper around raw WiFi codegen data.
 ///
 /// External consumers hold this without accessing the inner codegen types.
-/// Only WiFi-domain services ([UspWifiSettingsService], [UspDeviceService])
+/// Only WiFi-domain services ([UspWifiSettingsService])
 /// consume it via the typed accessor.
 class WifiCodegenContext extends Equatable {
   final WiFiRadios _radios;

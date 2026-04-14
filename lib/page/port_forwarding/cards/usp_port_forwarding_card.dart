@@ -9,6 +9,7 @@ import 'package:privacy_gui/page/dashboard/views/dialogs/port_forwarding_dialog.
 import 'package:privacy_gui/page/port_forwarding/providers/port_forwarding_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
 import 'package:privacy_gui/page/port_forwarding/providers/port_triggering_data_provider.dart';
+import 'package:privacy_gui/page/port_forwarding/providers/usp_port_forwarding_page_notifier.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
 class UspPortForwardingCard extends ConsumerWidget {
@@ -91,8 +92,8 @@ class UspPortForwardingCard extends ConsumerWidget {
                       ref,
                       loadingKey: 'portForwarding',
                       mutation: () => ref
-                          .read(portForwardingDataProvider.notifier)
-                          .toggleRule(rule.instancePath!, value),
+                          .read(uspPortForwardingPageProvider.notifier)
+                          .immediateToggleForwarding(rule.instancePath!, value),
                     ),
           ),
           AppGap.sm(),
@@ -134,8 +135,9 @@ class UspPortForwardingCard extends ConsumerWidget {
                       ref,
                       loadingKey: 'portForwarding',
                       mutation: () => ref
-                          .read(portTriggeringDataProvider.notifier)
-                          .toggleRule(trigger.instancePath!, value),
+                          .read(uspPortForwardingPageProvider.notifier)
+                          .immediateToggleTriggering(
+                              trigger.instancePath!, value),
                     ),
           ),
           AppGap.sm(),
@@ -172,7 +174,9 @@ class UspPortForwardingCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'portForwarding',
-      mutation: () => ref.read(portForwardingDataProvider.notifier).addRule(
+      mutation: () => ref
+          .read(uspPortForwardingPageProvider.notifier)
+          .immediateAddForwarding(
             externalPort: result.externalPort,
             internalPort: result.internalPort,
             internalClient: result.internalClient,
