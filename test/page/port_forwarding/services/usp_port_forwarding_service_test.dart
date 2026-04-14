@@ -6,22 +6,12 @@ import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
-import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_data_service.dart';
 import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_service.dart';
-import 'package:privacy_gui/page/port_forwarding/services/usp_port_triggering_data_service.dart';
 
 class MockUspService extends Mock implements UspService {}
 
-class MockPortForwardingDataService extends Mock
-    implements UspPortForwardingDataService {}
-
-class MockPortTriggeringDataService extends Mock
-    implements UspPortTriggeringDataService {}
-
 void main() {
   late MockUspService mockUsp;
-  late MockPortForwardingDataService mockFwdDataSvc;
-  late MockPortTriggeringDataService mockTrgDataSvc;
   late UspPortForwardingService service;
 
   setUpAll(() {
@@ -31,9 +21,7 @@ void main() {
 
   setUp(() {
     mockUsp = MockUspService();
-    mockFwdDataSvc = MockPortForwardingDataService();
-    mockTrgDataSvc = MockPortTriggeringDataService();
-    service = UspPortForwardingService(mockUsp, mockFwdDataSvc, mockTrgDataSvc);
+    service = UspPortForwardingService(mockUsp);
   });
 
   // ---------------------------------------------------------------------------
@@ -51,25 +39,13 @@ void main() {
             'Device.NAT.PortMapping.1.Protocol': 'TCP',
             'Device.NAT.PortMapping.1.Description': 'HTTP',
           });
-      when(() => mockFwdDataSvc.buildUIModels(
-            any(),
-          )).thenReturn([
-        PortForwardingRuleUIModel(
-          instancePath: 'Device.NAT.PortMapping.1.',
-          description: 'HTTP',
-          externalPort: 80,
-          internalPort: 8080,
-          internalClient: '192.168.1.100',
-          protocol: 'TCP',
-          enabled: true,
-        ),
-      ]);
 
       final result = await service.fetchForwardingRules();
 
       expect(result, hasLength(1));
       expect(result[0].description, 'HTTP');
-      verify(() => mockFwdDataSvc.buildUIModels(any())).called(1);
+      expect(result[0].externalPort, 80);
+      expect(result[0].protocol, 'TCP');
     });
   });
 
@@ -78,26 +54,16 @@ void main() {
       when(() => mockUsp.get(any())).thenAnswer((_) async => <String, dynamic>{
             'Device.NAT.PortTrigger.1.Enable': true,
             'Device.NAT.PortTrigger.1.Description': 'FTP',
-            'Device.NAT.PortTrigger.1.TriggerPort': 21,
-            'Device.NAT.PortTrigger.1.TriggerProtocol': 'TCP',
+            'Device.NAT.PortTrigger.1.Port': 21,
+            'Device.NAT.PortTrigger.1.PortEndRange': 21,
+            'Device.NAT.PortTrigger.1.Protocol': 'TCP',
           });
-      when(() => mockTrgDataSvc.buildUIModels(
-            any(),
-          )).thenReturn([
-        PortTriggeringRuleUIModel(
-          instancePath: 'Device.NAT.PortTrigger.1.',
-          enabled: true,
-          description: 'FTP',
-          triggerPort: 21,
-          triggerProtocol: 'TCP',
-        ),
-      ]);
 
       final result = await service.fetchTriggeringRules();
 
       expect(result, hasLength(1));
       expect(result[0].description, 'FTP');
-      verify(() => mockTrgDataSvc.buildUIModels(any())).called(1);
+      expect(result[0].triggerPort, 21);
     });
   });
 

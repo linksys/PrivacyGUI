@@ -7,8 +7,7 @@ import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
 import 'package:privacy_gui/page/port_forwarding/models/port_triggering_rule_ui_model.dart';
-import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_data_service.dart';
-import 'package:privacy_gui/page/port_forwarding/services/usp_port_triggering_data_service.dart';
+import 'package:privacy_gui/page/port_forwarding/services/port_forwarding_transforms.dart';
 
 final uspPortForwardingServiceProvider = Provider<UspPortForwardingService>(
   (ref) {
@@ -17,31 +16,25 @@ final uspPortForwardingServiceProvider = Provider<UspPortForwardingService>(
       throw const ServiceNotInitializedError(
           message: 'USP service not available');
     }
-    return UspPortForwardingService(
-      usp,
-      ref.read(uspPortForwardingDataServiceProvider),
-      ref.read(uspPortTriggeringDataServiceProvider),
-    );
+    return UspPortForwardingService(usp);
   },
 );
 
 /// Service layer for Port Forwarding + Port Triggering — encapsulates codegen CRUD + transform.
 class UspPortForwardingService {
   final UspService _usp;
-  final UspPortForwardingDataService _fwdDataSvc;
-  final UspPortTriggeringDataService _trgDataSvc;
 
-  UspPortForwardingService(this._usp, this._fwdDataSvc, this._trgDataSvc);
+  UspPortForwardingService(this._usp);
 
   // ---------------------------------------------------------------------------
-  // Fetch (reuse L1 Service transform)
+  // Fetch
   // ---------------------------------------------------------------------------
 
   /// Fetch port forwarding rules and transform to UI models.
   Future<List<PortForwardingRuleUIModel>> fetchForwardingRules() async {
     try {
       final raw = await PortForwarding.fetch(_usp);
-      return _fwdDataSvc.buildUIModels(raw);
+      return transformForwardingRules(raw);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -51,7 +44,7 @@ class UspPortForwardingService {
   Future<List<PortTriggeringRuleUIModel>> fetchTriggeringRules() async {
     try {
       final raw = await PortTriggering.fetch(_usp);
-      return _trgDataSvc.buildUIModels(raw);
+      return transformTriggeringRules(raw);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
