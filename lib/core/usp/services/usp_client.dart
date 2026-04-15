@@ -6,6 +6,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'bridge_request_throttler.dart';
 import '../models/usp_operation_result.dart';
+import '../../errors/service_error.dart';
 
 // Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
 import '../stub/usp_client_stub.dart'
@@ -294,8 +295,8 @@ class UspClient {
 
     // Log result summary for WASM v0.11.0 format
     final success = result['success'] as bool? ?? false;
-    final resultData = result['result'] as Map<String, dynamic>? ?? {};
-    final data = resultData['data'] as Map<String, dynamic>? ?? {};
+    final resultData = result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final data = resultData['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
     final error = resultData['error'] as Map<String, dynamic>?;
     final hasErrors = error != null;
     logger.d(
@@ -342,8 +343,8 @@ class UspClient {
 
     // Extract created instance path for logging compatibility
     final success = result['success'] as bool? ?? false;
-    final resultData = result['result'] as Map<String, dynamic>? ?? {};
-    final data = resultData['data'] as Map<String, dynamic>? ?? {};
+    final resultData = result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final data = resultData['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
     String createdPath = 'unknown';
 
     if (success && data.containsKey('instances')) {
@@ -1009,15 +1010,35 @@ class UspClient {
   }
 
   /// 應用層SET操作封裝，返回強型別結果
+  ///
+  /// [allowPartial] = false (atomic): 只返回 UspSuccess，其他情況拋出 ServiceError
+  /// [allowPartial] = true (best-effort): 返回 UspSuccess 或 UspPartialSuccess，只有完全失敗才拋出 ServiceError
   Future<UspSetResult> setWithResult(Map<String, dynamic> parameters,
       {bool allowPartial = false}) async {
     try {
       final resultMap = await set(parameters, allowPartial: allowPartial);
-      return UspResultParser.parseSetResult(resultMap);
+      final result = UspResultParser.parseSetResult(resultMap);
+
+      return switch (result) {
+        UspSuccess() => result,  // 總是返回成功
+        UspPartialSuccess() when allowPartial => result,  // 只在允許部分成功時返回
+        UspPartialSuccess() => throw UspAtomicModeFailureError(
+          summary: (result as UspPartialSuccess).errorSummary,
+          successPaths: result.successes.map((s) => s.requestedPath).toList(),
+          failedPaths: result.failures.map((f) => f.requestedPath).toList(),
+        ),
+        UspFailure() => throw UspCompleteFailureError(
+          summary: (result as UspFailure).errorSummary,
+          failedPaths: result.errors.map((e) => e.requestedPath).toList(),
+        ),
+      };
+    } on ServiceError {
+      rethrow;  // 重新拋出已經是 ServiceError 的異常
     } catch (e) {
-      return UspResultParser.createFailureFromException<void>(
-        e,
-        parameters.keys.join(', '),
+      // 轉換其他異常（如網路錯誤）為適當的 ServiceError
+      throw UspCompleteFailureError(
+        summary: 'Transport error: $e',
+        failedPaths: parameters.keys.toList(),
       );
     }
   }

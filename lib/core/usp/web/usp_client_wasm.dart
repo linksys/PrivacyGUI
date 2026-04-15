@@ -7,6 +7,35 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
+/// 將 dartify() 返回的 LinkedMap<Object?, Object?> 安全轉換為 Map<String, dynamic>
+/// 用於處理 WASM v0.11.0 UnifiedResponse 格式的型別轉換問題
+Map<String, dynamic> _safeConvertToStringDynamicMap(dynamic input) {
+  if (input == null) return <String, dynamic>{};
+
+  if (input is Map) {
+    final result = <String, dynamic>{};
+    for (final entry in input.entries) {
+      final key = entry.key?.toString() ?? '';
+      final value = entry.value;
+
+      // 遞歸轉換嵌套 Map
+      if (value is Map) {
+        result[key] = _safeConvertToStringDynamicMap(value);
+      } else if (value is List) {
+        result[key] = value.map((item) =>
+          item is Map ? _safeConvertToStringDynamicMap(item) : item
+        ).toList();
+      } else {
+        result[key] = value;
+      }
+    }
+    return result;
+  }
+
+  // 如果不是 Map，返回空 Map
+  return <String, dynamic>{};
+}
+
 // Bind to the UspClient class exported in usp_client.js
 @JS('UspClient')
 extension type UspClientJS._(JSObject _) implements JSObject {
@@ -204,9 +233,8 @@ class UspClientWeb {
                 '[WASM]GET_MULTI This is a JSObject - attempting property access...');
             try {
               // Try accessing common JS error properties
-              final jsError = e as JSObject;
               logger.e(
-                  '[WASM]GET_MULTI JSObject toString: ${jsError.toString()}');
+                  '[WASM]GET_MULTI JSObject toString: ${e.toString()}');
             } catch (propErr) {
               logger.e(
                   '[WASM]GET_MULTI JSObject property access failed: $propErr');
@@ -285,13 +313,13 @@ class UspClientWeb {
       };
     }
 
-    final map = resultJs?.dartify() as Map?;
+    final map = _safeConvertToStringDynamicMap(resultJs?.dartify());
 
     if (kDebugMode) {
       logger.d('[WASM]GET_STRUCTURED response: ${jsonEncode(map)}');
     }
 
-    if (map == null) {
+    if (map.isEmpty && resultJs != null) {
       return {
         'success': false,
         'result': {
@@ -306,7 +334,7 @@ class UspClientWeb {
       };
     }
 
-    return Map<String, dynamic>.from(map);
+    return map;
   }
 
   Future<void> set(String path, String value) async {
@@ -349,16 +377,12 @@ class UspClientWeb {
           'WASM client returned null/undefined - structured response required');
     }
 
-    final map = result.dartify() as Map?;
+    final map = _safeConvertToStringDynamicMap(result.dartify());
     if (kDebugMode) {
       logger.d('[WASM]SET dartified: ${jsonEncode(map)}');
     }
 
-    if (map == null) {
-      throw StateError('Invalid setMultiple response format');
-    }
-
-    return Map<String, dynamic>.from(map);
+    return map;
   }
 
   /// Creates a new object instance at the given path with initial parameters.
@@ -383,17 +407,13 @@ class UspClientWeb {
           'WASM client returned null/undefined - structured response required');
     }
 
-    final map = result.dartify();
+    final map = _safeConvertToStringDynamicMap(result.dartify());
 
     if (kDebugMode) {
       logger.d('[WASM]ADD dartified: ${jsonEncode(map)}');
     }
 
-    if (map is Map) {
-      return Map<String, dynamic>.from(map);
-    }
-
-    throw StateError('Invalid add response format: ${map.runtimeType}');
+    return map;
   }
 
   /// Creates multiple object instances.
@@ -422,18 +442,13 @@ class UspClientWeb {
           'WASM client returned null/undefined - structured response required');
     }
 
-    final dartResult = result.dartify();
+    final dartResult = _safeConvertToStringDynamicMap(result.dartify());
 
     if (kDebugMode) {
       logger.d('[WASM]ADD_MULTI dartified: ${jsonEncode(dartResult)}');
     }
 
-    if (dartResult is Map) {
-      return Map<String, dynamic>.from(dartResult);
-    }
-
-    throw StateError(
-        'Invalid addMultiple response format: ${dartResult.runtimeType}');
+    return dartResult;
   }
 
   /// Deletes an object instance at the given path.
@@ -456,17 +471,13 @@ class UspClientWeb {
             'WASM client returned null/undefined - structured response required');
       }
 
-      final map = result.dartify();
+      final map = _safeConvertToStringDynamicMap(result.dartify());
 
       if (kDebugMode) {
         logger.d('[WASM]DELETE dartified: ${jsonEncode(map)}');
       }
 
-      if (map is Map) {
-        return Map<String, dynamic>.from(map);
-      }
-
-      throw StateError('Invalid delete response format: ${map.runtimeType}');
+      return map;
     } catch (e) {
       if (kDebugMode) {
         logger.d('[WASM]DELETE exception: $e');
@@ -515,18 +526,13 @@ class UspClientWeb {
             'WASM client returned null/undefined - structured response required');
       }
 
-      final map = result.dartify();
+      final map = _safeConvertToStringDynamicMap(result.dartify());
 
       if (kDebugMode) {
         logger.d('[WASM]DELETE_MULTI dartified: ${jsonEncode(map)}');
       }
 
-      if (map is Map) {
-        return Map<String, dynamic>.from(map);
-      }
-
-      throw StateError(
-          'Invalid deleteMultiple response format: ${map.runtimeType}');
+      return map;
     } catch (e) {
       if (kDebugMode) {
         logger.d('[WASM]DELETE_MULTI exception: $e');

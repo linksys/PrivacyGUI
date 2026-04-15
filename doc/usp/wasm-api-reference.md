@@ -42,8 +42,9 @@ interface UnifiedResponse {
 | 7004 | Invalid arguments | Bad input arguments to command |
 | 7010 | Unsupported parameter | Parameter not supported by agent |
 | 7012 | Invalid type | Value type does not match schema |
+| 7013 | Read-only parameter | Per-parameter error: parameter is not writable (returned inside OperSuccess as ParameterError) |
 | 7016 | Invalid value | Value outside allowed range |
-| 7020 | Parameter not writable | Attempted SET on read-only parameter |
+| 7020 | Parameter not writable | Object-level SET failure: attempted write on read-only path |
 | 7021 | Value conflict | Conflicting parameter values |
 | 7022 | Value change not allowed | Parameter cannot be modified in current state |
 | 7024 | Resources exceeded | Agent resource limit reached |
@@ -176,6 +177,31 @@ const result = await client.setMultiple({
   }
 }
 ```
+
+**Response — Read-only parameter error (per-parameter ParameterError):**
+
+When SET targets a read-only parameter, the agent returns `OperSuccess` with a `ParameterError` entry (not `OperationFailure`). The client surfaces this as `success: false` with the per-parameter error:
+
+```javascript
+const result = await client.set("Device.DeviceInfo.Manufacturer", "TestValue");
+```
+
+```json
+{
+  "success": false,
+  "result": {
+    "data": {},
+    "error": {
+      "Device.DeviceInfo.Manufacturer": {
+        "errorCode": 7013,
+        "errorMessage": "Parameter is not writable"
+      }
+    }
+  }
+}
+```
+
+> **Note:** Error code `7013` is a per-parameter error inside `OperSuccess.UpdatedInstanceResult.ParameterError`, distinct from `7020` which is an object-level `OperationFailure`. Both indicate a read-only parameter, but they come from different levels of the USP protobuf response.
 
 ---
 

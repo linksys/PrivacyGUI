@@ -101,8 +101,8 @@ class UspBridgeClient {
   static void abortPreviousSession() {
     try {
       final prev = _jsSseAbort;
-      if (prev != null && prev.isA<web.AbortController>()) {
-        (prev as web.AbortController).abort();
+      if (prev != null && prev is web.AbortController) {
+        prev.abort();
       }
     } catch (_) {}
   }

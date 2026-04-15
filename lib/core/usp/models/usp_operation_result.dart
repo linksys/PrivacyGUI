@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// USP 操作結果的 sealed class hierarchy
 ///
 /// 實作「Never Lose Information」原則，保留所有來自 firmware 的結構化資訊
@@ -284,7 +286,18 @@ typedef UspOperateResult = UspOperationResult<Map<String, dynamic>>;
 class UspResultParser {
   /// 解析 SET 操作結果
   static UspSetResult parseSetResult(Map<String, dynamic> map) {
-    return _parseGenericResult<void>(map);
+    final result = _parseGenericResult<void>(map);
+
+    // Debug logging to track parsing results
+    if (kDebugMode) {
+      final success = map['success'] as bool? ?? false;
+      print('[UspResultParser] SET parseResult: success=$success, result=${result.runtimeType}');
+      if (result is UspFailure) {
+        print('[UspResultParser] SET failure: ${result.errorSummary}');
+      }
+    }
+
+    return result;
   }
 
   /// 解析 ADD 操作結果

@@ -335,6 +335,40 @@ final class StorageError extends ServiceError {
 }
 
 // ============================================================================
+// USP Operation Errors
+// ============================================================================
+
+/// USP operation failed completely (all parameters failed)
+final class UspCompleteFailureError extends ServiceError {
+  final String summary;
+  final List<String> failedPaths;
+
+  const UspCompleteFailureError({
+    required this.summary,
+    required this.failedPaths,
+  });
+
+  @override
+  String toString() => 'USP operation failed: $summary';
+}
+
+/// USP operation failed in atomic mode (partial success not allowed)
+final class UspAtomicModeFailureError extends ServiceError {
+  final String summary;
+  final List<String> successPaths;
+  final List<String> failedPaths;
+
+  const UspAtomicModeFailureError({
+    required this.summary,
+    required this.successPaths,
+    required this.failedPaths,
+  });
+
+  @override
+  String toString() => 'USP atomic operation failed: $summary';
+}
+
+// ============================================================================
 // Device/Router Errors
 // ============================================================================
 

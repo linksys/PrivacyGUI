@@ -385,7 +385,7 @@ class _DynamicSimulator {
 
       // --- CPU usage: sine wave + noise (15–45%) ---
       if (key == 'Device.DeviceInfo.ProcessStatus.CPUUsage') {
-        final base = 30.0;
+        const base = 30.0;
         final wave = 15.0 * sin(elapsed * 2 * pi / 60); // 60s period
         final noise = (_rng.nextDouble() - 0.5) * 6; // ±3
         final cpu = (base + wave + noise).clamp(5, 85).round();
