@@ -22,9 +22,10 @@ Map<String, dynamic> _safeConvertToStringDynamicMap(dynamic input) {
       if (value is Map) {
         result[key] = _safeConvertToStringDynamicMap(value);
       } else if (value is List) {
-        result[key] = value.map((item) =>
-          item is Map ? _safeConvertToStringDynamicMap(item) : item
-        ).toList();
+        result[key] = value
+            .map((item) =>
+                item is Map ? _safeConvertToStringDynamicMap(item) : item)
+            .toList();
       } else {
         result[key] = value;
       }
@@ -233,8 +234,7 @@ class UspClientWeb {
                 '[WASM]GET_MULTI This is a JSObject - attempting property access...');
             try {
               // Try accessing common JS error properties
-              logger.e(
-                  '[WASM]GET_MULTI JSObject toString: ${e.toString()}');
+              logger.e('[WASM]GET_MULTI JSObject toString: ${e.toString()}');
             } catch (propErr) {
               logger.e(
                   '[WASM]GET_MULTI JSObject property access failed: $propErr');

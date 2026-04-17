@@ -77,7 +77,8 @@ void main() {
       final model = await svc.fetch();
 
       expect(model.firmwareImages, hasLength(2));
-      final active = model.firmwareImages.firstWhere((f) => f.name == 'fw_image_1');
+      final active =
+          model.firmwareImages.firstWhere((f) => f.name == 'fw_image_1');
       expect(active.isActive, isTrue);
       expect(active.isBootTarget, isTrue);
 

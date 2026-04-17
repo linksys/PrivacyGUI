@@ -437,22 +437,14 @@ void main() {
     });
 
     test('add creates parent + forward rules', () async {
+      // WASM v0.11.0 format: {success, result: {data: {instances: [...]}}}
       when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.NAT.PortTrigger.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.NAT.PortTrigger.5.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
+            'success': true,
+            'result': {
+              'data': {
+                'instances': ['Device.NAT.PortTrigger.5.'],
+              },
+            },
           });
 
       final current = [
@@ -487,21 +479,12 @@ void main() {
 
     test('add with no forward rules creates parent only', () async {
       when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.NAT.PortTrigger.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.NAT.PortTrigger.5.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
+            'success': true,
+            'result': {
+              'data': {
+                'instances': ['Device.NAT.PortTrigger.5.'],
+              },
+            },
           });
 
       final current = [

@@ -132,7 +132,8 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
           .read(wifiDataProvider.future)
           .timeout(const Duration(seconds: 5));
     } catch (e) {
-      logger.w('[USP][DevicesData] WiFi data unavailable, proceeding without: $e');
+      logger.w(
+          '[USP][DevicesData] WiFi data unavailable, proceeding without: $e');
       wifiData = const WifiData.empty();
     }
 
