@@ -34,9 +34,13 @@ class UspTimezoneCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 AppText.titleMedium('Timezone'),
-                AppIconButton(
-                  icon: AppIcon.font(Icons.chevron_right),
-                  onTap: onEdit,
+                Semantics(
+                  label: 'Edit timezone settings',
+                  button: true,
+                  child: AppIconButton(
+                    icon: AppIcon.font(Icons.chevron_right),
+                    onTap: onEdit,
+                  ),
                 ),
               ],
             ),
