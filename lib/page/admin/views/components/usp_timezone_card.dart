@@ -17,6 +17,7 @@ class UspTimezoneCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tzInfo = matchTimezone(timeSettings.localTimeZone);
+    final dstEnabled = inferDstEnabled(timeSettings.localTimeZone);
     final tzDisplay = tzInfo != null
         ? '${tzInfo.friendlyName} (${tzInfo.offsetDisplayText})'
         : timeSettings.localTimeZone.isNotEmpty
@@ -43,6 +44,17 @@ class UspTimezoneCard extends StatelessWidget {
             UspInfoRow(
               label: 'Timezone',
               value: tzDisplay,
+            ),
+            if (tzInfo != null && tzInfo.observesDST)
+              UspInfoRow(
+                label: 'Daylight Savings Time',
+                value: dstEnabled ? 'On' : 'Off',
+              ),
+            UspInfoRow(
+              label: 'NTP Server',
+              value: timeSettings.ntpServer1.isNotEmpty
+                  ? timeSettings.ntpServer1
+                  : '—',
             ),
             UspInfoRow(
               label: 'Status',
