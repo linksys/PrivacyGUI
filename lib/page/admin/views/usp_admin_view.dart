@@ -160,6 +160,11 @@ class UspAdminView extends ConsumerWidget {
       await ref.read(uspAdminProvider.notifier).updateTimezone(
             localTimeZone: result.localTimeZone,
           );
+      if (result.ntpServer1 != null) {
+        await ref
+            .read(uspAdminProvider.notifier)
+            .updateTimeSettings(ntpServer1: result.ntpServer1);
+      }
       if (context.mounted) showSuccessSnackBar(context, 'Timezone updated');
     } catch (e) {
       if (context.mounted) {
