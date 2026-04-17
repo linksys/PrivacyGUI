@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/theme/theme_json_config.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// A global instance of [GetIt] used as a service locator for dependency injection.
 ///
@@ -42,15 +42,15 @@ void dependencySetup() {
     );
   }
 
-  // Register UspService on Web platform only
-  if (kIsWeb && !getIt.isRegistered<UspService>()) {
+  // Register UspClient on Web platform only
+  if (kIsWeb && !getIt.isRegistered<UspClient>()) {
     try {
-      getIt.registerSingleton<UspService>(UspService(
+      getIt.registerSingleton<UspClient>(UspClient(
         Uri.base.origin,
       ));
-      logger.d('[DI] UspService registered (Web)');
+      logger.d('[DI] UspClient registered (Web)');
     } catch (e) {
-      logger.w('[DI] UspService registration failed: $e');
+      logger.w('[DI] UspClient registration failed: $e');
     }
   }
 }

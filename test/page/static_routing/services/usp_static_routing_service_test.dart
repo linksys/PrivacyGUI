@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/page/static_routing/models/static_routing_ui_model.dart';
 import 'package:privacy_gui/page/static_routing/services/usp_static_routing_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 StaticRoute _route({
   String instancePath = 'Device.Routing.Router.1.IPv4Forwarding.1.',
@@ -30,11 +30,11 @@ StaticRoute _route({
     );
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspStaticRoutingService service;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     service = UspStaticRoutingService(mockUsp);
   });
 
@@ -276,7 +276,12 @@ void main() {
     });
 
     test('delete removes items missing from current', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       final original = [
         StaticRouteUIModel(
@@ -301,7 +306,23 @@ void main() {
     });
 
     test('add creates items with null instancePath', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.Routing.Router.1.IPv4Forwarding.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath': 'Device.Routing.Router.1.IPv4Forwarding.1.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
 
       final current = [
         StaticRouteUIModel(
@@ -331,7 +352,12 @@ void main() {
 
     test('update detects changed content', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+                'overallSuccess': true,
+                'hasAnySuccess': true,
+                'hasErrors': false,
+                'results': []
+              });
 
       final original = [
         StaticRouteUIModel(
@@ -367,10 +393,36 @@ void main() {
     });
 
     test('mixed batch: delete + add + update', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.Routing.Router.1.IPv4Forwarding.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath': 'Device.Routing.Router.1.IPv4Forwarding.2.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+                'overallSuccess': true,
+                'hasAnySuccess': true,
+                'hasErrors': false,
+                'results': []
+              });
 
       final original = [
         StaticRouteUIModel(

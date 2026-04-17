@@ -11,14 +11,14 @@ import '../mocks.dart';
 
 void main() {
   late MockUspBridgeClient mockBridge;
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late SseManager manager;
   late SseOperationAwaiter awaiter;
   late StreamController<SseEvent> streamController;
 
   setUp(() {
     mockBridge = MockUspBridgeClient();
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     streamController = StreamController<SseEvent>();
 
     when(() => mockBridge.notifications())

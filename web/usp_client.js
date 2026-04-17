@@ -1,4 +1,3 @@
-
 /* @ts-self-types="./usp_client.d.ts" */
 
 /**
@@ -442,7 +441,7 @@ export class UspClient {
      * * `value` - New value
      *
      * # Returns
-     * * Promise that resolves on success, rejects on error
+     * * Promise that resolves to structured result with detailed operation status
      * @param {string} path
      * @param {string} value
      * @returns {Promise<any>}
@@ -463,7 +462,7 @@ export class UspClient {
      * * `allow_partial` - If true, allow partial success; if false, atomic mode
      *
      * # Returns
-     * * Promise that resolves on success, rejects on error
+     * * Promise that resolves to structured result with detailed operation status
      * @param {any} parameters
      * @param {boolean} allow_partial
      * @returns {Promise<any>}
@@ -688,7 +687,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2137(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2237(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -838,10 +837,15 @@ function __wbg_get_imports() {
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { dtor_idx: 155, function: Function { arguments: [Externref], shim_idx: 156, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1275, __wasm_bindgen_func_elem_1290);
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1373, __wasm_bindgen_func_elem_1388);
             return addHeapObject(ret);
         },
-        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
+        __wbindgen_cast_0000000000000002: function(arg0) {
+            // Cast intrinsic for `F64 -> Externref`.
+            const ret = arg0;
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000003: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return addHeapObject(ret);
@@ -860,12 +864,12 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1290(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1290(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1388(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1388(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_2137(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2137(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_2237(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2237(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 

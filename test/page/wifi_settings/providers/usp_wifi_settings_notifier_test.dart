@@ -4,8 +4,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
@@ -21,13 +21,13 @@ import '../../../../test/mocks/test_data/wifi_settings_test_data.dart';
 class MockUspWifiSettingsService extends Mock
     implements UspWifiSettingsService {}
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 class MockUspAuthCoordinator extends Mock implements UspAuthCoordinator {}
 
 void main() {
   late MockUspWifiSettingsService mockService;
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late MockUspAuthCoordinator mockAuthCoordinator;
 
   setUpAll(() {
@@ -41,7 +41,7 @@ void main() {
 
   setUp(() {
     mockService = MockUspWifiSettingsService();
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     mockAuthCoordinator = MockUspAuthCoordinator();
     when(() => mockUsp.isAuthenticated).thenReturn(true);
   });
@@ -54,7 +54,7 @@ void main() {
       overrides: [
         uspWifiSettingsServiceProvider.overrideWithValue(mockService),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
         uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
         wifiDataProvider.overrideWith(() => _FakeWifiDataNotifier(data)),
       ],
@@ -122,7 +122,7 @@ void main() {
         overrides: [
           uspWifiSettingsServiceProvider.overrideWithValue(mockService),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-          uspServiceProvider.overrideWithValue(null),
+          uspClientProvider.overrideWithValue(null),
           uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
           wifiDataProvider.overrideWith(() =>
               _FakeWifiDataNotifier(WifiSettingsTestData.createWifiData())),
@@ -546,7 +546,7 @@ void main() {
         overrides: [
           uspWifiSettingsServiceProvider.overrideWithValue(mockService),
           uspMutationLockProvider.overrideWithValue(UspMutationLock()),
-          uspServiceProvider.overrideWithValue(mockUsp),
+          uspClientProvider.overrideWithValue(mockUsp),
           uspAuthCoordinatorProvider.overrideWithValue(mockAuthCoordinator),
           wifiDataProvider.overrideWith(() =>
               _ErrorWifiDataNotifier(const NetworkError(message: 'timeout'))),

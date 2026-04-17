@@ -3,8 +3,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 import 'package:privacy_gui/page/firewall/providers/firewall_data_provider.dart';
@@ -16,7 +16,7 @@ import 'package:privacy_gui/page/firewall/services/usp_firewall_service.dart';
 
 final uspFirewallDataServiceProvider = Provider<UspFirewallDataService>(
   (ref) {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
           message: 'USP service not available');
@@ -54,7 +54,7 @@ class FirewallDataFetchResult {
 ///
 /// Owns codegen calls and all transform logic for [firewallDataProvider].
 class UspFirewallDataService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspFirewallDataService(this._usp);
 

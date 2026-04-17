@@ -36,14 +36,14 @@ rm -rf "$OUTPUT_BASE"
 # Production builds should override --client-import to point at the real client.
 get_client_import() {
     case "$1" in
-        dart)       echo "../../stubs/dart/usp_service.dart" ;;
+        dart)       echo "../../stubs/dart/usp_client.dart" ;;
         typescript) echo "usp-client" ;;
         swift)      echo "UspClient" ;;
     esac
 }
 get_client_class() {
     case "$1" in
-        dart)       echo "UspService" ;;
+        dart)       echo "UspClient" ;;
         typescript) echo "UspClient" ;;
         swift)      echo "UspClient" ;;
     esac

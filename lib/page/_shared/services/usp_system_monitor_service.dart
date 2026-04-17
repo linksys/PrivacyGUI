@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 
@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 /// Returns null when USP is not available (polling providers check before use).
 final uspSystemMonitorServiceProvider = Provider<UspSystemMonitorService?>(
   (ref) {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) return null;
     return UspSystemMonitorService(usp);
   },
@@ -26,7 +26,7 @@ final uspSystemMonitorServiceProvider = Provider<UspSystemMonitorService?>(
 /// Owns the codegen call for [uspSystemMonitorProvider].
 /// No error mapping — polling providers silently catch errors.
 class UspSystemMonitorService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspSystemMonitorService(this._usp);
 

@@ -10,7 +10,7 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/models/sse_notification.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart'
     show RequestPriority;
 import 'package:ui_kit_library/ui_kit.dart';
@@ -75,11 +75,11 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
   // ---------------------------------------------------------------------------
 
   Future<void> _initializeUspData(WidgetSubscriptionConfig subscription) async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) return;
 
     try {
-      // usp.get() is automatically throttled via UspService.throttler
+      // usp.get() is automatically throttled via UspClient.throttler
       final data = await usp.get(subscription.paths);
       if (!mounted) return;
       ref
@@ -154,7 +154,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
       final targetUrl = Uri.parse('${Uri.base.origin}${ds.url}');
 
       // Attach JWT so CGI endpoints can optionally verify auth.
-      final token = ref.read(uspServiceProvider)?.sessionToken;
+      final token = ref.read(uspClientProvider)?.sessionToken;
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
@@ -277,7 +277,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
       final client = ref.read(httpClientProvider);
       final targetUrl = Uri.parse('${Uri.base.origin}$url');
 
-      final token = ref.read(uspServiceProvider)?.sessionToken;
+      final token = ref.read(uspClientProvider)?.sessionToken;
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
@@ -316,7 +316,7 @@ class _PackageWidgetRendererState extends ConsumerState<PackageWidgetRenderer> {
     final subscription = widget.template.subscription;
     if (subscription == null) return;
 
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) return;
 
     try {

@@ -23,7 +23,7 @@ import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_prov
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 
 // ---------------------------------------------------------------------------
 // State
@@ -111,7 +111,7 @@ class DashboardOrchestrator extends AsyncNotifier<DashboardOrchestratorState> {
   }
 
   Future<DashboardOrchestratorState> _buildImpl() async {
-    final usp = ref.watch(uspServiceProvider);
+    final usp = ref.watch(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
           message: 'USP service not available');

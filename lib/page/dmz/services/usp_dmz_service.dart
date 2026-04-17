@@ -1,15 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/dmz.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 
 final uspDmzServiceProvider = Provider<UspDmzService>(
-  (ref) => UspDmzService(ref.read(uspServiceProvider)!),
+  (ref) => UspDmzService(ref.read(uspClientProvider)!),
 );
 
 /// Service layer for DMZ — encapsulates codegen CRUD + transform + validation.
@@ -17,7 +17,7 @@ final uspDmzServiceProvider = Provider<UspDmzService>(
 /// DMZ is multi-instance on the router but practically only 0-1 entries.
 /// This service treats the first entry as "the" DMZ configuration.
 class UspDmzService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspDmzService(this._usp);
 

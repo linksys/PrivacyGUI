@@ -5,7 +5,7 @@ import 'package:privacy_gui/generated/ppp_interface.g.dart';
 import 'package:privacy_gui/generated/vlan_termination.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
 import 'package:privacy_gui/generated/wan_settings.g.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
@@ -16,7 +16,7 @@ import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_typ
 /// Handles PPP/VLAN multi-instance lifecycle (Add/Delete) and
 /// DNS comma-separated conversion.
 class UspInternetSettingsService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspInternetSettingsService(this._usp);
 
@@ -186,8 +186,16 @@ class UspInternetSettingsService {
     if (!wasPppoe && isPppoe && currentInstancePath == null) {
       // Switching TO PPPoE and no instance exists — Add
       logger.d('[USP][WAN] Adding PPP.Interface instance for PPPoE');
-      final path = await PppInterface.add(_usp);
-      return path;
+      final result = await PppInterface.add(_usp);
+      // Extract instance path from structured response
+      final parsedResult = UspResultParser.parseAddResult(result);
+      if (parsedResult is UspSuccess<List<String>>) {
+        final createdInstances = parsedResult.allCreatedInstances;
+        if (createdInstances.isNotEmpty) {
+          return createdInstances.first.affectedPath;
+        }
+      }
+      return null;
     } else if (wasPppoe && !isPppoe && currentInstancePath != null) {
       // Switching AWAY from PPPoE — Delete
       logger
@@ -217,8 +225,16 @@ class UspInternetSettingsService {
     if (!wasEnabled && isEnabled && currentInstancePath == null) {
       // Enabling VLAN and no instance exists — Add
       logger.d('[USP][WAN] Adding VLANTermination instance');
-      final path = await VlanTermination.add(_usp);
-      return path;
+      final result = await VlanTermination.add(_usp);
+      // Extract instance path from structured response
+      final parsedResult = UspResultParser.parseAddResult(result);
+      if (parsedResult is UspSuccess<List<String>>) {
+        final createdInstances = parsedResult.allCreatedInstances;
+        if (createdInstances.isNotEmpty) {
+          return createdInstances.first.affectedPath;
+        }
+      }
+      return null;
     } else if (wasEnabled && !isEnabled && currentInstancePath != null) {
       // Disabling VLAN — Delete
       logger.d(

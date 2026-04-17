@@ -3,8 +3,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/dhcp_clients.g.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_client_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 
@@ -14,7 +14,7 @@ import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
 
 final uspDhcpDataServiceProvider = Provider<UspDhcpDataService>(
   (ref) {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
           message: 'USP service not available');
@@ -46,7 +46,7 @@ class DhcpDataFetchResult {
 ///
 /// Owns codegen calls and error mapping for [dhcpDataProvider].
 class UspDhcpDataService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspDhcpDataService(this._usp);
 
