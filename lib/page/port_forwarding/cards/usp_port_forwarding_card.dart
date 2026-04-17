@@ -19,8 +19,9 @@ class UspPortForwardingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pfData = ref.watch(portForwardingDataProvider).valueOrNull;
     final ptData = ref.watch(portTriggeringDataProvider).valueOrNull;
-    if (pfData == null && ptData == null)
+    if (pfData == null && ptData == null) {
       return const CardSkeleton.list(rows: 3);
+    }
     final rules = pfData?.ruleModels ?? [];
     final triggers = ptData?.ruleModels ?? [];
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'portForwarding';

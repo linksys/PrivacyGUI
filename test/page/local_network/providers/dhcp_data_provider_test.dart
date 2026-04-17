@@ -7,15 +7,15 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
 
   /// DhcpClients codegen response.
   final dhcpClientsResponse = <String, dynamic>{
@@ -41,7 +41,7 @@ void main() {
   };
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     // DhcpClients.fetch + DhcpReservations.fetch both call usp.get()
     when(() => mockUsp.get(any())).thenAnswer((_) async {
       final paths = _.positionalArguments[0] as List;
@@ -50,9 +50,36 @@ void main() {
       }
       return dhcpClientsResponse;
     });
-    when(() => mockUsp.set(any())).thenAnswer((_) async {});
-    when(() => mockUsp.add(any(), any())).thenAnswer((_) async => 'new.1.');
-    when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+    when(() => mockUsp.set(any())).thenAnswer((_) async => {
+          'overallSuccess': true,
+          'hasAnySuccess': true,
+          'hasErrors': false,
+          'results': []
+        });
+    when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+          'overallSuccess': true,
+          'hasAnySuccess': true,
+          'hasErrors': false,
+          'results': [
+            {
+              'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+              'success': true,
+              'createdInstances': [
+                {
+                  'affectedPath':
+                      'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+                  'initialParams': {}
+                }
+              ]
+            }
+          ]
+        });
+    when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+          'overallSuccess': true,
+          'hasAnySuccess': true,
+          'hasErrors': false,
+          'results': []
+        });
   });
 
   ProviderContainer createContainer({
@@ -60,7 +87,7 @@ void main() {
   }) {
     return ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
         uspMutationLockProvider.overrideWithValue(UspMutationLock()),
         devicesDataProvider.overrideWith(
           () => _TestDevicesDataNotifier(devicesData ?? const DevicesData()),
@@ -110,7 +137,7 @@ void main() {
     test('build throws when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
-          uspServiceProvider.overrideWithValue(null),
+          uspClientProvider.overrideWithValue(null),
           devicesDataProvider.overrideWith(
             () => _TestDevicesDataNotifier(const DevicesData()),
           ),
@@ -156,7 +183,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            uspServiceProvider.overrideWithValue(mockUsp),
+            uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
               () => _TestDevicesDataNotifier(const DevicesData()),
@@ -193,7 +220,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            uspServiceProvider.overrideWithValue(mockUsp),
+            uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
               () => _TestDevicesDataNotifier(const DevicesData()),
@@ -225,7 +252,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            uspServiceProvider.overrideWithValue(mockUsp),
+            uspClientProvider.overrideWithValue(mockUsp),
             uspMutationLockProvider.overrideWithValue(UspMutationLock()),
             devicesDataProvider.overrideWith(
               () => _TestDevicesDataNotifier(const DevicesData()),

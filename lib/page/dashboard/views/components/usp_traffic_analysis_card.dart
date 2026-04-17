@@ -819,7 +819,7 @@ class _DualAxisLinePainter extends CustomPainter {
     if (pktsPerSec >= 1000) {
       return '${(pktsPerSec / 1000).toStringAsFixed(1)}K';
     }
-    return '${pktsPerSec.toStringAsFixed(0)}';
+    return pktsPerSec.toStringAsFixed(0);
   }
 
   @override

@@ -6,8 +6,8 @@ import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/generated/wifi_clients.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/client_connection_detail.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -19,7 +19,7 @@ import 'package:privacy_gui/page/_shared/models/wifi_radio_ui_model.dart';
 
 final uspWifiDataServiceProvider = Provider<UspWifiDataService>(
   (ref) {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
           message: 'USP service not available');
@@ -87,7 +87,7 @@ class WifiDataFetchResult {
 /// Owns all codegen calls and error mapping for the WiFi data provider.
 /// The provider delegates to this service instead of calling codegen directly.
 class UspWifiDataService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspWifiDataService(this._usp);
 

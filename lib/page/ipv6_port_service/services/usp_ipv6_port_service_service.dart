@@ -1,18 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/validator_rules/rules.dart';
 
 final uspIpv6PortServiceServiceProvider = Provider<UspIpv6PortServiceService>(
-  (ref) => UspIpv6PortServiceService(ref.read(uspServiceProvider)!),
+  (ref) => UspIpv6PortServiceService(ref.read(uspClientProvider)!),
 );
 
 /// Service layer for IPv6 Port Service — encapsulates codegen CRUD + transform + validation.
 class UspIpv6PortServiceService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspIpv6PortServiceService(this._usp);
   // ---------------------------------------------------------------------------

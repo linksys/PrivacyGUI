@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
@@ -13,7 +14,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart'
 import 'package:privacy_gui/page/wifi_settings/services/wifi_channel_bonding.dart';
 
 final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
-  (ref) => UspWifiSettingsService(ref.read(uspServiceProvider)!),
+  (ref) => UspWifiSettingsService(ref.read(uspClientProvider)!),
 );
 
 /// Stateless service for transforming raw USP WiFi data into [WifiNetworkUIModel] list.
@@ -27,7 +28,7 @@ final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
 ///   SSID.lowerLayers  → Radio instance path
 ///   AccessPoint.ssidReference → SSID instance path
 class UspWifiSettingsService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspWifiSettingsService(this._usp);
 
@@ -203,16 +204,45 @@ class UspWifiSettingsService {
         if (aggregate == null) continue;
 
         if (aggregate.ssidInstancePaths.isNotEmpty) {
-          await WiFiSsids.updateMany(
-            _usp,
-            aggregate.ssidInstancePaths
-                .map((p) => WiFiSsidUpdate(
-                      instancePath: p,
-                      ssid: pending.ssid,
-                      enable: pending.enabled,
-                    ))
-                .toList(),
-          );
+          // REFACTORED: Use structured error handling from WiFiSettingsService pattern
+          final ssidUpdates = aggregate.ssidInstancePaths
+              .map((p) => WiFiSsidUpdate(
+                    instancePath: p,
+                    ssid: pending.ssid,
+                    enable: pending.enabled,
+                  ))
+              .toList();
+
+          // Business validation (like WiFiSettingsService.updateSsidName)
+          if (pending.ssid.isEmpty) {
+            throw InvalidInputError(message: 'SSID name cannot be empty');
+          }
+          if (pending.ssid.length > 32) {
+            throw InvalidInputError(
+                message: 'SSID name cannot exceed 32 characters');
+          }
+
+          final result = await WiFiSsids.updateMany(_usp, ssidUpdates);
+          final parsedResult = UspResultParser.parseSetResult(result);
+
+          // Strict error handling for critical WiFi operations
+          if (parsedResult case UspPartialSuccess(failures: final failures)) {
+            logger.e(
+                '[UspWifiSettingsService] SSID update partial failure: ${failures.length} errors');
+            throw UnexpectedError(
+              message:
+                  'WiFi SSID update failed: ${failures.map((f) => f.errorMessage).join('; ')}',
+            );
+          } else if (parsedResult case UspFailure(errors: final errors)) {
+            logger.e('[UspWifiSettingsService] SSID update complete failure');
+            throw NetworkError(
+              message:
+                  'WiFi configuration failed: ${errors.map((e) => e.errorMessage).join('; ')}',
+            );
+          }
+
+          logger.d(
+              '[UspWifiSettingsService] SSID updates completed successfully');
         }
         if (aggregate.apInstancePaths.isNotEmpty) {
           // Build a band lookup: AP instance path → band string.

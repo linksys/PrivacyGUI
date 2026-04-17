@@ -6,7 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 import '../helpers.dart';
 import '../mocks.dart';
@@ -14,9 +14,9 @@ import '../mocks.dart';
 /// Mock that captures injected callbacks instead of swallowing them.
 ///
 /// SseManager injects `_handleSseSubscribe` and `_onTokenRefreshed` via
-/// setters. The standard [MockUspService] mocks the setters to no-op,
+/// setters. The standard [MockUspClient] mocks the setters to no-op,
 /// losing the references. This class stores them for direct invocation.
-class _CapturingUspService extends Mock implements UspService {
+class _CapturingUspClient extends Mock implements UspClient {
   SseSubscribeDelegate? capturedSseSubscribe;
   VoidCallback? capturedTokenRefreshed;
 
@@ -36,12 +36,12 @@ class _CapturingUspService extends Mock implements UspService {
 
 void main() {
   late MockUspBridgeClient mockBridge;
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late StreamController<SseEvent> streamController;
 
   setUp(() {
     mockBridge = MockUspBridgeClient();
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     streamController = StreamController<SseEvent>();
 
     when(() => mockBridge.notifications())
@@ -56,7 +56,7 @@ void main() {
         )).thenAnswer((_) async => {});
     when(() => mockBridge.abortSse()).thenReturn(null);
 
-    // UspService property setters
+    // UspClient property setters
     when(() => mockUsp.onSseSubscribe = any(that: anything)).thenReturn(null);
     when(() => mockUsp.onTokenRefreshed = any(that: anything)).thenReturn(null);
   });
@@ -123,13 +123,13 @@ void main() {
       await manager.dispose();
     });
 
-    test('injects onSseSubscribe into UspService', () {
+    test('injects onSseSubscribe into UspClient', () {
       createManager();
 
       verify(() => mockUsp.onSseSubscribe = any(that: isNotNull)).called(1);
     });
 
-    test('injects onTokenRefreshed into UspService', () {
+    test('injects onTokenRefreshed into UspClient', () {
       createManager();
 
       verify(() => mockUsp.onTokenRefreshed = any(that: isNotNull)).called(1);
@@ -394,7 +394,7 @@ void main() {
       expect(manager.router.wildcardHandlerCount, 0);
     });
 
-    test('clears UspService callbacks', () async {
+    test('clears UspClient callbacks', () async {
       final manager = createManager();
 
       await manager.dispose();
@@ -433,14 +433,14 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // _handleSseSubscribe (SSE delegate injected into UspService)
+  // _handleSseSubscribe (SSE delegate injected into UspClient)
   // ---------------------------------------------------------------------------
   group('_handleSseSubscribe (SSE delegate)', () {
-    late _CapturingUspService capturingUsp;
+    late _CapturingUspClient capturingUsp;
     late SseManager manager;
 
     setUp(() {
-      capturingUsp = _CapturingUspService();
+      capturingUsp = _CapturingUspClient();
       manager = SseManager(usp: capturingUsp, bridge: mockBridge);
     });
 
@@ -448,7 +448,7 @@ void main() {
       await manager.dispose();
     });
 
-    test('delegate is injected into UspService', () {
+    test('delegate is injected into UspClient', () {
       expect(capturingUsp.capturedSseSubscribe, isNotNull);
     });
 
@@ -654,7 +654,7 @@ void main() {
   // ---------------------------------------------------------------------------
   group('onTokenRefreshed callback', () {
     test('forces disconnect then reconnect', () async {
-      final capturingUsp = _CapturingUspService();
+      final capturingUsp = _CapturingUspClient();
       final manager = SseManager(usp: capturingUsp, bridge: mockBridge);
 
       await manager.connect();

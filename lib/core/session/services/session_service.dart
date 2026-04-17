@@ -3,11 +3,11 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/models/device_info.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 final sessionServiceProvider = Provider<SessionService>((ref) {
-  return SessionService(ref.watch(uspServiceProvider));
+  return SessionService(ref.watch(uspClientProvider));
 });
 
 /// Service for session management operations.
@@ -16,7 +16,7 @@ final sessionServiceProvider = Provider<SessionService>((ref) {
 /// - Router connectivity validation and serial number verification
 /// - Device info retrieval with caching support
 class SessionService {
-  final UspService? _usp;
+  final UspClient? _usp;
 
   SessionService(this._usp);
 
