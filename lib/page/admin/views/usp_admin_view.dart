@@ -159,8 +159,6 @@ class UspAdminView extends ConsumerWidget {
     try {
       await ref.read(uspAdminProvider.notifier).updateTimezone(
             localTimeZone: result.localTimeZone,
-            ntpServer1: result.ntpServer1,
-            ntpServer2: result.ntpServer2,
           );
       if (context.mounted) showSuccessSnackBar(context, 'Timezone updated');
     } catch (e) {
