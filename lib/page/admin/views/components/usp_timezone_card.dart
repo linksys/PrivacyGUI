@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
+import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -15,6 +16,13 @@ class UspTimezoneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tzInfo = matchTimezone(timeSettings.localTimeZone);
+    final tzDisplay = tzInfo != null
+        ? '${tzInfo.friendlyName} (${tzInfo.offsetDisplayText})'
+        : timeSettings.localTimeZone.isNotEmpty
+            ? timeSettings.localTimeZone
+            : 'Not set';
+
     return SizedBox(
       width: double.infinity,
       child: AppCard(
@@ -34,15 +42,7 @@ class UspTimezoneCard extends StatelessWidget {
             AppGap.md(),
             UspInfoRow(
               label: 'Timezone',
-              value: timeSettings.localTimeZone.isNotEmpty
-                  ? timeSettings.localTimeZone
-                  : 'Not set',
-            ),
-            UspInfoRow(
-              label: 'NTP Server',
-              value: timeSettings.ntpServer1.isNotEmpty
-                  ? timeSettings.ntpServer1
-                  : '—',
+              value: tzDisplay,
             ),
             UspInfoRow(
               label: 'Status',
