@@ -165,8 +165,8 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      final wifi = rebuilt.deviceModels
-          .firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
+      final wifi =
+          rebuilt.deviceModels.firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
       expect(wifi.signalStrength, -50);
       expect(wifi.downlinkRate, 100);
     });
@@ -183,8 +183,7 @@ void main() {
 
       final mesh = MeshTopologyInfo(
         nodes: [
-          MeshNodeInfo(
-              instancePath: 'p.1.', deviceId: 'NODE-A', model: 'M60'),
+          MeshNodeInfo(instancePath: 'p.1.', deviceId: 'NODE-A', model: 'M60'),
         ],
         clientToNodeMap: {'AA:BB:CC:DD:EE:01': 'NODE-A'},
       );
@@ -198,8 +197,8 @@ void main() {
         systemInfo: _sysInfo,
       );
 
-      final wifi = rebuilt.deviceModels
-          .firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
+      final wifi =
+          rebuilt.deviceModels.firstWhere((d) => d.mac == 'AA:BB:CC:DD:EE:01');
       expect(wifi.parentNodeId, 'NODE-A');
 
       // Node models should reflect mesh

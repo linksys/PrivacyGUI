@@ -295,8 +295,10 @@ class UspClient {
 
     // Log result summary for WASM v0.11.0 format
     final success = result['success'] as bool? ?? false;
-    final resultData = result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    final data = resultData['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final resultData =
+        result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final data =
+        resultData['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
     final error = resultData['error'] as Map<String, dynamic>?;
     final hasErrors = error != null;
     logger.d(
@@ -343,8 +345,10 @@ class UspClient {
 
     // Extract created instance path for logging compatibility
     final success = result['success'] as bool? ?? false;
-    final resultData = result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
-    final data = resultData['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final resultData =
+        result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final data =
+        resultData['data'] as Map<String, dynamic>? ?? <String, dynamic>{};
     String createdPath = 'unknown';
 
     if (success && data.containsKey('instances')) {
@@ -1020,20 +1024,20 @@ class UspClient {
       final result = UspResultParser.parseSetResult(resultMap);
 
       return switch (result) {
-        UspSuccess() => result,  // 總是返回成功
-        UspPartialSuccess() when allowPartial => result,  // 只在允許部分成功時返回
+        UspSuccess() => result, // 總是返回成功
+        UspPartialSuccess() when allowPartial => result, // 只在允許部分成功時返回
         UspPartialSuccess() => throw UspAtomicModeFailureError(
-          summary: (result as UspPartialSuccess).errorSummary,
-          successPaths: result.successes.map((s) => s.requestedPath).toList(),
-          failedPaths: result.failures.map((f) => f.requestedPath).toList(),
-        ),
+            summary: (result as UspPartialSuccess).errorSummary,
+            successPaths: result.successes.map((s) => s.requestedPath).toList(),
+            failedPaths: result.failures.map((f) => f.requestedPath).toList(),
+          ),
         UspFailure() => throw UspCompleteFailureError(
-          summary: (result as UspFailure).errorSummary,
-          failedPaths: result.errors.map((e) => e.requestedPath).toList(),
-        ),
+            summary: (result as UspFailure).errorSummary,
+            failedPaths: result.errors.map((e) => e.requestedPath).toList(),
+          ),
       };
     } on ServiceError {
-      rethrow;  // 重新拋出已經是 ServiceError 的異常
+      rethrow; // 重新拋出已經是 ServiceError 的異常
     } catch (e) {
       // 轉換其他異常（如網路錯誤）為適當的 ServiceError
       throw UspCompleteFailureError(

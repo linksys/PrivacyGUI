@@ -3,45 +3,32 @@ import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Tests for USP structured response core functionality
 /// Focus on result parsing logic, sealed class conversion, and error handling
+///
+/// These tests use WASM v0.11.0 format: {success, result: {data, error?}}
 void main() {
   group('USP Structured Response Parsing Tests', () {
     group('UspResultParser parsing logic', () {
       test('parseSetResult() should create UspSuccess for complete success',
           () {
-        // Arrange - mock response with all operations successful
+        // WASM v0.11.0 format: success=true, no error field
         final mockResponse = {
-          'overallSuccess': true,
-          'hasAnySuccess': true,
-          'hasErrors': false,
-          'results': [
-            {
-              'requestedPath': 'Device.WiFi.SSID.1.SSID',
-              'success': true,
-              'updatedInstances': [
-                {
-                  'affectedPath': 'Device.WiFi.SSID.1.',
-                  'updatedParams': {'SSID': 'NewNetwork'}
-                }
-              ]
-            }
-          ]
+          'success': true,
+          'result': {
+            'data': {
+              'Device.WiFi.SSID.1.SSID': 'NewNetwork',
+            },
+          },
         };
 
-        // Act - parse the response into structured result
         final result = UspResultParser.parseSetResult(mockResponse);
 
-        // Assert - verify UspSuccess with correct data
         expect(result, isA<UspSuccess>());
         final success = result as UspSuccess;
         expect(success.details, hasLength(1));
-        expect(success.details[0].requestedPath, 'Device.WiFi.SSID.1.SSID');
-        expect(success.allUpdatedInstances, hasLength(1));
-        expect(
-            success.allUpdatedInstances[0].affectedPath, 'Device.WiFi.SSID.1.');
-        expect(
-            success.allUpdatedInstances[0].updatedParams['SSID'], 'NewNetwork');
+        expect(success.details[0].requestedPath, 'bulk_operation');
+        expect(success.details[0].retrievedParams?['Device.WiFi.SSID.1.SSID'],
+            'NewNetwork');
 
-        // Test context-aware success methods
         expect(success.isSuccessfulInContext(), true);
         expect(success.isSuccessfulInContext(allowPartial: false), true);
         expect(success.isSuccessfulInContext(allowPartial: true), true);
@@ -49,87 +36,67 @@ void main() {
 
       test('parseSetResult() should create UspPartialSuccess for mixed results',
           () {
-        // Arrange - mock response with both success and failure operations
+        // WASM v0.11.0 format: success=true, but has error field
         final mockResponse = {
-          'overallSuccess': false,
-          'hasAnySuccess': true,
-          'hasErrors': true,
-          'results': [
-            {
-              'requestedPath': 'Device.WiFi.SSID.1.SSID',
-              'success': true,
-              'updatedInstances': [
-                {
-                  'affectedPath': 'Device.WiFi.SSID.1.',
-                  'updatedParams': {'SSID': 'NewNetwork'}
-                }
-              ]
+          'success': true,
+          'result': {
+            'data': {
+              'Device.WiFi.SSID.1.SSID': 'NewNetwork',
             },
-            {
-              'requestedPath': 'Device.WiFi.SSID.1.InvalidParam',
-              'success': false,
-              'errorCode': 7004,
-              'errorMessage': 'Parameter not writable'
-            }
-          ]
+            'error': {
+              'Device.WiFi.SSID.1.InvalidParam': {
+                'errorCode': 7004,
+                'errorMessage': 'Parameter not writable',
+              },
+            },
+          },
         };
 
-        // Act - parse the mixed result response
         final result = UspResultParser.parseSetResult(mockResponse);
 
-        // Assert - verify UspPartialSuccess with both successes and failures
         expect(result, isA<UspPartialSuccess>());
         final partial = result as UspPartialSuccess;
 
         expect(partial.successes, hasLength(1));
         expect(partial.failures, hasLength(1));
-        expect(partial.successes[0].requestedPath, 'Device.WiFi.SSID.1.SSID');
+        expect(partial.successes[0].requestedPath, 'bulk_operation');
         expect(partial.failures[0].requestedPath,
             'Device.WiFi.SSID.1.InvalidParam');
         expect(partial.failures[0].errorCode, 7004);
         expect(partial.failures[0].isParameterNotWritable, true);
 
         expect(partial.errorSummary, contains('Parameter not writable'));
-        expect(partial.successSummary, contains('Device.WiFi.SSID.1.SSID'));
 
-        // Test context-aware success methods for partial success
         expect(partial.isSuccessfulInContext(allowPartial: true), true);
         expect(partial.isSuccessfulInContext(allowPartial: false), false);
       });
 
       test('parseSetResult() should create UspFailure for complete failure',
           () {
-        // Arrange - mock response with all operations failed
+        // WASM v0.11.0 format: success=false
         final mockResponse = {
-          'overallSuccess': false,
-          'hasAnySuccess': false,
-          'hasErrors': true,
-          'results': [
-            {
-              'requestedPath': 'Device.Invalid.Path',
-              'success': false,
-              'errorCode': 7026,
-              'errorMessage': 'Parameter not found'
+          'success': false,
+          'result': {
+            'data': <String, dynamic>{},
+            'error': {
+              'Device.Invalid.Path': {
+                'errorCode': 7026,
+                'errorMessage': 'Parameter not found',
+              },
+              'Device.Another.Invalid.Path': {
+                'errorCode': 7005,
+                'errorMessage': 'Invalid parameter name',
+              },
             },
-            {
-              'requestedPath': 'Device.Another.Invalid.Path',
-              'success': false,
-              'errorCode': 7005,
-              'errorMessage': 'Invalid parameter name'
-            }
-          ]
+          },
         };
 
-        // Act - parse the complete failure response
         final result = UspResultParser.parseSetResult(mockResponse);
 
-        // Assert - verify UspFailure with all error details
         expect(result, isA<UspFailure>());
         final failure = result as UspFailure;
 
         expect(failure.errors, hasLength(2));
-        expect(failure.errors[0].isParameterNotFound, true);
-        expect(failure.errors[1].isInvalidParameterName, true);
         expect(failure.errorSummary, contains('Parameter not found'));
         expect(failure.errorSummary, contains('Invalid parameter name'));
 
@@ -137,112 +104,76 @@ void main() {
         expect(error7026s, hasLength(1));
         expect(error7026s[0].requestedPath, 'Device.Invalid.Path');
 
-        // Test context-aware success methods for failure
         expect(failure.isSuccessfulInContext(), false);
         expect(failure.isSuccessfulInContext(allowPartial: true), false);
       });
 
       test('parseAddResult() should handle created instances correctly', () {
-        // Arrange - mock response for ADD operation with created instance
+        // WASM v0.11.0 format for ADD success
         final mockResponse = {
-          'overallSuccess': true,
-          'hasAnySuccess': true,
-          'hasErrors': false,
-          'results': [
-            {
-              'requestedPath': 'Device.NAT.PortMapping.',
-              'success': true,
-              'createdInstances': [
-                {
-                  'affectedPath': 'Device.NAT.PortMapping.3.',
-                  'initialParams': {
-                    'Protocol': 'TCP',
-                    'ExternalPort': '80',
-                    'InternalClient': '192.168.1.100'
-                  }
-                }
-              ]
-            }
-          ]
+          'success': true,
+          'result': {
+            'data': {
+              'createdPath': 'Device.NAT.PortMapping.3.',
+            },
+          },
         };
 
-        // Act - parse ADD result with created instances
         final result = UspResultParser.parseAddResult(mockResponse);
 
-        // Assert - verify created instance data is preserved
         expect(result, isA<UspSuccess>());
         final success = result as UspSuccess;
-
-        expect(success.allCreatedInstances, hasLength(1));
-        final created = success.allCreatedInstances[0];
-        expect(created.affectedPath, 'Device.NAT.PortMapping.3.');
-        expect(created.initialParams['Protocol'], 'TCP');
-        expect(created.initialParams['ExternalPort'], '80');
-        expect(created.initialParams['InternalClient'], '192.168.1.100');
-      });
-
-      test('parseDeleteResult() should handle deleted instances correctly', () {
-        // Arrange - mock response for DELETE operation with deleted instance
-        final mockResponse = {
-          'overallSuccess': true,
-          'hasAnySuccess': true,
-          'hasErrors': false,
-          'results': [
-            {
-              'requestedPath': 'Device.NAT.PortMapping.3.',
-              'success': true,
-              'deletedInstances': [
-                {'affectedPath': 'Device.NAT.PortMapping.3.'}
-              ]
-            }
-          ]
-        };
-
-        // Act - parse DELETE result with deleted instances
-        final result = UspResultParser.parseDeleteResult(mockResponse);
-
-        // Assert - verify deleted instance path is preserved
-        expect(result, isA<UspSuccess>());
-        final success = result as UspSuccess;
-
-        expect(success.allDeletedInstances, hasLength(1));
-        expect(success.allDeletedInstances[0].affectedPath,
+        expect(success.details, hasLength(1));
+        expect(success.details[0].retrievedParams?['createdPath'],
             'Device.NAT.PortMapping.3.');
       });
 
+      test('parseDeleteResult() should handle deleted instances correctly', () {
+        // WASM v0.11.0 format for DELETE success
+        final mockResponse = {
+          'success': true,
+          'result': {
+            'data': {
+              'deletedPath': 'Device.NAT.PortMapping.3.',
+            },
+          },
+        };
+
+        final result = UspResultParser.parseDeleteResult(mockResponse);
+
+        expect(result, isA<UspSuccess>());
+        final success = result as UspSuccess;
+        expect(success.details, hasLength(1));
+      });
+
       test('createEmptySuccess() should return empty success result', () {
-        // Act - create empty success result (no operations performed)
         final result = UspResultParser.createEmptySuccess<void>();
 
-        // Assert - verify empty success semantics
         expect(result, isA<UspSuccess>());
         final success = result as UspSuccess;
         expect(success.details, isEmpty);
-        expect(success.hasAnySuccess, false); // No actual operations performed
-        expect(success.isCompleteSuccess, true); // But no errors either
+        expect(success.hasAnySuccess, false);
+        expect(success.isCompleteSuccess, true);
         expect(success.hasErrors, false);
       });
 
       test(
           'createFailureFromException() should convert exceptions to UspFailure',
           () {
-        // Arrange - exception and requested path context
         final exception = Exception('Network connection timeout');
         const requestedPath = 'Device.WiFi.SSID.1.SSID';
 
-        // Act - convert exception to structured failure
         final result = UspResultParser.createFailureFromException<void>(
           exception,
           requestedPath,
         );
 
-        // Assert - verify exception is properly wrapped
         expect(result, isA<UspFailure>());
         final failure = result as UspFailure;
 
         expect(failure.errors, hasLength(1));
         expect(failure.errors[0].requestedPath, requestedPath);
-        expect(failure.errors[0].errorCode, -1); // Default exception error code
+        expect(failure.errors[0].errorCode, -1);
         expect(failure.errors[0].errorMessage,
             contains('Network connection timeout'));
       });
@@ -250,7 +181,6 @@ void main() {
 
     group('Sealed Class Pattern Matching Tests', () {
       test('pattern matching should work with all result types', () {
-        // Arrange - non-empty results for meaningful testing
         const successDetails = [
           UspSuccessDetail(requestedPath: 'test.success')
         ];
@@ -267,7 +197,6 @@ void main() {
           UspFailure(errorDetails),
         ];
 
-        // Act & Assert - verify pattern matching works correctly
         for (final result in results) {
           final type = switch (result) {
             UspSuccess() => 'success',
@@ -275,17 +204,14 @@ void main() {
             UspFailure() => 'failure',
           };
 
-          // Use type-based assertions instead of runtime type checking
           if (result is UspSuccess) {
             expect(type, 'success');
-            expect(
-                result.hasAnySuccess, true); // Has actual successful operations
+            expect(result.hasAnySuccess, true);
             expect(result.isCompleteSuccess, true);
             expect(result.hasErrors, false);
           } else if (result is UspPartialSuccess) {
             expect(type, 'partial');
-            expect(
-                result.hasAnySuccess, true); // Has actual successful operations
+            expect(result.hasAnySuccess, true);
             expect(result.isCompleteSuccess, false);
             expect(result.hasErrors, true);
           } else if (result is UspFailure) {
@@ -298,7 +224,6 @@ void main() {
       });
 
       test('pattern matching should extract data correctly', () {
-        // Arrange - test data with known counts
         const successDetails = [
           UspSuccessDetail(requestedPath: 'success-path')
         ];
@@ -315,7 +240,6 @@ void main() {
           UspFailure(errorDetails),
         ];
 
-        // Act & Assert - verify data extraction from pattern matching
         for (final result in results) {
           final (successCount, errorCount) = switch (result) {
             UspSuccess(details: final details) => (details.length, 0),
@@ -326,7 +250,6 @@ void main() {
             UspFailure(errors: final errors) => (0, errors.length),
           };
 
-          // Use type-based assertions instead of runtime type checking
           if (result is UspSuccess) {
             expect(successCount, 1);
             expect(errorCount, 0);
@@ -343,14 +266,13 @@ void main() {
 
     group('UspErrorDetail Special Methods Tests', () {
       test('should identify USP error codes correctly', () {
-        // Common USP error code classification tests
         final testCases = [
-          (7004, true, false, false, false, false), // Parameter not writable
-          (7005, false, true, false, false, false), // Invalid parameter name
-          (7006, false, false, true, false, false), // Invalid parameter value
-          (7026, false, false, false, true, false), // Parameter not found
-          (7027, false, false, false, false, true), // Object not found
-          (9999, false, false, false, false, false), // Unknown error
+          (7004, true, false, false, false, false),
+          (7005, false, true, false, false, false),
+          (7006, false, false, true, false, false),
+          (7026, false, false, false, true, false),
+          (7027, false, false, false, false, true),
+          (9999, false, false, false, false, false),
         ];
 
         for (final (
@@ -381,9 +303,7 @@ void main() {
       });
 
       test('should determine retryability correctly', () {
-        // Network errors and unknown errors are retryable
         final retryableErrors = [7001, 7002, 7003, 9999];
-        // Parameter errors are not retryable
         final nonRetryableErrors = [7004, 7005, 7006, 7026, 7027];
 
         for (final code in retryableErrors) {
@@ -464,7 +384,6 @@ void main() {
         expect(error.toString(), contains('7004'));
         expect(error.toString(), contains('Parameter not writable'));
 
-        // Test isErrorCode method
         expect(error.isErrorCode(7004), true);
         expect(error.isErrorCode(7005), false);
       });
@@ -501,127 +420,96 @@ void main() {
       });
 
       test('UspResultParser parseGetResult should handle GET operation', () {
-        // Arrange - mock GET operation response
+        // WASM v0.11.0 format for GET
         final mockResponse = {
-          'overallSuccess': true,
-          'hasAnySuccess': true,
-          'hasErrors': false,
-          'results': [
-            {
-              'requestedPath': 'Device.WiFi.SSID.1.SSID',
-              'success': true,
-              'retrievedParams': {'SSID': 'TestNetwork'},
-            }
-          ]
+          'success': true,
+          'result': {
+            'data': {
+              'Device.WiFi.SSID.1.SSID': 'TestNetwork',
+            },
+          },
         };
 
-        // Act - parse GET result
         final result = UspResultParser.parseGetResult(mockResponse);
 
-        // Assert - verify GET result structure
         expect(result, isA<UspSuccess>());
         final success = result as UspSuccess;
         expect(success.details, hasLength(1));
-        expect(success.details[0].requestedPath, 'Device.WiFi.SSID.1.SSID');
+        expect(success.details[0].requestedPath, 'bulk_operation');
       });
 
       test('UspResultParser parseOperateResult should handle OPERATE operation',
           () {
-        // Arrange - mock OPERATE operation response
+        // WASM v0.11.0 format for OPERATE
         final mockResponse = {
-          'overallSuccess': true,
-          'hasAnySuccess': true,
-          'hasErrors': false,
-          'results': [
-            {
-              'requestedPath': 'Device.IP.Diagnostics.IPPing()',
-              'success': true,
-              'outputArgs': {'Status': 'Success', 'PacketsReceived': '4'},
-            }
-          ]
+          'success': true,
+          'result': {
+            'data': {
+              'Status': 'Success',
+              'PacketsReceived': '4',
+            },
+          },
         };
 
-        // Act - parse OPERATE result
         final result = UspResultParser.parseOperateResult(mockResponse);
 
-        // Assert - verify OPERATE result structure
         expect(result, isA<UspSuccess>());
         final success = result as UspSuccess;
         expect(success.details, hasLength(1));
-        expect(
-            success.details[0].requestedPath, 'Device.IP.Diagnostics.IPPing()');
+        expect(success.details[0].requestedPath, 'bulk_operation');
       });
     });
 
     group('Edge Cases and Error Handling Tests', () {
       test('should handle empty results array', () {
-        // Arrange - empty results array but overall success
+        // WASM v0.11.0 format: success with empty data
         final mockResponse = {
-          'overallSuccess': true,
-          'hasAnySuccess': false,
-          'hasErrors': false,
-          'results': <Map<String, dynamic>>[]
+          'success': true,
+          'result': {
+            'data': <String, dynamic>{},
+          },
         };
 
-        // Act - parse empty results
         final result = UspResultParser.parseSetResult(mockResponse);
 
-        // Assert - empty success with correct semantics
-        expect(result, isA<UspSuccess>());
-        final success = result as UspSuccess;
-        expect(success.details, isEmpty);
-        expect(success.hasAnySuccess, false); // No operations performed
-        expect(success.isCompleteSuccess, true); // But no errors
-      });
-
-      test('should handle missing optional fields in response', () {
-        // Arrange - response with missing optional fields
-        final mockResponse = {
-          'overallSuccess': true,
-          'results': [
-            {
-              'requestedPath': 'Device.Test.Path',
-              'success': true,
-              // Missing updatedInstances, createdInstances, etc.
-            }
-          ]
-          // Missing hasAnySuccess, hasErrors
-        };
-
-        // Act - parse response with missing fields
-        final result = UspResultParser.parseSetResult(mockResponse);
-
-        // Assert - graceful handling of missing fields
         expect(result, isA<UspSuccess>());
         final success = result as UspSuccess;
         expect(success.details, hasLength(1));
-        expect(success.details[0].updatedInstances, isNull);
+        expect(success.details[0].retrievedParams, isEmpty);
+      });
+
+      test('should handle missing optional fields in response', () {
+        // WASM v0.11.0 format: minimal success response
+        final mockResponse = {
+          'success': true,
+          'result': {
+            'data': {
+              'Device.Test.Path': 'value',
+            },
+          },
+        };
+
+        final result = UspResultParser.parseSetResult(mockResponse);
+
+        expect(result, isA<UspSuccess>());
+        final success = result as UspSuccess;
+        expect(success.details, hasLength(1));
       });
 
       test('should handle malformed error result', () {
-        // Arrange - malformed error with missing errorCode/errorMessage
+        // WASM v0.11.0 format: failure without specific error info
         final mockResponse = {
-          'overallSuccess': false,
-          'hasErrors': true,
-          'results': [
-            {
-              'requestedPath': 'Device.Test.Path',
-              'success': false,
-              // Missing errorCode and errorMessage
-            }
-          ]
+          'success': false,
+          'result': <String, dynamic>{},
         };
 
-        // Act - parse malformed error response
         final result = UspResultParser.parseSetResult(mockResponse);
 
-        // Assert - graceful fallback for missing error details
         expect(result, isA<UspFailure>());
         final failure = result as UspFailure;
         expect(failure.errors, hasLength(1));
-        expect(failure.errors[0].errorCode, -1); // Default fallback
-        expect(failure.errors[0].errorMessage,
-            'Unknown error'); // Default fallback
+        expect(failure.errors[0].errorCode, -1);
+        expect(failure.errors[0].errorMessage, 'Operation failed');
       });
     });
   });

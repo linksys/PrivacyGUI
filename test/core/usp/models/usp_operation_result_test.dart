@@ -155,23 +155,17 @@ void main() {
   });
 
   group('UspResultParser', () {
+    // Tests use WASM v0.11.0 format: {success, result: {data, error?}}
+
     test('should parse complete success result', () {
+      // WASM v0.11.0 format: success=true, no error field
       final rawResult = {
-        'overallSuccess': true,
-        'hasAnySuccess': true,
-        'hasErrors': false,
-        'results': [
-          {
-            'requestedPath': 'Device.WiFi.SSID.1.SSID',
-            'success': true,
-            'updatedInstances': [
-              {
-                'affectedPath': 'Device.WiFi.SSID.1.',
-                'updatedParams': {'SSID': 'NewNetwork'}
-              }
-            ]
-          }
-        ]
+        'success': true,
+        'result': {
+          'data': {
+            'Device.WiFi.SSID.1.SSID': 'NewNetwork',
+          },
+        },
       };
 
       final result = UspResultParser.parseSetResult(rawResult);
@@ -179,35 +173,26 @@ void main() {
       expect(result, isA<UspSuccess>());
       final success = result as UspSuccess;
       expect(success.details, hasLength(1));
-      expect(success.details.first.requestedPath, 'Device.WiFi.SSID.1.SSID');
-      expect(success.allUpdatedInstances, hasLength(1));
-      expect(success.allUpdatedInstances.first.affectedPath,
-          'Device.WiFi.SSID.1.');
+      expect(success.details.first.requestedPath, 'bulk_operation');
+      expect(success.details.first.retrievedParams?['Device.WiFi.SSID.1.SSID'],
+          'NewNetwork');
     });
 
     test('should parse partial success result', () {
+      // WASM v0.11.0 format: success=true, but has error field for failed paths
       final rawResult = {
-        'overallSuccess': false,
-        'hasAnySuccess': true,
-        'hasErrors': true,
-        'results': [
-          {
-            'requestedPath': 'Device.WiFi.SSID.1.SSID',
-            'success': true,
-            'updatedInstances': [
-              {
-                'affectedPath': 'Device.WiFi.SSID.1.',
-                'updatedParams': {'SSID': 'NewNetwork'}
-              }
-            ]
+        'success': true,
+        'result': {
+          'data': {
+            'Device.WiFi.SSID.1.SSID': 'NewNetwork',
           },
-          {
-            'requestedPath': 'Device.WiFi.SSID.1.Enable',
-            'success': false,
-            'errorCode': 7004,
-            'errorMessage': 'Parameter not writable'
-          }
-        ]
+          'error': {
+            'Device.WiFi.SSID.1.Enable': {
+              'errorCode': 7004,
+              'errorMessage': 'Parameter not writable',
+            },
+          },
+        },
       };
 
       final result = UspResultParser.parseSetResult(rawResult);
@@ -217,21 +202,22 @@ void main() {
       expect(partial.successes, hasLength(1));
       expect(partial.failures, hasLength(1));
       expect(partial.failures.first.errorCode, 7004);
+      expect(partial.failures.first.requestedPath, 'Device.WiFi.SSID.1.Enable');
     });
 
     test('should parse complete failure result', () {
+      // WASM v0.11.0 format: success=false
       final rawResult = {
-        'overallSuccess': false,
-        'hasAnySuccess': false,
-        'hasErrors': true,
-        'results': [
-          {
-            'requestedPath': 'Device.Invalid.Path',
-            'success': false,
-            'errorCode': 7026,
-            'errorMessage': 'Parameter not found'
-          }
-        ]
+        'success': false,
+        'result': {
+          'data': <String, dynamic>{},
+          'error': {
+            'Device.Invalid.Path': {
+              'errorCode': 7026,
+              'errorMessage': 'Parameter not found',
+            },
+          },
+        },
       };
 
       final result = UspResultParser.parseSetResult(rawResult);

@@ -291,7 +291,8 @@ class UspResultParser {
     // Debug logging to track parsing results
     if (kDebugMode) {
       final success = map['success'] as bool? ?? false;
-      print('[UspResultParser] SET parseResult: success=$success, result=${result.runtimeType}');
+      print(
+          '[UspResultParser] SET parseResult: success=$success, result=${result.runtimeType}');
       if (result is UspFailure) {
         print('[UspResultParser] SET failure: ${result.errorSummary}');
       }
@@ -301,10 +302,69 @@ class UspResultParser {
   }
 
   /// 解析 ADD 操作結果
+  ///
+  /// WASM v0.11.0 ADD 格式: {success, result: {data: {instances: [...]}}}
+  /// 其中 instances 是創建的實例路徑字串陣列，需轉換為 [UspCreatedInstance]
   static UspAddResult parseAddResult(Map<String, dynamic> map) {
-    final result = _parseGenericResult<List<String>>(map);
-    // ADD 操作的特殊處理：從 createdInstances 中提取實例路徑
-    return result;
+    final success = map['success'] as bool? ?? false;
+    final resultMap = map['result'] as Map<String, dynamic>? ?? {};
+    final data = resultMap['data'] as Map<String, dynamic>? ?? {};
+    final error = resultMap['error'] as Map<String, dynamic>?;
+
+    if (!success) {
+      final failures = <UspErrorDetail>[];
+      if (error != null) {
+        for (final entry in error.entries) {
+          final errorInfo = entry.value as Map<String, dynamic>;
+          failures.add(UspErrorDetail(
+            requestedPath: entry.key,
+            errorCode: errorInfo['errorCode'] as int? ?? -1,
+            errorMessage:
+                errorInfo['errorMessage'] as String? ?? 'Unknown error',
+          ));
+        }
+      } else {
+        failures.add(const UspErrorDetail(
+          requestedPath: 'add_operation',
+          errorCode: -1,
+          errorMessage: 'Add operation failed',
+        ));
+      }
+      return UspFailure<List<String>>(failures);
+    }
+
+    // Extract instances array → UspCreatedInstance list
+    final instances = data['instances'] as List? ?? [];
+    final createdInstances = instances
+        .whereType<String>()
+        .map((path) => UspCreatedInstance(
+              affectedPath: path,
+              initialParams: const {},
+            ))
+        .toList();
+
+    final successes = [
+      UspSuccessDetail(
+        requestedPath: 'add_operation',
+        createdInstances: createdInstances,
+        retrievedParams: data,
+      ),
+    ];
+
+    if (error != null && error.isNotEmpty) {
+      final failures = <UspErrorDetail>[];
+      for (final entry in error.entries) {
+        final errorInfo = entry.value as Map<String, dynamic>;
+        failures.add(UspErrorDetail(
+          requestedPath: entry.key,
+          errorCode: errorInfo['errorCode'] as int? ?? -1,
+          errorMessage: errorInfo['errorMessage'] as String? ?? 'Unknown error',
+        ));
+      }
+      return UspPartialSuccess<List<String>>(successes, failures);
+    }
+
+    return UspSuccess<List<String>>(successes);
   }
 
   /// 解析 DELETE 操作結果
