@@ -60,10 +60,6 @@ class UspTimezoneCard extends StatelessWidget {
               label: 'Status',
               value: timeSettings.status,
             ),
-            UspInfoRow(
-              label: 'Local Time',
-              value: timeSettings.formattedDateTime,
-            ),
           ],
         ),
       ),
