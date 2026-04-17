@@ -1,17 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 import 'package:privacy_gui/page/_shared/services/usp_traffic_analysis_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspTrafficAnalysisService svc;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     svc = UspTrafficAnalysisService(mockUsp);
   });
 

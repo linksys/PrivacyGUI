@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_wan_connection_type.dart';
 import 'package:privacy_gui/page/internet_settings/services/usp_internet_settings_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 // Test data — WAN singleton (new vendor paths)
 const _wanResponse = <String, dynamic>{
@@ -54,11 +54,11 @@ const _ipv6Response = <String, dynamic>{
 };
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspInternetSettingsService service;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     service = UspInternetSettingsService(mockUsp);
   });
 
@@ -153,9 +153,19 @@ void main() {
 
   group('saveAll', () {
     setUp(() {
-      when(() => mockUsp.set(any())).thenAnswer((_) async {});
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async {});
+          .thenAnswer((_) async => {
+                'overallSuccess': true,
+                'hasAnySuccess': true,
+                'hasErrors': false,
+                'results': []
+              });
     });
 
     test('sends only changed WAN fields', () async {
@@ -210,8 +220,23 @@ void main() {
 
     test('adds PPP instance when switching to PPPoE without existing instance',
         () async {
-      when(() => mockUsp.add(any(), any()))
-          .thenAnswer((_) async => 'Device.PPP.Interface.1.');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.PPP.Interface.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath': 'Device.PPP.Interface.1.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.dhcp,
@@ -228,7 +253,12 @@ void main() {
     });
 
     test('deletes PPP instance when switching away from PPPoE', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.pppoe,
@@ -250,8 +280,23 @@ void main() {
 
     test('adds VLAN instance when enabling VLAN without existing instance',
         () async {
-      when(() => mockUsp.add(any(), any()))
-          .thenAnswer((_) async => 'Device.Ethernet.VLANTermination.1.');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.Ethernet.VLANTermination.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath': 'Device.Ethernet.VLANTermination.1.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.pppoe,
@@ -268,7 +313,12 @@ void main() {
     });
 
     test('deletes VLAN instance when disabling VLAN', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       final original = UspInternetSettingsForm(
         connectionType: UspWanConnectionType.pppoe,

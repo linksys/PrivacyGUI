@@ -3,8 +3,8 @@ import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 
 // ---------------------------------------------------------------------------
@@ -13,7 +13,7 @@ import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 
 final uspWanDataServiceProvider = Provider<UspWanDataService>(
   (ref) {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
           message: 'USP service not available');
@@ -31,7 +31,7 @@ final uspWanDataServiceProvider = Provider<UspWanDataService>(
 /// Owns codegen calls, gateway/IPv6 query, and WAN UI model building
 /// for [wanDataProvider].
 class UspWanDataService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspWanDataService(this._usp);
 

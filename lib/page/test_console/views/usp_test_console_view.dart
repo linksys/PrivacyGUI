@@ -8,10 +8,11 @@ import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/web/usp_wasm_init.dart';
 import 'package:privacy_gui/generated/tr181_paths.g.dart';
 import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
@@ -19,7 +20,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shell-compatible USP test console integrated into the USP menu.
 ///
-/// Reuses the shared [UspService] session when available, with manual
+/// Reuses the shared [UspClient] session when available, with manual
 /// override for connecting to a different endpoint.
 class UspTestConsoleView extends ConsumerStatefulWidget {
   const UspTestConsoleView({super.key});
@@ -44,7 +45,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   final _subPathController = TextEditingController(text: 'Device.Hosts.Host.');
   final _logScrollController = ScrollController();
 
-  UspService? _service;
+  UspClient? _service;
   UspBridgeClient? _bridgeClient;
   bool _isConnected = false;
   bool _usingSharedSession = false;
@@ -61,14 +62,14 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   @override
   void initState() {
     super.initState();
-    // Try to inject shared UspService from the app's provider tree.
+    // Try to inject shared UspClient from the app's provider tree.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _tryInjectSharedService();
     });
   }
 
   void _tryInjectSharedService() {
-    final shared = ref.read(uspServiceProvider);
+    final shared = ref.read(uspClientProvider);
     if (shared != null && shared.isAuthenticated) {
       _service = shared;
       _bridgeClient = UspBridgeClient(shared);
@@ -116,7 +117,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
         return;
       }
       _log('WASM client ready');
-      final svc = UspService(url);
+      final svc = UspClient(url);
       _service = svc;
       _bridgeClient = UspBridgeClient(svc);
       _log('Client created for $url');
@@ -183,7 +184,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
 
   /// Switch back to shared session (if available)
   void _useSharedSession() {
-    final shared = ref.read(uspServiceProvider);
+    final shared = ref.read(uspClientProvider);
     if (shared != null && shared.isAuthenticated) {
       _service = shared;
       _bridgeClient = UspBridgeClient(shared);
@@ -219,15 +220,75 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     }
   }
 
-  Future<void> _doSet() async {
+  Future<void> _doSet() async => _doSetInternal(allowPartial: false);
+  Future<void> _doSetAllowPartial() async => _doSetInternal(allowPartial: true);
+
+  Future<void> _doSetInternal({required bool allowPartial}) async {
     if (_service == null) return;
-    final path = _setPathController.text.trim();
+    final paths = _setPathController.text.trim().split(',').map((p) => p.trim()).where((p) => p.isNotEmpty).toList();
     final value = _setValueController.text;
-    if (path.isEmpty) return;
-    _log('SET $path = $value');
+    if (paths.isEmpty) return;
+
+    // 支援多個路徑（逗號分隔）
+    final params = <String, dynamic>{};
+    for (final path in paths) {
+      params[path] = value;
+    }
+
+    final modeText = allowPartial ? '(Allow Partial)' : '(Atomic)';
+    _log('SET $modeText ${paths.length > 1 ? paths.toString() : paths.first} = $value');
+
     try {
-      await _service!.set({path: value});
-      _log('SET OK');
+      // 使用策略A：成功返回結果，失敗拋出 ServiceError
+      final result = await _service!.setWithResult(params, allowPartial: allowPartial);
+
+      // 如果到這裡，說明操作成功（UspSuccess 或允許的 UspPartialSuccess）
+      if (result is UspSuccess) {
+        _log('SET SUCCESS - All parameters updated');
+        // 顯示返回的更新值（證明 WASM v0.11.0 data 欄位包含更新後的值）
+        for (final detail in result.details) {
+          if (detail.retrievedParams != null && detail.retrievedParams!.isNotEmpty) {
+            for (final entry in detail.retrievedParams!.entries) {
+              _log('  Updated: ${entry.key} = ${entry.value}');
+            }
+          }
+        }
+        if (result.details.isEmpty || result.details.every((d) => d.retrievedParams?.isEmpty ?? true)) {
+          _log('  (No return values - operation completed)');
+        }
+      } else if (result is UspPartialSuccess) {
+        // 只有 allowPartial=true 時才會到這裡
+        _log('SET PARTIAL SUCCESS - Some succeeded, some failed');
+        _log('  Successes: ${result.successSummary}');
+        _log('  Failures: ${result.errorSummary}');
+
+        // 顯示成功的更新值
+        for (final detail in result.successes) {
+          if (detail.retrievedParams != null) {
+            for (final entry in detail.retrievedParams!.entries) {
+              _log('    Updated: ${entry.key} = ${entry.value}');
+            }
+          }
+        }
+
+        // 顯示錯誤詳情
+        for (final error in result.failures) {
+          final readOnlyTag = error.isParameterNotWritable ? ' [READ-ONLY]' : '';
+          final pathNotFoundTag = error.isParameterNotFound ? ' [NOT-FOUND]' : '';
+          _log('    ERROR: ${error.requestedPath}: Code ${error.errorCode}$readOnlyTag$pathNotFoundTag - ${error.errorMessage}');
+        }
+      }
+    } on UspCompleteFailureError catch (e) {
+      // 處理完全失敗
+      _log('SET FAILED - All operations failed');
+      _log('  Error: ${e.summary}');
+      _log('  Failed paths: ${e.failedPaths.join(', ')}');
+    } on UspAtomicModeFailureError catch (e) {
+      // 處理原子模式下的部分失敗
+      _log('SET FAILED - Partial success not allowed in atomic mode');
+      _log('  Error: ${e.summary}');
+      _log('  Success paths: ${e.successPaths.join(', ')}');
+      _log('  Failed paths: ${e.failedPaths.join(', ')}');
     } catch (e) {
       _log('ERROR set: $e');
     }
@@ -567,7 +628,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     _log('');
     _log('--- PROBE: LOGIN with wrong password');
     try {
-      final throwaway = UspService(_service!.baseUrl);
+      final throwaway = UspClient(_service!.baseUrl);
       await throwaway.login('definitely_wrong_password_12345');
       _log('  RESULT: No error thrown');
       throwaway.dispose();
@@ -929,7 +990,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
         _buildSectionTitle('USP Set'),
         Tr181AutocompleteField(
           controller: _setPathController,
-          labelText: 'Path',
+          labelText: 'Path (comma-separated for multiple)',
           pathTypeFilter: const {Tr181PathType.parameter},
         ),
         const SizedBox(height: 8),
@@ -938,7 +999,13 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
           hintText: 'Value',
         ),
         const SizedBox(height: 8),
-        AppButton.primary(label: 'Set', onTap: _doSet),
+        Wrap(
+          spacing: 8,
+          children: [
+            AppButton.primary(label: 'Set (Atomic)', onTap: _doSet),
+            AppButton.primaryOutline(label: 'Set (Allow Partial)', onTap: _doSetAllowPartial),
+          ],
+        ),
       ],
     );
   }

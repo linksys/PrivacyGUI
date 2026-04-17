@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/multi_interface_traffic_stats.g.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 
@@ -11,7 +11,7 @@ import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
 /// Returns null when USP is not available (polling providers check before use).
 final uspTrafficAnalysisServiceProvider = Provider<UspTrafficAnalysisService?>(
   (ref) {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) return null;
     return UspTrafficAnalysisService(usp);
   },
@@ -26,7 +26,7 @@ final uspTrafficAnalysisServiceProvider = Provider<UspTrafficAnalysisService?>(
 /// Owns the codegen call for [uspTrafficAnalysisProvider].
 /// No error mapping — polling providers silently catch errors.
 class UspTrafficAnalysisService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspTrafficAnalysisService(this._usp);
 

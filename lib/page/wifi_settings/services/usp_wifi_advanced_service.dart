@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 final uspWifiAdvancedServiceProvider = Provider<UspWifiAdvancedService>(
-  (ref) => UspWifiAdvancedService(ref.read(uspServiceProvider)!),
+  (ref) => UspWifiAdvancedService(ref.read(uspClientProvider)!),
 );
 
 /// Stateless service for IEEE 802.11h (DFS + TPC) radio settings.
@@ -14,7 +14,7 @@ final uspWifiAdvancedServiceProvider = Provider<UspWifiAdvancedService>(
 class UspWifiAdvancedService {
   static const _ieee80211hPath = 'Device.WiFi.Radio.*.IEEE80211hEnabled';
 
-  final UspService _usp;
+  final UspClient _usp;
 
   UspWifiAdvancedService(this._usp);
 

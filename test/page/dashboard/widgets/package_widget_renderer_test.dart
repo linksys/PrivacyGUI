@@ -9,10 +9,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 import 'package:privacy_gui/core/usp/providers/bridge_request_throttler_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/bridge_request_throttler.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/dashboard/models/package_widget_template.dart';
 import 'package:privacy_gui/page/dashboard/providers/http_client_provider.dart';
 import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart';
@@ -21,7 +21,7 @@ import 'package:privacy_gui/page/dashboard/widgets/package_widget_renderer.dart'
 // Mocks
 // =============================================================================
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 class MockSseManager extends Mock implements SseManager {}
 
@@ -114,7 +114,7 @@ final _testTheme = AppTheme.create(
 /// Wrap the renderer in a testable widget tree with provider overrides.
 Widget _buildTestWidget({
   required PackageWidgetTemplate template,
-  UspService? usp,
+  UspClient? usp,
   SseManager? sse,
   http.Client? httpClient,
   BridgeRequestThrottler? throttler,
@@ -122,7 +122,7 @@ Widget _buildTestWidget({
 }) {
   return ProviderScope(
     overrides: [
-      uspServiceProvider.overrideWithValue(usp),
+      uspClientProvider.overrideWithValue(usp),
       sseManagerProvider.overrideWithValue(sse),
       bridgeRequestThrottlerProvider.overrideWithValue(
           throttler ?? BridgeRequestThrottler(staggerDelay: Duration.zero)),
@@ -156,11 +156,11 @@ void main() {
   // USP path
   // -----------------------------------------------------------------------
   group('USP path', () {
-    late MockUspService mockUsp;
+    late MockUspClient mockUsp;
     late MockSseManager mockSse;
 
     setUp(() {
-      mockUsp = MockUspService();
+      mockUsp = MockUspClient();
       mockSse = MockSseManager();
     });
 

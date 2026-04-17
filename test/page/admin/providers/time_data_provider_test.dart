@@ -2,14 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/admin/providers/time_data_provider.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
 
   final timeResponse = <String, dynamic>{
     'Device.Time.Enable': true,
@@ -21,7 +21,7 @@ void main() {
   };
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     when(() => mockUsp.get(any(), priority: any(named: 'priority')))
         .thenAnswer((_) async => timeResponse);
   });
@@ -29,7 +29,7 @@ void main() {
   ProviderContainer createContainer() {
     return ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
       ],
     );
   }

@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_data_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 /// Raw USP response map for a dual-band radio setup (2.4 GHz + 5 GHz).
 Map<String, dynamic> _buildRadiosResponse() => {
@@ -91,7 +91,7 @@ Map<String, dynamic> _buildAccessPointsResponse() => {
 /// Stubs `mockUsp.get()` to return the right response based on the requested
 /// paths. Each codegen `.fetch()` requests distinct base paths, so we can
 /// dispatch based on the first path element.
-void _stubAllFetches(MockUspService mockUsp) {
+void _stubAllFetches(MockUspClient mockUsp) {
   when(() => mockUsp.get(any(), priority: any(named: 'priority')))
       .thenAnswer((invocation) async {
     final paths = invocation.positionalArguments[0] as List<String>;
@@ -112,11 +112,11 @@ void _stubAllFetches(MockUspService mockUsp) {
 }
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspWifiDataService svc;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     svc = UspWifiDataService(mockUsp);
   });
 

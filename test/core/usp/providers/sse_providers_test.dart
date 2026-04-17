@@ -2,30 +2,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import '../mocks.dart';
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late MockUspBridgeClient mockBridge;
   late MockSseManager mockManager;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     mockBridge = MockUspBridgeClient();
     mockManager = MockSseManager();
   });
 
   /// Creates a container with optional overrides for all three providers.
   ProviderContainer createContainer({
-    MockUspService? usp,
+    MockUspClient? usp,
     MockUspBridgeClient? bridge,
     MockSseManager? manager,
   }) {
     return ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(usp),
+        uspClientProvider.overrideWithValue(usp),
         uspBridgeClientProvider.overrideWithValue(bridge),
         sseManagerProvider.overrideWithValue(manager),
       ],

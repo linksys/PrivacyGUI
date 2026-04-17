@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
 import 'package:privacy_gui/page/instant_privacy/services/instant_privacy_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 ConnectedDevice _device({
   String instancePath = 'Device.Hosts.Host.1.',
@@ -41,11 +41,11 @@ MacFilterAccessPoint _ap({
     );
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspInstantPrivacyService service;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     service = UspInstantPrivacyService(mockUsp);
   });
 
@@ -352,7 +352,7 @@ void main() {
   /// Standard path-based mock for fetchAll: routes ConnectedDevices vs
   /// MacFilterAccessPoints based on requested paths.
   void stubFetchAll(
-    MockUspService mock, {
+    MockUspClient mock, {
     Map<String, dynamic>? devicesResponse,
     Map<String, dynamic>? apResponse,
   }) {

@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
 import 'package:privacy_gui/page/ipv6_port_service/models/ipv6_port_service_ui_model.dart';
 import 'package:privacy_gui/page/ipv6_port_service/services/usp_ipv6_port_service_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 Ipv6PortServiceRule _rule({
   String instancePath = 'Device.Firewall.Chain.1.Rule.26.',
@@ -34,11 +34,11 @@ Ipv6PortServiceRule _rule({
     );
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late UspIpv6PortServiceService service;
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     service = UspIpv6PortServiceService(mockUsp);
   });
 
@@ -276,7 +276,12 @@ void main() {
     });
 
     test('delete removes missing items', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
 
       final original = [
         Ipv6PortServiceRuleUIModel(
@@ -300,7 +305,23 @@ void main() {
     });
 
     test('add creates items with null instancePath', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.Firewall.Chain.1.Rule.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath': 'Device.Firewall.Chain.1.Rule.26.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
 
       final current = [
         Ipv6PortServiceRuleUIModel(
@@ -330,7 +351,12 @@ void main() {
 
     test('update detects changed content', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+                'overallSuccess': true,
+                'hasAnySuccess': true,
+                'hasErrors': false,
+                'results': []
+              });
 
       final original = [
         Ipv6PortServiceRuleUIModel(
@@ -364,10 +390,36 @@ void main() {
     });
 
     test('mixed batch: delete + add + update', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async {});
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => '');
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': []
+          });
+      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.Firewall.Chain.1.Rule.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath': 'Device.Firewall.Chain.1.Rule.27.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+                'overallSuccess': true,
+                'hasAnySuccess': true,
+                'hasErrors': false,
+                'results': []
+              });
 
       final original = [
         Ipv6PortServiceRuleUIModel(

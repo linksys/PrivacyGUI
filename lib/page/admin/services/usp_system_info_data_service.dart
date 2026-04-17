@@ -4,8 +4,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/firmware_images.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 
 // ---------------------------------------------------------------------------
@@ -14,7 +14,7 @@ import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 
 final uspSystemInfoDataServiceProvider = Provider<UspSystemInfoDataService>(
   (ref) {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
           message: 'USP service not available');
@@ -31,7 +31,7 @@ final uspSystemInfoDataServiceProvider = Provider<UspSystemInfoDataService>(
 ///
 /// Owns all codegen calls and error mapping for [systemInfoDataProvider].
 class UspSystemInfoDataService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspSystemInfoDataService(this._usp);
 

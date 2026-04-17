@@ -1,4 +1,4 @@
-/// Minimal USP service stub for codegen examples.
+/// Minimal USP client stub for codegen examples.
 /// This file provides the types that generated Dart code depends on,
 /// without requiring the full Flutter usp-test project.
 
@@ -38,11 +38,11 @@ class Subscription<T> {
 }
 
 // ===========================================================================
-// UspService
+// UspClient
 // ===========================================================================
 
-class UspService {
-  UspService(String baseUrl);
+class UspClient {
+  UspClient(String baseUrl);
 
   Future<Map<String, dynamic>> get(List<String> paths) async => {};
 

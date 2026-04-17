@@ -173,7 +173,7 @@ String _getWebLogByTag({String tag = appLogTag}) {
 
 /// Public accessor for retrieving cached logs by tag.
 ///
-/// Useful for embedding specific log sections (e.g., `UspService`) into
+/// Useful for embedding specific log sections (e.g., `UspClient`) into
 /// PDF reports or other diagnostics output.
 String getWebLogByTag({String tag = appLogTag}) => _getWebLogByTag(tag: tag);
 

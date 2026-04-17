@@ -8,7 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import 'sse_event_router.dart';
 import 'sse_manager.dart';
-import 'usp_service.dart';
+import 'usp_client.dart';
 
 export 'package:privacy_gui/core/usp/models/operate_result.dart';
 
@@ -24,7 +24,7 @@ export 'package:privacy_gui/core/usp/models/operate_result.dart';
 /// Supports concurrent operations via unique subscription IDs.
 class SseOperationAwaiter {
   final SseManager _manager;
-  final UspService _usp;
+  final UspClient _usp;
   static const _uuid = Uuid();
 
   SseOperationAwaiter(this._manager, this._usp);

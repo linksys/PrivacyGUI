@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/wifi_client_ui_model.dart';
@@ -19,12 +19,12 @@ import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart'
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
 
 class MockUspDevicesDataService extends Mock implements UspDevicesDataService {}
 
 void main() {
-  late MockUspService mockUsp;
+  late MockUspClient mockUsp;
   late MockUspDevicesDataService mockDevicesSvc;
 
   final sampleDeviceModels = [
@@ -60,7 +60,7 @@ void main() {
   );
 
   setUp(() {
-    mockUsp = MockUspService();
+    mockUsp = MockUspClient();
     mockDevicesSvc = MockUspDevicesDataService();
 
     when(() => mockDevicesSvc.fetch(
@@ -112,7 +112,7 @@ void main() {
   }) {
     return ProviderContainer(
       overrides: [
-        uspServiceProvider.overrideWithValue(mockUsp),
+        uspClientProvider.overrideWithValue(mockUsp),
         uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
         wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
         systemInfoDataProvider.overrideWith(
@@ -150,7 +150,7 @@ void main() {
     test('build throws when usp is null', () async {
       final container = ProviderContainer(
         overrides: [
-          uspServiceProvider.overrideWithValue(null),
+          uspClientProvider.overrideWithValue(null),
           wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
           systemInfoDataProvider.overrideWith(
             () => _TestSystemInfoDataNotifier(null),
@@ -168,7 +168,7 @@ void main() {
     test('wifi data timeout falls back to empty WifiData', () async {
       final container = ProviderContainer(
         overrides: [
-          uspServiceProvider.overrideWithValue(mockUsp),
+          uspClientProvider.overrideWithValue(mockUsp),
           uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
           wifiDataProvider
               .overrideWith(() => _TestWifiDataNotifier(shouldThrow: true)),
@@ -214,7 +214,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            uspServiceProvider.overrideWithValue(mockUsp),
+            uspClientProvider.overrideWithValue(mockUsp),
             uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
             wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
             systemInfoDataProvider.overrideWith(
@@ -260,7 +260,7 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            uspServiceProvider.overrideWithValue(mockUsp),
+            uspClientProvider.overrideWithValue(mockUsp),
             uspDevicesDataServiceProvider.overrideWithValue(mockDevicesSvc),
             wifiDataProvider.overrideWith(() => _TestWifiDataNotifier()),
             systemInfoDataProvider.overrideWith(

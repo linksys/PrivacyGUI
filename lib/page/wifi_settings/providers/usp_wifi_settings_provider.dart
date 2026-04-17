@@ -6,7 +6,7 @@ import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
@@ -61,7 +61,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     bool forceRemote = false,
     bool updateStatusOnly = false,
   }) async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) {
       return (
         null,

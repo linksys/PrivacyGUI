@@ -4,8 +4,8 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
@@ -20,7 +20,7 @@ import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 
 final uspDevicesDataServiceProvider = Provider<UspDevicesDataService>(
   (ref) {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) {
       throw const ServiceNotInitializedError(
           message: 'USP service not available');
@@ -77,7 +77,7 @@ class DevicesDataFetchResult {
 /// Owns the codegen call, error mapping, and all device/node UI model building
 /// for [devicesDataProvider].
 class UspDevicesDataService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspDevicesDataService(this._usp);
 
