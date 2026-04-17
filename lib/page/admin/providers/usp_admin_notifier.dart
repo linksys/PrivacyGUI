@@ -77,18 +77,12 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
 
   /// Update timezone (used by admin timezone edit dialog).
   Future<void> updateTimezone({
-    String? localTimeZone,
-    String? ntpServer1,
-    String? ntpServer2,
-    bool? enable,
+    required String localTimeZone,
   }) async {
     try {
       await ref.read(uspMutationLockProvider).withLock(() async {
         await _svc.updateTimezone(
           localTimeZone: localTimeZone,
-          ntpServer1: ntpServer1,
-          ntpServer2: ntpServer2,
-          enable: enable,
         );
       });
     } on ServiceError catch (e) {
