@@ -225,7 +225,12 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
 
   Future<void> _doSetInternal({required bool allowPartial}) async {
     if (_service == null) return;
-    final paths = _setPathController.text.trim().split(',').map((p) => p.trim()).where((p) => p.isNotEmpty).toList();
+    final paths = _setPathController.text
+        .trim()
+        .split(',')
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
     final value = _setValueController.text;
     if (paths.isEmpty) return;
 
@@ -236,24 +241,28 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     }
 
     final modeText = allowPartial ? '(Allow Partial)' : '(Atomic)';
-    _log('SET $modeText ${paths.length > 1 ? paths.toString() : paths.first} = $value');
+    _log(
+        'SET $modeText ${paths.length > 1 ? paths.toString() : paths.first} = $value');
 
     try {
       // 使用策略A：成功返回結果，失敗拋出 ServiceError
-      final result = await _service!.setWithResult(params, allowPartial: allowPartial);
+      final result =
+          await _service!.setWithResult(params, allowPartial: allowPartial);
 
       // 如果到這裡，說明操作成功（UspSuccess 或允許的 UspPartialSuccess）
       if (result is UspSuccess) {
         _log('SET SUCCESS - All parameters updated');
         // 顯示返回的更新值（證明 WASM v0.11.0 data 欄位包含更新後的值）
         for (final detail in result.details) {
-          if (detail.retrievedParams != null && detail.retrievedParams!.isNotEmpty) {
+          if (detail.retrievedParams != null &&
+              detail.retrievedParams!.isNotEmpty) {
             for (final entry in detail.retrievedParams!.entries) {
               _log('  Updated: ${entry.key} = ${entry.value}');
             }
           }
         }
-        if (result.details.isEmpty || result.details.every((d) => d.retrievedParams?.isEmpty ?? true)) {
+        if (result.details.isEmpty ||
+            result.details.every((d) => d.retrievedParams?.isEmpty ?? true)) {
           _log('  (No return values - operation completed)');
         }
       } else if (result is UspPartialSuccess) {
@@ -273,9 +282,12 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
 
         // 顯示錯誤詳情
         for (final error in result.failures) {
-          final readOnlyTag = error.isParameterNotWritable ? ' [READ-ONLY]' : '';
-          final pathNotFoundTag = error.isParameterNotFound ? ' [NOT-FOUND]' : '';
-          _log('    ERROR: ${error.requestedPath}: Code ${error.errorCode}$readOnlyTag$pathNotFoundTag - ${error.errorMessage}');
+          final readOnlyTag =
+              error.isParameterNotWritable ? ' [READ-ONLY]' : '';
+          final pathNotFoundTag =
+              error.isParameterNotFound ? ' [NOT-FOUND]' : '';
+          _log(
+              '    ERROR: ${error.requestedPath}: Code ${error.errorCode}$readOnlyTag$pathNotFoundTag - ${error.errorMessage}');
         }
       }
     } on UspCompleteFailureError catch (e) {
@@ -1003,7 +1015,8 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
           spacing: 8,
           children: [
             AppButton.primary(label: 'Set (Atomic)', onTap: _doSet),
-            AppButton.primaryOutline(label: 'Set (Allow Partial)', onTap: _doSetAllowPartial),
+            AppButton.primaryOutline(
+                label: 'Set (Allow Partial)', onTap: _doSetAllowPartial),
           ],
         ),
       ],
