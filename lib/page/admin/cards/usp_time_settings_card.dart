@@ -48,11 +48,15 @@ class UspTimeSettingsCard extends ConsumerWidget {
                             ?.semanticWarning,
                   ),
                   AppGap.sm(),
-                  AppIconButton(
-                    icon: AppIcon.font(Icons.edit, size: 18),
-                    onTap: isLoading
-                        ? null
-                        : () => _editTimezone(context, ref, time),
+                  Semantics(
+                    label: 'Edit time settings',
+                    button: true,
+                    child: AppIconButton(
+                      icon: AppIcon.font(Icons.edit, size: 18),
+                      onTap: isLoading
+                          ? null
+                          : () => _editTimezone(context, ref, time),
+                    ),
                   ),
                 ],
               ),

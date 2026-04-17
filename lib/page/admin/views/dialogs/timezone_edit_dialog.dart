@@ -37,8 +37,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
               // Allow "+8" to match "+08", "-5" to match "-05", etc.
               final m = RegExp(r'^[+-](\d{1,2})$').firstMatch(query);
               if (m != null) {
-                final padded = query[0] +
-                    m.group(1)!.padLeft(2, '0');
+                final padded = query[0] + m.group(1)!.padLeft(2, '0');
                 return offset.contains(padded);
               }
               return false;
@@ -128,8 +127,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
       final ntpValue = ntpController.text.trim();
       return TimezoneEditResult(
         localTimeZone: selected!.posixFor(dstEnabled: dstEnabled),
-        ntpServer1:
-            ntpValue != current.ntpServer1 ? ntpValue : null,
+        ntpServer1: ntpValue != current.ntpServer1 ? ntpValue : null,
       );
     },
   );
@@ -148,39 +146,49 @@ class _TimezoneListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm,
-          horizontal: AppSpacing.xs,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.bodyMedium(timezone.friendlyName),
-                  AppText.bodySmall(
-                    timezone.offsetDisplayText,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.6),
-                  ),
-                ],
+    return Semantics(
+      label: '${timezone.friendlyName}, ${timezone.offsetDisplayText}',
+      selected: isSelected,
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpacing.sm,
+            horizontal: AppSpacing.xs,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.bodyMedium(timezone.friendlyName),
+                    AppText.bodySmall(
+                      timezone.offsetDisplayText,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.6),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Icon(
-              isSelected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-            ),
-          ],
+              ExcludeSemantics(
+                child: Icon(
+                  isSelected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_unchecked,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.4),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -203,19 +211,26 @@ class _AdvancedSection extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        InkWell(
-          onTap: onToggle,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-            child: Row(
-              children: [
-                Icon(
-                  expanded ? Icons.expand_less : Icons.expand_more,
-                  size: 20,
-                ),
-                AppGap.xs(),
-                AppText.labelLarge('Advanced'),
-              ],
+        Semantics(
+          label: 'Advanced settings',
+          expanded: expanded,
+          button: true,
+          child: InkWell(
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Row(
+                children: [
+                  ExcludeSemantics(
+                    child: Icon(
+                      expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 20,
+                    ),
+                  ),
+                  AppGap.xs(),
+                  AppText.labelLarge('Advanced'),
+                ],
+              ),
             ),
           ),
         ),
