@@ -5,7 +5,8 @@ import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-/// Shows a dialog to select a timezone from a searchable list with DST toggle.
+/// Shows a dialog to select a timezone from a searchable list with DST toggle
+/// and an optional Advanced section for NTP server configuration.
 ///
 /// Returns a [TimezoneEditResult] if saved, or null if cancelled.
 Future<TimezoneEditResult?> showTimezoneEditDialog(
@@ -16,21 +17,31 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
   TimeZoneInfo? selected = currentTz;
   bool dstEnabled = inferDstEnabled(current.localTimeZone);
   String searchQuery = '';
+  bool advancedExpanded = false;
+  final ntpController = TextEditingController(text: current.ntpServer1);
 
   return showSubmitAppDialog<TimezoneEditResult>(
     context,
     scrollable: false,
     useRootNavigator: false,
     title: 'Edit Timezone',
-    width: 400,
     checkPositiveEnabled: () => selected != null,
     contentBuilder: (context, setState, onSubmit) {
       final filtered = searchQuery.isEmpty
           ? kTimeZoneDefinitions
           : kTimeZoneDefinitions.where((tz) {
               final query = searchQuery.toLowerCase();
-              return tz.description.toLowerCase().contains(query) ||
-                  tz.offsetDisplayText.toLowerCase().contains(query);
+              final desc = tz.description.toLowerCase();
+              final offset = tz.offsetDisplayText.toLowerCase();
+              if (desc.contains(query) || offset.contains(query)) return true;
+              // Allow "+8" to match "+08", "-5" to match "-05", etc.
+              final m = RegExp(r'^[+-](\d{1,2})$').firstMatch(query);
+              if (m != null) {
+                final padded = query[0] +
+                    m.group(1)!.padLeft(2, '0');
+                return offset.contains(padded);
+              }
+              return false;
             }).toList();
 
       final dstToggleEnabled = selected?.observesDST ?? false;
@@ -74,7 +85,7 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
           AppGap.md(),
           // Timezone list
           SizedBox(
-            height: 340,
+            height: 300,
             child: filtered.isEmpty
                 ? Center(
                     child: AppText.bodyMedium('No timezones found'),
@@ -100,12 +111,25 @@ Future<TimezoneEditResult?> showTimezoneEditDialog(
                     },
                   ),
           ),
+          // Advanced section (collapsible)
+          _AdvancedSection(
+            expanded: advancedExpanded,
+            onToggle: () {
+              setState(() {
+                advancedExpanded = !advancedExpanded;
+              });
+            },
+            ntpController: ntpController,
+          ),
         ],
       );
     },
     event: () async {
+      final ntpValue = ntpController.text.trim();
       return TimezoneEditResult(
         localTimeZone: selected!.posixFor(dstEnabled: dstEnabled),
+        ntpServer1:
+            ntpValue != current.ntpServer1 ? ntpValue : null,
       );
     },
   );
@@ -163,10 +187,57 @@ class _TimezoneListTile extends StatelessWidget {
   }
 }
 
+class _AdvancedSection extends StatelessWidget {
+  final bool expanded;
+  final VoidCallback onToggle;
+  final TextEditingController ntpController;
+
+  const _AdvancedSection({
+    required this.expanded,
+    required this.onToggle,
+    required this.ntpController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: Row(
+              children: [
+                Icon(
+                  expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                ),
+                AppGap.xs(),
+                AppText.labelLarge('Advanced'),
+              ],
+            ),
+          ),
+        ),
+        if (expanded) ...[
+          AppGap.sm(),
+          AppTextFormField(
+            key: const Key('ntpServerField'),
+            controller: ntpController,
+            label: 'NTP Server',
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class TimezoneEditResult {
   final String localTimeZone;
+  final String? ntpServer1;
 
   const TimezoneEditResult({
     required this.localTimeZone,
+    this.ntpServer1,
   });
 }
