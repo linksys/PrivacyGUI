@@ -89,27 +89,8 @@ class MacFilterAccessPoints {
     return MacFilterAccessPoints(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, MacFilterAccessPointUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.macAddressControlEnabled != null)
-      params['${update.instancePath}MACAddressControlEnabled'] =
-          update.macAddressControlEnabled;
-    if (update.allowedMACAddress != null)
-      params['${update.instancePath}AllowedMACAddress'] =
-          update.allowedMACAddress;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<MacFilterAccessPointUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};

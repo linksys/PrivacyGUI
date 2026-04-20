@@ -29,7 +29,7 @@ class UspLocalNetworkService {
     required LocalNetworkUIModel pending,
   }) async {
     try {
-      await LanNetworkInfo.save(
+      await LanNetworkInfo.update(
         _usp,
         ipAddress:
             original.ipAddress != pending.ipAddress ? pending.ipAddress : null,

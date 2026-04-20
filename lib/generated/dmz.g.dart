@@ -109,31 +109,8 @@ class Dmz {
     return Dmz(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, DmzEntryUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.enable != null)
-      params['${update.instancePath}Enable'] = update.enable;
-    if (update.destIp != null)
-      params['${update.instancePath}DestIP'] = update.destIp;
-    if (update.sourcePrefix != null)
-      params['${update.instancePath}SourcePrefix'] = update.sourcePrefix;
-    if (update.interface_ != null)
-      params['${update.instancePath}Interface'] = update.interface_;
-    if (update.description != null)
-      params['${update.instancePath}Description'] = update.description;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<DmzEntryUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
@@ -158,61 +135,20 @@ class Dmz {
     return await client.set(params, allowPartial: allowPartial);
   }
 
-  /// Add a new DmzEntry instance via USP Add message
+  /// Add DmzEntry instance(s) via USP Add message
   static Future<Map<String, dynamic>> add(
-    UspClient client, {
-    bool? enable,
-    String? destIp,
-    String? sourcePrefix,
-    String? interface_,
-    String? description,
-  }) async {
-    final params = <String, dynamic>{};
-    if (enable != null) params['Enable'] = enable;
-    if (destIp != null) params['DestIP'] = destIp;
-    if (sourcePrefix != null) params['SourcePrefix'] = sourcePrefix;
-    if (interface_ != null) params['Interface'] = interface_;
-    if (description != null) params['Description'] = description;
-    return await client.add('Device.Firewall.DMZ.', params);
-  }
-
-  /// Add multiple DmzEntry instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> addMany(
-      UspClient client, List<Map<String, dynamic>> paramsList,
+      UspClient client, List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
-    if (paramsList.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.addMultiple(
-      paramsList
-          .map((p) => {'path': 'Device.Firewall.DMZ.', 'params': p})
-          .toList(),
-      allowPartial: allowPartial,
-    );
+    final itemList = items
+        .map((item) => {'path': 'Device.Firewall.DMZ.', 'params': item})
+        .toList();
+    return await client.add(itemList, allowPartial: allowPartial);
   }
 
-  /// Delete a DmzEntry instance via USP Delete message
+  /// Delete DmzEntry instance(s) via USP Delete message
   static Future<Map<String, dynamic>> delete(
-      UspClient client, String instancePath) async {
-    return await client.delete(instancePath);
-  }
-
-  /// Delete multiple DmzEntry instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> deleteMany(
-      UspClient client, List<String> instancePaths,
+      UspClient client, List<String> paths,
       {bool allowPartial = false}) async {
-    if (instancePaths.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.deleteMultiple(instancePaths,
-        allowPartial: allowPartial);
+    return await client.delete(paths, allowPartial: allowPartial);
   }
 }

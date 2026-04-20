@@ -39,7 +39,7 @@ class WiFiSettingsService {
           '[WiFiSettingsService] Updating SSID $instancePath enable=$enable');
 
       // Use codegen update method which returns structured response
-      final result = await WiFiSsids.update(_client, update);
+      final result = await WiFiSsids.update(_client, [update]);
 
       // Parse structured response using our UspResultParser
       final parsedResult = UspResultParser.parseSetResult(result);
@@ -85,7 +85,7 @@ class WiFiSettingsService {
       logger.d(
           '[WiFiSettingsService] Updating SSID name: $instancePath -> "$newSsid"');
 
-      final result = await WiFiSsids.update(_client, update);
+      final result = await WiFiSsids.update(_client, [update]);
       final parsedResult = UspResultParser.parseSetResult(result);
 
       if (parsedResult case UspSuccess()) {
@@ -136,9 +136,38 @@ class WiFiSettingsService {
       logger.d(
           '[WiFiSettingsService] Batch updating ${updates.length} SSIDs, allowPartial=$allowPartial');
 
-      final result = await WiFiSsids.updateMany(_client, updates,
-          allowPartial: allowPartial);
-      final parsedResult = UspResultParser.parseSetResult(result);
+      // Update each SSID individually
+      final allSuccesses = <UspSuccessDetail>[];
+      final allFailures = <UspErrorDetail>[];
+
+      for (final update in updates) {
+        final result = await WiFiSsids.update(_client, [update],
+            allowPartial: allowPartial);
+        final parsedResult = UspResultParser.parseSetResult(result);
+
+        if (parsedResult case UspSuccess(details: final details)) {
+          allSuccesses.addAll(details);
+        } else if (parsedResult
+            case UspPartialSuccess(
+              successes: final successes,
+              failures: final failures
+            )) {
+          allSuccesses.addAll(successes);
+          allFailures.addAll(failures);
+        } else if (parsedResult case UspFailure(errors: final errors)) {
+          allFailures.addAll(errors);
+        }
+      }
+
+      // Reconstruct overall result
+      final UspSetResult parsedResult;
+      if (allFailures.isEmpty) {
+        parsedResult = UspSuccess(allSuccesses);
+      } else if (allSuccesses.isEmpty) {
+        parsedResult = UspFailure(allFailures);
+      } else {
+        parsedResult = UspPartialSuccess(allSuccesses, allFailures);
+      }
 
       if (parsedResult case UspSuccess(details: final details)) {
         logger.i('[WiFiSettingsService] Batch update completed successfully');

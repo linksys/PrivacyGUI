@@ -2,7 +2,7 @@
 
 This document describes the YAML format supported by `usp-codegen`, based on the current implementation (parser, AST, generators).
 
-> **Version Update (v0.11.0)**: All generated methods now return structured response objects instead of simple success/failure types. This implements the "Never Lose Information" principle, preserving all firmware response data. See [Step 1 & 2 Implementation Report](../STEP_1_2_IMPLEMENTATION_REPORT.md) for details.
+> **Version Update (v0.12.1)**: All generated methods now return structured response objects instead of simple success/failure types. API unification renames `save()` to `update()` for consistency. See [CHANGELOG](../CHANGELOG.md) for details.
 
 ---
 
@@ -115,7 +115,7 @@ parameters:
     writable: true
 ```
 
-> All three modes produce the same generated structure (data class + `fetch()` + `save()`); they only differ in how paths are assembled.
+> All three modes produce the same generated structure (data class + `fetch()` + `update()`); they only differ in how paths are assembled.
 
 #### `instance` vs `multiInstance` vs `related` Comparison
 
@@ -165,6 +165,7 @@ Each parameter describes a single USP data model parameter.
 | `sensitive` | boolean | No | Whether the parameter contains sensitive data (default: `false`) |
 | `optional` | boolean | No | Whether the parameter may be absent from GET responses (default: `false`). When `true`, the generated field type becomes nullable (`String?`, `int?`, etc.). If `default_value` is also set, the field remains non-nullable and uses the default when the key is absent. See [Optional Parameters](#optional-parameters) |
 | `default_value` | string \| number \| boolean | No | Default value. When used with `optional: true`, specifies the fallback value when the key is absent from the GET response |
+| `priority` | integer | No | Parameter execution priority for ordered updates (default: none). Lower values execute first. When present, generates additional `updateOrdered()` method that respects priority ordering for optimal performance |
 
 #### Supported `type` Values
 
@@ -183,8 +184,8 @@ Each parameter describes a single USP data model parameter.
 
 #### Access Modes
 
-- `writable: false` (default) — generates getter methods only, no setter/save
-- `writable: true` — generates both getter and setter/save methods
+- `writable: false` (default) — generates getter methods only, no update methods
+- `writable: true` — generates both getter and update methods
 
 ```yaml
 parameters:
@@ -201,6 +202,44 @@ parameters:
     sensitive: false
     description: Hardware address
 ```
+
+#### Priority-Based Ordered Updates
+
+When parameters have `priority` values, an additional `updateOrdered()` method is generated that sets parameters in priority order for optimal performance.
+
+```yaml
+parameters:
+  # Set first - enables static IP configuration
+  - path: AddressingType
+    type: string
+    writable: true
+    priority: 1
+    description: "IP addressing type - MUST be set first"
+
+  # Set second - depends on AddressingType=Static
+  - path: IPAddress
+    type: string
+    writable: true
+    priority: 2
+    description: "Static IP address"
+
+  - path: SubnetMask
+    type: string
+    writable: true
+    priority: 2
+    description: "Subnet mask"
+
+  # Set last - depends on IP configuration
+  - path: Gateway
+    type: string
+    writable: true
+    priority: 3
+    description: "Default gateway"
+```
+
+**Generated methods:**
+- `update()` - Standard unordered update
+- `updateOrdered()` - Priority-based ordered update (parameters grouped by priority value, lower = first)
 
 #### Optional Parameters
 
@@ -938,7 +977,7 @@ class WifiSettings {
     return WifiSettings._fromResponse(response);
   }
 
-  static Future<Map<String, dynamic>> save(UspService client, {
+  static Future<Map<String, dynamic>> update(UspService client, {
     String? ssid,
     bool? enabled,
     String? securityMode,
@@ -1767,6 +1806,57 @@ subscribe:
   notifType: ValueChange
   id: wifi-settings-01
 ```
+
+### Priority-Based Ordered Definition (single-instance)
+
+```yaml
+name: WanInterfaceOrdered
+version: "1.2.0"
+instance: Device.IP.Interface.2.IPv4Address.1
+description: "WAN interface configuration with optimized parameter ordering"
+
+parameters:
+  # CRITICAL: AddressingType must be set first (priority 1)
+  # This enables static IP configuration and validates subsequent parameters
+  - path: AddressingType
+    type: string
+    writable: true
+    priority: 1
+    description: "IP addressing type (DHCP, Static, etc.) - MUST be set first"
+
+  # IP configuration parameters (priority 2)
+  # These depend on AddressingType being set to "Static" first
+  - path: SubnetMask
+    type: string
+    writable: true
+    priority: 2
+    description: "Subnet mask (requires AddressingType=Static)"
+
+  - path: IPAddress
+    type: string
+    writable: true
+    priority: 2
+    description: "Static IP address (requires AddressingType=Static)"
+
+  # Network configuration (priority 3)
+  # These depend on IP configuration being set first
+  - path: Gateway
+    type: string
+    writable: true
+    priority: 3
+    description: "Default gateway (depends on IP configuration)"
+
+  - path: DNSServers
+    type: string
+    writable: true
+    priority: 3
+    description: "DNS servers comma-separated list (depends on IP configuration)"
+```
+
+**Generated methods:**
+- `fetch()` - Retrieve current configuration
+- `update()` - Standard unordered update
+- `updateOrdered()` - Priority-based ordered update (33% faster for WAN switching)
 
 ### Preset Definition (single-instance)
 

@@ -114,34 +114,8 @@ class PppInterface {
     return PppInterface(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, PppInterfaceInstanceUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.username != null)
-      params['${update.instancePath}Username'] = update.username;
-    if (update.password != null)
-      params['${update.instancePath}Password'] = update.password;
-    if (update.pppoeServiceName != null)
-      params['${update.instancePath}PPPoE.ServiceName'] =
-          update.pppoeServiceName;
-    if (update.connectionTrigger != null)
-      params['${update.instancePath}ConnectionTrigger'] =
-          update.connectionTrigger;
-    if (update.idleDisconnectTime != null)
-      params['${update.instancePath}IdleDisconnectTime'] =
-          update.idleDisconnectTime;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<PppInterfaceInstanceUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
@@ -169,64 +143,20 @@ class PppInterface {
     return await client.set(params, allowPartial: allowPartial);
   }
 
-  /// Add a new PppInterfaceInstance instance via USP Add message
+  /// Add PppInterfaceInstance instance(s) via USP Add message
   static Future<Map<String, dynamic>> add(
-    UspClient client, {
-    String? username,
-    String? password,
-    String? pppoeServiceName,
-    String? connectionTrigger,
-    int? idleDisconnectTime,
-  }) async {
-    final params = <String, dynamic>{};
-    if (username != null) params['Username'] = username;
-    if (password != null) params['Password'] = password;
-    if (pppoeServiceName != null)
-      params['PPPoE.ServiceName'] = pppoeServiceName;
-    if (connectionTrigger != null)
-      params['ConnectionTrigger'] = connectionTrigger;
-    if (idleDisconnectTime != null)
-      params['IdleDisconnectTime'] = idleDisconnectTime;
-    return await client.add('Device.PPP.Interface.', params);
-  }
-
-  /// Add multiple PppInterfaceInstance instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> addMany(
-      UspClient client, List<Map<String, dynamic>> paramsList,
+      UspClient client, List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
-    if (paramsList.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.addMultiple(
-      paramsList
-          .map((p) => {'path': 'Device.PPP.Interface.', 'params': p})
-          .toList(),
-      allowPartial: allowPartial,
-    );
+    final itemList = items
+        .map((item) => {'path': 'Device.PPP.Interface.', 'params': item})
+        .toList();
+    return await client.add(itemList, allowPartial: allowPartial);
   }
 
-  /// Delete a PppInterfaceInstance instance via USP Delete message
+  /// Delete PppInterfaceInstance instance(s) via USP Delete message
   static Future<Map<String, dynamic>> delete(
-      UspClient client, String instancePath) async {
-    return await client.delete(instancePath);
-  }
-
-  /// Delete multiple PppInterfaceInstance instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> deleteMany(
-      UspClient client, List<String> instancePaths,
+      UspClient client, List<String> paths,
       {bool allowPartial = false}) async {
-    if (instancePaths.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.deleteMultiple(instancePaths,
-        allowPartial: allowPartial);
+    return await client.delete(paths, allowPartial: allowPartial);
   }
 }

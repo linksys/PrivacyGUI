@@ -5,8 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 
 import 'bridge_request_throttler.dart';
-import '../models/usp_operation_result.dart';
-import '../../errors/service_error.dart';
 
 // Conditional import: use WASM client on Web, stub on other platforms (VM/tests).
 import '../stub/usp_client_stub.dart'
@@ -213,7 +211,7 @@ class UspClient {
   Future<Map<String, dynamic>> _rawGet(List<String> paths) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
-    final rawMap = await _withAuthRetry(() => _client.getMultiple(paths));
+    final rawMap = await _withAuthRetry(() => _client.get(paths));
     sw.stop();
 
     logger.d('[USP][Service]#$id GET ${_pathSummary(paths)} '
@@ -273,21 +271,43 @@ class UspClient {
     return raw;
   }
 
-  /// Sets multiple USP parameters and returns structured operation result.
+  /// Sets USP parameters. Accepts two call patterns:
   ///
-  /// Returns a Map containing:
-  /// - 'overallSuccess': bool - true if all operations succeeded
-  /// - 'hasAnySuccess': bool - true if at least one operation succeeded
-  /// - 'hasErrors': bool - true if at least one operation failed
-  /// - 'results': List<Map> - detailed results per parameter
-  Future<Map<String, dynamic>> set(Map<String, dynamic> parameters,
+  /// - Single: `set('Device.X.Y', singleValue: 'value')` — sets one parameter
+  /// - Batch:  `set({'Device.X.Y': value, ...}, allowPartial: true)` — sets multiple
+  ///
+  /// Returns structured operation result from the WASM client.
+  Future<Map<String, dynamic>> set(Object pathOrParams,
+      {dynamic singleValue, bool allowPartial = false}) async {
+    if (pathOrParams is String && singleValue != null) {
+      return await _singleSet(pathOrParams, singleValue.toString());
+    } else if (pathOrParams is Map) {
+      return await _batchSet(pathOrParams.cast<String, dynamic>(),
+          allowPartial: allowPartial);
+    }
+    throw ArgumentError(
+        'set() expects (String, value) or (Map<String, dynamic>)');
+  }
+
+  Future<Map<String, dynamic>> _singleSet(String path, String value) async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    final result = await _withAuthRetry(() => _client.set({path: value}));
+    sw.stop();
+    final shortPath = path.startsWith('Device.') ? path.substring(7) : path;
+    logger.d(
+        '[USP][Service]#$id SET $shortPath=$value (${sw.elapsedMilliseconds}ms)');
+    return result;
+  }
+
+  Future<Map<String, dynamic>> _batchSet(Map<String, dynamic> parameters,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final Map<String, String> stringParams =
         parameters.map((key, value) => MapEntry(key, value.toString()));
     final result = await _withAuthRetry(
-        () => _client.setMultiple(stringParams, allowPartial: allowPartial));
+        () => _client.set(stringParams, allowPartial: allowPartial));
     sw.stop();
     logger.d('[USP][Service]#$id SET ${_paramSummary(parameters)} '
         '${parameters.length} params'
@@ -317,33 +337,40 @@ class UspClient {
     return result;
   }
 
-  Future<Map<String, dynamic>> setMultiple(Map<String, String> parameters,
-      {bool allowPartial = false}) async {
-    return await _withAuthRetry(
-        () => _client.setMultiple(parameters, allowPartial: allowPartial));
-  }
-
   // ===========================================================================
   // Add Operation — create new object instances
   // ===========================================================================
 
-  /// Creates a new object instance at the given path with initial parameters.
+  /// Creates object instances via USP Add.
   ///
-  /// [objectPath] must end with "." (e.g., "Device.NAT.PortMapping.").
-  /// [parameters] are the initial parameter values for the new instance.
-  /// Returns structured operation result containing creation details.
-  Future<Map<String, dynamic>> add(
+  /// Each element in [items] should have:
+  /// - `path` (String): object path ending with "."
+  /// - `params` (Map<String, dynamic>): initial parameter values
+  ///
+  /// Single-item lists are optimized to use the WASM single-add method.
+  Future<Map<String, dynamic>> add(List<Map<String, dynamic>> items,
+      {bool allowPartial = false}) async {
+    if (items.length == 1) {
+      final item = items.first;
+      return await _singleAdd(item['path'] as String,
+          item['params'] as Map<String, dynamic>? ?? {});
+    }
+    return await _batchAdd(items, allowPartial: allowPartial);
+  }
+
+  Future<Map<String, dynamic>> _singleAdd(
       String objectPath, Map<String, dynamic> parameters) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final stringParams = parameters.map((k, v) => MapEntry(k, v.toString()));
-    final result =
-        await _withAuthRetry(() => _client.add(objectPath, stringParams));
+    final result = await _withAuthRetry(() => _client.add([
+          {'path': objectPath, 'params': stringParams}
+        ]));
     sw.stop();
     final shortPath =
         objectPath.startsWith('Device.') ? objectPath.substring(7) : objectPath;
 
-    // Extract created instance path for logging compatibility
+    // Extract created instance path for logging
     final success = result['success'] as bool? ?? false;
     final resultData =
         result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
@@ -361,97 +388,19 @@ class UspClient {
     logger.d('[USP][Service]#$id ADD $shortPath — '
         '${parameters.length} params → $createdPath (${sw.elapsedMilliseconds}ms)');
 
-    // Log detailed results in debug mode
-    if (kDebugMode) {
-      final overallSuccess = result['overallSuccess'] as bool? ?? false;
-      final hasErrors = result['hasErrors'] as bool? ?? false;
-      final results = result['results'] as List? ?? [];
-
-      logger.d(
-          '[USP][Service]#$id ADD result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
-
-      for (var i = 0; i < results.length; i++) {
-        final detail = results[i] as Map<String, dynamic>? ?? {};
-        final requestedPath = detail['requestedPath'] ?? 'unknown';
-        final success = detail['success'] ?? false;
-
-        if (success) {
-          final createdInstances = detail['createdInstances'] as List? ?? [];
-          logger.d(
-              '[USP][Service]#$id ADD[$i] ✅ $requestedPath → ${createdInstances.length} instances created');
-
-          for (var instance in createdInstances) {
-            final instanceMap = instance as Map<String, dynamic>? ?? {};
-            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
-            final initialParams = instanceMap['initialParams'] as Map? ?? {};
-            logger.d(
-                '[USP][Service]#$id ADD[$i]   🆕 $affectedPath with ${initialParams.length} params: ${initialParams.keys.join(', ')}');
-          }
-        } else {
-          final errorCode = detail['errorCode'] ?? 'unknown';
-          final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w(
-              '[USP][Service]#$id ADD[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
-        }
-      }
-    }
-
     return result;
   }
 
-  /// Creates multiple object instances in a single operation.
-  ///
-  /// Each element in [objects] should have:
-  /// - `path` (String): object path ending with "."
-  /// - `parameters` (Map<String, String>): initial parameter values
-  ///
-  /// Returns structured operation result containing creation details.
-  Future<Map<String, dynamic>> addMultiple(List<Map<String, dynamic>> objects,
+  Future<Map<String, dynamic>> _batchAdd(List<Map<String, dynamic>> objects,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final result = await _withAuthRetry(
-        () => _client.addMultiple(objects, allowPartial: allowPartial));
+        () => _client.add(objects, allowPartial: allowPartial));
     sw.stop();
 
-    // Extract created count for logging compatibility
-    final results = result['results'] as List? ?? [];
-    final createdCount = results.where((r) => r['success'] == true).length;
-
-    logger.d('[USP][Service]#$id ADD_MULTI ${objects.length} objects '
-        '→ $createdCount created'
+    logger.d('[USP][Service]#$id ADD ${objects.length} objects'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
-
-    // Log detailed results in debug mode
-    if (kDebugMode && results.isNotEmpty) {
-      final overallSuccess = result['overallSuccess'] as bool? ?? false;
-      final hasErrors = result['hasErrors'] as bool? ?? false;
-      logger.d(
-          '[USP][Service]#$id ADD_MULTI result: success=$overallSuccess, errors=$hasErrors');
-
-      for (var i = 0; i < results.length; i++) {
-        final detail = results[i] as Map<String, dynamic>? ?? {};
-        final requestedPath = detail['requestedPath'] ?? 'unknown';
-        final success = detail['success'] ?? false;
-
-        if (success) {
-          final createdInstances = detail['createdInstances'] as List? ?? [];
-          logger.d(
-              '[USP][Service]#$id ADD_MULTI[$i] ✅ $requestedPath → ${createdInstances.length} instances');
-
-          for (var instance in createdInstances) {
-            final instanceMap = instance as Map<String, dynamic>? ?? {};
-            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
-            logger.d('[USP][Service]#$id ADD_MULTI[$i]   🆕 $affectedPath');
-          }
-        } else {
-          final errorCode = detail['errorCode'] ?? 'unknown';
-          final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w(
-              '[USP][Service]#$id ADD_MULTI[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
-        }
-      }
-    }
 
     return result;
   }
@@ -460,101 +409,39 @@ class UspClient {
   // Delete Operation — remove object instances
   // ===========================================================================
 
-  /// Deletes the object instance at the given path.
+  /// Deletes object instances via USP Delete.
   ///
-  /// [path] must be a specific instance path (e.g., "Device.NAT.PortMapping.3.").
-  /// Returns structured operation result containing deletion details.
-  Future<Map<String, dynamic>> delete(String path) async {
+  /// Each path must be a specific instance path (e.g., "Device.NAT.PortMapping.3.").
+  /// Single-item lists are optimized to use the WASM single-delete method.
+  Future<Map<String, dynamic>> delete(List<String> paths,
+      {bool allowPartial = false}) async {
+    if (paths.length == 1) {
+      return await _singleDelete(paths.first);
+    }
+    return await _batchDelete(paths, allowPartial: allowPartial);
+  }
+
+  Future<Map<String, dynamic>> _singleDelete(String path) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
-    final result = await _withAuthRetry(() => _client.delete(path));
+    final result = await _withAuthRetry(() => _client.delete([path]));
     sw.stop();
     final shortPath = path.startsWith('Device.') ? path.substring(7) : path;
     logger.d(
         '[USP][Service]#$id DELETE $shortPath (${sw.elapsedMilliseconds}ms)');
-
-    // Log detailed results in debug mode
-    if (kDebugMode) {
-      final overallSuccess = result['overallSuccess'] as bool? ?? false;
-      final hasErrors = result['hasErrors'] as bool? ?? false;
-      final results = result['results'] as List? ?? [];
-
-      logger.d(
-          '[USP][Service]#$id DELETE result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
-
-      for (var i = 0; i < results.length; i++) {
-        final detail = results[i] as Map<String, dynamic>? ?? {};
-        final requestedPath = detail['requestedPath'] ?? 'unknown';
-        final success = detail['success'] ?? false;
-
-        if (success) {
-          final deletedInstances = detail['deletedInstances'] as List? ?? [];
-          logger.d(
-              '[USP][Service]#$id DELETE[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
-
-          for (var instance in deletedInstances) {
-            final instanceMap = instance as Map<String, dynamic>? ?? {};
-            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
-            logger.d('[USP][Service]#$id DELETE[$i]   🗑️ $affectedPath');
-          }
-        } else {
-          final errorCode = detail['errorCode'] ?? 'unknown';
-          final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w(
-              '[USP][Service]#$id DELETE[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
-        }
-      }
-    }
-
     return result;
   }
 
-  /// Deletes multiple object instances in a single operation.
-  /// Returns structured operation result containing deletion details.
-  Future<Map<String, dynamic>> deleteMultiple(List<String> paths,
+  Future<Map<String, dynamic>> _batchDelete(List<String> paths,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final result = await _withAuthRetry(
-        () => _client.deleteMultiple(paths, allowPartial: allowPartial));
+        () => _client.delete(paths, allowPartial: allowPartial));
     sw.stop();
-    logger.d('[USP][Service]#$id DELETE_MULTI ${_pathSummary(paths)} '
+    logger.d('[USP][Service]#$id DELETE ${_pathSummary(paths)} '
         '${paths.length} paths'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
-
-    // Log detailed results in debug mode
-    if (kDebugMode) {
-      final overallSuccess = result['overallSuccess'] as bool? ?? false;
-      final hasErrors = result['hasErrors'] as bool? ?? false;
-      final results = result['results'] as List? ?? [];
-
-      logger.d(
-          '[USP][Service]#$id DELETE_MULTI result: success=$overallSuccess, errors=$hasErrors, details=${results.length}');
-
-      for (var i = 0; i < results.length; i++) {
-        final detail = results[i] as Map<String, dynamic>? ?? {};
-        final requestedPath = detail['requestedPath'] ?? 'unknown';
-        final success = detail['success'] ?? false;
-
-        if (success) {
-          final deletedInstances = detail['deletedInstances'] as List? ?? [];
-          logger.d(
-              '[USP][Service]#$id DELETE_MULTI[$i] ✅ $requestedPath → ${deletedInstances.length} instances deleted');
-
-          for (var instance in deletedInstances) {
-            final instanceMap = instance as Map<String, dynamic>? ?? {};
-            final affectedPath = instanceMap['affectedPath'] ?? 'unknown';
-            logger.d('[USP][Service]#$id DELETE_MULTI[$i]   🗑️ $affectedPath');
-          }
-        } else {
-          final errorCode = detail['errorCode'] ?? 'unknown';
-          final errorMessage = detail['errorMessage'] ?? 'unknown error';
-          logger.w(
-              '[USP][Service]#$id DELETE_MULTI[$i] ❌ $requestedPath → Error $errorCode: $errorMessage');
-        }
-      }
-    }
-
     return result;
   }
 
@@ -617,8 +504,7 @@ class UspClient {
     const objectPath = 'Device.LocalAgent.Subscription.';
 
     // Step 1: Snapshot existing instance IDs
-    final before =
-        await _withAuthRetry(() => _client.getMultiple([objectPath]));
+    final before = await _withAuthRetry(() => _client.get([objectPath]));
     final existingIds = before.keys
         .where((k) => k.endsWith('.Enable'))
         .map((k) {
@@ -629,7 +515,9 @@ class UspClient {
         .toSet();
 
     // Step 2: Add subscription instance
-    final addResult = await _withAuthRetry(() => _client.add(objectPath, {}));
+    final addResult = await _withAuthRetry(() => _client.add([
+          {'path': objectPath, 'params': <String, dynamic>{}}
+        ]));
 
     // Step 3: Resolve instance path from structured result
     String instancePath;
@@ -651,8 +539,7 @@ class UspClient {
       instancePath = createdPath.endsWith('.') ? createdPath : '$createdPath.';
     } else {
       // Discover new instance via GET diff
-      final after =
-          await _withAuthRetry(() => _client.getMultiple([objectPath]));
+      final after = await _withAuthRetry(() => _client.get([objectPath]));
       final afterIds = after.keys
           .where((k) => k.endsWith('.Enable'))
           .map((k) {
@@ -670,14 +557,14 @@ class UspClient {
     }
 
     // Step 4: Set Enable, NotifType, ReferenceList
-    await _withAuthRetry(() => _client.setMultiple({
+    await _withAuthRetry(() => _client.set({
           '${instancePath}Enable': 'true',
           '${instancePath}NotifType': notifType,
           '${instancePath}ReferenceList': referenceList,
         }));
 
     // Step 5: Read back to verify
-    final verify = await _withAuthRetry(() => _client.getMultiple([
+    final verify = await _withAuthRetry(() => _client.get([
           '${instancePath}Recipient',
           '${instancePath}Enable',
           '${instancePath}NotifType',
@@ -700,7 +587,7 @@ class UspClient {
   Future<void> deleteNotifySubscription(String instancePath) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
-    await _withAuthRetry(() => _client.delete(instancePath));
+    await _withAuthRetry(() => _client.delete([instancePath]));
     sw.stop();
     final shortPath = instancePath.startsWith('Device.')
         ? instancePath.substring(7)
@@ -740,8 +627,7 @@ class UspClient {
     const objectPath = 'Device.LocalAgent.Subscription.';
 
     // Enumerate all subscription instances via GET
-    final allParams =
-        await _withAuthRetry(() => _client.getMultiple([objectPath]));
+    final allParams = await _withAuthRetry(() => _client.get([objectPath]));
 
     // Extract unique instance IDs from keys like
     // "Device.LocalAgent.Subscription.3.Enable"
@@ -774,7 +660,7 @@ class UspClient {
     for (final instId in instanceIds) {
       final instancePath = '$objectPath$instId.';
       try {
-        await _withAuthRetry(() => _client.delete(instancePath));
+        await _withAuthRetry(() => _client.delete([instancePath]));
         deleted++;
       } catch (e) {
         logger.w('[USP][Service]#$id PURGE failed to delete '
@@ -981,125 +867,6 @@ class UspClient {
       current[segments.last] = entry.value;
     }
     return const JsonEncoder.withIndent('  ').convert(nested);
-  }
-
-  // ===========================================================================
-  // Application Layer封裝方法 - 返回強型別結果
-  // ===========================================================================
-
-  /// 應用層GET操作封裝，返回強型別結構化結果
-  Future<UspGetResult> getWithResult(List<String> paths,
-      {RequestPriority? priority}) async {
-    final id = ++_reqId;
-    final sw = Stopwatch()..start();
-
-    try {
-      // 直接使用 WASM 客戶端的結構化方法
-      final structuredResult = await _client.getMultipleStructured(paths);
-      sw.stop();
-
-      logger.d('[USP][Client]#$id GET_STRUCTURED ${_pathSummary(paths)} '
-          '${paths.length} paths → structured result (${sw.elapsedMilliseconds}ms)');
-
-      return UspResultParser.parseGetResult(structuredResult);
-    } catch (e) {
-      sw.stop();
-      logger.e(
-          '[USP][Client]#$id GET_STRUCTURED failed: $e (${sw.elapsedMilliseconds}ms)');
-      return UspResultParser.createFailureFromException<Map<String, dynamic>>(
-        e,
-        paths.join(', '),
-      );
-    }
-  }
-
-  /// 應用層SET操作封裝，返回強型別結果
-  ///
-  /// [allowPartial] = false (atomic): 只返回 UspSuccess，其他情況拋出 ServiceError
-  /// [allowPartial] = true (best-effort): 返回 UspSuccess 或 UspPartialSuccess，只有完全失敗才拋出 ServiceError
-  Future<UspSetResult> setWithResult(Map<String, dynamic> parameters,
-      {bool allowPartial = false}) async {
-    try {
-      final resultMap = await set(parameters, allowPartial: allowPartial);
-      final result = UspResultParser.parseSetResult(resultMap);
-
-      return switch (result) {
-        UspSuccess() => result, // 總是返回成功
-        UspPartialSuccess() when allowPartial => result, // 只在允許部分成功時返回
-        UspPartialSuccess() => throw UspAtomicModeFailureError(
-            summary: (result as UspPartialSuccess).errorSummary,
-            successPaths: result.successes.map((s) => s.requestedPath).toList(),
-            failedPaths: result.failures.map((f) => f.requestedPath).toList(),
-          ),
-        UspFailure() => throw UspCompleteFailureError(
-            summary: (result as UspFailure).errorSummary,
-            failedPaths: result.errors.map((e) => e.requestedPath).toList(),
-          ),
-      };
-    } on ServiceError {
-      rethrow; // 重新拋出已經是 ServiceError 的異常
-    } catch (e) {
-      // 轉換其他異常（如網路錯誤）為適當的 ServiceError
-      throw UspCompleteFailureError(
-        summary: 'Transport error: $e',
-        failedPaths: parameters.keys.toList(),
-      );
-    }
-  }
-
-  /// 應用層ADD操作封裝，返回強型別結果
-  Future<UspAddResult> addWithResult(
-      String objectPath, Map<String, String> params) async {
-    try {
-      final resultMap = await add(objectPath, params);
-      return UspResultParser.parseAddResult(resultMap);
-    } catch (e) {
-      return UspResultParser.createFailureFromException<List<String>>(
-        e,
-        objectPath,
-      );
-    }
-  }
-
-  /// 應用層DELETE操作封裝，返回強型別結果
-  Future<UspDeleteResult> deleteWithResult(String instancePath) async {
-    try {
-      final resultMap = await delete(instancePath);
-      return UspResultParser.parseDeleteResult(resultMap);
-    } catch (e) {
-      return UspResultParser.createFailureFromException<void>(
-        e,
-        instancePath,
-      );
-    }
-  }
-
-  /// 應用層批量DELETE操作封裝，返回強型別結果
-  Future<UspDeleteResult> deleteMultipleWithResult(List<String> paths,
-      {bool allowPartial = false}) async {
-    try {
-      final resultMap = await deleteMultiple(paths, allowPartial: allowPartial);
-      return UspResultParser.parseDeleteResult(resultMap);
-    } catch (e) {
-      return UspResultParser.createFailureFromException<void>(
-        e,
-        paths.join(', '),
-      );
-    }
-  }
-
-  /// 應用層批量ADD操作封裝，返回強型別結果
-  Future<UspAddResult> addMultipleWithResult(List<Map<String, dynamic>> objects,
-      {bool allowPartial = false}) async {
-    try {
-      final resultMap = await addMultiple(objects, allowPartial: allowPartial);
-      return UspResultParser.parseAddResult(resultMap);
-    } catch (e) {
-      return UspResultParser.createFailureFromException<List<String>>(
-        e,
-        objects.map((obj) => obj['path'] as String? ?? 'unknown').join(', '),
-      );
-    }
   }
 
   void dispose() {

@@ -64,8 +64,9 @@ class UspFirewallService {
         pending: pending,
         rules: context._ruleMap,
       );
+      // Update all firewall rules in batch
       if (updates.isNotEmpty) {
-        await FirewallChainRules.updateMany(_usp, updates);
+        await FirewallChainRules.update(_usp, updates);
       }
       return updates.length;
     } catch (e) {

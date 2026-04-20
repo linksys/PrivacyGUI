@@ -121,30 +121,8 @@ class WiFiAccessPoints {
     return WiFiAccessPoints(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, WiFiAccessPointUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.securityModeEnabled != null)
-      params['${update.instancePath}Security.ModeEnabled'] =
-          update.securityModeEnabled;
-    if (update.keyPassphrase != null)
-      params['${update.instancePath}Security.KeyPassphrase'] =
-          update.keyPassphrase;
-    if (update.ssidAdvertisementEnabled != null)
-      params['${update.instancePath}SSIDAdvertisementEnabled'] =
-          update.ssidAdvertisementEnabled;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<WiFiAccessPointUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};

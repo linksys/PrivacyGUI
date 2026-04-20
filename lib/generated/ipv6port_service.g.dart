@@ -133,38 +133,8 @@ class Ipv6PortService {
     return Ipv6PortService(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, Ipv6PortServiceRuleUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.enable != null)
-      params['${update.instancePath}Enable'] = update.enable;
-    if (update.description != null)
-      params['${update.instancePath}Description'] = update.description;
-    if (update.ipVersion != null)
-      params['${update.instancePath}IPVersion'] = update.ipVersion;
-    if (update.destIp != null)
-      params['${update.instancePath}DestIP'] = update.destIp;
-    if (update.destPort != null)
-      params['${update.instancePath}DestPort'] = update.destPort;
-    if (update.destPortRangeMax != null)
-      params['${update.instancePath}DestPortRangeMax'] =
-          update.destPortRangeMax;
-    if (update.protocol != null)
-      params['${update.instancePath}Protocol'] = update.protocol;
-    if (update.target != null)
-      params['${update.instancePath}Target'] = update.target;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<Ipv6PortServiceRuleUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
@@ -196,67 +166,21 @@ class Ipv6PortService {
     return await client.set(params, allowPartial: allowPartial);
   }
 
-  /// Add a new Ipv6PortServiceRule instance via USP Add message
+  /// Add Ipv6PortServiceRule instance(s) via USP Add message
   static Future<Map<String, dynamic>> add(
-    UspClient client, {
-    bool? enable,
-    String? description,
-    int? ipVersion,
-    String? destIp,
-    int? destPort,
-    int? destPortRangeMax,
-    int? protocol,
-    String? target,
-  }) async {
-    final params = <String, dynamic>{};
-    if (enable != null) params['Enable'] = enable;
-    if (description != null) params['Description'] = description;
-    if (ipVersion != null) params['IPVersion'] = ipVersion;
-    if (destIp != null) params['DestIP'] = destIp;
-    if (destPort != null) params['DestPort'] = destPort;
-    if (destPortRangeMax != null) params['DestPortRangeMax'] = destPortRangeMax;
-    if (protocol != null) params['Protocol'] = protocol;
-    if (target != null) params['Target'] = target;
-    return await client.add('Device.Firewall.Chain.1.Rule.', params);
-  }
-
-  /// Add multiple Ipv6PortServiceRule instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> addMany(
-      UspClient client, List<Map<String, dynamic>> paramsList,
+      UspClient client, List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
-    if (paramsList.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.addMultiple(
-      paramsList
-          .map((p) => {'path': 'Device.Firewall.Chain.1.Rule.', 'params': p})
-          .toList(),
-      allowPartial: allowPartial,
-    );
+    final itemList = items
+        .map(
+            (item) => {'path': 'Device.Firewall.Chain.1.Rule.', 'params': item})
+        .toList();
+    return await client.add(itemList, allowPartial: allowPartial);
   }
 
-  /// Delete a Ipv6PortServiceRule instance via USP Delete message
+  /// Delete Ipv6PortServiceRule instance(s) via USP Delete message
   static Future<Map<String, dynamic>> delete(
-      UspClient client, String instancePath) async {
-    return await client.delete(instancePath);
-  }
-
-  /// Delete multiple Ipv6PortServiceRule instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> deleteMany(
-      UspClient client, List<String> instancePaths,
+      UspClient client, List<String> paths,
       {bool allowPartial = false}) async {
-    if (instancePaths.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.deleteMultiple(instancePaths,
-        allowPartial: allowPartial);
+    return await client.delete(paths, allowPartial: allowPartial);
   }
 }

@@ -73,7 +73,7 @@ class LanNetworkInfo {
   }
 
   /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> save(
+  static Future<Map<String, dynamic>> update(
     UspClient client, {
     String? ipAddress,
     String? subnetMask,
