@@ -222,23 +222,26 @@ class UspWifiSettingsService {
                 message: 'SSID name cannot exceed 32 characters');
           }
 
-          final result = await WiFiSsids.updateMany(_usp, ssidUpdates);
-          final parsedResult = UspResultParser.parseSetResult(result);
+          // Update each SSID individually
+          for (final ssidUpdate in ssidUpdates) {
+            final result = await WiFiSsids.update(_usp, [ssidUpdate]);
+            final parsedResult = UspResultParser.parseSetResult(result);
 
-          // Strict error handling for critical WiFi operations
-          if (parsedResult case UspPartialSuccess(failures: final failures)) {
-            logger.e(
-                '[UspWifiSettingsService] SSID update partial failure: ${failures.length} errors');
-            throw UnexpectedError(
-              message:
-                  'WiFi SSID update failed: ${failures.map((f) => f.errorMessage).join('; ')}',
-            );
-          } else if (parsedResult case UspFailure(errors: final errors)) {
-            logger.e('[UspWifiSettingsService] SSID update complete failure');
-            throw NetworkError(
-              message:
-                  'WiFi configuration failed: ${errors.map((e) => e.errorMessage).join('; ')}',
-            );
+            // Strict error handling for critical WiFi operations
+            if (parsedResult case UspPartialSuccess(failures: final failures)) {
+              logger.e(
+                  '[UspWifiSettingsService] SSID update partial failure: ${failures.length} errors');
+              throw UnexpectedError(
+                message:
+                    'WiFi SSID update failed: ${failures.map((f) => f.errorMessage).join('; ')}',
+              );
+            } else if (parsedResult case UspFailure(errors: final errors)) {
+              logger.e('[UspWifiSettingsService] SSID update complete failure');
+              throw NetworkError(
+                message:
+                    'WiFi configuration failed: ${errors.map((e) => e.errorMessage).join('; ')}',
+              );
+            }
           }
 
           logger.d(
@@ -254,21 +257,24 @@ class UspWifiSettingsService {
             }
           }
 
-          await WiFiAccessPoints.updateMany(
-            _usp,
-            aggregate.apInstancePaths.map((p) {
-              final band = bandByApPath[p] ?? '';
-              final securityMode = _securityModeFor6GHz(
-                band: band,
-                selectedMode: pending.securityMode,
-              );
-              return WiFiAccessPointUpdate(
-                instancePath: p,
-                keyPassphrase: pending.password,
-                securityModeEnabled: securityMode,
-              );
-            }).toList(),
-          );
+          // Update each access point individually
+          for (final p in aggregate.apInstancePaths) {
+            final band = bandByApPath[p] ?? '';
+            final securityMode = _securityModeFor6GHz(
+              band: band,
+              selectedMode: pending.securityMode,
+            );
+            await WiFiAccessPoints.update(
+              _usp,
+              [
+                WiFiAccessPointUpdate(
+                  instancePath: p,
+                  keyPassphrase: pending.password,
+                  securityModeEnabled: securityMode,
+                )
+              ],
+            );
+          }
         }
       }
     } catch (e) {
@@ -299,11 +305,13 @@ class UspWifiSettingsService {
             orig.ssid != curr.ssid) {
           await WiFiSsids.update(
             _usp,
-            WiFiSsidUpdate(
-              instancePath: curr.ssidInstancePath,
-              enable: curr.enabled,
-              ssid: curr.ssid,
-            ),
+            [
+              WiFiSsidUpdate(
+                instancePath: curr.ssidInstancePath,
+                enable: curr.enabled,
+                ssid: curr.ssid,
+              )
+            ],
           );
         }
 
@@ -317,14 +325,16 @@ class UspWifiSettingsService {
                     curr.ssidAdvertisementEnabled)) {
           await WiFiAccessPoints.update(
             _usp,
-            WiFiAccessPointUpdate(
-              instancePath: ap,
-              keyPassphrase:
-                  curr.keyPassphrase.isNotEmpty ? curr.keyPassphrase : null,
-              securityModeEnabled:
-                  curr.securityMode.isNotEmpty ? curr.securityMode : null,
-              ssidAdvertisementEnabled: curr.ssidAdvertisementEnabled,
-            ),
+            [
+              WiFiAccessPointUpdate(
+                instancePath: ap,
+                keyPassphrase:
+                    curr.keyPassphrase.isNotEmpty ? curr.keyPassphrase : null,
+                securityModeEnabled:
+                    curr.securityMode.isNotEmpty ? curr.securityMode : null,
+                ssidAdvertisementEnabled: curr.ssidAdvertisementEnabled,
+              )
+            ],
           );
         }
 
@@ -338,17 +348,19 @@ class UspWifiSettingsService {
                 orig.autoChannelEnable != curr.autoChannelEnable)) {
           await WiFiRadios.update(
             _usp,
-            WiFiRadioUpdate(
-              instancePath: radio,
-              operatingStandards: curr.operatingStandards.isNotEmpty
-                  ? curr.operatingStandards
-                  : null,
-              operatingChannelBandwidth: curr.channelBandwidth.isNotEmpty
-                  ? curr.channelBandwidth
-                  : null,
-              autoChannelEnable: curr.autoChannelEnable,
-              channel: curr.autoChannelEnable ? null : curr.channel,
-            ),
+            [
+              WiFiRadioUpdate(
+                instancePath: radio,
+                operatingStandards: curr.operatingStandards.isNotEmpty
+                    ? curr.operatingStandards
+                    : null,
+                operatingChannelBandwidth: curr.channelBandwidth.isNotEmpty
+                    ? curr.channelBandwidth
+                    : null,
+                autoChannelEnable: curr.autoChannelEnable,
+                channel: curr.autoChannelEnable ? null : curr.channel,
+              )
+            ],
           );
         }
       }
@@ -366,7 +378,7 @@ class UspWifiSettingsService {
     try {
       await WiFiRadios.update(
         _usp,
-        WiFiRadioUpdate(instancePath: instancePath, enable: enable),
+        [WiFiRadioUpdate(instancePath: instancePath, enable: enable)],
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -382,11 +394,13 @@ class UspWifiSettingsService {
     try {
       await WiFiRadios.update(
         _usp,
-        WiFiRadioUpdate(
-          instancePath: instancePath,
-          channel: channel,
-          autoChannelEnable: autoChannel,
-        ),
+        [
+          WiFiRadioUpdate(
+            instancePath: instancePath,
+            channel: channel,
+            autoChannelEnable: autoChannel,
+          )
+        ],
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);

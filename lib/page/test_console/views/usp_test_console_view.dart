@@ -12,7 +12,6 @@ import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
-import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/web/usp_wasm_init.dart';
 import 'package:privacy_gui/generated/tr181_paths.g.dart';
 import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
@@ -245,14 +244,11 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
         'SET $modeText ${paths.length > 1 ? paths.toString() : paths.first} = $value');
 
     try {
-      // 使用策略A：成功返回結果，失敗拋出 ServiceError
-      final result =
-          await _service!.setWithResult(params, allowPartial: allowPartial);
+      final rawResult = await _service!.set(params, allowPartial: allowPartial);
+      final result = UspResultParser.parseSetResult(rawResult);
 
-      // 如果到這裡，說明操作成功（UspSuccess 或允許的 UspPartialSuccess）
       if (result is UspSuccess) {
         _log('SET SUCCESS - All parameters updated');
-        // 顯示返回的更新值（證明 WASM v0.11.0 data 欄位包含更新後的值）
         for (final detail in result.details) {
           if (detail.retrievedParams != null &&
               detail.retrievedParams!.isNotEmpty) {
@@ -266,12 +262,10 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
           _log('  (No return values - operation completed)');
         }
       } else if (result is UspPartialSuccess) {
-        // 只有 allowPartial=true 時才會到這裡
         _log('SET PARTIAL SUCCESS - Some succeeded, some failed');
         _log('  Successes: ${result.successSummary}');
         _log('  Failures: ${result.errorSummary}');
 
-        // 顯示成功的更新值
         for (final detail in result.successes) {
           if (detail.retrievedParams != null) {
             for (final entry in detail.retrievedParams!.entries) {
@@ -280,7 +274,6 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
           }
         }
 
-        // 顯示錯誤詳情
         for (final error in result.failures) {
           final readOnlyTag =
               error.isParameterNotWritable ? ' [READ-ONLY]' : '';
@@ -289,18 +282,10 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
           _log(
               '    ERROR: ${error.requestedPath}: Code ${error.errorCode}$readOnlyTag$pathNotFoundTag - ${error.errorMessage}');
         }
+      } else if (result is UspFailure) {
+        _log('SET FAILED - All operations failed');
+        _log('  Error: ${result.errorSummary}');
       }
-    } on UspCompleteFailureError catch (e) {
-      // 處理完全失敗
-      _log('SET FAILED - All operations failed');
-      _log('  Error: ${e.summary}');
-      _log('  Failed paths: ${e.failedPaths.join(', ')}');
-    } on UspAtomicModeFailureError catch (e) {
-      // 處理原子模式下的部分失敗
-      _log('SET FAILED - Partial success not allowed in atomic mode');
-      _log('  Error: ${e.summary}');
-      _log('  Success paths: ${e.successPaths.join(', ')}');
-      _log('  Failed paths: ${e.failedPaths.join(', ')}');
     } catch (e) {
       _log('ERROR set: $e');
     }
@@ -315,7 +300,9 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     try {
       final params =
           Map<String, String>.from(jsonDecode(paramsJson) as Map? ?? {});
-      final created = await _service!.add(path, params);
+      final created = await _service!.add([
+        {'path': path, 'params': params}
+      ]);
       _log('ADD OK -> created: $created');
     } catch (e) {
       _log('ERROR add: $e');
@@ -328,7 +315,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     if (path.isEmpty) return;
     _log('DELETE $path');
     try {
-      await _service!.delete(path);
+      await _service!.delete([path]);
       _log('DELETE OK');
     } catch (e) {
       _log('ERROR delete: $e');
@@ -591,21 +578,25 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
       // --- ADD errors ---
       (
         'ADD to non-addable object: Device.DeviceInfo.',
-        () => _service!.add('Device.DeviceInfo.', {}),
+        () => _service!.add([
+              {'path': 'Device.DeviceInfo.', 'params': <String, dynamic>{}}
+            ]),
       ),
       (
         'ADD to non-existent object path',
-        () => _service!.add('Device.Bogus.Object.', {}),
+        () => _service!.add([
+              {'path': 'Device.Bogus.Object.', 'params': <String, dynamic>{}}
+            ]),
       ),
 
       // --- DELETE errors ---
       (
         'DELETE non-existent instance: Device.NAT.PortMapping.99999.',
-        () => _service!.delete('Device.NAT.PortMapping.99999.'),
+        () => _service!.delete(['Device.NAT.PortMapping.99999.']),
       ),
       (
         'DELETE non-deletable path: Device.DeviceInfo.',
-        () => _service!.delete('Device.DeviceInfo.'),
+        () => _service!.delete(['Device.DeviceInfo.']),
       ),
 
       // --- OPERATE errors ---

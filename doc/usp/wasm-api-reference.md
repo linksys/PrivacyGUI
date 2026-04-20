@@ -128,7 +128,7 @@ const result = await client.getMultiple([
 
 ---
 
-### SET — Write Parameters
+### SET — Write Parameters (Unordered)
 
 #### `client.set(path: string, value: string): Promise<UnifiedResponse>`
 
@@ -202,6 +202,39 @@ const result = await client.set("Device.DeviceInfo.Manufacturer", "TestValue");
 ```
 
 > **Note:** Error code `7013` is a per-parameter error inside `OperSuccess.UpdatedInstanceResult.ParameterError`, distinct from `7020` which is an object-level `OperationFailure`. Both indicate a read-only parameter, but they come from different levels of the USP protobuf response.
+
+---
+
+### SET — Write Parameters (Ordered)
+
+#### `client.setOrdered(parameters: Array<{path, value}>): Promise<UnifiedResponse>`
+
+Performs an ordered Set operation that preserves parameter execution sequence. Each parameter is sent as a separate UpdateObject, ensuring the device processes them in the specified order.
+
+Use this when parameter order affects correctness or performance (e.g., setting `AddressingType` before `IPAddress` during WAN configuration).
+
+**Request:**
+```javascript
+const result = await client.setOrdered([
+  { path: "Device.IP.Interface.2.IPv4Address.1.AddressingType", value: "Static" },
+  { path: "Device.IP.Interface.2.IPv4Address.1.IPAddress", value: "192.168.1.100" },
+  { path: "Device.IP.Interface.2.IPv4Address.1.SubnetMask", value: "255.255.255.0" }
+]);
+```
+
+**Response:** Same `UnifiedResponse` format as `set()`.
+
+#### `client.setOrderedWithOptions(parameters: Array<{path, value}>, allowPartial: boolean): Promise<UnifiedResponse>`
+
+Ordered Set with `allowPartial` control. When `allowPartial` is `true`, the device may apply some parameters even if others fail.
+
+**Request:**
+```javascript
+const result = await client.setOrderedWithOptions([
+  { path: "Device.WiFi.SSID.1.SSID", value: "Network1" },
+  { path: "Device.WiFi.SSID.1.Enable", value: "true" }
+], true); // allowPartial = true
+```
 
 ---
 
@@ -406,6 +439,14 @@ Authenticate with the device. Stores session token internally.
 await client.login("mypassword");
 ```
 
+#### `client.refreshToken(): Promise<void>`
+
+Refresh the authentication token before it expires.
+
+```javascript
+await client.refreshToken();
+```
+
 #### `client.logout(): Promise<void>`
 
 Clear authentication state.
@@ -443,6 +484,28 @@ await client.subscribe("sub-1", "Device.WiFi.SSID.1.SSID", 1);
 #### `client.unsubscribe(id: string): Promise<void>`
 
 Remove a notification subscription.
+
+#### `client.listSubscriptions(): Promise<Array>`
+
+List all active subscriptions for the current session.
+
+```javascript
+const subs = await client.listSubscriptions();
+// [{ subscription_id: "wifi-status", path: "Device.WiFi.", active: true }, ...]
+```
+
+#### `client.connectNotifications(): EventSource`
+
+Creates an EventSource connection to the bridge's SSE notifications endpoint. Uses `withCredentials: true` so the browser sends the session cookie automatically.
+
+```javascript
+const es = client.connectNotifications();
+es.onmessage = (event) => console.log("SSE:", event.data);
+es.onerror = (err) => console.error("SSE error:", err);
+// To close: es.close();
+```
+
+> For Bearer-token auth, use `getToken()` and construct the EventSource manually with a query parameter.
 
 #### `client.notificationsUrl(): string`
 

@@ -56,7 +56,7 @@ void main() {
           'hasErrors': false,
           'results': []
         });
-    when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+    when(() => mockUsp.add(any())).thenAnswer((_) async => {
           'overallSuccess': true,
           'hasAnySuccess': true,
           'hasErrors': false,

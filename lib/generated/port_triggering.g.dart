@@ -151,31 +151,8 @@ class PortTriggering {
     return PortTriggering(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, PortTriggerUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.enabled != null)
-      params['${update.instancePath}Enable'] = update.enabled;
-    if (update.description != null)
-      params['${update.instancePath}Description'] = update.description;
-    if (update.triggerPort != null)
-      params['${update.instancePath}Port'] = update.triggerPort;
-    if (update.triggerPortEndRange != null)
-      params['${update.instancePath}PortEndRange'] = update.triggerPortEndRange;
-    if (update.triggerProtocol != null)
-      params['${update.instancePath}Protocol'] = update.triggerProtocol;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<PortTriggerUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
@@ -201,63 +178,21 @@ class PortTriggering {
     return await client.set(params, allowPartial: allowPartial);
   }
 
-  /// Add a new PortTrigger instance via USP Add message
+  /// Add PortTrigger instance(s) via USP Add message
   static Future<Map<String, dynamic>> add(
-    UspClient client, {
-    bool? enabled,
-    String? description,
-    int? triggerPort,
-    int? triggerPortEndRange,
-    String? triggerProtocol,
-  }) async {
-    final params = <String, dynamic>{};
-    if (enabled != null) params['Enable'] = enabled;
-    if (description != null) params['Description'] = description;
-    if (triggerPort != null) params['Port'] = triggerPort;
-    if (triggerPortEndRange != null)
-      params['PortEndRange'] = triggerPortEndRange;
-    if (triggerProtocol != null) params['Protocol'] = triggerProtocol;
-    return await client.add('Device.NAT.PortTrigger.', params);
-  }
-
-  /// Add multiple PortTrigger instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> addMany(
-      UspClient client, List<Map<String, dynamic>> paramsList,
+      UspClient client, List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
-    if (paramsList.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.addMultiple(
-      paramsList
-          .map((p) => {'path': 'Device.NAT.PortTrigger.', 'params': p})
-          .toList(),
-      allowPartial: allowPartial,
-    );
+    final itemList = items
+        .map((item) => {'path': 'Device.NAT.PortTrigger.', 'params': item})
+        .toList();
+    return await client.add(itemList, allowPartial: allowPartial);
   }
 
-  /// Delete a PortTrigger instance via USP Delete message
+  /// Delete PortTrigger instance(s) via USP Delete message
   static Future<Map<String, dynamic>> delete(
-      UspClient client, String instancePath) async {
-    return await client.delete(instancePath);
-  }
-
-  /// Delete multiple PortTrigger instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> deleteMany(
-      UspClient client, List<String> instancePaths,
+      UspClient client, List<String> paths,
       {bool allowPartial = false}) async {
-    if (instancePaths.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.deleteMultiple(instancePaths,
-        allowPartial: allowPartial);
+    return await client.delete(paths, allowPartial: allowPartial);
   }
 
   /// Add a new PortTriggerForwardRule instance under a parent instance
@@ -273,12 +208,14 @@ class PortTriggering {
     if (forwardPortEndRange != null)
       params['PortEndRange'] = forwardPortEndRange;
     if (forwardProtocol != null) params['Protocol'] = forwardProtocol;
-    return await client.add('${parentInstancePath}Rule.', params);
+    return await client.add([
+      {'path': '${parentInstancePath}Rule.', 'params': params}
+    ]);
   }
 
   /// Delete a PortTriggerForwardRule instance via USP Delete message
   static Future<Map<String, dynamic>> deletePortTriggerForwardRule(
       UspClient client, String instancePath) async {
-    return await client.delete(instancePath);
+    return await client.delete([instancePath]);
   }
 }

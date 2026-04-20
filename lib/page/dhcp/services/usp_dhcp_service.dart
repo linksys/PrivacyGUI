@@ -45,7 +45,7 @@ class UspDhcpService {
     try {
       await DhcpReservations.update(
         _usp,
-        DhcpReservationUpdate(instancePath: instancePath, enable: enable),
+        [DhcpReservationUpdate(instancePath: instancePath, enable: enable)],
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -59,7 +59,9 @@ class UspDhcpService {
     bool enable = true,
   }) async {
     try {
-      await DhcpReservations.add(_usp, enable: enable, chaddr: mac, yiaddr: ip);
+      await DhcpReservations.add(_usp, [
+        {'Enable': enable, 'Chaddr': mac, 'Yiaddr': ip}
+      ]);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -68,7 +70,7 @@ class UspDhcpService {
   /// Delete a single reservation immediately.
   Future<void> immediateDelete(String instancePath) async {
     try {
-      await DhcpReservations.delete(_usp, instancePath);
+      await DhcpReservations.delete(_usp, [instancePath]);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -98,7 +100,7 @@ class UspDhcpService {
         if (i > 0) {
           await Future.delayed(const Duration(milliseconds: 300));
         }
-        await DhcpReservations.delete(_usp, toDelete[i].instancePath!);
+        await DhcpReservations.delete(_usp, [toDelete[i].instancePath!]);
       }
 
       // 2. Add (sequential with delay to avoid bridge 504)
@@ -111,9 +113,9 @@ class UspDhcpService {
         final r = toAdd[i];
         await DhcpReservations.add(
           _usp,
-          enable: r.enable,
-          chaddr: r.mac,
-          yiaddr: r.ip,
+          [
+            {'Enable': r.enable, 'Chaddr': r.mac, 'Yiaddr': r.ip}
+          ],
         );
       }
 
@@ -139,7 +141,7 @@ class UspDhcpService {
       }
 
       if (toUpdate.isNotEmpty) {
-        await DhcpReservations.updateMany(_usp, toUpdate);
+        await DhcpReservations.update(_usp, toUpdate);
       }
 
       return (

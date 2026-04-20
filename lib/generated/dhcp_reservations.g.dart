@@ -90,27 +90,8 @@ class DhcpReservations {
     return DhcpReservations(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, DhcpReservationUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.enable != null)
-      params['${update.instancePath}Enable'] = update.enable;
-    if (update.chaddr != null)
-      params['${update.instancePath}Chaddr'] = update.chaddr;
-    if (update.yiaddr != null)
-      params['${update.instancePath}Yiaddr'] = update.yiaddr;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<DhcpReservationUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
@@ -131,61 +112,23 @@ class DhcpReservations {
     return await client.set(params, allowPartial: allowPartial);
   }
 
-  /// Add a new DhcpReservation instance via USP Add message
+  /// Add DhcpReservation instance(s) via USP Add message
   static Future<Map<String, dynamic>> add(
-    UspClient client, {
-    bool? enable,
-    String? chaddr,
-    String? yiaddr,
-  }) async {
-    final params = <String, dynamic>{};
-    if (enable != null) params['Enable'] = enable;
-    if (chaddr != null) params['Chaddr'] = chaddr;
-    if (yiaddr != null) params['Yiaddr'] = yiaddr;
-    return await client.add(
-        'Device.DHCPv4.Server.Pool.1.StaticAddress.', params);
-  }
-
-  /// Add multiple DhcpReservation instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> addMany(
-      UspClient client, List<Map<String, dynamic>> paramsList,
+      UspClient client, List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
-    if (paramsList.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.addMultiple(
-      paramsList
-          .map((p) => {
-                'path': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
-                'params': p
-              })
-          .toList(),
-      allowPartial: allowPartial,
-    );
+    final itemList = items
+        .map((item) => {
+              'path': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+              'params': item
+            })
+        .toList();
+    return await client.add(itemList, allowPartial: allowPartial);
   }
 
-  /// Delete a DhcpReservation instance via USP Delete message
+  /// Delete DhcpReservation instance(s) via USP Delete message
   static Future<Map<String, dynamic>> delete(
-      UspClient client, String instancePath) async {
-    return await client.delete(instancePath);
-  }
-
-  /// Delete multiple DhcpReservation instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> deleteMany(
-      UspClient client, List<String> instancePaths,
+      UspClient client, List<String> paths,
       {bool allowPartial = false}) async {
-    if (instancePaths.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.deleteMultiple(instancePaths,
-        allowPartial: allowPartial);
+    return await client.delete(paths, allowPartial: allowPartial);
   }
 }

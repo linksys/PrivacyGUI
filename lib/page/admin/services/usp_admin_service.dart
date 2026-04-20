@@ -38,7 +38,7 @@ class UspAdminService {
     try {
       await AdminUsers.update(
         _usp,
-        AdminUserUpdate(instancePath: instancePath, password: newPassword),
+        [AdminUserUpdate(instancePath: instancePath, password: newPassword)],
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -56,7 +56,7 @@ class UspAdminService {
     String? ntpServer2,
   }) async {
     try {
-      await TimeSettings.save(
+      await TimeSettings.update(
         _usp,
         enable: enable,
         ntpServer1: ntpServer1,
@@ -75,7 +75,7 @@ class UspAdminService {
     bool? enable,
   }) async {
     try {
-      await TimeSettings.save(
+      await TimeSettings.update(
         _usp,
         localTimeZone: localTimeZone,
         ntpServer1: ntpServer1,

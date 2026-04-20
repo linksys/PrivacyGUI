@@ -158,37 +158,8 @@ class WiFiRadios {
     return WiFiRadios(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, WiFiRadioUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.enable != null)
-      params['${update.instancePath}Enable'] = update.enable;
-    if (update.channel != null)
-      params['${update.instancePath}Channel'] = update.channel;
-    if (update.operatingChannelBandwidth != null)
-      params['${update.instancePath}OperatingChannelBandwidth'] =
-          update.operatingChannelBandwidth;
-    if (update.operatingStandards != null)
-      params['${update.instancePath}OperatingStandards'] =
-          update.operatingStandards;
-    if (update.autoChannelEnable != null)
-      params['${update.instancePath}AutoChannelEnable'] =
-          update.autoChannelEnable;
-    if (update.ieee80211hEnabled != null)
-      params['${update.instancePath}IEEE80211hEnabled'] =
-          update.ieee80211hEnabled;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<WiFiRadioUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};

@@ -98,24 +98,8 @@ class WiFiSsids {
     return WiFiSsids(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, WiFiSsidUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.ssid != null) params['${update.instancePath}SSID'] = update.ssid;
-    if (update.enable != null)
-      params['${update.instancePath}Enable'] = update.enable;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<WiFiSsidUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};

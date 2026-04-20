@@ -249,7 +249,7 @@ void main() {
 
   group('UspDmzService — add', () {
     test('add with sourceType.any sends 0.0.0.0/0', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
             'hasErrors': false,
@@ -276,15 +276,16 @@ void main() {
         ),
       );
 
-      final captured =
-          verify(() => mockUsp.add(captureAny(), captureAny())).captured;
-      final params = captured[1] as Map<String, dynamic>;
+      final captured = verify(() => mockUsp.add(captureAny())).captured;
+      final items = captured[0] as List;
+      final firstItem = items.first as Map<String, dynamic>;
+      final params = firstItem['params'] as Map<String, dynamic>;
       expect(params['SourcePrefix'], '0.0.0.0/0');
       expect(params['DestIP'], '192.168.1.50');
     });
 
     test('add with sourceType.cidr sends the CIDR value', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
             'hasErrors': false,
@@ -311,9 +312,10 @@ void main() {
         ),
       );
 
-      final captured =
-          verify(() => mockUsp.add(captureAny(), captureAny())).captured;
-      final params = captured[1] as Map<String, dynamic>;
+      final captured = verify(() => mockUsp.add(captureAny())).captured;
+      final items = captured[0] as List;
+      final firstItem = items.first as Map<String, dynamic>;
+      final params = firstItem['params'] as Map<String, dynamic>;
       expect(params['SourcePrefix'], '10.0.0.0/8');
     });
   });

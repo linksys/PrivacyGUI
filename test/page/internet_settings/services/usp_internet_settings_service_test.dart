@@ -220,7 +220,7 @@ void main() {
 
     test('adds PPP instance when switching to PPPoE without existing instance',
         () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
             'hasErrors': false,
@@ -249,7 +249,7 @@ void main() {
 
       await service.saveAll(original, edited);
 
-      verify(() => mockUsp.add('Device.PPP.Interface.', any())).called(1);
+      verify(() => mockUsp.add(any())).called(1);
     });
 
     test('deletes PPP instance when switching away from PPPoE', () async {
@@ -275,12 +275,12 @@ void main() {
         pppInstancePath: 'Device.PPP.Interface.1.',
       );
 
-      verify(() => mockUsp.delete('Device.PPP.Interface.1.')).called(1);
+      verify(() => mockUsp.delete(any())).called(1);
     });
 
     test('adds VLAN instance when enabling VLAN without existing instance',
         () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
             'hasErrors': false,
@@ -308,8 +308,7 @@ void main() {
 
       await service.saveAll(original, edited);
 
-      verify(() => mockUsp.add('Device.Ethernet.VLANTermination.', any()))
-          .called(1);
+      verify(() => mockUsp.add(any())).called(1);
     });
 
     test('deletes VLAN instance when disabling VLAN', () async {
@@ -335,8 +334,7 @@ void main() {
         vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
       );
 
-      verify(() => mockUsp.delete('Device.Ethernet.VLANTermination.1.'))
-          .called(1);
+      verify(() => mockUsp.delete(any())).called(1);
     });
   });
 

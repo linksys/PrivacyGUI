@@ -60,7 +60,9 @@ class UspPortForwardingService {
     try {
       await PortForwarding.update(
         _usp,
-        PortForwardingRuleUpdate(instancePath: instancePath, enabled: enabled),
+        [
+          PortForwardingRuleUpdate(instancePath: instancePath, enabled: enabled)
+        ],
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -80,13 +82,17 @@ class UspPortForwardingService {
     try {
       await PortForwarding.add(
         _usp,
-        enabled: enabled,
-        externalPort: externalPort,
-        externalPortEndRange: externalPortEndRange,
-        internalPort: internalPort,
-        internalClient: internalClient,
-        protocol: protocol,
-        description: description,
+        [
+          {
+            'Enable': enabled,
+            'ExternalPort': externalPort,
+            'ExternalPortEndRange': externalPortEndRange,
+            'InternalPort': internalPort,
+            'InternalClient': internalClient,
+            'Protocol': protocol,
+            'Description': description,
+          }
+        ],
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -103,7 +109,7 @@ class UspPortForwardingService {
     try {
       await PortTriggering.update(
         _usp,
-        PortTriggerUpdate(instancePath: instancePath, enabled: enabled),
+        [PortTriggerUpdate(instancePath: instancePath, enabled: enabled)],
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -133,7 +139,7 @@ class UspPortForwardingService {
         if (i > 0) {
           await Future.delayed(const Duration(milliseconds: 300));
         }
-        await PortForwarding.delete(_usp, toDelete[i].instancePath!);
+        await PortForwarding.delete(_usp, [toDelete[i].instancePath!]);
       }
 
       // 2. Add
@@ -145,13 +151,17 @@ class UspPortForwardingService {
         final r = toAdd[i];
         await PortForwarding.add(
           _usp,
-          enabled: r.enabled,
-          externalPort: r.externalPort,
-          externalPortEndRange: r.externalPortEndRange,
-          internalPort: r.internalPort,
-          internalClient: r.internalClient,
-          protocol: r.protocol,
-          description: r.description,
+          [
+            {
+              'Enable': r.enabled,
+              'ExternalPort': r.externalPort,
+              'ExternalPortEndRange': r.externalPortEndRange,
+              'InternalPort': r.internalPort,
+              'InternalClient': r.internalClient,
+              'Protocol': r.protocol,
+              'Description': r.description,
+            }
+          ],
         );
       }
 
@@ -179,7 +189,7 @@ class UspPortForwardingService {
         }
       }
       if (toUpdate.isNotEmpty) {
-        await PortForwarding.updateMany(_usp, toUpdate);
+        await PortForwarding.update(_usp, toUpdate);
       }
 
       return (
@@ -215,7 +225,7 @@ class UspPortForwardingService {
         if (i > 0) {
           await Future.delayed(const Duration(milliseconds: 300));
         }
-        await PortTriggering.delete(_usp, toDelete[i].instancePath!);
+        await PortTriggering.delete(_usp, [toDelete[i].instancePath!]);
       }
 
       // 2. Add (parent + forward rules)
@@ -223,11 +233,15 @@ class UspPortForwardingService {
       for (final r in toAdd) {
         final result = await PortTriggering.add(
           _usp,
-          enabled: r.enabled,
-          description: r.description,
-          triggerPort: r.triggerPort,
-          triggerPortEndRange: r.triggerPortEndRange,
-          triggerProtocol: r.triggerProtocol,
+          [
+            {
+              'Enable': r.enabled,
+              'Description': r.description,
+              'Port': r.triggerPort,
+              'PortEndRange': r.triggerPortEndRange,
+              'Protocol': r.triggerProtocol,
+            }
+          ],
         );
 
         // Extract instance path from structured response
@@ -275,7 +289,7 @@ class UspPortForwardingService {
         }
       }
       if (toUpdate.isNotEmpty) {
-        await PortTriggering.updateMany(_usp, toUpdate);
+        await PortTriggering.update(_usp, toUpdate);
       }
 
       return (

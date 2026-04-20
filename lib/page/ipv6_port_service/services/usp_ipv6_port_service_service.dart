@@ -49,7 +49,7 @@ class UspIpv6PortServiceService {
         if (i > 0) {
           await Future.delayed(const Duration(milliseconds: 300));
         }
-        await Ipv6PortService.delete(_usp, toDelete[i].instancePath!);
+        await Ipv6PortService.delete(_usp, [toDelete[i].instancePath!]);
       }
 
       // 2. Add (instancePath == null → new)
@@ -62,14 +62,18 @@ class UspIpv6PortServiceService {
         final r = toAdd[i];
         await Ipv6PortService.add(
           _usp,
-          enable: r.enabled,
-          description: r.description,
-          ipVersion: 6,
-          destIp: r.ipv6Address,
-          destPort: r.startPort,
-          destPortRangeMax: r.endPort,
-          protocol: mapDisplayToIana(r.protocol),
-          target: 'Accept',
+          [
+            {
+              'Enable': r.enabled,
+              'Description': r.description,
+              'IPVersion': 6,
+              'DestIP': r.ipv6Address,
+              'DestPort': r.startPort,
+              'DestPortRangeMax': r.endPort,
+              'Protocol': mapDisplayToIana(r.protocol),
+              'Target': 'Accept',
+            }
+          ],
         );
       }
 
@@ -99,7 +103,7 @@ class UspIpv6PortServiceService {
       }
 
       if (toUpdate.isNotEmpty) {
-        await Ipv6PortService.updateMany(_usp, toUpdate);
+        await Ipv6PortService.update(_usp, toUpdate);
       }
 
       return (

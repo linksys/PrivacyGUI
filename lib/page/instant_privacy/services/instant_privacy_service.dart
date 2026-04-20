@@ -205,7 +205,9 @@ class UspInstantPrivacyService {
   Future<void> enable(List<String> macs, MacFilterContext ctx) async {
     try {
       final updates = buildEnableUpdates(macs, ctx._data);
-      await MacFilterAccessPoints.updateMany(_usp, updates);
+      if (updates.isNotEmpty) {
+        await MacFilterAccessPoints.update(_usp, updates);
+      }
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -215,7 +217,9 @@ class UspInstantPrivacyService {
   Future<void> disable(MacFilterContext ctx) async {
     try {
       final updates = buildDisableUpdates(ctx._data);
-      await MacFilterAccessPoints.updateMany(_usp, updates);
+      if (updates.isNotEmpty) {
+        await MacFilterAccessPoints.update(_usp, updates);
+      }
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }
@@ -227,7 +231,7 @@ class UspInstantPrivacyService {
     try {
       final updates = buildAddMacUpdates(mac, ctx._data);
       if (updates.isEmpty) return false;
-      await MacFilterAccessPoints.updateMany(_usp, updates);
+      await MacFilterAccessPoints.update(_usp, updates);
       return true;
     } catch (e) {
       throw mapUspErrorToServiceError(e);
