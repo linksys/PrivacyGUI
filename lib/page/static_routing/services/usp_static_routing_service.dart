@@ -58,33 +58,26 @@ class UspStaticRoutingService {
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
 
-      for (var i = 0; i < toDelete.length; i++) {
-        if (i > 0) {
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-        await StaticRouting.delete(_usp, [toDelete[i].instancePath!]);
+      // Delete in reverse instance order to avoid firmware renumbering issues
+      for (final r in toDelete.reversed) {
+        await StaticRouting.delete(_usp, [r.instancePath!]);
       }
 
       // 2. Add (instancePath == null → new)
       final toAdd = current.where((r) => r.instancePath == null).toList();
-
-      for (var i = 0; i < toAdd.length; i++) {
-        if (i > 0) {
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-        final r = toAdd[i];
+      if (toAdd.isNotEmpty) {
         await StaticRouting.add(
           _usp,
-          [
-            {
-              'Enable': r.enabled,
-              'DestIPAddress': r.destIpAddress,
-              'DestSubnetMask': r.destSubnetMask,
-              'GatewayIPAddress': r.gatewayIpAddress,
-              'Interface': mapDisplayToInterface(r.interfaceName),
-              'Alias': r.name,
-            }
-          ],
+          toAdd
+              .map((r) => {
+                    'Enable': r.enabled,
+                    'DestIPAddress': r.destIpAddress,
+                    'DestSubnetMask': r.destSubnetMask,
+                    'GatewayIPAddress': r.gatewayIpAddress,
+                    'Interface': mapDisplayToInterface(r.interfaceName),
+                    'Alias': r.name,
+                  })
+              .toList(),
         );
       }
 

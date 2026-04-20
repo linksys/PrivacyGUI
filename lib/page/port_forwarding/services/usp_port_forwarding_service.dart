@@ -135,33 +135,27 @@ class UspPortForwardingService {
           .where((r) =>
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
-      for (var i = 0; i < toDelete.length; i++) {
-        if (i > 0) {
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-        await PortForwarding.delete(_usp, [toDelete[i].instancePath!]);
+      // Delete in reverse instance order to avoid firmware renumbering issues
+      for (final r in toDelete.reversed) {
+        await PortForwarding.delete(_usp, [r.instancePath!]);
       }
 
       // 2. Add
       final toAdd = current.where((r) => r.instancePath == null).toList();
-      for (var i = 0; i < toAdd.length; i++) {
-        if (i > 0) {
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-        final r = toAdd[i];
+      if (toAdd.isNotEmpty) {
         await PortForwarding.add(
           _usp,
-          [
-            {
-              'Enable': r.enabled,
-              'ExternalPort': r.externalPort,
-              'ExternalPortEndRange': r.externalPortEndRange,
-              'InternalPort': r.internalPort,
-              'InternalClient': r.internalClient,
-              'Protocol': r.protocol,
-              'Description': r.description,
-            }
-          ],
+          toAdd
+              .map((r) => {
+                    'Enable': r.enabled,
+                    'ExternalPort': r.externalPort,
+                    'ExternalPortEndRange': r.externalPortEndRange,
+                    'InternalPort': r.internalPort,
+                    'InternalClient': r.internalClient,
+                    'Protocol': r.protocol,
+                    'Description': r.description,
+                  })
+              .toList(),
         );
       }
 
@@ -221,11 +215,8 @@ class UspPortForwardingService {
           .where((r) =>
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
-      for (var i = 0; i < toDelete.length; i++) {
-        if (i > 0) {
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-        await PortTriggering.delete(_usp, [toDelete[i].instancePath!]);
+      for (final r in toDelete.reversed) {
+        await PortTriggering.delete(_usp, [r.instancePath!]);
       }
 
       // 2. Add (parent + forward rules)

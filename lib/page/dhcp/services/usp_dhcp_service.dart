@@ -96,26 +96,19 @@ class UspDhcpService {
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
 
-      for (var i = 0; i < toDelete.length; i++) {
-        if (i > 0) {
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-        await DhcpReservations.delete(_usp, [toDelete[i].instancePath!]);
+      // Delete in reverse instance order to avoid firmware renumbering issues
+      for (final r in toDelete.reversed) {
+        await DhcpReservations.delete(_usp, [r.instancePath!]);
       }
 
-      // 2. Add (sequential with delay to avoid bridge 504)
+      // 2. Add
       final toAdd = current.where((r) => r.instancePath == null).toList();
-
-      for (var i = 0; i < toAdd.length; i++) {
-        if (i > 0) {
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-        final r = toAdd[i];
+      if (toAdd.isNotEmpty) {
         await DhcpReservations.add(
           _usp,
-          [
-            {'Enable': r.enable, 'Chaddr': r.mac, 'Yiaddr': r.ip}
-          ],
+          toAdd
+              .map((r) => {'Enable': r.enable, 'Chaddr': r.mac, 'Yiaddr': r.ip})
+              .toList(),
         );
       }
 

@@ -270,12 +270,27 @@ class UspClientWeb {
       }
     }
 
+    // Stringify all param values — Rust WASM expects JS strings, not
+    // Number/Boolean.  Dart's jsify() preserves int→Number / bool→Boolean,
+    // which Rust's JsValue::as_string() returns None for, falling back to
+    // Debug format "JsValue(90)" and corrupting the data on the router.
+    final stringified = items.map((item) {
+      final params = item['params'];
+      if (params is Map) {
+        return {
+          ...item,
+          'params': params.map((k, v) => MapEntry(k, v?.toString() ?? '')),
+        };
+      }
+      return item;
+    }).toList();
+
     // Single item → pass as object; multiple → pass as array
     final JSAny jsItems;
-    if (items.length == 1) {
-      jsItems = items.first.jsify()!;
+    if (stringified.length == 1) {
+      jsItems = stringified.first.jsify()!;
     } else {
-      jsItems = items.jsify()!;
+      jsItems = stringified.jsify()!;
     }
 
     final result = await _client
