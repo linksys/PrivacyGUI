@@ -45,35 +45,28 @@ class UspIpv6PortServiceService {
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
 
-      for (var i = 0; i < toDelete.length; i++) {
-        if (i > 0) {
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-        await Ipv6PortService.delete(_usp, [toDelete[i].instancePath!]);
+      // Delete in reverse instance order to avoid firmware renumbering issues
+      for (final r in toDelete.reversed) {
+        await Ipv6PortService.delete(_usp, [r.instancePath!]);
       }
 
       // 2. Add (instancePath == null → new)
       final toAdd = current.where((r) => r.instancePath == null).toList();
-
-      for (var i = 0; i < toAdd.length; i++) {
-        if (i > 0) {
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-        final r = toAdd[i];
+      if (toAdd.isNotEmpty) {
         await Ipv6PortService.add(
           _usp,
-          [
-            {
-              'Enable': r.enabled,
-              'Description': r.description,
-              'IPVersion': 6,
-              'DestIP': r.ipv6Address,
-              'DestPort': r.startPort,
-              'DestPortRangeMax': r.endPort,
-              'Protocol': mapDisplayToIana(r.protocol),
-              'Target': 'Accept',
-            }
-          ],
+          toAdd
+              .map((r) => {
+                    'Enable': r.enabled,
+                    'Description': r.description,
+                    'IPVersion': 6,
+                    'DestIP': r.ipv6Address,
+                    'DestPort': r.startPort,
+                    'DestPortRangeMax': r.endPort,
+                    'Protocol': mapDisplayToIana(r.protocol),
+                    'Target': 'Accept',
+                  })
+              .toList(),
         );
       }
 
