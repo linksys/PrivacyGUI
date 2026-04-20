@@ -116,34 +116,8 @@ class StaticRouting {
     return StaticRouting(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, StaticRouteUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.enable != null)
-      params['${update.instancePath}Enable'] = update.enable;
-    if (update.destIpAddress != null)
-      params['${update.instancePath}DestIPAddress'] = update.destIpAddress;
-    if (update.destSubnetMask != null)
-      params['${update.instancePath}DestSubnetMask'] = update.destSubnetMask;
-    if (update.gatewayIpAddress != null)
-      params['${update.instancePath}GatewayIPAddress'] =
-          update.gatewayIpAddress;
-    if (update.interface_ != null)
-      params['${update.instancePath}Interface'] = update.interface_;
-    if (update.alias != null)
-      params['${update.instancePath}Alias'] = update.alias;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<StaticRouteUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
@@ -171,64 +145,21 @@ class StaticRouting {
     return await client.set(params, allowPartial: allowPartial);
   }
 
-  /// Add a new StaticRoute instance via USP Add message
+  /// Add StaticRoute instance(s) via USP Add message
   static Future<Map<String, dynamic>> add(
-    UspClient client, {
-    bool? enable,
-    String? destIpAddress,
-    String? destSubnetMask,
-    String? gatewayIpAddress,
-    String? interface_,
-    String? alias,
-  }) async {
-    final params = <String, dynamic>{};
-    if (enable != null) params['Enable'] = enable;
-    if (destIpAddress != null) params['DestIPAddress'] = destIpAddress;
-    if (destSubnetMask != null) params['DestSubnetMask'] = destSubnetMask;
-    if (gatewayIpAddress != null) params['GatewayIPAddress'] = gatewayIpAddress;
-    if (interface_ != null) params['Interface'] = interface_;
-    if (alias != null) params['Alias'] = alias;
-    return await client.add('Device.Routing.Router.1.IPv4Forwarding.', params);
-  }
-
-  /// Add multiple StaticRoute instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> addMany(
-      UspClient client, List<Map<String, dynamic>> paramsList,
+      UspClient client, List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
-    if (paramsList.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.addMultiple(
-      paramsList
-          .map((p) =>
-              {'path': 'Device.Routing.Router.1.IPv4Forwarding.', 'params': p})
-          .toList(),
-      allowPartial: allowPartial,
-    );
+    final itemList = items
+        .map((item) =>
+            {'path': 'Device.Routing.Router.1.IPv4Forwarding.', 'params': item})
+        .toList();
+    return await client.add(itemList, allowPartial: allowPartial);
   }
 
-  /// Delete a StaticRoute instance via USP Delete message
+  /// Delete StaticRoute instance(s) via USP Delete message
   static Future<Map<String, dynamic>> delete(
-      UspClient client, String instancePath) async {
-    return await client.delete(instancePath);
-  }
-
-  /// Delete multiple StaticRoute instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> deleteMany(
-      UspClient client, List<String> instancePaths,
+      UspClient client, List<String> paths,
       {bool allowPartial = false}) async {
-    if (instancePaths.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.deleteMultiple(instancePaths,
-        allowPartial: allowPartial);
+    return await client.delete(paths, allowPartial: allowPartial);
   }
 }

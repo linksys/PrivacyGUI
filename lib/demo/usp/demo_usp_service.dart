@@ -79,9 +79,20 @@ class DemoUspClient extends UspClient {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<Map<String, dynamic>> set(Map<String, dynamic> parameters,
-      {bool allowPartial = false}) async {
+  Future<Map<String, dynamic>> set(Object pathOrParams,
+      {dynamic singleValue, bool allowPartial = false}) async {
     await Future.delayed(const Duration(milliseconds: 20));
+
+    // Normalize to Map
+    final Map<String, dynamic> parameters;
+    if (pathOrParams is String && singleValue != null) {
+      parameters = {pathOrParams: singleValue.toString()};
+    } else if (pathOrParams is Map) {
+      parameters = pathOrParams.cast<String, dynamic>();
+    } else {
+      throw ArgumentError(
+          'set() expects (String, value) or (Map<String, dynamic>)');
+    }
 
     final results = <Map<String, dynamic>>[];
     for (final entry in parameters.entries) {
@@ -113,51 +124,32 @@ class DemoUspClient extends UspClient {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<Map<String, dynamic>> add(
-      String objectPath, Map<String, dynamic> parameters) async {
-    await Future.delayed(const Duration(milliseconds: 20));
-    final nextId = _loader.nextInstanceId(objectPath);
-    final normalized = objectPath.endsWith('.') ? objectPath : '$objectPath.';
-    final instancePath = '$normalized$nextId.';
-
-    final initialParams = <String, String>{};
-    for (final entry in parameters.entries) {
-      _loader.setValue('$instancePath${entry.key}', entry.value.toString());
-      initialParams[entry.key] = entry.value.toString();
-    }
-
-    debugPrint('[DemoUsp] ADD $instancePath');
-    return {
-      'overallSuccess': true,
-      'hasAnySuccess': true,
-      'hasErrors': false,
-      'results': [
-        {
-          'requestedPath': objectPath,
-          'success': true,
-          'createdInstances': [
-            {'affectedPath': instancePath, 'initialParams': initialParams}
-          ]
-        }
-      ]
-    };
-  }
-
-  @override
-  Future<Map<String, dynamic>> addMultiple(List<Map<String, dynamic>> objects,
+  Future<Map<String, dynamic>> add(List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
+    await Future.delayed(const Duration(milliseconds: 20));
     final results = <Map<String, dynamic>>[];
 
-    for (final obj in objects) {
-      final path = obj['path'] as String? ?? '';
-      final params = obj['parameters'] as Map<String, dynamic>? ?? {};
+    for (final item in items) {
+      final objectPath = item['path'] as String? ?? '';
+      final parameters = item['params'] as Map<String, dynamic>? ?? {};
+      final nextId = _loader.nextInstanceId(objectPath);
+      final normalized = objectPath.endsWith('.') ? objectPath : '$objectPath.';
+      final instancePath = '$normalized$nextId.';
 
-      final result = await add(path, params);
-      // Extract the result details from the structured response
-      if (result['results'] != null && (result['results'] as List).isNotEmpty) {
-        results
-            .addAll((result['results'] as List).cast<Map<String, dynamic>>());
+      final initialParams = <String, String>{};
+      for (final entry in parameters.entries) {
+        _loader.setValue('$instancePath${entry.key}', entry.value.toString());
+        initialParams[entry.key] = entry.value.toString();
       }
+
+      debugPrint('[DemoUsp] ADD $instancePath');
+      results.add({
+        'requestedPath': objectPath,
+        'success': true,
+        'createdInstances': [
+          {'affectedPath': instancePath, 'initialParams': initialParams}
+        ]
+      });
     }
 
     return {
@@ -173,38 +165,20 @@ class DemoUspClient extends UspClient {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<Map<String, dynamic>> delete(String path) async {
-    await Future.delayed(const Duration(milliseconds: 20));
-    _loader.removeByPrefix(path);
-
-    return {
-      'overallSuccess': true,
-      'hasAnySuccess': true,
-      'hasErrors': false,
-      'results': [
-        {
-          'requestedPath': path,
-          'success': true,
-          'deletedInstances': [
-            {'affectedPath': path}
-          ]
-        }
-      ]
-    };
-  }
-
-  @override
-  Future<Map<String, dynamic>> deleteMultiple(List<String> paths,
+  Future<Map<String, dynamic>> delete(List<String> paths,
       {bool allowPartial = false}) async {
+    await Future.delayed(const Duration(milliseconds: 20));
     final results = <Map<String, dynamic>>[];
 
     for (final path in paths) {
-      final result = await delete(path);
-      // Extract the result details from the structured response
-      if (result['results'] != null && (result['results'] as List).isNotEmpty) {
-        results
-            .addAll((result['results'] as List).cast<Map<String, dynamic>>());
-      }
+      _loader.removeByPrefix(path);
+      results.add({
+        'requestedPath': path,
+        'success': true,
+        'deletedInstances': [
+          {'affectedPath': path}
+        ]
+      });
     }
 
     return {

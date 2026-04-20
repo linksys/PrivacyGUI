@@ -52,7 +52,7 @@ class TimeSettings {
   }
 
   /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> save(
+  static Future<Map<String, dynamic>> update(
     UspClient client, {
     bool? enable,
     String? ntpServer1,

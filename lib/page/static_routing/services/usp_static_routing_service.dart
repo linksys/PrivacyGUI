@@ -62,7 +62,7 @@ class UspStaticRoutingService {
         if (i > 0) {
           await Future.delayed(const Duration(milliseconds: 300));
         }
-        await StaticRouting.delete(_usp, toDelete[i].instancePath!);
+        await StaticRouting.delete(_usp, [toDelete[i].instancePath!]);
       }
 
       // 2. Add (instancePath == null → new)
@@ -75,12 +75,16 @@ class UspStaticRoutingService {
         final r = toAdd[i];
         await StaticRouting.add(
           _usp,
-          enable: r.enabled,
-          destIpAddress: r.destIpAddress,
-          destSubnetMask: r.destSubnetMask,
-          gatewayIpAddress: r.gatewayIpAddress,
-          interface_: mapDisplayToInterface(r.interfaceName),
-          alias: r.name,
+          [
+            {
+              'Enable': r.enabled,
+              'DestIPAddress': r.destIpAddress,
+              'DestSubnetMask': r.destSubnetMask,
+              'GatewayIPAddress': r.gatewayIpAddress,
+              'Interface': mapDisplayToInterface(r.interfaceName),
+              'Alias': r.name,
+            }
+          ],
         );
       }
 
@@ -109,7 +113,7 @@ class UspStaticRoutingService {
       }
 
       if (toUpdate.isNotEmpty) {
-        await StaticRouting.updateMany(_usp, toUpdate);
+        await StaticRouting.update(_usp, toUpdate);
       }
 
       return (

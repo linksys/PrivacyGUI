@@ -80,25 +80,8 @@ class VlanTermination {
     return VlanTermination(items: items);
   }
 
-  /// Update a single instance via USP Set message
+  /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
-      UspClient client, VlanTerminationInstanceUpdate update) async {
-    final params = <String, dynamic>{};
-    if (update.enable != null)
-      params['${update.instancePath}Enable'] = update.enable;
-    if (update.vlanId != null)
-      params['${update.instancePath}VLANID'] = update.vlanId;
-    if (params.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.set(params);
-  }
-
-  /// Update multiple instances in a single USP Set message
-  static Future<Map<String, dynamic>> updateMany(
       UspClient client, List<VlanTerminationInstanceUpdate> updates,
       {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
@@ -117,55 +100,21 @@ class VlanTermination {
     return await client.set(params, allowPartial: allowPartial);
   }
 
-  /// Add a new VlanTerminationInstance instance via USP Add message
+  /// Add VlanTerminationInstance instance(s) via USP Add message
   static Future<Map<String, dynamic>> add(
-    UspClient client, {
-    bool? enable,
-    int? vlanId,
-  }) async {
-    final params = <String, dynamic>{};
-    if (enable != null) params['Enable'] = enable;
-    if (vlanId != null) params['VLANID'] = vlanId;
-    return await client.add('Device.Ethernet.VLANTermination.', params);
-  }
-
-  /// Add multiple VlanTerminationInstance instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> addMany(
-      UspClient client, List<Map<String, dynamic>> paramsList,
+      UspClient client, List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
-    if (paramsList.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.addMultiple(
-      paramsList
-          .map((p) => {'path': 'Device.Ethernet.VLANTermination.', 'params': p})
-          .toList(),
-      allowPartial: allowPartial,
-    );
+    final itemList = items
+        .map((item) =>
+            {'path': 'Device.Ethernet.VLANTermination.', 'params': item})
+        .toList();
+    return await client.add(itemList, allowPartial: allowPartial);
   }
 
-  /// Delete a VlanTerminationInstance instance via USP Delete message
+  /// Delete VlanTerminationInstance instance(s) via USP Delete message
   static Future<Map<String, dynamic>> delete(
-      UspClient client, String instancePath) async {
-    return await client.delete(instancePath);
-  }
-
-  /// Delete multiple VlanTerminationInstance instances with partial success support
-  /// Returns detailed operation result Map
-  static Future<Map<String, dynamic>> deleteMany(
-      UspClient client, List<String> instancePaths,
+      UspClient client, List<String> paths,
       {bool allowPartial = false}) async {
-    if (instancePaths.isEmpty) {
-      return {
-        'success': true,
-        'result': {'data': <String, dynamic>{}}
-      };
-    }
-    return await client.deleteMultiple(instancePaths,
-        allowPartial: allowPartial);
+    return await client.delete(paths, allowPartial: allowPartial);
   }
 }

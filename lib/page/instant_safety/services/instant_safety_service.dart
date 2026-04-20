@@ -39,7 +39,7 @@ class UspInstantSafetyService {
   Future<void> save(SafeBrowsingType type) async {
     try {
       final dnsValue = dnsValueForType(type);
-      await LanNetworkInfo.save(_usp, dnsServers: dnsValue);
+      await LanNetworkInfo.update(_usp, dnsServers: dnsValue);
     } catch (e) {
       throw mapUspErrorToServiceError(e);
     }

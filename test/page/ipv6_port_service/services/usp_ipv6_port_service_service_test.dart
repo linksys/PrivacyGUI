@@ -301,11 +301,11 @@ void main() {
       );
 
       expect(result.deleted, 1);
-      verify(() => mockUsp.delete('path.1.')).called(1);
+      verify(() => mockUsp.delete(any())).called(1);
     });
 
     test('add creates items with null instancePath', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
             'hasErrors': false,
@@ -340,9 +340,9 @@ void main() {
       );
 
       expect(result.added, 1);
-      final captured =
-          verify(() => mockUsp.add(captureAny(), captureAny())).captured;
-      final params = captured[1] as Map<String, dynamic>;
+      final captured = verify(() => mockUsp.add(captureAny())).captured;
+      final items = captured[0] as List<Map<String, dynamic>>;
+      final params = items[0]['params'] as Map<String, dynamic>;
       expect(params['DestIP'], '2001:db8::2');
       expect(params['Protocol'], 6); // TCP → IANA 6
       expect(params['IPVersion'], 6);
@@ -396,7 +396,7 @@ void main() {
             'hasErrors': false,
             'results': []
           });
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
             'hasErrors': false,

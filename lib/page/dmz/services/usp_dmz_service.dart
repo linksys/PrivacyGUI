@@ -49,10 +49,14 @@ class UspDmzService {
           : model.sourcePrefix;
       await Dmz.add(
         _usp,
-        enable: true,
-        destIp: model.destIp,
-        sourcePrefix: sourcePrefix,
-        description: 'DMZ',
+        [
+          {
+            'Enable': true,
+            'DestIP': model.destIp,
+            'SourcePrefix': sourcePrefix,
+            'Description': 'DMZ',
+          }
+        ],
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);
@@ -70,12 +74,14 @@ class UspDmzService {
           : model.sourcePrefix;
       await Dmz.update(
         _usp,
-        DmzEntryUpdate(
-          instancePath: instancePath,
-          enable: model.isEnabled,
-          destIp: model.destIp,
-          sourcePrefix: sourcePrefix,
-        ),
+        [
+          DmzEntryUpdate(
+            instancePath: instancePath,
+            enable: model.isEnabled,
+            destIp: model.destIp,
+            sourcePrefix: sourcePrefix,
+          )
+        ],
       );
     } catch (e) {
       throw mapUspErrorToServiceError(e);

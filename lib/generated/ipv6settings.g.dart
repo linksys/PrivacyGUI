@@ -68,7 +68,7 @@ class Ipv6Settings {
   }
 
   /// Update writable parameters via USP Set message
-  static Future<Map<String, dynamic>> save(
+  static Future<Map<String, dynamic>> update(
     UspClient client, {
     bool? ipv6Enabled,
     bool? dhcpv6Enabled,

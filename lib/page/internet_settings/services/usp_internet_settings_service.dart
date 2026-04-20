@@ -186,7 +186,7 @@ class UspInternetSettingsService {
     if (!wasPppoe && isPppoe && currentInstancePath == null) {
       // Switching TO PPPoE and no instance exists — Add
       logger.d('[USP][WAN] Adding PPP.Interface instance for PPPoE');
-      final result = await PppInterface.add(_usp);
+      final result = await PppInterface.add(_usp, [{}]);
       // Extract instance path from structured response
       final parsedResult = UspResultParser.parseAddResult(result);
       if (parsedResult is UspSuccess<List<String>>) {
@@ -200,7 +200,7 @@ class UspInternetSettingsService {
       // Switching AWAY from PPPoE — Delete
       logger
           .d('[USP][WAN] Deleting PPP.Interface instance $currentInstancePath');
-      await PppInterface.delete(_usp, currentInstancePath);
+      await PppInterface.delete(_usp, [currentInstancePath]);
       return null;
     }
 
@@ -225,7 +225,7 @@ class UspInternetSettingsService {
     if (!wasEnabled && isEnabled && currentInstancePath == null) {
       // Enabling VLAN and no instance exists — Add
       logger.d('[USP][WAN] Adding VLANTermination instance');
-      final result = await VlanTermination.add(_usp);
+      final result = await VlanTermination.add(_usp, [{}]);
       // Extract instance path from structured response
       final parsedResult = UspResultParser.parseAddResult(result);
       if (parsedResult is UspSuccess<List<String>>) {
@@ -239,7 +239,7 @@ class UspInternetSettingsService {
       // Disabling VLAN — Delete
       logger.d(
           '[USP][WAN] Deleting VLANTermination instance $currentInstancePath');
-      await VlanTermination.delete(_usp, currentInstancePath);
+      await VlanTermination.delete(_usp, [currentInstancePath]);
       return null;
     }
 
@@ -264,7 +264,7 @@ class UspInternetSettingsService {
         _mergeDns(edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
 
     // Save IP interface params (Device.IP.Interface.2.*)
-    await WanSettings.save(
+    await WanSettings.update(
       _usp,
       addressingType:
           typeChanged ? edited.connectionType.addressingTypeValue : null,
@@ -279,7 +279,7 @@ class UspInternetSettingsService {
     // by a different USP Service and cannot be combined with
     // Device.IP.Interface.2.* in a single Set (error 7005).
     if (typeChanged) {
-      await WanSettings.save(
+      await WanSettings.update(
         _usp,
         bridgeEnabled: edited.connectionType == UspWanConnectionType.bridge,
       );
@@ -297,17 +297,19 @@ class UspInternetSettingsService {
   ) async {
     await PppInterface.update(
       _usp,
-      PppInterfaceInstanceUpdate(
-        instancePath: instancePath,
-        username: _diff(original.pppUsername, edited.pppUsername),
-        password: _diff(original.pppPassword, edited.pppPassword),
-        pppoeServiceName:
-            _diff(original.pppoeServiceName, edited.pppoeServiceName),
-        connectionTrigger:
-            _diff(original.connectionTrigger, edited.connectionTrigger),
-        idleDisconnectTime:
-            _diff(original.idleDisconnectTime, edited.idleDisconnectTime),
-      ),
+      [
+        PppInterfaceInstanceUpdate(
+          instancePath: instancePath,
+          username: _diff(original.pppUsername, edited.pppUsername),
+          password: _diff(original.pppPassword, edited.pppPassword),
+          pppoeServiceName:
+              _diff(original.pppoeServiceName, edited.pppoeServiceName),
+          connectionTrigger:
+              _diff(original.connectionTrigger, edited.connectionTrigger),
+          idleDisconnectTime:
+              _diff(original.idleDisconnectTime, edited.idleDisconnectTime),
+        )
+      ],
     );
   }
 
@@ -322,11 +324,13 @@ class UspInternetSettingsService {
   ) async {
     await VlanTermination.update(
       _usp,
-      VlanTerminationInstanceUpdate(
-        instancePath: instancePath,
-        enable: _diff(original.vlanEnabled, edited.vlanEnabled),
-        vlanId: _diff(original.vlanId, edited.vlanId),
-      ),
+      [
+        VlanTerminationInstanceUpdate(
+          instancePath: instancePath,
+          enable: _diff(original.vlanEnabled, edited.vlanEnabled),
+          vlanId: _diff(original.vlanId, edited.vlanId),
+        )
+      ],
     );
   }
 
@@ -338,7 +342,7 @@ class UspInternetSettingsService {
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
   ) async {
-    await Ipv6Settings.save(
+    await Ipv6Settings.update(
       _usp,
       ipv6Enabled: _diff(original.ipv6Enabled, edited.ipv6Enabled),
       dhcpv6Enabled: _diff(original.dhcpv6Enabled, edited.dhcpv6Enabled),

@@ -98,7 +98,7 @@ void main() {
       expect(result.updated, 0);
       expect(result.deleted, 0);
       verifyNever(() => mockUsp.delete(any()));
-      verifyNever(() => mockUsp.add(any(), any()));
+      verifyNever(() => mockUsp.add(any()));
       verifyNever(() => mockUsp.set(any()));
     });
 
@@ -126,7 +126,7 @@ void main() {
 
       expect(result.deleted, 1);
       verify(() => mockUsp.delete(
-            'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+            ['Device.DHCPv4.Server.Pool.1.StaticAddress.1.'],
           )).called(1);
     });
 
@@ -159,12 +159,12 @@ void main() {
       );
 
       expect(result.deleted, 2);
-      verify(() => mockUsp.delete('path.1.')).called(1);
-      verify(() => mockUsp.delete('path.2.')).called(1);
+      verify(() => mockUsp.delete(['path.1.'])).called(1);
+      verify(() => mockUsp.delete(['path.2.'])).called(1);
     });
 
     test('add creates items with null instancePath', () async {
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
             'hasErrors': false,
@@ -197,9 +197,10 @@ void main() {
       );
 
       expect(result.added, 1);
-      final captured =
-          verify(() => mockUsp.add(captureAny(), captureAny())).captured;
-      final params = captured[1] as Map<String, dynamic>;
+      final captured = verify(() => mockUsp.add(captureAny())).captured;
+      final items = captured[0] as List<Map<String, dynamic>>;
+      expect(items, hasLength(1));
+      final params = items[0]['params'] as Map<String, dynamic>;
       expect(params['Chaddr'], '11:22:33:44:55:66');
       expect(params['Yiaddr'], '192.168.1.200');
     });
@@ -244,7 +245,7 @@ void main() {
             'hasErrors': false,
             'results': []
           });
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async => {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
             'hasErrors': false,
@@ -311,7 +312,7 @@ void main() {
 
     test('multiple adds use sequential delay', () async {
       final addTimes = <DateTime>[];
-      when(() => mockUsp.add(any(), any())).thenAnswer((_) async {
+      when(() => mockUsp.add(any())).thenAnswer((_) async {
         addTimes.add(DateTime.now());
         return {
           'overallSuccess': true,

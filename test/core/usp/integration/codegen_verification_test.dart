@@ -43,7 +43,7 @@ void main() {
         Function addMethodRef = PortForwarding.add;
         Function deleteMethodRef = PortForwarding.delete;
         Function updateMethodRef = WiFiSsids.update;
-        Function updateManyMethodRef = PortForwarding.updateMany;
+        Function portUpdateMethodRef = PortForwarding.update;
 
         expect(addMethodRef, isNotNull,
             reason: 'PortForwarding.add method should exist');
@@ -51,8 +51,8 @@ void main() {
             reason: 'PortForwarding.delete method should exist');
         expect(updateMethodRef, isNotNull,
             reason: 'WiFiSsids.update method should exist');
-        expect(updateManyMethodRef, isNotNull,
-            reason: 'PortForwarding.updateMany method should exist');
+        expect(portUpdateMethodRef, isNotNull,
+            reason: 'PortForwarding.update method should exist');
       });
 
       test('Generated methods should accept correct parameter types', () {
