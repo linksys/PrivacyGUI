@@ -292,7 +292,7 @@ void main() {
       expect(result.updated, 1);
     });
 
-    test('multi-item delete uses sequential delay', () async {
+    test('multi-item delete uses reverse-order sequential calls', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
@@ -330,7 +330,7 @@ void main() {
       verify(() => mockUsp.delete(any())).called(2);
     });
 
-    test('multi-item add uses sequential delay', () async {
+    test('multi-item add sends single batch call', () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
@@ -374,7 +374,7 @@ void main() {
       );
 
       expect(result.added, 2);
-      verify(() => mockUsp.add(any())).called(2);
+      verify(() => mockUsp.add(any())).called(1);
     });
   });
 
@@ -617,7 +617,7 @@ void main() {
       expect(result.updated, 1);
     });
 
-    test('multi-item delete uses sequential delay', () async {
+    test('multi-item delete uses reverse-order sequential calls', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,

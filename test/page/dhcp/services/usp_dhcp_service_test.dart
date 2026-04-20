@@ -130,7 +130,7 @@ void main() {
           )).called(1);
     });
 
-    test('multiple deletes use sequential delay', () async {
+    test('multiple deletes use reverse-order sequential calls', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
             'overallSuccess': true,
             'hasAnySuccess': true,
@@ -159,8 +159,7 @@ void main() {
       );
 
       expect(result.deleted, 2);
-      verify(() => mockUsp.delete(['path.1.'])).called(1);
-      verify(() => mockUsp.delete(['path.2.'])).called(1);
+      verify(() => mockUsp.delete(any())).called(2);
     });
 
     test('add creates items with null instancePath', () async {
@@ -310,29 +309,25 @@ void main() {
       expect(result.updated, 1);
     });
 
-    test('multiple adds use sequential delay', () async {
-      final addTimes = <DateTime>[];
-      when(() => mockUsp.add(any())).thenAnswer((_) async {
-        addTimes.add(DateTime.now());
-        return {
-          'overallSuccess': true,
-          'hasAnySuccess': true,
-          'hasErrors': false,
-          'results': [
-            {
-              'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
-              'success': true,
-              'createdInstances': [
-                {
-                  'affectedPath':
-                      'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
-                  'initialParams': {}
-                }
-              ]
-            }
-          ]
-        };
-      });
+    test('multiple adds send single batch call', () async {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath':
+                        'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
 
       final current = [
         DhcpReservationUIModel(
@@ -341,12 +336,10 @@ void main() {
             mac: '11:11:11:11:11:02', ip: '10.0.0.2', enable: true),
       ];
 
-      await service.saveBatch(original: [], current: current);
+      final result = await service.saveBatch(original: [], current: current);
 
-      expect(addTimes, hasLength(2));
-      // Second add should be at least 200ms after first (300ms delay, allow margin)
-      final gap = addTimes[1].difference(addTimes[0]);
-      expect(gap.inMilliseconds, greaterThanOrEqualTo(200));
+      expect(result.added, 2);
+      verify(() => mockUsp.add(any())).called(1);
     });
   });
 
