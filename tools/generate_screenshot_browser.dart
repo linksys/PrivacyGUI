@@ -3,7 +3,7 @@ import 'dart:io';
 
 /// Generates an interactive HTML browser for screenshot test outputs.
 ///
-/// Usage: dart run tool/generate_screenshot_browser.dart [options]
+/// Usage: dart run tools/generate_screenshot_browser.dart [options]
 ///
 /// Options:
 ///   --output, -o     Output HTML path (default: snapshots/screenshot_browser.html)
@@ -13,9 +13,9 @@ import 'dart:io';
 ///   --thumbnails     Generate thumbnails (requires ImageMagick)
 ///
 /// Examples:
-///   dart run tool/generate_screenshot_browser.dart
-///   dart run tool/generate_screenshot_browser.dart -l en,ja,zh-TW -d Device480w,Device1280w
-///   dart run tool/generate_screenshot_browser.dart --page-size 30
+///   dart run tools/generate_screenshot_browser.dart
+///   dart run tools/generate_screenshot_browser.dart -l en,ja,zh-TW -d Device480w,Device1280w
+///   dart run tools/generate_screenshot_browser.dart --page-size 30
 void main(List<String> args) async {
   final config = parseArgs(args);
 
