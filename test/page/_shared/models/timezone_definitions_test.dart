@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
-import 'package:privacy_gui/page/_shared/models/timezone_info.dart';
 
 void main() {
   group('kTimeZoneDefinitions', () {
