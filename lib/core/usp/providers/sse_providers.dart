@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_manager.dart';
 import 'package:privacy_gui/core/usp/services/sse_operation_awaiter.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
+import 'package:privacy_gui/providers/auth/auth_provider.dart';
 
 /// Provides [UspBridgeClient] instance — depends on [UspClient].
 final uspBridgeClientProvider = Provider<UspBridgeClient?>((ref) {
@@ -27,7 +29,29 @@ final sseManagerProvider = Provider<SseManager?>((ref) {
   if (usp == null || bridge == null) return null;
 
   final manager = SseManager(usp: usp, bridge: bridge);
-  ref.onDispose(() => manager.dispose());
+
+  // Wire proactive token refresh on SSE heartbeat
+  final authCoordinator = ref.read(uspAuthCoordinatorProvider);
+  manager.onHeartbeatAuth = () => authCoordinator.ensureAuth();
+
+  // Wire force logout — shared guard prevents duplicate triggers
+  bool logoutTriggered = false;
+  void forceLogout() {
+    if (logoutTriggered) return;
+    logoutTriggered = true;
+    logger.w('[USP][Auth]Force logout triggered — navigating to login');
+    ref.read(authProvider.notifier).logout();
+  }
+
+  authCoordinator.onForceLogout = forceLogout;
+  usp.onForceLogout = forceLogout;
+
+  ref.onDispose(() {
+    authCoordinator.onForceLogout = null;
+    usp.onForceLogout = null;
+    manager.dispose();
+  });
+
   return manager;
 });
 
