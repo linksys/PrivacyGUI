@@ -18,6 +18,10 @@ export 'package:privacy_gui/core/usp/models/sse_notification.dart';
 /// Events that are not `notification` type (heartbeat, connected, turbo_channel)
 /// are silently ignored — they are handled by [SseConnectionManager].
 class SseEventRouter {
+  /// Called on every SSE heartbeat event. Set by [SseManager] to trigger
+  /// proactive token refresh via [UspAuthCoordinator.ensureAuth].
+  VoidCallback? onHeartbeat;
+
   /// subscription_id → list of handlers
   final Map<String, List<SseNotificationHandler>> _handlers = {};
 
@@ -57,8 +61,9 @@ class SseEventRouter {
         _routeNotification(event);
         break;
       case 'heartbeat':
+        onHeartbeat?.call();
+        break;
       case 'connected':
-        // Handled by SseConnectionManager. No routing needed.
         break;
       case 'turbo_channel':
         // Future: route to turbo channel coordinator
@@ -127,6 +132,7 @@ class SseEventRouter {
 
   /// Removes all handlers.
   void dispose() {
+    onHeartbeat = null;
     _handlers.clear();
     _wildcardHandlers.clear();
   }
