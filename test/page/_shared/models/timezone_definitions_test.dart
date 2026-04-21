@@ -58,6 +58,15 @@ void main() {
       expect(result!.utcOffsetMinutes, -480);
     });
 
+    test('posixNoDST match prefers non-DST entry over DST entry', () {
+      // UTC5 is shared by EST5 (DST) and EST5-NO-DST (no DST).
+      // A bare "UTC5" string has no DST rules, so should match non-DST.
+      final result = matchTimezone('UTC5');
+      expect(result, isNotNull);
+      expect(result!.observesDST, isFalse);
+      expect(result.timeZoneID, 'EST5-NO-DST');
+    });
+
     test('matches by posixWithDST', () {
       final result = matchTimezone('PST8PDT,M3.2.0/02:00,M11.1.0/02:00');
       expect(result, isNotNull);

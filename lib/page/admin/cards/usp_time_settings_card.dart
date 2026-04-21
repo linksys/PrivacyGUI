@@ -85,16 +85,10 @@ class UspTimeSettingsCard extends ConsumerWidget {
       context,
       ref,
       loadingKey: 'time',
-      mutation: () async {
-        await ref.read(uspAdminProvider.notifier).updateTimezone(
-              localTimeZone: result.localTimeZone,
-            );
-        if (result.ntpServer1 != null) {
-          await ref
-              .read(uspAdminProvider.notifier)
-              .updateTimeSettings(ntpServer1: result.ntpServer1);
-        }
-      },
+      mutation: () => ref.read(uspAdminProvider.notifier).updateTimezone(
+            localTimeZone: result.localTimeZone,
+            ntpServer1: result.ntpServer1,
+          ),
       successMessage: 'Time settings saved',
     );
   }

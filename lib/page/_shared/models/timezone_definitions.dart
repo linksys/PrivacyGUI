@@ -371,9 +371,18 @@ TimeZoneInfo? matchTimezone(String posixFromRouter) {
   for (final tz in kTimeZoneDefinitions) {
     if (tz.timeZoneID == posixFromRouter) return tz;
   }
+  // posixNoDST match: prefer non-DST entry when multiple zones share the
+  // same posixNoDST value (e.g. UTC5 → Indiana non-DST, not EST DST).
+  // A bare "UTC5" string has no DST transition rules, so it should map to
+  // the non-DST variant.
+  TimeZoneInfo? posixNoDstMatch;
   for (final tz in kTimeZoneDefinitions) {
-    if (tz.posixNoDST == posixFromRouter) return tz;
+    if (tz.posixNoDST == posixFromRouter) {
+      if (!tz.observesDST) return tz;
+      posixNoDstMatch ??= tz;
+    }
   }
+  if (posixNoDstMatch != null) return posixNoDstMatch;
   for (final tz in kTimeZoneDefinitions) {
     if (tz.posixWithDST == posixFromRouter) return tz;
   }
