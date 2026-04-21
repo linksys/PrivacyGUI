@@ -162,7 +162,7 @@ abstract class UspWidgetSpecs {
         minColumns: 3,
         maxColumns: 8,
         preferredColumns: 6,
-        heightStrategy: HeightStrategy.strict(3),
+        heightStrategy: HeightStrategy.strict(2),
         minHeightRows: 2,
         maxHeightRows: 5,
       ),
