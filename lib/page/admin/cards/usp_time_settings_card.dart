@@ -16,7 +16,7 @@ class UspTimeSettingsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final timeData = ref.watch(timeDataProvider).valueOrNull;
-    if (timeData == null) return const CardSkeleton.info(rows: 3);
+    if (timeData == null) return const CardSkeleton.info(rows: 2);
     final time = timeData.model;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'time';
 
@@ -69,10 +69,6 @@ class UspTimeSettingsCard extends ConsumerWidget {
               label: 'Daylight Savings Time',
               value: inferDstEnabled(time.localTimeZone) ? 'On' : 'Off',
             ),
-          UspInfoRow(
-            label: 'NTP Server',
-            value: time.ntpServer1.isNotEmpty ? time.ntpServer1 : '—',
-          ),
         ],
       ),
     );
