@@ -110,7 +110,8 @@ const List<TimeZoneInfo> kTimeZoneDefinitions = [
     timeZoneID: 'AST4',
     utcOffsetMinutes: -240,
     observesDST: true,
-    description: '(GMT-04:00) Atlantic Time (Canada, Greenland, Atlantic Islands)',
+    description:
+        '(GMT-04:00) Atlantic Time (Canada, Greenland, Atlantic Islands)',
     posixNoDST: 'UTC4',
     posixWithDST: 'AST4ADT,M3.2.0/02:00,M11.1.0/02:00',
   ),

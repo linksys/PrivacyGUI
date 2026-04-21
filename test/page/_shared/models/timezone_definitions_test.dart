@@ -83,8 +83,7 @@ void main() {
 
   group('inferDstEnabled', () {
     test('returns true when posixWithDST matches', () {
-      final result =
-          inferDstEnabled('PST8PDT,M3.2.0/02:00,M11.1.0/02:00');
+      final result = inferDstEnabled('PST8PDT,M3.2.0/02:00,M11.1.0/02:00');
       expect(result, isTrue);
     });
 
