@@ -45,6 +45,10 @@ class SseManager {
       [];
   bool _coreSubsDeferred = false;
 
+  /// Delegate for proactive auth check on heartbeat. Set by provider layer
+  /// to wire [UspAuthCoordinator.ensureAuth].
+  Future<void> Function()? onHeartbeatAuth;
+
   SseManager({
     required UspClient usp,
     required UspBridgeClient bridge,
@@ -55,6 +59,16 @@ class SseManager {
         router = SseEventRouter() {
     // Wire connection events to router
     connection.onEvent = router.routeEvent;
+
+    // Wire heartbeat → proactive auth check (fire-and-forget)
+    router.onHeartbeat = () {
+      final authCheck = onHeartbeatAuth;
+      if (authCheck != null) {
+        authCheck().catchError((e) {
+          logger.w('[USP][SSE]Heartbeat auth check error: $e');
+        });
+      }
+    };
 
     // On connect (first or reconnect): register/re-register subscriptions.
     // First connect: registers core subscriptions set via setCoreSubscriptions().
@@ -254,6 +268,8 @@ class SseManager {
     _unloadHandler.unregister();
     _usp.onSseSubscribe = null;
     _usp.onTokenRefreshed = null;
+    router.onHeartbeat = null;
+    onHeartbeatAuth = null;
     // Synchronous abort first — critical for hot restart where async may not complete.
     _bridge.abortSse();
     await connection.disconnect();

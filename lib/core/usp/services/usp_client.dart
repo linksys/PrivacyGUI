@@ -86,14 +86,27 @@ class UspClient {
 
   String? get sessionToken => _client.sessionToken;
 
+  /// Whether a [reauth] call is currently in progress.
+  /// Used by [UspAuthCoordinator.ensureAuth] to avoid overlapping refresh.
+  bool get isReauthInProgress => _reauthInProgress != null;
+
   /// Callback for full re-authentication when token refresh fails.
   /// Set by [UspAuthCoordinator] to provide re-login via stored password.
   Future<void> Function()? onReauthRequired;
 
-  /// Called after [reauth] completes successfully (either refreshToken or
-  /// full re-login). Set by [SseManager] to force SSE reconnect with the
-  /// new token, preventing silent subscription routing failures.
+  /// Called after [reauth] Stage 2 (full re-login) succeeds.
+  /// Set by [SseManager] to force SSE reconnect with the new session token.
+  /// NOT called after Stage 1 (refreshToken) — same session, no SSE reconnect needed.
   VoidCallback? onTokenRefreshed;
+
+  /// Called after [reauth] Stage 1 (refreshToken) succeeds.
+  /// Set by [UspAuthCoordinator] to update [_lastTokenRefresh] timestamp.
+  /// NOT related to SSE reconnect — see [onTokenRefreshed] for that.
+  VoidCallback? onRefreshTokenSuccess;
+
+  /// Called when all reauth stages fail — session is unrecoverable.
+  /// Set by provider layer to trigger navigation to login screen.
+  VoidCallback? onForceLogout;
 
   /// SSE subscription delegate. Set by [SseManager] to route subscriptions
   /// through SSE instead of polling. When null, falls back to polling.
@@ -144,6 +157,11 @@ class UspClient {
       try {
         await refreshToken();
         logger.d('[USP][Service]Token refreshed successfully');
+        try {
+          onRefreshTokenSuccess?.call();
+        } catch (cbError) {
+          logger.w('[USP][Service]onRefreshTokenSuccess callback error: $cbError');
+        }
         _reauthInProgress!.complete();
         return;
       } catch (e) {
@@ -160,6 +178,16 @@ class UspClient {
     } catch (e) {
       if (!_reauthInProgress!.isCompleted) {
         _reauthInProgress!.completeError(e);
+      }
+      // The original trigger was a confirmed 401 (token expired/revoked).
+      // Both Stage 1 (refreshToken) and Stage 2 (restoreSession) failed,
+      // so the session is unrecoverable regardless of Stage 2 failure reason
+      // (auth error, network error, or no stored password).
+      logger.w('[USP][Service]All reauth stages failed — forcing logout');
+      try {
+        onForceLogout?.call();
+      } catch (cbError) {
+        logger.w('[USP][Service]onForceLogout callback error: $cbError');
       }
       rethrow;
     } finally {
