@@ -34,17 +34,32 @@ class UspTimezoneCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 AppText.titleMedium('Timezone'),
-                Semantics(
-                  label: 'Edit timezone settings',
-                  button: true,
-                  child: AppIconButton(
-                    icon: AppIcon.font(Icons.chevron_right),
-                    onTap: onEdit,
-                  ),
+                Row(
+                  children: [
+                    AppBadge(
+                      label: timeSettings.status,
+                      color: timeSettings.isSynchronized
+                          ? Theme.of(context)
+                              .extension<AppColorScheme>()
+                              ?.semanticSuccess
+                          : Theme.of(context)
+                              .extension<AppColorScheme>()
+                              ?.semanticWarning,
+                    ),
+                    AppGap.sm(),
+                    Semantics(
+                      label: 'Edit timezone settings',
+                      button: true,
+                      child: AppIconButton(
+                        icon: AppIcon.font(Icons.edit, size: 18),
+                        onTap: onEdit,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            AppGap.md(),
+            AppGap.xl(),
             UspInfoRow(
               label: 'Timezone',
               value: tzDisplay,
@@ -59,10 +74,6 @@ class UspTimezoneCard extends StatelessWidget {
               value: timeSettings.ntpServer1.isNotEmpty
                   ? timeSettings.ntpServer1
                   : '—',
-            ),
-            UspInfoRow(
-              label: 'Status',
-              value: timeSettings.status,
             ),
           ],
         ),
