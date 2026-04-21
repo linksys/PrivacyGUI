@@ -152,8 +152,7 @@ void main() {
 
     test('concurrent ensureAuth calls do not stack', () async {
       final completer = Completer<void>();
-      when(() => mockUsp.refreshToken())
-          .thenAnswer((_) => completer.future);
+      when(() => mockUsp.refreshToken()).thenAnswer((_) => completer.future);
 
       // Launch two concurrent calls
       final f1 = coordinator.ensureAuth();
