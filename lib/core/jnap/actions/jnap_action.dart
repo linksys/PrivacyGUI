@@ -226,6 +226,7 @@ enum JNAPAction {
   //ui
   getRemoteSetting,
   setRemoteSetting,
+  getUILog,
   //channelFinder
   getSelectedChannels,
   startAutoChannelSelection,

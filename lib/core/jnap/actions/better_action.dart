@@ -708,6 +708,8 @@ void initBetterActions() {
       _JNAPActionValue.getRemoteSetting.value;
   _betterActionMap[JNAPAction.setRemoteSetting] =
       _JNAPActionValue.setRemoteSetting.value;
+  _betterActionMap[JNAPAction.getUILog] =
+      _JNAPActionValue.getUILog.value;
   _betterActionMap[JNAPAction.getGamingPrioritizationSettings] =
       _JNAPActionValue.getGamingPrioritizationSettings.value;
   _betterActionMap[JNAPAction.setGamingPrioritizationSettings] =

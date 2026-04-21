@@ -9,13 +9,17 @@ import 'package:privacy_gui/core/jnap/router_repository.dart';
 import 'package:privacy_gui/localization/localization_hook.dart';
 import 'package:privacy_gui/page/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/components/shortcuts/snack_bar.dart';
+import 'package:privacy_gui/util/get_log_selector/get_log_base.dart'
+    if (dart.library.io) 'package:privacy_gui/util/get_log_selector/get_log_mobile.dart'
+    if (dart.library.html) 'package:privacy_gui/util/get_log_selector/get_log_web.dart';
 import 'package:privacygui_widgets/widgets/_widgets.dart';
 
 class SysinfoEmailService {
   static Future<void> sendSystemInfo({
     required WidgetRef ref,
     required String userEmailList,
-  }) {
+    required BuildContext context,
+  }) async {
     List<String> emailList = [kDebugMode ? '' : 'routerinfo@linksys.com'];
 
     userEmailList = userEmailList.replaceAll(RegExp(r' '), '');
@@ -26,7 +30,34 @@ class SysinfoEmailService {
     }
     emailList.removeWhere((value) => value.isEmpty);
 
-    return ref.read(routerRepositoryProvider).send(
+    // Step 1: Collect UI logs
+    try {
+      final logContent = await getLog(context);
+
+      // Step 2: Send UI logs to FW (ignore result)
+      try {
+        await ref.read(routerRepositoryProvider).send(
+          JNAPAction.getUILog,
+          auth: true,
+          data: {'log': logContent},
+          cacheLevel: CacheLevel.noCache,
+          timeoutMs: 30000,
+        );
+      } catch (error) {
+        // Ignore GetUILog errors - continue with SendSysinfoEmail
+        if (kDebugMode) {
+          print('GetUILog failed: $error');
+        }
+      }
+    } catch (error) {
+      // Ignore log collection errors - continue with SendSysinfoEmail
+      if (kDebugMode) {
+        print('Log collection failed: $error');
+      }
+    }
+
+    // Step 3: Send system info email (always execute)
+    await ref.read(routerRepositoryProvider).send(
           JNAPAction.sendSysinfoEmail,
           auth: true,
           data: SendSysinfoEmail(addressList: emailList).toJson(),
@@ -100,6 +131,7 @@ class SysinfoEmailService {
                 sendSystemInfo(
                   ref: ref,
                   userEmailList: emailController.text,
+                  context: pageContext,
                 ),
               ).then((_) {
                 if (pageContext.mounted) {

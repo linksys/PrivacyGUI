@@ -404,6 +404,7 @@ enum _JNAPActionValue {
   //ui
   getRemoteSetting(value: 'http://linksys.com/jnap/ui/GetRemoteSetting'),
   setRemoteSetting(value: 'http://linksys.com/jnap/ui/SetRemoteSetting'),
+  getUILog(value: 'http://linksys.com/jnap/ui/GetUILog'),
   getAutoConfigurationSettings(
       value:
           'http://linksys.com/jnap/nodes/setup/GetAutoConfigurationSettings'),
