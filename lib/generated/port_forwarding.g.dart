@@ -102,6 +102,23 @@ class PortForwarding {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}ExternalPort'))
+        missing.add('${p}ExternalPort');
+      if (!response.containsKey('${p}ExternalPortEndRange'))
+        missing.add('${p}ExternalPortEndRange');
+      if (!response.containsKey('${p}InternalPort'))
+        missing.add('${p}InternalPort');
+      if (!response.containsKey('${p}InternalClient'))
+        missing.add('${p}InternalClient');
+      if (!response.containsKey('${p}Protocol')) missing.add('${p}Protocol');
+      if (!response.containsKey('${p}Description'))
+        missing.add('${p}Description');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(PortForwardingRule(
         instancePath: p,
         enabled: response['${p}Enable'] == true ||

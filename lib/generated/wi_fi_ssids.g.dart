@@ -84,6 +84,17 @@ class WiFiSsids {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}SSID')) missing.add('${p}SSID');
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}Status')) missing.add('${p}Status');
+      if (!response.containsKey('${p}BSSID')) missing.add('${p}BSSID');
+      if (!response.containsKey('${p}LowerLayers'))
+        missing.add('${p}LowerLayers');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(WiFiSsid(
         instancePath: p,
         ssid: (response['${p}SSID'] ?? '') as String,
