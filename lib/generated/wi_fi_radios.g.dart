@@ -124,6 +124,34 @@ class WiFiRadios {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}Status')) missing.add('${p}Status');
+      if (!response.containsKey('${p}Channel')) missing.add('${p}Channel');
+      if (!response.containsKey('${p}OperatingFrequencyBand'))
+        missing.add('${p}OperatingFrequencyBand');
+      if (!response.containsKey('${p}OperatingChannelBandwidth'))
+        missing.add('${p}OperatingChannelBandwidth');
+      if (!response.containsKey('${p}PossibleChannels'))
+        missing.add('${p}PossibleChannels');
+      if (!response.containsKey('${p}OperatingStandards'))
+        missing.add('${p}OperatingStandards');
+      if (!response.containsKey('${p}SupportedStandards'))
+        missing.add('${p}SupportedStandards');
+      if (!response.containsKey('${p}TransmitPower'))
+        missing.add('${p}TransmitPower');
+      if (!response.containsKey('${p}MaxBitRate'))
+        missing.add('${p}MaxBitRate');
+      if (!response.containsKey('${p}AutoChannelEnable'))
+        missing.add('${p}AutoChannelEnable');
+      if (!response.containsKey('${p}IEEE80211hEnabled'))
+        missing.add('${p}IEEE80211hEnabled');
+      if (!response.containsKey('${p}SupportedOperatingChannelBandwidths'))
+        missing.add('${p}SupportedOperatingChannelBandwidths');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(WiFiRadio(
         instancePath: p,
         enable: response['${p}Enable'] == true ||

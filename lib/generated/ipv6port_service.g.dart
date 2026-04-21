@@ -112,6 +112,23 @@ class Ipv6PortService {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}Description'))
+        missing.add('${p}Description');
+      if (!response.containsKey('${p}IPVersion')) missing.add('${p}IPVersion');
+      if (!response.containsKey('${p}DestIP')) missing.add('${p}DestIP');
+      if (!response.containsKey('${p}DestPort')) missing.add('${p}DestPort');
+      if (!response.containsKey('${p}DestPortRangeMax'))
+        missing.add('${p}DestPortRangeMax');
+      if (!response.containsKey('${p}Protocol')) missing.add('${p}Protocol');
+      if (!response.containsKey('${p}Target')) missing.add('${p}Target');
+      if (!response.containsKey('${p}CreationDate'))
+        missing.add('${p}CreationDate');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(Ipv6PortServiceRule(
         instancePath: p,
         enable: response['${p}Enable'] == true ||

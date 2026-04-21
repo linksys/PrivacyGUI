@@ -47,6 +47,29 @@ class LanNetworkInfo {
   }
 
   factory LanNetworkInfo._fromResponse(Map<String, dynamic> response) {
+    final missing = <String>[];
+    if (!response.containsKey('Device.IP.Interface.1.IPv4Address.1.IPAddress'))
+      missing.add('Device.IP.Interface.1.IPv4Address.1.IPAddress');
+    if (!response.containsKey('Device.IP.Interface.1.IPv4Address.1.SubnetMask'))
+      missing.add('Device.IP.Interface.1.IPv4Address.1.SubnetMask');
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.Enable'))
+      missing.add('Device.DHCPv4.Server.Pool.1.Enable');
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.MinAddress'))
+      missing.add('Device.DHCPv4.Server.Pool.1.MinAddress');
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.MaxAddress'))
+      missing.add('Device.DHCPv4.Server.Pool.1.MaxAddress');
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.LeaseTime'))
+      missing.add('Device.DHCPv4.Server.Pool.1.LeaseTime');
+    if (!response.containsKey('Device.DHCPv4.Server.Pool.1.DNSServers'))
+      missing.add('Device.DHCPv4.Server.Pool.1.DNSServers');
+    if (!response.containsKey('Device.DeviceInfo.HostName'))
+      missing.add('Device.DeviceInfo.HostName');
+    if (!response.containsKey('Device.IP.Interface.1.IPv6Enable'))
+      missing.add('Device.IP.Interface.1.IPv6Enable');
+    if (missing.isNotEmpty) {
+      throw Exception(
+          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+    }
     return LanNetworkInfo(
       ipAddress: (response['Device.IP.Interface.1.IPv4Address.1.IPAddress'] ??
           '') as String,

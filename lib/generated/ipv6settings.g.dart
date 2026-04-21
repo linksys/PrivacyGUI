@@ -41,6 +41,27 @@ class Ipv6Settings {
   }
 
   factory Ipv6Settings._fromResponse(Map<String, dynamic> response) {
+    final missing = <String>[];
+    if (!response.containsKey('Device.IP.Interface.2.IPv6Enable'))
+      missing.add('Device.IP.Interface.2.IPv6Enable');
+    if (!response.containsKey('Device.DHCPv6.Client.1.Enable'))
+      missing.add('Device.DHCPv6.Client.1.Enable');
+    if (!response.containsKey('Device.DHCPv6.Client.1.DUID'))
+      missing.add('Device.DHCPv6.Client.1.DUID');
+    if (!response.containsKey('Device.IPv6rd.InterfaceSetting.1.Enable'))
+      missing.add('Device.IPv6rd.InterfaceSetting.1.Enable');
+    if (!response.containsKey('Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix'))
+      missing.add('Device.IPv6rd.InterfaceSetting.1.SPIPv6Prefix');
+    if (!response
+        .containsKey('Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength'))
+      missing.add('Device.IPv6rd.InterfaceSetting.1.IPv4MaskLength');
+    if (!response.containsKey(
+        'Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses'))
+      missing.add('Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses');
+    if (missing.isNotEmpty) {
+      throw Exception(
+          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+    }
     return Ipv6Settings(
       ipv6Enabled: response['Device.IP.Interface.2.IPv6Enable'] == true ||
           response['Device.IP.Interface.2.IPv6Enable'] == 'true' ||

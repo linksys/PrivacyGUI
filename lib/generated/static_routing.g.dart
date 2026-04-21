@@ -100,6 +100,21 @@ class StaticRouting {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}DestIPAddress'))
+        missing.add('${p}DestIPAddress');
+      if (!response.containsKey('${p}DestSubnetMask'))
+        missing.add('${p}DestSubnetMask');
+      if (!response.containsKey('${p}GatewayIPAddress'))
+        missing.add('${p}GatewayIPAddress');
+      if (!response.containsKey('${p}Interface')) missing.add('${p}Interface');
+      if (!response.containsKey('${p}Origin')) missing.add('${p}Origin');
+      if (!response.containsKey('${p}Alias')) missing.add('${p}Alias');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(StaticRoute(
         instancePath: p,
         enable: response['${p}Enable'] == true ||

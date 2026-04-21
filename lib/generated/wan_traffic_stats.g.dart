@@ -32,6 +32,19 @@ class WanTrafficStats {
   }
 
   factory WanTrafficStats._fromResponse(Map<String, dynamic> response) {
+    final missing = <String>[];
+    if (!response.containsKey('Device.IP.Interface.2.Stats.BytesSent'))
+      missing.add('Device.IP.Interface.2.Stats.BytesSent');
+    if (!response.containsKey('Device.IP.Interface.2.Stats.BytesReceived'))
+      missing.add('Device.IP.Interface.2.Stats.BytesReceived');
+    if (!response.containsKey('Device.IP.Interface.2.Stats.PacketsSent'))
+      missing.add('Device.IP.Interface.2.Stats.PacketsSent');
+    if (!response.containsKey('Device.IP.Interface.2.Stats.PacketsReceived'))
+      missing.add('Device.IP.Interface.2.Stats.PacketsReceived');
+    if (missing.isNotEmpty) {
+      throw Exception(
+          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+    }
     return WanTrafficStats(
       bytesSent: int.tryParse(
               response['Device.IP.Interface.2.Stats.BytesSent']?.toString() ??

@@ -98,6 +98,22 @@ class PppInterface {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Username')) missing.add('${p}Username');
+      if (!response.containsKey('${p}Password')) missing.add('${p}Password');
+      if (!response.containsKey('${p}PPPoE.ServiceName'))
+        missing.add('${p}PPPoE.ServiceName');
+      if (!response.containsKey('${p}ConnectionTrigger'))
+        missing.add('${p}ConnectionTrigger');
+      if (!response.containsKey('${p}IdleDisconnectTime'))
+        missing.add('${p}IdleDisconnectTime');
+      if (!response.containsKey('${p}LCPEcho')) missing.add('${p}LCPEcho');
+      if (!response.containsKey('${p}ConnectionStatus'))
+        missing.add('${p}ConnectionStatus');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(PppInterfaceInstance(
         instancePath: p,
         username: (response['${p}Username'] ?? '') as String,

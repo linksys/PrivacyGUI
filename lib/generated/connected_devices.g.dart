@@ -23,7 +23,7 @@ class ConnectedDevice {
   final String hostName;
   final bool isActive;
   final String interface_;
-  final String addressSource;
+  final String? addressSource;
   final List<ConnectedDeviceIpv6> ipv6Addresses;
 
   const ConnectedDevice({
@@ -33,7 +33,7 @@ class ConnectedDevice {
     required this.hostName,
     required this.isActive,
     required this.interface_,
-    required this.addressSource,
+    this.addressSource,
     required this.ipv6Addresses,
   });
 }
@@ -109,6 +109,18 @@ class ConnectedDevices {
           address: (response['${cp_0}IPAddress'] ?? '') as String,
         ));
       }
+      final missing = <String>[];
+      if (!response.containsKey('${p}PhysAddress'))
+        missing.add('${p}PhysAddress');
+      if (!response.containsKey('${p}IPAddress')) missing.add('${p}IPAddress');
+      if (!response.containsKey('${p}HostName')) missing.add('${p}HostName');
+      if (!response.containsKey('${p}Active')) missing.add('${p}Active');
+      if (!response.containsKey('${p}Layer1Interface'))
+        missing.add('${p}Layer1Interface');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(ConnectedDevice(
         instancePath: p,
         macAddress: (response['${p}PhysAddress'] ?? '') as String,
@@ -118,7 +130,9 @@ class ConnectedDevices {
             response['${p}Active'] == 'true' ||
             response['${p}Active'] == '1',
         interface_: (response['${p}Layer1Interface'] ?? '') as String,
-        addressSource: (response['${p}AddressSource'] ?? '') as String,
+        addressSource: response.containsKey('${p}AddressSource')
+            ? response['${p}AddressSource'] as String
+            : null,
         ipv6Addresses: ipv6Addresses,
       ));
     }

@@ -98,6 +98,25 @@ class WiFiAccessPoints {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}Status')) missing.add('${p}Status');
+      if (!response.containsKey('${p}Security.ModesSupported'))
+        missing.add('${p}Security.ModesSupported');
+      if (!response.containsKey('${p}Security.ModeEnabled'))
+        missing.add('${p}Security.ModeEnabled');
+      if (!response.containsKey('${p}Security.EncryptionMode'))
+        missing.add('${p}Security.EncryptionMode');
+      if (!response.containsKey('${p}Security.KeyPassphrase'))
+        missing.add('${p}Security.KeyPassphrase');
+      if (!response.containsKey('${p}SSIDAdvertisementEnabled'))
+        missing.add('${p}SSIDAdvertisementEnabled');
+      if (!response.containsKey('${p}SSIDReference'))
+        missing.add('${p}SSIDReference');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(WiFiAccessPoint(
         instancePath: p,
         enable: response['${p}Enable'] == true ||
