@@ -81,7 +81,8 @@ void main() {
         enable: true,
         status: 'Synchronized',
         currentLocalTime: '2026-04-17T12:00:00Z',
-        localTimeZone: 'UTC5', // matches EST5 posixNoDST (DST off)
+        localTimeZone:
+            'EST5', // matches EST5 by timeZoneID (DST-capable, DST off)
         ntpServer1: 'pool.ntp.org',
         ntpServer2: '',
       );
