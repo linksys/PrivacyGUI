@@ -182,7 +182,8 @@ class UspAuthCoordinator {
         logger.w('[USP][Auth]Proactive refresh got 401 — forcing logout: $e');
         onForceLogout?.call();
       } else {
-        logger.w('[USP][Auth]Proactive refresh failed (non-auth, will retry): $e');
+        logger.w(
+            '[USP][Auth]Proactive refresh failed (non-auth, will retry): $e');
       }
     } finally {
       _refreshInProgress = null;

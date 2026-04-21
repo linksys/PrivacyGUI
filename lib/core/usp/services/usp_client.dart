@@ -160,7 +160,8 @@ class UspClient {
         try {
           onRefreshTokenSuccess?.call();
         } catch (cbError) {
-          logger.w('[USP][Service]onRefreshTokenSuccess callback error: $cbError');
+          logger.w(
+              '[USP][Service]onRefreshTokenSuccess callback error: $cbError');
         }
         _reauthInProgress!.complete();
         return;
