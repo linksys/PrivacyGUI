@@ -18,6 +18,7 @@ import 'package:privacygui_widgets/widgets/_widgets.dart';
 import 'package:privacygui_widgets/widgets/card/expansion_card.dart';
 import 'package:privacy_gui/core/utils/extension.dart';
 import 'package:privacy_gui/page/support/faq_data.dart';
+import 'package:privacy_gui/page/support/widgets/still_need_help_widget.dart';
 import 'package:privacygui_widgets/widgets/gap/const/spacing.dart';
 
 class FaqListView extends ArgumentsConsumerStatefulView {
@@ -122,6 +123,10 @@ class _FaqListViewState extends ConsumerState<FaqListView> {
                       const AppGap.small2(),
                     ],
                   )),
+              // Still need help section
+              const AppGap.large2(),
+              const StillNeedHelpWidget(),
+              const AppGap.large2(),
             ],
           ),
         );
