@@ -56,6 +56,7 @@ enum _JNAPActionValue {
       value: 'http://linksys.com/jnap/diagnostics/RestorePreviousFirmware'),
   sendSysinfoEmail(
       value: 'http://linksys.com/jnap/diagnostics/SendSysinfoEmail'),
+  getUILog(value: 'http://linksys.com/jnap/diagnostics/GetUILog'),
   startPing(value: 'http://linksys.com/jnap/diagnostics/StartPing'),
   startTracroute(value: 'http://linksys.com/jnap/diagnostics/StartTraceroute'),
   stopPing(value: 'http://linksys.com/jnap/diagnostics/StopPing'),
@@ -404,7 +405,6 @@ enum _JNAPActionValue {
   //ui
   getRemoteSetting(value: 'http://linksys.com/jnap/ui/GetRemoteSetting'),
   setRemoteSetting(value: 'http://linksys.com/jnap/ui/SetRemoteSetting'),
-  getUILog(value: 'http://linksys.com/jnap/ui/GetUILog'),
   getAutoConfigurationSettings(
       value:
           'http://linksys.com/jnap/nodes/setup/GetAutoConfigurationSettings'),
