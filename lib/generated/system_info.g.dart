@@ -53,6 +53,33 @@ class SystemInfo {
   }
 
   factory SystemInfo._fromResponse(Map<String, dynamic> response) {
+    final missing = <String>[];
+    if (!response.containsKey('Device.DeviceInfo.Manufacturer'))
+      missing.add('Device.DeviceInfo.Manufacturer');
+    if (!response.containsKey('Device.DeviceInfo.ModelName'))
+      missing.add('Device.DeviceInfo.ModelName');
+    if (!response.containsKey('Device.DeviceInfo.SerialNumber'))
+      missing.add('Device.DeviceInfo.SerialNumber');
+    if (!response.containsKey('Device.DeviceInfo.HardwareVersion'))
+      missing.add('Device.DeviceInfo.HardwareVersion');
+    if (!response.containsKey('Device.DeviceInfo.SoftwareVersion'))
+      missing.add('Device.DeviceInfo.SoftwareVersion');
+    if (!response.containsKey('Device.DeviceInfo.UpTime'))
+      missing.add('Device.DeviceInfo.UpTime');
+    if (!response.containsKey('Device.DeviceInfo.MemoryStatus.Total'))
+      missing.add('Device.DeviceInfo.MemoryStatus.Total');
+    if (!response.containsKey('Device.DeviceInfo.MemoryStatus.Free'))
+      missing.add('Device.DeviceInfo.MemoryStatus.Free');
+    if (!response.containsKey('Device.DeviceInfo.ProcessStatus.CPUUsage'))
+      missing.add('Device.DeviceInfo.ProcessStatus.CPUUsage');
+    if (!response.containsKey('Device.DeviceInfo.ActiveFirmwareImage'))
+      missing.add('Device.DeviceInfo.ActiveFirmwareImage');
+    if (!response.containsKey('Device.DeviceInfo.BootFirmwareImage'))
+      missing.add('Device.DeviceInfo.BootFirmwareImage');
+    if (missing.isNotEmpty) {
+      throw Exception(
+          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+    }
     return SystemInfo(
       manufacturer:
           (response['Device.DeviceInfo.Manufacturer'] ?? '') as String,

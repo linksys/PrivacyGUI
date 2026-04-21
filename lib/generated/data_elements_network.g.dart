@@ -181,6 +181,20 @@ class DataElementsNetwork {
           bssList: bssList,
         ));
       }
+      final missing = <String>[];
+      if (!response.containsKey('${p}ID')) missing.add('${p}ID');
+      if (!response.containsKey('${p}ManufacturerModel'))
+        missing.add('${p}ManufacturerModel');
+      if (!response.containsKey('${p}Manufacturer'))
+        missing.add('${p}Manufacturer');
+      if (!response.containsKey('${p}SerialNumber'))
+        missing.add('${p}SerialNumber');
+      if (!response.containsKey('${p}SoftwareVersion'))
+        missing.add('${p}SoftwareVersion');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(MeshNode(
         instancePath: p,
         id: (response['${p}ID'] ?? '') as String,

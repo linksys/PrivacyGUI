@@ -69,6 +69,45 @@ class MultiInterfaceTrafficStats {
 
   factory MultiInterfaceTrafficStats._fromResponse(
       Map<String, dynamic> response) {
+    final missing = <String>[];
+    if (!response.containsKey('Device.IP.Interface.2.Stats.BytesSent'))
+      missing.add('Device.IP.Interface.2.Stats.BytesSent');
+    if (!response.containsKey('Device.IP.Interface.2.Stats.BytesReceived'))
+      missing.add('Device.IP.Interface.2.Stats.BytesReceived');
+    if (!response.containsKey('Device.IP.Interface.2.Stats.PacketsSent'))
+      missing.add('Device.IP.Interface.2.Stats.PacketsSent');
+    if (!response.containsKey('Device.IP.Interface.2.Stats.PacketsReceived'))
+      missing.add('Device.IP.Interface.2.Stats.PacketsReceived');
+    if (!response.containsKey('Device.IP.Interface.2.Stats.ErrorsSent'))
+      missing.add('Device.IP.Interface.2.Stats.ErrorsSent');
+    if (!response.containsKey('Device.IP.Interface.2.Stats.ErrorsReceived'))
+      missing.add('Device.IP.Interface.2.Stats.ErrorsReceived');
+    if (!response.containsKey('Device.IP.Interface.2.Stats.DiscardPacketsSent'))
+      missing.add('Device.IP.Interface.2.Stats.DiscardPacketsSent');
+    if (!response
+        .containsKey('Device.IP.Interface.2.Stats.DiscardPacketsReceived'))
+      missing.add('Device.IP.Interface.2.Stats.DiscardPacketsReceived');
+    if (!response.containsKey('Device.IP.Interface.1.Stats.BytesSent'))
+      missing.add('Device.IP.Interface.1.Stats.BytesSent');
+    if (!response.containsKey('Device.IP.Interface.1.Stats.BytesReceived'))
+      missing.add('Device.IP.Interface.1.Stats.BytesReceived');
+    if (!response.containsKey('Device.IP.Interface.1.Stats.PacketsSent'))
+      missing.add('Device.IP.Interface.1.Stats.PacketsSent');
+    if (!response.containsKey('Device.IP.Interface.1.Stats.PacketsReceived'))
+      missing.add('Device.IP.Interface.1.Stats.PacketsReceived');
+    if (!response.containsKey('Device.IP.Interface.1.Stats.ErrorsSent'))
+      missing.add('Device.IP.Interface.1.Stats.ErrorsSent');
+    if (!response.containsKey('Device.IP.Interface.1.Stats.ErrorsReceived'))
+      missing.add('Device.IP.Interface.1.Stats.ErrorsReceived');
+    if (!response.containsKey('Device.IP.Interface.1.Stats.DiscardPacketsSent'))
+      missing.add('Device.IP.Interface.1.Stats.DiscardPacketsSent');
+    if (!response
+        .containsKey('Device.IP.Interface.1.Stats.DiscardPacketsReceived'))
+      missing.add('Device.IP.Interface.1.Stats.DiscardPacketsReceived');
+    if (missing.isNotEmpty) {
+      throw Exception(
+          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+    }
     return MultiInterfaceTrafficStats(
       wanBytesSent: int.tryParse(
               response['Device.IP.Interface.2.Stats.BytesSent']?.toString() ??

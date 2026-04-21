@@ -44,6 +44,31 @@ class WanSettings {
   }
 
   factory WanSettings._fromResponse(Map<String, dynamic> response) {
+    final missing = <String>[];
+    if (!response
+        .containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'))
+      missing.add('Device.IP.Interface.2.IPv4Address.1.AddressingType');
+    if (!response.containsKey('Device.IP.Interface.2.MaxMTUSize'))
+      missing.add('Device.IP.Interface.2.MaxMTUSize');
+    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.IPAddress'))
+      missing.add('Device.IP.Interface.2.IPv4Address.1.IPAddress');
+    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.SubnetMask'))
+      missing.add('Device.IP.Interface.2.IPv4Address.1.SubnetMask');
+    if (!response.containsKey(
+        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'))
+      missing
+          .add('Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway');
+    if (!response.containsKey(
+        'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'))
+      missing.add('Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers');
+    if (!response.containsKey('Device.Bridging.Bridge.1.Enable'))
+      missing.add('Device.Bridging.Bridge.1.Enable');
+    if (!response.containsKey('Device.Ethernet.Interface.1.MACAddress'))
+      missing.add('Device.Ethernet.Interface.1.MACAddress');
+    if (missing.isNotEmpty) {
+      throw Exception(
+          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+    }
     return WanSettings(
       addressingType:
           (response['Device.IP.Interface.2.IPv4Address.1.AddressingType'] ?? '')
