@@ -115,11 +115,12 @@ void main() {
       expect(find.text('—'), findsOneWidget);
     });
 
-    testWidgets('displays status', (tester) async {
+    testWidgets('displays status as badge', (tester) async {
       await tester.pumpWidget(_buildTestWidget(timeSettings: gmt8Settings));
       await tester.pumpAndSettle();
 
-      expect(find.text('Status'), findsOneWidget);
+      // Status is now shown as a badge in the title row, not as an info row
+      expect(find.text('Status'), findsNothing);
       expect(find.text('Synchronized'), findsOneWidget);
     });
 
@@ -161,7 +162,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.tap(find.byIcon(Icons.edit));
       expect(editTapped, isTrue);
     });
 
