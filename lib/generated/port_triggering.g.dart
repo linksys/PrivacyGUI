@@ -135,6 +135,18 @@ class PortTriggering {
           forwardProtocol: (response['${cp_0}Protocol'] ?? '') as String,
         ));
       }
+      final missing = <String>[];
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}Description'))
+        missing.add('${p}Description');
+      if (!response.containsKey('${p}Port')) missing.add('${p}Port');
+      if (!response.containsKey('${p}PortEndRange'))
+        missing.add('${p}PortEndRange');
+      if (!response.containsKey('${p}Protocol')) missing.add('${p}Protocol');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(PortTrigger(
         instancePath: p,
         enabled: response['${p}Enable'] == true ||

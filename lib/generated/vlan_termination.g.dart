@@ -69,6 +69,13 @@ class VlanTermination {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}VLANID')) missing.add('${p}VLANID');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(VlanTerminationInstance(
         instancePath: p,
         enable: response['${p}Enable'] == true ||

@@ -38,6 +38,24 @@ class WanStatus {
   }
 
   factory WanStatus._fromResponse(Map<String, dynamic> response) {
+    final missing = <String>[];
+    if (!response.containsKey('Device.IP.Interface.2.Status'))
+      missing.add('Device.IP.Interface.2.Status');
+    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.IPAddress'))
+      missing.add('Device.IP.Interface.2.IPv4Address.1.IPAddress');
+    if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.SubnetMask'))
+      missing.add('Device.IP.Interface.2.IPv4Address.1.SubnetMask');
+    if (!response
+        .containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'))
+      missing.add('Device.IP.Interface.2.IPv4Address.1.AddressingType');
+    if (!response.containsKey('Device.IP.Interface.2.MaxMTUSize'))
+      missing.add('Device.IP.Interface.2.MaxMTUSize');
+    if (!response.containsKey('Device.IP.Interface.2.IPv6Enable'))
+      missing.add('Device.IP.Interface.2.IPv6Enable');
+    if (missing.isNotEmpty) {
+      throw Exception(
+          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+    }
     return WanStatus(
       status: (response['Device.IP.Interface.2.Status'] ?? '') as String,
       ipAddress: (response['Device.IP.Interface.2.IPv4Address.1.IPAddress'] ??

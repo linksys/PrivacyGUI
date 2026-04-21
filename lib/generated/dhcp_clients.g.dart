@@ -67,6 +67,17 @@ class DhcpClients {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Chaddr')) missing.add('${p}Chaddr');
+      if (!response.containsKey('${p}Active')) missing.add('${p}Active');
+      if (!response.containsKey('${p}IPv4Address.1.IPAddress'))
+        missing.add('${p}IPv4Address.1.IPAddress');
+      if (!response.containsKey('${p}IPv4Address.1.LeaseTimeRemaining'))
+        missing.add('${p}IPv4Address.1.LeaseTimeRemaining');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(DhcpClient(
         instancePath: p,
         chaddr: (response['${p}Chaddr'] ?? '') as String,

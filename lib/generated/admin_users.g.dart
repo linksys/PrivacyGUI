@@ -74,6 +74,14 @@ class AdminUsers {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Username')) missing.add('${p}Username');
+      if (!response.containsKey('${p}Password')) missing.add('${p}Password');
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(AdminUser(
         instancePath: p,
         username: (response['${p}Username'] ?? '') as String,

@@ -38,6 +38,23 @@ class TimeSettings {
   }
 
   factory TimeSettings._fromResponse(Map<String, dynamic> response) {
+    final missing = <String>[];
+    if (!response.containsKey('Device.Time.Enable'))
+      missing.add('Device.Time.Enable');
+    if (!response.containsKey('Device.Time.Status'))
+      missing.add('Device.Time.Status');
+    if (!response.containsKey('Device.Time.NTPServer1'))
+      missing.add('Device.Time.NTPServer1');
+    if (!response.containsKey('Device.Time.NTPServer2'))
+      missing.add('Device.Time.NTPServer2');
+    if (!response.containsKey('Device.Time.LocalTimeZone'))
+      missing.add('Device.Time.LocalTimeZone');
+    if (!response.containsKey('Device.Time.CurrentLocalTime'))
+      missing.add('Device.Time.CurrentLocalTime');
+    if (missing.isNotEmpty) {
+      throw Exception(
+          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+    }
     return TimeSettings(
       enable: response['Device.Time.Enable'] == true ||
           response['Device.Time.Enable'] == 'true' ||

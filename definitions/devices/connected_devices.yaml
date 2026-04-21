@@ -37,6 +37,7 @@ parameters:
   - field_name: addressSource
     path: .AddressSource
     type: string
+    optional: true
     description: Address assignment method (DHCP, Static)
 
 children:

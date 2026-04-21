@@ -76,6 +76,17 @@ class MacFilterAccessPoints {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}SSIDReference'))
+        missing.add('${p}SSIDReference');
+      if (!response.containsKey('${p}MACAddressControlEnabled'))
+        missing.add('${p}MACAddressControlEnabled');
+      if (!response.containsKey('${p}AllowedMACAddress'))
+        missing.add('${p}AllowedMACAddress');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(MacFilterAccessPoint(
         instancePath: p,
         ssidReference: (response['${p}SSIDReference'] ?? '') as String,

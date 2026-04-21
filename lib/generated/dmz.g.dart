@@ -94,6 +94,19 @@ class Dmz {
           v == 0 ||
           v == false ||
           v == 'false')) continue;
+      final missing = <String>[];
+      if (!response.containsKey('${p}Enable')) missing.add('${p}Enable');
+      if (!response.containsKey('${p}DestIP')) missing.add('${p}DestIP');
+      if (!response.containsKey('${p}SourcePrefix'))
+        missing.add('${p}SourcePrefix');
+      if (!response.containsKey('${p}Interface')) missing.add('${p}Interface');
+      if (!response.containsKey('${p}Description'))
+        missing.add('${p}Description');
+      if (!response.containsKey('${p}Status')) missing.add('${p}Status');
+      if (missing.isNotEmpty) {
+        throw Exception(
+            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      }
       items.add(DmzEntry(
         instancePath: p,
         enable: response['${p}Enable'] == true ||
