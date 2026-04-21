@@ -49,16 +49,6 @@ class _FakeTimeDataNotifier extends TimeDataNotifier {
 
   @override
   Future<TimeData> build() async => _data;
-
-  @override
-  Future<void> updateTimezone({required String localTimeZone}) async {}
-
-  @override
-  Future<void> updateTimeSettings({
-    bool? enable,
-    String? ntpServer1,
-    String? ntpServer2,
-  }) async {}
 }
 
 Widget _buildTestWidget(TimeSettingsUIModel time) {
@@ -117,19 +107,11 @@ void main() {
       expect(find.text('On'), findsOneWidget);
     });
 
-    testWidgets('displays NTP server', (tester) async {
+    testWidgets('does not display NTP server row', (tester) async {
       await tester.pumpWidget(_buildTestWidget(_gmt8Time));
       await tester.pumpAndSettle();
 
-      expect(find.text('NTP Server'), findsOneWidget);
-      expect(find.text('pool.ntp.org'), findsOneWidget);
-    });
-
-    testWidgets('shows dash when NTP server is empty', (tester) async {
-      await tester.pumpWidget(_buildTestWidget(_unsyncTime));
-      await tester.pumpAndSettle();
-
-      expect(find.text('—'), findsOneWidget);
+      expect(find.text('NTP Server'), findsNothing);
     });
 
     testWidgets('shows "Not set" for empty timezone', (tester) async {
