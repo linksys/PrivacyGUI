@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_feature_state.dart';
@@ -347,21 +349,20 @@ class _UspLocalNetworkViewState extends ConsumerState<UspLocalNetworkView> {
     // Warn if router IP or subnet changed (may cause disconnection)
     if (state.hasNetworkChange) {
       final confirmed = await _showNetworkChangeConfirmation(context);
-      if (confirmed != true) return;
+      if (confirmed != true || !context.mounted) return;
     }
 
     try {
-      await ref.read(uspLocalNetworkProvider.notifier).save();
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspLocalNetworkProvider.notifier).save(),
+      );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Local network settings saved')),
-        );
+        showSuccessSnackBar(context, 'Local network settings saved');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        showFailedSnackBar(context, 'Failed to save: $e');
       }
     }
   }
