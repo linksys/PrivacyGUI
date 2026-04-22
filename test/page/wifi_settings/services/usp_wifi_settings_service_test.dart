@@ -578,4 +578,162 @@ void main() {
           qs.main!.supportedSecurityModes, ['WPA2-Personal', 'WPA3-Personal']);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // buildWifiNetworks — guest detection (per-radio instance ordering)
+  // -------------------------------------------------------------------------
+
+  group('buildWifiNetworks — guest detection', () {
+    WiFiSsid _ssid(String path, String name, String radio,
+            {bool enable = true}) =>
+        WiFiSsid(
+          instancePath: path,
+          ssid: name,
+          enable: enable,
+          status: enable ? 'Up' : 'Down',
+          bssid: 'AA:BB:CC:DD:EE:FF',
+          lowerLayers: radio,
+        );
+
+    WiFiAccessPoint _ap(String path, String ssidRef) => WiFiAccessPoint(
+          instancePath: path,
+          enable: true,
+          status: 'Enabled',
+          modesSupported: 'WPA2-Personal',
+          securityModeEnabled: 'WPA2-Personal',
+          encryptionMode: 'AES',
+          keyPassphrase: 'pass',
+          ssidAdvertisementEnabled: true,
+          ssidReference: ssidRef,
+        );
+
+    WiFiRadio _radio(String path, String band) => WiFiRadio(
+          instancePath: path,
+          enable: true,
+          status: 'Up',
+          channel: 6,
+          operatingFrequencyBand: band,
+          operatingChannelBandwidth: '20MHz',
+          possibleChannels: '1,6,11',
+          operatingStandards: 'n',
+          supportedStandards: 'b,g,n',
+          transmitPower: 100,
+          maxBitRate: 300,
+          autoChannelEnable: true,
+          ieee80211hEnabled: false,
+          supportedOperatingChannelBandwidths: 'Auto,20MHz',
+        );
+
+    test('dual-band: 2 main + 2 guest', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: WiFiSsids(items: [
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+          _ssid('Device.WiFi.SSID.3.', 'Home-Guest', 'Device.WiFi.Radio.1.',
+              enable: false),
+          _ssid('Device.WiFi.SSID.4.', 'Home-Guest', 'Device.WiFi.Radio.2.',
+              enable: false),
+        ]),
+        accessPoints: WiFiAccessPoints(items: [
+          _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+          _ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+          _ap('Device.WiFi.AccessPoint.3.', 'Device.WiFi.SSID.3.'),
+          _ap('Device.WiFi.AccessPoint.4.', 'Device.WiFi.SSID.4.'),
+        ]),
+        radios: WiFiRadios(items: [
+          _radio('Device.WiFi.Radio.1.', '2.4GHz'),
+          _radio('Device.WiFi.Radio.2.', '5GHz'),
+        ]),
+      );
+
+      expect(networks, hasLength(4));
+      expect(networks[0].isGuest, isFalse); // SSID.1 — Main
+      expect(networks[1].isGuest, isFalse); // SSID.2 — Main
+      expect(networks[2].isGuest, isTrue); // SSID.3 — Guest
+      expect(networks[3].isGuest, isTrue); // SSID.4 — Guest
+    });
+
+    test('tri-band: 3 main + 3 guest', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: WiFiSsids(items: [
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+          _ssid('Device.WiFi.SSID.3.', 'Home', 'Device.WiFi.Radio.3.'),
+          _ssid('Device.WiFi.SSID.4.', 'Home-Guest', 'Device.WiFi.Radio.1.',
+              enable: false),
+          _ssid('Device.WiFi.SSID.5.', 'Home-Guest', 'Device.WiFi.Radio.2.',
+              enable: false),
+          _ssid('Device.WiFi.SSID.6.', 'Home-Guest', 'Device.WiFi.Radio.3.',
+              enable: false),
+        ]),
+        accessPoints: WiFiAccessPoints(items: [
+          _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+          _ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+          _ap('Device.WiFi.AccessPoint.3.', 'Device.WiFi.SSID.3.'),
+          _ap('Device.WiFi.AccessPoint.4.', 'Device.WiFi.SSID.4.'),
+          _ap('Device.WiFi.AccessPoint.5.', 'Device.WiFi.SSID.5.'),
+          _ap('Device.WiFi.AccessPoint.6.', 'Device.WiFi.SSID.6.'),
+        ]),
+        radios: WiFiRadios(items: [
+          _radio('Device.WiFi.Radio.1.', '2.4GHz'),
+          _radio('Device.WiFi.Radio.2.', '5GHz'),
+          _radio('Device.WiFi.Radio.3.', '6GHz'),
+        ]),
+      );
+
+      expect(networks, hasLength(6));
+      // Main: SSID.1, SSID.2, SSID.3
+      expect(networks[0].isGuest, isFalse);
+      expect(networks[1].isGuest, isFalse);
+      expect(networks[2].isGuest, isFalse);
+      // Guest: SSID.4, SSID.5, SSID.6
+      expect(networks[3].isGuest, isTrue);
+      expect(networks[4].isGuest, isTrue);
+      expect(networks[5].isGuest, isTrue);
+    });
+
+    test('guest SSID without "guest" in name still detected', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: WiFiSsids(items: [
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+          _ssid('Device.WiFi.SSID.2.', 'Visitors', 'Device.WiFi.Radio.1.'),
+        ]),
+        accessPoints: WiFiAccessPoints(items: [
+          _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+          _ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+        ]),
+        radios: WiFiRadios(items: [
+          _radio('Device.WiFi.Radio.1.', '2.4GHz'),
+        ]),
+      );
+
+      expect(networks, hasLength(2));
+      expect(networks[0].isGuest, isFalse); // SSID.1 — Main
+      expect(networks[0].ssid, 'Home');
+      expect(
+          networks[1].isGuest, isTrue); // SSID.2 — Guest (no "guest" in name)
+      expect(networks[1].ssid, 'Visitors');
+    });
+
+    test('single SSID per radio — no guest', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: WiFiSsids(items: [
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+        ]),
+        accessPoints: WiFiAccessPoints(items: [
+          _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+          _ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+        ]),
+        radios: WiFiRadios(items: [
+          _radio('Device.WiFi.Radio.1.', '2.4GHz'),
+          _radio('Device.WiFi.Radio.2.', '5GHz'),
+        ]),
+      );
+
+      expect(networks, hasLength(2));
+      expect(networks[0].isGuest, isFalse);
+      expect(networks[1].isGuest, isFalse);
+    });
+  });
 }

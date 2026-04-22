@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_feature_state.dart';
@@ -277,17 +279,16 @@ class _UspDmzViewState extends ConsumerState<UspDmzView> {
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(uspDmzProvider.notifier).save();
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspDmzProvider.notifier).save(),
+      );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('DMZ settings saved')),
-        );
+        showSuccessSnackBar(context, 'DMZ settings saved');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        showFailedSnackBar(context, 'Failed to save: $e');
       }
     }
   }

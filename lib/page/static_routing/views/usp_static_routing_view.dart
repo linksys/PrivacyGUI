@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -242,7 +243,10 @@ class UspStaticRoutingView extends ConsumerWidget {
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(uspStaticRoutingProvider.notifier).save();
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspStaticRoutingProvider.notifier).save(),
+      );
       if (context.mounted) {
         showSuccessSnackBar(context, 'Static routes saved');
       }

@@ -142,6 +142,122 @@ class WifiSettingsTestData {
       ]);
 
   // ---------------------------------------------------------------------------
+  // Tri-band codegen collections (2.4 GHz + 5 GHz + 6 GHz, each with guest)
+  // ---------------------------------------------------------------------------
+
+  static WiFiSsids createTriBandSsids() => WiFiSsids(items: [
+        createSsid(
+          instancePath: 'Device.WiFi.SSID.1.',
+          ssid: 'Home',
+          lowerLayers: 'Device.WiFi.Radio.1.',
+        ),
+        createSsid(
+          instancePath: 'Device.WiFi.SSID.2.',
+          ssid: 'Home',
+          lowerLayers: 'Device.WiFi.Radio.2.',
+        ),
+        createSsid(
+          instancePath: 'Device.WiFi.SSID.3.',
+          ssid: 'Home',
+          lowerLayers: 'Device.WiFi.Radio.3.',
+        ),
+        createSsid(
+          instancePath: 'Device.WiFi.SSID.4.',
+          ssid: 'Home-Guest',
+          enable: false,
+          lowerLayers: 'Device.WiFi.Radio.1.',
+        ),
+        createSsid(
+          instancePath: 'Device.WiFi.SSID.5.',
+          ssid: 'Home-Guest',
+          enable: false,
+          lowerLayers: 'Device.WiFi.Radio.2.',
+        ),
+        createSsid(
+          instancePath: 'Device.WiFi.SSID.6.',
+          ssid: 'Home-Guest',
+          enable: false,
+          lowerLayers: 'Device.WiFi.Radio.3.',
+        ),
+      ]);
+
+  static WiFiAccessPoints createTriBandAccessPoints() =>
+      WiFiAccessPoints(items: [
+        createAccessPoint(
+          instancePath: 'Device.WiFi.AccessPoint.1.',
+          ssidReference: 'Device.WiFi.SSID.1.',
+        ),
+        createAccessPoint(
+          instancePath: 'Device.WiFi.AccessPoint.2.',
+          ssidReference: 'Device.WiFi.SSID.2.',
+          modesSupported: 'WPA2-Personal,WPA3-Personal',
+          securityModeEnabled: 'WPA3-Personal',
+        ),
+        createAccessPoint(
+          instancePath: 'Device.WiFi.AccessPoint.3.',
+          ssidReference: 'Device.WiFi.SSID.3.',
+          modesSupported: 'WPA3-Personal',
+          securityModeEnabled: 'WPA3-Personal',
+        ),
+        createAccessPoint(
+          instancePath: 'Device.WiFi.AccessPoint.4.',
+          ssidReference: 'Device.WiFi.SSID.4.',
+        ),
+        createAccessPoint(
+          instancePath: 'Device.WiFi.AccessPoint.5.',
+          ssidReference: 'Device.WiFi.SSID.5.',
+          modesSupported: 'WPA2-Personal,WPA3-Personal',
+          securityModeEnabled: 'WPA3-Personal',
+        ),
+        createAccessPoint(
+          instancePath: 'Device.WiFi.AccessPoint.6.',
+          ssidReference: 'Device.WiFi.SSID.6.',
+          modesSupported: 'WPA3-Personal',
+          securityModeEnabled: 'WPA3-Personal',
+        ),
+      ]);
+
+  static WiFiRadios createTriBandRadios() => WiFiRadios(items: [
+        createRadio(
+          instancePath: 'Device.WiFi.Radio.1.',
+          operatingFrequencyBand: '2.4GHz',
+          channel: 6,
+          possibleChannels: '1,6,11',
+          supportedOperatingChannelBandwidths: 'Auto,20MHz,40MHz',
+        ),
+        createRadio(
+          instancePath: 'Device.WiFi.Radio.2.',
+          operatingFrequencyBand: '5GHz',
+          channel: 36,
+          operatingChannelBandwidth: '80MHz',
+          possibleChannels: '36,40,44,48',
+          operatingStandards: 'ax',
+          supportedStandards: 'a,n,ac,ax',
+          autoChannelEnable: false,
+          supportedOperatingChannelBandwidths: 'Auto,20MHz,40MHz,80MHz',
+        ),
+        createRadio(
+          instancePath: 'Device.WiFi.Radio.3.',
+          operatingFrequencyBand: '6GHz',
+          channel: 1,
+          operatingChannelBandwidth: '160MHz',
+          possibleChannels: '1,5,9,13,17,21,25,29',
+          operatingStandards: 'ax',
+          supportedStandards: 'ax',
+          autoChannelEnable: true,
+          supportedOperatingChannelBandwidths: 'Auto,20MHz,40MHz,80MHz,160MHz',
+        ),
+      ]);
+
+  static WifiData createTriBandWifiData() => WifiData(
+        codegenContext: WifiCodegenContext(
+          createTriBandRadios(),
+          createTriBandSsids(),
+          createTriBandAccessPoints(),
+        ),
+      );
+
+  // ---------------------------------------------------------------------------
   // UI models
   // ---------------------------------------------------------------------------
 
