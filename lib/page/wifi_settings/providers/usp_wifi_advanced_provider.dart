@@ -2,48 +2,153 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
-import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_state.dart';
+import 'package:privacy_gui/framework/preservable_contract.dart';
+import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_feature_state.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_advanced_status.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_advanced_service.dart';
 
-final uspWifiAdvancedProvider = AsyncNotifierProvider.autoDispose<
-    UspWifiAdvancedNotifier, UspWifiAdvancedState>(
+// ---------------------------------------------------------------------------
+// Providers
+// ---------------------------------------------------------------------------
+
+final uspWifiAdvancedProvider = AutoDisposeNotifierProvider<
+    UspWifiAdvancedNotifier, WifiAdvancedFeatureState>(
   UspWifiAdvancedNotifier.new,
 );
 
+/// Exposes the notifier as a [PreservableContract] for dirty-check integration.
+final preservableUspWifiAdvancedProvider = AutoDisposeProvider<
+    PreservableContract<WifiAdvancedSettings, WifiAdvancedStatus>>(
+  (ref) => ref.watch(uspWifiAdvancedProvider.notifier),
+);
+
+// ---------------------------------------------------------------------------
+// Notifier
+// ---------------------------------------------------------------------------
+
 class UspWifiAdvancedNotifier
-    extends AutoDisposeAsyncNotifier<UspWifiAdvancedState> {
+    extends AutoDisposeNotifier<WifiAdvancedFeatureState>
+    with
+        PreservableAutoDisposeNotifierMixin<WifiAdvancedSettings,
+            WifiAdvancedStatus, WifiAdvancedFeatureState> {
   UspWifiAdvancedService get _svc => ref.read(uspWifiAdvancedServiceProvider);
 
   @override
-  Future<UspWifiAdvancedState> build() async {
-    logger.d('[USP][WiFi][Advanced]Fetching advanced settings...');
+  WifiAdvancedFeatureState build() {
+    // SSE: when WiFi data provider updates, trigger dirty guard
+    ref.listen(wifiDataProvider, (_, next) {
+      if (next.hasValue) onSseInvalidation();
+    });
 
+    // Synchronous build with loading state; async fetch follows immediately.
+    Future.microtask(() => fetch());
+    return WifiAdvancedFeatureState.initial();
+  }
+
+  // ---------------------------------------------------------------------------
+  // performFetch — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<(WifiAdvancedSettings?, WifiAdvancedStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) async {
     try {
       final ieee80211h = await _svc.fetchIeee80211h();
-      logger.d('[USP][WiFi][Advanced]radios=${ieee80211h.length}');
-      return UspWifiAdvancedState(ieee80211hByRadio: ieee80211h);
+
+      logger.d('[USP][WiFi][Advanced] Fetched — radios=${ieee80211h.length}');
+
+      return (
+        WifiAdvancedSettings(ieee80211hByRadio: ieee80211h),
+        const WifiAdvancedStatus(),
+      );
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi][Advanced] Fetch failed', error: e);
-      rethrow;
+      return (
+        null,
+        WifiAdvancedStatus(errorMessage: '$e'),
+      );
     }
   }
 
-  /// Toggles IEEE 802.11h (DFS + TPC) on ALL known radios simultaneously.
-  Future<void> setIeee80211hEnabled(bool enabled) async {
-    final paths = state.requireValue.ieee80211hByRadio.keys.toList();
-    if (paths.isEmpty) return;
+  // ---------------------------------------------------------------------------
+  // save — override to manage isSaving flag
+  // ---------------------------------------------------------------------------
 
+  @override
+  Future<WifiAdvancedFeatureState> save() async {
+    state = state.copyWith(
+      status: state.status.copyWith(isSaving: true),
+    );
     try {
-      await ref.read(uspMutationLockProvider).withLock(() async {
-        await _svc.setIeee80211hEnabled(radioPaths: paths, enabled: enabled);
-      });
-
-      state = AsyncData(state.requireValue.copyWith(
-        ieee80211hByRadio: {for (final path in paths) path: enabled},
-      ));
+      return await super.save();
     } on ServiceError catch (e) {
-      logger.e('[USP][WiFi][Advanced] Set IEEE80211h failed', error: e);
+      logger.e('[USP][WiFi][Advanced] Save failed', error: e);
       rethrow;
+    } finally {
+      state = state.copyWith(
+        status: state.status.copyWith(isSaving: false),
+      );
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // performSave — required by PreservableAutoDisposeNotifierMixin
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> performSave() async {
+    final current = state.settings.current;
+    final radioPaths = current.ieee80211hByRadio.keys.toList();
+    final enabled = current.isDfsEnabled;
+
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.setIeee80211hEnabled(
+        radioPaths: radioPaths,
+        enabled: enabled,
+      );
+    });
+
+    logger.d('[USP][WiFi][Advanced] Save succeeded — '
+        'radios=${radioPaths.length}, enabled=$enabled');
+    // Invalidate Layer 1 cache so post-save fetch() reads fresh data.
+    ref.invalidate(wifiDataProvider);
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI Mutation (synchronous — buffers, no network call)
+  // ---------------------------------------------------------------------------
+
+  /// Toggle DFS/802.11h on or off for all radios.
+  /// Updates [settings.current] only — does NOT call the service.
+  /// User must call save() to persist the change.
+  void setDfsEnabled(bool enabled) {
+    final original = state.settings.original;
+
+    // When the user toggles back to the original effective DFS state, restore
+    // the original per-radio map so the dirty flag clears correctly. Without
+    // this, mixed per-radio values (e.g. 2.4 GHz=false, 5 GHz=true) would
+    // never match after a uniform set-all toggle.
+    if (enabled == original.isDfsEnabled) {
+      state = state.copyWith(
+        settings: state.settings.update(original),
+      );
+      return;
+    }
+
+    final current = state.settings.current;
+    final updated = current.copyWith(
+      ieee80211hByRadio: {
+        for (final path in current.ieee80211hByRadio.keys) path: enabled,
+      },
+    );
+
+    state = state.copyWith(
+      settings: state.settings.update(updated),
+    );
   }
 }

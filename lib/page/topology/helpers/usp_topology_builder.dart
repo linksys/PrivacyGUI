@@ -17,6 +17,7 @@ class UspTopologyBuilder {
     required List<DeviceUIModel> devices,
     required List<MeshNodeInfo> meshNodes,
     Color? coverageColor,
+    double coverageRingScale = 1.0,
   }) {
     final nodes = <MeshNode>[];
     final links = <MeshLink>[];
@@ -42,7 +43,8 @@ class UspTopologyBuilder {
       level: 1.0,
       metadata: {'deviceId': gatewayDeviceId},
       coverageRings: coverageColor != null
-          ? _buildCoverageRings(MeshNodeType.gateway, coverageColor)
+          ? _buildCoverageRings(
+              MeshNodeType.gateway, coverageColor, coverageRingScale)
           : null,
     ));
 
@@ -70,7 +72,8 @@ class UspTopologyBuilder {
           level: 0.8,
           metadata: {'deviceId': meshNode.deviceId},
           coverageRings: coverageColor != null
-              ? _buildCoverageRings(MeshNodeType.extender, coverageColor)
+              ? _buildCoverageRings(
+                  MeshNodeType.extender, coverageColor, coverageRingScale)
               : null,
         ));
 
@@ -157,13 +160,16 @@ class UspTopologyBuilder {
   }
 
   /// Builds coverage rings for infrastructure nodes (gateway / extender).
+  ///
+  /// [scale] shrinks rings for compact contexts (e.g. dashboard card).
   static List<NodeCoverageRing> _buildCoverageRings(
     MeshNodeType type,
     Color color,
+    double scale,
   ) {
     final (innerR, outerR, innerOp, outerOp) = switch (type) {
-      MeshNodeType.gateway => (100.0, 180.0, 0.18, 0.12),
-      MeshNodeType.extender => (80.0, 140.0, 0.15, 0.10),
+      MeshNodeType.gateway => (100.0 * scale, 180.0 * scale, 0.18, 0.12),
+      MeshNodeType.extender => (80.0 * scale, 140.0 * scale, 0.15, 0.10),
       _ => (0.0, 0.0, 0.0, 0.0),
     };
     if (innerR == 0) return [];
