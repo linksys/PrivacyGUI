@@ -12,6 +12,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.d
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
@@ -24,11 +25,14 @@ final uspWifiSettingsProvider =
   UspWifiSettingsNotifier.new,
 );
 
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspWifiSettingsProvider = AutoDisposeProvider<
+/// Route-level dirty proxy — aggregates both WiFi tabs' dirty state.
+/// Only isDirty() and revert() are invoked by LinksysRoute.onExit.
+final preservableUspWifiPageProvider = AutoDisposeProvider<
     PreservableContract<WifiSettingsSettings, WifiSettingsStatus>>(
-  (ref) => ref.watch(uspWifiSettingsProvider.notifier),
+  (ref) => _WifiPageDirtyProxy(
+    ref.watch(uspWifiSettingsProvider.notifier),
+    ref.watch(uspWifiAdvancedProvider.notifier),
+  ),
 );
 
 // ---------------------------------------------------------------------------
@@ -182,6 +186,8 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         );
       }
     });
+    // Invalidate Layer 1 cache so post-save fetch() reads fresh data.
+    ref.invalidate(wifiDataProvider);
   }
 
   // ---------------------------------------------------------------------------
@@ -387,4 +393,37 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       return null;
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Route-level Dirty Proxy
+// ---------------------------------------------------------------------------
+
+/// Aggregates dirty state from both WiFi tabs for the route's onExit guard.
+class _WifiPageDirtyProxy
+    implements PreservableContract<WifiSettingsSettings, WifiSettingsStatus> {
+  final UspWifiSettingsNotifier _wifiList;
+  final UspWifiAdvancedNotifier _advanced;
+
+  _WifiPageDirtyProxy(this._wifiList, this._advanced);
+
+  @override
+  bool isDirty() => _wifiList.isDirty() || _advanced.isDirty();
+
+  @override
+  void revert() {
+    if (_wifiList.isDirty()) _wifiList.revert();
+    if (_advanced.isDirty()) _advanced.revert();
+  }
+
+  @override
+  Future<(WifiSettingsSettings?, WifiSettingsStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) =>
+      throw UnsupportedError('Route proxy — not callable');
+
+  @override
+  Future<void> performSave() =>
+      throw UnsupportedError('Route proxy — not callable');
 }

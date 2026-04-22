@@ -32,9 +32,8 @@ class WifiNetworkUIModel extends Equatable {
 
   /// Whether this network is a guest network.
   ///
-  /// Detected via SSID naming convention (contains "guest", case-insensitive).
-  // TODO(vendor-ext): Replace with Device.WiFi.SSID.{i}.X_LINKSYS_COM_IsGuest
-  //   once firmware support is confirmed.
+  /// Detected via per-radio SSID instance ordering: for each radio, the
+  /// lowest-index SSID is Main, all subsequent are Guest.
   final bool isGuest;
 
   /// Frequency band (e.g. "2.4GHz", "5GHz", "6GHz")

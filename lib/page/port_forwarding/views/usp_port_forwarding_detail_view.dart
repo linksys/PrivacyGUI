@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -160,7 +161,10 @@ class _UspPortForwardingDetailViewState
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(uspPortForwardingPageProvider.notifier).save();
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspPortForwardingPageProvider.notifier).save(),
+      );
       if (context.mounted) {
         showSuccessSnackBar(context, 'Port forwarding settings saved');
       }
