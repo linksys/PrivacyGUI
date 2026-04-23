@@ -245,27 +245,23 @@ class UspWifiSettingsService {
           // Update each SSID individually
           for (final ssidUpdate in ssidUpdates) {
             final result = await WiFiSsids.update(_usp, [ssidUpdate]);
-            final parsedResult = UspResultParser.parseSetResult(result);
-
-            // Strict error handling for critical WiFi operations
-            if (parsedResult case UspPartialSuccess(failures: final failures)) {
-              logger.e(
-                  '[UspWifiSettingsService] SSID update partial failure: ${failures.length} errors');
-              throw UnexpectedError(
-                message:
-                    'WiFi SSID update failed: ${failures.map((f) => f.errorMessage).join('; ')}',
-              );
-            } else if (parsedResult case UspFailure(errors: final errors)) {
-              logger.e('[UspWifiSettingsService] SSID update complete failure');
-              throw NetworkError(
-                message:
-                    'WiFi configuration failed: ${errors.map((e) => e.errorMessage).join('; ')}',
-              );
+            final parsed = UspResultParser.parseSetResult(result);
+            switch (parsed) {
+              case UspSuccess():
+                break;
+              case UspPartialSuccess(failures: final f):
+                throw UspAtomicModeFailureError(
+                  summary: 'WiFi SSID update partial failure: ${f.first.errorMessage}',
+                  successPaths: [],
+                  failedPaths: f.map((e) => e.requestedPath).toList(),
+                );
+              case UspFailure(errors: final e):
+                throw UspCompleteFailureError(
+                  summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
+                  failedPaths: e.map((e) => e.requestedPath).toList(),
+                );
             }
           }
-
-          logger.d(
-              '[UspWifiSettingsService] SSID updates completed successfully');
         }
         if (aggregate.apInstancePaths.isNotEmpty) {
           // Build a band lookup: AP instance path → band string.
@@ -284,7 +280,7 @@ class UspWifiSettingsService {
               band: band,
               selectedMode: pending.securityMode,
             );
-            await WiFiAccessPoints.update(
+            final result = await WiFiAccessPoints.update(
               _usp,
               [
                 WiFiAccessPointUpdate(
@@ -294,10 +290,27 @@ class UspWifiSettingsService {
                 )
               ],
             );
+            final parsed = UspResultParser.parseSetResult(result);
+            switch (parsed) {
+              case UspSuccess():
+                break;
+              case UspPartialSuccess(failures: final f):
+                throw UspAtomicModeFailureError(
+                  summary: 'WiFi AP update partial failure: ${f.first.errorMessage}',
+                  successPaths: [],
+                  failedPaths: f.map((e) => e.requestedPath).toList(),
+                );
+              case UspFailure(errors: final e):
+                throw UspCompleteFailureError(
+                  summary: 'WiFi AP update failed: ${e.first.errorMessage}',
+                  failedPaths: e.map((e) => e.requestedPath).toList(),
+                );
+            }
           }
         }
       }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -323,7 +336,7 @@ class UspWifiSettingsService {
         if (orig == null ||
             orig.enabled != curr.enabled ||
             orig.ssid != curr.ssid) {
-          await WiFiSsids.update(
+          final result = await WiFiSsids.update(
             _usp,
             [
               WiFiSsidUpdate(
@@ -333,6 +346,22 @@ class UspWifiSettingsService {
               )
             ],
           );
+          final parsed = UspResultParser.parseSetResult(result);
+          switch (parsed) {
+            case UspSuccess():
+              break;
+            case UspPartialSuccess(failures: final f):
+              throw UspAtomicModeFailureError(
+                summary: 'WiFi SSID update partial failure: ${f.first.errorMessage}',
+                successPaths: [],
+                failedPaths: f.map((e) => e.requestedPath).toList(),
+              );
+            case UspFailure(errors: final e):
+              throw UspCompleteFailureError(
+                summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
+                failedPaths: e.map((e) => e.requestedPath).toList(),
+              );
+          }
         }
 
         // ── AccessPoint layer ───────────────────────────────────────────────
@@ -343,7 +372,7 @@ class UspWifiSettingsService {
                 orig.securityMode != curr.securityMode ||
                 orig.ssidAdvertisementEnabled !=
                     curr.ssidAdvertisementEnabled)) {
-          await WiFiAccessPoints.update(
+          final result = await WiFiAccessPoints.update(
             _usp,
             [
               WiFiAccessPointUpdate(
@@ -356,6 +385,22 @@ class UspWifiSettingsService {
               )
             ],
           );
+          final parsed = UspResultParser.parseSetResult(result);
+          switch (parsed) {
+            case UspSuccess():
+              break;
+            case UspPartialSuccess(failures: final f):
+              throw UspAtomicModeFailureError(
+                summary: 'WiFi AP update partial failure: ${f.first.errorMessage}',
+                successPaths: [],
+                failedPaths: f.map((e) => e.requestedPath).toList(),
+              );
+            case UspFailure(errors: final e):
+              throw UspCompleteFailureError(
+                summary: 'WiFi AP update failed: ${e.first.errorMessage}',
+                failedPaths: e.map((e) => e.requestedPath).toList(),
+              );
+          }
         }
 
         // ── Radio layer ─────────────────────────────────────────────────────
@@ -366,7 +411,7 @@ class UspWifiSettingsService {
                 orig.channelBandwidth != curr.channelBandwidth ||
                 orig.channel != curr.channel ||
                 orig.autoChannelEnable != curr.autoChannelEnable)) {
-          await WiFiRadios.update(
+          final result = await WiFiRadios.update(
             _usp,
             [
               WiFiRadioUpdate(
@@ -382,9 +427,26 @@ class UspWifiSettingsService {
               )
             ],
           );
+          final parsed = UspResultParser.parseSetResult(result);
+          switch (parsed) {
+            case UspSuccess():
+              break;
+            case UspPartialSuccess(failures: final f):
+              throw UspAtomicModeFailureError(
+                summary: 'WiFi Radio update partial failure: ${f.first.errorMessage}',
+                successPaths: [],
+                failedPaths: f.map((e) => e.requestedPath).toList(),
+              );
+            case UspFailure(errors: final e):
+              throw UspCompleteFailureError(
+                summary: 'WiFi Radio update failed: ${e.first.errorMessage}',
+                failedPaths: e.map((e) => e.requestedPath).toList(),
+              );
+          }
         }
       }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -396,11 +458,28 @@ class UspWifiSettingsService {
   /// Toggles a WiFi radio on or off.
   Future<void> toggleRadio(String instancePath, bool enable) async {
     try {
-      await WiFiRadios.update(
+      final result = await WiFiRadios.update(
         _usp,
         [WiFiRadioUpdate(instancePath: instancePath, enable: enable)],
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          throw UspAtomicModeFailureError(
+            summary: 'Toggle radio partial failure: ${f.first.errorMessage}',
+            successPaths: [],
+            failedPaths: f.map((e) => e.requestedPath).toList(),
+          );
+        case UspFailure(errors: final e):
+          throw UspCompleteFailureError(
+            summary: 'Toggle radio failed: ${e.first.errorMessage}',
+            failedPaths: e.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -412,7 +491,7 @@ class UspWifiSettingsService {
     required bool autoChannel,
   }) async {
     try {
-      await WiFiRadios.update(
+      final result = await WiFiRadios.update(
         _usp,
         [
           WiFiRadioUpdate(
@@ -422,7 +501,24 @@ class UspWifiSettingsService {
           )
         ],
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          throw UspAtomicModeFailureError(
+            summary: 'Update radio channel partial failure: ${f.first.errorMessage}',
+            successPaths: [],
+            failedPaths: f.map((e) => e.requestedPath).toList(),
+          );
+        case UspFailure(errors: final e):
+          throw UspCompleteFailureError(
+            summary: 'Update radio channel failed: ${e.first.errorMessage}',
+            failedPaths: e.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
