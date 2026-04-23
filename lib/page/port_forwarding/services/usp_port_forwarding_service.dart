@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/port_forwarding.g.dart';
 import 'package:privacy_gui/generated/port_triggering.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
@@ -58,13 +59,30 @@ class UspPortForwardingService {
   Future<void> immediateToggleForwarding(
       String instancePath, bool enabled) async {
     try {
-      await PortForwarding.update(
+      final result = await PortForwarding.update(
         _usp,
         [
           PortForwardingRuleUpdate(instancePath: instancePath, enabled: enabled)
         ],
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          throw UspAtomicModeFailureError(
+            summary: 'Toggle forwarding partial failure: ${f.first.errorMessage}',
+            successPaths: [],
+            failedPaths: f.map((e) => e.requestedPath).toList(),
+          );
+        case UspFailure(errors: final e):
+          throw UspCompleteFailureError(
+            summary: 'Toggle forwarding failed: ${e.first.errorMessage}',
+            failedPaths: e.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -80,7 +98,7 @@ class UspPortForwardingService {
     int externalPortEndRange = 0,
   }) async {
     try {
-      await PortForwarding.add(
+      final result = await PortForwarding.add(
         _usp,
         [
           {
@@ -94,7 +112,24 @@ class UspPortForwardingService {
           }
         ],
       );
+      final parsed = UspResultParser.parseAddResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          throw UspAtomicModeFailureError(
+            summary: 'Add forwarding partial failure: ${f.first.errorMessage}',
+            successPaths: [],
+            failedPaths: f.map((e) => e.requestedPath).toList(),
+          );
+        case UspFailure(errors: final e):
+          throw UspCompleteFailureError(
+            summary: 'Add forwarding failed: ${e.first.errorMessage}',
+            failedPaths: e.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -107,11 +142,28 @@ class UspPortForwardingService {
   Future<void> immediateToggleTriggering(
       String instancePath, bool enabled) async {
     try {
-      await PortTriggering.update(
+      final result = await PortTriggering.update(
         _usp,
         [PortTriggerUpdate(instancePath: instancePath, enabled: enabled)],
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          throw UspAtomicModeFailureError(
+            summary: 'Toggle triggering partial failure: ${f.first.errorMessage}',
+            successPaths: [],
+            failedPaths: f.map((e) => e.requestedPath).toList(),
+          );
+        case UspFailure(errors: final e):
+          throw UspCompleteFailureError(
+            summary: 'Toggle triggering failed: ${e.first.errorMessage}',
+            failedPaths: e.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -121,12 +173,18 @@ class UspPortForwardingService {
   // ---------------------------------------------------------------------------
 
   /// Batch save port forwarding rules: diff original vs current.
+  ///
+  /// Lenient mode: partial success is acceptable (log warning),
+  /// only throws if ALL operations fail.
   Future<({int added, int updated, int deleted})> saveForwardingBatch({
     required List<PortForwardingRuleUIModel> original,
     required List<PortForwardingRuleUIModel> current,
   }) async {
     try {
-      // 1. Delete
+      int totalOps = 0;
+      int failedOps = 0;
+
+      // 1. Delete (sequential, reverse order to avoid firmware renumbering)
       final currentPaths = <String>{
         for (final r in current)
           if (r.instancePath != null) r.instancePath!,
@@ -135,15 +193,26 @@ class UspPortForwardingService {
           .where((r) =>
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
-      // Delete in reverse instance order to avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        await PortForwarding.delete(_usp, [r.instancePath!]);
+        totalOps++;
+        final result = await PortForwarding.delete(_usp, [r.instancePath!]);
+        final parsed = UspResultParser.parseDeleteResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(failures: final f):
+            logger.w('[PortForwarding] Delete partial: ${f.first.errorMessage}');
+          case UspFailure(errors: final e):
+            failedOps++;
+            logger.w('[PortForwarding] Delete failed: ${e.first.errorMessage}');
+        }
       }
 
-      // 2. Add
+      // 2. Add (single batch call)
       final toAdd = current.where((r) => r.instancePath == null).toList();
       if (toAdd.isNotEmpty) {
-        await PortForwarding.add(
+        totalOps++;
+        final result = await PortForwarding.add(
           _usp,
           toAdd
               .map((r) => {
@@ -157,9 +226,19 @@ class UspPortForwardingService {
                   })
               .toList(),
         );
+        final parsed = UspResultParser.parseAddResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(failures: final f):
+            logger.w('[PortForwarding] Add partial: ${f.first.errorMessage}');
+          case UspFailure(errors: final e):
+            failedOps++;
+            logger.w('[PortForwarding] Add failed: ${e.first.errorMessage}');
+        }
       }
 
-      // 3. Update
+      // 3. Update (single batch call)
       final originalByPath = <String, PortForwardingRuleUIModel>{
         for (final r in original)
           if (r.instancePath != null) r.instancePath!: r,
@@ -183,7 +262,26 @@ class UspPortForwardingService {
         }
       }
       if (toUpdate.isNotEmpty) {
-        await PortForwarding.update(_usp, toUpdate);
+        totalOps++;
+        final result = await PortForwarding.update(_usp, toUpdate);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(failures: final f):
+            logger.w('[PortForwarding] Update partial: ${f.first.errorMessage}');
+          case UspFailure(errors: final e):
+            failedOps++;
+            logger.w('[PortForwarding] Update failed: ${e.first.errorMessage}');
+        }
+      }
+
+      // All operations failed → throw
+      if (totalOps > 0 && failedOps == totalOps) {
+        throw UspCompleteFailureError(
+          summary: 'All forwarding batch operations failed',
+          failedPaths: [],
+        );
       }
 
       return (
@@ -192,6 +290,7 @@ class UspPortForwardingService {
         deleted: toDelete.length,
       );
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -201,12 +300,18 @@ class UspPortForwardingService {
   // ---------------------------------------------------------------------------
 
   /// Batch save port triggering rules: diff original vs current.
+  ///
+  /// Lenient mode: partial success is acceptable (log warning),
+  /// only throws if ALL operations fail.
   Future<({int added, int updated, int deleted})> saveTriggeringBatch({
     required List<PortTriggeringRuleUIModel> original,
     required List<PortTriggeringRuleUIModel> current,
   }) async {
     try {
-      // 1. Delete
+      int totalOps = 0;
+      int failedOps = 0;
+
+      // 1. Delete (sequential, reverse order to avoid firmware renumbering)
       final currentPaths = <String>{
         for (final r in current)
           if (r.instancePath != null) r.instancePath!,
@@ -216,12 +321,24 @@ class UspPortForwardingService {
               r.instancePath != null && !currentPaths.contains(r.instancePath))
           .toList();
       for (final r in toDelete.reversed) {
-        await PortTriggering.delete(_usp, [r.instancePath!]);
+        totalOps++;
+        final result = await PortTriggering.delete(_usp, [r.instancePath!]);
+        final parsed = UspResultParser.parseDeleteResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(failures: final f):
+            logger.w('[PortTriggering] Delete partial: ${f.first.errorMessage}');
+          case UspFailure(errors: final e):
+            failedOps++;
+            logger.w('[PortTriggering] Delete failed: ${e.first.errorMessage}');
+        }
       }
 
       // 2. Add (parent + forward rules)
       final toAdd = current.where((r) => r.instancePath == null).toList();
       for (final r in toAdd) {
+        totalOps++;
         final result = await PortTriggering.add(
           _usp,
           [
@@ -238,13 +355,26 @@ class UspPortForwardingService {
         // Extract instance path from structured response
         final parsedResult = UspResultParser.parseAddResult(result);
         String? parentPath;
-        if (parsedResult is UspSuccess<List<String>>) {
-          final createdInstances = parsedResult.allCreatedInstances;
-          if (createdInstances.isNotEmpty) {
-            parentPath = createdInstances.first.affectedPath;
-          }
+        switch (parsedResult) {
+          case UspSuccess():
+            final createdInstances = parsedResult.allCreatedInstances;
+            if (createdInstances.isNotEmpty) {
+              parentPath = createdInstances.first.affectedPath;
+            }
+          case UspPartialSuccess(failures: final f):
+            logger.w('[PortTriggering] Add parent partial: ${f.first.errorMessage}');
+            final createdInstances = parsedResult.successes
+                .expand((s) => s.createdInstances ?? <UspCreatedInstance>[])
+                .toList();
+            if (createdInstances.isNotEmpty) {
+              parentPath = createdInstances.first.affectedPath;
+            }
+          case UspFailure(errors: final e):
+            failedOps++;
+            logger.w('[PortTriggering] Add parent failed: ${e.first.errorMessage}');
         }
 
+        // Add forward rules only if parent was created
         if (parentPath != null) {
           for (final fr in r.forwardRules) {
             await PortTriggering.addPortTriggerForwardRule(
@@ -280,7 +410,26 @@ class UspPortForwardingService {
         }
       }
       if (toUpdate.isNotEmpty) {
-        await PortTriggering.update(_usp, toUpdate);
+        totalOps++;
+        final result = await PortTriggering.update(_usp, toUpdate);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(failures: final f):
+            logger.w('[PortTriggering] Update partial: ${f.first.errorMessage}');
+          case UspFailure(errors: final e):
+            failedOps++;
+            logger.w('[PortTriggering] Update failed: ${e.first.errorMessage}');
+        }
+      }
+
+      // All operations failed → throw
+      if (totalOps > 0 && failedOps == totalOps) {
+        throw UspCompleteFailureError(
+          summary: 'All triggering batch operations failed',
+          failedPaths: [],
+        );
       }
 
       return (
@@ -289,6 +438,7 @@ class UspPortForwardingService {
         deleted: toDelete.length,
       );
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
