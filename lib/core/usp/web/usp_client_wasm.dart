@@ -75,6 +75,13 @@ extension type UspClientJS._(JSObject _) implements JSObject {
   @JS('delete')
   external JSPromise<JSAny?> delete_(JSAny paths, JSAny? options);
 
+  // Ordered set: array of {path, value} objects processed in sequence
+  external JSPromise<JSAny?> setOrdered(JSAny parametersArray);
+
+  // Ordered set with options
+  external JSPromise<JSAny?> setOrderedWithOptions(
+      JSAny parametersArray, bool allowPartial);
+
   // Operate: execute a USP command
   external JSPromise<JSAny?> operate(String command, JSAny args);
 
@@ -251,6 +258,50 @@ class UspClientWeb {
     final map = _safeConvertToStringDynamicMap(result.dartify());
     if (kDebugMode) {
       logger.d('[WASM]SET dartified: ${jsonEncode(map)}');
+    }
+
+    return map;
+  }
+
+  // ---------------------------------------------------------------------------
+  // SET ORDERED — array of {path, value} processed in sequence
+  // ---------------------------------------------------------------------------
+
+  Future<Map<String, dynamic>> setOrdered(List<Map<String, String>> parameters,
+      {bool allowPartial = false}) async {
+    if (kDebugMode) {
+      logger.d(
+          '[WASM]SET_ORDERED called: ${parameters.length} params, allowPartial=$allowPartial');
+      for (var i = 0; i < parameters.length; i++) {
+        logger.d('[WASM]SET_ORDERED[$i]: ${parameters[i]}');
+      }
+    }
+
+    final jsParams = parameters
+        .map((p) => {'path': p['path'], 'value': p['value']}.jsify()!)
+        .toList()
+        .toJS;
+
+    final JSAny? result;
+    if (allowPartial) {
+      result = await _client.setOrderedWithOptions(jsParams, true).toDart;
+    } else {
+      result = await _client.setOrdered(jsParams).toDart;
+    }
+
+    if (kDebugMode) {
+      logger
+          .d('[WASM]SET_ORDERED raw response: ${result?.toString() ?? 'null'}');
+    }
+
+    if (result == null || result.isUndefinedOrNull) {
+      throw StateError(
+          'WASM client returned null/undefined - structured response required');
+    }
+
+    final map = _safeConvertToStringDynamicMap(result.dartify());
+    if (kDebugMode) {
+      logger.d('[WASM]SET_ORDERED dartified: ${jsonEncode(map)}');
     }
 
     return map;

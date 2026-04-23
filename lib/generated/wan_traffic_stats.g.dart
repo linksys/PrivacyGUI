@@ -42,8 +42,7 @@ class WanTrafficStats {
     if (!response.containsKey('Device.IP.Interface.2.Stats.PacketsReceived'))
       missing.add('Device.IP.Interface.2.Stats.PacketsReceived');
     if (missing.isNotEmpty) {
-      throw Exception(
-          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanTrafficStats(
       bytesSent: int.tryParse(

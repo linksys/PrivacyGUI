@@ -59,8 +59,7 @@ class Ipv6Settings {
         'Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses'))
       missing.add('Device.IPv6rd.InterfaceSetting.1.BorderRelayIPv4Addresses');
     if (missing.isNotEmpty) {
-      throw Exception(
-          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return Ipv6Settings(
       ipv6Enabled: response['Device.IP.Interface.2.IPv6Enable'] == true ||

@@ -12,6 +12,8 @@ class WanSettings {
   final String subnetMask;
   final String defaultGateway;
   final String dnsServers;
+  final String pppUsername;
+  final String pppPassword;
   final bool bridgeEnabled;
   final String currentMacAddress;
 
@@ -22,6 +24,8 @@ class WanSettings {
     required this.subnetMask,
     required this.defaultGateway,
     required this.dnsServers,
+    required this.pppUsername,
+    required this.pppPassword,
     required this.bridgeEnabled,
     required this.currentMacAddress,
   });
@@ -33,6 +37,8 @@ class WanSettings {
     'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers',
+    'Device.PPP.Interface.1.Username',
+    'Device.PPP.Interface.1.Password',
     'Device.Bridging.Bridge.1.Enable',
     'Device.Ethernet.Interface.1.MACAddress',
   ];
@@ -61,13 +67,16 @@ class WanSettings {
     if (!response.containsKey(
         'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'))
       missing.add('Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers');
+    if (!response.containsKey('Device.PPP.Interface.1.Username'))
+      missing.add('Device.PPP.Interface.1.Username');
+    if (!response.containsKey('Device.PPP.Interface.1.Password'))
+      missing.add('Device.PPP.Interface.1.Password');
     if (!response.containsKey('Device.Bridging.Bridge.1.Enable'))
       missing.add('Device.Bridging.Bridge.1.Enable');
     if (!response.containsKey('Device.Ethernet.Interface.1.MACAddress'))
       missing.add('Device.Ethernet.Interface.1.MACAddress');
     if (missing.isNotEmpty) {
-      throw Exception(
-          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanSettings(
       addressingType:
@@ -87,6 +96,10 @@ class WanSettings {
       dnsServers: (response[
               'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] ??
           '') as String,
+      pppUsername:
+          (response['Device.PPP.Interface.1.Username'] ?? '') as String,
+      pppPassword:
+          (response['Device.PPP.Interface.1.Password'] ?? '') as String,
       bridgeEnabled: response['Device.Bridging.Bridge.1.Enable'] == true ||
           response['Device.Bridging.Bridge.1.Enable'] == 'true' ||
           response['Device.Bridging.Bridge.1.Enable'] == '1',
@@ -104,6 +117,8 @@ class WanSettings {
     String? subnetMask,
     String? defaultGateway,
     String? dnsServers,
+    String? pppUsername,
+    String? pppPassword,
     bool? bridgeEnabled,
     bool allowPartial = false,
   }) async {
@@ -122,6 +137,10 @@ class WanSettings {
     if (dnsServers != null)
       params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] =
           dnsServers;
+    if (pppUsername != null)
+      params['Device.PPP.Interface.1.Username'] = pppUsername;
+    if (pppPassword != null)
+      params['Device.PPP.Interface.1.Password'] = pppPassword;
     if (bridgeEnabled != null)
       params['Device.Bridging.Bridge.1.Enable'] = bridgeEnabled;
     if (params.isEmpty) {
@@ -133,6 +152,51 @@ class WanSettings {
     return await client.set(params, allowPartial: allowPartial);
   }
 
+  /// Update parameters in specified priority order using ordered groups
+  ///
+  /// This method preserves parameter execution order for operations where
+  /// sequence affects performance or correctness.
+  static Future<Map<String, dynamic>> updateOrdered(
+      UspClient client, WanSettings data) async {
+    final orderedParams = <Map<String, String>>[];
+
+    // Priority 1: Parameters with priority 1
+    final group1Params = <String, String>{};
+    group1Params['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
+        data.addressingType.toString();
+    if (group1Params.isNotEmpty) {
+      orderedParams.add(group1Params);
+    }
+
+    // Priority 2: Parameters with priority 2
+    final group2Params = <String, String>{};
+    group2Params['Device.IP.Interface.2.IPv4Address.1.IPAddress'] =
+        data.staticIpAddress.toString();
+    group2Params['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] =
+        data.subnetMask.toString();
+    group2Params[
+            'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'] =
+        data.defaultGateway.toString();
+    group2Params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] =
+        data.dnsServers.toString();
+    group2Params['Device.PPP.Interface.1.Username'] =
+        data.pppUsername.toString();
+    group2Params['Device.PPP.Interface.1.Password'] =
+        data.pppPassword.toString();
+    if (group2Params.isNotEmpty) {
+      orderedParams.add(group2Params);
+    }
+
+    if (orderedParams.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': {}, 'updatedCount': 0}
+      };
+    }
+
+    return await client.setOrdered(orderedParams);
+  }
+
   @override
   String toString() {
     return 'WanSettings('
@@ -142,6 +206,8 @@ class WanSettings {
         'subnetMask: $subnetMask, '
         'defaultGateway: $defaultGateway, '
         'dnsServers: $dnsServers, '
+        'pppUsername: $pppUsername, '
+        'pppPassword: $pppPassword, '
         'bridgeEnabled: $bridgeEnabled, '
         'currentMacAddress: $currentMacAddress'
         ')';

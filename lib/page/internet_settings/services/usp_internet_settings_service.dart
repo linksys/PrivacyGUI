@@ -136,7 +136,6 @@ class UspInternetSettingsService {
     try {
       // Step 1: PPP lifecycle
       final pppPath = await _handlePppLifecycle(
-        original,
         edited,
         currentInstancePath: pppInstancePath,
       );
@@ -148,13 +147,19 @@ class UspInternetSettingsService {
         currentInstancePath: vlanInstancePath,
       );
 
-      // Step 3: Singleton WAN fields
-      await _saveWanSettings(original, edited);
+      // Step 3: Singleton WAN fields (+ PPP creds if switching to PPPoE)
+      final typeChanged = original.connectionType != edited.connectionType;
+      final switchingToPppoe =
+          typeChanged && edited.connectionType == UspWanConnectionType.pppoe;
+      await _saveWanSettings(original, edited,
+          includePppCredentials: switchingToPppoe);
 
-      // Step 4: PPP instance fields
+      // Step 4: PPP instance fields (skip username/password if already sent
+      // in the ordered Set above)
       if (pppPath != null &&
           edited.connectionType == UspWanConnectionType.pppoe) {
-        await _savePppSettings(original, edited, pppPath);
+        await _savePppSettings(original, edited, pppPath,
+            skipCredentials: switchingToPppoe);
       }
 
       // Step 5: VLAN instance fields
@@ -170,24 +175,23 @@ class UspInternetSettingsService {
   }
 
   // ---------------------------------------------------------------------------
-  // PPP Lifecycle (DD-1: Strict — Add when switching TO PPPoE, Delete when away)
+  // PPP Lifecycle — Add-only: create instance when entering PPPoE if missing
   // ---------------------------------------------------------------------------
 
   /// Returns the PPP instance path to use for subsequent Set operations,
   /// or null if no PPP instance exists after this step.
+  ///
+  /// Only creates a new instance when switching TO PPPoE and none exists.
+  /// Never deletes — the instance persists across mode switches.
   Future<String?> _handlePppLifecycle(
-    UspInternetSettingsForm original,
     UspInternetSettingsForm edited, {
     String? currentInstancePath,
   }) async {
-    final wasPppoe = original.connectionType == UspWanConnectionType.pppoe;
     final isPppoe = edited.connectionType == UspWanConnectionType.pppoe;
 
-    if (!wasPppoe && isPppoe && currentInstancePath == null) {
-      // Switching TO PPPoE and no instance exists — Add
+    if (isPppoe && currentInstancePath == null) {
       logger.d('[USP][WAN] Adding PPP.Interface instance for PPPoE');
       final result = await PppInterface.add(_usp, [{}]);
-      // Extract instance path from structured response
       final parsedResult = UspResultParser.parseAddResult(result);
       if (parsedResult is UspSuccess<List<String>>) {
         final createdInstances = parsedResult.allCreatedInstances;
@@ -196,15 +200,8 @@ class UspInternetSettingsService {
         }
       }
       return null;
-    } else if (wasPppoe && !isPppoe && currentInstancePath != null) {
-      // Switching AWAY from PPPoE — Delete
-      logger
-          .d('[USP][WAN] Deleting PPP.Interface instance $currentInstancePath');
-      await PppInterface.delete(_usp, [currentInstancePath]);
-      return null;
     }
 
-    // No lifecycle change — return current path
     return currentInstancePath;
   }
 
@@ -253,8 +250,9 @@ class UspInternetSettingsService {
 
   Future<void> _saveWanSettings(
     UspInternetSettingsForm original,
-    UspInternetSettingsForm edited,
-  ) async {
+    UspInternetSettingsForm edited, {
+    bool includePppCredentials = false,
+  }) async {
     final typeChanged = original.connectionType != edited.connectionType;
 
     // Merge 3 DNS fields → comma-separated string
@@ -263,21 +261,38 @@ class UspInternetSettingsService {
     final editedDns =
         _mergeDns(edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
 
-    // Save IP interface params (Device.IP.Interface.2.*)
-    await WanSettings.update(
-      _usp,
-      addressingType:
-          typeChanged ? edited.connectionType.addressingTypeValue : null,
-      mtu: _diff(original.mtu, edited.mtu),
-      staticIpAddress: _diff(original.staticIpAddress, edited.staticIpAddress),
-      subnetMask: _diff(original.subnetMask, edited.subnetMask),
-      defaultGateway: _diff(original.defaultGateway, edited.defaultGateway),
-      dnsServers: _diff(originalDns, editedDns),
-    );
+    if (typeChanged) {
+      // Use ordered Set via WanSettings.updateOrdered() — AddressingType
+      // (priority 1) is processed before Static IP / PPP params (priority 2)
+      // due to bbfdm enable guard.
+      final data = WanSettings(
+        addressingType: edited.connectionType.addressingTypeValue,
+        mtu: edited.mtu,
+        staticIpAddress: edited.staticIpAddress,
+        subnetMask: edited.subnetMask,
+        defaultGateway: edited.defaultGateway,
+        dnsServers: editedDns,
+        pppUsername: includePppCredentials ? edited.pppUsername : '',
+        pppPassword: includePppCredentials ? edited.pppPassword : '',
+        bridgeEnabled: edited.connectionType == UspWanConnectionType.bridge,
+        currentMacAddress: '',
+      );
+      await WanSettings.updateOrdered(_usp, data);
+    } else {
+      // No type change — use standard unordered Set for field edits
+      await WanSettings.update(
+        _usp,
+        mtu: _diff(original.mtu, edited.mtu),
+        staticIpAddress:
+            _diff(original.staticIpAddress, edited.staticIpAddress),
+        subnetMask: _diff(original.subnetMask, edited.subnetMask),
+        defaultGateway: _diff(original.defaultGateway, edited.defaultGateway),
+        dnsServers: _diff(originalDns, editedDns),
+      );
+    }
 
-    // Save bridge param separately — Device.Bridging.Bridge.1.* is managed
-    // by a different USP Service and cannot be combined with
-    // Device.IP.Interface.2.* in a single Set (error 7005).
+    // Bridge param must be set separately — Device.Bridging.Bridge.1.* is
+    // managed by a different USP service (error 7005).
     if (typeChanged) {
       await WanSettings.update(
         _usp,
@@ -293,15 +308,20 @@ class UspInternetSettingsService {
   Future<void> _savePppSettings(
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
-    String instancePath,
-  ) async {
+    String instancePath, {
+    bool skipCredentials = false,
+  }) async {
     await PppInterface.update(
       _usp,
       [
         PppInterfaceInstanceUpdate(
           instancePath: instancePath,
-          username: _diff(original.pppUsername, edited.pppUsername),
-          password: _diff(original.pppPassword, edited.pppPassword),
+          username: skipCredentials
+              ? null
+              : _diff(original.pppUsername, edited.pppUsername),
+          password: skipCredentials
+              ? null
+              : _diff(original.pppPassword, edited.pppPassword),
           pppoeServiceName:
               _diff(original.pppoeServiceName, edited.pppoeServiceName),
           connectionTrigger:

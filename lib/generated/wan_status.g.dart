@@ -53,8 +53,7 @@ class WanStatus {
     if (!response.containsKey('Device.IP.Interface.2.IPv6Enable'))
       missing.add('Device.IP.Interface.2.IPv6Enable');
     if (missing.isNotEmpty) {
-      throw Exception(
-          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return WanStatus(
       status: (response['Device.IP.Interface.2.Status'] ?? '') as String,

@@ -105,8 +105,7 @@ class MultiInterfaceTrafficStats {
         .containsKey('Device.IP.Interface.1.Stats.DiscardPacketsReceived'))
       missing.add('Device.IP.Interface.1.Stats.DiscardPacketsReceived');
     if (missing.isNotEmpty) {
-      throw Exception(
-          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return MultiInterfaceTrafficStats(
       wanBytesSent: int.tryParse(
