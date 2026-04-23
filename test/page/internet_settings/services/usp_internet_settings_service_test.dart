@@ -16,6 +16,8 @@ const _wanResponse = <String, dynamic>{
   'Device.IP.Interface.2.IPv4Address.1.SubnetMask': '255.255.255.0',
   'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway': '192.168.1.1',
   'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers': '8.8.8.8,8.8.4.4',
+  'Device.PPP.Interface.1.Username': 'testuser',
+  'Device.PPP.Interface.1.Password': 'testpass',
   'Device.Bridging.Bridge.1.Enable': false,
   'Device.Ethernet.Interface.1.MACAddress': '11:22:33:44:55:66',
 };
@@ -306,7 +308,11 @@ void main() {
       );
       final edited = original.copyWith(vlanEnabled: true, vlanId: 100);
 
-      await service.saveAll(original, edited);
+      await service.saveAll(
+        original,
+        edited,
+        pppInstancePath: 'Device.PPP.Interface.1.',
+      );
 
       verify(() => mockUsp.add(any())).called(1);
     });
@@ -331,10 +337,207 @@ void main() {
       await service.saveAll(
         original,
         edited,
+        pppInstancePath: 'Device.PPP.Interface.1.',
         vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
       );
 
       verify(() => mockUsp.delete(any())).called(1);
+    });
+
+    test('switching to DHCP sends only AddressingType', () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.staticIp,
+        staticIpAddress: '10.0.0.1',
+        subnetMask: '255.255.255.0',
+        defaultGateway: '10.0.0.254',
+        dnsServer1: '8.8.8.8',
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      // Exactly 1 set call for WanDhcp.update (AddressingType only)
+      // IPv6 and other calls may also use set, so find the one with AddressingType
+      final dhcpParams = captured.whereType<Map<String, dynamic>>().where((m) =>
+          m.containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      expect(dhcpParams.length, equals(1));
+      expect(
+        dhcpParams.first['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
+        equals('DHCP'),
+      );
+      expect(dhcpParams.first.length, equals(1));
+    });
+
+    test('switching to Static IP sends 5 params in 2 ordered groups', () async {
+      when(() => mockUsp.setOrdered(any(),
+              allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'overallSuccess': true,
+                'hasAnySuccess': true,
+                'hasErrors': false,
+                'results': []
+              });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.staticIp,
+        staticIpAddress: '10.0.0.1',
+        subnetMask: '255.255.255.0',
+        defaultGateway: '10.0.0.254',
+        dnsServer1: '8.8.8.8',
+      );
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () => mockUsp.setOrdered(captureAny(),
+            allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final orderedParams = captured.first as List<Map<String, String>>;
+
+      // Group 1: AddressingType only
+      expect(orderedParams[0].length, equals(1));
+      expect(
+        orderedParams[0]['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
+        equals('Static'),
+      );
+
+      // Group 2: 4 IP config fields
+      expect(orderedParams[1].length, equals(4));
+      expect(
+        orderedParams[1]['Device.IP.Interface.2.IPv4Address.1.IPAddress'],
+        equals('10.0.0.1'),
+      );
+      expect(
+        orderedParams[1]['Device.IP.Interface.2.IPv4Address.1.SubnetMask'],
+        equals('255.255.255.0'),
+      );
+      expect(
+        orderedParams[1]
+            ['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'],
+        equals('10.0.0.254'),
+      );
+      expect(
+        orderedParams[1]
+            ['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'],
+        equals('8.8.8.8'),
+      );
+    });
+
+    test('switching to PPPoE sends 3 params (PPP creds + AddressingType)',
+        () async {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
+            'overallSuccess': true,
+            'hasAnySuccess': true,
+            'hasErrors': false,
+            'results': [
+              {
+                'requestedPath': 'Device.PPP.Interface.',
+                'success': true,
+                'createdInstances': [
+                  {
+                    'affectedPath': 'Device.PPP.Interface.1.',
+                    'initialParams': {}
+                  }
+                ]
+              }
+            ]
+          });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.pppoe,
+        pppUsername: 'myuser',
+        pppPassword: 'mypass',
+      );
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      // Find the set call that contains PPP credentials + AddressingType
+      final pppoeParams = captured.whereType<Map<String, dynamic>>().where(
+          (m) =>
+              m.containsKey('Device.PPP.Interface.1.Username') ||
+              m.containsKey(
+                  'Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      // WanPppoe.update sends all 3 in one set call
+      final combinedParams = pppoeParams.firstWhere(
+        (m) => m.containsKey('Device.PPP.Interface.1.Username'),
+      );
+      expect(combinedParams.length, equals(3));
+      expect(
+          combinedParams['Device.PPP.Interface.1.Username'], equals('myuser'));
+      expect(
+          combinedParams['Device.PPP.Interface.1.Password'], equals('mypass'));
+      expect(
+        combinedParams['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
+        equals('IPCP'),
+      );
+    });
+
+    test('switching to Bridge sends only AddressingType as empty string',
+        () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+      );
+      final edited = original.copyWith(
+        connectionType: UspWanConnectionType.bridge,
+      );
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      final bridgeParams = captured.whereType<Map<String, dynamic>>().where(
+          (m) => m.containsKey(
+              'Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      expect(bridgeParams.length, equals(1));
+      expect(
+        bridgeParams
+            .first['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
+        equals(''),
+      );
+      expect(bridgeParams.first.length, equals(1));
+    });
+
+    test('MTU change without type change sends only MTU param', () async {
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+      );
+      final edited = original.copyWith(mtu: 1400);
+
+      await service.saveAll(original, edited);
+
+      final captured = verify(
+        () =>
+            mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')),
+      ).captured;
+      // Should have exactly 1 set call with MTU param
+      final mtuParams = captured
+          .whereType<Map<String, dynamic>>()
+          .where((m) => m.containsKey('Device.IP.Interface.2.MaxMTUSize'));
+      expect(mtuParams.length, equals(1));
+      expect(
+        mtuParams.first['Device.IP.Interface.2.MaxMTUSize'],
+        equals(1400),
+      );
+      expect(mtuParams.first.length, equals(1));
     });
   });
 
