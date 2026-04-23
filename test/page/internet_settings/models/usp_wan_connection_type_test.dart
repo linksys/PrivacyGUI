@@ -119,8 +119,8 @@ void main() {
         expect(UspWanConnectionType.pppoe.addressingTypeValue, 'IPCP');
       });
 
-      test('bridge returns DHCP', () {
-        expect(UspWanConnectionType.bridge.addressingTypeValue, 'DHCP');
+      test('bridge returns empty string', () {
+        expect(UspWanConnectionType.bridge.addressingTypeValue, '');
       });
     });
   });
