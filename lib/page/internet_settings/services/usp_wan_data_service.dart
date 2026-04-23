@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/static_routing.g.dart';
+import 'package:privacy_gui/generated/wan_ipv6addresses.g.dart';
+import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/page/_shared/models/wan_status_ui_model.dart';
 
 // ---------------------------------------------------------------------------
@@ -67,46 +69,30 @@ class UspWanDataService {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /// Fetches default gateway IP and IPv6 addresses in a single USP request.
-  ///
-  /// Combines the routing table scan (for gateway) and IPv6Address
-  /// multi-instance query to minimize throttler slot usage.
+  /// Fetches default gateway IP and IPv6 addresses via codegen APIs.
   Future<({String gateway, List<String> ipv6Addresses})>
       _fetchGatewayAndIpv6Addresses() async {
     try {
-      final resp = await _usp.get([
-        'Device.Routing.Router.1.IPv4Forwarding.*.DestIPAddress',
-        'Device.Routing.Router.1.IPv4Forwarding.*.GatewayIPAddress',
-        'Device.Routing.Router.1.IPv4Forwarding.*.Interface',
-        'Device.IP.Interface.2.IPv6Address.',
-      ]).timeout(const Duration(seconds: 20));
+      final results = await Future.wait([
+        StaticRouting.fetch(_usp),
+        WanIpv6Addresses.fetch(_usp),
+      ]);
 
-      // Parse gateway from routing table
+      final routing = results[0] as StaticRouting;
+      final ipv6 = results[1] as WanIpv6Addresses;
+
+      // Find default route (dest 0.0.0.0) on WAN interface (Interface.2)
       String gateway = '';
-      const basePath = 'Device.Routing.Router.1.IPv4Forwarding.';
-      final ids = <String>{};
-      for (final key in resp.keys) {
-        if (key.startsWith(basePath)) {
-          final rest = key.substring(basePath.length);
-          final dot = rest.indexOf('.');
-          if (dot > 0) ids.add(rest.substring(0, dot));
-        }
-      }
-      for (final id in ids) {
-        final prefix = '$basePath$id.';
-        final dest = resp['${prefix}DestIPAddress']?.toString() ?? '';
-        final gw = resp['${prefix}GatewayIPAddress']?.toString() ?? '';
-        final iface = resp['${prefix}Interface']?.toString() ?? '';
-        if (dest == '0.0.0.0' && iface.contains('Interface.2')) {
-          gateway = gw;
+      for (final route in routing.items) {
+        if (route.destIpAddress == '0.0.0.0' &&
+            route.interface_.contains('Interface.2')) {
+          gateway = route.gatewayIpAddress;
           break;
         }
       }
 
-      // Parse IPv6 addresses
-      final instances = resp.getInstances('Device.IP.Interface.2.IPv6Address.');
-      final List<String> ipv6Addresses = instances
-          .map((i) => i.getString('IPAddress'))
+      final ipv6Addresses = ipv6.items
+          .map((addr) => addr.ipAddress)
           .where((ip) => ip.isNotEmpty)
           .toList();
 

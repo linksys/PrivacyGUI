@@ -32,6 +32,10 @@ class UspClientWeb {
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 
+  Future<Map<String, dynamic>> setOrdered(List<Map<String, String>> parameters,
+          {bool allowPartial = false}) =>
+      throw UnsupportedError('USP is only available on Web');
+
   Future<Map<String, dynamic>> add(List<Map<String, dynamic>> items,
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');

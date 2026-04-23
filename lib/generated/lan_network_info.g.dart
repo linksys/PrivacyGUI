@@ -67,8 +67,7 @@ class LanNetworkInfo {
     if (!response.containsKey('Device.IP.Interface.1.IPv6Enable'))
       missing.add('Device.IP.Interface.1.IPv6Enable');
     if (missing.isNotEmpty) {
-      throw Exception(
-          '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+      throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
     return LanNetworkInfo(
       ipAddress: (response['Device.IP.Interface.1.IPv4Address.1.IPAddress'] ??

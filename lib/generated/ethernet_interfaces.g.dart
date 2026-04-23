@@ -74,8 +74,7 @@ class EthernetInterfaces {
       if (!response.containsKey('${p}CurrentBitRate'))
         missing.add('${p}CurrentBitRate');
       if (missing.isNotEmpty) {
-        throw Exception(
-            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
       items.add(EthernetInterface(
         instancePath: p,
