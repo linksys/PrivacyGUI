@@ -1,12 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
+
+// WASM v0.11.0 response helpers
+Map<String, dynamic> uspSuccess({Map<String, dynamic> data = const {}}) => {
+      'success': true,
+      'result': {'data': data},
+    };
+
+Map<String, dynamic> uspFailure(
+        {String path = 'bulk_operation',
+        int errorCode = 7004,
+        String errorMessage = 'Operation failed'}) =>
+    {
+      'success': false,
+      'result': {
+        'data': <String, dynamic>{},
+        'error': {
+          path: {
+            'errorCode': errorCode,
+            'errorMessage': errorMessage,
+          }
+        },
+      },
+    };
 
 void main() {
   late UspWifiSettingsService svc;
@@ -734,6 +759,174 @@ void main() {
       expect(networks, hasLength(2));
       expect(networks[0].isGuest, isFalse);
       expect(networks[1].isGuest, isFalse);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // toggleRadio
+  // -------------------------------------------------------------------------
+
+  group('toggleRadio', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+    });
+
+    test('succeeds on UspSuccess', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      await writeSvc.toggleRadio('Device.WiFi.Radio.1.', true);
+
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test('throws UspCompleteFailureError on UspFailure', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspFailure());
+
+      expect(
+        () => writeSvc.toggleRadio('Device.WiFi.Radio.1.', true),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('maps transport error to ServiceError', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => writeSvc.toggleRadio('Device.WiFi.Radio.1.', true),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // updateRadioChannel
+  // -------------------------------------------------------------------------
+
+  group('updateRadioChannel', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+    });
+
+    test('succeeds on UspSuccess', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      await writeSvc.updateRadioChannel(
+        'Device.WiFi.Radio.1.',
+        channel: 36,
+        autoChannel: false,
+      );
+
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test('throws UspCompleteFailureError on UspFailure', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspFailure());
+
+      expect(
+        () => writeSvc.updateRadioChannel(
+          'Device.WiFi.Radio.1.',
+          channel: 36,
+          autoChannel: false,
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // saveAdvanced — strict error handling
+  // -------------------------------------------------------------------------
+
+  group('saveAdvanced', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+    });
+
+    WifiNetworkUIModel makeNetwork({
+      String ssid = 'TestNet',
+      bool enabled = true,
+      String securityMode = 'WPA2-Personal',
+      String keyPassphrase = 'pass1234',
+      String band = '5GHz',
+      int channel = 36,
+      String channelBandwidth = '80MHz',
+      bool autoChannelEnable = true,
+    }) =>
+        WifiNetworkUIModel(
+          ssidInstancePath: 'Device.WiFi.SSID.1.',
+          accessPointInstancePath: 'Device.WiFi.AccessPoint.1.',
+          radioInstancePath: 'Device.WiFi.Radio.1.',
+          ssid: ssid,
+          enabled: enabled,
+          ssidAdvertisementEnabled: true,
+          supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+          securityMode: securityMode,
+          keyPassphrase: keyPassphrase,
+          isGuest: false,
+          band: band,
+          channel: channel,
+          channelBandwidth: channelBandwidth,
+          autoChannelEnable: autoChannelEnable,
+          possibleChannels: [36, 40, 44, 48],
+          operatingStandards: 'ax',
+          supportedStandards: 'a,n,ac,ax',
+        );
+
+    test('succeeds when all updates return UspSuccess', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      final original = [makeNetwork(ssid: 'OldName')];
+      final current = [makeNetwork(ssid: 'NewName')];
+
+      await writeSvc.saveAdvanced(original: original, current: current);
+
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test('throws UspCompleteFailureError when SSID update fails', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspFailure(errorMessage: 'SSID rejected'));
+
+      final original = [makeNetwork(ssid: 'OldName')];
+      final current = [makeNetwork(ssid: 'NewName')];
+
+      expect(
+        () => writeSvc.saveAdvanced(original: original, current: current),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('skips unchanged networks', () async {
+      final networks = [makeNetwork()];
+
+      await writeSvc.saveAdvanced(
+        original: networks,
+        current: List.of(networks),
+      );
+
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
     });
   });
 }
