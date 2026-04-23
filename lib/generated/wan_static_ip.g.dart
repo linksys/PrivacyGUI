@@ -4,58 +4,41 @@
 
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-/// WAN singleton settings — fetch all params + cross-mode writable fields (MTU)
-class WanSettings {
+/// WAN Static IP mode switch — AddressingType + IP config (5 params, 2 ordered groups)
+class WanStaticIp {
   final String addressingType;
-  final int mtu;
   final String staticIpAddress;
   final String subnetMask;
   final String defaultGateway;
   final String dnsServers;
-  final String pppUsername;
-  final String pppPassword;
-  final bool bridgeEnabled;
-  final String currentMacAddress;
 
-  const WanSettings({
+  const WanStaticIp({
     required this.addressingType,
-    required this.mtu,
     required this.staticIpAddress,
     required this.subnetMask,
     required this.defaultGateway,
     required this.dnsServers,
-    required this.pppUsername,
-    required this.pppPassword,
-    required this.bridgeEnabled,
-    required this.currentMacAddress,
   });
 
   static const _paths = [
     'Device.IP.Interface.2.IPv4Address.1.AddressingType',
-    'Device.IP.Interface.2.MaxMTUSize',
     'Device.IP.Interface.2.IPv4Address.1.IPAddress',
     'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway',
     'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers',
-    'Device.PPP.Interface.1.Username',
-    'Device.PPP.Interface.1.Password',
-    'Device.Bridging.Bridge.1.Enable',
-    'Device.Ethernet.Interface.1.MACAddress',
   ];
 
   /// Fetch all parameters via USP Get message
-  static Future<WanSettings> fetch(UspClient client) async {
+  static Future<WanStaticIp> fetch(UspClient client) async {
     final response = await client.get(_paths);
-    return WanSettings._fromResponse(response);
+    return WanStaticIp._fromResponse(response);
   }
 
-  factory WanSettings._fromResponse(Map<String, dynamic> response) {
+  factory WanStaticIp._fromResponse(Map<String, dynamic> response) {
     final missing = <String>[];
     if (!response
         .containsKey('Device.IP.Interface.2.IPv4Address.1.AddressingType'))
       missing.add('Device.IP.Interface.2.IPv4Address.1.AddressingType');
-    if (!response.containsKey('Device.IP.Interface.2.MaxMTUSize'))
-      missing.add('Device.IP.Interface.2.MaxMTUSize');
     if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.IPAddress'))
       missing.add('Device.IP.Interface.2.IPv4Address.1.IPAddress');
     if (!response.containsKey('Device.IP.Interface.2.IPv4Address.1.SubnetMask'))
@@ -67,24 +50,13 @@ class WanSettings {
     if (!response.containsKey(
         'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'))
       missing.add('Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers');
-    if (!response.containsKey('Device.PPP.Interface.1.Username'))
-      missing.add('Device.PPP.Interface.1.Username');
-    if (!response.containsKey('Device.PPP.Interface.1.Password'))
-      missing.add('Device.PPP.Interface.1.Password');
-    if (!response.containsKey('Device.Bridging.Bridge.1.Enable'))
-      missing.add('Device.Bridging.Bridge.1.Enable');
-    if (!response.containsKey('Device.Ethernet.Interface.1.MACAddress'))
-      missing.add('Device.Ethernet.Interface.1.MACAddress');
     if (missing.isNotEmpty) {
       throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
     }
-    return WanSettings(
+    return WanStaticIp(
       addressingType:
           (response['Device.IP.Interface.2.IPv4Address.1.AddressingType'] ?? '')
               as String,
-      mtu: int.tryParse(
-              response['Device.IP.Interface.2.MaxMTUSize']?.toString() ?? '') ??
-          0,
       staticIpAddress:
           (response['Device.IP.Interface.2.IPv4Address.1.IPAddress'] ?? '')
               as String,
@@ -96,26 +68,33 @@ class WanSettings {
       dnsServers: (response[
               'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] ??
           '') as String,
-      pppUsername:
-          (response['Device.PPP.Interface.1.Username'] ?? '') as String,
-      pppPassword:
-          (response['Device.PPP.Interface.1.Password'] ?? '') as String,
-      bridgeEnabled: response['Device.Bridging.Bridge.1.Enable'] == true ||
-          response['Device.Bridging.Bridge.1.Enable'] == 'true' ||
-          response['Device.Bridging.Bridge.1.Enable'] == '1',
-      currentMacAddress:
-          (response['Device.Ethernet.Interface.1.MACAddress'] ?? '') as String,
     );
   }
 
   /// Update writable parameters via USP Set message
   static Future<Map<String, dynamic>> update(
     UspClient client, {
-    int? mtu,
+    String? addressingType,
+    String? staticIpAddress,
+    String? subnetMask,
+    String? defaultGateway,
+    String? dnsServers,
     bool allowPartial = false,
   }) async {
     final params = <String, dynamic>{};
-    if (mtu != null) params['Device.IP.Interface.2.MaxMTUSize'] = mtu;
+    if (addressingType != null)
+      params['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
+          addressingType;
+    if (staticIpAddress != null)
+      params['Device.IP.Interface.2.IPv4Address.1.IPAddress'] = staticIpAddress;
+    if (subnetMask != null)
+      params['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] = subnetMask;
+    if (defaultGateway != null)
+      params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'] =
+          defaultGateway;
+    if (dnsServers != null)
+      params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] =
+          dnsServers;
     if (params.isEmpty) {
       return {
         'success': true,
@@ -125,19 +104,55 @@ class WanSettings {
     return await client.set(params, allowPartial: allowPartial);
   }
 
+  /// Update parameters in specified priority order using ordered groups
+  ///
+  /// This method preserves parameter execution order for operations where
+  /// sequence affects performance or correctness.
+  static Future<Map<String, dynamic>> updateOrdered(
+      UspClient client, WanStaticIp data) async {
+    final orderedParams = <Map<String, String>>[];
+
+    // Priority 1: Parameters with priority 1
+    final group1Params = <String, String>{};
+    group1Params['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
+        data.addressingType.toString();
+    if (group1Params.isNotEmpty) {
+      orderedParams.add(group1Params);
+    }
+
+    // Priority 2: Parameters with priority 2
+    final group2Params = <String, String>{};
+    group2Params['Device.IP.Interface.2.IPv4Address.1.IPAddress'] =
+        data.staticIpAddress.toString();
+    group2Params['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] =
+        data.subnetMask.toString();
+    group2Params[
+            'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'] =
+        data.defaultGateway.toString();
+    group2Params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] =
+        data.dnsServers.toString();
+    if (group2Params.isNotEmpty) {
+      orderedParams.add(group2Params);
+    }
+
+    if (orderedParams.isEmpty) {
+      return {
+        'success': true,
+        'result': {'data': {}, 'updatedCount': 0}
+      };
+    }
+
+    return await client.setOrdered(orderedParams);
+  }
+
   @override
   String toString() {
-    return 'WanSettings('
+    return 'WanStaticIp('
         'addressingType: $addressingType, '
-        'mtu: $mtu, '
         'staticIpAddress: $staticIpAddress, '
         'subnetMask: $subnetMask, '
         'defaultGateway: $defaultGateway, '
-        'dnsServers: $dnsServers, '
-        'pppUsername: $pppUsername, '
-        'pppPassword: $pppPassword, '
-        'bridgeEnabled: $bridgeEnabled, '
-        'currentMacAddress: $currentMacAddress'
+        'dnsServers: $dnsServers'
         ')';
   }
 }
