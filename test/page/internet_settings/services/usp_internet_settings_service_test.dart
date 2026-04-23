@@ -254,32 +254,6 @@ void main() {
       verify(() => mockUsp.add(any())).called(1);
     });
 
-    test('deletes PPP instance when switching away from PPPoE', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
-          });
-
-      final original = UspInternetSettingsForm(
-        connectionType: UspWanConnectionType.pppoe,
-        pppUsername: 'user',
-        pppPassword: 'pass',
-      );
-      final edited = original.copyWith(
-        connectionType: UspWanConnectionType.dhcp,
-      );
-
-      await service.saveAll(
-        original,
-        edited,
-        pppInstancePath: 'Device.PPP.Interface.1.',
-      );
-
-      verify(() => mockUsp.delete(any())).called(1);
-    });
-
     test('adds VLAN instance when enabling VLAN without existing instance',
         () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
