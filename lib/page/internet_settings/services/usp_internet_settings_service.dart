@@ -3,8 +3,12 @@ import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/ipv6settings.g.dart';
 import 'package:privacy_gui/generated/ppp_interface.g.dart';
 import 'package:privacy_gui/generated/vlan_termination.g.dart';
+import 'package:privacy_gui/generated/wan_bridge.g.dart';
+import 'package:privacy_gui/generated/wan_dhcp.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
+import 'package:privacy_gui/generated/wan_pppoe.g.dart';
 import 'package:privacy_gui/generated/wan_settings.g.dart';
+import 'package:privacy_gui/generated/wan_static_ip.g.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/internet_settings/models/internet_settings_read_only_info.dart';
 import 'package:privacy_gui/page/internet_settings/models/usp_internet_settings_form.dart';
@@ -147,12 +151,11 @@ class UspInternetSettingsService {
         currentInstancePath: vlanInstancePath,
       );
 
-      // Step 3: Singleton WAN fields (+ PPP creds if switching to PPPoE)
+      // Step 3: WAN mode switch or field edit (per-mode dispatch)
       final typeChanged = original.connectionType != edited.connectionType;
       final switchingToPppoe =
           typeChanged && edited.connectionType == UspWanConnectionType.pppoe;
-      await _saveWanSettings(original, edited,
-          includePppCredentials: switchingToPppoe);
+      await _saveWanSettings(original, edited);
 
       // Step 4: PPP instance fields (skip username/password if already sent
       // in the ordered Set above)
@@ -250,54 +253,70 @@ class UspInternetSettingsService {
 
   Future<void> _saveWanSettings(
     UspInternetSettingsForm original,
-    UspInternetSettingsForm edited, {
-    bool includePppCredentials = false,
-  }) async {
+    UspInternetSettingsForm edited,
+  ) async {
     final typeChanged = original.connectionType != edited.connectionType;
 
-    // Merge 3 DNS fields → comma-separated string
-    final originalDns = _mergeDns(
-        original.dnsServer1, original.dnsServer2, original.dnsServer3);
-    final editedDns =
-        _mergeDns(edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
-
     if (typeChanged) {
-      // Use ordered Set via WanSettings.updateOrdered() — AddressingType
-      // (priority 1) is processed before Static IP / PPP params (priority 2)
-      // due to bbfdm enable guard.
-      final data = WanSettings(
-        addressingType: edited.connectionType.addressingTypeValue,
-        mtu: edited.mtu,
-        staticIpAddress: edited.staticIpAddress,
-        subnetMask: edited.subnetMask,
-        defaultGateway: edited.defaultGateway,
-        dnsServers: editedDns,
-        pppUsername: includePppCredentials ? edited.pppUsername : '',
-        pppPassword: includePppCredentials ? edited.pppPassword : '',
-        bridgeEnabled: edited.connectionType == UspWanConnectionType.bridge,
-        currentMacAddress: '',
-      );
-      await WanSettings.updateOrdered(_usp, data);
+      switch (edited.connectionType) {
+        case UspWanConnectionType.dhcp:
+          await WanDhcp.update(_usp, addressingType: 'DHCP');
+
+        case UspWanConnectionType.staticIp:
+          final dns = _mergeDns(
+              edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
+          await WanStaticIp.updateOrdered(
+            _usp,
+            WanStaticIp(
+              addressingType: 'Static',
+              staticIpAddress: edited.staticIpAddress,
+              subnetMask: edited.subnetMask,
+              defaultGateway: edited.defaultGateway,
+              dnsServers: dns,
+            ),
+          );
+
+        case UspWanConnectionType.pppoe:
+          await WanPppoe.update(
+            _usp,
+            pppUsername: edited.pppUsername,
+            pppPassword: edited.pppPassword,
+            addressingType: 'IPCP',
+          );
+
+        case UspWanConnectionType.bridge:
+          await WanBridge.update(_usp, addressingType: '');
+      }
     } else {
-      // No type change — use standard unordered Set for field edits
-      await WanSettings.update(
-        _usp,
-        mtu: _diff(original.mtu, edited.mtu),
-        staticIpAddress:
-            _diff(original.staticIpAddress, edited.staticIpAddress),
-        subnetMask: _diff(original.subnetMask, edited.subnetMask),
-        defaultGateway: _diff(original.defaultGateway, edited.defaultGateway),
-        dnsServers: _diff(originalDns, editedDns),
-      );
+      switch (edited.connectionType) {
+        case UspWanConnectionType.staticIp:
+          final originalDns = _mergeDns(
+              original.dnsServer1, original.dnsServer2, original.dnsServer3);
+          final editedDns = _mergeDns(
+              edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
+          await WanStaticIp.update(
+            _usp,
+            staticIpAddress:
+                _diff(original.staticIpAddress, edited.staticIpAddress),
+            subnetMask: _diff(original.subnetMask, edited.subnetMask),
+            defaultGateway:
+                _diff(original.defaultGateway, edited.defaultGateway),
+            dnsServers: _diff(originalDns, editedDns),
+          );
+
+        case UspWanConnectionType.dhcp:
+        case UspWanConnectionType.bridge:
+          break;
+
+        case UspWanConnectionType.pppoe:
+          break;
+      }
     }
 
-    // Bridge param must be set separately — Device.Bridging.Bridge.1.* is
-    // managed by a different USP service (error 7005).
-    if (typeChanged) {
-      await WanSettings.update(
-        _usp,
-        bridgeEnabled: edited.connectionType == UspWanConnectionType.bridge,
-      );
+    // MTU is mode-independent — update via WanSettings if changed
+    final mtuDiff = _diff(original.mtu, edited.mtu);
+    if (mtuDiff != null) {
+      await WanSettings.update(_usp, mtu: mtuDiff);
     }
   }
 
