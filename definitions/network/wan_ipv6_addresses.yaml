@@ -1,0 +1,12 @@
+name: WanIpv6Addresses
+singularName: WanIpv6Address
+version: 1.0.0
+multiInstance: Device.IP.Interface.2.IPv6Address.
+category: network
+description: WAN interface IPv6 addresses (multi-instance, read-only)
+
+parameters:
+  - field_name: ipAddress
+    path: .IPAddress
+    type: string
+    description: IPv6 address assigned to WAN interface

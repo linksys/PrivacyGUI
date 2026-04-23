@@ -142,7 +142,7 @@ class WanStaticIp {
       };
     }
 
-    return await client.setOrdered(orderedParams);
+    return await client.setOrdered(orderedParams, allowPartial: true);
   }
 
   @override
