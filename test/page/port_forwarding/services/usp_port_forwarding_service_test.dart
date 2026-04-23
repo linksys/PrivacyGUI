@@ -10,6 +10,42 @@ import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_se
 
 class MockUspClient extends Mock implements UspClient {}
 
+// ---------------------------------------------------------------------------
+// WASM v0.11.0 response helpers
+// ---------------------------------------------------------------------------
+
+Map<String, dynamic> uspSuccess({Map<String, dynamic> data = const {}}) => {
+      'success': true,
+      'result': {'data': data},
+    };
+
+Map<String, dynamic> uspAddSuccess(List<String> instances) => {
+      'success': true,
+      'result': {
+        'data': {
+          'affectedCount': instances.length,
+          'instances': instances,
+        },
+      },
+    };
+
+Map<String, dynamic> uspFailure(
+        {String path = 'bulk_operation',
+        int errorCode = 7004,
+        String errorMessage = 'Operation failed'}) =>
+    {
+      'success': false,
+      'result': {
+        'data': <String, dynamic>{},
+        'error': {
+          path: {
+            'errorCode': errorCode,
+            'errorMessage': errorMessage,
+          }
+        },
+      },
+    };
+
 void main() {
   late MockUspClient mockUsp;
   late UspPortForwardingService service;
@@ -70,6 +106,93 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // immediateToggleForwarding
+  // ---------------------------------------------------------------------------
+
+  group('UspPortForwardingService — immediateToggleForwarding', () {
+    test('succeeds on UspSuccess', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      await service.immediateToggleForwarding('path.1.', false);
+
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test('throws on UspFailure', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspFailure());
+
+      expect(
+        () => service.immediateToggleForwarding('path.1.', false),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // immediateAddForwarding
+  // ---------------------------------------------------------------------------
+
+  group('UspPortForwardingService — immediateAddForwarding', () {
+    test('succeeds on UspSuccess', () async {
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => uspAddSuccess(['Device.NAT.PortMapping.1.']));
+
+      await service.immediateAddForwarding(
+        externalPort: 80,
+        internalPort: 80,
+        internalClient: '192.168.1.100',
+        protocol: 'TCP',
+      );
+
+      verify(() => mockUsp.add(any())).called(1);
+    });
+
+    test('throws on UspFailure', () async {
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => uspFailure(errorMessage: 'Add rejected'));
+
+      expect(
+        () => service.immediateAddForwarding(
+          externalPort: 80,
+          internalPort: 80,
+          internalClient: '192.168.1.100',
+          protocol: 'TCP',
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // immediateToggleTriggering
+  // ---------------------------------------------------------------------------
+
+  group('UspPortForwardingService — immediateToggleTriggering', () {
+    test('succeeds on UspSuccess', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      await service.immediateToggleTriggering('path.1.', true);
+
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test('throws on UspFailure', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspFailure());
+
+      expect(
+        () => service.immediateToggleTriggering('path.1.', true),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // saveForwardingBatch
   // ---------------------------------------------------------------------------
 
@@ -98,12 +221,8 @@ void main() {
     });
 
     test('delete removes items missing from current', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
-          });
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => uspSuccess());
 
       final original = [
         PortForwardingRuleUIModel(
@@ -127,23 +246,8 @@ void main() {
     });
 
     test('add creates items with null instancePath', () async {
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.NAT.PortMapping.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.NAT.PortMapping.1.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
-          });
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => uspAddSuccess(['Device.NAT.PortMapping.1.']));
 
       final current = [
         PortForwardingRuleUIModel(
@@ -172,12 +276,7 @@ void main() {
 
     test('update detects changed content', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'overallSuccess': true,
-                'hasAnySuccess': true,
-                'hasErrors': false,
-                'results': []
-              });
+          .thenAnswer((_) async => uspSuccess());
 
       final original = [
         PortForwardingRuleUIModel(
@@ -211,36 +310,12 @@ void main() {
     });
 
     test('mixed batch: delete + add + update', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
-          });
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.NAT.PortMapping.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.NAT.PortMapping.2.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
-          });
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => uspSuccess());
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => uspAddSuccess(['Device.NAT.PortMapping.2.']));
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'overallSuccess': true,
-                'hasAnySuccess': true,
-                'hasErrors': false,
-                'results': []
-              });
+          .thenAnswer((_) async => uspSuccess());
 
       final original = [
         PortForwardingRuleUIModel(
@@ -293,12 +368,8 @@ void main() {
     });
 
     test('multi-item delete uses reverse-order sequential calls', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
-          });
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => uspSuccess());
 
       final original = [
         PortForwardingRuleUIModel(
@@ -331,23 +402,8 @@ void main() {
     });
 
     test('multi-item add sends single batch call', () async {
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.NAT.PortMapping.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.NAT.PortMapping.1.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
-          });
+      when(() => mockUsp.add(any())).thenAnswer((_) async => uspAddSuccess(
+          ['Device.NAT.PortMapping.1.', 'Device.NAT.PortMapping.2.']));
 
       final current = [
         PortForwardingRuleUIModel(
@@ -375,6 +431,67 @@ void main() {
 
       expect(result.added, 2);
       verify(() => mockUsp.add(any())).called(1);
+    });
+
+    test('throws when all batch operations fail', () async {
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => uspFailure(errorMessage: 'Delete rejected'));
+
+      final original = [
+        PortForwardingRuleUIModel(
+          instancePath: 'path.1.',
+          description: 'HTTP',
+          externalPort: 80,
+          internalPort: 80,
+          internalClient: '192.168.1.100',
+          protocol: 'TCP',
+          enabled: true,
+        ),
+      ];
+
+      expect(
+        () => service.saveForwardingBatch(original: original, current: []),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('does not throw when some operations succeed', () async {
+      // delete fails, add succeeds
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => uspFailure(errorMessage: 'Delete rejected'));
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => uspAddSuccess(['Device.NAT.PortMapping.2.']));
+
+      final original = [
+        PortForwardingRuleUIModel(
+          instancePath: 'path.1.',
+          description: 'ToDelete',
+          externalPort: 80,
+          internalPort: 80,
+          internalClient: '192.168.1.100',
+          protocol: 'TCP',
+          enabled: true,
+        ),
+      ];
+      final current = [
+        PortForwardingRuleUIModel(
+          description: 'NewRule',
+          externalPort: 22,
+          internalPort: 22,
+          internalClient: '192.168.1.50',
+          protocol: 'Both',
+          enabled: true,
+        ),
+      ];
+
+      final result = await service.saveForwardingBatch(
+        original: original,
+        current: current,
+      );
+
+      // Completes without throwing
+      expect(result.deleted, 1);
+      expect(result.added, 1);
     });
   });
 
@@ -412,12 +529,8 @@ void main() {
     });
 
     test('delete removes items missing from current', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
-          });
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => uspSuccess());
 
       final original = [
         PortTriggeringRuleUIModel(
@@ -439,15 +552,8 @@ void main() {
     });
 
     test('add creates parent + forward rules', () async {
-      // WASM v0.11.0 format: {success, result: {data: {instances: [...]}}}
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {
-              'data': {
-                'instances': ['Device.NAT.PortTrigger.5.'],
-              },
-            },
-          });
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          uspAddSuccess(['Device.NAT.PortTrigger.5.']));
 
       final current = [
         PortTriggeringRuleUIModel(
@@ -480,14 +586,8 @@ void main() {
     });
 
     test('add with no forward rules creates parent only', () async {
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'success': true,
-            'result': {
-              'data': {
-                'instances': ['Device.NAT.PortTrigger.5.'],
-              },
-            },
-          });
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          uspAddSuccess(['Device.NAT.PortTrigger.5.']));
 
       final current = [
         PortTriggeringRuleUIModel(
@@ -507,14 +607,38 @@ void main() {
       verify(() => mockUsp.add(any())).called(1);
     });
 
+    test('add skips forward rules when parent ADD fails', () async {
+      when(() => mockUsp.add(any()))
+          .thenAnswer((_) async => uspFailure(errorMessage: 'Add rejected'));
+
+      final current = [
+        PortTriggeringRuleUIModel(
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'TCP',
+          forwardRules: [
+            PortTriggerForwardRuleUIModel(
+              forwardPort: 1024,
+              forwardProtocol: 'TCP',
+            ),
+          ],
+        ),
+      ];
+
+      // All ops failed → throws
+      expect(
+        () => service.saveTriggeringBatch(original: [], current: current),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+
+      // Only parent add called, forward rule add NOT called
+      verify(() => mockUsp.add(any())).called(1);
+    });
+
     test('update detects changed parent fields', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'overallSuccess': true,
-                'hasAnySuccess': true,
-                'hasErrors': false,
-                'results': []
-              });
+          .thenAnswer((_) async => uspSuccess());
 
       final original = [
         PortTriggeringRuleUIModel(
@@ -544,36 +668,12 @@ void main() {
     });
 
     test('mixed batch: delete + add + update', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
-          });
-      when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.NAT.PortTrigger.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.NAT.PortTrigger.9.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
-          });
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => uspSuccess());
+      when(() => mockUsp.add(any())).thenAnswer((_) async =>
+          uspAddSuccess(['Device.NAT.PortTrigger.9.']));
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {
-                'overallSuccess': true,
-                'hasAnySuccess': true,
-                'hasErrors': false,
-                'results': []
-              });
+          .thenAnswer((_) async => uspSuccess());
 
       final original = [
         PortTriggeringRuleUIModel(
@@ -618,12 +718,8 @@ void main() {
     });
 
     test('multi-item delete uses reverse-order sequential calls', () async {
-      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
-          });
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => uspSuccess());
 
       final original = [
         PortTriggeringRuleUIModel(
@@ -650,13 +746,33 @@ void main() {
       expect(result.deleted, 2);
       verify(() => mockUsp.delete(any())).called(2);
     });
+
+    test('throws when all batch operations fail', () async {
+      when(() => mockUsp.delete(any()))
+          .thenAnswer((_) async => uspFailure(errorMessage: 'Delete rejected'));
+
+      final original = [
+        PortTriggeringRuleUIModel(
+          instancePath: 'path.1.',
+          enabled: true,
+          description: 'FTP',
+          triggerPort: 21,
+          triggerProtocol: 'TCP',
+        ),
+      ];
+
+      expect(
+        () => service.saveTriggeringBatch(original: original, current: []),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------
-  // Error handling
+  // Error handling — transport layer exceptions
   // ---------------------------------------------------------------------------
 
-  group('UspPortForwardingService — error handling', () {
+  group('UspPortForwardingService — transport error handling', () {
     test('fetchForwardingRules maps USP error to ServiceError', () async {
       when(() => mockUsp.get(any()))
           .thenThrow('Get failed: Transport error: HTTP error: HTTP 504');
@@ -677,7 +793,7 @@ void main() {
       );
     });
 
-    test('saveForwardingBatch maps USP error to ServiceError', () async {
+    test('saveForwardingBatch maps transport error to ServiceError', () async {
       when(() => mockUsp.delete(any())).thenThrow(
           'Delete failed: Protocol error: invalid path (code: 7004)');
 
@@ -699,7 +815,7 @@ void main() {
       );
     });
 
-    test('saveTriggeringBatch maps USP error to ServiceError', () async {
+    test('saveTriggeringBatch maps transport error to ServiceError', () async {
       when(() => mockUsp.delete(any())).thenThrow(
           'Delete failed: Protocol error: invalid path (code: 7004)');
 
@@ -716,6 +832,31 @@ void main() {
       expect(
         () => service.saveTriggeringBatch(original: original, current: []),
         throwsA(isA<ServiceError>()),
+      );
+    });
+
+    test('immediateToggleForwarding maps transport error', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => service.immediateToggleForwarding('path.1.', false),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+
+    test('immediateAddForwarding maps transport error', () async {
+      when(() => mockUsp.add(any()))
+          .thenThrow('Add failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => service.immediateAddForwarding(
+          externalPort: 80,
+          internalPort: 80,
+          internalClient: '192.168.1.100',
+          protocol: 'TCP',
+        ),
+        throwsA(isA<NetworkError>()),
       );
     });
   });
