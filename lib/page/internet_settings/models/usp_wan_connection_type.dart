@@ -49,6 +49,6 @@ enum UspWanConnectionType {
         dhcp => 'DHCP',
         staticIp => 'Static',
         pppoe => 'IPCP',
-        bridge => 'DHCP', // bridge mode uses DHCP addressing internally
+        bridge => '', // issue #14: empty string = proto=none
       };
 }
