@@ -21,6 +21,8 @@ void main() {
     'Device.DeviceInfo.MemoryStatus.Total': '1000000',
     'Device.DeviceInfo.MemoryStatus.Free': '400000',
     'Device.DeviceInfo.ProcessStatus.CPUUsage': '35',
+    'Device.DeviceInfo.ActiveFirmwareImage': 'Device.DeviceInfo.FirmwareImage.1.',
+    'Device.DeviceInfo.BootFirmwareImage': 'Device.DeviceInfo.FirmwareImage.1.',
   };
 
   setUp(() {
