@@ -367,6 +367,39 @@ class UspClient {
   }
 
   // ===========================================================================
+  // Set Ordered — preserves parameter execution sequence
+  // ===========================================================================
+
+  /// Performs an ordered Set operation where each entry is processed in
+  /// sequence as a separate UpdateObject. Use when parameter order affects
+  /// correctness (e.g., AddressingType must be set before SubnetMask).
+  ///
+  /// [parameters] is a list of `{path, value}` maps processed in order.
+  Future<Map<String, dynamic>> setOrdered(List<Map<String, String>> parameters,
+      {bool allowPartial = false}) async {
+    final id = ++_reqId;
+    final sw = Stopwatch()..start();
+    final result = await _withAuthRetry(
+        () => _client.setOrdered(parameters, allowPartial: allowPartial));
+    sw.stop();
+
+    final paths = parameters.map((p) => p['path'] ?? '').toList();
+    logger.d('[USP][Service]#$id SET_ORDERED ${_pathSummary(paths)} '
+        '${parameters.length} params'
+        '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
+
+    final success = result['success'] as bool? ?? false;
+    final resultData =
+        result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
+    final error = resultData['error'] as Map<String, dynamic>?;
+    final hasErrors = error != null;
+    logger.d(
+        '[USP][Service]#$id SET_ORDERED result: success=$success, errors=$hasErrors');
+
+    return result;
+  }
+
+  // ===========================================================================
   // Add Operation — create new object instances
   // ===========================================================================
 

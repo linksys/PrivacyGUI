@@ -83,8 +83,7 @@ class DhcpReservations {
       if (!response.containsKey('${p}Chaddr')) missing.add('${p}Chaddr');
       if (!response.containsKey('${p}Yiaddr')) missing.add('${p}Yiaddr');
       if (missing.isNotEmpty) {
-        throw Exception(
-            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
       items.add(DhcpReservation(
         instancePath: p,
