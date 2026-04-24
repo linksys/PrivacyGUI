@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/generated/admin_users.g.dart';
-import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/admin_users.g.dart';
+import 'package:privacy_gui/generated/time_settings.g.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
 
 final uspAdminServiceProvider = Provider<UspAdminService>(
@@ -36,11 +37,28 @@ class UspAdminService {
     required String newPassword,
   }) async {
     try {
-      await AdminUsers.update(
+      final result = await AdminUsers.update(
         _usp,
         [AdminUserUpdate(instancePath: instancePath, password: newPassword)],
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'Password update partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Password update failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -56,13 +74,30 @@ class UspAdminService {
     String? ntpServer2,
   }) async {
     try {
-      await TimeSettings.update(
+      final result = await TimeSettings.update(
         _usp,
         enable: enable,
         ntpServer1: ntpServer1,
         ntpServer2: ntpServer2,
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'Time settings partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Time settings update failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -75,14 +110,31 @@ class UspAdminService {
     bool? enable,
   }) async {
     try {
-      await TimeSettings.update(
+      final result = await TimeSettings.update(
         _usp,
         localTimeZone: localTimeZone,
         ntpServer1: ntpServer1,
         ntpServer2: ntpServer2,
         enable: enable,
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'Timezone update partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Timezone update failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }

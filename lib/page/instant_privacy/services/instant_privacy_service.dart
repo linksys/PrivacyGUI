@@ -1,10 +1,11 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/generated/connected_devices.g.dart';
-import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/connected_devices.g.dart';
+import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 
 final uspInstantPrivacyServiceProvider = Provider<UspInstantPrivacyService>(
@@ -206,9 +207,26 @@ class UspInstantPrivacyService {
     try {
       final updates = buildEnableUpdates(macs, ctx._data);
       if (updates.isNotEmpty) {
-        await MacFilterAccessPoints.update(_usp, updates);
+        final result = await MacFilterAccessPoints.update(_usp, updates);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+            throw UspPartialFailureError(
+              summary: 'MAC filter enable partial failure: $errorSummary',
+              successPaths: successes.map((s) => s.requestedPath).toList(),
+              failedPaths: failures.map((f) => f.requestedPath).toList(),
+            );
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'MAC filter enable failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -218,9 +236,26 @@ class UspInstantPrivacyService {
     try {
       final updates = buildDisableUpdates(ctx._data);
       if (updates.isNotEmpty) {
-        await MacFilterAccessPoints.update(_usp, updates);
+        final result = await MacFilterAccessPoints.update(_usp, updates);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+            throw UspPartialFailureError(
+              summary: 'MAC filter disable partial failure: $errorSummary',
+              successPaths: successes.map((s) => s.requestedPath).toList(),
+              failedPaths: failures.map((f) => f.requestedPath).toList(),
+            );
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'MAC filter disable failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -231,9 +266,25 @@ class UspInstantPrivacyService {
     try {
       final updates = buildAddMacUpdates(mac, ctx._data);
       if (updates.isEmpty) return false;
-      await MacFilterAccessPoints.update(_usp, updates);
-      return true;
+      final result = await MacFilterAccessPoints.update(_usp, updates);
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          return true;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'MAC filter add partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'MAC filter add failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }

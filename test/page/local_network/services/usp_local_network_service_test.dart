@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_ui_model.dart';
@@ -415,6 +416,87 @@ void main() {
         minAddress: '192.168.1.1',
       ));
       expect(errors['minAddress'], contains('router IP'));
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // save
+  // ---------------------------------------------------------------------------
+
+  group('UspLocalNetworkService — save', () {
+    test('save succeeds when firmware returns success', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
+          });
+
+      await service.save(
+        original: _model(),
+        pending: _model(hostName: 'NewRouter'),
+      );
+
+      verify(() => mockUsp.set(any())).called(1);
+    });
+
+    test('save throws UspCompleteFailureError on firmware failure', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.DHCPv4.Server.Pool.1.MinAddress': {
+                  'errorCode': 7004,
+                  'errorMessage': 'Parameter not writable'
+                }
+              }
+            },
+          });
+
+      expect(
+        () => service.save(
+          original: _model(),
+          pending: _model(minAddress: '192.168.1.50'),
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('save throws UspPartialFailureError on partial success', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {
+              'data': {
+                'Device.DHCPv4.Server.Pool.1.MinAddress': '192.168.1.50'
+              },
+              'error': {
+                'Device.DHCPv4.Server.Pool.1.MaxAddress': {
+                  'errorCode': 7004,
+                  'errorMessage': 'Parameter not writable'
+                }
+              }
+            },
+          });
+
+      expect(
+        () => service.save(
+          original: _model(),
+          pending: _model(minAddress: '192.168.1.50', maxAddress: '192.168.1.250'),
+        ),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+    });
+
+    test('save maps transport error to ServiceError', () async {
+      when(() => mockUsp.set(any()))
+          .thenThrow('Set failed: Transport error: Connection refused');
+
+      expect(
+        () => service.save(
+          original: _model(),
+          pending: _model(hostName: 'NewRouter'),
+        ),
+        throwsA(isA<ServiceError>()),
+      );
     });
   });
 }
