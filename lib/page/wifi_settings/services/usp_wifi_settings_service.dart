@@ -250,7 +250,7 @@ class UspWifiSettingsService {
               case UspSuccess():
                 break;
               case UspPartialSuccess(failures: final f):
-                throw UspAtomicModeFailureError(
+                throw UspPartialFailureError(
                   summary: 'WiFi SSID update partial failure: ${f.first.errorMessage}',
                   successPaths: [],
                   failedPaths: f.map((e) => e.requestedPath).toList(),
@@ -295,7 +295,7 @@ class UspWifiSettingsService {
               case UspSuccess():
                 break;
               case UspPartialSuccess(failures: final f):
-                throw UspAtomicModeFailureError(
+                throw UspPartialFailureError(
                   summary: 'WiFi AP update partial failure: ${f.first.errorMessage}',
                   successPaths: [],
                   failedPaths: f.map((e) => e.requestedPath).toList(),
@@ -351,7 +351,7 @@ class UspWifiSettingsService {
             case UspSuccess():
               break;
             case UspPartialSuccess(failures: final f):
-              throw UspAtomicModeFailureError(
+              throw UspPartialFailureError(
                 summary: 'WiFi SSID update partial failure: ${f.first.errorMessage}',
                 successPaths: [],
                 failedPaths: f.map((e) => e.requestedPath).toList(),
@@ -390,7 +390,7 @@ class UspWifiSettingsService {
             case UspSuccess():
               break;
             case UspPartialSuccess(failures: final f):
-              throw UspAtomicModeFailureError(
+              throw UspPartialFailureError(
                 summary: 'WiFi AP update partial failure: ${f.first.errorMessage}',
                 successPaths: [],
                 failedPaths: f.map((e) => e.requestedPath).toList(),
@@ -432,7 +432,7 @@ class UspWifiSettingsService {
             case UspSuccess():
               break;
             case UspPartialSuccess(failures: final f):
-              throw UspAtomicModeFailureError(
+              throw UspPartialFailureError(
                 summary: 'WiFi Radio update partial failure: ${f.first.errorMessage}',
                 successPaths: [],
                 failedPaths: f.map((e) => e.requestedPath).toList(),
@@ -467,7 +467,7 @@ class UspWifiSettingsService {
         case UspSuccess():
           break;
         case UspPartialSuccess(failures: final f):
-          throw UspAtomicModeFailureError(
+          throw UspPartialFailureError(
             summary: 'Toggle radio partial failure: ${f.first.errorMessage}',
             successPaths: [],
             failedPaths: f.map((e) => e.requestedPath).toList(),
@@ -506,7 +506,7 @@ class UspWifiSettingsService {
         case UspSuccess():
           break;
         case UspPartialSuccess(failures: final f):
-          throw UspAtomicModeFailureError(
+          throw UspPartialFailureError(
             summary: 'Update radio channel partial failure: ${f.first.errorMessage}',
             successPaths: [],
             failedPaths: f.map((e) => e.requestedPath).toList(),

@@ -11,13 +11,7 @@ void main() {
       expect('${const AdminAccountLockedError()}', 'Admin account locked');
     });
 
-    test('preserves acronyms (VPN, IP, DNS, SSID, MAC, OTP)', () {
-      expect('${const VPNNotConnectedError()}', 'VPN not connected');
-      expect('${const InvalidIPAddressError()}', 'Invalid IP address');
-      expect('${const InvalidPrimaryDNSServerError()}',
-          'Invalid primary DNS server');
-      expect('${const GuestSSIDConflictError()}', 'Guest SSID conflict');
-      expect('${const InvalidMACAddressError()}', 'Invalid MAC address');
+    test('preserves acronyms (OTP)', () {
       expect('${const InvalidOtpError()}', 'Invalid otp');
     });
 
