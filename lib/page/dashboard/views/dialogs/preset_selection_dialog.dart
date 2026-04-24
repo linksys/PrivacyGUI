@@ -56,11 +56,16 @@ class _PresetSelectionDialogState extends State<_PresetSelectionDialog> {
             final isSelected = _selected == preset;
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _PresetCard(
-                preset: preset,
-                isSelected: isSelected,
-                onTap: () => setState(() => _selected = preset),
-                colorScheme: colorScheme,
+              child: Semantics(
+                label: 'preset-${preset.name}',
+                button: true,
+                selected: isSelected,
+                child: _PresetCard(
+                  preset: preset,
+                  isSelected: isSelected,
+                  onTap: () => setState(() => _selected = preset),
+                  colorScheme: colorScheme,
+                ),
               ),
             );
           }),
@@ -68,10 +73,12 @@ class _PresetSelectionDialogState extends State<_PresetSelectionDialog> {
       ),
       actions: [
         AppButton(
+          semanticLabel: 'preset-cancel',
           label: 'Cancel',
           onTap: () => Navigator.pop(context),
         ),
         AppButton.primary(
+          semanticLabel: 'preset-apply',
           label: 'Apply',
           onTap: _selected != null
               ? () => Navigator.pop(context, _selected)
