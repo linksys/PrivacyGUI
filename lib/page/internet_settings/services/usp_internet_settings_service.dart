@@ -260,12 +260,12 @@ class UspInternetSettingsService {
     if (typeChanged) {
       switch (edited.connectionType) {
         case UspWanConnectionType.dhcp:
-          await WanDhcp.update(_usp, addressingType: 'DHCP');
+          _checkSetResult(await WanDhcp.update(_usp, addressingType: 'DHCP'));
 
         case UspWanConnectionType.staticIp:
           final dns = _mergeDns(
               edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
-          await WanStaticIp.updateOrdered(
+          _checkSetResult(await WanStaticIp.updateOrdered(
             _usp,
             WanStaticIp(
               addressingType: 'Static',
@@ -274,18 +274,19 @@ class UspInternetSettingsService {
               defaultGateway: edited.defaultGateway,
               dnsServers: dns,
             ),
-          );
+          ));
 
         case UspWanConnectionType.pppoe:
-          await WanPppoe.update(
+          _checkSetResult(await WanPppoe.update(
             _usp,
             pppUsername: edited.pppUsername,
             pppPassword: edited.pppPassword,
             addressingType: 'IPCP',
-          );
+            allowPartial: true,
+          ));
 
         case UspWanConnectionType.bridge:
-          await WanBridge.update(_usp, addressingType: '');
+          _checkSetResult(await WanBridge.update(_usp, addressingType: ''));
       }
     } else {
       switch (edited.connectionType) {
@@ -294,7 +295,7 @@ class UspInternetSettingsService {
               original.dnsServer1, original.dnsServer2, original.dnsServer3);
           final editedDns = _mergeDns(
               edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
-          await WanStaticIp.update(
+          _checkSetResult(await WanStaticIp.update(
             _usp,
             staticIpAddress:
                 _diff(original.staticIpAddress, edited.staticIpAddress),
@@ -302,7 +303,7 @@ class UspInternetSettingsService {
             defaultGateway:
                 _diff(original.defaultGateway, edited.defaultGateway),
             dnsServers: _diff(originalDns, editedDns),
-          );
+          ));
 
         case UspWanConnectionType.dhcp:
         case UspWanConnectionType.bridge:
@@ -316,7 +317,7 @@ class UspInternetSettingsService {
     // MTU is mode-independent — update via WanSettings if changed
     final mtuDiff = _diff(original.mtu, edited.mtu);
     if (mtuDiff != null) {
-      await WanSettings.update(_usp, mtu: mtuDiff);
+      _checkSetResult(await WanSettings.update(_usp, mtu: mtuDiff));
     }
   }
 
@@ -330,7 +331,7 @@ class UspInternetSettingsService {
     String instancePath, {
     bool skipCredentials = false,
   }) async {
-    await PppInterface.update(
+    _checkSetResult(await PppInterface.update(
       _usp,
       [
         PppInterfaceInstanceUpdate(
@@ -349,7 +350,7 @@ class UspInternetSettingsService {
               _diff(original.idleDisconnectTime, edited.idleDisconnectTime),
         )
       ],
-    );
+    ));
   }
 
   // ---------------------------------------------------------------------------
@@ -361,7 +362,7 @@ class UspInternetSettingsService {
     UspInternetSettingsForm edited,
     String instancePath,
   ) async {
-    await VlanTermination.update(
+    _checkSetResult(await VlanTermination.update(
       _usp,
       [
         VlanTerminationInstanceUpdate(
@@ -370,7 +371,7 @@ class UspInternetSettingsService {
           vlanId: _diff(original.vlanId, edited.vlanId),
         )
       ],
-    );
+    ));
   }
 
   // ---------------------------------------------------------------------------
@@ -381,7 +382,7 @@ class UspInternetSettingsService {
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
   ) async {
-    await Ipv6Settings.update(
+    _checkSetResult(await Ipv6Settings.update(
       _usp,
       ipv6Enabled: _diff(original.ipv6Enabled, edited.ipv6Enabled),
       dhcpv6Enabled: _diff(original.dhcpv6Enabled, edited.dhcpv6Enabled),
@@ -391,7 +392,7 @@ class UspInternetSettingsService {
           _diff(original.ipv6rdIpv4MaskLength, edited.ipv6rdIpv4MaskLength),
       ipv6rdBorderRelay:
           _diff(original.ipv6rdBorderRelay, edited.ipv6rdBorderRelay),
-    );
+    ));
   }
 
   // ---------------------------------------------------------------------------
@@ -425,6 +426,22 @@ class UspInternetSettingsService {
 
   /// Returns [edited] if it differs from [original], otherwise null.
   T? _diff<T>(T original, T edited) => original != edited ? edited : null;
+
+  /// Throws if USP SET returned success=false.
+  void _checkSetResult(Map<String, dynamic> result) {
+    final success = result['success'] as bool? ?? false;
+    if (!success) {
+      final resultData =
+          result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
+      final error = resultData['error'] as Map<String, dynamic>?;
+      final errorMsg = error?.entries
+              .map((e) =>
+                  '${e.key}: ${(e.value as Map<String, dynamic>)['errorMessage'] ?? 'unknown'}')
+              .join('; ') ??
+          'SET failed';
+      throw 'Set failed: Operation error: $errorMsg';
+    }
+  }
 }
 
 /// Result of [UspInternetSettingsService.fetchSettings].
