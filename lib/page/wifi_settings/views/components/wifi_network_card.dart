@@ -549,31 +549,31 @@ class _WifiTile extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       child: InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.bodyMedium(title),
-                  if (description != null) ...[
-                    AppGap.xs(),
-                    AppText.labelLarge(description!),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.bodyMedium(title),
+                    if (description != null) ...[
+                      AppGap.xs(),
+                      AppText.labelLarge(description!),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            if (trailing != null) ...[
-              AppGap.md(),
-              trailing!,
+              if (trailing != null) ...[
+                AppGap.md(),
+                trailing!,
+              ],
             ],
-          ],
+          ),
         ),
       ),
-    ),
     );
   }
 }
