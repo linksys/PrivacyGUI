@@ -1,0 +1,26 @@
+{
+  "name": "privacygui-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "E2E tests for PrivacyGUI Flutter web app using Playwright",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:h1": "npx playwright test h1-app-loads",
+    "test:h2": "npx playwright test h2-wasm-mock",
+    "test:h3": "npx playwright test h3-api-intercept",
+    "test:h4": "npx playwright test h4-screenshot",
+    "test:h5": "npx playwright test h5-semantics",
+    "test:h6": "npx playwright test h6-interaction-depth",
+    "test:mvp": "npx playwright test h1 h2 h3 h4 h5 h6 --reporter=list",
+    "test:layer3": "npx playwright test login-flows onboarding dashboard navigation wifi-settings --reporter=list",
+    "test:screenshots": "npx playwright test screenshots.spec --reporter=list",
+    "test:screenshots:update": "npx playwright test screenshots.spec --update-snapshots --reporter=list",
+    "test:sse": "npx playwright test sse-mock-server --reporter=list",
+    "test:all": "npx playwright test --reporter=list",
+    "report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "serve": "^14.2.0"
+  }
+}
