@@ -406,15 +406,14 @@ export class UspClient {
         return takeObject(ret);
     }
     /**
-     * Performs a grouped ordered Set operation preserving priority-based parameter sequence
+     * Performs an ordered Set operation preserving parameter sequence
      *
-     * Parameters are organized into priority groups. Within each group, parameters
-     * sharing the same object path are merged into a single USP UpdateObject.
-     * Groups are sent in order, preserving the priority-based execution sequence.
+     * Unlike the regular set methods, this preserves the exact order of parameters
+     * by creating one UpdateObject per parameter. This is useful for operations
+     * where parameter sequence affects performance or correctness.
      *
      * # Arguments
-     * * `groups_array` - JavaScript array of arrays: `[[{path, value}, ...], ...]`
-     * * `allow_partial` - If true, allows partial success
+     * * `parameters_array` - JavaScript array of objects with `path` and `value` properties
      *
      * # Returns
      * * Promise that resolves to structured result with detailed operation status
@@ -422,24 +421,42 @@ export class UspClient {
      * # Example (JavaScript)
      * ```javascript
      * const result = await client.setOrdered([
-     *     [
-     *       { path: "Device.WiFi.Radio.1.Enable", value: "false" }
-     *     ],
-     *     [
-     *       { path: "Device.WiFi.SSID.1.SSID", value: "NewNetwork" },
-     *       { path: "Device.WiFi.SSID.1.Enable", value: "true" }
-     *     ],
-     *     [
-     *       { path: "Device.WiFi.Radio.1.Enable", value: "true" }
-     *     ]
-     * ], true);
+     *     { path: "Device.WiFi.Radio.1.Enable", value: "false" },
+     *     { path: "Device.WiFi.SSID.1.SSID", value: "NewNetwork" },
+     *     { path: "Device.WiFi.SSID.1.Enable", value: "true" },
+     *     { path: "Device.WiFi.Radio.1.Enable", value: "true" }
+     * ]);
      * ```
-     * @param {any} groups_array
+     * @param {any} parameters_array
+     * @returns {Promise<any>}
+     */
+    setOrdered(parameters_array) {
+        const ret = wasm.uspclient_setOrdered(this.__wbg_ptr, addHeapObject(parameters_array));
+        return takeObject(ret);
+    }
+    /**
+     * Performs an ordered Set operation with options
+     *
+     * # Arguments
+     * * `parameters_array` - JavaScript array of objects with `path` and `value` properties
+     * * `allow_partial` - If true, allows partial success (some parameters may fail while others succeed)
+     *
+     * # Returns
+     * * Promise that resolves to structured result with detailed operation status
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * const result = await client.setOrderedWithOptions([
+     *     { path: "Device.WiFi.SSID.1.SSID", value: "Network1" },
+     *     { path: "Device.WiFi.SSID.1.Enable", value: "true" }
+     * ], true); // allow_partial = true
+     * ```
+     * @param {any} parameters_array
      * @param {boolean} allow_partial
      * @returns {Promise<any>}
      */
-    setOrdered(groups_array, allow_partial) {
-        const ret = wasm.uspclient_setOrdered(this.__wbg_ptr, addHeapObject(groups_array), allow_partial);
+    setOrderedWithOptions(parameters_array, allow_partial) {
+        const ret = wasm.uspclient_setOrderedWithOptions(this.__wbg_ptr, addHeapObject(parameters_array), allow_partial);
         return takeObject(ret);
     }
     /**
@@ -685,7 +702,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2218(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2213(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -834,8 +851,8 @@ function __wbg_get_imports() {
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 143, function: Function { arguments: [Externref], shim_idx: 144, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1354, __wasm_bindgen_func_elem_1369);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 147, function: Function { arguments: [Externref], shim_idx: 148, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1349, __wasm_bindgen_func_elem_1364);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0) {
@@ -866,12 +883,12 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1369(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1369(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1364(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1364(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_2218(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2218(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_2213(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2213(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 
