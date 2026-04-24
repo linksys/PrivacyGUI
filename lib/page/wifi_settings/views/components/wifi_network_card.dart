@@ -58,16 +58,24 @@ class WifiNetworkCard extends ConsumerWidget {
             _WifiTile(
               title: n.isGuest ? 'Guest' : 'Main',
               description: n.bandDisplayName,
-              trailing: AppSwitch(
-                value: n.enabled,
-                onChanged: (v) => ref
-                    .read(uspWifiSettingsProvider.notifier)
-                    .updateNetworkField(ssidInstancePath, enabled: v),
+              trailing: Semantics(
+                label: 'wifi-enable-${n.band}',
+                toggled: n.enabled,
+                enabled: true,
+                child: ExcludeSemantics(
+                  child: AppSwitch(
+                    value: n.enabled,
+                    onChanged: (v) => ref
+                        .read(uspWifiSettingsProvider.notifier)
+                        .updateNetworkField(ssidInstancePath, enabled: v),
+                  ),
+                ),
               ),
             ),
             // ── WiFi name ─────────────────────────────────────────────────
             const Divider(),
             _WifiTile(
+              semanticLabel: 'wifi-name-${n.band}',
               title: 'Name',
               description: n.ssid.isNotEmpty ? n.ssid : '(No SSID)',
               trailing: const AppIcon.font(AppFontIcons.edit),
@@ -110,14 +118,21 @@ class WifiNetworkCard extends ConsumerWidget {
               const Divider(),
               _WifiTile(
                 title: 'Broadcast SSID',
-                trailing: AppSwitch(
-                  value: n.ssidAdvertisementEnabled,
-                  onChanged: n.accessPointInstancePath != null
-                      ? (v) => ref
-                          .read(uspWifiSettingsProvider.notifier)
-                          .updateNetworkField(ssidInstancePath,
-                              broadcastSsid: v)
-                      : null,
+                trailing: Semantics(
+                  label: 'wifi-broadcast-${n.band}',
+                  toggled: n.ssidAdvertisementEnabled,
+                  enabled: n.accessPointInstancePath != null,
+                  child: ExcludeSemantics(
+                    child: AppSwitch(
+                      value: n.ssidAdvertisementEnabled,
+                      onChanged: n.accessPointInstancePath != null
+                          ? (v) => ref
+                              .read(uspWifiSettingsProvider.notifier)
+                              .updateNetworkField(ssidInstancePath,
+                                  broadcastSsid: v)
+                          : null,
+                    ),
+                  ),
                 ),
               ),
               const Divider(),
@@ -519,17 +534,21 @@ class _WifiTile extends StatelessWidget {
   final String? description;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final String? semanticLabel;
 
   const _WifiTile({
     required this.title,
     this.description,
     this.trailing,
     this.onTap,
+    this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return Semantics(
+      label: semanticLabel,
+      child: InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -554,6 +573,7 @@ class _WifiTile extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
