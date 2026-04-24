@@ -298,7 +298,10 @@ void main() {
 
     test('changed toggles call updateMany and return count', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
 
       final rules = {
         'pptp': _rule('p.23.', enable: false, description: 'RULE_LAN2WAN_PPTP'),

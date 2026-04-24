@@ -277,10 +277,8 @@ void main() {
 
     test('delete removes missing items', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
 
       final original = [
@@ -306,21 +304,13 @@ void main() {
 
     test('add creates items with null instancePath', () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.Firewall.Chain.1.Rule.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.Firewall.Chain.1.Rule.26.',
-                    'initialParams': {}
-                  }
-                ]
+            'success': true,
+            'result': {
+              'data': {
+                'affectedCount': 1,
+                'instances': ['Device.Firewall.Chain.1.Rule.26.']
               }
-            ]
+            },
           });
 
       final current = [
@@ -352,10 +342,8 @@ void main() {
     test('update detects changed content', () async {
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
-                'overallSuccess': true,
-                'hasAnySuccess': true,
-                'hasErrors': false,
-                'results': []
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
               });
 
       final original = [
@@ -391,34 +379,22 @@ void main() {
 
     test('mixed batch: delete + add + update', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.Firewall.Chain.1.Rule.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.Firewall.Chain.1.Rule.27.',
-                    'initialParams': {}
-                  }
-                ]
+            'success': true,
+            'result': {
+              'data': {
+                'affectedCount': 1,
+                'instances': ['Device.Firewall.Chain.1.Rule.27.']
               }
-            ]
+            },
           });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
-                'overallSuccess': true,
-                'hasAnySuccess': true,
-                'hasErrors': false,
-                'results': []
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
               });
 
       final original = [

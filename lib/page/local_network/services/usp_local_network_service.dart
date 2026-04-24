@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
@@ -29,7 +30,7 @@ class UspLocalNetworkService {
     required LocalNetworkUIModel pending,
   }) async {
     try {
-      await LanNetworkInfo.update(
+      final result = await LanNetworkInfo.update(
         _usp,
         ipAddress:
             original.ipAddress != pending.ipAddress ? pending.ipAddress : null,
@@ -55,7 +56,24 @@ class UspLocalNetworkService {
                 pending.dnsServer1, pending.dnsServer2, pending.dnsServer3)
             : null,
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'Local network update partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Local network update failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }

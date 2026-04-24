@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
-import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/generated/dmz.g.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_settings.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_status.dart';
 import 'package:privacy_gui/page/dmz/models/dmz_ui_model.dart';
@@ -47,7 +48,7 @@ class UspDmzService {
       final sourcePrefix = model.sourceType == DmzSourceType.any
           ? '0.0.0.0/0'
           : model.sourcePrefix;
-      await Dmz.add(
+      final result = await Dmz.add(
         _usp,
         [
           {
@@ -58,7 +59,24 @@ class UspDmzService {
           }
         ],
       );
+      final parsed = UspResultParser.parseAddResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'DMZ add partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'DMZ add failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -72,7 +90,7 @@ class UspDmzService {
       final sourcePrefix = model.sourceType == DmzSourceType.any
           ? '0.0.0.0/0'
           : model.sourcePrefix;
-      await Dmz.update(
+      final result = await Dmz.update(
         _usp,
         [
           DmzEntryUpdate(
@@ -83,7 +101,24 @@ class UspDmzService {
           )
         ],
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'DMZ update partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'DMZ update failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
