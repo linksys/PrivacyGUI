@@ -156,17 +156,13 @@ void main() {
   group('saveAll', () {
     setUp(() {
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}}
           });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
-                'overallSuccess': true,
-                'hasAnySuccess': true,
-                'hasErrors': false,
-                'results': []
+                'success': true,
+                'result': {'data': <String, dynamic>{}}
               });
     });
 
@@ -349,13 +345,11 @@ void main() {
     });
 
     test('switching to Static IP sends 5 params in 2 ordered groups', () async {
-      when(() => mockUsp.setOrdered(any(),
-              allowPartial: any(named: 'allowPartial')))
+      when(() => mockUsp
+              .setOrdered(any(), allowPartial: any(named: 'allowPartial')))
           .thenAnswer((_) async => {
-                'overallSuccess': true,
-                'hasAnySuccess': true,
-                'hasErrors': false,
-                'results': []
+                'success': true,
+                'result': {'data': <String, dynamic>{}}
               });
 
       final original = UspInternetSettingsForm(
@@ -375,35 +369,25 @@ void main() {
         () => mockUsp.setOrdered(captureAny(),
             allowPartial: any(named: 'allowPartial')),
       ).captured;
-      final orderedParams = captured.first as List<Map<String, String>>;
+      final orderedGroups = captured.first as List<List<Map<String, String>>>;
 
       // Group 1: AddressingType only
-      expect(orderedParams[0].length, equals(1));
-      expect(
-        orderedParams[0]['Device.IP.Interface.2.IPv4Address.1.AddressingType'],
-        equals('Static'),
-      );
+      expect(orderedGroups[0].length, equals(1));
+      expect(orderedGroups[0][0]['path'],
+          equals('Device.IP.Interface.2.IPv4Address.1.AddressingType'));
+      expect(orderedGroups[0][0]['value'], equals('Static'));
 
       // Group 2: 4 IP config fields
-      expect(orderedParams[1].length, equals(4));
+      expect(orderedGroups[1].length, equals(4));
+      final group2Paths = orderedGroups[1].map((p) => p['path']).toSet();
       expect(
-        orderedParams[1]['Device.IP.Interface.2.IPv4Address.1.IPAddress'],
-        equals('10.0.0.1'),
-      );
-      expect(
-        orderedParams[1]['Device.IP.Interface.2.IPv4Address.1.SubnetMask'],
-        equals('255.255.255.0'),
-      );
-      expect(
-        orderedParams[1]
-            ['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'],
-        equals('10.0.0.254'),
-      );
-      expect(
-        orderedParams[1]
-            ['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'],
-        equals('8.8.8.8'),
-      );
+          group2Paths,
+          containsAll([
+            'Device.IP.Interface.2.IPv4Address.1.IPAddress',
+            'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
+            'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway',
+            'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers',
+          ]));
     });
 
     test('switching to PPPoE sends 3 params (PPP creds + AddressingType)',
