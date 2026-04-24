@@ -457,7 +457,10 @@ class UspClientWeb {
     }
 
     if (result == null || result.isUndefinedOrNull) {
-      return {'success': false, 'result': {'data': <String, dynamic>{}}};
+      return {
+        'success': false,
+        'result': {'data': <String, dynamic>{}}
+      };
     }
 
     final map = result.dartify() as Map?;
@@ -467,7 +470,10 @@ class UspClientWeb {
     }
 
     if (map == null) {
-      return {'success': false, 'result': {'data': <String, dynamic>{}}};
+      return {
+        'success': false,
+        'result': {'data': <String, dynamic>{}}
+      };
     }
 
     // Pass through the unified format for UspResultParser

@@ -212,7 +212,11 @@ class UspInstantPrivacyService {
         switch (parsed) {
           case UspSuccess():
             break;
-          case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          case UspPartialSuccess(
+              :final errorSummary,
+              :final successes,
+              :final failures
+            ):
             throw UspPartialFailureError(
               summary: 'MAC filter enable partial failure: $errorSummary',
               successPaths: successes.map((s) => s.requestedPath).toList(),
@@ -241,7 +245,11 @@ class UspInstantPrivacyService {
         switch (parsed) {
           case UspSuccess():
             break;
-          case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          case UspPartialSuccess(
+              :final errorSummary,
+              :final successes,
+              :final failures
+            ):
             throw UspPartialFailureError(
               summary: 'MAC filter disable partial failure: $errorSummary',
               successPaths: successes.map((s) => s.requestedPath).toList(),
@@ -271,7 +279,11 @@ class UspInstantPrivacyService {
       switch (parsed) {
         case UspSuccess():
           return true;
-        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
           throw UspPartialFailureError(
             summary: 'MAC filter add partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),

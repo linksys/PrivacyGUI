@@ -60,7 +60,11 @@ class UspLocalNetworkService {
       switch (parsed) {
         case UspSuccess():
           break;
-        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
           throw UspPartialFailureError(
             summary: 'Local network update partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),

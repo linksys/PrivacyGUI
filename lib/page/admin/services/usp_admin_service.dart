@@ -45,7 +45,11 @@ class UspAdminService {
       switch (parsed) {
         case UspSuccess():
           break;
-        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
           throw UspPartialFailureError(
             summary: 'Password update partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
@@ -84,7 +88,11 @@ class UspAdminService {
       switch (parsed) {
         case UspSuccess():
           break;
-        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
           throw UspPartialFailureError(
             summary: 'Time settings partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
@@ -121,7 +129,11 @@ class UspAdminService {
       switch (parsed) {
         case UspSuccess():
           break;
-        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
           throw UspPartialFailureError(
             summary: 'Timezone update partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
