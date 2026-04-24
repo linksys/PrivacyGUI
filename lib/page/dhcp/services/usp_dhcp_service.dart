@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/dhcp_reservations.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -43,11 +45,28 @@ class UspDhcpService {
   /// Toggle a single reservation's enable state.
   Future<void> immediateToggle(String instancePath, bool enable) async {
     try {
-      await DhcpReservations.update(
+      final result = await DhcpReservations.update(
         _usp,
         [DhcpReservationUpdate(instancePath: instancePath, enable: enable)],
       );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'DHCP toggle partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'DHCP toggle failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -59,10 +78,27 @@ class UspDhcpService {
     bool enable = true,
   }) async {
     try {
-      await DhcpReservations.add(_usp, [
+      final result = await DhcpReservations.add(_usp, [
         {'Enable': enable, 'Chaddr': mac, 'Yiaddr': ip}
       ]);
+      final parsed = UspResultParser.parseAddResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'DHCP add partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'DHCP add failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -70,8 +106,25 @@ class UspDhcpService {
   /// Delete a single reservation immediately.
   Future<void> immediateDelete(String instancePath) async {
     try {
-      await DhcpReservations.delete(_usp, [instancePath]);
+      final result = await DhcpReservations.delete(_usp, [instancePath]);
+      final parsed = UspResultParser.parseDeleteResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          throw UspPartialFailureError(
+            summary: 'DHCP delete partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'DHCP delete failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -81,6 +134,9 @@ class UspDhcpService {
   // ---------------------------------------------------------------------------
 
   /// Batch save: diff original vs current, execute delete/add/update.
+  ///
+  /// Lenient mode: partial success is acceptable for batch operations,
+  /// only log warnings. Complete failure still throws.
   Future<({int added, int updated, int deleted})> saveBatch({
     required List<DhcpReservationUIModel> original,
     required List<DhcpReservationUIModel> current,
@@ -98,18 +154,44 @@ class UspDhcpService {
 
       // Delete in reverse instance order to avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        await DhcpReservations.delete(_usp, [r.instancePath!]);
+        final result = await DhcpReservations.delete(_usp, [r.instancePath!]);
+        final parsed = UspResultParser.parseDeleteResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final successes, :final failures):
+            logger.w('[DHCP] Batch delete partial: ${successes.length} ok, ${failures.length} failed');
+            break;
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'DHCP batch delete failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
 
       // 2. Add
       final toAdd = current.where((r) => r.instancePath == null).toList();
       if (toAdd.isNotEmpty) {
-        await DhcpReservations.add(
+        final result = await DhcpReservations.add(
           _usp,
           toAdd
               .map((r) => {'Enable': r.enable, 'Chaddr': r.mac, 'Yiaddr': r.ip})
               .toList(),
         );
+        final parsed = UspResultParser.parseAddResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final successes, :final failures):
+            logger.w('[DHCP] Batch add partial: ${successes.length} ok, ${failures.length} failed');
+            break;
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'DHCP batch add failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
 
       // 3. Update (same path, different content)
@@ -134,7 +216,20 @@ class UspDhcpService {
       }
 
       if (toUpdate.isNotEmpty) {
-        await DhcpReservations.update(_usp, toUpdate);
+        final result = await DhcpReservations.update(_usp, toUpdate);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final successes, :final failures):
+            logger.w('[DHCP] Batch update partial: ${successes.length} ok, ${failures.length} failed');
+            break;
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'DHCP batch update failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
 
       return (
@@ -143,6 +238,7 @@ class UspDhcpService {
         deleted: toDelete.length,
       );
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }

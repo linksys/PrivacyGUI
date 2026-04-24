@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/static_routing.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -43,6 +45,9 @@ class UspStaticRoutingService {
   }
 
   /// Batch save: diff original vs current, execute delete/add/update.
+  ///
+  /// Lenient mode: partial success is acceptable for batch operations,
+  /// only log warnings. Complete failure still throws.
   Future<({int added, int updated, int deleted})> saveBatch({
     required List<StaticRouteUIModel> original,
     required List<StaticRouteUIModel> current,
@@ -60,13 +65,26 @@ class UspStaticRoutingService {
 
       // Delete in reverse instance order to avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        await StaticRouting.delete(_usp, [r.instancePath!]);
+        final result = await StaticRouting.delete(_usp, [r.instancePath!]);
+        final parsed = UspResultParser.parseDeleteResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final successes, :final failures):
+            logger.w('[StaticRouting] Batch delete partial: ${successes.length} ok, ${failures.length} failed');
+            break;
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'Static routing batch delete failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
 
       // 2. Add (instancePath == null → new)
       final toAdd = current.where((r) => r.instancePath == null).toList();
       if (toAdd.isNotEmpty) {
-        await StaticRouting.add(
+        final result = await StaticRouting.add(
           _usp,
           toAdd
               .map((r) => {
@@ -79,6 +97,19 @@ class UspStaticRoutingService {
                   })
               .toList(),
         );
+        final parsed = UspResultParser.parseAddResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final successes, :final failures):
+            logger.w('[StaticRouting] Batch add partial: ${successes.length} ok, ${failures.length} failed');
+            break;
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'Static routing batch add failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
 
       // 3. Update (same path, different content)
@@ -106,7 +137,20 @@ class UspStaticRoutingService {
       }
 
       if (toUpdate.isNotEmpty) {
-        await StaticRouting.update(_usp, toUpdate);
+        final result = await StaticRouting.update(_usp, toUpdate);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final successes, :final failures):
+            logger.w('[StaticRouting] Batch update partial: ${successes.length} ok, ${failures.length} failed');
+            break;
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'Static routing batch update failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
 
       return (
@@ -115,6 +159,7 @@ class UspStaticRoutingService {
         deleted: toDelete.length,
       );
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
