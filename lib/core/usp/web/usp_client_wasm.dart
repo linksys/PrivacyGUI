@@ -75,12 +75,8 @@ extension type UspClientJS._(JSObject _) implements JSObject {
   @JS('delete')
   external JSPromise<JSAny?> delete_(JSAny paths, JSAny? options);
 
-  // Ordered set: array of {path, value} objects processed in sequence
-  external JSPromise<JSAny?> setOrdered(JSAny parametersArray);
-
-  // Ordered set with options
-  external JSPromise<JSAny?> setOrderedWithOptions(
-      JSAny parametersArray, bool allowPartial);
+  // Ordered set: array of groups [[{path, value}, ...], ...] processed in sequence
+  external JSPromise<JSAny?> setOrdered(JSAny groupsArray, bool allowPartial);
 
   // Operate: execute a USP command
   external JSPromise<JSAny?> operate(String command, JSAny args);
@@ -264,30 +260,31 @@ class UspClientWeb {
   }
 
   // ---------------------------------------------------------------------------
-  // SET ORDERED — array of {path, value} processed in sequence
+  // SET ORDERED — groups of [{path, value}, ...] processed in sequence
   // ---------------------------------------------------------------------------
 
-  Future<Map<String, dynamic>> setOrdered(List<Map<String, String>> parameters,
+  Future<Map<String, dynamic>> setOrdered(
+      List<List<Map<String, String>>> parameterGroups,
       {bool allowPartial = false}) async {
     if (kDebugMode) {
       logger.d(
-          '[WASM]SET_ORDERED called: ${parameters.length} params, allowPartial=$allowPartial');
-      for (var i = 0; i < parameters.length; i++) {
-        logger.d('[WASM]SET_ORDERED[$i]: ${parameters[i]}');
+          '[WASM]SET_ORDERED called: ${parameterGroups.length} groups, allowPartial=$allowPartial');
+      for (var g = 0; g < parameterGroups.length; g++) {
+        for (var i = 0; i < parameterGroups[g].length; i++) {
+          logger.d('[WASM]SET_ORDERED[group$g][$i]: ${parameterGroups[g][i]}');
+        }
       }
     }
 
-    final jsParams = parameters
-        .map((p) => {'path': p['path'], 'value': p['value']}.jsify()!)
+    final jsGroups = parameterGroups
+        .map((group) => group
+            .map((p) => {'path': p['path'], 'value': p['value']}.jsify()!)
+            .toList()
+            .toJS)
         .toList()
         .toJS;
 
-    final JSAny? result;
-    if (allowPartial) {
-      result = await _client.setOrderedWithOptions(jsParams, true).toDart;
-    } else {
-      result = await _client.setOrdered(jsParams).toDart;
-    }
+    final result = await _client.setOrdered(jsGroups, allowPartial).toDart;
 
     if (kDebugMode) {
       logger

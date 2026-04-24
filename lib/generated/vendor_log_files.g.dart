@@ -70,8 +70,7 @@ class VendorLogFiles {
       if (!response.containsKey('${p}Persistent'))
         missing.add('${p}Persistent');
       if (missing.isNotEmpty) {
-        throw Exception(
-            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
       items.add(VendorLogFile(
         instancePath: p,

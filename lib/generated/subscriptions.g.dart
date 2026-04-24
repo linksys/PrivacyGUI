@@ -4,4 +4,8 @@
 
 const coreSubscriptions = [
   ('dhcp-clients-01', 'ObjectCreation', 'Device.DHCPv4.Server.Pool.1.Client.'),
+  ('wifi-clients-01', 'ObjectCreation', 'Device.WiFi.AccessPoint.'),
+  ('connected-devices-objectcreation', 'ObjectCreation', 'Device.Hosts.Host.'),
+  ('connected-devices-objectdeletion', 'ObjectDeletion', 'Device.Hosts.Host.'),
+  ('connected-devices-valuechange', 'ValueChange', 'Device.Hosts.Host.'),
 ];
