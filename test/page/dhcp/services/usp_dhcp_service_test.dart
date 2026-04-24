@@ -104,10 +104,8 @@ void main() {
 
     test('delete removes items missing from current', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
 
       final original = [
@@ -132,10 +130,8 @@ void main() {
 
     test('multiple deletes use reverse-order sequential calls', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
 
       final original = [
@@ -164,22 +160,13 @@ void main() {
 
     test('add creates items with null instancePath', () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath':
-                        'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
-                    'initialParams': {}
-                  }
-                ]
+            'success': true,
+            'result': {
+              'data': {
+                'affectedCount': 1,
+                'instances': ['Device.DHCPv4.Server.Pool.1.StaticAddress.1.']
               }
-            ]
+            },
           });
 
       final current = [
@@ -206,10 +193,8 @@ void main() {
 
     test('update detects changed content on same path', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
 
       final original = [
@@ -239,34 +224,21 @@ void main() {
 
     test('mixed batch: delete + add + update', () async {
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath':
-                        'Device.DHCPv4.Server.Pool.1.StaticAddress.3.',
-                    'initialParams': {}
-                  }
-                ]
+            'success': true,
+            'result': {
+              'data': {
+                'affectedCount': 1,
+                'instances': ['Device.DHCPv4.Server.Pool.1.StaticAddress.3.']
               }
-            ]
+            },
           });
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
 
       final original = [
@@ -311,22 +283,16 @@ void main() {
 
     test('multiple adds send single batch call', () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.DHCPv4.Server.Pool.1.StaticAddress.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath':
-                        'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
-                    'initialParams': {}
-                  }
+            'success': true,
+            'result': {
+              'data': {
+                'affectedCount': 2,
+                'instances': [
+                  'Device.DHCPv4.Server.Pool.1.StaticAddress.1.',
+                  'Device.DHCPv4.Server.Pool.1.StaticAddress.2.',
                 ]
               }
-            ]
+            },
           });
 
       final current = [
@@ -340,6 +306,110 @@ void main() {
 
       expect(result.added, 2);
       verify(() => mockUsp.add(any())).called(1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Immediate mutations
+  // ---------------------------------------------------------------------------
+
+  group('UspDhcpService — immediate mutations', () {
+    test('immediateToggle succeeds on firmware success', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
+          });
+
+      await service.immediateToggle('path.1.', false);
+
+      verify(() => mockUsp.set(any())).called(1);
+    });
+
+    test('immediateToggle throws on firmware failure', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'path.1.Enable': {
+                  'errorCode': 7004,
+                  'errorMessage': 'Parameter not writable'
+                }
+              }
+            },
+          });
+
+      expect(
+        () => service.immediateToggle('path.1.', false),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('immediateAdd succeeds on firmware success', () async {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {
+              'data': {
+                'affectedCount': 1,
+                'instances': ['path.1.']
+              }
+            },
+          });
+
+      await service.immediateAdd(mac: 'AA:BB:CC:DD:EE:FF', ip: '192.168.1.100');
+
+      verify(() => mockUsp.add(any())).called(1);
+    });
+
+    test('immediateAdd throws on firmware failure', () async {
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.DHCPv4.Server.Pool.1.StaticAddress.': {
+                  'errorCode': 7001,
+                  'errorMessage': 'Duplicate MAC address'
+                }
+              }
+            },
+          });
+
+      expect(
+        () => service.immediateAdd(mac: 'AA:BB:CC:DD:EE:FF', ip: '192.168.1.100'),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('immediateDelete succeeds on firmware success', () async {
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
+          });
+
+      await service.immediateDelete('path.1.');
+
+      verify(() => mockUsp.delete(any())).called(1);
+    });
+
+    test('immediateDelete throws on firmware failure', () async {
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'path.1.': {
+                  'errorCode': 7003,
+                  'errorMessage': 'Object not found'
+                }
+              }
+            },
+          });
+
+      expect(
+        () => service.immediateDelete('path.1.'),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
     });
   });
 
@@ -375,6 +445,64 @@ void main() {
         () => service.saveBatch(original: original, current: []),
         throwsA(isA<ServiceError>()),
       );
+    });
+
+    test('saveBatch throws on complete failure', () async {
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'path.1.': {
+                  'errorCode': 7003,
+                  'errorMessage': 'Object not found'
+                }
+              }
+            },
+          });
+
+      final original = [
+        DhcpReservationUIModel(
+          instancePath: 'path.1.',
+          mac: 'AA:BB:CC:DD:EE:FF',
+          ip: '192.168.1.100',
+          enable: true,
+        ),
+      ];
+
+      expect(
+        () => service.saveBatch(original: original, current: []),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('saveBatch partial success logs warning but continues', () async {
+      // Partial success: one succeeds, one fails
+      when(() => mockUsp.add(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {
+              'data': {
+                'affectedCount': 1,
+                'instances': ['path.1.']
+              },
+              'error': {
+                'path.2.': {
+                  'errorCode': 7001,
+                  'errorMessage': 'Duplicate'
+                }
+              }
+            },
+          });
+
+      final current = [
+        DhcpReservationUIModel(mac: 'AA:AA:AA:AA:AA:01', ip: '192.168.1.1', enable: true),
+        DhcpReservationUIModel(mac: 'AA:AA:AA:AA:AA:02', ip: '192.168.1.2', enable: true),
+      ];
+
+      // Should NOT throw — lenient mode accepts partial success
+      final result = await service.saveBatch(original: [], current: current);
+
+      expect(result.added, 2);
     });
   });
 }

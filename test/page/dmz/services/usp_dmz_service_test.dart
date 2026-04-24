@@ -250,21 +250,12 @@ void main() {
   group('UspDmzService — add', () {
     test('add with sourceType.any sends 0.0.0.0/0', () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.Firewall.DMZ.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.Firewall.DMZ.1.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
+            'success': true,
+            'result': {
+              'data': {
+                'instances': ['Device.Firewall.DMZ.1.'],
+              },
+            },
           });
 
       await service.add(
@@ -286,21 +277,12 @@ void main() {
 
     test('add with sourceType.cidr sends the CIDR value', () async {
       when(() => mockUsp.add(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': [
-              {
-                'requestedPath': 'Device.Firewall.DMZ.',
-                'success': true,
-                'createdInstances': [
-                  {
-                    'affectedPath': 'Device.Firewall.DMZ.1.',
-                    'initialParams': {}
-                  }
-                ]
-              }
-            ]
+            'success': true,
+            'result': {
+              'data': {
+                'instances': ['Device.Firewall.DMZ.1.'],
+              },
+            },
           });
 
       await service.add(
@@ -323,10 +305,8 @@ void main() {
   group('UspDmzService — update', () {
     test('update with sourceType.any sends 0.0.0.0/0', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
 
       await service.update(
@@ -345,10 +325,8 @@ void main() {
 
     test('update with sourceType.cidr sends the CIDR value', () async {
       when(() => mockUsp.set(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
 
       await service.update(

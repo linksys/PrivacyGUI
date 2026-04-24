@@ -417,7 +417,10 @@ void main() {
         'Device.WiFi.AccessPoint.1.AllowedMACAddress': '',
       });
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
 
       final result = await service.fetchAll();
 
@@ -447,7 +450,10 @@ void main() {
     test('calls set via updateMany with disable updates', () async {
       stubFetchAll(mockUsp);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
 
       final result = await service.fetchAll();
 
@@ -477,7 +483,10 @@ void main() {
     test('adds new MAC and calls set', () async {
       stubFetchAll(mockUsp);
       when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
-          .thenAnswer((_) async => {});
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {'data': <String, dynamic>{}},
+              });
 
       final result = await service.fetchAll();
 

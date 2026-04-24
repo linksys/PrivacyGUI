@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/ipv6port_service.g.dart';
 import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
@@ -30,6 +32,9 @@ class UspIpv6PortServiceService {
   }
 
   /// Batch save: diff original vs current, execute delete/add/update.
+  ///
+  /// Lenient mode: partial success is acceptable for batch operations,
+  /// only log warnings. Complete failure still throws.
   Future<({int added, int updated, int deleted})> saveBatch({
     required List<Ipv6PortServiceRuleUIModel> original,
     required List<Ipv6PortServiceRuleUIModel> current,
@@ -47,13 +52,26 @@ class UspIpv6PortServiceService {
 
       // Delete in reverse instance order to avoid firmware renumbering issues
       for (final r in toDelete.reversed) {
-        await Ipv6PortService.delete(_usp, [r.instancePath!]);
+        final result = await Ipv6PortService.delete(_usp, [r.instancePath!]);
+        final parsed = UspResultParser.parseDeleteResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final successes, :final failures):
+            logger.w('[IPv6PortService] Batch delete partial: ${successes.length} ok, ${failures.length} failed');
+            break;
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'IPv6 port service batch delete failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
 
       // 2. Add (instancePath == null → new)
       final toAdd = current.where((r) => r.instancePath == null).toList();
       if (toAdd.isNotEmpty) {
-        await Ipv6PortService.add(
+        final result = await Ipv6PortService.add(
           _usp,
           toAdd
               .map((r) => {
@@ -68,6 +86,19 @@ class UspIpv6PortServiceService {
                   })
               .toList(),
         );
+        final parsed = UspResultParser.parseAddResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final successes, :final failures):
+            logger.w('[IPv6PortService] Batch add partial: ${successes.length} ok, ${failures.length} failed');
+            break;
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'IPv6 port service batch add failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
 
       // 3. Update (same path, different content)
@@ -96,7 +127,20 @@ class UspIpv6PortServiceService {
       }
 
       if (toUpdate.isNotEmpty) {
-        await Ipv6PortService.update(_usp, toUpdate);
+        final result = await Ipv6PortService.update(_usp, toUpdate);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(:final successes, :final failures):
+            logger.w('[IPv6PortService] Batch update partial: ${successes.length} ok, ${failures.length} failed');
+            break;
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'IPv6 port service batch update failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
       }
 
       return (
@@ -105,6 +149,7 @@ class UspIpv6PortServiceService {
         deleted: toDelete.length,
       );
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }

@@ -49,7 +49,10 @@ void main() {
 
   group('UspAdminService — updatePassword', () {
     test('calls AdminUsers.update with correct params', () async {
-      when(() => mockUsp.set(any())).thenAnswer((_) async => {});
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
+          });
 
       await service.updatePassword(
         instancePath: 'Device.Users.User.2.',
@@ -60,6 +63,29 @@ void main() {
       expect(captured, hasLength(1));
       final params = captured.first as Map<String, dynamic>;
       expect(params['Device.Users.User.2.Password'], 'newSecret123');
+    });
+
+    test('throws UspCompleteFailureError on SET failure', () async {
+      when(() => mockUsp.set(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.Users.User.2.Password': {
+                  'errorCode': 7004,
+                  'errorMessage': 'Parameter not writable',
+                },
+              },
+            },
+          });
+
+      expect(
+        () => service.updatePassword(
+          instancePath: 'Device.Users.User.2.',
+          newPassword: 'newSecret123',
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
     });
   });
 
