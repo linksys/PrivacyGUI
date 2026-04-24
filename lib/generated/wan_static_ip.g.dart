@@ -110,27 +110,36 @@ class WanStaticIp {
   /// sequence affects performance or correctness.
   static Future<Map<String, dynamic>> updateOrdered(
       UspClient client, WanStaticIp data) async {
-    final orderedParams = <Map<String, String>>[];
+    final orderedParams = <List<Map<String, String>>>[];
 
     // Priority 1: Parameters with priority 1
-    final group1Params = <String, String>{};
-    group1Params['Device.IP.Interface.2.IPv4Address.1.AddressingType'] =
-        data.addressingType.toString();
+    final group1Params = <Map<String, String>>[];
+    group1Params.add({
+      'path': 'Device.IP.Interface.2.IPv4Address.1.AddressingType',
+      'value': data.addressingType.toString()
+    });
     if (group1Params.isNotEmpty) {
       orderedParams.add(group1Params);
     }
 
     // Priority 2: Parameters with priority 2
-    final group2Params = <String, String>{};
-    group2Params['Device.IP.Interface.2.IPv4Address.1.IPAddress'] =
-        data.staticIpAddress.toString();
-    group2Params['Device.IP.Interface.2.IPv4Address.1.SubnetMask'] =
-        data.subnetMask.toString();
-    group2Params[
-            'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway'] =
-        data.defaultGateway.toString();
-    group2Params['Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers'] =
-        data.dnsServers.toString();
+    final group2Params = <Map<String, String>>[];
+    group2Params.add({
+      'path': 'Device.IP.Interface.2.IPv4Address.1.IPAddress',
+      'value': data.staticIpAddress.toString()
+    });
+    group2Params.add({
+      'path': 'Device.IP.Interface.2.IPv4Address.1.SubnetMask',
+      'value': data.subnetMask.toString()
+    });
+    group2Params.add({
+      'path': 'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DefaultGateway',
+      'value': data.defaultGateway.toString()
+    });
+    group2Params.add({
+      'path': 'Device.IP.Interface.2.IPv4Address.1.X_LINKSYS_DNSServers',
+      'value': data.dnsServers.toString()
+    });
     if (group2Params.isNotEmpty) {
       orderedParams.add(group2Params);
     }

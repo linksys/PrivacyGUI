@@ -341,22 +341,27 @@ class UspClient {
   // Set Ordered — preserves parameter execution sequence
   // ===========================================================================
 
-  /// Performs an ordered Set operation where each entry is processed in
-  /// sequence as a separate UpdateObject. Use when parameter order affects
-  /// correctness (e.g., AddressingType must be set before SubnetMask).
+  /// Performs an ordered Set operation where parameter groups are processed
+  /// sequentially. Each group is sent as a separate USP Set message.
+  /// Use when parameter order affects correctness
+  /// (e.g., AddressingType must be set before SubnetMask).
   ///
-  /// [parameters] is a list of `{path, value}` maps processed in order.
-  Future<Map<String, dynamic>> setOrdered(List<Map<String, String>> parameters,
+  /// [parameterGroups] is a list of groups, where each group is a list of
+  /// `{path, value}` maps. Groups are processed in order; params within a
+  /// group are sent together in one Set message.
+  Future<Map<String, dynamic>> setOrdered(
+      List<List<Map<String, String>>> parameterGroups,
       {bool allowPartial = false}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
     final result = await _withAuthRetry(
-        () => _client.setOrdered(parameters, allowPartial: allowPartial));
+        () => _client.setOrdered(parameterGroups, allowPartial: allowPartial));
     sw.stop();
 
-    final paths = parameters.map((p) => p['path'] ?? '').toList();
+    final allParams = parameterGroups.expand((g) => g).toList();
+    final paths = allParams.map((p) => p['path'] ?? '').toList();
     logger.d('[USP][Service]#$id SET_ORDERED ${_pathSummary(paths)} '
-        '${parameters.length} params'
+        '${allParams.length} params (${parameterGroups.length} groups)'
         '${allowPartial ? ' (allowPartial)' : ''} (${sw.elapsedMilliseconds}ms)');
 
     final success = result['success'] as bool? ?? false;

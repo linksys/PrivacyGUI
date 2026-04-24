@@ -149,8 +149,7 @@ class WiFiRadios {
       if (!response.containsKey('${p}SupportedOperatingChannelBandwidths'))
         missing.add('${p}SupportedOperatingChannelBandwidths');
       if (missing.isNotEmpty) {
-        throw Exception(
-            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
       items.add(WiFiRadio(
         instancePath: p,

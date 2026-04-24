@@ -73,8 +73,7 @@ class FirmwareImages {
       if (!response.containsKey('${p}Status')) missing.add('${p}Status');
       if (!response.containsKey('${p}Available')) missing.add('${p}Available');
       if (missing.isNotEmpty) {
-        throw Exception(
-            '{errorCode: 9998, errorMessage: "Required fields missing from response: ${missing.join(", ")}"}');
+        throw 'Get failed: Validation error: Required fields missing from response: ${missing.join(", ")} (code: 9998)';
       }
       items.add(FirmwareImage(
         instancePath: p,
