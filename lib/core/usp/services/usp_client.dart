@@ -527,9 +527,14 @@ class UspClient {
       {Map<String, String> args = const {}}) async {
     final id = ++_reqId;
     final sw = Stopwatch()..start();
-    final response =
+    final rawResponse =
         await _withAuthRetry(() => _client.operate(command, args: args));
     sw.stop();
+
+    // Extract commandKey and outputArgs from WASM v0.11.0 unified format:
+    // { success, result: { data: { commandKey, outputArgs }, error? } }
+    final response = _extractOperateResult(rawResponse);
+
     logger.d('[USP][Service]#$id OPERATE $command'
         '${args.isNotEmpty ? ' — ${args.length} args' : ''}'
         ' → key=${response['commandKey']}, ${response.length} output keys'
@@ -538,6 +543,28 @@ class UspClient {
       logger.d('[USP][Service]#$id ← ${_mapSummary(response)}');
     }
     return response;
+  }
+
+  /// Extracts commandKey and outputArgs from WASM v0.11.0 unified format.
+  Map<String, dynamic> _extractOperateResult(Map<String, dynamic> raw) {
+    final result = raw['result'] as Map?;
+    if (result == null) return raw; // fallback to raw if not v0.11.0 format
+
+    final data = result['data'] as Map?;
+    if (data == null) return {};
+
+    final output = <String, dynamic>{};
+    final commandKey = data['commandKey']?.toString();
+    if (commandKey != null && commandKey.isNotEmpty) {
+      output['commandKey'] = commandKey;
+    }
+    final rawOutputArgs = data['outputArgs'];
+    if (rawOutputArgs is Map) {
+      for (final entry in rawOutputArgs.entries) {
+        output[entry.key.toString()] = entry.value.toString();
+      }
+    }
+    return output;
   }
 
   // ===========================================================================
