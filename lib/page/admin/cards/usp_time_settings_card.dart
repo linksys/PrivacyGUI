@@ -7,18 +7,42 @@ import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/_shared/utils/local_time_ticker.dart';
 import 'package:privacy_gui/page/admin/views/dialogs/timezone_edit_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class UspTimeSettingsCard extends ConsumerWidget {
+class UspTimeSettingsCard extends ConsumerStatefulWidget {
   const UspTimeSettingsCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UspTimeSettingsCard> createState() =>
+      _UspTimeSettingsCardState();
+}
+
+class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
+    with LocalTimeTicker {
+  String? _lastRawTime;
+
+  void _syncIfChanged(TimeData timeData) {
+    if (timeData.model.currentLocalTime == _lastRawTime) return;
+    _lastRawTime = timeData.model.currentLocalTime;
+    syncTime(timeData.model.parsedLocalTime, fetchedAt: timeData.fetchedAt);
+  }
+
+  @override
+  void dispose() {
+    disposeTicker();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final timeData = ref.watch(timeDataProvider).valueOrNull;
     if (timeData == null) return const CardSkeleton.info(rows: 2);
     final time = timeData.model;
     final isLoading = ref.watch(uspMutationLoadingProvider) == 'time';
+
+    _syncIfChanged(timeData);
 
     final tzInfo = matchTimezone(time.localTimeZone);
     final tzDisplay = tzInfo != null
@@ -26,6 +50,10 @@ class UspTimeSettingsCard extends ConsumerWidget {
         : time.localTimeZone.isNotEmpty
             ? time.localTimeZone
             : 'Not set';
+
+    final timeDisplay = currentTime != null
+        ? TimeSettingsUIModel.formatDateTime(currentTime!)
+        : time.formattedDateTime;
 
     return AppCard(
       child: Column(
@@ -69,6 +97,10 @@ class UspTimeSettingsCard extends ConsumerWidget {
               label: 'Daylight Savings Time',
               value: inferDstEnabled(time.localTimeZone) ? 'On' : 'Off',
             ),
+          UspInfoRow(
+            label: 'Local Time',
+            value: timeDisplay,
+          ),
         ],
       ),
     );

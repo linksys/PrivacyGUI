@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 
 /// Presentation Layer Model for time settings.
 class TimeSettingsUIModel extends Equatable {
@@ -21,32 +20,35 @@ class TimeSettingsUIModel extends Equatable {
 
   bool get isSynchronized => status == 'Synchronized';
 
-  /// Formatted date/time for display, converted from UTC to local time
-  /// using the configured timezone offset.
-  String get formattedDateTime {
-    if (currentLocalTime.isEmpty) return 'N/A';
-    try {
-      final dt = DateTime.parse(currentLocalTime);
-      final utc = dt.isUtc ? dt : dt.toUtc();
-      final localDt = _applyTimezoneOffset(utc);
-      return '${localDt.year}-${localDt.month.toString().padLeft(2, '0')}-'
-          '${localDt.day.toString().padLeft(2, '0')} '
-          '${localDt.hour.toString().padLeft(2, '0')}:'
-          '${localDt.minute.toString().padLeft(2, '0')}:'
-          '${localDt.second.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return currentLocalTime;
-    }
+  DateTime? get parsedLocalTime {
+    if (currentLocalTime.isEmpty) return null;
+    final match = RegExp(r'(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})')
+        .firstMatch(currentLocalTime);
+    if (match == null) return null;
+    return DateTime(
+      int.parse(match[1]!),
+      int.parse(match[2]!),
+      int.parse(match[3]!),
+      int.parse(match[4]!),
+      int.parse(match[5]!),
+      int.parse(match[6]!),
+    );
   }
 
-  DateTime _applyTimezoneOffset(DateTime utc) {
-    final tz = matchTimezone(localTimeZone);
-    if (tz == null) return utc;
-    var offsetMinutes = tz.utcOffsetMinutes;
-    if (inferDstEnabled(localTimeZone)) {
-      offsetMinutes += 60;
+  String get formattedDateTime {
+    final dt = parsedLocalTime;
+    if (dt == null) {
+      return currentLocalTime.isEmpty ? 'N/A' : currentLocalTime;
     }
-    return utc.add(Duration(minutes: offsetMinutes));
+    return formatDateTime(dt);
+  }
+
+  static String formatDateTime(DateTime dt) {
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-'
+        '${dt.day.toString().padLeft(2, '0')} '
+        '${dt.hour.toString().padLeft(2, '0')}:'
+        '${dt.minute.toString().padLeft(2, '0')}:'
+        '${dt.second.toString().padLeft(2, '0')}';
   }
 
   @override

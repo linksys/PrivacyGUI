@@ -173,5 +173,46 @@ void main() {
 
       expect(find.bySemanticsLabel('Edit timezone settings'), findsOneWidget);
     });
+
+    testWidgets('displays initial local time correctly', (tester) async {
+      const settings = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        currentLocalTime: '2026-04-17T12:00:00',
+        localTimeZone: 'UTC-8',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: settings));
+      await tester.pump();
+
+      expect(find.text('2026-04-17 12:00:00'), findsOneWidget);
+    });
+
+    testWidgets('re-syncs time when timeSettings changes', (tester) async {
+      const initial = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        currentLocalTime: '2026-04-17T12:00:00',
+        localTimeZone: 'UTC-8',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: initial));
+      await tester.pump();
+      expect(find.text('2026-04-17 12:00:00'), findsOneWidget);
+
+      const updated = TimeSettingsUIModel(
+        enable: true,
+        status: 'Synchronized',
+        currentLocalTime: '2026-04-17T20:00:00',
+        localTimeZone: 'UTC-8',
+        ntpServer1: 'pool.ntp.org',
+        ntpServer2: '',
+      );
+      await tester.pumpWidget(_buildTestWidget(timeSettings: updated));
+      await tester.pump();
+      expect(find.text('2026-04-17 20:00:00'), findsOneWidget);
+    });
   });
 }
