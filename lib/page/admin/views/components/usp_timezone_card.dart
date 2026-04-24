@@ -2,27 +2,62 @@ import 'package:flutter/material.dart';
 import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/timezone_definitions.dart';
 import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
+import 'package:privacy_gui/page/_shared/utils/local_time_ticker.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
-class UspTimezoneCard extends StatelessWidget {
+class UspTimezoneCard extends StatefulWidget {
   final TimeSettingsUIModel timeSettings;
+  final DateTime? fetchedAt;
   final VoidCallback onEdit;
 
   const UspTimezoneCard({
     super.key,
     required this.timeSettings,
+    this.fetchedAt,
     required this.onEdit,
   });
 
   @override
+  State<UspTimezoneCard> createState() => _UspTimezoneCardState();
+}
+
+class _UspTimezoneCardState extends State<UspTimezoneCard>
+    with LocalTimeTicker {
+  @override
+  void initState() {
+    super.initState();
+    syncTime(widget.timeSettings.parsedLocalTime, fetchedAt: widget.fetchedAt);
+  }
+
+  @override
+  void didUpdateWidget(UspTimezoneCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.timeSettings.currentLocalTime !=
+        widget.timeSettings.currentLocalTime) {
+      syncTime(widget.timeSettings.parsedLocalTime,
+          fetchedAt: widget.fetchedAt);
+    }
+  }
+
+  @override
+  void dispose() {
+    disposeTicker();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final tzInfo = matchTimezone(timeSettings.localTimeZone);
-    final dstEnabled = inferDstEnabled(timeSettings.localTimeZone);
+    final tzInfo = matchTimezone(widget.timeSettings.localTimeZone);
+    final dstEnabled = inferDstEnabled(widget.timeSettings.localTimeZone);
     final tzDisplay = tzInfo != null
         ? '${tzInfo.friendlyName} (${tzInfo.offsetDisplayText})'
-        : timeSettings.localTimeZone.isNotEmpty
-            ? timeSettings.localTimeZone
+        : widget.timeSettings.localTimeZone.isNotEmpty
+            ? widget.timeSettings.localTimeZone
             : 'Not set';
+
+    final timeDisplay = currentTime != null
+        ? TimeSettingsUIModel.formatDateTime(currentTime!)
+        : widget.timeSettings.formattedDateTime;
 
     return SizedBox(
       width: double.infinity,
@@ -37,8 +72,8 @@ class UspTimezoneCard extends StatelessWidget {
                 Row(
                   children: [
                     AppBadge(
-                      label: timeSettings.status,
-                      color: timeSettings.isSynchronized
+                      label: widget.timeSettings.status,
+                      color: widget.timeSettings.isSynchronized
                           ? Theme.of(context)
                               .extension<AppColorScheme>()
                               ?.semanticSuccess
@@ -52,7 +87,7 @@ class UspTimezoneCard extends StatelessWidget {
                       button: true,
                       child: AppIconButton(
                         icon: AppIcon.font(Icons.edit, size: 18),
-                        onTap: onEdit,
+                        onTap: widget.onEdit,
                       ),
                     ),
                   ],
@@ -71,9 +106,13 @@ class UspTimezoneCard extends StatelessWidget {
               ),
             UspInfoRow(
               label: 'NTP Server',
-              value: timeSettings.ntpServer1.isNotEmpty
-                  ? timeSettings.ntpServer1
+              value: widget.timeSettings.ntpServer1.isNotEmpty
+                  ? widget.timeSettings.ntpServer1
                   : '—',
+            ),
+            UspInfoRow(
+              label: 'Local Time',
+              value: timeDisplay,
             ),
           ],
         ),

@@ -86,6 +86,7 @@ class UspAdminView extends ConsumerWidget {
       children: [
         UspTimezoneCard(
           timeSettings: state.timeSettings,
+          fetchedAt: state.timeFetchedAt,
           onEdit: () => _editTimezone(context, ref, state),
         ),
         AppGap.xl(),

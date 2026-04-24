@@ -10,11 +10,12 @@ import 'package:privacy_gui/page/admin/services/usp_time_data_service.dart';
 
 class TimeData extends Equatable {
   final TimeSettingsUIModel model;
+  final DateTime fetchedAt;
 
-  const TimeData({required this.model});
+  TimeData({required this.model}) : fetchedAt = DateTime.now();
 
   @override
-  List<Object?> get props => [model];
+  List<Object?> get props => [model, fetchedAt];
 }
 
 // ---------------------------------------------------------------------------
@@ -26,13 +27,12 @@ final timeDataProvider = AsyncNotifierProvider<TimeDataNotifier, TimeData>(
 );
 
 // ---------------------------------------------------------------------------
-// Notifier (NOT autoDispose — shared between dashboard card & admin page)
+// Notifier (NOT autoDispose — dashboard card stays mounted across tab switches)
 // ---------------------------------------------------------------------------
 
 class TimeDataNotifier extends AsyncNotifier<TimeData> {
   @override
   Future<TimeData> build() async {
-    // No SSE invalidation domain for time settings.
     return _fetch();
   }
 
