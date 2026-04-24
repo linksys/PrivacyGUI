@@ -410,18 +410,19 @@ class UspClientWeb {
       if (kDebugMode) {
         logger.d('[WASM]DELETE exception: $e');
       }
+      // Return WASM v0.11.0 unified format for consistency with UspResultParser
       return {
-        'overallSuccess': false,
-        'hasAnySuccess': false,
-        'hasErrors': true,
-        'results': paths
-            .map((path) => {
-                  'requestedPath': path,
-                  'success': false,
-                  'errorCode': -1,
-                  'errorMessage': e.toString(),
-                })
-            .toList(),
+        'success': false,
+        'result': {
+          'data': <String, dynamic>{},
+          'error': {
+            for (final path in paths)
+              path: {
+                'errorCode': -1,
+                'errorMessage': e.toString(),
+              },
+          },
+        },
       };
     }
   }
@@ -430,6 +431,23 @@ class UspClientWeb {
   // OPERATE
   // ---------------------------------------------------------------------------
 
+  /// Execute a USP Operate command.
+  ///
+  /// Returns the WASM v0.11.0 unified format:
+  /// ```dart
+  /// {
+  ///   'success': true,
+  ///   'result': {
+  ///     'data': {
+  ///       'commandKey': 'uuid-string',
+  ///       'outputArgs': { ... }
+  ///     },
+  ///     'error': { ... }  // optional
+  ///   }
+  /// }
+  /// ```
+  ///
+  /// Use `UspResultParser.parseOperateResult()` to extract commandKey/outputArgs.
   Future<Map<String, dynamic>> operate(String command,
       {Map<String, String> args = const {}}) async {
     final result = await _client.operate(command, args.jsify()!).toDart;
@@ -438,7 +456,9 @@ class UspClientWeb {
       logger.d('[WASM]OPERATE raw response: ${result?.toString() ?? 'null'}');
     }
 
-    if (result == null || result.isUndefinedOrNull) return {};
+    if (result == null || result.isUndefinedOrNull) {
+      return {'success': false, 'result': {'data': <String, dynamic>{}}};
+    }
 
     final map = result.dartify() as Map?;
 
@@ -446,20 +466,12 @@ class UspClientWeb {
       logger.d('[WASM]OPERATE dartified: ${jsonEncode(map)}');
     }
 
-    if (map == null) return {};
+    if (map == null) {
+      return {'success': false, 'result': {'data': <String, dynamic>{}}};
+    }
 
-    final output = <String, dynamic>{};
-    final commandKey = map['commandKey']?.toString();
-    if (commandKey != null && commandKey.isNotEmpty) {
-      output['commandKey'] = commandKey;
-    }
-    final rawOutputArgs = map['outputArgs'];
-    if (rawOutputArgs is Map) {
-      for (final entry in rawOutputArgs.entries) {
-        output[entry.key.toString()] = entry.value.toString();
-      }
-    }
-    return output;
+    // Pass through the unified format for UspResultParser
+    return Map<String, dynamic>.from(map);
   }
 
   // ---------------------------------------------------------------------------
