@@ -17,13 +17,14 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   @override
   Future<UspAdminState> build() async {
     try {
-      // Time settings from shared data provider.
+      ref.invalidate(timeDataProvider);
       final timeData = await ref.watch(timeDataProvider.future);
       final adminUser = await _svc.fetchAdmin();
 
       return UspAdminState(
         adminUser: adminUser,
         timeSettings: timeData.model,
+        timeFetchedAt: timeData.fetchedAt,
       );
     } on ServiceError catch (e) {
       logger.e('[USP][Admin] Fetch failed', error: e);
