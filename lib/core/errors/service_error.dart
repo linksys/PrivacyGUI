@@ -284,4 +284,3 @@ final class ServiceSideEffectError extends ServiceError {
 
   const ServiceSideEffectError([this.originalResult, this.lastPolledResult]);
 }
-

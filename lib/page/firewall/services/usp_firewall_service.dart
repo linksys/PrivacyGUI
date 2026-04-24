@@ -72,7 +72,11 @@ class UspFirewallService {
         switch (parsed) {
           case UspSuccess():
             break;
-          case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+          case UspPartialSuccess(
+              :final errorSummary,
+              :final successes,
+              :final failures
+            ):
             // Firewall rules are paired — partial success is unacceptable
             throw UspPartialFailureError(
               summary: 'Firewall update partial failure: $errorSummary',

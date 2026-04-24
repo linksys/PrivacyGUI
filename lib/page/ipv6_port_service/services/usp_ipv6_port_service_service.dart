@@ -58,7 +58,8 @@ class UspIpv6PortServiceService {
           case UspSuccess():
             break;
           case UspPartialSuccess(:final successes, :final failures):
-            logger.w('[IPv6PortService] Batch delete partial: ${successes.length} ok, ${failures.length} failed');
+            logger.w(
+                '[IPv6PortService] Batch delete partial: ${successes.length} ok, ${failures.length} failed');
             break;
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
@@ -91,7 +92,8 @@ class UspIpv6PortServiceService {
           case UspSuccess():
             break;
           case UspPartialSuccess(:final successes, :final failures):
-            logger.w('[IPv6PortService] Batch add partial: ${successes.length} ok, ${failures.length} failed');
+            logger.w(
+                '[IPv6PortService] Batch add partial: ${successes.length} ok, ${failures.length} failed');
             break;
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
@@ -133,7 +135,8 @@ class UspIpv6PortServiceService {
           case UspSuccess():
             break;
           case UspPartialSuccess(:final successes, :final failures):
-            logger.w('[IPv6PortService] Batch update partial: ${successes.length} ok, ${failures.length} failed');
+            logger.w(
+                '[IPv6PortService] Batch update partial: ${successes.length} ok, ${failures.length} failed');
             break;
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(

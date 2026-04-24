@@ -71,7 +71,8 @@ class UspStaticRoutingService {
           case UspSuccess():
             break;
           case UspPartialSuccess(:final successes, :final failures):
-            logger.w('[StaticRouting] Batch delete partial: ${successes.length} ok, ${failures.length} failed');
+            logger.w(
+                '[StaticRouting] Batch delete partial: ${successes.length} ok, ${failures.length} failed');
             break;
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
@@ -102,7 +103,8 @@ class UspStaticRoutingService {
           case UspSuccess():
             break;
           case UspPartialSuccess(:final successes, :final failures):
-            logger.w('[StaticRouting] Batch add partial: ${successes.length} ok, ${failures.length} failed');
+            logger.w(
+                '[StaticRouting] Batch add partial: ${successes.length} ok, ${failures.length} failed');
             break;
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(
@@ -143,7 +145,8 @@ class UspStaticRoutingService {
           case UspSuccess():
             break;
           case UspPartialSuccess(:final successes, :final failures):
-            logger.w('[StaticRouting] Batch update partial: ${successes.length} ok, ${failures.length} failed');
+            logger.w(
+                '[StaticRouting] Batch update partial: ${successes.length} ok, ${failures.length} failed');
             break;
           case UspFailure(:final errorSummary, :final errors):
             throw UspCompleteFailureError(

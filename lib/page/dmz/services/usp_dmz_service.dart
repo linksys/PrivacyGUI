@@ -63,7 +63,11 @@ class UspDmzService {
       switch (parsed) {
         case UspSuccess():
           break;
-        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
           throw UspPartialFailureError(
             summary: 'DMZ add partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
@@ -105,7 +109,11 @@ class UspDmzService {
       switch (parsed) {
         case UspSuccess():
           break;
-        case UspPartialSuccess(:final errorSummary, :final successes, :final failures):
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
           throw UspPartialFailureError(
             summary: 'DMZ update partial failure: $errorSummary',
             successPaths: successes.map((s) => s.requestedPath).toList(),
