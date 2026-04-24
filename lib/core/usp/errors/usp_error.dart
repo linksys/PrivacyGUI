@@ -113,17 +113,26 @@ UspError? parseUspError(Object error) {
 
 /// Converts any caught error from a USP codegen call into a [ServiceError].
 ///
-/// Usage in the Service layer:
-/// ```dart
-/// Future<DmzState> fetchSettings() async {
-///   try {
-///     final dmz = await Dmz.fetch(_usp);
-///     return DmzState(entries: dmz.items);
-///   } catch (e) {
-///     throw mapUspErrorToServiceError(e);
-///   }
-/// }
-/// ```
+/// ## WASM String Contract
+///
+/// This function matches error strings from `usp_framework/usp-client/src/error.rs`.
+/// The following strings are part of the API contract:
+///
+/// | Dart match string       | WASM error type                  |
+/// |-------------------------|----------------------------------|
+/// | `'Invalid credentials'` | `AuthError::InvalidCredentials`  |
+/// | `'Session expired'`     | `AuthError::SessionExpired`      |
+/// | `'Invalid token'`       | `AuthError::InvalidToken`        |
+/// | `'Permission denied'`   | `AuthError::PermissionDenied`    |
+/// | `'Authentication required'` | `AuthError::AuthenticationRequired` |
+/// | `'Request timeout'`     | `TransportError::Timeout`        |
+/// | `'Connection refused'`  | `TransportError::ConnectionRefused` |
+/// | `'Path not found'`      | `OperationError::PathNotFound`   |
+/// | `'read-only'`           | `OperationError::ReadOnly`       |
+/// | `'Invalid value'`       | `OperationError::InvalidValue`   |
+///
+/// **Warning**: If WASM error messages change, this mapping will break silently.
+/// Update both sides together.
 ServiceError mapUspErrorToServiceError(Object error) {
   final parsed = parseUspError(error);
   if (parsed == null) {
@@ -167,7 +176,7 @@ ServiceError _mapTransportError(UspError e) {
     return NetworkError(message: msg);
   }
   if (msg.contains('Connection refused')) {
-    return const ConnectivityError(message: 'Connection refused');
+    return ConnectivityError(message: msg);
   }
   return NetworkError(message: msg);
 }

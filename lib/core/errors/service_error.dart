@@ -32,7 +32,7 @@ sealed class ServiceError implements Exception {
 
   /// Human-readable label derived from the class name.
   ///
-  /// `NetworkError` → `Network error`, `VPNNotConnectedError` → `VPN not connected`.
+  /// `NetworkError` → `Network error`, `InvalidCredentialsError` → `Invalid credentials`.
   /// Subtypes with a `message` field override this to append details.
   @override
   String toString() {
@@ -61,26 +61,6 @@ sealed class ServiceError implements Exception {
 // Authentication & Session Errors
 // ============================================================================
 
-/// Empty email provided
-final class EmptyEmailError extends ServiceError {
-  const EmptyEmailError();
-}
-
-/// Invalid password format or value
-final class InvalidPasswordError extends ServiceError {
-  const InvalidPasswordError();
-}
-
-/// Bad authentication attempt
-final class BadAuthenticationError extends ServiceError {
-  const BadAuthenticationError();
-}
-
-/// Authentication credentials missing
-final class AuthenticationMissingError extends ServiceError {
-  const AuthenticationMissingError();
-}
-
 /// User not authenticated
 final class NotAuthenticatedError extends ServiceError {
   const NotAuthenticatedError();
@@ -91,25 +71,9 @@ final class InvalidSessionTokenError extends ServiceError {
   const InvalidSessionTokenError();
 }
 
-/// No session token found in storage
-final class NoSessionTokenError extends ServiceError {
-  const NoSessionTokenError();
-}
-
 /// Session token has expired and cannot be refreshed
 final class SessionTokenExpiredError extends ServiceError {
   const SessionTokenExpiredError();
-}
-
-/// Token refresh operation failed
-final class TokenRefreshError extends ServiceError {
-  final Object? cause;
-  const TokenRefreshError({this.cause});
-}
-
-/// Multi-factor authentication required
-final class MfaRequiredError extends ServiceError {
-  const MfaRequiredError();
 }
 
 /// Invalid credentials (username/password combination)
@@ -117,7 +81,7 @@ final class InvalidCredentialsError extends ServiceError {
   const InvalidCredentialsError();
 }
 
-/// Unauthorized access attempt (JNAP: _ErrorUnauthorized)
+/// Unauthorized access attempt
 final class UnauthorizedError extends ServiceError {
   const UnauthorizedError();
 }
@@ -129,16 +93,6 @@ final class UnauthorizedError extends ServiceError {
 /// Requested resource not found
 final class ResourceNotFoundError extends ServiceError {
   const ResourceNotFoundError();
-}
-
-/// Resource exists but not ready
-final class ResourceNotReadyError extends ServiceError {
-  const ResourceNotReadyError();
-}
-
-/// Subject/entity not found
-final class SubjectNotFoundError extends ServiceError {
-  const SubjectNotFoundError();
 }
 
 // ============================================================================
@@ -153,25 +107,6 @@ final class InvalidOtpError extends ServiceError {
 /// OTP code has expired
 final class ExpiredOtpError extends ServiceError {
   const ExpiredOtpError();
-}
-
-// ============================================================================
-// User/Account Errors
-// ============================================================================
-
-/// Rate limit or threshold exceeded
-final class ExceedThresholdError extends ServiceError {
-  const ExceedThresholdError();
-}
-
-/// Username already exists
-final class UsernameExistsError extends ServiceError {
-  const UsernameExistsError();
-}
-
-/// Invalid phone number format
-final class InvalidPhoneError extends ServiceError {
-  const InvalidPhoneError();
 }
 
 // ============================================================================
@@ -197,94 +132,6 @@ final class ConsecutiveInvalidResetCodeError extends ServiceError {
 /// Invalid admin password
 final class InvalidAdminPasswordError extends ServiceError {
   const InvalidAdminPasswordError();
-}
-
-/// Password check is delayed (rate limiting)
-final class PasswordCheckDelayedError extends ServiceError {
-  const PasswordCheckDelayedError();
-}
-
-// ============================================================================
-// Network Configuration Errors
-// ============================================================================
-
-/// Invalid gateway address
-final class InvalidGatewayError extends ServiceError {
-  const InvalidGatewayError();
-}
-
-/// Invalid IP address
-final class InvalidIPAddressError extends ServiceError {
-  const InvalidIPAddressError();
-}
-
-/// Invalid destination IP address
-final class InvalidDestinationIPAddressError extends ServiceError {
-  const InvalidDestinationIPAddressError();
-}
-
-/// Invalid MAC address
-final class InvalidMACAddressError extends ServiceError {
-  const InvalidMACAddressError();
-}
-
-/// Invalid destination MAC address
-final class InvalidDestinationMACAddressError extends ServiceError {
-  const InvalidDestinationMACAddressError();
-}
-
-/// Invalid primary DNS server
-final class InvalidPrimaryDNSServerError extends ServiceError {
-  const InvalidPrimaryDNSServerError();
-}
-
-/// Invalid secondary DNS server
-final class InvalidSecondaryDNSServerError extends ServiceError {
-  const InvalidSecondaryDNSServerError();
-}
-
-/// Invalid tertiary DNS server
-final class InvalidTertiaryDNSServerError extends ServiceError {
-  const InvalidTertiaryDNSServerError();
-}
-
-/// Invalid server address
-final class InvalidServerError extends ServiceError {
-  const InvalidServerError();
-}
-
-/// Missing destination in configuration
-final class MissingDestinationError extends ServiceError {
-  const MissingDestinationError();
-}
-
-/// Rules overlap conflict
-final class RuleOverlapError extends ServiceError {
-  const RuleOverlapError();
-}
-
-/// Guest SSID conflict
-final class GuestSSIDConflictError extends ServiceError {
-  const GuestSSIDConflictError();
-}
-
-// ============================================================================
-// VPN Errors
-// ============================================================================
-
-/// VPN is not connected
-final class VPNNotConnectedError extends ServiceError {
-  const VPNNotConnectedError();
-}
-
-/// VPN user already exists
-final class VPNUserAlreadyExistsError extends ServiceError {
-  const VPNUserAlreadyExistsError();
-}
-
-/// VPN user not found
-final class VPNUserNotFoundError extends ServiceError {
-  const VPNUserNotFoundError();
 }
 
 // ============================================================================
@@ -363,23 +210,23 @@ final class UspCompleteFailureError extends ServiceError {
   });
 
   @override
-  String toString() => 'USP operation failed: $summary';
+  String toString() => summary;
 }
 
-/// USP operation failed in atomic mode (partial success not allowed)
-final class UspAtomicModeFailureError extends ServiceError {
+/// USP operation partially failed (some succeeded, some failed)
+final class UspPartialFailureError extends ServiceError {
   final String summary;
   final List<String> successPaths;
   final List<String> failedPaths;
 
-  const UspAtomicModeFailureError({
+  const UspPartialFailureError({
     required this.summary,
     required this.successPaths,
     required this.failedPaths,
   });
 
   @override
-  String toString() => 'USP atomic operation failed: $summary';
+  String toString() => '(Partial) $summary';
 }
 
 // ============================================================================
@@ -438,53 +285,3 @@ final class ServiceSideEffectError extends ServiceError {
   const ServiceSideEffectError([this.originalResult, this.lastPolledResult]);
 }
 
-// ============================================================================
-// Topology Operation Errors
-// ============================================================================
-
-/// Timeout while waiting for nodes to go offline after reboot/factory reset.
-///
-/// Thrown when nodes don't reach offline state within the configured timeout
-/// (default: 60 seconds = 20 retries × 3 second intervals).
-final class TopologyTimeoutError extends ServiceError {
-  /// The timeout duration that was exceeded
-  final Duration timeout;
-
-  /// Device IDs that were being monitored
-  final List<String> deviceIds;
-
-  const TopologyTimeoutError({
-    required this.timeout,
-    required this.deviceIds,
-  });
-}
-
-/// Target node is offline and cannot be reached for the requested operation.
-///
-/// Thrown when attempting LED blink or other operations on an offline node.
-final class NodeOfflineError extends ServiceError {
-  /// The device ID of the offline node
-  final String deviceId;
-
-  const NodeOfflineError({required this.deviceId});
-}
-
-/// A node operation (reboot, factory reset, LED blink) failed.
-///
-/// Contains details about which operation failed and on which device.
-final class NodeOperationFailedError extends ServiceError {
-  /// The device ID where the operation failed
-  final String deviceId;
-
-  /// The operation that failed: 'reboot', 'factoryReset', 'blinkStart', 'blinkStop'
-  final String operation;
-
-  /// The underlying error (if available)
-  final Object? originalError;
-
-  const NodeOperationFailedError({
-    required this.deviceId,
-    required this.operation,
-    this.originalError,
-  });
-}

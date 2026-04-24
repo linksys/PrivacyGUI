@@ -70,7 +70,7 @@ class UspPortForwardingService {
         case UspSuccess():
           break;
         case UspPartialSuccess(failures: final f):
-          throw UspAtomicModeFailureError(
+          throw UspPartialFailureError(
             summary: 'Toggle forwarding partial failure: ${f.first.errorMessage}',
             successPaths: [],
             failedPaths: f.map((e) => e.requestedPath).toList(),
@@ -117,7 +117,7 @@ class UspPortForwardingService {
         case UspSuccess():
           break;
         case UspPartialSuccess(failures: final f):
-          throw UspAtomicModeFailureError(
+          throw UspPartialFailureError(
             summary: 'Add forwarding partial failure: ${f.first.errorMessage}',
             successPaths: [],
             failedPaths: f.map((e) => e.requestedPath).toList(),
@@ -151,7 +151,7 @@ class UspPortForwardingService {
         case UspSuccess():
           break;
         case UspPartialSuccess(failures: final f):
-          throw UspAtomicModeFailureError(
+          throw UspPartialFailureError(
             summary: 'Toggle triggering partial failure: ${f.first.errorMessage}',
             successPaths: [],
             failedPaths: f.map((e) => e.requestedPath).toList(),
