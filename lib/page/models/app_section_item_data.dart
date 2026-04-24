@@ -12,6 +12,7 @@ class AppSectionItemData {
   final bool isBeta;
   final bool disabledOnBridge;
   final VoidCallback? onTap;
+  final String? semanticLabel;
 
   const AppSectionItemData({
     this.iconData,
@@ -21,5 +22,6 @@ class AppSectionItemData {
     this.status,
     this.isBeta = false,
     this.disabledOnBridge = false,
+    this.semanticLabel,
   });
 }

@@ -10,6 +10,7 @@ class AppMenuCard extends StatelessWidget {
     this.onTap,
     this.status,
     this.isBeta = false,
+    this.semanticLabel,
   });
 
   final IconData? iconData;
@@ -18,10 +19,11 @@ class AppMenuCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool? status;
   final bool isBeta;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    final card = AppCard(
       onTap: onTap,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -91,5 +93,13 @@ class AppMenuCard extends StatelessWidget {
         ],
       ),
     );
+    if (semanticLabel != null) {
+      return Semantics(
+        label: semanticLabel,
+        button: true,
+        child: card,
+      );
+    }
+    return card;
   }
 }
