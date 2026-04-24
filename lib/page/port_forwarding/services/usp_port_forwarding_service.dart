@@ -71,7 +71,8 @@ class UspPortForwardingService {
           break;
         case UspPartialSuccess(failures: final f):
           throw UspPartialFailureError(
-            summary: 'Toggle forwarding partial failure: ${f.first.errorMessage}',
+            summary:
+                'Toggle forwarding partial failure: ${f.first.errorMessage}',
             successPaths: [],
             failedPaths: f.map((e) => e.requestedPath).toList(),
           );
@@ -152,7 +153,8 @@ class UspPortForwardingService {
           break;
         case UspPartialSuccess(failures: final f):
           throw UspPartialFailureError(
-            summary: 'Toggle triggering partial failure: ${f.first.errorMessage}',
+            summary:
+                'Toggle triggering partial failure: ${f.first.errorMessage}',
             successPaths: [],
             failedPaths: f.map((e) => e.requestedPath).toList(),
           );
@@ -201,7 +203,8 @@ class UspPortForwardingService {
           case UspSuccess():
             break;
           case UspPartialSuccess(failures: final f):
-            logger.w('[PortForwarding] Delete partial: ${f.first.errorMessage}');
+            logger
+                .w('[PortForwarding] Delete partial: ${f.first.errorMessage}');
           case UspFailure(errors: final e):
             failedOps++;
             logger.w('[PortForwarding] Delete failed: ${e.first.errorMessage}');
@@ -269,7 +272,8 @@ class UspPortForwardingService {
           case UspSuccess():
             break;
           case UspPartialSuccess(failures: final f):
-            logger.w('[PortForwarding] Update partial: ${f.first.errorMessage}');
+            logger
+                .w('[PortForwarding] Update partial: ${f.first.errorMessage}');
           case UspFailure(errors: final e):
             failedOps++;
             logger.w('[PortForwarding] Update failed: ${e.first.errorMessage}');
@@ -328,7 +332,8 @@ class UspPortForwardingService {
           case UspSuccess():
             break;
           case UspPartialSuccess(failures: final f):
-            logger.w('[PortTriggering] Delete partial: ${f.first.errorMessage}');
+            logger
+                .w('[PortTriggering] Delete partial: ${f.first.errorMessage}');
           case UspFailure(errors: final e):
             failedOps++;
             logger.w('[PortTriggering] Delete failed: ${e.first.errorMessage}');
@@ -362,7 +367,8 @@ class UspPortForwardingService {
               parentPath = createdInstances.first.affectedPath;
             }
           case UspPartialSuccess(failures: final f):
-            logger.w('[PortTriggering] Add parent partial: ${f.first.errorMessage}');
+            logger.w(
+                '[PortTriggering] Add parent partial: ${f.first.errorMessage}');
             final createdInstances = parsedResult.successes
                 .expand((s) => s.createdInstances ?? <UspCreatedInstance>[])
                 .toList();
@@ -371,7 +377,8 @@ class UspPortForwardingService {
             }
           case UspFailure(errors: final e):
             failedOps++;
-            logger.w('[PortTriggering] Add parent failed: ${e.first.errorMessage}');
+            logger.w(
+                '[PortTriggering] Add parent failed: ${e.first.errorMessage}');
         }
 
         // Add forward rules only if parent was created
@@ -417,7 +424,8 @@ class UspPortForwardingService {
           case UspSuccess():
             break;
           case UspPartialSuccess(failures: final f):
-            logger.w('[PortTriggering] Update partial: ${f.first.errorMessage}');
+            logger
+                .w('[PortTriggering] Update partial: ${f.first.errorMessage}');
           case UspFailure(errors: final e):
             failedOps++;
             logger.w('[PortTriggering] Update failed: ${e.first.errorMessage}');
