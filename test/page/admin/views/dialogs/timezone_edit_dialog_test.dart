@@ -118,18 +118,20 @@ void main() {
       expect(inferDstEnabled(settings.localTimeZone), isTrue);
     });
 
-    test('DST-capable timezone with non-DST POSIX → dstEnabled=false', () {
+    test('Non-DST POSIX string → dstEnabled=false', () {
+      // UTC5 matches EST5-NO-DST (non-DST variant preferred by matchTimezone)
       const settings = TimeSettingsUIModel(
         enable: true,
         status: 'Synchronized',
         currentLocalTime: '',
-        localTimeZone: 'UTC5', // matches EST5 posixNoDST
+        localTimeZone: 'UTC5',
         ntpServer1: '',
         ntpServer2: '',
       );
       final tz = matchTimezone(settings.localTimeZone);
       expect(tz, isNotNull);
-      expect(tz!.observesDST, isTrue);
+      // matchTimezone prefers non-DST entry when posixNoDST collides
+      expect(tz!.observesDST, isFalse);
       expect(inferDstEnabled(settings.localTimeZone), isFalse);
     });
 
