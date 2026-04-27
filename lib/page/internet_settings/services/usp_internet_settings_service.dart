@@ -1,3 +1,4 @@
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/generated/ipv6settings.g.dart';
@@ -56,6 +57,7 @@ class UspInternetSettingsService {
         debugIpv6Enabled: ipv6.ipv6Enabled,
       );
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -173,6 +175,7 @@ class UspInternetSettingsService {
       // Step 6: IPv6 fields
       await _saveIpv6Settings(original, edited);
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -239,7 +242,9 @@ class UspInternetSettingsService {
       // Disabling VLAN — Delete
       logger.d(
           '[USP][WAN] Deleting VLANTermination instance $currentInstancePath');
-      await VlanTermination.delete(_usp, [currentInstancePath]);
+      final deleteResult =
+          await VlanTermination.delete(_usp, [currentInstancePath]);
+      _handleDeleteResult(deleteResult);
       return null;
     }
 
@@ -260,12 +265,12 @@ class UspInternetSettingsService {
     if (typeChanged) {
       switch (edited.connectionType) {
         case UspWanConnectionType.dhcp:
-          _checkSetResult(await WanDhcp.update(_usp, addressingType: 'DHCP'));
+          _handleSetResult(await WanDhcp.update(_usp, addressingType: 'DHCP'));
 
         case UspWanConnectionType.staticIp:
           final dns = _mergeDns(
               edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
-          _checkSetResult(await WanStaticIp.updateOrdered(
+          _handleSetResult(await WanStaticIp.updateOrdered(
             _usp,
             WanStaticIp(
               addressingType: 'Static',
@@ -277,7 +282,7 @@ class UspInternetSettingsService {
           ));
 
         case UspWanConnectionType.pppoe:
-          _checkSetResult(await WanPppoe.update(
+          _handleSetResult(await WanPppoe.update(
             _usp,
             pppUsername: edited.pppUsername,
             pppPassword: edited.pppPassword,
@@ -286,7 +291,7 @@ class UspInternetSettingsService {
           ));
 
         case UspWanConnectionType.bridge:
-          _checkSetResult(await WanBridge.update(_usp, addressingType: ''));
+          _handleSetResult(await WanBridge.update(_usp, addressingType: ''));
       }
     } else {
       switch (edited.connectionType) {
@@ -295,7 +300,7 @@ class UspInternetSettingsService {
               original.dnsServer1, original.dnsServer2, original.dnsServer3);
           final editedDns = _mergeDns(
               edited.dnsServer1, edited.dnsServer2, edited.dnsServer3);
-          _checkSetResult(await WanStaticIp.update(
+          _handleSetResult(await WanStaticIp.update(
             _usp,
             staticIpAddress:
                 _diff(original.staticIpAddress, edited.staticIpAddress),
@@ -317,7 +322,7 @@ class UspInternetSettingsService {
     // MTU is mode-independent — update via WanSettings if changed
     final mtuDiff = _diff(original.mtu, edited.mtu);
     if (mtuDiff != null) {
-      _checkSetResult(await WanSettings.update(_usp, mtu: mtuDiff));
+      _handleSetResult(await WanSettings.update(_usp, mtu: mtuDiff));
     }
   }
 
@@ -331,7 +336,7 @@ class UspInternetSettingsService {
     String instancePath, {
     bool skipCredentials = false,
   }) async {
-    _checkSetResult(await PppInterface.update(
+    _handleSetResult(await PppInterface.update(
       _usp,
       [
         PppInterfaceInstanceUpdate(
@@ -362,7 +367,7 @@ class UspInternetSettingsService {
     UspInternetSettingsForm edited,
     String instancePath,
   ) async {
-    _checkSetResult(await VlanTermination.update(
+    _handleSetResult(await VlanTermination.update(
       _usp,
       [
         VlanTerminationInstanceUpdate(
@@ -382,7 +387,7 @@ class UspInternetSettingsService {
     UspInternetSettingsForm original,
     UspInternetSettingsForm edited,
   ) async {
-    _checkSetResult(await Ipv6Settings.update(
+    _handleSetResult(await Ipv6Settings.update(
       _usp,
       ipv6Enabled: _diff(original.ipv6Enabled, edited.ipv6Enabled),
       dhcpv6Enabled: _diff(original.dhcpv6Enabled, edited.dhcpv6Enabled),
@@ -401,16 +406,20 @@ class UspInternetSettingsService {
 
   Future<void> renewDhcpLease() async {
     try {
-      await WanOperations.renewDhcpLease(_usp);
+      final result = await WanOperations.renewDhcpLease(_usp);
+      _handleOperateResult(result);
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
 
   Future<void> renewDhcpv6Lease() async {
     try {
-      await WanOperations.renewDhcpv6Lease(_usp);
+      final result = await WanOperations.renewDhcpv6Lease(_usp);
+      _handleOperateResult(result);
     } catch (e) {
+      if (e is ServiceError) rethrow;
       throw mapUspErrorToServiceError(e);
     }
   }
@@ -427,19 +436,78 @@ class UspInternetSettingsService {
   /// Returns [edited] if it differs from [original], otherwise null.
   T? _diff<T>(T original, T edited) => original != edited ? edited : null;
 
-  /// Throws if USP SET returned success=false.
-  void _checkSetResult(Map<String, dynamic> result) {
-    final success = result['success'] as bool? ?? false;
-    if (!success) {
-      final resultData =
-          result['result'] as Map<String, dynamic>? ?? <String, dynamic>{};
-      final error = resultData['error'] as Map<String, dynamic>?;
-      final errorMsg = error?.entries
-              .map((e) =>
-                  '${e.key}: ${(e.value as Map<String, dynamic>)['errorMessage'] ?? 'unknown'}')
-              .join('; ') ??
-          'SET failed';
-      throw 'Set failed: Operation error: $errorMsg';
+  /// Parse and validate SET result using standard UspResultParser (Strict mode).
+  ///
+  /// WAN settings are critical — any failure (including partial) should be
+  /// reported to the user.
+  void _handleSetResult(Map<String, dynamic> result) {
+    final parsed = UspResultParser.parseSetResult(result);
+    switch (parsed) {
+      case UspSuccess():
+        break;
+      case UspPartialSuccess(
+          :final errorSummary,
+          :final successes,
+          :final failures
+        ):
+        throw UspPartialFailureError(
+          summary: 'WAN update partial failure: $errorSummary',
+          successPaths: successes.map((s) => s.requestedPath).toList(),
+          failedPaths: failures.map((f) => f.requestedPath).toList(),
+        );
+      case UspFailure(:final errorSummary, :final errors):
+        throw UspCompleteFailureError(
+          summary: 'WAN update failed: $errorSummary',
+          failedPaths: errors.map((e) => e.requestedPath).toList(),
+        );
+    }
+  }
+
+  /// Parse and validate DELETE result using standard UspResultParser (Strict mode).
+  void _handleDeleteResult(Map<String, dynamic> result) {
+    final parsed = UspResultParser.parseDeleteResult(result);
+    switch (parsed) {
+      case UspSuccess():
+        break;
+      case UspPartialSuccess(
+          :final errorSummary,
+          :final successes,
+          :final failures
+        ):
+        throw UspPartialFailureError(
+          summary: 'WAN delete partial failure: $errorSummary',
+          successPaths: successes.map((s) => s.requestedPath).toList(),
+          failedPaths: failures.map((f) => f.requestedPath).toList(),
+        );
+      case UspFailure(:final errorSummary, :final errors):
+        throw UspCompleteFailureError(
+          summary: 'WAN delete failed: $errorSummary',
+          failedPaths: errors.map((e) => e.requestedPath).toList(),
+        );
+    }
+  }
+
+  /// Parse and validate OPERATE result using standard UspResultParser (Strict mode).
+  void _handleOperateResult(Map<String, dynamic> result) {
+    final parsed = UspResultParser.parseOperateResult(result);
+    switch (parsed) {
+      case UspSuccess():
+        break;
+      case UspPartialSuccess(
+          :final errorSummary,
+          :final successes,
+          :final failures
+        ):
+        throw UspPartialFailureError(
+          summary: 'WAN operation partial failure: $errorSummary',
+          successPaths: successes.map((s) => s.requestedPath).toList(),
+          failedPaths: failures.map((f) => f.requestedPath).toList(),
+        );
+      case UspFailure(:final errorSummary, :final errors):
+        throw UspCompleteFailureError(
+          summary: 'WAN operation failed: $errorSummary',
+          failedPaths: errors.map((e) => e.requestedPath).toList(),
+        );
     }
   }
 }

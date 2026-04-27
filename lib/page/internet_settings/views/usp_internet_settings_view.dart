@@ -205,7 +205,7 @@ class UspInternetSettingsView extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, '$e');
+        showFailedSnackBar(context, 'Failed to save: $e');
       }
     }
   }
