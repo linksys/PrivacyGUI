@@ -45,15 +45,24 @@ void main() {
         };
       }
 
-      // Gateway + IPv6 query (Device.Routing.* and Device.IP.Interface.2.IPv6Address.*)
+      // Gateway query (StaticRouting.fetch uses Device.Routing.*)
       if (paths.any((p) => p.contains('Routing'))) {
-        final result = <String, dynamic>{
+        return {
+          // StaticRouting requires all fields for validation
+          'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
           'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress': '0.0.0.0',
+          'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask': '0.0.0.0',
           'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress': gateway,
           'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
               'Device.IP.Interface.2',
+          'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
+          'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'DefaultRoute',
         };
-        // Add IPv6 addresses
+      }
+
+      // IPv6 addresses query (WanIpv6Addresses.fetch)
+      if (paths.any((p) => p.contains('IPv6Address'))) {
+        final result = <String, dynamic>{};
         for (var i = 0; i < ipv6Addresses.length; i++) {
           result['Device.IP.Interface.2.IPv6Address.${i + 1}.IPAddress'] =
               ipv6Addresses[i];
@@ -154,12 +163,17 @@ void main() {
         // No default route (DestIPAddress != 0.0.0.0)
         if (paths.any((p) => p.contains('Routing'))) {
           return {
+            'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
             'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress':
                 '192.168.1.0',
+            'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask':
+                '255.255.255.0',
             'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress':
                 '192.168.1.1',
             'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
                 'Device.IP.Interface.1',
+            'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
+            'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'LanRoute',
           };
         }
 

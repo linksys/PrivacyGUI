@@ -25,15 +25,26 @@ void main() {
   };
 
   /// Simulated routing table response for gateway lookup.
+  /// StaticRouting validation requires all fields for each route instance.
   final routingResponse = <String, dynamic>{
+    // Default route (0.0.0.0) on WAN interface
+    'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
     'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress': '0.0.0.0',
+    'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask': '0.0.0.0',
     'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress': '100.64.0.1',
     'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
         'Device.IP.Interface.2.',
+    'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
+    'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'DefaultRoute',
+    // LAN route
+    'Device.Routing.Router.1.IPv4Forwarding.2.Enable': true,
     'Device.Routing.Router.1.IPv4Forwarding.2.DestIPAddress': '192.168.1.0',
+    'Device.Routing.Router.1.IPv4Forwarding.2.DestSubnetMask': '255.255.255.0',
     'Device.Routing.Router.1.IPv4Forwarding.2.GatewayIPAddress': '0.0.0.0',
     'Device.Routing.Router.1.IPv4Forwarding.2.Interface':
         'Device.IP.Interface.1.',
+    'Device.Routing.Router.1.IPv4Forwarding.2.Origin': 'Static',
+    'Device.Routing.Router.1.IPv4Forwarding.2.Alias': 'LanRoute',
   };
 
   /// Simulated IPv6 response.
@@ -48,18 +59,23 @@ void main() {
 
     // Route usp.get() calls by path content.
     //
-    // _fetch() issues two concurrent requests:
-    //   1. WanStatus.fetch  → paths include IPv6Enable (codegen v1.1.0)
-    //   2. _fetchGatewayAndIpv6Addresses → paths include IPv4Forwarding + IPv6Address
+    // Service issues requests in parallel:
+    //   1. WanStatus.fetch  → Device.IP.Interface.2.Status, IPv6Enable, etc.
+    //   2. StaticRouting.fetch → Device.Routing.Router.1.IPv4Forwarding.*
+    //   3. WanIpv6Addresses.fetch → Device.IP.Interface.2.IPv6Address.*
     //
-    // Distinguish by the presence of 'IPv4Forwarding' (only in request #2).
+    // Distinguish by path patterns.
     when(() => mockUsp.get(any())).thenAnswer((invocation) async {
       final paths = invocation.positionalArguments[0] as List;
       final joined = paths.join(',');
 
       if (joined.contains('IPv4Forwarding')) {
-        // Combined gateway + IPv6 addresses request
-        return {...routingResponse, ...ipv6Response};
+        // StaticRouting.fetch
+        return routingResponse;
+      }
+      if (joined.contains('IPv6Address')) {
+        // WanIpv6Addresses.fetch
+        return ipv6Response;
       }
       // WanStatus.fetch (includes IPv6Enable in its paths)
       return wanStatusResponse;
@@ -146,12 +162,17 @@ void main() {
         if (joined.contains('IPv4Forwarding')) {
           // No route with DestIP 0.0.0.0 on Interface.2
           return <String, dynamic>{
+            'Device.Routing.Router.1.IPv4Forwarding.1.Enable': true,
             'Device.Routing.Router.1.IPv4Forwarding.1.DestIPAddress':
                 '192.168.1.0',
+            'Device.Routing.Router.1.IPv4Forwarding.1.DestSubnetMask':
+                '255.255.255.0',
             'Device.Routing.Router.1.IPv4Forwarding.1.GatewayIPAddress':
                 '0.0.0.0',
             'Device.Routing.Router.1.IPv4Forwarding.1.Interface':
                 'Device.IP.Interface.1.',
+            'Device.Routing.Router.1.IPv4Forwarding.1.Origin': 'Static',
+            'Device.Routing.Router.1.IPv4Forwarding.1.Alias': 'LanRoute',
             ...ipv6Response,
           };
         }
