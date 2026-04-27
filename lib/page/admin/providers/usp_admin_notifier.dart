@@ -17,7 +17,6 @@ class UspAdminNotifier extends AutoDisposeAsyncNotifier<UspAdminState> {
   @override
   Future<UspAdminState> build() async {
     try {
-      ref.invalidate(timeDataProvider);
       final timeData = await ref.watch(timeDataProvider.future);
       final adminUser = await _svc.fetchAdmin();
 
