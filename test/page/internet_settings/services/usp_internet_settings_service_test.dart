@@ -288,11 +288,10 @@ void main() {
     });
 
     test('deletes VLAN instance when disabling VLAN', () async {
+      // WASM v0.11.0 format for DELETE success
       when(() => mockUsp.delete(any())).thenAnswer((_) async => {
-            'overallSuccess': true,
-            'hasAnySuccess': true,
-            'hasErrors': false,
-            'results': []
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
           });
 
       final original = UspInternetSettingsForm(
@@ -501,8 +500,11 @@ void main() {
 
   group('renewDhcpLease', () {
     test('calls WanOperations.renewDhcpLease', () async {
-      when(() => mockUsp.operate(any()))
-          .thenAnswer((_) async => <String, dynamic>{});
+      // WASM v0.11.0 format for OPERATE success
+      when(() => mockUsp.operate(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
+          });
 
       await service.renewDhcpLease();
 
@@ -512,8 +514,11 @@ void main() {
 
   group('renewDhcpv6Lease', () {
     test('calls WanOperations.renewDhcpv6Lease', () async {
-      when(() => mockUsp.operate(any()))
-          .thenAnswer((_) async => <String, dynamic>{});
+      // WASM v0.11.0 format for OPERATE success
+      when(() => mockUsp.operate(any())).thenAnswer((_) async => {
+            'success': true,
+            'result': {'data': <String, dynamic>{}},
+          });
 
       await service.renewDhcpv6Lease();
 
@@ -570,6 +575,198 @@ void main() {
         () => service.renewDhcpv6Lease(),
         throwsA(isA<ServiceError>()),
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // UspResultParser failure scenarios
+  // ---------------------------------------------------------------------------
+
+  group('UspInternetSettingsService — UspResultParser failure handling', () {
+    test('saveAll throws UspCompleteFailureError on SET failure', () async {
+      // WASM v0.11.0 format: success=false
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.IP.Interface.2.MaxMTUSize': {
+                      'errorCode': 7004,
+                      'errorMessage': 'Parameter not writable',
+                    },
+                  },
+                },
+              });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+      );
+      final edited = original.copyWith(mtu: 1400);
+
+      expect(
+        () => service.saveAll(original, edited),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('saveAll throws UspPartialFailureError on SET partial failure',
+        () async {
+      // WASM v0.11.0 format: success=true but has error field
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {
+                  'data': {
+                    'Device.IP.Interface.2.MaxMTUSize': 1400,
+                  },
+                  'error': {
+                    'Device.IP.Interface.2.SomeOtherParam': {
+                      'errorCode': 7026,
+                      'errorMessage': 'Parameter does not exist',
+                    },
+                  },
+                },
+              });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+      );
+      final edited = original.copyWith(mtu: 1400);
+
+      expect(
+        () => service.saveAll(original, edited),
+        throwsA(isA<UspPartialFailureError>()),
+      );
+    });
+
+    test('delete VLAN throws UspCompleteFailureError on DELETE failure',
+        () async {
+      // WASM v0.11.0 format: success=false for DELETE
+      when(() => mockUsp.delete(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.Ethernet.VLANTermination.1.': {
+                  'errorCode': 7003,
+                  'errorMessage': 'Invalid path',
+                },
+              },
+            },
+          });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.pppoe,
+        pppUsername: 'user',
+        pppPassword: 'pass',
+        vlanEnabled: true,
+        vlanId: 100,
+      );
+      final edited = original.copyWith(vlanEnabled: false);
+
+      expect(
+        () => service.saveAll(
+          original,
+          edited,
+          pppInstancePath: 'Device.PPP.Interface.1.',
+          vlanInstancePath: 'Device.Ethernet.VLANTermination.1.',
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('renewDhcpLease throws UspCompleteFailureError on OPERATE failure',
+        () async {
+      // WASM v0.11.0 format: success=false for OPERATE
+      when(() => mockUsp.operate(any())).thenAnswer((_) async => {
+            'success': false,
+            'result': {
+              'data': <String, dynamic>{},
+              'error': {
+                'Device.DHCPv4.Client.1.Renew()': {
+                  'errorCode': 7012,
+                  'errorMessage': 'Command failure',
+                },
+              },
+            },
+          });
+
+      expect(
+        () => service.renewDhcpLease(),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('UspCompleteFailureError contains correct error message', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': false,
+                'result': {
+                  'data': <String, dynamic>{},
+                  'error': {
+                    'Device.IP.Interface.2.MaxMTUSize': {
+                      'errorCode': 7004,
+                      'errorMessage': 'Parameter not writable',
+                    },
+                  },
+                },
+              });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+      );
+      final edited = original.copyWith(mtu: 1400);
+
+      try {
+        await service.saveAll(original, edited);
+        fail('Expected UspCompleteFailureError');
+      } on UspCompleteFailureError catch (e) {
+        expect(e.summary, contains('WAN update failed'));
+        expect(e.summary, contains('Parameter not writable'));
+        expect(e.failedPaths, contains('Device.IP.Interface.2.MaxMTUSize'));
+        // Verify toString() returns the summary for View layer display
+        expect(e.toString(), equals(e.summary));
+      }
+    });
+
+    test('UspPartialFailureError contains success and failure paths', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => {
+                'success': true,
+                'result': {
+                  'data': {
+                    'Device.IP.Interface.2.MaxMTUSize': 1400,
+                  },
+                  'error': {
+                    'Device.IP.Interface.2.SomeOtherParam': {
+                      'errorCode': 7026,
+                      'errorMessage': 'Parameter does not exist',
+                    },
+                  },
+                },
+              });
+
+      final original = UspInternetSettingsForm(
+        connectionType: UspWanConnectionType.dhcp,
+        mtu: 1500,
+      );
+      final edited = original.copyWith(mtu: 1400);
+
+      try {
+        await service.saveAll(original, edited);
+        fail('Expected UspPartialFailureError');
+      } on UspPartialFailureError catch (e) {
+        expect(e.summary, contains('WAN update partial failure'));
+        expect(e.summary, contains('Parameter does not exist'));
+        expect(e.successPaths, isNotEmpty);
+        expect(e.failedPaths, contains('Device.IP.Interface.2.SomeOtherParam'));
+        // Verify toString() includes "(Partial)" prefix for View layer display
+        expect(e.toString(), startsWith('(Partial)'));
+      }
     });
   });
 }
