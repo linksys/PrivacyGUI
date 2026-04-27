@@ -480,7 +480,8 @@ void main() {
       expect(
         () => service.save(
           original: _model(),
-          pending: _model(minAddress: '192.168.1.50', maxAddress: '192.168.1.250'),
+          pending:
+              _model(minAddress: '192.168.1.50', maxAddress: '192.168.1.250'),
         ),
         throwsA(isA<UspPartialFailureError>()),
       );
