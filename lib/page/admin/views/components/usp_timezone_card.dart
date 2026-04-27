@@ -33,7 +33,9 @@ class _UspTimezoneCardState extends State<UspTimezoneCard>
   void didUpdateWidget(UspTimezoneCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.timeSettings.currentLocalTime !=
-        widget.timeSettings.currentLocalTime) {
+            widget.timeSettings.currentLocalTime ||
+        oldWidget.timeSettings.localTimeZone !=
+            widget.timeSettings.localTimeZone) {
       syncTime(widget.timeSettings.parsedLocalTime,
           fetchedAt: widget.fetchedAt);
     }

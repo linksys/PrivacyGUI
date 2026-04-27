@@ -22,10 +22,15 @@ class UspTimeSettingsCard extends ConsumerStatefulWidget {
 class _UspTimeSettingsCardState extends ConsumerState<UspTimeSettingsCard>
     with LocalTimeTicker {
   String? _lastRawTime;
+  String? _lastTimeZone;
 
   void _syncIfChanged(TimeData timeData) {
-    if (timeData.model.currentLocalTime == _lastRawTime) return;
+    if (timeData.model.currentLocalTime == _lastRawTime &&
+        timeData.model.localTimeZone == _lastTimeZone) {
+      return;
+    }
     _lastRawTime = timeData.model.currentLocalTime;
+    _lastTimeZone = timeData.model.localTimeZone;
     syncTime(timeData.model.parsedLocalTime, fetchedAt: timeData.fetchedAt);
   }
 

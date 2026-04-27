@@ -43,9 +43,32 @@ void main() {
         expect(m.parsedLocalTime, DateTime(2026, 4, 17, 22, 30, 15));
       });
 
-      test('extracts date/time ignoring timezone offset suffix', () {
-        final m = _model(currentLocalTime: '2026-04-17T08:00:00+08:00');
+      test('converts offset to target timezone (offset matches timezone)', () {
+        final m = _model(
+          currentLocalTime: '2026-04-17T08:00:00+08:00',
+          localTimeZone: 'UTC-8',
+        );
         expect(m.parsedLocalTime, DateTime(2026, 4, 17, 8, 0, 0));
+      });
+
+      test('converts stale offset to correct target timezone', () {
+        // Device returns +08:00 offset but timezone was changed to Alaska
+        final m = _model(
+          currentLocalTime: '2026-04-27T17:28:51+08:00',
+          localTimeZone: 'AKST9AKDT,M3.2.0/02:00,M11.1.0/02:00',
+        );
+        // UTC = 17:28:51 - 8h = 09:28:51, Alaska = UTC-9 = 00:28:51
+        expect(m.parsedLocalTime, DateTime(2026, 4, 27, 0, 28, 51));
+      });
+
+      test('converts negative offset to target timezone', () {
+        // Device returns -08:00 offset but timezone was changed to GMT+8
+        final m = _model(
+          currentLocalTime: '2026-04-27T01:29:04-08:00',
+          localTimeZone: 'UTC-8',
+        );
+        // UTC = 01:29:04 + 8h = 09:29:04, GMT+8 = UTC+8 = 17:29:04
+        expect(m.parsedLocalTime, DateTime(2026, 4, 27, 17, 29, 4));
       });
     });
 
