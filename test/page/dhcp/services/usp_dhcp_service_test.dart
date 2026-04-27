@@ -376,7 +376,8 @@ void main() {
           });
 
       expect(
-        () => service.immediateAdd(mac: 'AA:BB:CC:DD:EE:FF', ip: '192.168.1.100'),
+        () =>
+            service.immediateAdd(mac: 'AA:BB:CC:DD:EE:FF', ip: '192.168.1.100'),
         throwsA(isA<UspCompleteFailureError>()),
       );
     });
@@ -486,17 +487,16 @@ void main() {
                 'instances': ['path.1.']
               },
               'error': {
-                'path.2.': {
-                  'errorCode': 7001,
-                  'errorMessage': 'Duplicate'
-                }
+                'path.2.': {'errorCode': 7001, 'errorMessage': 'Duplicate'}
               }
             },
           });
 
       final current = [
-        DhcpReservationUIModel(mac: 'AA:AA:AA:AA:AA:01', ip: '192.168.1.1', enable: true),
-        DhcpReservationUIModel(mac: 'AA:AA:AA:AA:AA:02', ip: '192.168.1.2', enable: true),
+        DhcpReservationUIModel(
+            mac: 'AA:AA:AA:AA:AA:01', ip: '192.168.1.1', enable: true),
+        DhcpReservationUIModel(
+            mac: 'AA:AA:AA:AA:AA:02', ip: '192.168.1.2', enable: true),
       ];
 
       // Should NOT throw — lenient mode accepts partial success
