@@ -459,6 +459,90 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
+    // WifiQuickSetupSettings.isPasswordRequired
+    // -----------------------------------------------------------------------
+
+    group('WifiQuickSetupSettings.isPasswordRequired', () {
+      const wpa2Orig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA2-Personal',
+        supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+      );
+
+      test('false when only enabled toggled (non-open mode)', () {
+        expect(
+          wpa2Orig.copyWith(enabled: false).isPasswordRequired(wpa2Orig),
+          isFalse,
+        );
+      });
+
+      test('false when only ssid changed (non-open mode)', () {
+        expect(
+          wpa2Orig.copyWith(ssid: 'Renamed').isPasswordRequired(wpa2Orig),
+          isFalse,
+        );
+      });
+
+      test('true when password changed and mode is non-open', () {
+        expect(
+          wpa2Orig.copyWith(password: 'newpass1').isPasswordRequired(wpa2Orig),
+          isTrue,
+        );
+      });
+
+      test('true when security mode changed to a non-open mode', () {
+        expect(
+          wpa2Orig
+              .copyWith(securityMode: 'WPA3-Personal')
+              .isPasswordRequired(wpa2Orig),
+          isTrue,
+        );
+      });
+
+      test('false when security mode changed to None (open)', () {
+        expect(
+          wpa2Orig.copyWith(securityMode: 'None').isPasswordRequired(wpa2Orig),
+          isFalse,
+        );
+      });
+
+      test('false on open mode with unchanged password', () {
+        const openOrig = WifiQuickSetupSettings(
+          isGuest: true,
+          enabled: true,
+          ssid: 'Home-Guest',
+          password: '',
+          securityMode: 'None',
+          supportedSecurityModes: [],
+        );
+        expect(
+          openOrig.copyWith(enabled: false).isPasswordRequired(openOrig),
+          isFalse,
+        );
+      });
+
+      test('true when original is null and mode is non-open', () {
+        // Fresh pending with no baseline (e.g. freshly toggled Quick Setup).
+        expect(wpa2Orig.isPasswordRequired(null), isTrue);
+      });
+
+      test('false when original is null but mode is open', () {
+        const openPending = WifiQuickSetupSettings(
+          isGuest: false,
+          enabled: true,
+          ssid: 'OpenNet',
+          password: '',
+          securityMode: 'Enhanced-Open',
+          supportedSecurityModes: ['None', 'Enhanced-Open'],
+        );
+        expect(openPending.isPasswordRequired(null), isFalse);
+      });
+    });
+
+    // -----------------------------------------------------------------------
     // copyWith
     // -----------------------------------------------------------------------
 

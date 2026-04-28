@@ -39,24 +39,28 @@ class WifiQuickSetupSettings extends Equatable {
     required this.supportedSecurityModes,
   });
 
+  /// True when the next Save will actually send `KeyPassphrase` to firmware
+  /// AND the resulting security mode is non-open.
+  ///
+  /// [original] is the server-side snapshot (pre-edit). The AP-layer write
+  /// is only issued when [password] or [securityMode] changed, and the
+  /// passphrase is only meaningful when the mode is non-open. Toggling
+  /// [enabled] or changing only the SSID name therefore does not require a
+  /// password — callers (UI label, validation) should use this to avoid
+  /// showing spurious "(Required)" indicators.
+  bool isPasswordRequired(WifiQuickSetupSettings? original) {
+    final passwordChanged = original == null || password != original.password;
+    final modeChanged =
+        original == null || securityMode != original.securityMode;
+    final isOpen = securityMode == 'None' || securityMode == 'Enhanced-Open';
+    return (passwordChanged || modeChanged) && !isOpen;
+  }
+
   /// True when all required fields are filled and valid for the write that
   /// will actually be issued against firmware.
-  ///
-  /// [original] is the server-side snapshot (pre-edit). Compared against the
-  /// current values to decide which TR-181 parameters will be written:
-  ///   - SSID write happens when [ssid] or [enabled] changed.
-  ///   - AP write happens when [password] or [securityMode] changed.
-  ///
-  /// The passphrase is only validated when the AP write is actually going to
-  /// happen AND the resulting security mode is non-open. Toggling enable
-  /// alone, or changing only the SSID name, does not require a password.
   bool isValid(WifiQuickSetupSettings? original) {
     if (ssid.trim().isEmpty) return false;
-    final passwordChanged = original == null || password != original.password;
-    final modeChanged = original == null || securityMode != original.securityMode;
-    final isOpen = securityMode == 'None' || securityMode == 'Enhanced-Open';
-    final needsPassword = (passwordChanged || modeChanged) && !isOpen;
-    if (!needsPassword) return true;
+    if (!isPasswordRequired(original)) return true;
     return password.isNotEmpty &&
         LengthRule(min: 8, max: 63).validate(password) &&
         WiFiPasswordRule(ignoreLength: true).validate(password);
