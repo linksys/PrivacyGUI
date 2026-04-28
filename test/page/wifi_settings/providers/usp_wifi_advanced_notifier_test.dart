@@ -46,7 +46,10 @@ void main() {
         'Device.WiFi.Radio.1.': true,
         'Device.WiFi.Radio.2.': false,
       });
-      verify(() => mockService.fetchIeee80211h()).called(1);
+      // Called at least once from build(); may be called again if SSE listener
+      // triggers due to wifiDataProvider stub emitting a value.
+      verify(() => mockService.fetchIeee80211h())
+          .called(greaterThanOrEqualTo(1));
       container.dispose();
     });
 
@@ -324,5 +327,5 @@ void main() {
 
 class _StubWifiDataNotifier extends WifiDataNotifier {
   @override
-  Future<WifiData> build() async => throw UnimplementedError();
+  Future<WifiData> build() async => const WifiData.empty();
 }

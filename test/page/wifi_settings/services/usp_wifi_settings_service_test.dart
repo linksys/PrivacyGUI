@@ -976,9 +976,8 @@ void main() {
 
     /// Captures all TR-181 parameter keys that were passed to `mockUsp.set`.
     Set<String> capturedKeys() {
-      final captured = verify(() =>
-              mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')))
-          .captured;
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
       final keys = <String>{};
       for (final arg in captured) {
         if (arg is Map) keys.addAll(arg.keys.cast<String>());
@@ -1085,9 +1084,11 @@ void main() {
 
       final keys = capturedKeys();
       // AP layer gets written — passphrase + mode.
-      expect(keys.any((k) => k.contains('AccessPoint.1.Security.KeyPassphrase')),
+      expect(
+          keys.any((k) => k.contains('AccessPoint.1.Security.KeyPassphrase')),
           isTrue);
-      expect(keys.any((k) => k.contains('AccessPoint.2.Security.KeyPassphrase')),
+      expect(
+          keys.any((k) => k.contains('AccessPoint.2.Security.KeyPassphrase')),
           isTrue);
       // SSID layer must NOT be touched.
       expect(keys.any((k) => k.startsWith('Device.WiFi.SSID.')), isFalse);

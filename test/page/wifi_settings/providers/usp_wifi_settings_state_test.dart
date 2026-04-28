@@ -425,8 +425,7 @@ void main() {
         expect(state.canSave, isTrue);
       });
 
-      test(
-          'true when only ssid changed (WPA2, empty password, unchanged mode)',
+      test('true when only ssid changed (WPA2, empty password, unchanged mode)',
           () {
         final networks = WifiSettingsTestData.createNetworks();
         const mainOrig = WifiQuickSetupSettings(

@@ -167,7 +167,8 @@ class UspWifiSettingsService {
       );
     }
 
-    final isQuickSetup = isConsistent(mainNetworks) && isConsistent(guestNetworks);
+    final isQuickSetup =
+        isConsistent(mainNetworks) && isConsistent(guestNetworks);
 
     return (
       main: mainNetworks.isEmpty
