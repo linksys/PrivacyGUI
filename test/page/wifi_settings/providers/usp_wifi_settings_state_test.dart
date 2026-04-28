@@ -360,6 +360,102 @@ void main() {
 
         expect(state.canSave, isTrue);
       });
+
+      test(
+          'true when only guest enabled toggled off (open security, empty password)',
+          () {
+        final networks = WifiSettingsTestData.createNetworks();
+        const guestOrig = WifiQuickSetupSettings(
+          isGuest: true,
+          enabled: true,
+          ssid: 'Home-Guest',
+          password: '',
+          securityMode: 'None',
+          supportedSecurityModes: [],
+        );
+        final original = WifiSettingsSettings(
+          networks: networks,
+          quickSetupEnabled: true,
+          quickSetupGuest: guestOrig,
+        );
+        final current = original.copyWith(
+          quickSetupGuest: guestOrig.copyWith(enabled: false),
+        );
+
+        final state = UspWifiSettingsState(
+          settings: Preservable(original: original, current: current),
+          status: const WifiSettingsStatus(),
+        );
+
+        // Only enabled toggled — password is not being written, so no
+        // passphrase requirement even though current mode is 'None'.
+        expect(state.isDirty, isTrue);
+        expect(state.canSave, isTrue);
+      });
+
+      test(
+          'true when only main enabled toggled (WPA2, empty password, unchanged mode)',
+          () {
+        final networks = WifiSettingsTestData.createNetworks();
+        const mainOrig = WifiQuickSetupSettings(
+          isGuest: false,
+          enabled: true,
+          ssid: 'Home',
+          password: '',
+          securityMode: 'WPA2-Personal',
+          supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+        );
+        final original = WifiSettingsSettings(
+          networks: networks,
+          quickSetupEnabled: true,
+          quickSetupMain: mainOrig,
+        );
+        final current = original.copyWith(
+          quickSetupMain: mainOrig.copyWith(enabled: false),
+        );
+
+        final state = UspWifiSettingsState(
+          settings: Preservable(original: original, current: current),
+          status: const WifiSettingsStatus(),
+        );
+
+        // Toggle enable only — no AP write, so empty password is fine
+        // even though the security mode is non-open.
+        expect(state.isDirty, isTrue);
+        expect(state.canSave, isTrue);
+      });
+
+      test(
+          'true when only ssid changed (WPA2, empty password, unchanged mode)',
+          () {
+        final networks = WifiSettingsTestData.createNetworks();
+        const mainOrig = WifiQuickSetupSettings(
+          isGuest: false,
+          enabled: true,
+          ssid: 'Home',
+          password: '',
+          securityMode: 'WPA2-Personal',
+          supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+        );
+        final original = WifiSettingsSettings(
+          networks: networks,
+          quickSetupEnabled: true,
+          quickSetupMain: mainOrig,
+        );
+        final current = original.copyWith(
+          quickSetupMain: mainOrig.copyWith(ssid: 'RenamedHome'),
+        );
+
+        final state = UspWifiSettingsState(
+          settings: Preservable(original: original, current: current),
+          status: const WifiSettingsStatus(),
+        );
+
+        // Only SSID name changed — no AP write triggered, so no password
+        // requirement even under WPA2.
+        expect(state.isDirty, isTrue);
+        expect(state.canSave, isTrue);
+      });
     });
 
     // -----------------------------------------------------------------------

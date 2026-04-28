@@ -405,6 +405,7 @@ void main() {
             current: any(named: 'current'),
           )).called(1);
       verifyNever(() => mockService.saveQuickSetup(
+            original: any(named: 'original'),
             current: any(named: 'current'),
             status: any(named: 'status'),
           ));
@@ -425,6 +426,7 @@ void main() {
         isQuickSetup: true,
       ));
       when(() => mockService.saveQuickSetup(
+            original: any(named: 'original'),
             current: any(named: 'current'),
             status: any(named: 'status'),
           )).thenAnswer((_) async {});
@@ -441,6 +443,7 @@ void main() {
       await notifier.save();
 
       verify(() => mockService.saveQuickSetup(
+            original: any(named: 'original'),
             current: any(named: 'current'),
             status: any(named: 'status'),
           )).called(1);

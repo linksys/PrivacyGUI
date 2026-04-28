@@ -178,7 +178,11 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     await ref.read(uspMutationLockProvider).withLock(() async {
       final current = state.settings.current;
       if (current.quickSetupEnabled) {
-        await _svc.saveQuickSetup(current: current, status: state.status);
+        await _svc.saveQuickSetup(
+          original: state.settings.original,
+          current: current,
+          status: state.status,
+        );
       } else {
         await _svc.saveAdvanced(
           original: state.settings.original.networks,

@@ -10,6 +10,8 @@ import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 ///   - [securityMode] — pre-filled from the intersection of supported modes.
 ///
 /// [isValid] must be `true` before the page-level Save button is enabled.
+/// Validity is evaluated against [original] so that a password is only
+/// required when the user is actually changing password or securityMode.
 class WifiQuickSetupSettings extends Equatable {
   final bool isGuest;
 
@@ -37,11 +39,24 @@ class WifiQuickSetupSettings extends Equatable {
     required this.supportedSecurityModes,
   });
 
-  /// True when all required fields are filled and valid.
-  bool get isValid {
+  /// True when all required fields are filled and valid for the write that
+  /// will actually be issued against firmware.
+  ///
+  /// [original] is the server-side snapshot (pre-edit). Compared against the
+  /// current values to decide which TR-181 parameters will be written:
+  ///   - SSID write happens when [ssid] or [enabled] changed.
+  ///   - AP write happens when [password] or [securityMode] changed.
+  ///
+  /// The passphrase is only validated when the AP write is actually going to
+  /// happen AND the resulting security mode is non-open. Toggling enable
+  /// alone, or changing only the SSID name, does not require a password.
+  bool isValid(WifiQuickSetupSettings? original) {
     if (ssid.trim().isEmpty) return false;
+    final passwordChanged = original == null || password != original.password;
+    final modeChanged = original == null || securityMode != original.securityMode;
     final isOpen = securityMode == 'None' || securityMode == 'Enhanced-Open';
-    if (isOpen) return true;
+    final needsPassword = (passwordChanged || modeChanged) && !isOpen;
+    if (!needsPassword) return true;
     return password.isNotEmpty &&
         LengthRule(min: 8, max: 63).validate(password) &&
         WiFiPasswordRule(ignoreLength: true).validate(password);

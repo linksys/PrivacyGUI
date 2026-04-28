@@ -70,8 +70,8 @@ class UspWifiSettingsState
       if (!mainChanged && !guestChanged) return false;
 
       // All changed groups must be valid.
-      if (mainChanged && !main.isValid) return false;
-      if (guestChanged && !guest.isValid) return false;
+      if (mainChanged && !main.isValid(origMain)) return false;
+      if (guestChanged && !guest.isValid(origGuest)) return false;
 
       return true;
     }

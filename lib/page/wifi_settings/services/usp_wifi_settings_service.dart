@@ -210,41 +210,65 @@ class UspWifiSettingsService {
   // ---------------------------------------------------------------------------
 
   /// Saves WiFi settings in Quick Setup mode.
+  ///
+  /// Writes are gated by field-level diff against [original] so that firmware
+  /// only receives the parameters the user actually changed:
+  ///   - SSID update is issued only when ssid name or enabled flag changed.
+  ///   - AP update is issued only when password or securityMode changed.
+  ///
+  /// This prevents `KeyPassphrase (Invalid value)` errors from firmware when
+  /// the user toggles Guest enable without (re-)entering a passphrase.
   Future<void> saveQuickSetup({
+    required WifiSettingsSettings original,
     required WifiSettingsSettings current,
     required WifiSettingsStatus status,
   }) async {
     try {
-      for (final pending in [current.quickSetupMain, current.quickSetupGuest]) {
-        if (pending == null || !pending.isValid) continue;
+      final groups = [
+        (
+          pending: current.quickSetupMain,
+          orig: original.quickSetupMain,
+          isGuest: false,
+        ),
+        (
+          pending: current.quickSetupGuest,
+          orig: original.quickSetupGuest,
+          isGuest: true,
+        ),
+      ];
 
-        final aggregate = pending.isGuest
+      for (final group in groups) {
+        final pending = group.pending;
+        if (pending == null) continue;
+        final orig = group.orig;
+
+        final aggregate = group.isGuest
             ? status.quickSetupGuestAggregate
             : status.quickSetupMainAggregate;
         if (aggregate == null) continue;
 
-        if (aggregate.ssidInstancePaths.isNotEmpty) {
-          // REFACTORED: Use structured error handling from WiFiSettingsService pattern
-          final ssidUpdates = aggregate.ssidInstancePaths
-              .map((p) => WiFiSsidUpdate(
-                    instancePath: p,
-                    ssid: pending.ssid,
-                    enable: pending.enabled,
-                  ))
-              .toList();
-
-          // Business validation (like WiFiSettingsService.updateSsidName)
-          if (pending.ssid.isEmpty) {
-            throw InvalidInputError(message: 'SSID name cannot be empty');
+        // ── SSID layer — only when ssid name or enabled changed ────────────
+        final ssidChanged = orig == null || orig.ssid != pending.ssid;
+        final enabledChanged = orig == null || orig.enabled != pending.enabled;
+        if (aggregate.ssidInstancePaths.isNotEmpty &&
+            (ssidChanged || enabledChanged)) {
+          if (ssidChanged) {
+            if (pending.ssid.isEmpty) {
+              throw InvalidInputError(message: 'SSID name cannot be empty');
+            }
+            if (pending.ssid.length > 32) {
+              throw InvalidInputError(
+                  message: 'SSID name cannot exceed 32 characters');
+            }
           }
-          if (pending.ssid.length > 32) {
-            throw InvalidInputError(
-                message: 'SSID name cannot exceed 32 characters');
-          }
-
-          // Update each SSID individually
-          for (final ssidUpdate in ssidUpdates) {
-            final result = await WiFiSsids.update(_usp, [ssidUpdate]);
+          for (final p in aggregate.ssidInstancePaths) {
+            final result = await WiFiSsids.update(_usp, [
+              WiFiSsidUpdate(
+                instancePath: p,
+                ssid: pending.ssid,
+                enable: pending.enabled,
+              ),
+            ]);
             final parsed = UspResultParser.parseSetResult(result);
             switch (parsed) {
               case UspSuccess():
@@ -264,17 +288,22 @@ class UspWifiSettingsService {
             }
           }
         }
-        if (aggregate.apInstancePaths.isNotEmpty) {
+
+        // ── AP layer — only when password or securityMode changed ──────────
+        final passwordChanged =
+            orig == null || orig.password != pending.password;
+        final modeChanged =
+            orig == null || orig.securityMode != pending.securityMode;
+        if (aggregate.apInstancePaths.isNotEmpty &&
+            (passwordChanged || modeChanged)) {
           // Build a band lookup: AP instance path → band string.
           // Used to apply the 6 GHz security override (Wi-Fi 6E mandates WPA3).
-          final bandByApPath = <String, String>{};
-          for (final n in current.networks) {
-            if (n.accessPointInstancePath != null) {
-              bandByApPath[n.accessPointInstancePath!] = n.band;
-            }
-          }
+          final bandByApPath = <String, String>{
+            for (final n in current.networks)
+              if (n.accessPointInstancePath != null)
+                n.accessPointInstancePath!: n.band,
+          };
 
-          // Update each access point individually
           for (final p in aggregate.apInstancePaths) {
             final band = bandByApPath[p] ?? '';
             final securityMode = _securityModeFor6GHz(
@@ -286,7 +315,10 @@ class UspWifiSettingsService {
               [
                 WiFiAccessPointUpdate(
                   instancePath: p,
-                  keyPassphrase: pending.password,
+                  // Omit an empty passphrase (e.g. when only securityMode
+                  // changed to an open mode) so firmware does not reject it.
+                  keyPassphrase:
+                      pending.password.isNotEmpty ? pending.password : null,
                   securityModeEnabled: securityMode,
                 )
               ],

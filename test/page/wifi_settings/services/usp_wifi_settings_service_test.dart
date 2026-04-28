@@ -6,6 +6,9 @@ import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
 import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
 class MockUspClient extends Mock implements UspClient {}
@@ -927,6 +930,211 @@ void main() {
 
       verifyNever(
           () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // saveQuickSetup — field-level diff
+  // -------------------------------------------------------------------------
+
+  group('saveQuickSetup', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+    });
+
+    WifiNetworkUIModel makeNetwork({
+      String ssidInstancePath = 'Device.WiFi.SSID.1.',
+      String accessPointInstancePath = 'Device.WiFi.AccessPoint.1.',
+      String band = '2.4GHz',
+      bool isGuest = false,
+    }) =>
+        WifiNetworkUIModel(
+          ssidInstancePath: ssidInstancePath,
+          accessPointInstancePath: accessPointInstancePath,
+          radioInstancePath: 'Device.WiFi.Radio.1.',
+          ssid: 'Home',
+          enabled: true,
+          ssidAdvertisementEnabled: true,
+          supportedSecurityModes: const ['WPA2-Personal', 'WPA3-Personal'],
+          securityMode: 'WPA2-Personal',
+          keyPassphrase: '',
+          isGuest: isGuest,
+          band: band,
+          channel: 6,
+          channelBandwidth: '20MHz',
+          autoChannelEnable: true,
+          possibleChannels: const [1, 6, 11],
+          operatingStandards: 'n',
+          supportedStandards: 'b,g,n',
+        );
+
+    /// Captures all TR-181 parameter keys that were passed to `mockUsp.set`.
+    Set<String> capturedKeys() {
+      final captured = verify(() =>
+              mockUsp.set(captureAny(), allowPartial: any(named: 'allowPartial')))
+          .captured;
+      final keys = <String>{};
+      for (final arg in captured) {
+        if (arg is Map) keys.addAll(arg.keys.cast<String>());
+      }
+      return keys;
+    }
+
+    test('skips AP write when only guest enabled toggled', () async {
+      // Guest group: only `enabled` changed. No SSID-name change, no AP change.
+      final guestAgg = WifiQuickSetupNetwork(
+        isGuest: true,
+        ssid: 'Home-Guest',
+        securityMode: 'None',
+        keyPassphrase: '',
+        supportedSecurityModes: const [],
+        ssidInstancePaths: const ['Device.WiFi.SSID.3.'],
+        apInstancePaths: const ['Device.WiFi.AccessPoint.3.'],
+      );
+      const guestOrig = WifiQuickSetupSettings(
+        isGuest: true,
+        enabled: true,
+        ssid: 'Home-Guest',
+        password: '',
+        securityMode: 'None',
+        supportedSecurityModes: [],
+      );
+
+      final original = WifiSettingsSettings(
+        networks: [
+          makeNetwork(
+            ssidInstancePath: 'Device.WiFi.SSID.3.',
+            accessPointInstancePath: 'Device.WiFi.AccessPoint.3.',
+            isGuest: true,
+          ),
+        ],
+        quickSetupEnabled: true,
+        quickSetupGuest: guestOrig,
+      );
+      final current = original.copyWith(
+        quickSetupGuest: guestOrig.copyWith(enabled: false),
+      );
+      final status = WifiSettingsStatus(quickSetupGuestAggregate: guestAgg);
+
+      await writeSvc.saveQuickSetup(
+        original: original,
+        current: current,
+        status: status,
+      );
+
+      final keys = capturedKeys();
+      // SSID enable write happens…
+      expect(keys, contains('Device.WiFi.SSID.3.Enable'));
+      // …but AP layer (KeyPassphrase / Security.ModeEnabled) must NOT be touched.
+      expect(
+        keys.any((k) => k.startsWith('Device.WiFi.AccessPoint.3.Security.')),
+        isFalse,
+      );
+    });
+
+    test('skips SSID write when only password changed', () async {
+      final mainAgg = WifiQuickSetupNetwork(
+        isGuest: false,
+        ssid: 'Home',
+        securityMode: 'WPA2-Personal',
+        keyPassphrase: '',
+        supportedSecurityModes: const ['WPA2-Personal', 'WPA3-Personal'],
+        ssidInstancePaths: const ['Device.WiFi.SSID.1.', 'Device.WiFi.SSID.2.'],
+        apInstancePaths: const [
+          'Device.WiFi.AccessPoint.1.',
+          'Device.WiFi.AccessPoint.2.'
+        ],
+      );
+      const mainOrig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA2-Personal',
+        supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+      );
+
+      final original = WifiSettingsSettings(
+        networks: [
+          makeNetwork(ssidInstancePath: 'Device.WiFi.SSID.1.'),
+          makeNetwork(
+            ssidInstancePath: 'Device.WiFi.SSID.2.',
+            accessPointInstancePath: 'Device.WiFi.AccessPoint.2.',
+            band: '5GHz',
+          ),
+        ],
+        quickSetupEnabled: true,
+        quickSetupMain: mainOrig,
+      );
+      final current = original.copyWith(
+        quickSetupMain: mainOrig.copyWith(password: 'brandnew1'),
+      );
+      final status = WifiSettingsStatus(quickSetupMainAggregate: mainAgg);
+
+      await writeSvc.saveQuickSetup(
+        original: original,
+        current: current,
+        status: status,
+      );
+
+      final keys = capturedKeys();
+      // AP layer gets written — passphrase + mode.
+      expect(keys.any((k) => k.contains('AccessPoint.1.Security.KeyPassphrase')),
+          isTrue);
+      expect(keys.any((k) => k.contains('AccessPoint.2.Security.KeyPassphrase')),
+          isTrue);
+      // SSID layer must NOT be touched.
+      expect(keys.any((k) => k.startsWith('Device.WiFi.SSID.')), isFalse);
+    });
+
+    test('omits keyPassphrase param when password empty on mode change',
+        () async {
+      // User switches main to Open without entering a password. AP write
+      // still happens (mode changed) but must not send an empty passphrase.
+      final mainAgg = WifiQuickSetupNetwork(
+        isGuest: false,
+        ssid: 'Home',
+        securityMode: 'WPA2-Personal',
+        keyPassphrase: '',
+        supportedSecurityModes: const ['None', 'WPA2-Personal'],
+        ssidInstancePaths: const ['Device.WiFi.SSID.1.'],
+        apInstancePaths: const ['Device.WiFi.AccessPoint.1.'],
+      );
+      const mainOrig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA2-Personal',
+        supportedSecurityModes: ['None', 'WPA2-Personal'],
+      );
+
+      final original = WifiSettingsSettings(
+        networks: [makeNetwork()],
+        quickSetupEnabled: true,
+        quickSetupMain: mainOrig,
+      );
+      final current = original.copyWith(
+        quickSetupMain: mainOrig.copyWith(securityMode: 'None'),
+      );
+      final status = WifiSettingsStatus(quickSetupMainAggregate: mainAgg);
+
+      await writeSvc.saveQuickSetup(
+        original: original,
+        current: current,
+        status: status,
+      );
+
+      final keys = capturedKeys();
+      expect(keys.any((k) => k.contains('Security.ModeEnabled')), isTrue);
+      // Empty passphrase must not be sent to firmware.
+      expect(keys.any((k) => k.contains('Security.KeyPassphrase')), isFalse);
     });
   });
 }
