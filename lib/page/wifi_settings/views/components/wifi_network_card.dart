@@ -81,23 +81,29 @@ class WifiNetworkCard extends ConsumerWidget {
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editSsid(context, ref, n),
             ),
-            // ── WiFi password — bullet dots + pencil ──────────────────────
-            const Divider(),
-            _WifiTile(
-              title: 'Password',
-              description: '\u2022' * 12,
-              trailing: const AppIcon.font(AppFontIcons.edit),
-              onTap: () => _editPassword(context, ref, n),
-            ),
-            // ── Security mode (main networks only) ────────────────────────
-            if (!n.isGuest && n.supportedSecurityModes.isNotEmpty) ...[
+            // ── WiFi password & Security mode ────────────────────────────
+            // Hidden together when the network has no supported security modes
+            // (e.g. Guest on firmware that reports ModesSupported=''). Password
+            // is meaningless for an open network, so showing it would mislead.
+            // This mirrors the Quick Setup card's guard.
+            if (n.supportedSecurityModes.isNotEmpty) ...[
               const Divider(),
               _WifiTile(
-                title: 'Security mode',
-                description: n.securityMode,
+                title: 'Password',
+                description: '\u2022' * 12,
                 trailing: const AppIcon.font(AppFontIcons.edit),
-                onTap: () => _editSecurityMode(context, ref, n),
+                onTap: () => _editPassword(context, ref, n),
               ),
+              // Security mode — main networks only (guest is always open/None)
+              if (!n.isGuest) ...[
+                const Divider(),
+                _WifiTile(
+                  title: 'Security mode',
+                  description: n.securityMode,
+                  trailing: const AppIcon.font(AppFontIcons.edit),
+                  onTap: () => _editSecurityMode(context, ref, n),
+                ),
+              ],
             ],
             // ── WiFi Mode ──────────────────────────────────────────────────
             if (!n.isGuest && n.supportedStandards.isNotEmpty) ...[

@@ -190,8 +190,11 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         );
       }
     });
-    // Invalidate Layer 1 cache so post-save fetch() reads fresh data.
-    ref.invalidate(wifiDataProvider);
+    // Refresh Layer 1 cache so post-save fetch() reads fresh data.
+    // Using refresh() instead of invalidate() because the latter only marks
+    // the provider dirty — without an active subscriber it won't rebuild,
+    // and the subsequent .future call would return stale data.
+    final _ = await ref.refresh(wifiDataProvider.future);
   }
 
   // ---------------------------------------------------------------------------

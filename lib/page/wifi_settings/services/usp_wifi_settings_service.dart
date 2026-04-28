@@ -156,15 +156,18 @@ class UspWifiSettingsService {
     final mainNetworks = networks.where((n) => !n.isGuest).toList();
     final guestNetworks = networks.where((n) => n.isGuest).toList();
 
-    final bool isQuickSetup;
-    if (mainNetworks.isEmpty) {
-      isQuickSetup = true;
-    } else {
-      final first = mainNetworks.first;
-      isQuickSetup = mainNetworks.every(
+    // Quick Setup requires all networks (main AND guest) to share the same
+    // enabled state and SSID within their group. If any group is inconsistent,
+    // the aggregated view would be misleading — fall back to Advanced mode.
+    bool isConsistent(List<WifiNetworkUIModel> nets) {
+      if (nets.isEmpty) return true;
+      final first = nets.first;
+      return nets.every(
         (n) => n.enabled == first.enabled && n.ssid == first.ssid,
       );
     }
+
+    final isQuickSetup = isConsistent(mainNetworks) && isConsistent(guestNetworks);
 
     return (
       main: mainNetworks.isEmpty
