@@ -94,13 +94,13 @@ class UspMenuView extends StatelessWidget {
         iconData: Icons.tune,
         onTap: () => context.goNamed(RouteNamed.uspAdvancedSettings),
       ),
-      AppSectionItemData(
-        semanticLabel: 'menu-system-logs',
-        title: 'System Logs',
-        description: 'View router log files',
-        iconData: Icons.article_outlined,
-        onTap: () => context.goNamed(RouteNamed.uspSystemLog),
-      ),
+      // AppSectionItemData(
+      //   semanticLabel: 'menu-system-logs',
+      //   title: 'System Logs',
+      //   description: 'View router log files',
+      //   iconData: Icons.article_outlined,
+      //   onTap: () => context.goNamed(RouteNamed.uspSystemLog),
+      // ),
       AppSectionItemData(
         semanticLabel: 'menu-statistics',
         title: 'Statistics',
