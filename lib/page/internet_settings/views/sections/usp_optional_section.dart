@@ -113,14 +113,14 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
                   _updateField((f) => f.copyWith(mtu: int.tryParse(v) ?? 0)),
             ),
           ],
-          AppGap.lg(),
-          AppDivider(),
-          AppGap.lg(),
-          // MAC Address Clone — read-only until USP data model supports write
-          AppText.labelLarge(l.macAddressClone),
-          AppGap.md(),
-          UspInfoRow(
-              label: l.currentMac, value: widget.state.currentMacAddress),
+          // MAC Address Clone — disabled: USP data model does not support write
+          // AppGap.lg(),
+          // AppDivider(),
+          // AppGap.lg(),
+          // AppText.labelLarge(l.macAddressClone),
+          // AppGap.md(),
+          // UspInfoRow(
+          //     label: l.currentMac, value: widget.state.currentMacAddress),
         ],
       ),
     );

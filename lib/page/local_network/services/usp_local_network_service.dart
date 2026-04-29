@@ -157,6 +157,75 @@ class UspLocalNetworkService {
     return null;
   }
 
+  // ─── DHCP Defaults ─────────────────────────────────────────
+
+  static const _defaultLeaseTimeMinutes = 720; // 12 hours
+  static const _defaultPoolSize = 150;
+  static const _defaultPoolOffset = 100;
+
+  /// Compute sensible DHCP defaults when the user enables DHCP and the pool
+  /// fields are empty. Returns the model unchanged if defaults are not needed.
+  LocalNetworkUIModel applyDhcpDefaults(LocalNetworkUIModel model) {
+    final needPool = model.minAddress.isEmpty || model.maxAddress.isEmpty;
+    final needLease = model.leaseTimeMinutes < 1;
+
+    if (!needPool && !needLease) return model;
+
+    var result = model;
+
+    if (needPool &&
+        NetworkUtils.isValidIpAddress(model.ipAddress) &&
+        model.subnetMask.isNotEmpty) {
+      final pool = _computeDefaultPool(model.ipAddress, model.subnetMask);
+      if (pool != null) {
+        result = result.copyWith(
+          minAddress: model.minAddress.isEmpty ? pool.$1 : null,
+          maxAddress: model.maxAddress.isEmpty ? pool.$2 : null,
+        );
+      }
+    }
+
+    if (needLease) {
+      result = result.copyWith(leaseTimeMinutes: _defaultLeaseTimeMinutes);
+    }
+
+    return result;
+  }
+
+  (String, String)? _computeDefaultPool(String routerIp, String subnetMask) {
+    try {
+      final routerNum = NetworkUtils.ipToNum(routerIp);
+      final maskNum = NetworkUtils.ipToNum(subnetMask);
+      final networkNum = routerNum & maskNum;
+      final broadcastNum = networkNum | (~maskNum & 0xFFFFFFFF);
+      final lastUsable = broadcastNum - 1;
+      final usableCount = lastUsable - networkNum - 1;
+      if (usableCount < 2) return null;
+
+      final offset = usableCount > 200
+          ? _defaultPoolOffset
+          : (usableCount ~/ 4).clamp(2, _defaultPoolOffset);
+      final poolSize = (usableCount > 100 ? _defaultPoolSize : usableCount ~/ 2)
+          .clamp(1, _defaultPoolSize);
+
+      var startNum = networkNum + offset;
+      var endNum = startNum + poolSize - 1;
+
+      // Shift past router IP if it falls within the pool
+      if (routerNum >= startNum && routerNum <= endNum) {
+        startNum = routerNum + 1;
+        endNum = startNum + poolSize - 1;
+      }
+
+      if (endNum > lastUsable) endNum = lastUsable;
+      if (startNum > endNum) return null;
+
+      return (NetworkUtils.numToIp(startNum), NetworkUtils.numToIp(endNum));
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ─── Prefix Lock ───────────────────────────────────────────
 
   /// How many octets to lock based on subnet mask.
