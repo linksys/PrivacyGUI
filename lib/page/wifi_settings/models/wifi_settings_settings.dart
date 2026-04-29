@@ -10,6 +10,8 @@ import 'package:privacy_gui/validator_rules/_validator_rules.dart';
 ///   - [securityMode] — pre-filled from the intersection of supported modes.
 ///
 /// [isValid] must be `true` before the page-level Save button is enabled.
+/// Validity is evaluated against [original] so that a password is only
+/// required when the user is actually changing password or securityMode.
 class WifiQuickSetupSettings extends Equatable {
   final bool isGuest;
 
@@ -37,11 +39,28 @@ class WifiQuickSetupSettings extends Equatable {
     required this.supportedSecurityModes,
   });
 
-  /// True when all required fields are filled and valid.
-  bool get isValid {
-    if (ssid.trim().isEmpty) return false;
+  /// True when the next Save will actually send `KeyPassphrase` to firmware
+  /// AND the resulting security mode is non-open.
+  ///
+  /// [original] is the server-side snapshot (pre-edit). The AP-layer write
+  /// is only issued when [password] or [securityMode] changed, and the
+  /// passphrase is only meaningful when the mode is non-open. Toggling
+  /// [enabled] or changing only the SSID name therefore does not require a
+  /// password — callers (UI label, validation) should use this to avoid
+  /// showing spurious "(Required)" indicators.
+  bool isPasswordRequired(WifiQuickSetupSettings? original) {
+    final passwordChanged = original == null || password != original.password;
+    final modeChanged =
+        original == null || securityMode != original.securityMode;
     final isOpen = securityMode == 'None' || securityMode == 'Enhanced-Open';
-    if (isOpen) return true;
+    return (passwordChanged || modeChanged) && !isOpen;
+  }
+
+  /// True when all required fields are filled and valid for the write that
+  /// will actually be issued against firmware.
+  bool isValid(WifiQuickSetupSettings? original) {
+    if (ssid.trim().isEmpty) return false;
+    if (!isPasswordRequired(original)) return true;
     return password.isNotEmpty &&
         LengthRule(min: 8, max: 63).validate(password) &&
         WiFiPasswordRule(ignoreLength: true).validate(password);

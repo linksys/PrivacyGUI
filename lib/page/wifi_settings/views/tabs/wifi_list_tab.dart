@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_quick_setup_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -181,7 +182,7 @@ class UspWifiListTab extends ConsumerWidget {
 
   Widget _buildAdvancedGrid(
     BuildContext context,
-    dynamic state,
+    UspWifiSettingsState state,
     int columnCount,
     double fixedWidth,
     double gutter,
@@ -192,32 +193,49 @@ class UspWifiListTab extends ConsumerWidget {
       return idx < 0 ? 99 : idx;
     }
 
-    final sorted = [...state.settings.current.networks]..sort((a, b) {
-        if (a.isGuest != b.isGuest) return a.isGuest ? 1 : -1;
-        return bandRank(a.band).compareTo(bandRank(b.band));
-      });
+    final networks = state.settings.current.networks;
+    final mainNets = networks.where((n) => !n.isGuest).toList()
+      ..sort((a, b) => bandRank(a.band).compareTo(bandRank(b.band)));
+    final guestNets = networks.where((n) => n.isGuest).toList()
+      ..sort((a, b) => bandRank(a.band).compareTo(bandRank(b.band)));
 
-    final rows = <TableRow>[];
-    for (var i = 0; i < sorted.length; i += columnCount) {
-      final chunk = sorted.skip(i).take(columnCount).toList();
-      final cells = <Widget>[];
-      for (var j = 0; j < columnCount; j++) {
-        if (j < chunk.length) {
-          cells.add(WifiNetworkCard(
-            ssidInstancePath: chunk[j].ssidInstancePath,
-            lastInRow: j == columnCount - 1,
-          ));
-        } else {
-          cells.add(const SizedBox.shrink());
-        }
+    // Build a map from band to guest network for pairing
+    final guestByBand = {for (final g in guestNets) g.band: g};
+
+    // Build columns: each band is a column with Main on top, Guest below
+    // Use Expanded so all columns share equal width regardless of count
+    final columns = <Widget>[];
+
+    for (var i = 0; i < mainNets.length; i++) {
+      final main = mainNets[i];
+      final guest = guestByBand[main.band];
+      final lastInRow = i == mainNets.length - 1;
+
+      final columnChildren = <Widget>[
+        WifiNetworkCard(
+          ssidInstancePath: main.ssidInstancePath,
+          lastInRow: true,
+        ),
+      ];
+
+      if (guest != null) {
+        columnChildren.add(WifiNetworkCard(
+          ssidInstancePath: guest.ssidInstancePath,
+          lastInRow: true,
+        ));
       }
-      rows.add(TableRow(children: cells));
+
+      columns.add(Expanded(
+        child: Padding(
+          padding: EdgeInsets.only(right: lastInRow ? 0 : gutter),
+          child: Column(children: columnChildren),
+        ),
+      ));
     }
 
-    return Table(
-      defaultVerticalAlignment: TableCellVerticalAlignment.intrinsicHeight,
-      columnWidths: _columnWidths(columnCount, fixedWidth, gutter),
-      children: rows,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: columns,
     );
   }
 
