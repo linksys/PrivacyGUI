@@ -1,12 +1,5 @@
 part of 'router_provider.dart';
 
-final autoParentFirstLoginRoute = LinksysRoute(
-  name: RouteNamed.autoParentFirstLogin,
-  path: RoutePath.autoParentFirstLogin,
-  config: const LinksysRouteConfig(noNaviRail: true),
-  builder: (context, state) => const AutoParentFirstLoginView(),
-);
-
 final localLoginRoute = LinksysRoute(
   name: RouteNamed.localLoginPassword,
   path: RoutePath.localLoginPassword,
