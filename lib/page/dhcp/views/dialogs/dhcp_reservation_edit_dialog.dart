@@ -10,8 +10,15 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// Returns a `({String mac, String ip, bool enable})` record on submit, or null on cancel.
 class DhcpReservationEditDialog extends StatefulWidget {
   final DhcpReservationUIModel? reservation;
+  final List<AppAutoCompleteOption> macDeviceOptions;
+  final List<AppAutoCompleteOption> ipDeviceOptions;
 
-  const DhcpReservationEditDialog({super.key, this.reservation});
+  const DhcpReservationEditDialog({
+    super.key,
+    this.reservation,
+    this.macDeviceOptions = const [],
+    this.ipDeviceOptions = const [],
+  });
 
   @override
   State<DhcpReservationEditDialog> createState() =>
@@ -78,18 +85,44 @@ class _DhcpReservationEditDialogState extends State<DhcpReservationEditDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppTextField(
+          AppSelectAutoComplete(
+            options: widget.macDeviceOptions,
             controller: _macController,
-            hintText: 'MAC Address (e.g. AA:BB:CC:DD:EE:FF)',
-            onChanged: (_) => _validate(),
-            errorText: _errors['mac'],
+            onSelected: (value) {
+              final match = widget.macDeviceOptions
+                  .where((o) => o.value == value)
+                  .firstOrNull;
+              if (match?.subtitle != null) {
+                _ipController.text = match!.subtitle!;
+              }
+              _validate();
+            },
+            child: AppTextField(
+              controller: _macController,
+              hintText: 'MAC Address (e.g. AA:BB:CC:DD:EE:FF)',
+              onChanged: (_) => _validate(),
+              errorText: _errors['mac'],
+            ),
           ),
           AppGap.lg(),
-          AppTextField(
+          AppSelectAutoComplete(
+            options: widget.ipDeviceOptions,
             controller: _ipController,
-            hintText: 'IP Address (e.g. 192.168.1.100)',
-            onChanged: (_) => _validate(),
-            errorText: _errors['ip'],
+            onSelected: (value) {
+              final match = widget.ipDeviceOptions
+                  .where((o) => o.value == value)
+                  .firstOrNull;
+              if (match?.subtitle != null) {
+                _macController.text = match!.subtitle!;
+              }
+              _validate();
+            },
+            child: AppTextField(
+              controller: _ipController,
+              hintText: 'IP Address (e.g. 192.168.1.100)',
+              onChanged: (_) => _validate(),
+              errorText: _errors['ip'],
+            ),
           ),
           AppGap.lg(),
           Row(

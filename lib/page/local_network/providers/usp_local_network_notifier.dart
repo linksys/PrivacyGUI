@@ -149,6 +149,11 @@ class UspLocalNetworkNotifier
     final current = state.settings.current;
     var newModel = updater(current.model);
 
+    // Apply sensible defaults when DHCP is toggled from disabled → enabled
+    if (!current.model.dhcpEnabled && newModel.dhcpEnabled) {
+      newModel = _svc.applyDhcpDefaults(newModel);
+    }
+
     // Auto-sync pool prefix when router IP changes
     if (newModel.ipAddress != current.model.ipAddress &&
         newModel.subnetMask.isNotEmpty) {
