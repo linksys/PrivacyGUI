@@ -117,7 +117,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
   StreamSubscription? _errorSub;
-  RouterNotifier(this._ref);
+  RouterNotifier(this._ref) {
+    _ref.listen(authProvider, (_, __) {
+      notifyListeners();
+    });
+  }
 
   @override
   void dispose() {
