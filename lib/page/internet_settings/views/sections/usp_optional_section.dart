@@ -25,7 +25,6 @@ class UspOptionalSection extends ConsumerStatefulWidget {
 
 class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
   late TextEditingController _mtuController;
-  late TextEditingController _macController;
 
   @override
   void initState() {
@@ -33,7 +32,6 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
     final form = widget.state.edited;
     _mtuController =
         TextEditingController(text: form.mtu == 0 ? '' : form.mtu.toString());
-    _macController = TextEditingController(text: form.wanMacAddress);
   }
 
   @override
@@ -45,16 +43,12 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
       if (_mtuController.text != mtuText) {
         _mtuController.text = mtuText;
       }
-      if (_macController.text != form.wanMacAddress) {
-        _macController.text = form.wanMacAddress;
-      }
     }
   }
 
   @override
   void dispose() {
     _mtuController.dispose();
-    _macController.dispose();
     super.dispose();
   }
 
@@ -122,27 +116,11 @@ class _UspOptionalSectionState extends ConsumerState<UspOptionalSection> {
           AppGap.lg(),
           AppDivider(),
           AppGap.lg(),
-          // MAC Address Clone
+          // MAC Address Clone — read-only until USP data model supports write
           AppText.labelLarge(l.macAddressClone),
           AppGap.md(),
           UspInfoRow(
               label: l.currentMac, value: widget.state.currentMacAddress),
-          AppGap.md(),
-          if (!isEditing) ...[
-            UspInfoRow(
-              label: l.cloneMac,
-              value:
-                  form.wanMacAddress.isEmpty ? l.disabled : form.wanMacAddress,
-            ),
-          ] else ...[
-            AppTextFormField(
-              controller: _macController,
-              label: l.macAddress,
-              hintText: 'AA:BB:CC:DD:EE:FF',
-              onChanged: (v) =>
-                  _updateField((f) => f.copyWith(wanMacAddress: v)),
-            ),
-          ],
         ],
       ),
     );
