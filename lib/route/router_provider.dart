@@ -118,8 +118,13 @@ class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
   StreamSubscription? _errorSub;
   RouterNotifier(this._ref) {
-    _ref.listen(authProvider, (_, __) {
-      notifyListeners();
+    _ref.listen(authProvider, (previous, next) {
+      if (next.isLoading) return;
+      final prevType = previous?.value?.loginType;
+      final nextType = next.value?.loginType;
+      if (prevType != nextType) {
+        notifyListeners();
+      }
     });
   }
 
