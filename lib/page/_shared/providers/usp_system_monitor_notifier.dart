@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
 import 'package:privacy_gui/page/_shared/services/usp_system_monitor_service.dart';
@@ -15,12 +18,21 @@ final uspSystemMonitorProvider =
 
 class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
   Timer? _timer;
+  int _consecutiveErrors = 0;
+  static const _errorThreshold = 3;
 
   @override
   SystemMonitorState build() {
     ref.onDispose(() {
       _timer?.cancel();
       _timer = null;
+    });
+
+    ref.listen(appConnectionStateProvider, (_, next) {
+      if (next != AppConnectionState.authenticated) {
+        _timer?.cancel();
+        _timer = null;
+      }
     });
 
     const defaultInterval = Duration(seconds: 30);
@@ -61,16 +73,28 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
   Future<void> fetchNow() => _fetchAndAppend();
 
   Future<void> _fetchAndAppend() async {
+    final connectionState = ref.read(appConnectionStateProvider);
+    if (connectionState != AppConnectionState.authenticated) return;
+
     final svc = ref.read(uspSystemMonitorServiceProvider);
     if (svc == null || !svc.isAuthenticated) return;
 
     state = state.copyWith(isFetching: true);
     try {
       final snapshot = await svc.fetchSnapshot();
+      _consecutiveErrors = 0;
       state = state.copyWith(
         history: _appendToRingBuffer(state.history, snapshot),
         isFetching: false,
       );
+    } on ConnectivityError {
+      _consecutiveErrors++;
+      if (_consecutiveErrors >= _errorThreshold) {
+        ref
+            .read(appConnectionStateProvider.notifier)
+            .reportConnectivityFailure();
+      }
+      state = state.copyWith(isFetching: false);
     } catch (e) {
       logger.w('[USP][Monitor][System]Fetch failed: $e');
       state = state.copyWith(isFetching: false);

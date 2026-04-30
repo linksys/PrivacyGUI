@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
+import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/session/providers/session_provider.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/providers/auth/auth_service.dart';
@@ -119,6 +120,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       // Now safe to logout USP
       logger.d('[Auth]logout: syncing USP logout');
       await ref.read(uspAuthCoordinatorProvider).syncAfterLogout();
+
+      // Clear router fingerprint
+      await ref.read(routerFingerprintServiceProvider).clear();
 
       // Clear credentials
       logger.d('[Auth]logout: clearing credentials');

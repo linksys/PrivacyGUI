@@ -150,6 +150,21 @@ class UspAuthCoordinator {
     }
   }
 
+  /// Reads the router serial number via USP after authentication.
+  ///
+  /// Used by recovery probe to verify router identity after re-login.
+  Future<String> getSerialNumber() async {
+    if (_usp == null) {
+      throw StateError('UspClient is null');
+    }
+    final result = await _usp.get(['Device.DeviceInfo.SerialNumber']);
+    final serial = result['Device.DeviceInfo.SerialNumber'] as String?;
+    if (serial == null || serial.isEmpty) {
+      throw StateError('Serial number not available');
+    }
+    return serial;
+  }
+
   /// Proactive token refresh — called on every SSE heartbeat (~30s).
   ///
   /// Strategy: Only refreshes when elapsed time ≥ [_refreshThreshold] (12 min)
