@@ -3,7 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:privacy_gui/core/connection/services/recovery_probe_service.dart';
 import 'package:privacy_gui/core/connection/services/router_fingerprint_service.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
-import 'package:privacy_gui/core/usp/services/usp_bridge_client_base.dart';
+import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
 
 class MockUspBridgeClient extends Mock implements UspBridgeClient {}
 
