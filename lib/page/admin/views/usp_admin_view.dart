@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/core/connection/helpers/recovery_dialog_helper.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_password_card.dart';
@@ -208,7 +211,18 @@ class UspAdminView extends ConsumerWidget {
         context,
         ref.read(uspAdminProvider.notifier).reboot(),
       );
-      if (context.mounted) showSuccessSnackBar(context, 'Reboot command sent');
+      if (!context.mounted) return;
+
+      await showRecoveryDialog(
+        context,
+        ref,
+        trigger: RecoveryTrigger.operationalReboot,
+        cooldown: const Duration(seconds: 60),
+        title: 'Router is rebooting',
+        message:
+            'All connected devices will be temporarily disconnected. Please wait.',
+        successMessage: 'Router reboot complete',
+      );
     } catch (e) {
       if (context.mounted) showFailedSnackBar(context, 'Reboot failed: $e');
     }
@@ -228,9 +242,21 @@ class UspAdminView extends ConsumerWidget {
         context,
         ref.read(uspAdminProvider.notifier).factoryReset(),
       );
-      if (context.mounted) {
-        showSuccessSnackBar(context, 'Factory reset command sent');
-      }
+      if (!context.mounted) return;
+
+      await showRecoveryDialog(
+        context,
+        ref,
+        trigger: RecoveryTrigger.operationalReboot,
+        cooldown: const Duration(seconds: 90),
+        healthOnly: true,
+        title: 'Factory reset in progress',
+        message:
+            'The router is restoring to factory defaults. You will need to set up and log in again.',
+        onRecovered: (ctx, r) {
+          r.read(appConnectionStateProvider.notifier).exitToLogout();
+        },
+      );
     } catch (e) {
       if (context.mounted) {
         showFailedSnackBar(context, 'Factory reset failed: $e');

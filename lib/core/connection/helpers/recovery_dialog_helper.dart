@@ -12,20 +12,35 @@ import 'package:ui_kit_library/ui_kit.dart';
 ///
 /// Call this after a mutation that causes the router to restart (WiFi change,
 /// reboot, firmware upgrade, etc.).
+/// Enters recovery mode, shows a spinner dialog while probing the router,
+/// and auto-dismisses when recovery completes or the user bails out.
+///
+/// Call this after a mutation that causes the router to restart (WiFi change,
+/// reboot, firmware upgrade, etc.).
+///
+/// [onRecovered] — optional callback invoked when probe reports recovered.
+/// If provided, it replaces the default success snackbar behaviour.
 Future<void> showRecoveryDialog(
   BuildContext context,
   WidgetRef ref, {
   required RecoveryTrigger trigger,
   Duration cooldown = const Duration(seconds: 20),
+  bool healthOnly = false,
   String? title,
   String? message,
   String? successMessage,
+  void Function(BuildContext context, WidgetRef ref)? onRecovered,
 }) async {
   logger
-      .d('[Recovery] showRecoveryDialog: trigger=$trigger, cooldown=$cooldown');
+      .d('[Recovery] showRecoveryDialog: trigger=$trigger, cooldown=$cooldown, '
+          'healthOnly=$healthOnly');
 
   ref.read(appConnectionStateProvider.notifier).enterWaiting(
-        context: RecoveryContext(trigger: trigger, cooldown: cooldown),
+        context: RecoveryContext(
+          trigger: trigger,
+          cooldown: cooldown,
+          healthOnly: healthOnly,
+        ),
       );
 
   final navigator = Navigator.of(context, rootNavigator: true);
@@ -60,11 +75,14 @@ Future<void> showRecoveryDialog(
 
   sub.close();
 
-  if (context.mounted &&
-      ref.read(appConnectionStateProvider) ==
-          AppConnectionState.authenticated) {
+  if (!context.mounted) return;
+
+  if (ref.read(appConnectionStateProvider) ==
+      AppConnectionState.authenticated) {
     logger.d('[Recovery] Recovery successful');
-    if (successMessage != null) {
+    if (onRecovered != null) {
+      onRecovered(context, ref);
+    } else if (successMessage != null) {
       showSuccessSnackBar(context, successMessage);
     }
   }

@@ -20,13 +20,18 @@ class RecoveryProbeService {
   final UspAuthCoordinator authCoordinator;
   final RouterFingerprintService fingerprintService;
 
-  Future<ProbeResult> probe() async {
+  Future<ProbeResult> probe({bool healthOnly = false}) async {
     try {
       await bridge.health();
       logger.d('[Recovery] Health check passed');
     } catch (e) {
       logger.d('[Recovery] Health check failed: $e');
       return ProbeResult.unreachable;
+    }
+
+    if (healthOnly) {
+      logger.i('[Recovery] healthOnly mode — router reachable, done');
+      return ProbeResult.recovered;
     }
 
     try {

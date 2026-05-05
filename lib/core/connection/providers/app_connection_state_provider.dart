@@ -30,6 +30,7 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
   Timer? _probeTimer;
   Timer? _cooldownTimer;
   bool _sseSuspended = false;
+  RecoveryContext? _recoveryContext;
 
   @override
   AppConnectionState build() {
@@ -50,8 +51,10 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     if (state == AppConnectionState.waitingForRecovery) return;
 
     logger.i('[Connection] Entering waitingForRecovery '
-        '(trigger: ${context.trigger}, cooldown: ${context.cooldown})');
+        '(trigger: ${context.trigger}, cooldown: ${context.cooldown}, '
+        'healthOnly: ${context.healthOnly})');
 
+    _recoveryContext = context;
     state = AppConnectionState.waitingForRecovery;
 
     // Disconnect SSE immediately
@@ -97,7 +100,9 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
     }
 
     final probeService = ref.read(recoveryProbeServiceProvider);
-    final result = await probeService.probe();
+    final result = await probeService.probe(
+      healthOnly: _recoveryContext?.healthOnly ?? false,
+    );
 
     switch (result) {
       case ProbeResult.unreachable:
