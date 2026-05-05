@@ -468,6 +468,14 @@ class PnpNotifier extends BasePnpNotifier with AvailabilityChecker {
               guestSSID: guestWiFiName, guestWPAPassphrase: guestWiFiPassphase))
           .toList();
       setGuestRadioSettings = setGuestRadioSettings.copyWith(radios: radios);
+    } else {
+      var radios = setGuestRadioSettings.radios
+          .map((e) => e.copyWith(
+              guestWPAPassphrase: (e.guestWPAPassphrase?.isEmpty ?? true)
+                  ? wifiPassphase
+                  : e.guestWPAPassphrase))
+          .toList();
+      setGuestRadioSettings = setGuestRadioSettings.copyWith(radios: radios);
     }
     // Night mode
     final nightModeStateData = getStepState(NightModeStep.id).data;

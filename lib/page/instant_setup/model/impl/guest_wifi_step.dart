@@ -71,7 +71,7 @@ class GuestWiFiStep extends PnpStep {
                 setState(() {
                   isEnabled = value;
                 });
-                // update(ref, key: 'isEnabled', value: value);
+                _check(ref);
               },
             ),
             const AppGap.large3(),
