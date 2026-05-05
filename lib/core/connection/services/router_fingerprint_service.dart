@@ -30,6 +30,7 @@ class RouterFingerprintService {
 
   Future<bool> matches(String serialNumber) async {
     final stored = await read();
+    logger.d('[Fingerprint] matches() stored=$stored, incoming=$serialNumber');
     if (stored == null) return false;
     return stored == serialNumber;
   }

@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
-import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/framework/preservable.dart';
@@ -154,25 +152,11 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
   @override
   Future<UspWifiSettingsState> save() async {
-    final ssidChanged = _hasSsidNameChanged();
-
     state = state.copyWith(
       status: state.status.copyWith(isSaving: true),
     );
     try {
       final result = await super.save();
-      // super.save() calls performSave() → markAsSaved() → fetch().
-      // fetch() rebuilds status with a fresh WifiSettingsStatus (isSaving = false).
-
-      if (ssidChanged) {
-        ref.read(appConnectionStateProvider.notifier).enterWaiting(
-              context: RecoveryContext(
-                trigger: RecoveryTrigger.operationalWifiChange,
-                cooldown: const Duration(seconds: 3),
-              ),
-            );
-      }
-
       return result;
     } on ServiceError catch (e) {
       logger.e('[USP][WiFi] Save failed', error: e);
@@ -182,19 +166,6 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
         status: state.status.copyWith(isSaving: false),
       );
     }
-  }
-
-  bool _hasSsidNameChanged() {
-    final original = state.settings.original.networks;
-    final current = state.settings.current.networks;
-    for (final orig in original) {
-      final curr = current.firstWhere(
-        (n) => n.ssidInstancePath == orig.ssidInstancePath,
-        orElse: () => orig,
-      );
-      if (orig.ssid != curr.ssid) return true;
-    }
-    return false;
   }
 
   // ---------------------------------------------------------------------------

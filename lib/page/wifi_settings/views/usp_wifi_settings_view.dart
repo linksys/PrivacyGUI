@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
+import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
+import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/shell/usp_top_bar.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_advanced_tab.dart';
 import 'package:privacy_gui/page/wifi_settings/views/tabs/wifi_list_tab.dart';
+import 'package:ui_kit_library/ui_kit.dart';
 
 class UspWifiSettingsView extends ConsumerStatefulWidget {
   const UspWifiSettingsView({super.key});
@@ -170,11 +174,60 @@ class _UspWifiSettingsViewState extends ConsumerState<UspWifiSettingsView>
         1 => ref.read(uspWifiAdvancedProvider.notifier).save(),
         _ => Future.value(),
       };
+      logger.d('[WiFi][Save] Starting save...');
       await doSomethingWithSpinner(context, task);
-      if (context.mounted) {
+      logger.d('[WiFi][Save] Save completed, save spinner dismissed');
+
+      if (!context.mounted) return;
+
+      // WiFi changes cause radio restart — enter recovery and show waiting dialog
+      logger.d('[WiFi][Save] Calling enterWaiting');
+      ref.read(appConnectionStateProvider.notifier).enterWaiting(
+            context: RecoveryContext(
+              trigger: RecoveryTrigger.operationalWifiChange,
+              cooldown: const Duration(seconds: 20),
+            ),
+          );
+
+      final navigator = Navigator.of(context, rootNavigator: true);
+
+      final sub = ref.listenManual(appConnectionStateProvider, (prev, next) {
+        logger.d('[WiFi][Save] appConnectionState changed: $prev -> $next');
+        if (next != AppConnectionState.waitingForRecovery) {
+          logger.d('[WiFi][Save] Popping recovery dialog (state=$next)');
+          navigator.pop();
+        }
+      });
+
+      logger.d('[WiFi][Save] Showing recovery dialog');
+      await showAppSpinnerDialog(
+        context,
+        title: 'Router is applying changes',
+        messages: [
+          'Your Wi-Fi network may restart. Please reconnect to your router\'s network if needed.',
+        ],
+        actions: [
+          AppButton.text(
+            label: 'Return to login page',
+            onTap: () {
+              logger.d('[WiFi][Save] User tapped Return to login');
+              ref.read(appConnectionStateProvider.notifier).exitToLogout();
+            },
+          ),
+        ],
+      );
+      logger.d('[WiFi][Save] Recovery dialog dismissed');
+
+      sub.close();
+
+      if (context.mounted &&
+          ref.read(appConnectionStateProvider) ==
+              AppConnectionState.authenticated) {
+        logger.d('[WiFi][Save] Recovery successful, showing success snackbar');
         showSuccessSnackBar(context, 'WiFi settings saved');
       }
     } catch (e) {
+      logger.d('[WiFi][Save] Error: $e');
       if (context.mounted) {
         showFailedSnackBar(context, 'Failed to save: $e');
       }

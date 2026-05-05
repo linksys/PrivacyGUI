@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/components/layouts/idle_checker.dart';
-import 'package:privacy_gui/core/connection/views/recovery_overlay.dart';
 import 'package:privacy_gui/providers/auth/_auth.dart';
 import 'package:privacy_gui/providers/idle_checker_pause_provider.dart';
 
@@ -38,42 +37,39 @@ class _AppRootContainerState extends ConsumerState<AppRootContainer> {
     logger.d('Root Container:: build: ${widget.route}');
 
     return LayoutBuilder(builder: ((context, constraints) {
-      return RecoveryOverlay(
-        child: IdleChecker(
-          idleTime: const Duration(minutes: 5),
-          onIdle: () {
-            // not for debug
-            if (!kReleaseMode) {
-              return;
-            }
-            // not log in yet
-            if (ref.read(authProvider).value?.loginType == LoginType.none) {
-              return;
-            }
-            // not go into dashboard yet
-            if (shellNavigatorKey.currentContext == null) {
-              return;
-            }
-            // white list
-            final routeName = widget.route?.name;
-            if (routeName != null && idleCheckWhiteList.contains(routeName)) {
-              return;
-            }
-            // pause?
-            if (ref.read(idleCheckerPauseProvider) == true) {
-              return;
-            }
-            logger.d('Idled!');
-            ref.read(authProvider.notifier).logout();
-          },
-          child: Container(
-            color: Theme.of(context).colorScheme.surface,
-            child: CompositedTransformTarget(
-              link: _link,
-              child: _buildLayout(
-                  Container(child: widget.child ?? const Center()),
-                  constraints),
-            ),
+      return IdleChecker(
+        idleTime: const Duration(minutes: 5),
+        onIdle: () {
+          // not for debug
+          if (!kReleaseMode) {
+            return;
+          }
+          // not log in yet
+          if (ref.read(authProvider).value?.loginType == LoginType.none) {
+            return;
+          }
+          // not go into dashboard yet
+          if (shellNavigatorKey.currentContext == null) {
+            return;
+          }
+          // white list
+          final routeName = widget.route?.name;
+          if (routeName != null && idleCheckWhiteList.contains(routeName)) {
+            return;
+          }
+          // pause?
+          if (ref.read(idleCheckerPauseProvider) == true) {
+            return;
+          }
+          logger.d('Idled!');
+          ref.read(authProvider.notifier).logout();
+        },
+        child: Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: CompositedTransformTarget(
+            link: _link,
+            child: _buildLayout(
+                Container(child: widget.child ?? const Center()), constraints),
           ),
         ),
       );
