@@ -110,9 +110,16 @@ class AppConnectionStateNotifier extends Notifier<AppConnectionState> {
       case ProbeResult.recovered:
         _probeTimer?.cancel();
         _probeTimer = null;
-        state = AppConnectionState.authenticated;
-        logger.i('[Connection] Recovered — reconnecting SSE');
-        ref.read(sseManagerProvider)?.connect();
+        if (_recoveryContext?.trigger ==
+            RecoveryTrigger.operationalFactoryReset) {
+          logger.i('[Connection] Recovered (factoryReset) — logging out');
+          state = AppConnectionState.loggedOut;
+          ref.read(authProvider.notifier).logout();
+        } else {
+          state = AppConnectionState.authenticated;
+          logger.i('[Connection] Recovered — reconnecting SSE');
+          ref.read(sseManagerProvider)?.connect();
+        }
         break;
       case ProbeResult.serialMismatch:
         _probeTimer?.cancel();

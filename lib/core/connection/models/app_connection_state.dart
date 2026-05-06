@@ -8,6 +8,7 @@ enum RecoveryTrigger {
   natural,
   operationalWifiChange,
   operationalReboot,
+  operationalFactoryReset,
   operationalFirmwareUpgrade,
 }
 

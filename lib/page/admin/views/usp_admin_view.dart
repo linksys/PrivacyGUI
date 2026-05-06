@@ -5,7 +5,6 @@ import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/core/connection/helpers/recovery_dialog_helper.dart';
 import 'package:privacy_gui/core/connection/models/app_connection_state.dart';
-import 'package:privacy_gui/core/connection/providers/app_connection_state_provider.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_state.dart';
 import 'package:privacy_gui/page/admin/views/components/usp_password_card.dart';
@@ -247,15 +246,12 @@ class UspAdminView extends ConsumerWidget {
       await showRecoveryDialog(
         context,
         ref,
-        trigger: RecoveryTrigger.operationalReboot,
+        trigger: RecoveryTrigger.operationalFactoryReset,
         cooldown: const Duration(seconds: 90),
         healthOnly: true,
         title: 'Factory reset in progress',
         message:
             'The router is restoring to factory defaults. You will need to set up and log in again.',
-        onRecovered: (ctx, r) {
-          r.read(appConnectionStateProvider.notifier).exitToLogout();
-        },
       );
     } catch (e) {
       if (context.mounted) {

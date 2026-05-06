@@ -11,15 +11,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 /// and auto-dismisses when recovery completes or the user bails out.
 ///
 /// Call this after a mutation that causes the router to restart (WiFi change,
-/// reboot, firmware upgrade, etc.).
-/// Enters recovery mode, shows a spinner dialog while probing the router,
-/// and auto-dismisses when recovery completes or the user bails out.
-///
-/// Call this after a mutation that causes the router to restart (WiFi change,
-/// reboot, firmware upgrade, etc.).
-///
-/// [onRecovered] — optional callback invoked when probe reports recovered.
-/// If provided, it replaces the default success snackbar behaviour.
+/// reboot, factory reset, firmware upgrade, etc.).
 Future<void> showRecoveryDialog(
   BuildContext context,
   WidgetRef ref, {
@@ -29,7 +21,6 @@ Future<void> showRecoveryDialog(
   String? title,
   String? message,
   String? successMessage,
-  void Function(BuildContext context, WidgetRef ref)? onRecovered,
 }) async {
   logger
       .d('[Recovery] showRecoveryDialog: trigger=$trigger, cooldown=$cooldown, '
@@ -47,10 +38,11 @@ Future<void> showRecoveryDialog(
 
   final sub = ref.listenManual(appConnectionStateProvider, (prev, next) {
     logger.d('[Recovery] appConnectionState changed: $prev -> $next');
-    if (next != AppConnectionState.waitingForRecovery) {
-      logger.d('[Recovery] Popping recovery dialog (state=$next)');
+    if (next == AppConnectionState.authenticated) {
+      logger.d('[Recovery] Popping recovery dialog (recovered)');
       navigator.pop();
     }
+    // loggedOut: don't pop — route redirect will replace the entire page stack
   });
 
   logger.d('[Recovery] Showing recovery dialog');
@@ -80,9 +72,7 @@ Future<void> showRecoveryDialog(
   if (ref.read(appConnectionStateProvider) ==
       AppConnectionState.authenticated) {
     logger.d('[Recovery] Recovery successful');
-    if (onRecovered != null) {
-      onRecovered(context, ref);
-    } else if (successMessage != null) {
+    if (successMessage != null) {
       showSuccessSnackBar(context, successMessage);
     }
   }
