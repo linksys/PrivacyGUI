@@ -53,13 +53,14 @@ class CustomOutput extends LogOutput {
       await _file.writeAsBytes("$processedOutput\n".codeUnits,
           mode: FileMode.writeOnlyAppend);
     } else if (kIsWeb && output.isNotEmpty) {
+      final stripped = _stripPrinterPrefix(output);
       _recordLog(
         MaskingUtils.encryptJNAPAuth(
           MaskingUtils.maskUsernamePasswordBodyValue(
             MaskingUtils.maskSensitiveJsonValues(
               MaskingUtils.maskSerialNumber(
                 MaskingUtils.maskMacAddress(
-                  MaskingUtils.replaceHttpScheme(output.toString()),
+                  MaskingUtils.replaceHttpScheme(stripped),
                 ),
               ),
             ),
@@ -69,6 +70,13 @@ class CustomOutput extends LogOutput {
       );
     }
   }
+}
+
+/// Strips the SimplePrinter prefix (e.g., `[D] TIME: 2026-05-07T... `) from
+/// log output, leaving only the raw message for cache storage.
+final _printerPrefixRegex = RegExp(r'^\[\w+\]\s*TIME:\s*\S+\s*');
+String _stripPrinterPrefix(String output) {
+  return output.replaceFirst(_printerPrefixRegex, '');
 }
 
 /// A cache to store log messages in memory, primarily for the web platform.
@@ -172,14 +180,16 @@ void _addLogWithTag(
 ///
 /// Returns a single string containing all the log messages for the given tag,
 /// separated by newlines.
-String _getWebLogByTag({String tag = appLogTag}) {
+String _getWebLogByTag({String tag = appLogTag, bool showLevel = true}) {
   final logList = _webLogCache[tag] ?? [];
-  // Sort log list by timestamp in ascending order
-  // And return the log list as a string with date time prefix and level
   return logList
       .sorted((a, b) => a.$1.compareTo(b.$1))
-      .map((e) =>
-          '${DateTime.fromMillisecondsSinceEpoch(e.$1).toIso8601String()} ${_levelPrefix(e.$3)}${e.$2}')
+      .map((e) {
+        final timestamp = DateTime.fromMillisecondsSinceEpoch(e.$1).toIso8601String();
+        return showLevel
+            ? '$timestamp ${_levelPrefix(e.$3)}${e.$2}'
+            : '$timestamp ${e.$2}';
+      })
       .join('\n');
 }
 
@@ -219,7 +229,7 @@ Future<String> outputFullWebLog(BuildContext context) async {
 ${await getPackageInfo()}
 $screenInfo
 ================================ View History ==================================
-${_getWebLogByTag(tag: routeLogTag)}
+${_getWebLogByTag(tag: routeLogTag, showLevel: false)}
 ============================== Custom Tag Summary ==============================
 ${keys.map((e) => '[$e]\n${_getWebLogByTag(tag: e)}').join('\n\n')}
 ============================== State Management ==============================
