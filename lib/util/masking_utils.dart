@@ -63,6 +63,30 @@ class MaskingUtils {
     });
   }
 
+  static String maskSerialNumber(String raw) {
+    final pattern = RegExp(
+        r'("?serialNumber"?\s*:\s*"?)([A-Za-z0-9]{4,})("?)',
+        caseSensitive: false);
+    return raw.replaceAllMapped(pattern, (match) {
+      final prefix = match.group(1)!;
+      final value = match.group(2)!;
+      final suffix = match.group(3)!;
+      if (value.length <= 4) return '$prefix****$suffix';
+      return '$prefix****${value.substring(value.length - 4)}$suffix';
+    });
+  }
+
+  static String maskMacAddress(String raw) {
+    final pattern = RegExp(
+        r'([0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}');
+    return raw.replaceAllMapped(pattern, (match) {
+      final mac = match.group(0)!;
+      final separator = mac.contains(':') ? ':' : '-';
+      final lastTwo = mac.split(RegExp(r'[:\-]'));
+      return 'XX${separator}XX${separator}XX${separator}XX$separator${lastTwo[4]}$separator${lastTwo[5]}';
+    });
+  }
+
   static String replaceHttpScheme(String raw) {
     const pattern =
         r'(https?:\/\/)?((www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b)([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)';

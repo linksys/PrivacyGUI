@@ -47,7 +47,9 @@ class CustomOutput extends LogOutput {
     if (!kIsWeb && output.isNotEmpty && _file.existsSync()) {
       final processedOutput = MaskingUtils.encryptJNAPAuth(
           MaskingUtils.maskSensitiveJsonValues(
-              MaskingUtils.replaceHttpScheme(output.toString())));
+              MaskingUtils.maskSerialNumber(
+                  MaskingUtils.maskMacAddress(
+                      MaskingUtils.replaceHttpScheme(output.toString())))));
       await _file.writeAsBytes("$processedOutput\n".codeUnits,
           mode: FileMode.writeOnlyAppend);
     } else if (kIsWeb && output.isNotEmpty) {
@@ -55,7 +57,11 @@ class CustomOutput extends LogOutput {
         MaskingUtils.encryptJNAPAuth(
           MaskingUtils.maskUsernamePasswordBodyValue(
             MaskingUtils.maskSensitiveJsonValues(
-              MaskingUtils.replaceHttpScheme(output.toString()),
+              MaskingUtils.maskSerialNumber(
+                MaskingUtils.maskMacAddress(
+                  MaskingUtils.replaceHttpScheme(output.toString()),
+                ),
+              ),
             ),
           ),
         ),
