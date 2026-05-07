@@ -1,13 +1,15 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/generated/mac_filter_access_points.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/instant_privacy/models/instant_privacy_device_ui_model.dart';
 
 final uspInstantPrivacyServiceProvider = Provider<UspInstantPrivacyService>(
-  (ref) => UspInstantPrivacyService(ref.read(uspServiceProvider)!),
+  (ref) => UspInstantPrivacyService(ref.read(uspClientProvider)!),
 );
 
 /// Opaque wrapper around MAC filter AP data.
@@ -42,7 +44,7 @@ class InstantPrivacyFetchResult {
 
 /// Service layer for Instant Privacy — encapsulates codegen CRUD + transform.
 class UspInstantPrivacyService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspInstantPrivacyService(this._usp);
   static final _macRegExp = RegExp(
@@ -162,10 +164,15 @@ class UspInstantPrivacyService {
 
   /// Fetch all data needed for Instant Privacy and return UI-safe result.
   Future<InstantPrivacyFetchResult> fetchAll() async {
-    final results = await Future.wait([
-      ConnectedDevices.fetch(_usp),
-      MacFilterAccessPoints.fetch(_usp),
-    ]);
+    final List<Object> results;
+    try {
+      results = await Future.wait([
+        ConnectedDevices.fetch(_usp),
+        MacFilterAccessPoints.fetch(_usp),
+      ]);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
 
     final devices = results[0] as ConnectedDevices;
     final macAps = results[1] as MacFilterAccessPoints;
@@ -197,23 +204,101 @@ class UspInstantPrivacyService {
 
   /// Enable MAC filtering on all APs with the given MAC whitelist.
   Future<void> enable(List<String> macs, MacFilterContext ctx) async {
-    final updates = buildEnableUpdates(macs, ctx._data);
-    await MacFilterAccessPoints.updateMany(_usp, updates);
+    try {
+      final updates = buildEnableUpdates(macs, ctx._data);
+      if (updates.isNotEmpty) {
+        final result = await MacFilterAccessPoints.update(_usp, updates);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(
+              :final errorSummary,
+              :final successes,
+              :final failures
+            ):
+            throw UspPartialFailureError(
+              summary: 'MAC filter enable partial failure: $errorSummary',
+              successPaths: successes.map((s) => s.requestedPath).toList(),
+              failedPaths: failures.map((f) => f.requestedPath).toList(),
+            );
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'MAC filter enable failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Disable MAC filtering on all APs.
   Future<void> disable(MacFilterContext ctx) async {
-    final updates = buildDisableUpdates(ctx._data);
-    await MacFilterAccessPoints.updateMany(_usp, updates);
+    try {
+      final updates = buildDisableUpdates(ctx._data);
+      if (updates.isNotEmpty) {
+        final result = await MacFilterAccessPoints.update(_usp, updates);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(
+              :final errorSummary,
+              :final successes,
+              :final failures
+            ):
+            throw UspPartialFailureError(
+              summary: 'MAC filter disable partial failure: $errorSummary',
+              successPaths: successes.map((s) => s.requestedPath).toList(),
+              failedPaths: failures.map((f) => f.requestedPath).toList(),
+            );
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'MAC filter disable failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Add a MAC address to the allowed list across all APs.
   /// Returns true if the MAC was added, false if already present.
   Future<bool> addMac(String mac, MacFilterContext ctx) async {
-    final updates = buildAddMacUpdates(mac, ctx._data);
-    if (updates.isEmpty) return false;
-    await MacFilterAccessPoints.updateMany(_usp, updates);
-    return true;
+    try {
+      final updates = buildAddMacUpdates(mac, ctx._data);
+      if (updates.isEmpty) return false;
+      final result = await MacFilterAccessPoints.update(_usp, updates);
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          return true;
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
+          throw UspPartialFailureError(
+            summary: 'MAC filter add partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'MAC filter add failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ---------------------------------------------------------------------------

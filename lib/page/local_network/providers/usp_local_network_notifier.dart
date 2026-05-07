@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
@@ -83,7 +84,7 @@ class UspLocalNetworkNotifier
         LocalNetworkSettings(model: uiModel),
         const LocalNetworkStatus(isLoading: false),
       );
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][Network][LAN] Fetch failed', error: e);
       return (
         null,
@@ -113,7 +114,7 @@ class UspLocalNetworkNotifier
 
       // Force data provider to re-fetch so dashboard card updates too.
       ref.invalidate(lanDataProvider);
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][Network][LAN] Save failed', error: e);
       rethrow;
     } finally {
@@ -147,6 +148,11 @@ class UspLocalNetworkNotifier
       LocalNetworkUIModel Function(LocalNetworkUIModel) updater) {
     final current = state.settings.current;
     var newModel = updater(current.model);
+
+    // Apply sensible defaults when DHCP is toggled from disabled → enabled
+    if (!current.model.dhcpEnabled && newModel.dhcpEnabled) {
+      newModel = _svc.applyDhcpDefaults(newModel);
+    }
 
     // Auto-sync pool prefix when router IP changes
     if (newModel.ipAddress != current.model.ipAddress &&

@@ -16,6 +16,14 @@ class InternetSettingsStatus extends Equatable {
   /// Read-only fields from WAN/IPv6 for display purposes.
   final InternetSettingsReadOnlyInfo readOnlyInfo;
 
+  /// PPP instance path from last fetch (e.g. 'Device.PPP.Interface.1.').
+  /// Null if no PPP instance exists on the device.
+  final String? pppInstancePath;
+
+  /// VLAN instance path from last fetch (e.g. 'Device.Ethernet.VLANTermination.1.').
+  /// Null if no VLAN instance exists on the device.
+  final String? vlanInstancePath;
+
   const InternetSettingsStatus({
     this.isLoading = true,
     this.isSaving = false,
@@ -23,6 +31,8 @@ class InternetSettingsStatus extends Equatable {
     this.errorMessage,
     this.activeMutation,
     this.readOnlyInfo = const InternetSettingsReadOnlyInfo(),
+    this.pppInstancePath,
+    this.vlanInstancePath,
   });
 
   InternetSettingsStatus copyWith({
@@ -33,6 +43,10 @@ class InternetSettingsStatus extends Equatable {
     String? activeMutation,
     bool clearActiveMutation = false,
     InternetSettingsReadOnlyInfo? readOnlyInfo,
+    String? pppInstancePath,
+    bool clearPppInstancePath = false,
+    String? vlanInstancePath,
+    bool clearVlanInstancePath = false,
   }) {
     return InternetSettingsStatus(
       isLoading: isLoading ?? this.isLoading,
@@ -42,6 +56,12 @@ class InternetSettingsStatus extends Equatable {
       activeMutation:
           clearActiveMutation ? null : (activeMutation ?? this.activeMutation),
       readOnlyInfo: readOnlyInfo ?? this.readOnlyInfo,
+      pppInstancePath: clearPppInstancePath
+          ? null
+          : (pppInstancePath ?? this.pppInstancePath),
+      vlanInstancePath: clearVlanInstancePath
+          ? null
+          : (vlanInstancePath ?? this.vlanInstancePath),
     );
   }
 
@@ -53,5 +73,7 @@ class InternetSettingsStatus extends Equatable {
         errorMessage,
         activeMutation,
         readOnlyInfo,
+        pppInstancePath,
+        vlanInstancePath,
       ];
 }

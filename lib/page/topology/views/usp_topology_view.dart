@@ -28,7 +28,7 @@ class UspTopologyView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backFallback: RouteNamed.uspDashboard,
+      backFallback: RouteNamed.uspMenu,
       onRefresh: () => ref.refresh(devicesDataProvider.future),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: (childContext, constraints) {

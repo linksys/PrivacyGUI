@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/system_info.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/_shared/models/system_monitor_state.dart';
+import 'package:privacy_gui/page/_shared/services/usp_system_monitor_service.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 
 /// System monitor provider — tracks CPU/Memory history with optional
 /// auto-refresh timer. NOT autoDispose so history persists across tab switches.
@@ -22,9 +22,14 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
       _timer?.cancel();
       _timer = null;
     });
-    // Auto-start with 30s default interval
+
     const defaultInterval = Duration(seconds: 30);
-    Future.microtask(() => setRefreshInterval(defaultInterval));
+    ref.listen(dashboardDomainReadyProvider, (_, next) {
+      if (next is AsyncData) {
+        setRefreshInterval(defaultInterval);
+      }
+    });
+
     return const SystemMonitorState(
       refreshInterval: defaultInterval,
     );
@@ -47,7 +52,6 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
     );
 
     if (interval != null) {
-      // Fetch immediately on interval change
       _fetchAndAppend();
       _timer = Timer.periodic(interval, (_) => _fetchAndAppend());
     }
@@ -57,27 +61,12 @@ class UspSystemMonitorNotifier extends Notifier<SystemMonitorState> {
   Future<void> fetchNow() => _fetchAndAppend();
 
   Future<void> _fetchAndAppend() async {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null || !usp.isAuthenticated) return;
+    final svc = ref.read(uspSystemMonitorServiceProvider);
+    if (svc == null || !svc.isAuthenticated) return;
 
     state = state.copyWith(isFetching: true);
     try {
-      final info = await SystemInfo.fetch(usp);
-      final cpuPercent = info.cpuUsage.clamp(0, 100);
-      final memPercent = info.totalMemory > 0
-          ? ((info.totalMemory - info.freeMemory) / info.totalMemory * 100)
-              .round()
-              .clamp(0, 100)
-          : 0;
-
-      final snapshot = SystemSnapshot(
-        timestamp: DateTime.now(),
-        cpuPercent: cpuPercent,
-        memoryPercent: memPercent,
-        totalMemoryKb: info.totalMemory,
-        freeMemoryKb: info.freeMemory,
-      );
-
+      final snapshot = await svc.fetchSnapshot();
       state = state.copyWith(
         history: _appendToRingBuffer(state.history, snapshot),
         isFetching: false,

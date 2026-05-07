@@ -8,10 +8,10 @@ import 'package:privacy_gui/route/navigation_extensions.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/core/usp/services/sse_connection_manager.dart';
 import 'package:privacy_gui/core/usp/services/usp_bridge_client.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/core/usp/web/usp_wasm_init.dart';
 import 'package:privacy_gui/generated/tr181_paths.g.dart';
 import 'package:privacy_gui/page/test_console/widgets/tr181_autocomplete_field.dart';
@@ -19,7 +19,7 @@ import 'package:ui_kit_library/ui_kit.dart';
 
 /// Shell-compatible USP test console integrated into the USP menu.
 ///
-/// Reuses the shared [UspService] session when available, with manual
+/// Reuses the shared [UspClient] session when available, with manual
 /// override for connecting to a different endpoint.
 class UspTestConsoleView extends ConsumerStatefulWidget {
   const UspTestConsoleView({super.key});
@@ -44,7 +44,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   final _subPathController = TextEditingController(text: 'Device.Hosts.Host.');
   final _logScrollController = ScrollController();
 
-  UspService? _service;
+  UspClient? _service;
   UspBridgeClient? _bridgeClient;
   bool _isConnected = false;
   bool _usingSharedSession = false;
@@ -61,14 +61,14 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   @override
   void initState() {
     super.initState();
-    // Try to inject shared UspService from the app's provider tree.
+    // Try to inject shared UspClient from the app's provider tree.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _tryInjectSharedService();
     });
   }
 
   void _tryInjectSharedService() {
-    final shared = ref.read(uspServiceProvider);
+    final shared = ref.read(uspClientProvider);
     if (shared != null && shared.isAuthenticated) {
       _service = shared;
       _bridgeClient = UspBridgeClient(shared);
@@ -116,7 +116,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
         return;
       }
       _log('WASM client ready');
-      final svc = UspService(url);
+      final svc = UspClient(url);
       _service = svc;
       _bridgeClient = UspBridgeClient(svc);
       _log('Client created for $url');
@@ -183,7 +183,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
 
   /// Switch back to shared session (if available)
   void _useSharedSession() {
-    final shared = ref.read(uspServiceProvider);
+    final shared = ref.read(uspClientProvider);
     if (shared != null && shared.isAuthenticated) {
       _service = shared;
       _bridgeClient = UspBridgeClient(shared);
@@ -219,15 +219,73 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     }
   }
 
-  Future<void> _doSet() async {
+  Future<void> _doSet() async => _doSetInternal(allowPartial: false);
+  Future<void> _doSetAllowPartial() async => _doSetInternal(allowPartial: true);
+
+  Future<void> _doSetInternal({required bool allowPartial}) async {
     if (_service == null) return;
-    final path = _setPathController.text.trim();
+    final paths = _setPathController.text
+        .trim()
+        .split(',')
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
     final value = _setValueController.text;
-    if (path.isEmpty) return;
-    _log('SET $path = $value');
+    if (paths.isEmpty) return;
+
+    // 支援多個路徑（逗號分隔）
+    final params = <String, dynamic>{};
+    for (final path in paths) {
+      params[path] = value;
+    }
+
+    final modeText = allowPartial ? '(Allow Partial)' : '(Atomic)';
+    _log(
+        'SET $modeText ${paths.length > 1 ? paths.toString() : paths.first} = $value');
+
     try {
-      await _service!.set({path: value});
-      _log('SET OK');
+      final rawResult = await _service!.set(params, allowPartial: allowPartial);
+      final result = UspResultParser.parseSetResult(rawResult);
+
+      if (result is UspSuccess) {
+        _log('SET SUCCESS - All parameters updated');
+        for (final detail in result.details) {
+          if (detail.retrievedParams != null &&
+              detail.retrievedParams!.isNotEmpty) {
+            for (final entry in detail.retrievedParams!.entries) {
+              _log('  Updated: ${entry.key} = ${entry.value}');
+            }
+          }
+        }
+        if (result.details.isEmpty ||
+            result.details.every((d) => d.retrievedParams?.isEmpty ?? true)) {
+          _log('  (No return values - operation completed)');
+        }
+      } else if (result is UspPartialSuccess) {
+        _log('SET PARTIAL SUCCESS - Some succeeded, some failed');
+        _log('  Successes: ${result.successSummary}');
+        _log('  Failures: ${result.errorSummary}');
+
+        for (final detail in result.successes) {
+          if (detail.retrievedParams != null) {
+            for (final entry in detail.retrievedParams!.entries) {
+              _log('    Updated: ${entry.key} = ${entry.value}');
+            }
+          }
+        }
+
+        for (final error in result.failures) {
+          final readOnlyTag =
+              error.isParameterNotWritable ? ' [READ-ONLY]' : '';
+          final pathNotFoundTag =
+              error.isParameterNotFound ? ' [NOT-FOUND]' : '';
+          _log(
+              '    ERROR: ${error.requestedPath}: Code ${error.errorCode}$readOnlyTag$pathNotFoundTag - ${error.errorMessage}');
+        }
+      } else if (result is UspFailure) {
+        _log('SET FAILED - All operations failed');
+        _log('  Error: ${result.errorSummary}');
+      }
     } catch (e) {
       _log('ERROR set: $e');
     }
@@ -242,7 +300,9 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     try {
       final params =
           Map<String, String>.from(jsonDecode(paramsJson) as Map? ?? {});
-      final created = await _service!.add(path, params);
+      final created = await _service!.add([
+        {'path': path, 'params': params}
+      ]);
       _log('ADD OK -> created: $created');
     } catch (e) {
       _log('ERROR add: $e');
@@ -255,7 +315,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
     if (path.isEmpty) return;
     _log('DELETE $path');
     try {
-      await _service!.delete(path);
+      await _service!.delete([path]);
       _log('DELETE OK');
     } catch (e) {
       _log('ERROR delete: $e');
@@ -455,6 +515,141 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
+  // Error Probe — systematically trigger USP errors to capture error formats
+  // ════════════════════════════════════════════════════════════════════════════
+
+  bool _probeRunning = false;
+
+  Future<void> _runErrorProbe() async {
+    if (_service == null) {
+      _log('ERROR: Not connected — cannot run probe');
+      return;
+    }
+    if (_probeRunning) return;
+    setState(() => _probeRunning = true);
+
+    _log('');
+    _log('═══════════════════════════════════════════');
+    _log('  ERROR PROBE — Capturing USP error formats');
+    _log('═══════════════════════════════════════════');
+
+    final probes = <(String label, Future<void> Function() action)>[
+      // --- GET errors ---
+      (
+        'GET non-existent path (expect fault 9005)',
+        () => _service!.get(['Device.Bogus.NonExistent.Path']),
+      ),
+      (
+        'GET unimplemented module: DynamicDNS (expect fault 9005)',
+        () => _service!.get(['Device.DynamicDNS.']),
+      ),
+      (
+        'GET unimplemented module: UPnP (expect fault 9005)',
+        () => _service!.get(['Device.UPnP.']),
+      ),
+      (
+        'GET invalid path format (no Device. prefix)',
+        () => _service!.get(['InvalidPath']),
+      ),
+      (
+        'GET empty path',
+        () => _service!.get(['']),
+      ),
+
+      // --- SET errors ---
+      (
+        'SET read-only param: DeviceInfo.Manufacturer (expect fault 9008)',
+        () => _service!.set({'Device.DeviceInfo.Manufacturer': 'TestValue'}),
+      ),
+      (
+        'SET read-only param: Ethernet.Link.1.MACAddress (expect fault 9008)',
+        () => _service!
+            .set({'Device.Ethernet.Link.1.MACAddress': 'AA:BB:CC:DD:EE:FF'}),
+      ),
+      (
+        'SET non-existent path (expect fault 9005)',
+        () => _service!.set({'Device.Bogus.Param': 'value'}),
+      ),
+      (
+        'SET empty value to valid writable param',
+        () => _service!.set({'Device.Time.NTPServer5': ''}),
+      ),
+
+      // --- ADD errors ---
+      (
+        'ADD to non-addable object: Device.DeviceInfo.',
+        () => _service!.add([
+              {'path': 'Device.DeviceInfo.', 'params': <String, dynamic>{}}
+            ]),
+      ),
+      (
+        'ADD to non-existent object path',
+        () => _service!.add([
+              {'path': 'Device.Bogus.Object.', 'params': <String, dynamic>{}}
+            ]),
+      ),
+
+      // --- DELETE errors ---
+      (
+        'DELETE non-existent instance: Device.NAT.PortMapping.99999.',
+        () => _service!.delete(['Device.NAT.PortMapping.99999.']),
+      ),
+      (
+        'DELETE non-deletable path: Device.DeviceInfo.',
+        () => _service!.delete(['Device.DeviceInfo.']),
+      ),
+
+      // --- OPERATE errors ---
+      (
+        'OPERATE non-existent command: Device.BogusCommand()',
+        () => _service!.operate('Device.BogusCommand()'),
+      ),
+      (
+        'OPERATE valid command with bad args: Ping with empty host',
+        () => _service!.operate('Device.IP.Diagnostics.IPPing()',
+            args: {'Host': '', 'NumberOfRepetitions': '1'}),
+      ),
+    ];
+
+    for (final (label, action) in probes) {
+      _log('');
+      _log('--- PROBE: $label');
+      try {
+        await action();
+        _log('  RESULT: No error thrown (success or silent failure)');
+      } catch (e) {
+        _log('  runtimeType: ${e.runtimeType}');
+        _log('  toString(): $e');
+        // Try to extract more info if available
+        if (e is Error) {
+          _log('  stackTrace available: ${e.stackTrace != null}');
+        }
+      }
+    }
+
+    // --- Auth error (separate — uses a throwaway service) ---
+    _log('');
+    _log('--- PROBE: LOGIN with wrong password');
+    try {
+      final throwaway = UspClient(_service!.baseUrl);
+      await throwaway.login('definitely_wrong_password_12345');
+      _log('  RESULT: No error thrown');
+      throwaway.dispose();
+    } catch (e) {
+      _log('  runtimeType: ${e.runtimeType}');
+      _log('  toString(): $e');
+    }
+
+    _log('');
+    _log('═══════════════════════════════════════════');
+    _log('  ERROR PROBE COMPLETE');
+    _log('═══════════════════════════════════════════');
+    _log('');
+
+    setState(() => _probeRunning = false);
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
   // Bridge: Turbo Channel
   // ════════════════════════════════════════════════════════════════════════════
 
@@ -547,6 +742,8 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
                           _buildOperateSection(),
                           const Divider(height: 32),
                           _buildHealthSection(),
+                          const Divider(height: 32),
+                          _buildErrorProbeSection(),
                           const Divider(height: 32),
                           _buildSseSection(),
                           const Divider(height: 32),
@@ -796,7 +993,7 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
         _buildSectionTitle('USP Set'),
         Tr181AutocompleteField(
           controller: _setPathController,
-          labelText: 'Path',
+          labelText: 'Path (comma-separated for multiple)',
           pathTypeFilter: const {Tr181PathType.parameter},
         ),
         const SizedBox(height: 8),
@@ -805,7 +1002,14 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
           hintText: 'Value',
         ),
         const SizedBox(height: 8),
-        AppButton.primary(label: 'Set', onTap: _doSet),
+        Wrap(
+          spacing: 8,
+          children: [
+            AppButton.primary(label: 'Set (Atomic)', onTap: _doSet),
+            AppButton.primaryOutline(
+                label: 'Set (Allow Partial)', onTap: _doSetAllowPartial),
+          ],
+        ),
       ],
     );
   }
@@ -876,6 +1080,25 @@ class _UspTestConsoleViewState extends ConsumerState<UspTestConsoleView> {
       children: [
         _buildSectionTitle('Bridge Health'),
         AppButton.primary(label: 'Health Check', onTap: _doHealth),
+      ],
+    );
+  }
+
+  Widget _buildErrorProbeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildSectionTitle('Error Probe'),
+        AppText.bodySmall(
+          'Systematically triggers USP errors to capture error string formats. '
+          'Results appear in the log panel.',
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(height: 8),
+        AppButton.primary(
+          label: _probeRunning ? 'Running...' : 'Run Error Probe',
+          onTap: _probeRunning ? null : _runErrorProbe,
+        ),
       ],
     );
   }

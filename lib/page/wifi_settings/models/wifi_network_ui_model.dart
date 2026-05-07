@@ -32,9 +32,8 @@ class WifiNetworkUIModel extends Equatable {
 
   /// Whether this network is a guest network.
   ///
-  /// Detected via SSID naming convention (contains "guest", case-insensitive).
-  // TODO(vendor-ext): Replace with Device.WiFi.SSID.{i}.X_LINKSYS_COM_IsGuest
-  //   once firmware support is confirmed.
+  /// Detected via per-radio SSID instance ordering: for each radio, the
+  /// lowest-index SSID is Main, all subsequent are Guest.
   final bool isGuest;
 
   /// Frequency band (e.g. "2.4GHz", "5GHz", "6GHz")
@@ -181,61 +180,4 @@ class WifiNetworkUIModel extends Equatable {
         supportedBandwidths,
         availableChannelsPerBandwidth,
       ];
-
-  Map<String, dynamic> toMap() => {
-        'ssidInstancePath': ssidInstancePath,
-        'accessPointInstancePath': accessPointInstancePath,
-        'radioInstancePath': radioInstancePath,
-        'ssid': ssid,
-        'enabled': enabled,
-        'ssidAdvertisementEnabled': ssidAdvertisementEnabled,
-        'supportedSecurityModes': supportedSecurityModes,
-        'securityMode': securityMode,
-        'keyPassphrase': keyPassphrase,
-        'isGuest': isGuest,
-        'band': band,
-        'channel': channel,
-        'channelBandwidth': channelBandwidth,
-        'autoChannelEnable': autoChannelEnable,
-        'possibleChannels': possibleChannels,
-        'operatingStandards': operatingStandards,
-        'supportedStandards': supportedStandards,
-        'supportedBandwidths': supportedBandwidths,
-        'availableChannelsPerBandwidth': availableChannelsPerBandwidth,
-      };
-
-  Map<String, dynamic> toJson() => toMap();
-
-  factory WifiNetworkUIModel.fromMap(Map<String, dynamic> map) =>
-      WifiNetworkUIModel(
-        ssidInstancePath: map['ssidInstancePath'] as String,
-        accessPointInstancePath: map['accessPointInstancePath'] as String?,
-        radioInstancePath: map['radioInstancePath'] as String?,
-        ssid: map['ssid'] as String? ?? '',
-        enabled: map['enabled'] as bool? ?? false,
-        ssidAdvertisementEnabled:
-            map['ssidAdvertisementEnabled'] as bool? ?? true,
-        supportedSecurityModes:
-            (map['supportedSecurityModes'] as List?)?.cast<String>() ?? [],
-        securityMode: map['securityMode'] as String? ?? '',
-        keyPassphrase: map['keyPassphrase'] as String? ?? '',
-        isGuest: map['isGuest'] as bool? ?? false,
-        band: map['band'] as String? ?? '',
-        channel: map['channel'] as int? ?? 0,
-        channelBandwidth: map['channelBandwidth'] as String? ?? '',
-        autoChannelEnable: map['autoChannelEnable'] as bool? ?? true,
-        possibleChannels: (map['possibleChannels'] as List?)?.cast<int>() ?? [],
-        operatingStandards: map['operatingStandards'] as String? ?? '',
-        supportedStandards: map['supportedStandards'] as String? ?? '',
-        supportedBandwidths:
-            (map['supportedBandwidths'] as List?)?.cast<String>() ?? [],
-        availableChannelsPerBandwidth:
-            (map['availableChannelsPerBandwidth'] as Map?)?.map(
-                  (k, v) => MapEntry(k as String, (v as List).cast<int>()),
-                ) ??
-                {},
-      );
-
-  factory WifiNetworkUIModel.fromJson(Map<String, dynamic> json) =>
-      WifiNetworkUIModel.fromMap(json);
 }

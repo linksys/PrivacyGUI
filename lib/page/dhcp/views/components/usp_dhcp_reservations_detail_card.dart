@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/page/_shared/models/dhcp_reservation_ui_model.dart';
+import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/dhcp/views/dialogs/dhcp_reservation_edit_dialog.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -94,10 +95,39 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     );
   }
 
+  ({List<AppAutoCompleteOption> mac, List<AppAutoCompleteOption> ip})
+      _buildDeviceOptions(WidgetRef ref) {
+    final devices =
+        ref.read(devicesDataProvider).valueOrNull?.deviceModels ?? [];
+    final macOptions = devices
+        .where((d) => d.mac.isNotEmpty)
+        .map((d) => AppAutoCompleteOption(
+              label: d.displayName,
+              value: d.mac,
+              subtitle: d.ip,
+              isActive: d.isActive,
+            ))
+        .toList();
+    final ipOptions = devices
+        .where((d) => d.ip.isNotEmpty)
+        .map((d) => AppAutoCompleteOption(
+              label: d.displayName,
+              value: d.ip,
+              subtitle: d.mac,
+              isActive: d.isActive,
+            ))
+        .toList();
+    return (mac: macOptions, ip: ipOptions);
+  }
+
   Future<void> _showAddDialog(BuildContext context, WidgetRef ref) async {
+    final options = _buildDeviceOptions(ref);
     final result = await showDialog<({String mac, String ip, bool enable})>(
       context: context,
-      builder: (_) => const DhcpReservationEditDialog(),
+      builder: (_) => DhcpReservationEditDialog(
+        macDeviceOptions: options.mac,
+        ipDeviceOptions: options.ip,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspDhcpReservationsProvider.notifier).addReservation(
@@ -114,9 +144,14 @@ class UspDhcpReservationsDetailCard extends ConsumerWidget {
     WidgetRef ref,
     DhcpReservationUIModel reservation,
   ) async {
+    final options = _buildDeviceOptions(ref);
     final result = await showDialog<({String mac, String ip, bool enable})>(
       context: context,
-      builder: (_) => DhcpReservationEditDialog(reservation: reservation),
+      builder: (_) => DhcpReservationEditDialog(
+        reservation: reservation,
+        macDeviceOptions: options.mac,
+        ipDeviceOptions: options.ip,
+      ),
     );
     if (result == null || !context.mounted) return;
     ref.read(uspDhcpReservationsProvider.notifier).editReservation(

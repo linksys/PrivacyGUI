@@ -326,6 +326,14 @@ test/mocks/
 test/mocks/test_data/
 ```
 
+**3.5.4: Special Directories**
+
+Two special infrastructure directories exist outside the normal feature structure. They are not feature pages.
+
+**`lib/framework/`** — Provides the base infrastructure (`FeatureState`, `Preservable`, `PreservableNotifierMixin`) used by all Type A and Type B feature pages. Do not add feature-specific code here.
+
+**`lib/page/_shared/`** — Holds assets shared across multiple feature modules. See **Article V Section 5.3** for usage rules.
+
 ---
 
 **Section 3.6: Test Naming**
@@ -368,8 +376,154 @@ void main() {
 
 ---
 
-## Article IV: Operations & Deployment (Reserved)
-*Reserved for future definition of deployment policies, CI/CD pipelines, and runtime observability requirements.*
+## Article IV: USP Provider Architecture
+
+**Section 4.1: Two-Tier Provider Taxonomy**
+
+USP pages follow a two-tier provider structure. Each tier has distinct responsibilities, lifecycle, and codegen import rules.
+
+| Tier | Role | Lifecycle | Codegen Import |
+|------|------|-----------|----------------|
+| **L1 Domain Data Provider** | Session-wide cache: holds UI models, responds to SSE invalidation | **NOT autoDispose** | ❌ Prohibited |
+| **L2 Feature Page Provider** | Holds editable working copy; coordinates save/revert | **AutoDispose** | ❌ Prohibited |
+
+**L1 Service Layer**: Each L1 provider delegates codegen calls to a dedicated **L1 Service** (`Provider<T>`, stateless). The L1 Service owns all codegen fetch calls, error mapping (`mapUspErrorToServiceError`), and codegen→UI model transformation. This ensures that codegen types and `usp_error.dart` are confined to the Service layer.
+
+```
+L1 Provider  →  L1 Service  →  Codegen (lib/generated/)
+                    ↑
+              mapUspErrorToServiceError here
+```
+
+**L2 Immediate Mutations**: When Dashboard cards or other non-page views need to perform single-operation mutations (toggle, add, delete), they call **`immediate*` methods** on the L2 Notifier. These methods delegate to the L2 Service, then `ref.invalidate()` the corresponding L1 provider. This is distinct from the batch Save mode used on feature pages.
+
+**Key Principle**: L1 and L2 serve different purposes:
+- **L1** → Persistent session cache: shared across features, SSE target, no redundant re-fetches
+- **L2** → Editable working copy: isolated per page, discarded when the page closes
+
+---
+
+**Section 4.2: Page Type Classification**
+
+Before implementing a feature page, determine its type using the following decision tree:
+
+```
+Does the page have an edit form (fields or list) + Save/Cancel?
+├── YES → Is the user editing a list (add/edit/delete items)?
+│         ├── YES → Type B: CRUD List
+│         └── NO  → Type A: Form
+└── NO  → Type C: Read-Only / Toggle
+```
+
+**Type A — Form**
+
+For pages with fixed editable fields and a single Save operation.
+
+- State: `FeatureState<{Domain}Settings, {Domain}Status>`
+- Mutations: `updateSetting({UIModel} Function({UIModel}) fn)`
+- Save: `Service.update(current)` (direct)
+- Requires L2: ✅ | Dirty Guard: ✅
+
+Examples: DMZ, Firewall, WiFi Settings, Internet Settings
+
+**Type B — CRUD List**
+
+For pages where users add/edit/delete list items, saved all at once.
+
+- State: `FeatureState<{Item}UIList, {Domain}ListStatus>`
+- Mutations: `addItem()` / `editItem()` / `deleteItem()`
+- Save: diff(original, current) → `addMultiple` + `set` + `delete`
+- New item identification: `instancePath == null` (not yet written to router)
+- Requires L2: ✅ | Dirty Guard: ✅
+
+Examples: Port Forwarding, DHCP Reservations, Static Routing
+
+**Type C — Read-Only / Toggle**
+
+For display-only pages or instant-effect operations with no Save/Cancel flow.
+
+- View consumes L1 directly: `ref.watch({domain}DataProvider)`
+- Requires L2: ❌ — do not create an unnecessary L2 provider
+
+Examples: System Info, WAN Status, Time Settings
+
+**Dirty Guard Implementation (Type A and Type B)**:
+- Use `PreservableAutoDisposeNotifierMixin` with the Notifier class
+- State MUST extend `FeatureState<TSettings, TStatus>`
+- Implement `performFetch()` and `performSave()` template methods
+- Expose `preservableProvider` for route dirty check:
+
+```dart
+final preservable{Domain}Provider =
+    AutoDisposeProvider<PreservableContract<{Domain}Settings, {Domain}Status>>(
+  (ref) => ref.watch(usp{Domain}Provider.notifier),
+);
+```
+
+**Route Configuration**:
+```dart
+LinksysRoute(
+  path: '{domain}',
+  builder: (context, state) => const {Domain}View(),
+  enableDirtyCheck: true,
+  preservableProvider: preservable{Domain}Provider,
+)
+```
+
+Reference implementation: `lib/page/dmz/providers/usp_dmz_notifier.dart`
+Detailed Guide: `doc/dirty_guard/dirty_guard_framework_guide.md`
+
+---
+
+**Section 4.3: Hard Rules**
+
+The following rules are non-negotiable for all USP provider implementations:
+
+**Rule 1: L1 Data Providers MUST NOT be `autoDispose`**
+
+L1 Data Providers are the single source of truth for the entire connected session. They must persist for the app lifetime so that multiple features can share the same cached data, SSE updates have a stable target, and re-navigating to a page does not trigger redundant re-fetches.
+
+```dart
+// ✅ Correct
+final xxxDataProvider = AsyncNotifierProvider<XxxDataNotifier, XxxData>(...);
+
+// ❌ Wrong
+final xxxDataProvider = AsyncNotifierProvider.autoDispose<XxxDataNotifier, XxxData>(...);
+```
+
+**Rule 2: L2 Notifiers MUST use `ref.read` (not `ref.watch`) when reading from L1**
+
+`ref.watch` in `performFetch()` causes SSE updates to directly overwrite the user's in-progress edits. SSE updates must flow through the `onSseInvalidation()` dirty guard path instead.
+
+```dart
+// ✅ Correct — one-time clone, no live tracking
+final data = await ref.read(xxxDataProvider.future);
+
+// ❌ Wrong — SSE will silently overwrite user edits
+final data = await ref.watch(xxxDataProvider.future);
+```
+
+**Rule 3: All mutations MUST go through `uspMutationLockProvider.withLock()`**
+
+The WASM USP client does not support concurrent calls. All write operations (add, update, delete) MUST acquire the global mutation lock.
+
+```dart
+await ref.read(uspMutationLockProvider).withLock(() async {
+  await _svc.save(current);
+});
+```
+
+**Rule 4: `PreservableContract` MUST NOT be duplicated**
+
+`lib/framework/preservable_contract.dart` is the single definition of `PreservableContract`. All features MUST import it from this location. Duplicating the class elsewhere creates a type incompatibility that silently breaks `LinksysRoute`'s dirty check at runtime.
+
+```dart
+// ✅ Correct — import from the single source of truth
+import 'package:privacy_gui/framework/preservable_contract.dart';
+
+// ❌ Wrong — re-defining the class creates an incompatible type
+class PreservableContract<T, S> { ... }
+```
 
 ---
 
@@ -382,11 +536,33 @@ Complexity must be justified. Implementations must avoid "future-proofing" for s
 Do not create abstractions, interfaces, or layers until there is a concrete need. Start simple and refactor when patterns emerge.
 
 **Section 5.3: Feature Structure**
-Each feature should follow a consistent, minimal structure:
+
+The overall structure is:
+
+```
+lib/
+├── framework/           # Infrastructure (FeatureState, Preservable, mixins)
+└── page/
+    ├── _shared/             # Cross-module shared assets
+    │   ├── models/          # UI models used by 2+ feature modules
+    │   ├── components/      # UI components used by 2+ feature modules
+    │   ├── services/        # Services used by 2+ feature modules
+    │   └── providers/       # Providers used by 2+ feature modules
+    ├── dashboard/           # Dashboard page (orchestrator, cards)
+    └── [feature]/           # Feature modules
+        ├── views/
+        ├── providers/
+        ├── services/
+        └── models/
+```
+
+Each feature module should follow a consistent, minimal structure:
 * `lib/page/[feature]/views/` - UI components
 * `lib/page/[feature]/providers/` - State management
 * `lib/page/[feature]/services/` - Business logic (when needed)
 * `lib/page/[feature]/models/` - UI models (when needed)
+
+**`_shared/` Usage Rule**: Code belongs in `lib/page/_shared/` only when it is referenced by **two or more unrelated feature modules**. Do not move code to `_shared/` preemptively — wait until the second consumer exists.
 
 **Section 5.4: Architectural Layers and Separation of Concerns**
 
@@ -407,7 +583,7 @@ Each feature should follow a consistent, minimal structure:
 ┌────────────▼────────────────────┐
 │  Data (Data Layer)               │  ← USP protocol communication, local storage
 │  lib/generated/*.g.dart          │  ← usp-codegen generated API
-│  lib/core/usp/                   │  ← UspService, transport layer
+│  lib/core/usp/                        │  ← UspService, transport layer
 └─────────────────────────────────┘
 ```
 
@@ -504,7 +680,7 @@ After completing the work, execute the following checks:
 
 # 1️⃣ Check if generated models are imported in the Provider layer
 grep -r "import.*generated/" lib/page/*/providers/
-# ✅ Should return 0 results
+# ✅ Should return 0 results (both L1 and L2 providers delegate to Services)
 
 # 2️⃣ Check if generated models are imported in the UI layer
 grep -r "import.*generated/" lib/page/*/views/
@@ -629,7 +805,7 @@ Services MUST be organized as follows:
 * Provider type: Use `Provider<T>` (stateless, NOT `NotifierProvider` or `StateNotifierProvider`)
 * Dependencies: Inject via `ref.watch()` in the provider definition
 
-**Reference implementation:** `lib/page/dashboard/services/usp_device_service.dart`
+**Reference implementation:** `lib/page/dmz/services/usp_dmz_service.dart`
 
 **Section 6.4: Provider-Service Separation**
 Clear separation of concerns MUST be maintained:
@@ -660,8 +836,8 @@ Services MUST have unit tests that:
 
 **Section 6.6: Reference Implementations**
 See these existing services as examples:
-* `lib/page/dashboard/services/usp_device_service.dart`
-* `lib/page/instant_safety/providers/instant_safety_provider.dart`
+* L2 Service: `lib/page/dmz/services/usp_dmz_service.dart`
+* L1 Service: `lib/page/admin/services/usp_time_data_service.dart`
 
 **Section 6.7: Distinction from Article VII**
 The Service layer is a LEGITIMATE abstraction that:
@@ -765,6 +941,11 @@ Run `dart tools/run_screenshot_tests.dart` with optional flags:
 
 ---
 
+## Article IX: (Reserved)
+*Reserved for future definition.*
+
+---
+
 ## Article X: Code Review Standards
 
 **Section 10.1: Review Checklist**
@@ -833,31 +1014,6 @@ class WifiNotifier extends AsyncNotifier<WifiState> {
 }
 ```
 
-**Section 12.3: Dirty Guard Feature**
-
-**Usage Scenario**: When developers require implementing Dirty Guard functionality, refer to the following
-
-**Implementation Approach**:
-- Use `PreservableNotifierMixin` mixin with Notifier class
-- State must extend `FeatureState<Settings, Status>`
-- Implement `performFetch()` and `performSave()` methods
-
-**Reference Examples**:
-- `lib/page/instant_privacy/providers/instant_privacy_provider.dart`
-- `lib/framework/preservable_notifier_mixin.dart` (PreservableNotifierMixin definition)
-
-**Detailed Guide**: `doc/dirty_guard/dirty_guard_framework_guide.md`
-
-**Route Configuration**:
-```dart
-LinksysRoute(
-  path: 'feature',
-  builder: (context, state) => const FeatureView(),
-  preservableProvider: featureProvider,  // Specify provider to check
-  enableDirtyCheck: true,  // Enable dirty guard
-)
-```
-
 ---
 
 ## Article XIII: Error Handling Strategy
@@ -916,30 +1072,31 @@ final class UnexpectedError extends ServiceError {
 
 **Responsibility**: The Service layer is the **only** place allowed to directly catch underlying exceptions (USP/WASM), and is responsible for converting them to `ServiceError`.
 
-**Correct Example**:
+> **Important — USP errors are raw `String`, not `Exception`:**
+> The WASM client throws plain `String` values across the JS→Dart interop boundary, not `Exception` or `Error` objects. Therefore, Service methods MUST use `catch (e)` (catch-all), **not** `on Exception catch (e)` — the latter silently misses all USP errors.
+
+**Standard Pattern — use `mapUspErrorToServiceError()`**
+
+All USP Service methods MUST use the centralized `mapUspErrorToServiceError()` utility. This function parses the structured USP error string, extracts fault codes and HTTP status, and maps to the appropriate `ServiceError` subtype. Do NOT manually parse USP error strings.
+
 ```dart
-// lib/page/wifi/services/wifi_service.dart
-Future<WifiState> fetchSettings() async {
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+
+// ✅ Correct: USP Service uses mapUspErrorToServiceError()
+Future<DmzSettings> fetchSettings() async {
   try {
-    final ssids = await WifiSsids.fetch(_usp);  // codegen call, may throw underlying exception
-    return WifiState(ssidModels: ssids.items.map(_toUIModel).toList());
+    final dmz = await Dmz.fetch(_usp);
+    return _toUIModel(dmz);
   } catch (e) {
-    // ✅ Convert all underlying exceptions to ServiceError in Service layer
-    throw UnexpectedError(originalError: e);
+    throw mapUspErrorToServiceError(e);
   }
 }
-```
 
-For known business rule violations, convert to a specific `ServiceError` subtype:
-```dart
-Future<void> updatePassword(String newPassword) async {
+Future<void> update({required String instancePath, required DmzUIModel model}) async {
   try {
-    await AdminSettings.update(_usp, AdminSettingsUpdate(password: newPassword));
+    await Dmz.update(_usp, DmzEntryUpdate(...));
   } catch (e) {
-    if (e.toString().contains('ErrorInvalidPassword')) {
-      throw const InvalidAdminPasswordError();
-    }
-    throw UnexpectedError(originalError: e);
+    throw mapUspErrorToServiceError(e);
   }
 }
 ```
@@ -957,9 +1114,12 @@ Future<WifiState> fetchSettings() async {
 
 **Section 13.4: Provider Layer Error Handling**
 
-**Responsibility**: The Provider layer only handles `ServiceError` types. `build()` exceptions are automatically wrapped as `AsyncError` state by `AsyncNotifier`; mutation methods require explicit error handling.
+**Responsibility**: The Provider layer only handles `ServiceError` types. MUST NOT catch generic exceptions or underlying error types.
 
-**Correct Example**:
+**13.4.1: AsyncNotifier Pattern (Type C pages)**
+
+`build()` exceptions are automatically wrapped as `AsyncError` state by `AsyncNotifier`; mutation methods require explicit error handling.
+
 ```dart
 // lib/page/wifi/providers/wifi_notifier.dart
 import 'package:privacy_gui/core/errors/service_error.dart';
@@ -987,17 +1147,88 @@ Future<void> updatePassword(String newPassword) async {
 }
 ```
 
+**13.4.2: Preservable Pattern (Type A / Type B pages)**
+
+Pages using `PreservableAutoDisposeNotifierMixin` handle errors in `performFetch()` and `performSave()`:
+
+```dart
+import 'package:privacy_gui/core/errors/service_error.dart';
+
+// performFetch: catch ServiceError → return (null, errorStatus)
+// Do NOT rethrow — the mixin's fetch() handles null settings gracefully.
+@override
+Future<(DmzSettings?, DmzStatus?)> performFetch({
+  bool forceRemote = false,
+  bool updateStatusOnly = false,
+}) async {
+  try {
+    final (settings, status) = await _svc.fetch();
+    return (settings, status);
+  } on ServiceError catch (e) {
+    logger.e('[USP][DMZ] Fetch failed', error: e);
+    return (null, DmzStatus(isLoading: false, errorMessage: '$e'));
+  }
+}
+
+// performSave: catch ServiceError → log + rethrow
+// The mixin's save() will catch the rethrown error and handle UI state.
+@override
+Future<void> performSave() async {
+  try {
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      await _svc.update(instancePath: path, model: pending);
+    });
+  } on ServiceError catch (e) {
+    logger.e('[USP][DMZ] Save failed', error: e);
+    rethrow;
+  }
+}
+```
+
 **Wrong Example**:
 ```dart
 // ❌ Wrong: Provider swallows generic exceptions without converting
-Future<void> updatePassword(String newPassword) async {
+Future<void> performSave() async {
   try {
-    await svc.updatePassword(newPassword);
-  } catch (e) {  // ❌ Absorbs all exceptions — UI won't know the operation failed
+    await _svc.update(...);
+  } catch (e) {  // ❌ Catches everything — bypasses ServiceError contract
     logger.e(e);
   }
 }
 ```
+
+---
+
+**Section 13.5: USP Error Handling Infrastructure**
+
+All USP error parsing and `ServiceError` mapping is centralized in a single utility file. Individual USP Services MUST NOT implement their own parsing logic.
+
+**File Location**: `lib/core/usp/errors/usp_error.dart`
+
+**Key utilities**:
+
+| Function | Purpose |
+|----------|---------|
+| `parseUspError(Object error)` | Parses raw USP error string into structured `UspError` (operation, category, fault code, HTTP status) |
+| `mapUspErrorToServiceError(Object error)` | Parses + maps to `ServiceError` subtype — **the only function USP Services need to call** |
+
+**Mapping summary**:
+
+| USP Error Category | Mapped ServiceError |
+|--------------------|---------------------|
+| Authentication (Invalid credentials) | `InvalidCredentialsError` |
+| Authentication (Session expired) | `SessionTokenExpiredError` |
+| Authentication (Permission denied) | `UnauthorizedError` |
+| Transport (HTTP 401) | `NotAuthenticatedError` |
+| Transport (HTTP 5xx, timeout) | `NetworkError` |
+| Transport (Connection refused) | `ConnectivityError` |
+| Protocol (fault 7026, 9005) | `ResourceNotFoundError` |
+| Protocol (fault 7004, 9008) | `InvalidInputError` |
+| Protocol (fault 9001) | `UnauthorizedError` |
+| Validation | `InvalidInputError` |
+| Unrecognized | `UnexpectedError` |
+
+**Reference implementation**: `lib/page/dmz/services/usp_dmz_service.dart`
 
 ---
 
@@ -1077,5 +1308,3 @@ Code Review MUST check:
 - ✅ If there are custom components, confirm they have user approval
 
 ---
-
-**Version**: 2.0.0 | **Ratified**: 2025-12-09 | **Last Amended**: 2026-03-20

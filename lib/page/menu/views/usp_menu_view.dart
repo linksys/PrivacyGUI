@@ -46,54 +46,63 @@ class UspMenuView extends StatelessWidget {
   List<AppSectionItemData> _buildMenuItems(BuildContext context) {
     return [
       AppSectionItemData(
+        semanticLabel: 'menu-wifi-settings',
         title: 'WiFi Settings',
         description: 'Networks, security, MAC filtering',
         iconData: Icons.wifi,
         onTap: () => context.goNamed(RouteNamed.uspWifiSettings),
       ),
       AppSectionItemData(
+        semanticLabel: 'menu-topology',
         title: 'Topology',
         description: 'View network topology and mesh nodes',
         iconData: Icons.account_tree,
         onTap: () => context.goNamed(RouteNamed.uspTopology),
       ),
       AppSectionItemData(
+        semanticLabel: 'menu-devices',
         title: 'Devices',
         description: 'View and manage connected devices',
         iconData: Icons.devices,
         onTap: () => context.goNamed(RouteNamed.uspDeviceList),
       ),
       AppSectionItemData(
+        semanticLabel: 'menu-instant-safety',
         title: 'Instant Safety',
         description: 'Safe browsing with OpenDNS',
         iconData: Icons.shield_outlined,
         onTap: () => context.goNamed(RouteNamed.uspInstantSafety),
       ),
       AppSectionItemData(
+        semanticLabel: 'menu-instant-privacy',
         title: 'Instant Privacy',
         description: 'Lock network to currently connected devices',
         iconData: Icons.lock_outlined,
         onTap: () => context.goNamed(RouteNamed.uspInstantPrivacy),
       ),
       AppSectionItemData(
+        semanticLabel: 'menu-administration',
         title: 'Administration',
         description: 'Password, timezone, reboot',
         iconData: Icons.admin_panel_settings,
         onTap: () => context.goNamed(RouteNamed.uspAdmin),
       ),
       AppSectionItemData(
+        semanticLabel: 'menu-advanced-settings',
         title: 'Advanced Settings',
         description: 'Firewall, local network, DMZ, port forwarding, routing',
         iconData: Icons.tune,
         onTap: () => context.goNamed(RouteNamed.uspAdvancedSettings),
       ),
+      // AppSectionItemData(
+      //   semanticLabel: 'menu-system-logs',
+      //   title: 'System Logs',
+      //   description: 'View router log files',
+      //   iconData: Icons.article_outlined,
+      //   onTap: () => context.goNamed(RouteNamed.uspSystemLog),
+      // ),
       AppSectionItemData(
-        title: 'System Logs',
-        description: 'View router log files',
-        iconData: Icons.article_outlined,
-        onTap: () => context.goNamed(RouteNamed.uspSystemLog),
-      ),
-      AppSectionItemData(
+        semanticLabel: 'menu-statistics',
         title: 'Statistics',
         description: 'Network, device, and system analytics',
         iconData: Icons.bar_chart,
@@ -134,6 +143,7 @@ class UspMenuView extends StatelessWidget {
             title: item.title,
             description: item.description,
             onTap: item.onTap,
+            semanticLabel: item.semanticLabel,
           );
         },
       ),

@@ -3,21 +3,24 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/connected_devices.g.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
-import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
-import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
+import 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart';
 import 'package:privacy_gui/page/topology/models/node_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
+
+// Re-export so existing consumers can still import DevicesCodegenContext from here.
+export 'package:privacy_gui/page/devices/services/usp_devices_data_service.dart'
+    show DevicesCodegenContext;
 
 // ---------------------------------------------------------------------------
 // Data Model (Layer 1 — UIModel only)
 // ---------------------------------------------------------------------------
 
 class DevicesData extends Equatable {
+  final DevicesCodegenContext codegenContext;
   final MeshTopologyInfo meshTopology;
 
   // UI models (computed from raw + cross-domain enrichment)
@@ -28,6 +31,7 @@ class DevicesData extends Equatable {
   final Map<String, String> hostNameByMac;
 
   const DevicesData({
+    this.codegenContext = DevicesCodegenContext.empty,
     this.meshTopology = MeshTopologyInfo.empty,
     this.deviceModels = const [],
     this.nodeModels = const [],
@@ -35,12 +39,14 @@ class DevicesData extends Equatable {
   });
 
   DevicesData copyWith({
+    DevicesCodegenContext? codegenContext,
     MeshTopologyInfo? meshTopology,
     List<DeviceUIModel>? deviceModels,
     List<NodeUIModel>? nodeModels,
     Map<String, String>? hostNameByMac,
   }) {
     return DevicesData(
+      codegenContext: codegenContext ?? this.codegenContext,
       meshTopology: meshTopology ?? this.meshTopology,
       deviceModels: deviceModels ?? this.deviceModels,
       nodeModels: nodeModels ?? this.nodeModels,
@@ -50,9 +56,10 @@ class DevicesData extends Equatable {
 
   @override
   List<Object?> get props => [
+        codegenContext,
         meshTopology.nodes.length,
-        deviceModels.length,
-        nodeModels.length,
+        deviceModels,
+        nodeModels,
         hostNameByMac.length,
       ];
 }
@@ -72,9 +79,6 @@ final devicesDataProvider =
 class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   Timer? _debounce;
 
-  /// Raw codegen kept as internal state for WiFi listener rebuild.
-  ConnectedDevices? _rawConnectedDevices;
-
   @override
   Future<DevicesData> build() async {
     // SSE: listen for device domain changes → debounce → re-fetch
@@ -85,24 +89,32 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
       }
     });
 
-    // WiFi data changes → rebuild deviceModels with updated enrichment
+    // WiFi data changes → rebuild deviceModels with updated enrichment.
     ref.listen(wifiDataProvider, (_, next) {
       final wd = next.valueOrNull;
       final cur = state.valueOrNull;
-      final raw = _rawConnectedDevices;
-      if (wd == null || cur == null || raw == null) return;
-      final svc = ref.read(uspDeviceServiceProvider);
+      if (wd == null || cur == null) return;
+      if (cur.codegenContext == DevicesCodegenContext.empty) return;
+
+      final svc = ref.read(uspDevicesDataServiceProvider);
       final gatewayName =
           ref.read(systemInfoDataProvider).valueOrNull?.model.gatewayName ??
               'Router';
-      final rebuiltDevices = svc.buildDeviceUIModels(
-        connectedDevices: raw,
+      final sysInfo = ref.read(systemInfoDataProvider).valueOrNull?.model;
+
+      final rebuilt = svc.rebuildWithWifiData(
+        context: cur.codegenContext,
         wifiClientMap: wd.wifiClientMap,
         connectionDetailMap: wd.connectionDetailMap,
         meshTopology: cur.meshTopology,
         gatewayName: gatewayName,
+        systemInfo: sysInfo,
       );
-      state = AsyncData(cur.copyWith(deviceModels: rebuiltDevices));
+
+      state = AsyncData(cur.copyWith(
+        deviceModels: rebuilt.deviceModels,
+        nodeModels: rebuilt.nodeModels,
+      ));
     });
 
     ref.onDispose(() => _debounce?.cancel());
@@ -111,40 +123,17 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
   }
 
   Future<DevicesData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-
-    // Parallel fetch devices + mesh topology
-    final results = await Future.wait([
-      ConnectedDevices.fetch(usp),
-      fetchMeshNodes(usp),
-    ]);
-
-    final connectedDevices = results[0] as ConnectedDevices;
-    final meshTopology = results[1] as MeshTopologyInfo;
-
-    // Cache raw for WiFi listener rebuild.
-    _rawConnectedDevices = connectedDevices;
-
-    // Build hostname map for DHCP enrichment.
-    final hostNameByMac = <String, String>{};
-    for (final d in connectedDevices.items) {
-      if (d.hostName.isNotEmpty) {
-        hostNameByMac[d.macAddress.trim().toUpperCase()] = d.hostName;
-      }
-    }
+    final svc = ref.read(uspDevicesDataServiceProvider);
 
     // Read WiFi enrichment data — soft dependency with timeout.
-    // If wifiDataProvider is in error (e.g. bridge 503 on startup), use
-    // fallback empty data so devices still load. The WiFi listener in build()
-    // will rebuild deviceModels when WiFi data arrives later.
     WifiData wifiData;
     try {
       wifiData = await ref
           .read(wifiDataProvider.future)
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 5));
     } catch (e) {
-      logger.w('[USP][DevicesData] WiFi data unavailable, using fallback: $e');
+      logger.w(
+          '[USP][DevicesData] WiFi data unavailable, proceeding without: $e');
       wifiData = const WifiData.empty();
     }
 
@@ -152,36 +141,61 @@ class DevicesDataNotifier extends AsyncNotifier<DevicesData> {
     final sysData = ref.read(systemInfoDataProvider).valueOrNull;
     final gatewayName = sysData?.model.gatewayName ?? 'Router';
 
-    // Build UI models
-    final svc = ref.read(uspDeviceServiceProvider);
-    final deviceModels = svc.buildDeviceUIModels(
-      connectedDevices: connectedDevices,
+    final result = await svc.fetch(
+      wifiClientMap: wifiData.wifiClientMap,
+      connectionDetailMap: wifiData.connectionDetailMap,
+      gatewayName: gatewayName,
+      systemInfo: sysData?.model,
+    );
+
+    logger.d('[USP][DevicesData] Fetched — '
+        'deviceModels: ${result.deviceModels.length}, '
+        'nodeModels: ${result.nodeModels.length}');
+
+    // Fire-and-forget: fetch mesh topology in background, then update state.
+    _fetchMeshAndUpdate(svc, wifiData, gatewayName, sysData, result);
+
+    return DevicesData(
+      codegenContext: result.codegenContext,
+      meshTopology: MeshTopologyInfo.empty,
+      deviceModels: result.deviceModels,
+      nodeModels: result.nodeModels,
+      hostNameByMac: result.hostNameByMac,
+    );
+  }
+
+  /// Background mesh topology fetch — updates state when complete.
+  Future<void> _fetchMeshAndUpdate(
+    UspDevicesDataService svc,
+    WifiData wifiData,
+    String gatewayName,
+    SystemInfoData? sysData,
+    DevicesDataFetchResult fetchResult,
+  ) async {
+    final meshTopology = await svc.fetchMeshTopology();
+    if (meshTopology.isEmpty) return;
+
+    final cur = state.valueOrNull;
+    if (cur == null) return;
+
+    final rebuilt = svc.rebuildWithMesh(
+      context: cur.codegenContext,
       wifiClientMap: wifiData.wifiClientMap,
       connectionDetailMap: wifiData.connectionDetailMap,
       meshTopology: meshTopology,
       gatewayName: gatewayName,
+      systemInfo: sysData?.model,
     );
 
-    final nodeModels = sysData != null
-        ? svc.buildNodeUIModels(
-            meshTopology: meshTopology,
-            deviceModels: deviceModels,
-            systemInfo: sysData.model,
-          )
-        : <NodeUIModel>[];
-
-    logger.d('[USP][DevicesData] Fetched — '
-        'devices: ${connectedDevices.items.length}, '
+    logger.d('[USP][DevicesData] Mesh update — '
         'meshNodes: ${meshTopology.nodes.length}, '
-        'deviceModels: ${deviceModels.length}, '
-        'nodeModels: ${nodeModels.length}');
+        'nodeModels: ${rebuilt.nodeModels.length}');
 
-    return DevicesData(
+    state = AsyncData(cur.copyWith(
       meshTopology: meshTopology,
-      deviceModels: deviceModels,
-      nodeModels: nodeModels,
-      hostNameByMac: hostNameByMac,
-    );
+      deviceModels: rebuilt.deviceModels,
+      nodeModels: rebuilt.nodeModels,
+    ));
   }
 
   void _debouncedInvalidate() {

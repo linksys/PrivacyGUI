@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -35,7 +36,7 @@ class UspDhcpDetailView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backFallback: RouteNamed.uspMenu,
+      backFallback: RouteNamed.uspLocalNetwork,
       onRefresh: () async {
         ref.invalidate(dhcpDataProvider);
         ref.read(uspDhcpReservationsProvider.notifier).fetch(forceRemote: true);
@@ -206,7 +207,10 @@ class UspDhcpDetailView extends ConsumerWidget {
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(uspDhcpReservationsProvider.notifier).save();
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspDhcpReservationsProvider.notifier).save(),
+      );
       if (context.mounted) {
         showSuccessSnackBar(context, 'DHCP reservations saved');
       }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/models/system_info_ui_model.dart';
-import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/admin/providers/system_info_data_provider.dart';
 import 'package:privacy_gui/page/devices/providers/devices_data_provider.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
@@ -40,6 +40,11 @@ class UspNetworkTopologyCard extends ConsumerWidget {
       devices: devices,
       meshNodes: meshNodes,
       coverageColor: Theme.of(context).colorScheme.primary,
+      // Shrink coverage rings for dashboard card context — ui_kit's
+      // calculateBounds() ignores ring radii, so full-size rings (180px)
+      // overflow the fitScale viewport. Revisit if calculateBounds is
+      // updated to include ring extents.
+      coverageRingScale: 0.7,
     );
     final clientCount = devices.length;
     final useRing = clientCount >= 8;
@@ -58,42 +63,43 @@ class UspNetworkTopologyCard extends ConsumerWidget {
             ],
           ),
           AppGap.xl(),
-          SizedBox(
-            height: 320,
-            child: _withTopologyAnimation(
-              context,
-              AppTopology(
-                topology: topology,
-                viewMode: TopologyViewMode.graph,
-                layoutMode: LayoutRecommendation.auto,
-                clientVisibility: useRing
-                    ? ClientVisibility.onHover
-                    : ClientVisibility.always,
-                nodeRendererRegistry: NodeRendererRegistry.unified,
-                enableAnimation: true,
-                interactive: false,
-                treeConfig: TopologyTreeConfiguration(
-                  titleBuilder: (node) => node.name,
-                  subtitleBuilder: (node) => node.extra ?? '',
-                  preferAnimationNode: true,
-                  showStatusIndicator: true,
-                  showStatusText: true,
-                  expanded: false,
-                ),
-                nodeDetailConfig: NodeDetailConfig(
-                  trigger: NodeDetailTrigger.tap,
-                  detailBuilder: (ctx, node, metadata) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText.labelLarge(node.name),
-                      if (node.extra != null) AppText.bodySmall(node.extra!),
-                      AppText.bodySmall(
-                        node.status == MeshNodeStatus.online
-                            ? 'Online'
-                            : 'Offline',
-                      ),
-                    ],
+          Expanded(
+            child: ClipRect(
+              child: _withTopologyAnimation(
+                context,
+                AppTopology(
+                  topology: topology,
+                  viewMode: TopologyViewMode.graph,
+                  layoutMode: LayoutRecommendation.auto,
+                  clientVisibility: useRing
+                      ? ClientVisibility.onHover
+                      : ClientVisibility.always,
+                  nodeRendererRegistry: NodeRendererRegistry.unified,
+                  enableAnimation: true,
+                  interactive: false,
+                  treeConfig: TopologyTreeConfiguration(
+                    titleBuilder: (node) => node.name,
+                    subtitleBuilder: (node) => node.extra ?? '',
+                    preferAnimationNode: true,
+                    showStatusIndicator: true,
+                    showStatusText: true,
+                    expanded: false,
+                  ),
+                  nodeDetailConfig: NodeDetailConfig(
+                    trigger: NodeDetailTrigger.tap,
+                    detailBuilder: (ctx, node, metadata) => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText.labelLarge(node.name),
+                        if (node.extra != null) AppText.bodySmall(node.extra!),
+                        AppText.bodySmall(
+                          node.status == MeshNodeStatus.online
+                              ? 'Online'
+                              : 'Offline',
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

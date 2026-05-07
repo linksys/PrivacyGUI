@@ -8,7 +8,7 @@ import 'sse_event_router.dart';
 import 'sse_subscription_registry.dart';
 import 'sse_unload_handler.dart';
 import 'usp_bridge_client.dart';
-import 'usp_service.dart';
+import 'usp_client.dart';
 
 /// Facade that composes [SseConnectionManager], [SseSubscriptionRegistry],
 /// and [SseEventRouter] into a single entry point.
@@ -35,7 +35,7 @@ import 'usp_service.dart';
 /// await manager.dispose();
 /// ```
 class SseManager {
-  final UspService _usp;
+  final UspClient _usp;
   final UspBridgeClient _bridge;
   final SseConnectionManager connection;
   final SseSubscriptionRegistry registry;
@@ -45,8 +45,12 @@ class SseManager {
       [];
   bool _coreSubsDeferred = false;
 
+  /// Delegate for proactive auth check on heartbeat. Set by provider layer
+  /// to wire [UspAuthCoordinator.ensureAuth].
+  Future<void> Function()? onHeartbeatAuth;
+
   SseManager({
-    required UspService usp,
+    required UspClient usp,
     required UspBridgeClient bridge,
   })  : _usp = usp,
         _bridge = bridge,
@@ -55,6 +59,16 @@ class SseManager {
         router = SseEventRouter() {
     // Wire connection events to router
     connection.onEvent = router.routeEvent;
+
+    // Wire heartbeat → proactive auth check (fire-and-forget)
+    router.onHeartbeat = () {
+      final authCheck = onHeartbeatAuth;
+      if (authCheck != null) {
+        authCheck().catchError((e) {
+          logger.w('[USP][SSE]Heartbeat auth check error: $e');
+        });
+      }
+    };
 
     // On connect (first or reconnect): register/re-register subscriptions.
     // First connect: registers core subscriptions set via setCoreSubscriptions().
@@ -129,7 +143,7 @@ class SseManager {
     return router.addWildcardHandler(handler);
   }
 
-  /// SSE delegate implementation injected into [UspService].
+  /// SSE delegate implementation injected into [UspClient].
   ///
   /// Uses wildcard handler + path prefix matching because the CPE delivers
   /// events using its own internal subscription_id (e.g., "cpe-5"), not the
@@ -254,6 +268,10 @@ class SseManager {
     _unloadHandler.unregister();
     _usp.onSseSubscribe = null;
     _usp.onTokenRefreshed = null;
+    router.onHeartbeat = null;
+    onHeartbeatAuth = null;
+    // Synchronous abort first — critical for hot restart where async may not complete.
+    _bridge.abortSse();
     await connection.disconnect();
     await registry.unregisterAll();
     router.dispose();

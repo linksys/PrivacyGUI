@@ -1,5 +1,6 @@
+import 'package:ui_kit_library/ui_kit.dart';
+
 import 'display_mode.dart';
-import 'widget_grid_constraints.dart';
 
 /// Component Specification Definition
 ///

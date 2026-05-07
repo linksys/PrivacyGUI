@@ -5,6 +5,7 @@ import 'package:privacy_gui/page/_shared/components/usp_info_row.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/_shared/components/card_skeleton.dart';
+import 'package:privacy_gui/page/internet_settings/providers/usp_internet_settings_notifier.dart';
 import 'package:privacy_gui/page/internet_settings/providers/wan_data_provider.dart';
 import 'package:ui_kit_library/ui_kit.dart';
 
@@ -62,8 +63,9 @@ class UspNetworkStatusCard extends ConsumerWidget {
                           context,
                           ref,
                           loadingKey: 'wanRenew',
-                          mutation: () =>
-                              ref.read(wanDataProvider.notifier).renewLease(),
+                          mutation: () => ref
+                              .read(uspInternetSettingsProvider.notifier)
+                              .renewDhcpLease(),
                           successMessage: 'DHCP lease renewed',
                         ),
               ),

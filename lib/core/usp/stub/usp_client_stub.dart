@@ -25,30 +25,23 @@ class UspClientWeb {
   Future<void> refreshToken() =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<String?> get(String path) =>
+  Future<Map<String, String>> get(List<String> paths) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<Map<String, String>> getMultiple(List<String> paths) =>
-      throw UnsupportedError('USP is only available on Web');
-
-  Future<void> set(String path, String value) =>
-      throw UnsupportedError('USP is only available on Web');
-
-  Future<void> setMultiple(Map<String, String> parameters,
+  Future<Map<String, dynamic>> set(Map<String, String> parameters,
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<String> add(String objectPath, Map<String, String> parameters) =>
-      throw UnsupportedError('USP is only available on Web');
-
-  Future<List<String>> addMultiple(List<Map<String, dynamic>> objects,
+  Future<Map<String, dynamic>> setOrdered(
+          List<List<Map<String, String>>> parameterGroups,
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<void> delete(String path) =>
+  Future<Map<String, dynamic>> add(List<Map<String, dynamic>> items,
+          {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 
-  Future<void> deleteMultiple(List<String> paths,
+  Future<Map<String, dynamic>> delete(List<String> paths,
           {bool allowPartial = false}) =>
       throw UnsupportedError('USP is only available on Web');
 

@@ -1,7 +1,7 @@
 /// Demo Provider Overrides
 ///
 /// Minimal overrides for Demo application. Most providers use their
-/// original implementation with USP mock data via DemoUspService.
+/// original implementation with USP mock data via DemoUspClient.
 library;
 
 import 'package:flutter/foundation.dart';
@@ -15,8 +15,10 @@ import 'package:privacy_gui/providers/auth/auth_provider.dart';
 import 'package:privacy_gui/route/router_provider.dart';
 import 'package:privacy_gui/core/usp/providers/sse_providers.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/page/dashboard/providers/package_widget_loader.dart';
 import 'demo_router_provider.dart';
+import 'demo_package_widget_loader.dart';
 
 /// Demo provider overrides for the Demo application.
 ///
@@ -27,7 +29,7 @@ import 'demo_router_provider.dart';
 class DemoProviders {
   /// Returns all provider overrides needed for demo mode.
   static List<Override> get allOverrides {
-    final demoUsp = DemoUspService(DemoUspDataLoader.instance);
+    final demoUsp = DemoUspClient(DemoUspDataLoader.instance);
     return [
       // 1. Auth: Always logged in
       authProvider.overrideWith(() => _DemoAuthNotifier()),
@@ -41,7 +43,7 @@ class DemoProviders {
       // --- USP Provider overrides ---
 
       // 4. USP Service: Mock data from demo_usp_data.json
-      uspServiceProvider.overrideWith((ref) => demoUsp),
+      uspClientProvider.overrideWith((ref) => demoUsp),
 
       // 5. SSE Bootstrap: No-op (no SSE in demo)
       sseBootstrapProvider.overrideWith((ref) async {}),
@@ -52,9 +54,12 @@ class DemoProviders {
       // 7. USP Bridge Client: Null (no bridge in demo)
       uspBridgeClientProvider.overrideWith((ref) => null),
 
-      // 8. USP Auth Coordinator: Uses DemoUspService (always authenticated)
+      // 8. USP Auth Coordinator: Uses DemoUspClient (always authenticated)
       uspAuthCoordinatorProvider.overrideWith(
           (ref) => UspAuthCoordinator(demoUsp, const FlutterSecureStorage())),
+
+      // 9. Package Widget Loader: Use demo templates from assets
+      packageWidgetLoaderProvider.overrideWith(() => DemoPackageWidgetLoader()),
     ];
   }
 }

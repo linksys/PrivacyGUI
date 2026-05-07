@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
@@ -12,7 +14,7 @@ import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart'
 import 'package:privacy_gui/page/wifi_settings/services/wifi_channel_bonding.dart';
 
 final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
-  (ref) => UspWifiSettingsService(ref.read(uspServiceProvider)!),
+  (ref) => UspWifiSettingsService(ref.read(uspClientProvider)!),
 );
 
 /// Stateless service for transforming raw USP WiFi data into [WifiNetworkUIModel] list.
@@ -26,7 +28,7 @@ final uspWifiSettingsServiceProvider = Provider<UspWifiSettingsService>(
 ///   SSID.lowerLayers  → Radio instance path
 ///   AccessPoint.ssidReference → SSID instance path
 class UspWifiSettingsService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspWifiSettingsService(this._usp);
 
@@ -56,6 +58,28 @@ class UspWifiSettingsService {
         '${accessPoints.items.length} APs, '
         '${radios.items.length} radios');
 
+    // ── Guest detection: per-radio instance ordering ─────────────
+    // Group SSIDs by their radio (LowerLayers). Within each radio
+    // group, sort by SSID instance index. The lowest-index SSID per
+    // radio is Main; all subsequent are Guest. This mirrors the
+    // Linksys firmware convention (wl{n}_user_vap / wl{n}_guest_vap)
+    // and works for dual-band, tri-band, and quad-band devices.
+    final guestSsidPaths = <String>{};
+    {
+      final ssidsByRadio = <String, List<WiFiSsid>>{};
+      for (final ssid in ssids.items) {
+        final radioKey = _ensureTrailingDot(ssid.lowerLayers);
+        (ssidsByRadio[radioKey] ??= []).add(ssid);
+      }
+      for (final group in ssidsByRadio.values) {
+        group.sort((a, b) => _ssidInstanceIndex(a.instancePath)
+            .compareTo(_ssidInstanceIndex(b.instancePath)));
+        for (final ssid in group.skip(1)) {
+          guestSsidPaths.add(_ensureTrailingDot(ssid.instancePath));
+        }
+      }
+    }
+
     final networks = <WifiNetworkUIModel>[];
     for (final ssid in ssids.items) {
       final ssidPath = _ensureTrailingDot(ssid.instancePath);
@@ -71,9 +95,7 @@ class UspWifiSettingsService {
           'AP=${ap?.instancePath ?? "none"}, '
           'radio=${radio?.operatingFrequencyBand ?? "none"}');
 
-      // TODO(vendor-ext): Replace with Device.WiFi.SSID.{i}.X_LINKSYS_COM_IsGuest
-      //   once firmware support is confirmed.
-      final isGuest = ssid.ssid.toLowerCase().contains('guest');
+      final isGuest = guestSsidPaths.contains(ssidPath);
 
       // Parse Security.ModesSupported comma-separated string into a list.
       // e.g. "None, WPA2-Personal, WPA3-Personal" → ['None', 'WPA2-Personal', 'WPA3-Personal']
@@ -134,15 +156,19 @@ class UspWifiSettingsService {
     final mainNetworks = networks.where((n) => !n.isGuest).toList();
     final guestNetworks = networks.where((n) => n.isGuest).toList();
 
-    final bool isQuickSetup;
-    if (mainNetworks.isEmpty) {
-      isQuickSetup = true;
-    } else {
-      final first = mainNetworks.first;
-      isQuickSetup = mainNetworks.every(
+    // Quick Setup requires all networks (main AND guest) to share the same
+    // enabled state and SSID within their group. If any group is inconsistent,
+    // the aggregated view would be misleading — fall back to Advanced mode.
+    bool isConsistent(List<WifiNetworkUIModel> nets) {
+      if (nets.isEmpty) return true;
+      final first = nets.first;
+      return nets.every(
         (n) => n.enabled == first.enabled && n.ssid == first.ssid,
       );
     }
+
+    final isQuickSetup =
+        isConsistent(mainNetworks) && isConsistent(guestNetworks);
 
     return (
       main: mainNetworks.isEmpty
@@ -188,56 +214,142 @@ class UspWifiSettingsService {
   // ---------------------------------------------------------------------------
 
   /// Saves WiFi settings in Quick Setup mode.
+  ///
+  /// Writes are gated by field-level diff against [original] so that firmware
+  /// only receives the parameters the user actually changed:
+  ///   - SSID update is issued only when ssid name or enabled flag changed.
+  ///   - AP update is issued only when password or securityMode changed.
+  ///
+  /// This prevents `KeyPassphrase (Invalid value)` errors from firmware when
+  /// the user toggles Guest enable without (re-)entering a passphrase.
   Future<void> saveQuickSetup({
+    required WifiSettingsSettings original,
     required WifiSettingsSettings current,
     required WifiSettingsStatus status,
   }) async {
-    for (final pending in [current.quickSetupMain, current.quickSetupGuest]) {
-      if (pending == null || !pending.isValid) continue;
+    try {
+      final groups = [
+        (
+          pending: current.quickSetupMain,
+          orig: original.quickSetupMain,
+          isGuest: false,
+        ),
+        (
+          pending: current.quickSetupGuest,
+          orig: original.quickSetupGuest,
+          isGuest: true,
+        ),
+      ];
 
-      final aggregate = pending.isGuest
-          ? status.quickSetupGuestAggregate
-          : status.quickSetupMainAggregate;
-      if (aggregate == null) continue;
+      for (final group in groups) {
+        final pending = group.pending;
+        if (pending == null) continue;
+        final orig = group.orig;
 
-      if (aggregate.ssidInstancePaths.isNotEmpty) {
-        await WiFiSsids.updateMany(
-          _usp,
-          aggregate.ssidInstancePaths
-              .map((p) => WiFiSsidUpdate(
-                    instancePath: p,
-                    ssid: pending.ssid,
-                    enable: pending.enabled,
-                  ))
-              .toList(),
-        );
-      }
-      if (aggregate.apInstancePaths.isNotEmpty) {
-        // Build a band lookup: AP instance path → band string.
-        // Used to apply the 6 GHz security override (Wi-Fi 6E mandates WPA3).
-        final bandByApPath = <String, String>{};
-        for (final n in current.networks) {
-          if (n.accessPointInstancePath != null) {
-            bandByApPath[n.accessPointInstancePath!] = n.band;
+        final aggregate = group.isGuest
+            ? status.quickSetupGuestAggregate
+            : status.quickSetupMainAggregate;
+        if (aggregate == null) continue;
+
+        // ── SSID layer — only when ssid name or enabled changed ────────────
+        final ssidChanged = orig == null || orig.ssid != pending.ssid;
+        final enabledChanged = orig == null || orig.enabled != pending.enabled;
+        if (aggregate.ssidInstancePaths.isNotEmpty &&
+            (ssidChanged || enabledChanged)) {
+          if (ssidChanged) {
+            if (pending.ssid.isEmpty) {
+              throw InvalidInputError(message: 'SSID name cannot be empty');
+            }
+            if (pending.ssid.length > 32) {
+              throw InvalidInputError(
+                  message: 'SSID name cannot exceed 32 characters');
+            }
+          }
+          for (final p in aggregate.ssidInstancePaths) {
+            final result = await WiFiSsids.update(_usp, [
+              WiFiSsidUpdate(
+                instancePath: p,
+                ssid: pending.ssid,
+                enable: pending.enabled,
+              ),
+            ]);
+            final parsed = UspResultParser.parseSetResult(result);
+            switch (parsed) {
+              case UspSuccess():
+                break;
+              case UspPartialSuccess(failures: final f):
+                throw UspPartialFailureError(
+                  summary:
+                      'WiFi SSID update partial failure: ${f.first.errorMessage}',
+                  successPaths: [],
+                  failedPaths: f.map((e) => e.requestedPath).toList(),
+                );
+              case UspFailure(errors: final e):
+                throw UspCompleteFailureError(
+                  summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
+                  failedPaths: e.map((e) => e.requestedPath).toList(),
+                );
+            }
           }
         }
 
-        await WiFiAccessPoints.updateMany(
-          _usp,
-          aggregate.apInstancePaths.map((p) {
+        // ── AP layer — only when password or securityMode changed ──────────
+        final passwordChanged =
+            orig == null || orig.password != pending.password;
+        final modeChanged =
+            orig == null || orig.securityMode != pending.securityMode;
+        if (aggregate.apInstancePaths.isNotEmpty &&
+            (passwordChanged || modeChanged)) {
+          // Build a band lookup: AP instance path → band string.
+          // Used to apply the 6 GHz security override (Wi-Fi 6E mandates WPA3).
+          final bandByApPath = <String, String>{
+            for (final n in current.networks)
+              if (n.accessPointInstancePath != null)
+                n.accessPointInstancePath!: n.band,
+          };
+
+          for (final p in aggregate.apInstancePaths) {
             final band = bandByApPath[p] ?? '';
             final securityMode = _securityModeFor6GHz(
               band: band,
               selectedMode: pending.securityMode,
             );
-            return WiFiAccessPointUpdate(
-              instancePath: p,
-              keyPassphrase: pending.password,
-              securityModeEnabled: securityMode,
+            final result = await WiFiAccessPoints.update(
+              _usp,
+              [
+                WiFiAccessPointUpdate(
+                  instancePath: p,
+                  // Omit an empty passphrase (e.g. when only securityMode
+                  // changed to an open mode) so firmware does not reject it.
+                  keyPassphrase:
+                      pending.password.isNotEmpty ? pending.password : null,
+                  securityModeEnabled: securityMode,
+                )
+              ],
             );
-          }).toList(),
-        );
+            final parsed = UspResultParser.parseSetResult(result);
+            switch (parsed) {
+              case UspSuccess():
+                break;
+              case UspPartialSuccess(failures: final f):
+                throw UspPartialFailureError(
+                  summary:
+                      'WiFi AP update partial failure: ${f.first.errorMessage}',
+                  successPaths: [],
+                  failedPaths: f.map((e) => e.requestedPath).toList(),
+                );
+              case UspFailure(errors: final e):
+                throw UspCompleteFailureError(
+                  summary: 'WiFi AP update failed: ${e.first.errorMessage}',
+                  failedPaths: e.map((e) => e.requestedPath).toList(),
+                );
+            }
+          }
+        }
       }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
     }
   }
 
@@ -250,69 +362,206 @@ class UspWifiSettingsService {
     required List<WifiNetworkUIModel> original,
     required List<WifiNetworkUIModel> current,
   }) async {
-    for (var i = 0; i < current.length; i++) {
-      final curr = current[i];
-      final orig = original.length > i ? original[i] : null;
+    try {
+      for (var i = 0; i < current.length; i++) {
+        final curr = current[i];
+        final orig = original.length > i ? original[i] : null;
 
-      // Skip unchanged networks.
-      if (orig != null && orig == curr) continue;
+        // Skip unchanged networks.
+        if (orig != null && orig == curr) continue;
 
-      // ── SSID layer ─────────────────────────────────────────────────────
-      if (orig == null ||
-          orig.enabled != curr.enabled ||
-          orig.ssid != curr.ssid) {
-        await WiFiSsids.update(
-          _usp,
-          WiFiSsidUpdate(
-            instancePath: curr.ssidInstancePath,
-            enable: curr.enabled,
-            ssid: curr.ssid,
-          ),
-        );
+        // ── SSID layer ─────────────────────────────────────────────────────
+        if (orig == null ||
+            orig.enabled != curr.enabled ||
+            orig.ssid != curr.ssid) {
+          final result = await WiFiSsids.update(
+            _usp,
+            [
+              WiFiSsidUpdate(
+                instancePath: curr.ssidInstancePath,
+                enable: curr.enabled,
+                ssid: curr.ssid,
+              )
+            ],
+          );
+          final parsed = UspResultParser.parseSetResult(result);
+          switch (parsed) {
+            case UspSuccess():
+              break;
+            case UspPartialSuccess(failures: final f):
+              throw UspPartialFailureError(
+                summary:
+                    'WiFi SSID update partial failure: ${f.first.errorMessage}',
+                successPaths: [],
+                failedPaths: f.map((e) => e.requestedPath).toList(),
+              );
+            case UspFailure(errors: final e):
+              throw UspCompleteFailureError(
+                summary: 'WiFi SSID update failed: ${e.first.errorMessage}',
+                failedPaths: e.map((e) => e.requestedPath).toList(),
+              );
+          }
+        }
+
+        // ── AccessPoint layer ───────────────────────────────────────────────
+        final ap = curr.accessPointInstancePath;
+        if (ap != null &&
+            (orig == null ||
+                orig.keyPassphrase != curr.keyPassphrase ||
+                orig.securityMode != curr.securityMode ||
+                orig.ssidAdvertisementEnabled !=
+                    curr.ssidAdvertisementEnabled)) {
+          final result = await WiFiAccessPoints.update(
+            _usp,
+            [
+              WiFiAccessPointUpdate(
+                instancePath: ap,
+                keyPassphrase:
+                    curr.keyPassphrase.isNotEmpty ? curr.keyPassphrase : null,
+                securityModeEnabled:
+                    curr.securityMode.isNotEmpty ? curr.securityMode : null,
+                ssidAdvertisementEnabled: curr.ssidAdvertisementEnabled,
+              )
+            ],
+          );
+          final parsed = UspResultParser.parseSetResult(result);
+          switch (parsed) {
+            case UspSuccess():
+              break;
+            case UspPartialSuccess(failures: final f):
+              throw UspPartialFailureError(
+                summary:
+                    'WiFi AP update partial failure: ${f.first.errorMessage}',
+                successPaths: [],
+                failedPaths: f.map((e) => e.requestedPath).toList(),
+              );
+            case UspFailure(errors: final e):
+              throw UspCompleteFailureError(
+                summary: 'WiFi AP update failed: ${e.first.errorMessage}',
+                failedPaths: e.map((e) => e.requestedPath).toList(),
+              );
+          }
+        }
+
+        // ── Radio layer ─────────────────────────────────────────────────────
+        final radio = curr.radioInstancePath;
+        if (radio != null &&
+            (orig == null ||
+                orig.operatingStandards != curr.operatingStandards ||
+                orig.channelBandwidth != curr.channelBandwidth ||
+                orig.channel != curr.channel ||
+                orig.autoChannelEnable != curr.autoChannelEnable)) {
+          final result = await WiFiRadios.update(
+            _usp,
+            [
+              WiFiRadioUpdate(
+                instancePath: radio,
+                operatingStandards: curr.operatingStandards.isNotEmpty
+                    ? curr.operatingStandards
+                    : null,
+                operatingChannelBandwidth: curr.channelBandwidth.isNotEmpty
+                    ? curr.channelBandwidth
+                    : null,
+                autoChannelEnable: curr.autoChannelEnable,
+                channel: curr.autoChannelEnable ? null : curr.channel,
+              )
+            ],
+          );
+          final parsed = UspResultParser.parseSetResult(result);
+          switch (parsed) {
+            case UspSuccess():
+              break;
+            case UspPartialSuccess(failures: final f):
+              throw UspPartialFailureError(
+                summary:
+                    'WiFi Radio update partial failure: ${f.first.errorMessage}',
+                successPaths: [],
+                failedPaths: f.map((e) => e.requestedPath).toList(),
+              );
+            case UspFailure(errors: final e):
+              throw UspCompleteFailureError(
+                summary: 'WiFi Radio update failed: ${e.first.errorMessage}',
+                failedPaths: e.map((e) => e.requestedPath).toList(),
+              );
+          }
+        }
       }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
 
-      // ── AccessPoint layer ───────────────────────────────────────────────
-      final ap = curr.accessPointInstancePath;
-      if (ap != null &&
-          (orig == null ||
-              orig.keyPassphrase != curr.keyPassphrase ||
-              orig.securityMode != curr.securityMode ||
-              orig.ssidAdvertisementEnabled != curr.ssidAdvertisementEnabled)) {
-        await WiFiAccessPoints.update(
-          _usp,
-          WiFiAccessPointUpdate(
-            instancePath: ap,
-            keyPassphrase:
-                curr.keyPassphrase.isNotEmpty ? curr.keyPassphrase : null,
-            securityModeEnabled:
-                curr.securityMode.isNotEmpty ? curr.securityMode : null,
-            ssidAdvertisementEnabled: curr.ssidAdvertisementEnabled,
-          ),
-        );
+  // ---------------------------------------------------------------------------
+  // Mutations — WiFi Radio quick actions (from Dashboard cards)
+  // ---------------------------------------------------------------------------
+
+  /// Toggles a WiFi radio on or off.
+  Future<void> toggleRadio(String instancePath, bool enable) async {
+    try {
+      final result = await WiFiRadios.update(
+        _usp,
+        [WiFiRadioUpdate(instancePath: instancePath, enable: enable)],
+      );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          throw UspPartialFailureError(
+            summary: 'Toggle radio partial failure: ${f.first.errorMessage}',
+            successPaths: [],
+            failedPaths: f.map((e) => e.requestedPath).toList(),
+          );
+        case UspFailure(errors: final e):
+          throw UspCompleteFailureError(
+            summary: 'Toggle radio failed: ${e.first.errorMessage}',
+            failedPaths: e.map((e) => e.requestedPath).toList(),
+          );
       }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
 
-      // ── Radio layer ─────────────────────────────────────────────────────
-      final radio = curr.radioInstancePath;
-      if (radio != null &&
-          (orig == null ||
-              orig.operatingStandards != curr.operatingStandards ||
-              orig.channelBandwidth != curr.channelBandwidth ||
-              orig.channel != curr.channel ||
-              orig.autoChannelEnable != curr.autoChannelEnable)) {
-        await WiFiRadios.update(
-          _usp,
+  /// Updates a WiFi radio's channel and auto-channel setting.
+  Future<void> updateRadioChannel(
+    String instancePath, {
+    required int channel,
+    required bool autoChannel,
+  }) async {
+    try {
+      final result = await WiFiRadios.update(
+        _usp,
+        [
           WiFiRadioUpdate(
-            instancePath: radio,
-            operatingStandards: curr.operatingStandards.isNotEmpty
-                ? curr.operatingStandards
-                : null,
-            operatingChannelBandwidth:
-                curr.channelBandwidth.isNotEmpty ? curr.channelBandwidth : null,
-            autoChannelEnable: curr.autoChannelEnable,
-            channel: curr.autoChannelEnable ? null : curr.channel,
-          ),
-        );
+            instancePath: instancePath,
+            channel: channel,
+            autoChannelEnable: autoChannel,
+          )
+        ],
+      );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(failures: final f):
+          throw UspPartialFailureError(
+            summary:
+                'Update radio channel partial failure: ${f.first.errorMessage}',
+            successPaths: [],
+            failedPaths: f.map((e) => e.requestedPath).toList(),
+          );
+        case UspFailure(errors: final e):
+          throw UspCompleteFailureError(
+            summary: 'Update radio channel failed: ${e.first.errorMessage}',
+            failedPaths: e.map((e) => e.requestedPath).toList(),
+          );
       }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
     }
   }
 
@@ -394,4 +643,16 @@ String _normalizeBand(String rawBand) {
   if (lower.contains('5g') || lower.contains('5 g')) return '5GHz';
   if (lower.contains('2.4') || lower.contains('2_4')) return '2.4GHz';
   return rawBand;
+}
+
+/// Extracts the numeric instance index from a TR-181 SSID path.
+/// e.g. "Device.WiFi.SSID.3." → 3
+int _ssidInstanceIndex(String instancePath) {
+  final match = RegExp(r'Device\.WiFi\.SSID\.(\d+)').firstMatch(instancePath);
+  if (match == null) {
+    logger.w('[USP][WiFi] Unexpected SSID path format: $instancePath — '
+        'defaulting to index 0 (Main)');
+    return 0;
+  }
+  return int.parse(match.group(1)!);
 }

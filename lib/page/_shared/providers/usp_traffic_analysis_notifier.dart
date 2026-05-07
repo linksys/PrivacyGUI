@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/generated/multi_interface_traffic_stats.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
 import 'package:privacy_gui/page/_shared/models/traffic_analysis_state.dart';
+import 'package:privacy_gui/page/_shared/services/usp_traffic_analysis_service.dart';
+import 'package:privacy_gui/page/dashboard/providers/dashboard_domain_ready_provider.dart';
 
 /// Multi-interface traffic analysis provider — compares WAN vs LAN traffic
 /// with timer-based polling. NOT autoDispose so history persists across tab
@@ -23,8 +23,14 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
       _timer?.cancel();
       _timer = null;
     });
+
     const defaultInterval = Duration(seconds: 5);
-    Future.microtask(() => setRefreshInterval(defaultInterval));
+    ref.listen(dashboardDomainReadyProvider, (_, next) {
+      if (next is AsyncData) {
+        setRefreshInterval(defaultInterval);
+      }
+    });
+
     return const TrafficAnalysisState(
       refreshInterval: defaultInterval,
     );
@@ -49,36 +55,13 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
   Future<void> fetchNow() => _fetchAndAppend();
 
   Future<void> _fetchAndAppend() async {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null || !usp.isAuthenticated) return;
+    final svc = ref.read(uspTrafficAnalysisServiceProvider);
+    if (svc == null || !svc.isAuthenticated) return;
 
     state = state.copyWith(isFetching: true);
     try {
-      final stats = await MultiInterfaceTrafficStats.fetch(usp);
+      final currentBaselines = await svc.fetchBaselines();
       final now = DateTime.now();
-
-      final currentBaselines = {
-        TrafficInterface.wan: InterfaceBaseline(
-          bytesSent: stats.wanBytesSent,
-          bytesReceived: stats.wanBytesReceived,
-          packetsSent: stats.wanPacketsSent,
-          packetsReceived: stats.wanPacketsReceived,
-          errorsSent: stats.wanErrorsSent,
-          errorsReceived: stats.wanErrorsReceived,
-          discardsSent: stats.wanDiscardPacketsSent,
-          discardsReceived: stats.wanDiscardPacketsReceived,
-        ),
-        TrafficInterface.lan: InterfaceBaseline(
-          bytesSent: stats.lanBytesSent,
-          bytesReceived: stats.lanBytesReceived,
-          packetsSent: stats.lanPacketsSent,
-          packetsReceived: stats.lanPacketsReceived,
-          errorsSent: stats.lanErrorsSent,
-          errorsReceived: stats.lanErrorsReceived,
-          discardsSent: stats.lanDiscardPacketsSent,
-          discardsReceived: stats.lanDiscardPacketsReceived,
-        ),
-      };
 
       // First fetch: set baseline only, no rate to compute yet
       if (state.lastBaselines == null || state.lastTimestamp == null) {
@@ -105,8 +88,6 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
               current: currentBaselines[iface]!,
               previous: state.lastBaselines![iface]!,
               seconds: seconds,
-              stats: stats,
-              iface: iface,
             ),
         },
       );
@@ -127,16 +108,11 @@ class UspTrafficAnalysisNotifier extends Notifier<TrafficAnalysisState> {
     required InterfaceBaseline current,
     required InterfaceBaseline previous,
     required double seconds,
-    required MultiInterfaceTrafficStats stats,
-    required TrafficInterface iface,
   }) {
-    // Counter wraparound protection: negative delta → treat as 0
     final deltaSent = current.bytesSent - previous.bytesSent;
     final deltaRecv = current.bytesReceived - previous.bytesReceived;
     final deltaPktSent = current.packetsSent - previous.packetsSent;
     final deltaPktRecv = current.packetsReceived - previous.packetsReceived;
-
-    // Error/discard deltas
     final deltaErrSent = current.errorsSent - previous.errorsSent;
     final deltaErrRecv = current.errorsReceived - previous.errorsReceived;
     final deltaDiscSent = current.discardsSent - previous.discardsSent;

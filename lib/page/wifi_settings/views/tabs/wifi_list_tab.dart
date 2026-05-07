@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_provider.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_network_card.dart';
 import 'package:privacy_gui/page/wifi_settings/views/components/wifi_quick_setup_card.dart';
 import 'package:ui_kit_library/ui_kit.dart';
@@ -55,8 +56,6 @@ class UspWifiListTab extends ConsumerWidget {
     }
 
     final quickSetupEnabled = state.settings.current.quickSetupEnabled;
-    final canSave = state.canSave;
-    final isSaving = state.status.isSaving;
 
     // Responsive column count
     final columnCount = context.isDesktopLargeLayout
@@ -69,64 +68,55 @@ class UspWifiListTab extends ConsumerWidget {
     final fixedWidth = context.colWidth(span);
     final gutter = context.layoutGutter;
 
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Quick Setup toggle card ──────────────────────────────
+          AppCard(
+            child: Row(
               children: [
-                // ── Quick Setup toggle card ──────────────────────────────
-                AppCard(
-                  child: Row(
+                AppIcon.font(
+                  Icons.bolt_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                AppGap.md(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      AppIcon.font(
-                        Icons.bolt_outlined,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      AppGap.md(),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AppText.labelLarge('Quick Setup'),
-                            AppGap.xs(),
-                            AppText.bodySmall(
-                              'Apply the same WiFi settings to all bands at once',
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                          ],
-                        ),
-                      ),
-                      AppSwitch(
-                        value: quickSetupEnabled,
-                        onChanged: (v) => ref
-                            .read(uspWifiSettingsProvider.notifier)
-                            .setQuickSetupEnabled(v),
+                      AppText.labelLarge('Quick Setup'),
+                      AppGap.xs(),
+                      AppText.bodySmall(
+                        'Apply the same WiFi settings to all bands at once',
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ],
                   ),
                 ),
-                AppGap.lg(),
-                // ── Quick Setup mode: Main + Guest cards ─────────────────
-                if (quickSetupEnabled)
-                  _buildQuickSetupGrid(context, columnCount, fixedWidth, gutter)
-                // ── Normal mode: per-band grid ───────────────────────────
-                else
-                  _buildAdvancedGrid(
-                      context, state, columnCount, fixedWidth, gutter),
+                AppSwitch(
+                  value: quickSetupEnabled,
+                  onChanged: (v) => ref
+                      .read(uspWifiSettingsProvider.notifier)
+                      .setQuickSetupEnabled(v),
+                ),
               ],
             ),
           ),
-        ),
-        // ── Page-level Save button ───────────────────────────────────────
-        if (quickSetupEnabled || state.isDirty || isSaving)
-          _buildSaveBar(context, ref, canSave, isSaving),
-      ],
+          AppGap.lg(),
+          // ── Quick Setup mode: Main + Guest cards ─────────────────
+          if (quickSetupEnabled) ...[
+            _buildQuickSetupNotice(context),
+            AppGap.md(),
+            _buildQuickSetupGrid(context, columnCount, fixedWidth, gutter),
+          ]
+          // ── Normal mode: per-band grid ───────────────────────────
+          else
+            _buildAdvancedGrid(context, state, columnCount, fixedWidth, gutter),
+        ],
+      ),
     );
   }
 
@@ -162,9 +152,37 @@ class UspWifiListTab extends ConsumerWidget {
     );
   }
 
+  Widget _buildQuickSetupNotice(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return AppSurface(
+      variant: SurfaceVariant.tonal,
+      borderRadius: AppRadius.md,
+      showBorder: false,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon.font(
+            AppFontIcons.infoCircle,
+            color: colorScheme.onSurfaceVariant,
+            size: 18,
+          ),
+          AppGap.sm(),
+          Expanded(
+            child: AppText.bodySmall(
+              'Quick Setup applies the same name, password, and security '
+              'mode to all bands. A password is required to save.',
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAdvancedGrid(
     BuildContext context,
-    dynamic state,
+    UspWifiSettingsState state,
     int columnCount,
     double fixedWidth,
     double gutter,
@@ -175,32 +193,49 @@ class UspWifiListTab extends ConsumerWidget {
       return idx < 0 ? 99 : idx;
     }
 
-    final sorted = [...state.settings.current.networks]..sort((a, b) {
-        if (a.isGuest != b.isGuest) return a.isGuest ? 1 : -1;
-        return bandRank(a.band).compareTo(bandRank(b.band));
-      });
+    final networks = state.settings.current.networks;
+    final mainNets = networks.where((n) => !n.isGuest).toList()
+      ..sort((a, b) => bandRank(a.band).compareTo(bandRank(b.band)));
+    final guestNets = networks.where((n) => n.isGuest).toList()
+      ..sort((a, b) => bandRank(a.band).compareTo(bandRank(b.band)));
 
-    final rows = <TableRow>[];
-    for (var i = 0; i < sorted.length; i += columnCount) {
-      final chunk = sorted.skip(i).take(columnCount).toList();
-      final cells = <Widget>[];
-      for (var j = 0; j < columnCount; j++) {
-        if (j < chunk.length) {
-          cells.add(WifiNetworkCard(
-            ssidInstancePath: chunk[j].ssidInstancePath,
-            lastInRow: j == columnCount - 1,
-          ));
-        } else {
-          cells.add(const SizedBox.shrink());
-        }
+    // Build a map from band to guest network for pairing
+    final guestByBand = {for (final g in guestNets) g.band: g};
+
+    // Build columns: each band is a column with Main on top, Guest below
+    // Use Expanded so all columns share equal width regardless of count
+    final columns = <Widget>[];
+
+    for (var i = 0; i < mainNets.length; i++) {
+      final main = mainNets[i];
+      final guest = guestByBand[main.band];
+      final lastInRow = i == mainNets.length - 1;
+
+      final columnChildren = <Widget>[
+        WifiNetworkCard(
+          ssidInstancePath: main.ssidInstancePath,
+          lastInRow: true,
+        ),
+      ];
+
+      if (guest != null) {
+        columnChildren.add(WifiNetworkCard(
+          ssidInstancePath: guest.ssidInstancePath,
+          lastInRow: true,
+        ));
       }
-      rows.add(TableRow(children: cells));
+
+      columns.add(Expanded(
+        child: Padding(
+          padding: EdgeInsets.only(right: lastInRow ? 0 : gutter),
+          child: Column(children: columnChildren),
+        ),
+      ));
     }
 
-    return Table(
-      defaultVerticalAlignment: TableCellVerticalAlignment.intrinsicHeight,
-      columnWidths: _columnWidths(columnCount, fixedWidth, gutter),
-      children: rows,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: columns,
     );
   }
 
@@ -211,57 +246,6 @@ class UspWifiListTab extends ConsumerWidget {
         (e) => e == count - 1
             ? MapEntry(e, FixedColumnWidth(fixedWidth))
             : MapEntry(e, FixedColumnWidth(fixedWidth + gutter)),
-      ),
-    );
-  }
-
-  Widget _buildSaveBar(
-    BuildContext context,
-    WidgetRef ref,
-    bool canSave,
-    bool isSaving,
-  ) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: context.layoutMargin,
-        vertical: AppSpacing.md,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
-        ),
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        child: AppButton.primary(
-          label: 'Save',
-          isLoading: isSaving,
-          onTap: (canSave && !isSaving)
-              ? () async {
-                  try {
-                    await ref.read(uspWifiSettingsProvider.notifier).save();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Settings saved'),
-                        ),
-                      );
-                    }
-                  } catch (_) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Failed to save settings'),
-                        ),
-                      );
-                    }
-                  }
-                }
-              : null,
-        ),
       ),
     );
   }

@@ -1,9 +1,12 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:privacy_gui/constants/pref_key.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
 /// Coordinates USP authentication alongside JNAP authentication.
 ///
@@ -15,15 +18,37 @@ import 'package:privacy_gui/core/usp/services/usp_service.dart';
 /// - [syncAfterLocalLogin]: Auto-login USP after successful JNAP local login
 /// - [syncAfterLogout]: Logout USP when JNAP logs out
 /// - [restoreSession]: Re-authenticate USP using stored password on page reload
+/// - [ensureAuth]: Proactive token refresh triggered by SSE heartbeat
 ///
 /// USP login failure never blocks JNAP operations — [ProtocolResolver] falls
 /// back to JNAP when `isAuthenticated` is false.
 class UspAuthCoordinator {
-  final UspService? _usp;
+  final UspClient? _usp;
   final FlutterSecureStorage _storage;
 
+  DateTime? _lastTokenRefresh;
+  Completer<void>? _refreshInProgress;
+
+  /// Called when proactive refresh gets 401 — session externally terminated.
+  VoidCallback? onForceLogout;
+
+  /// Proactive refresh threshold. Must be less than JWT TTL (15 min).
+  /// At 12 min, the worst-case margin is ~2:30 (heartbeat at 12:29 + refresh).
+  static const Duration _refreshThreshold = Duration(minutes: 12);
+
+  // Matches WASM error format "Transport error: HTTP error: HTTP 401"
+  // and simplified format "HTTP 401 Unauthorized". Avoids false positives
+  // on non-401 status codes (e.g., "HTTP 500").
+  static final _authErrorPattern = RegExp(r'HTTP (?:error: HTTP )?401');
+  static bool _isAuthError(Object error) {
+    return _authErrorPattern.hasMatch(error.toString());
+  }
+
   UspAuthCoordinator(this._usp, this._storage) {
-    _usp?.onReauthRequired = () => restoreSession();
+    _usp?.onReauthRequired = () => _forceRestoreSession();
+    _usp?.onRefreshTokenSuccess = () {
+      _lastTokenRefresh = DateTime.now();
+    };
   }
 
   /// Called after JNAP localLogin succeeds — auto-sync USP authentication.
@@ -31,6 +56,7 @@ class UspAuthCoordinator {
     if (_usp == null) return;
     try {
       await _usp.login(password);
+      _lastTokenRefresh = DateTime.now();
       logger.d('[USP][Auth]USP login synced successfully');
     } catch (e) {
       // USP login failure does not affect JNAP — ProtocolResolver
@@ -41,6 +67,7 @@ class UspAuthCoordinator {
 
   /// Called during JNAP logout — sync logout USP.
   Future<void> syncAfterLogout() async {
+    _lastTokenRefresh = null;
     if (_usp == null || !_usp.isAuthenticated) return;
     try {
       await _usp.logout();
@@ -56,24 +83,47 @@ class UspAuthCoordinator {
   /// stored password from FlutterSecureStorage and re-authenticates USP.
   Future<void> restoreSession() async {
     if (_usp == null) {
-      logger.w('[USP][Auth]restoreSession skipped: UspService is null');
+      logger.w('[USP][Auth]restoreSession skipped: UspClient is null');
       return;
     }
     if (_usp.isAuthenticated) {
       logger.d('[USP][Auth]restoreSession skipped: already authenticated');
       return;
     }
+    await _loginWithStoredPassword();
+  }
+
+  /// Force restore session — bypasses [isAuthenticated] guard.
+  ///
+  /// Used as [UspClient.onReauthRequired] callback. After a 401, the WASM
+  /// client may still report isAuthenticated=true (token exists in memory
+  /// but is expired/revoked). This method skips the guard and attempts
+  /// re-login unconditionally.
+  Future<void> _forceRestoreSession() async {
+    if (_usp == null) {
+      logger.w('[USP][Auth]forceRestoreSession skipped: UspClient is null');
+      return;
+    }
+    await _loginWithStoredPassword();
+  }
+
+  /// Shared login logic — reads stored password and calls [UspClient.login].
+  /// Returns true if login succeeded, false otherwise. Never throws.
+  Future<bool> _loginWithStoredPassword() async {
     final password = await _storage.read(key: pLocalPassword);
     if (password == null || password.isEmpty) {
       logger.w('[USP][Auth]restoreSession skipped: no stored password');
-      return;
+      return false;
     }
     try {
-      await _usp.login(password);
+      await _usp!.login(password);
+      _lastTokenRefresh = DateTime.now();
       logger.d(
           '[USP][Auth]restoreSession login done, isAuthenticated=${_usp.isAuthenticated}');
+      return true;
     } catch (e) {
       logger.w('[USP][Auth]restoreSession login failed: $e');
+      return false;
     }
   }
 
@@ -83,13 +133,14 @@ class UspAuthCoordinator {
   /// Returns true if USP login succeeds and is authenticated.
   Future<bool> tryUspLogin(String password) async {
     if (_usp == null) {
-      logger.w('[USP][Auth]tryUspLogin skipped: UspService is null');
+      logger.w('[USP][Auth]tryUspLogin skipped: UspClient is null');
       return false;
     }
     try {
       await _usp.login(password);
       final authenticated = _usp.isAuthenticated;
       if (authenticated) {
+        _lastTokenRefresh = DateTime.now();
         logger.d('[USP][Auth]USP standalone login succeeded');
       }
       return authenticated;
@@ -99,21 +150,50 @@ class UspAuthCoordinator {
     }
   }
 
-  /// Called periodically (e.g., every polling cycle) to keep USP token alive.
+  /// Proactive token refresh — called on every SSE heartbeat (~30s).
+  ///
+  /// Strategy: Only refreshes when elapsed time ≥ [_refreshThreshold] (12 min)
+  /// to avoid unnecessary network calls. On 401, triggers force logout instead
+  /// of attempting [restoreSession], because:
+  /// - SSE heartbeat arriving means the connection is live
+  /// - A 401 on proactive refresh means the session was externally terminated
+  ///   (e.g., SSH killed the session on the router)
+  /// - Force logout is cleaner than silent re-login in this scenario
+  ///
+  /// Network errors are silently skipped — the next heartbeat will retry.
   Future<void> ensureAuth() async {
     if (_usp == null || !_usp.isAuthenticated) return;
+    if (_usp.isReauthInProgress) return;
+    if (_refreshInProgress != null) return;
+
+    final last = _lastTokenRefresh;
+    if (last != null && DateTime.now().difference(last) < _refreshThreshold) {
+      return;
+    }
+
+    _refreshInProgress = Completer<void>();
     try {
       await _usp.refreshToken();
+      _lastTokenRefresh = DateTime.now();
+      logger.d('[USP][Auth]Proactive token refresh succeeded');
     } catch (e) {
-      logger.w('[USP][Auth]USP token refresh failed, attempting restore: $e');
-      await restoreSession();
+      if (_isAuthError(e)) {
+        _lastTokenRefresh = null; // Allow immediate retry if logout is delayed
+        logger.w('[USP][Auth]Proactive refresh got 401 — forcing logout: $e');
+        onForceLogout?.call();
+      } else {
+        logger.w(
+            '[USP][Auth]Proactive refresh failed (non-auth, will retry): $e');
+      }
+    } finally {
+      _refreshInProgress = null;
     }
   }
 }
 
 final uspAuthCoordinatorProvider = Provider<UspAuthCoordinator>((ref) {
   return UspAuthCoordinator(
-    ref.watch(uspServiceProvider),
+    ref.watch(uspClientProvider),
     const FlutterSecureStorage(),
   );
 });

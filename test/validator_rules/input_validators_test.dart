@@ -1171,26 +1171,40 @@ void main() {
         runInvalidTestCases(testCases, 'loopback');
       });
 
-      // Link-local addresses (fe80::/10)
-      group('link-local addresses (fe80::/10)', () {
+      // Link-local addresses (fe80::/10) — allowed for LAN port service targets
+      group('link-local addresses (fe80::/10) - should be accepted', () {
         final testCases = [
           'fe80::1',
           'fe80::1234:5678',
           'fe80:0000:0000:0000:0000:0000:0000:0001',
           'febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of fe80::/10
         ];
-        runInvalidTestCases(testCases, 'link-local');
+        for (var address in testCases) {
+          test('should accept link-local address: $address', () {
+            final rule = IPv6WithReservedRule();
+            expect(rule.validate(address), isTrue,
+                reason:
+                    'Expected $address to be accepted as a valid link-local address');
+          });
+        }
       });
 
-      // Unique Local Addresses (fc00::/7)
-      group('unique local addresses (fc00::/7)', () {
+      // Unique Local Addresses (fc00::/7) — allowed for private networks
+      group('unique local addresses (fc00::/7) - should be accepted', () {
         final testCases = [
           'fc00::1',
           'fd00::1',
           'fd12:3456:789a:1::1',
           'fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // End of fd00::/8
         ];
-        runInvalidTestCases(testCases, 'ULA');
+        for (var address in testCases) {
+          test('should accept ULA address: $address', () {
+            final rule = IPv6WithReservedRule();
+            expect(rule.validate(address), isTrue,
+                reason:
+                    'Expected $address to be accepted as a valid ULA address');
+          });
+        }
       });
 
       // Multicast addresses (ff00::/8)

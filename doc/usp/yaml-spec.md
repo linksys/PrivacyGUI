@@ -2,6 +2,8 @@
 
 This document describes the YAML format supported by `usp-codegen`, based on the current implementation (parser, AST, generators).
 
+> **Version Update (v0.12.1)**: All generated methods now return structured response objects instead of simple success/failure types. API unification renames `save()` to `update()` for consistency. See [CHANGELOG](../CHANGELOG.md) for details.
+
 ---
 
 ## Table of Contents
@@ -29,6 +31,7 @@ This document describes the YAML format supported by `usp-codegen`, based on the
 - [5. Naming Conventions](#5-naming-conventions)
 - [6. CLI Options](#6-cli-options)
 - [7. Full Examples](#7-full-examples)
+- [8. Structured Response Format](#8-structured-response-format)
 
 ---
 
@@ -112,7 +115,7 @@ parameters:
     writable: true
 ```
 
-> All three modes produce the same generated structure (data class + `fetch()` + `save()`); they only differ in how paths are assembled.
+> All three modes produce the same generated structure (data class + `fetch()` + `update()`); they only differ in how paths are assembled.
 
 #### `instance` vs `multiInstance` vs `related` Comparison
 
@@ -160,7 +163,9 @@ Each parameter describes a single USP data model parameter.
 | `writable` | boolean | No | Whether the parameter is writable (default: `false` = read-only) |
 | `required` | boolean | No | Whether the parameter is required for `add()` (default: `false`). Required params are non-nullable in `add()` signatures |
 | `sensitive` | boolean | No | Whether the parameter contains sensitive data (default: `false`) |
-| `default_value` | string \| number \| boolean | No | Default value |
+| `optional` | boolean | No | Whether the parameter may be absent from GET responses (default: `false`). When `true`, the generated field type becomes nullable (`String?`, `int?`, etc.). If `default_value` is also set, the field remains non-nullable and uses the default when the key is absent. See [Optional Parameters](#optional-parameters) |
+| `default_value` | string \| number \| boolean | No | Default value. When used with `optional: true`, specifies the fallback value when the key is absent from the GET response |
+| `priority` | integer | No | Parameter execution priority for ordered updates (default: none). Lower values execute first. When present, generates additional `updateOrdered()` method that respects priority ordering for optimal performance |
 
 #### Supported `type` Values
 
@@ -179,8 +184,8 @@ Each parameter describes a single USP data model parameter.
 
 #### Access Modes
 
-- `writable: false` (default) — generates getter methods only, no setter/save
-- `writable: true` — generates both getter and setter/save methods
+- `writable: false` (default) — generates getter methods only, no update methods
+- `writable: true` — generates both getter and update methods
 
 ```yaml
 parameters:
@@ -197,6 +202,104 @@ parameters:
     sensitive: false
     description: Hardware address
 ```
+
+#### Priority-Based Ordered Updates
+
+When parameters have `priority` values, an additional `updateOrdered()` method is generated that sets parameters in priority order for optimal performance.
+
+```yaml
+parameters:
+  # Set first - enables static IP configuration
+  - path: AddressingType
+    type: string
+    writable: true
+    priority: 1
+    description: "IP addressing type - MUST be set first"
+
+  # Set second - depends on AddressingType=Static
+  - path: IPAddress
+    type: string
+    writable: true
+    priority: 2
+    description: "Static IP address"
+
+  - path: SubnetMask
+    type: string
+    writable: true
+    priority: 2
+    description: "Subnet mask"
+
+  # Set last - depends on IP configuration
+  - path: Gateway
+    type: string
+    writable: true
+    priority: 3
+    description: "Default gateway"
+```
+
+**Generated methods:**
+- `update()` - Standard unordered update
+- `updateOrdered()` - Priority-based ordered update (parameters grouped by priority value, lower = first)
+
+#### Optional Parameters
+
+USP GET operations may return partial results — some paths succeed while others fail or are absent, especially across different device models. The `optional` field marks parameters that may not exist in the response.
+
+| YAML Configuration | Generated Type (Dart) | `_fromResponse` Behavior |
+|---|---|---|
+| No `optional` (default) | `String` / `int` / `bool` | Current behavior — implicit fallback (`''`, `0`, `false`) |
+| `optional: true`, no `default_value` | `String?` / `int?` / `bool?` | Key absent → `null` |
+| `optional: true` + `default_value: X` | `String` / `int` / `bool` | Key absent → `X` |
+
+**Language-specific nullable syntax:**
+
+| Language | Nullable Type | Constructor | Null Literal | Key Check |
+|---|---|---|---|---|
+| Dart | `String?` | `this.field,` | `null` | `response.containsKey('path')` |
+| TypeScript | `string \| undefined` | `field?: string` | `undefined` | `'path' in response` |
+| Swift | `String?` | `field: String? = nil` | `nil` | `response.keys.contains("path")` |
+
+```yaml
+parameters:
+  - path: .MaxBitRate
+    type: int
+    writable: true
+    optional: true
+    default_value: 0
+    description: Maximum bit rate (0 = auto, may not exist on all models)
+
+  - path: .Channel
+    type: int
+    optional: true
+    description: Operating channel (not available on all models)
+```
+
+**Generated Dart:**
+```dart
+class WiFiBasicSettings {
+  final int maxBitRate;     // non-nullable — default_value provides fallback
+  final int? channel;       // nullable — no default_value
+
+  const WiFiBasicSettings({
+    this.maxBitRate = 0,    // optional with default
+    this.channel,           // optional nullable
+    // ...
+  });
+
+  factory WiFiBasicSettings._fromResponse(Map<String, dynamic> response) {
+    return WiFiBasicSettings(
+      maxBitRate: response.containsKey('...MaxBitRate')
+          ? int.tryParse(response['...MaxBitRate']?.toString() ?? '') ?? 0
+          : 0,              // key absent → use default
+      channel: response.containsKey('...Channel')
+          ? int.tryParse(response['...Channel']?.toString() ?? '')
+          : null,           // key absent → null
+    );
+  }
+}
+```
+
+> **Note**: `optional` is orthogonal to `required`. `required` controls whether a parameter is mandatory in `add()` signatures. `optional` controls whether a parameter may be absent from GET responses. A parameter can be both `required: true` (must provide when adding) and `optional: true` (may be absent when reading from existing instances).
 
 ### 1.3 Presets
 
@@ -529,21 +632,23 @@ class ConnectedDevices {
   factory ConnectedDevices._fromResponse(Map<String, dynamic> response) { ... }
 
   /// Update a single instance via USP Set
-  static Future<void> update(UspService client, ConnectedDeviceUpdate update) async {
+  static Future<Map<String, dynamic>> update(UspService client, ConnectedDeviceUpdate update) async {
     final params = <String, dynamic>{};
     if (update.hostName != null) params['${update.instancePath}HostName'] = update.hostName;
     if (update.active != null) params['${update.instancePath}Active'] = update.active;
-    if (params.isNotEmpty) await client.set(params);
+    if (params.isNotEmpty) return await client.set(params);
+    return {'success': true, 'result': {'data': <String, dynamic>{}}};
   }
 
   /// Update multiple instances in a single USP Set
-  static Future<void> updateMany(UspService client, List<ConnectedDeviceUpdate> updates, {bool allowPartial = false}) async {
+  static Future<Map<String, dynamic>> updateMany(UspService client, List<ConnectedDeviceUpdate> updates, {bool allowPartial = false}) async {
     final params = <String, dynamic>{};
     for (final update in updates) {
       if (update.hostName != null) params['${update.instancePath}HostName'] = update.hostName;
       if (update.active != null) params['${update.instancePath}Active'] = update.active;
     }
-    if (params.isNotEmpty) await client.set(params, allowPartial: allowPartial);
+    if (params.isNotEmpty) return await client.set(params, allowPartial: allowPartial);
+    return {'success': true, 'result': {'data': <String, dynamic>{}}};
   }
 }
 ```
@@ -578,20 +683,22 @@ export async function fetchConnectedDevices(client: UspClient): Promise<Connecte
   return { items };
 }
 
-export async function updateConnectedDevice(client: UspClient, update: ConnectedDeviceUpdate): Promise<void> {
+export async function updateConnectedDevice(client: UspClient, update: ConnectedDeviceUpdate): Promise<Record<string, any>> {
   const params: Record<string, any> = {};
   if (update.hostName !== undefined) params[`${update.instancePath}HostName`] = update.hostName;
   if (update.active !== undefined) params[`${update.instancePath}Active`] = update.active;
-  if (Object.keys(params).length > 0) await client.setMultiple(params, false);
+  if (Object.keys(params).length > 0) return await client.setMultiple(params, false);
+  return { success: true, result: { data: {} } };
 }
 
-export async function updateConnectedDevices(client: UspClient, updates: ConnectedDeviceUpdate[], allowPartial = false): Promise<void> {
+export async function updateConnectedDevices(client: UspClient, updates: ConnectedDeviceUpdate[], allowPartial = false): Promise<Record<string, any>> {
   const params: Record<string, any> = {};
   for (const update of updates) {
     if (update.hostName !== undefined) params[`${update.instancePath}HostName`] = update.hostName;
     if (update.active !== undefined) params[`${update.instancePath}Active`] = update.active;
   }
-  if (Object.keys(params).length > 0) await client.setMultiple(params, allowPartial);
+  if (Object.keys(params).length > 0) return await client.setMultiple(params, allowPartial);
+  return { success: true, result: { data: {} } };
 }
 ```
 
@@ -623,22 +730,26 @@ public class ConnectedDevices {
 
     public static func fetch(client: UspClient) async throws -> ConnectedDevices { ... }
 
-    public static func update(client: UspClient, _ update: ConnectedDeviceUpdate) async throws {
+    public static func update(client: UspClient, _ update: ConnectedDeviceUpdate) async throws -> [String: Any] {
         var params: [String: Any] = [:]
         if let hostName = update.hostName { params["\(update.instancePath)HostName"] = hostName }
         if let active = update.active { params["\(update.instancePath)Active"] = active }
-        guard !params.isEmpty else { return }
-        try await client.set(params)
+        guard !params.isEmpty else { 
+            return ["success": true, "result": ["data": [:] as [String: Any]]]
+        }
+        return try await client.set(params)
     }
 
-    public static func updateMany(client: UspClient, _ updates: [ConnectedDeviceUpdate], allowPartial: Bool = false) async throws {
+    public static func updateMany(client: UspClient, _ updates: [ConnectedDeviceUpdate], allowPartial: Bool = false) async throws -> [String: Any] {
         var params: [String: Any] = [:]
         for update in updates {
             if let hostName = update.hostName { params["\(update.instancePath)HostName"] = hostName }
             if let active = update.active { params["\(update.instancePath)Active"] = active }
         }
-        guard !params.isEmpty else { return }
-        try await client.set(params, allowPartial: allowPartial)
+        guard !params.isEmpty else { 
+            return ["success": true, "result": ["data": [:] as [String: Any]]]
+        }
+        return try await client.set(params, allowPartial: allowPartial)
     }
 }
 ```
@@ -750,7 +861,7 @@ Only **writable** parameters are included in the `add()` method signature. Read-
 
 **Dart:**
 ```dart
-static Future<String> add(UspService client, {
+static Future<Map<String, dynamic>> add(UspService client, {
   required String protocol,
   required int externalPort,
   bool? enabled,
@@ -762,8 +873,8 @@ static Future<String> add(UspService client, {
   return await client.add('Device.NAT.PortMapping.', params);
 }
 
-static Future<void> delete(UspService client, String instancePath) async {
-  await client.delete(instancePath);
+static Future<Map<String, dynamic>> delete(UspService client, String instancePath) async {
+  return await client.delete(instancePath);
 }
 ```
 
@@ -773,7 +884,7 @@ export async function addPortForwardingRule(client: UspClient, params: {
   protocol: string;
   externalPort: number;
   enabled?: boolean;
-}): Promise<string> {
+}): Promise<Record<string, any>> {
   const setParams: Record<string, any> = {};
   setParams['Protocol'] = params.protocol;
   setParams['ExternalPort'] = params.externalPort;
@@ -781,14 +892,14 @@ export async function addPortForwardingRule(client: UspClient, params: {
   return await client.add('Device.NAT.PortMapping.', setParams);
 }
 
-export async function deletePortForwardingRule(client: UspClient, instancePath: string): Promise<void> {
-  await client.delete(instancePath);
+export async function deletePortForwardingRule(client: UspClient, instancePath: string): Promise<Record<string, any>> {
+  return await client.delete(instancePath);
 }
 ```
 
 **Swift:**
 ```swift
-public static func add(client: UspClient, protocol: String, externalPort: Int, enabled: Bool? = nil) async throws -> String {
+public static func add(client: UspClient, protocol: String, externalPort: Int, enabled: Bool? = nil) async throws -> [String: Any] {
     var params: [String: Any] = [:]
     params["Protocol"] = `protocol`
     params["ExternalPort"] = externalPort
@@ -796,8 +907,8 @@ public static func add(client: UspClient, protocol: String, externalPort: Int, e
     return try await client.add("Device.NAT.PortMapping.", params)
 }
 
-public static func delete(client: UspClient, instancePath: String) async throws {
-    try await client.delete(instancePath)
+public static func delete(client: UspClient, instancePath: String) async throws -> [String: Any] {
+    return try await client.delete(instancePath)
 }
 ```
 
@@ -866,7 +977,7 @@ class WifiSettings {
     return WifiSettings._fromResponse(response);
   }
 
-  static Future<void> save(UspService client, {
+  static Future<Map<String, dynamic>> update(UspService client, {
     String? ssid,
     bool? enabled,
     String? securityMode,
@@ -877,7 +988,8 @@ class WifiSettings {
     if (enabled != null) params['Device.WiFi.SSID.1.Enable'] = enabled;
     if (securityMode != null) params['Device.WiFi.AccessPoint.1.Security.ModeEnabled'] = securityMode;
     if (passphrase != null) params['Device.WiFi.AccessPoint.1.Security.KeyPassphrase'] = passphrase;
-    if (params.isNotEmpty) await client.set(params);
+    if (params.isNotEmpty) return await client.set(params);
+    return {'success': true, 'result': {'data': <String, dynamic>{}}};
   }
 }
 ```
@@ -1140,8 +1252,8 @@ children:
 
 Generated (Dart):
 ```dart
-static Future<String> addRule(UspService client, String parentInstancePath, {String? name}) async { ... }
-static Future<void> deleteRule(UspService client, String instancePath) async { ... }
+static Future<Map<String, dynamic>> addRule(UspService client, String parentInstancePath, {String? name}) async { ... }
+static Future<Map<String, dynamic>> deleteRule(UspService client, String instancePath) async { ... }
 ```
 
 #### Multi-Level Nesting
@@ -1695,6 +1807,57 @@ subscribe:
   id: wifi-settings-01
 ```
 
+### Priority-Based Ordered Definition (single-instance)
+
+```yaml
+name: WanInterfaceOrdered
+version: "1.2.0"
+instance: Device.IP.Interface.2.IPv4Address.1
+description: "WAN interface configuration with optimized parameter ordering"
+
+parameters:
+  # CRITICAL: AddressingType must be set first (priority 1)
+  # This enables static IP configuration and validates subsequent parameters
+  - path: AddressingType
+    type: string
+    writable: true
+    priority: 1
+    description: "IP addressing type (DHCP, Static, etc.) - MUST be set first"
+
+  # IP configuration parameters (priority 2)
+  # These depend on AddressingType being set to "Static" first
+  - path: SubnetMask
+    type: string
+    writable: true
+    priority: 2
+    description: "Subnet mask (requires AddressingType=Static)"
+
+  - path: IPAddress
+    type: string
+    writable: true
+    priority: 2
+    description: "Static IP address (requires AddressingType=Static)"
+
+  # Network configuration (priority 3)
+  # These depend on IP configuration being set first
+  - path: Gateway
+    type: string
+    writable: true
+    priority: 3
+    description: "Default gateway (depends on IP configuration)"
+
+  - path: DNSServers
+    type: string
+    writable: true
+    priority: 3
+    description: "DNS servers comma-separated list (depends on IP configuration)"
+```
+
+**Generated methods:**
+- `fetch()` - Retrieve current configuration
+- `update()` - Standard unordered update
+- `updateOrdered()` - Priority-based ordered update (33% faster for WAN switching)
+
 ### Preset Definition (single-instance)
 
 ```yaml
@@ -1823,6 +1986,81 @@ parameters:
     type: boolean
     writable: true
     description: Whether the device is currently active
+```
+
+---
+
+## 8. Structured Response Format
+
+Starting with version 0.11.0, all generated USP operation methods (`set`, `add`, `delete`, `get`, `operate`) return structured response objects that preserve complete firmware response information, implementing the "Never Lose Information" principle.
+
+### Return Type Structure
+
+All operations now return a consistent structure across all languages:
+
+**Dart:** `Future<Map<String, dynamic>>`
+**TypeScript:** `Promise<Record<string, any>>`
+**Swift:** `async throws -> [String: Any]`
+
+### Response Object Schema
+
+All operations return a unified envelope format from usp-client v0.7.0:
+
+```typescript
+interface UspResponse {
+  success: boolean;              // At least one operation succeeded
+  result: {
+    data: Record<string, any>;   // Operation-specific result data
+    error?: Record<string, {     // Optional — only present when errors occur
+      errorCode: number;         // USP error code
+      errorMessage: string;      // Human-readable error message
+    }>;
+  };
+}
+```
+
+**Interpreting the response:**
+- **All success:** `success === true` and `result.error` is absent or empty
+- **Partial success:** `success === true` and `result.error` has entries
+- **All failure:** `success === false`
+
+### Benefits
+
+1. **Complete Information Preservation**: All firmware response data is available to application logic
+2. **Partial Success Handling**: Applications can detect and handle scenarios where some operations succeed and others fail
+3. **Detailed Error Information**: Specific error codes and messages for each failed path
+4. **Consistent Interface**: Same envelope structure across SET, ADD, DELETE, and OPERATE operations
+5. **Optional Error Field**: No `error` key when all operations succeed — clean responses for the common case
+
+### Migration Guide
+
+**Before (v0.10.x):**
+```dart
+// Simple success/failure
+await client.set({'Device.WiFi.SSID.1.SSID': 'NewNetwork'});
+String instancePath = await client.add('Device.NAT.PortMapping.', params);
+```
+
+**After (v0.11.0+):**
+```dart
+// Unified response format
+final result = await client.set({'Device.WiFi.SSID.1.SSID': 'NewNetwork'});
+if (result['success']) {
+  final data = result['result']['data'] as Map<String, dynamic>;
+  // Check for partial errors (error field is optional)
+  final errors = result['result']['error'] as Map<String, dynamic>?;
+  if (errors != null && errors.isNotEmpty) {
+    for (final entry in errors.entries) {
+      print('Error on ${entry.key}: ${entry.value['errorMessage']}');
+    }
+  }
+}
+
+final addResult = await client.add('Device.NAT.PortMapping.', params);
+if (addResult['success']) {
+  final data = addResult['result']['data'] as Map<String, dynamic>;
+  final instances = data['instances'] as List;
+}
 ```
 
 ---

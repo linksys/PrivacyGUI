@@ -6,17 +6,24 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
 
-import 'usp_service.dart';
+import 'usp_client.dart';
+
+/// Global JS property to persist SSE AbortController across hot restarts.
+@JS('_sseAbort')
+external JSAny? get _jsSseAbort;
+
+@JS('_sseAbort')
+external set _jsSseAbort(JSAny? value);
 
 /// HTTP/SSE client for usp-bridge endpoints that don't use protobuf.
 ///
-/// Uses the JWT session token from [UspService] for authentication.
+/// Uses the JWT session token from [UspClient] for authentication.
 /// Handles: Health, SSE Notifications, Subscription, Turbo Channel.
 ///
 /// All REST endpoints are wrapped with 401 retry logic that delegates
-/// re-authentication to [UspService.reauth].
+/// re-authentication to [UspClient.reauth].
 class UspBridgeClient {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspBridgeClient(this._usp);
 
@@ -45,7 +52,7 @@ class UspBridgeClient {
   // ══════════════════════════════════════════════════════════════════════════
 
   /// Wraps a REST request with 401 retry. On 401, delegates to
-  /// [UspService.reauth] (shared Completer lock) then retries once.
+  /// [UspClient.reauth] (shared Completer lock) then retries once.
   Future<T> _withAuthRetry<T>(
     Future<http.Response> Function() request,
     T Function(http.Response) parser,
@@ -86,6 +93,26 @@ class UspBridgeClient {
     _sseAbortController = null;
   }
 
+  /// Abort any SSE connection left over from a previous hot restart.
+  ///
+  /// Hot restart recreates Dart state but does NOT trigger `beforeunload`,
+  /// so the browser keeps the old Fetch SSE stream alive. We store the
+  /// AbortController on `window` so the new Dart isolate can abort it.
+  static void abortPreviousSession() {
+    try {
+      final prev = _jsSseAbort;
+      if (prev != null && prev is web.AbortController) {
+        prev.abort();
+      }
+    } catch (_) {}
+  }
+
+  void _storeSseAbortOnWindow() {
+    if (_sseAbortController != null) {
+      _jsSseAbort = _sseAbortController!;
+    }
+  }
+
   /// Opens an SSE connection to GET /api/v1/notifications.
   ///
   /// Browser-native EventSource does not support custom headers, so we use
@@ -94,7 +121,10 @@ class UspBridgeClient {
     final controller = StreamController<SseEvent>();
 
     controller.onListen = () {
+      // Abort any leftover SSE from window (covers rapid hot-restart sequences)
+      abortPreviousSession();
       _sseAbortController = web.AbortController();
+      _storeSseAbortOnWindow();
       _startSseStream(controller, _sseAbortController!);
     };
 

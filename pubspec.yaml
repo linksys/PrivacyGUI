@@ -15,7 +15,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 2.2.1+100000
+version: 2.4.0+100000
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -57,17 +57,17 @@ dependencies:
   url_launcher: ^6.1.5
   local_auth: ^2.1.7
   image: ^4.1.0
-  collection: ^1.18.0
+  collection: ^1.19.0
   flutter_secure_storage: ^9.2.2
 
   ui_kit_library:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.15.2
+      ref: v2.18.1
   generative_ui:
     git:
       url: https://github.com/linksys/privacyGUI-UI-kit.git
-      ref: v2.15.2
+      ref: v2.18.1
       path: generative_ui
   flutter_blue_plus: ^1.4.0
   crypto: ^3.0.2

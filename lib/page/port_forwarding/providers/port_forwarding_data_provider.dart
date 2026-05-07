@@ -2,13 +2,9 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/generated/port_forwarding.g.dart';
-import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
-import 'package:privacy_gui/page/_shared/services/usp_device_service.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
-import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/page/_shared/models/port_forwarding_rule_ui_model.dart';
+import 'package:privacy_gui/page/port_forwarding/services/usp_port_forwarding_data_service.dart';
 
 /// Shared data provider for Port Forwarding rules.
 ///
@@ -35,7 +31,6 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
 
   @override
   Future<PortForwardingData> build() async {
-    // SSE invalidation
     ref.listen(sseInvalidationProvider, (prev, next) {
       final domain = next.valueOrNull;
       if (domain == InvalidationDomain.portForwarding) {
@@ -50,95 +45,8 @@ class PortForwardingDataNotifier extends AsyncNotifier<PortForwardingData> {
   }
 
   Future<PortForwardingData> _fetch() async {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-    final codegen = await PortForwarding.fetch(usp);
-    final svc = ref.read(uspDeviceServiceProvider);
-    return PortForwardingData(
-      ruleModels: svc.buildPortForwardingRuleUIModels(codegen),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Mutations
-  // ---------------------------------------------------------------------------
-
-  Future<void> toggleRule(String instancePath, bool enabled) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      await PortForwarding.update(
-        usp,
-        PortForwardingRuleUpdate(instancePath: instancePath, enabled: enabled),
-      );
-      ref.invalidateSelf();
-    });
-  }
-
-  Future<void> addRule({
-    required int externalPort,
-    required int internalPort,
-    required String internalClient,
-    required String protocol,
-    String description = '',
-    bool enabled = true,
-    int externalPortEndRange = 0,
-  }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      await PortForwarding.add(
-        usp,
-        enabled: enabled,
-        externalPort: externalPort,
-        externalPortEndRange: externalPortEndRange,
-        internalPort: internalPort,
-        internalClient: internalClient,
-        protocol: protocol,
-        description: description,
-      );
-      ref.invalidateSelf();
-    });
-  }
-
-  Future<void> updateRule({
-    required String instancePath,
-    bool? enabled,
-    int? externalPort,
-    int? externalPortEndRange,
-    int? internalPort,
-    String? internalClient,
-    String? protocol,
-    String? description,
-  }) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      await PortForwarding.update(
-        usp,
-        PortForwardingRuleUpdate(
-          instancePath: instancePath,
-          enabled: enabled,
-          externalPort: externalPort,
-          externalPortEndRange: externalPortEndRange,
-          internalPort: internalPort,
-          internalClient: internalClient,
-          protocol: protocol,
-          description: description,
-        ),
-      );
-      ref.invalidateSelf();
-    });
-  }
-
-  Future<void> deleteRule(String instancePath) async {
-    await ref.read(uspMutationLockProvider).withLock(() async {
-      final usp = _usp;
-      await PortForwarding.delete(usp, instancePath);
-      ref.invalidateSelf();
-    });
-  }
-
-  UspService get _usp {
-    final usp = ref.read(uspServiceProvider);
-    if (usp == null) throw StateError('USP service not available');
-    return usp;
+    final svc = ref.read(uspPortForwardingDataServiceProvider);
+    final ruleModels = await svc.fetch();
+    return PortForwardingData(ruleModels: ruleModels);
   }
 }

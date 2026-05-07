@@ -5,7 +5,7 @@ import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/_shared/models/device_ui_model.dart';
 import 'package:privacy_gui/page/_shared/components/usp_mutation_helper.dart';
-import 'package:privacy_gui/page/local_network/providers/dhcp_data_provider.dart';
+import 'package:privacy_gui/page/dhcp/providers/usp_dhcp_reservations_notifier.dart';
 import 'package:privacy_gui/page/_shared/components/usp_status_dot.dart';
 import 'package:privacy_gui/page/devices/providers/device_detail_provider.dart';
 import 'package:privacy_gui/page/devices/views/components/usp_signal_strength_indicator.dart';
@@ -229,8 +229,8 @@ class UspDeviceDetailView extends ConsumerWidget {
       ref,
       loadingKey: 'dhcp',
       mutation: () => ref
-          .read(dhcpDataProvider.notifier)
-          .addReservation(mac: device.mac, ip: device.ip),
+          .read(uspDhcpReservationsProvider.notifier)
+          .immediateAdd(mac: device.mac, ip: device.ip),
       successMessage: 'IP address reserved',
     );
   }
@@ -242,8 +242,8 @@ class UspDeviceDetailView extends ConsumerWidget {
       ref,
       loadingKey: 'dhcp',
       mutation: () => ref
-          .read(dhcpDataProvider.notifier)
-          .deleteReservation(detail.reservation!.instancePath!),
+          .read(uspDhcpReservationsProvider.notifier)
+          .immediateDelete(detail.reservation!.instancePath!),
       successMessage: 'Reservation released',
     );
   }

@@ -1014,7 +1014,7 @@ class UspPdfService {
   // ===========================================================================
 
   static List<pw.Widget> _buildUspTrafficLog(List<pw.Font> fontFallback) {
-    final log = getWebLogByTag(tag: 'UspService');
+    final log = getWebLogByTag(tag: 'UspClient');
     if (log.trim().isEmpty) return [];
     final style = pw.TextStyle(fontSize: 7, fontFallback: fontFallback);
     final lines = log.split('\n');

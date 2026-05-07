@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/page/admin/providers/usp_admin_notifier.dart';
@@ -86,6 +87,7 @@ class UspAdminView extends ConsumerWidget {
       children: [
         UspTimezoneCard(
           timeSettings: state.timeSettings,
+          fetchedAt: state.timeFetchedAt,
           onEdit: () => _editTimezone(context, ref, state),
         ),
         AppGap.xl(),
@@ -157,28 +159,38 @@ class UspAdminView extends ConsumerWidget {
     );
     if (result == null || !context.mounted) return;
     try {
-      await ref.read(uspAdminProvider.notifier).updateTimezone(
-            localTimeZone: result.localTimeZone,
-            ntpServer1: result.ntpServer1,
-            ntpServer2: result.ntpServer2,
-          );
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspAdminProvider.notifier).updateTimezone(
+              localTimeZone: result.localTimeZone,
+              ntpServer1: result.ntpServer1,
+            ),
+      );
       if (context.mounted) showSuccessSnackBar(context, 'Timezone updated');
     } catch (e) {
       if (context.mounted) {
-        showFailedSnackBar(context, 'Failed to update timezone');
+        showFailedSnackBar(context, 'Failed to update timezone: $e');
       }
     }
   }
 
   Future<void> _changePassword(BuildContext context, WidgetRef ref) async {
-    final result = await showChangePasswordDialog(
-      context,
-      onSave: (newPassword) async {
-        await ref.read(uspAdminProvider.notifier).setAdminPassword(newPassword);
-      },
-    );
-    if (result == true && context.mounted) {
-      showSuccessSnackBar(context, 'Password updated');
+    try {
+      final result = await showChangePasswordDialog(
+        context,
+        onSave: (newPassword) async {
+          await ref
+              .read(uspAdminProvider.notifier)
+              .setAdminPassword(newPassword);
+        },
+      );
+      if (result == true && context.mounted) {
+        showSuccessSnackBar(context, 'Password updated');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showFailedSnackBar(context, 'Failed to update password: $e');
+      }
     }
   }
 
@@ -192,10 +204,13 @@ class UspAdminView extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
     try {
-      await ref.read(uspAdminProvider.notifier).reboot();
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspAdminProvider.notifier).reboot(),
+      );
       if (context.mounted) showSuccessSnackBar(context, 'Reboot command sent');
     } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Reboot failed');
+      if (context.mounted) showFailedSnackBar(context, 'Reboot failed: $e');
     }
   }
 
@@ -209,12 +224,17 @@ class UspAdminView extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
     try {
-      await ref.read(uspAdminProvider.notifier).factoryReset();
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspAdminProvider.notifier).factoryReset(),
+      );
       if (context.mounted) {
         showSuccessSnackBar(context, 'Factory reset command sent');
       }
     } catch (e) {
-      if (context.mounted) showFailedSnackBar(context, 'Factory reset failed');
+      if (context.mounted) {
+        showFailedSnackBar(context, 'Factory reset failed: $e');
+      }
     }
   }
 }

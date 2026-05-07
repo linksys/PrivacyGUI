@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
 import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
@@ -26,7 +28,7 @@ class UspIpv6PortServiceView extends ConsumerWidget {
         preferredSize: Size.fromHeight(64),
         child: UspTopBar(),
       ),
-      backFallback: RouteNamed.uspAdvancedSettings,
+      onBackTap: () => context.goNamed(RouteNamed.uspFirewall),
       onRefresh: () => ref
           .read(uspIpv6PortServiceProvider.notifier)
           .fetch(forceRemote: true),
@@ -258,7 +260,10 @@ class UspIpv6PortServiceView extends ConsumerWidget {
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(uspIpv6PortServiceProvider.notifier).save();
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspIpv6PortServiceProvider.notifier).save(),
+      );
       if (context.mounted) {
         showSuccessSnackBar(context, 'IPv6 port rules saved');
       }

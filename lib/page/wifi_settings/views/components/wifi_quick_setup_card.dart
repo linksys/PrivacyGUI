@@ -33,10 +33,19 @@ class WifiQuickSetupCard extends ConsumerWidget {
           ? s.settings.current.quickSetupGuest
           : s.settings.current.quickSetupMain),
     );
+    final original = ref.watch(
+      uspWifiSettingsProvider.select((s) => isGuest
+          ? s.settings.original.quickSetupGuest
+          : s.settings.original.quickSetupMain),
+    );
 
     if (pending == null) return const SizedBox.shrink();
 
     final passwordEntered = pending.password.isNotEmpty;
+    // Only show the red "(Required)" indicator when the upcoming Save will
+    // actually carry a passphrase write — otherwise the label would be a
+    // false alarm (Save can still succeed without any password entered).
+    final passwordRequired = pending.isPasswordRequired(original);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -69,18 +78,23 @@ class WifiQuickSetupCard extends ConsumerWidget {
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editSsid(context, ref, pending.ssid),
             ),
-            // ── Password — required indicator until entered ────────────────
-            const Divider(),
-            _QuickSetupTile(
-              title: 'Password',
-              description: passwordEntered ? '\u2022' * 12 : '(Required)',
-              descriptionColor:
-                  passwordEntered ? null : Theme.of(context).colorScheme.error,
-              trailing: const AppIcon.font(AppFontIcons.edit),
-              onTap: () => _editPassword(context, ref, pending.password),
-            ),
-            // ── Security mode ─────────────────────────────────────────────
+            // ── Password & Security mode — hidden together when the AP
+            //    has no supported security modes (e.g. Guest on firmware
+            //    that reports ModesSupported=''). Password is meaningless
+            //    for an open network, so showing it would be misleading.
             if (pending.supportedSecurityModes.isNotEmpty) ...[
+              const Divider(),
+              _QuickSetupTile(
+                title: 'Password',
+                description: passwordEntered
+                    ? '\u2022' * 12
+                    : (passwordRequired ? '(Required)' : '(Unchanged)'),
+                descriptionColor: (passwordRequired && !passwordEntered)
+                    ? Theme.of(context).colorScheme.error
+                    : null,
+                trailing: const AppIcon.font(AppFontIcons.edit),
+                onTap: () => _editPassword(context, ref, pending.password),
+              ),
               const Divider(),
               _QuickSetupTile(
                 title: 'Security mode',

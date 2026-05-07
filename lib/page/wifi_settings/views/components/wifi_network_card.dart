@@ -58,38 +58,52 @@ class WifiNetworkCard extends ConsumerWidget {
             _WifiTile(
               title: n.isGuest ? 'Guest' : 'Main',
               description: n.bandDisplayName,
-              trailing: AppSwitch(
-                value: n.enabled,
-                onChanged: (v) => ref
-                    .read(uspWifiSettingsProvider.notifier)
-                    .updateNetworkField(ssidInstancePath, enabled: v),
+              trailing: Semantics(
+                label: 'wifi-enable-${n.band}',
+                toggled: n.enabled,
+                enabled: true,
+                child: ExcludeSemantics(
+                  child: AppSwitch(
+                    value: n.enabled,
+                    onChanged: (v) => ref
+                        .read(uspWifiSettingsProvider.notifier)
+                        .updateNetworkField(ssidInstancePath, enabled: v),
+                  ),
+                ),
               ),
             ),
             // ── WiFi name ─────────────────────────────────────────────────
             const Divider(),
             _WifiTile(
+              semanticLabel: 'wifi-name-${n.band}',
               title: 'Name',
               description: n.ssid.isNotEmpty ? n.ssid : '(No SSID)',
               trailing: const AppIcon.font(AppFontIcons.edit),
               onTap: () => _editSsid(context, ref, n),
             ),
-            // ── WiFi password — bullet dots + pencil ──────────────────────
-            const Divider(),
-            _WifiTile(
-              title: 'Password',
-              description: '\u2022' * 12,
-              trailing: const AppIcon.font(AppFontIcons.edit),
-              onTap: () => _editPassword(context, ref, n),
-            ),
-            // ── Security mode (main networks only) ────────────────────────
-            if (!n.isGuest && n.supportedSecurityModes.isNotEmpty) ...[
+            // ── WiFi password & Security mode ────────────────────────────
+            // Hidden together when the network has no supported security modes
+            // (e.g. Guest on firmware that reports ModesSupported=''). Password
+            // is meaningless for an open network, so showing it would mislead.
+            // This mirrors the Quick Setup card's guard.
+            if (n.supportedSecurityModes.isNotEmpty) ...[
               const Divider(),
               _WifiTile(
-                title: 'Security mode',
-                description: n.securityMode,
+                title: 'Password',
+                description: '\u2022' * 12,
                 trailing: const AppIcon.font(AppFontIcons.edit),
-                onTap: () => _editSecurityMode(context, ref, n),
+                onTap: () => _editPassword(context, ref, n),
               ),
+              // Security mode — main networks only (guest is always open/None)
+              if (!n.isGuest) ...[
+                const Divider(),
+                _WifiTile(
+                  title: 'Security mode',
+                  description: n.securityMode,
+                  trailing: const AppIcon.font(AppFontIcons.edit),
+                  onTap: () => _editSecurityMode(context, ref, n),
+                ),
+              ],
             ],
             // ── WiFi Mode ──────────────────────────────────────────────────
             if (!n.isGuest && n.supportedStandards.isNotEmpty) ...[
@@ -110,14 +124,21 @@ class WifiNetworkCard extends ConsumerWidget {
               const Divider(),
               _WifiTile(
                 title: 'Broadcast SSID',
-                trailing: AppSwitch(
-                  value: n.ssidAdvertisementEnabled,
-                  onChanged: n.accessPointInstancePath != null
-                      ? (v) => ref
-                          .read(uspWifiSettingsProvider.notifier)
-                          .updateNetworkField(ssidInstancePath,
-                              broadcastSsid: v)
-                      : null,
+                trailing: Semantics(
+                  label: 'wifi-broadcast-${n.band}',
+                  toggled: n.ssidAdvertisementEnabled,
+                  enabled: n.accessPointInstancePath != null,
+                  child: ExcludeSemantics(
+                    child: AppSwitch(
+                      value: n.ssidAdvertisementEnabled,
+                      onChanged: n.accessPointInstancePath != null
+                          ? (v) => ref
+                              .read(uspWifiSettingsProvider.notifier)
+                              .updateNetworkField(ssidInstancePath,
+                                  broadcastSsid: v)
+                          : null,
+                    ),
+                  ),
                 ),
               ),
               const Divider(),
@@ -519,39 +540,44 @@ class _WifiTile extends StatelessWidget {
   final String? description;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final String? semanticLabel;
 
   const _WifiTile({
     required this.title,
     this.description,
     this.trailing,
     this.onTap,
+    this.semanticLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText.bodyMedium(title),
-                  if (description != null) ...[
-                    AppGap.xs(),
-                    AppText.labelLarge(description!),
+    return Semantics(
+      label: semanticLabel,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText.bodyMedium(title),
+                    if (description != null) ...[
+                      AppGap.xs(),
+                      AppText.labelLarge(description!),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            if (trailing != null) ...[
-              AppGap.md(),
-              trailing!,
+              if (trailing != null) ...[
+                AppGap.md(),
+                trailing!,
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

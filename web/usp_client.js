@@ -1,4 +1,3 @@
-
 /* @ts-self-types="./usp_client.d.ts" */
 
 /**
@@ -31,59 +30,32 @@ export class UspClient {
         wasm.__wbg_uspclient_free(ptr, 0);
     }
     /**
-     * Performs an Add operation to create a new object instance
+     * Performs an Add operation for single or multiple object instances (unified API)
      *
      * # Arguments
-     * * `object_path` - Object path ending with "." (e.g., "Device.NAT.PortMapping.")
-     * * `parameters` - JavaScript object with parameter name-value pairs for the new instance
+     * * `items` - Single object {path, params} or array of objects [{path, params}, ...]
+     * * `options` - Optional object with {allowPartial: boolean} (defaults to {allowPartial: false})
      *
      * # Returns
-     * * Promise that resolves to the created instance path (string)
+     * * Promise that resolves to structured result with detailed operation status
      *
-     * # Example (JavaScript)
+     * # Examples
      * ```javascript
-     * const instancePath = await client.add("Device.NAT.PortMapping.", {
-     *     "ExternalPort": "8080",
-     *     "InternalPort": "80",
-     *     "Protocol": "TCP"
-     * });
-     * console.log("Created:", instancePath); // "Device.NAT.PortMapping.3."
+     * // Single instance
+     * await client.add({path: "Device.NAT.PortMapping.", params: {"ExternalPort": "8080"}});
+     *
+     * // Multiple instances with partial mode
+     * await client.add([
+     *     {path: "Device.NAT.PortMapping.", params: {"ExternalPort": "8080"}},
+     *     {path: "Device.NAT.PortMapping.", params: {"ExternalPort": "8443"}}
+     * ], {allowPartial: true});
      * ```
-     * @param {string} object_path
-     * @param {any} parameters
+     * @param {any} items
+     * @param {any | null} [options]
      * @returns {Promise<any>}
      */
-    add(object_path, parameters) {
-        const ptr0 = passStringToWasm0(object_path, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.uspclient_add(this.__wbg_ptr, ptr0, len0, addHeapObject(parameters));
-        return takeObject(ret);
-    }
-    /**
-     * Performs an Add operation to create multiple object instances
-     *
-     * # Arguments
-     * * `objects` - Array of JavaScript objects, each with `path` (string) and `parameters` (object)
-     * * `allow_partial` - If true, allow partial success; if false, atomic mode
-     *
-     * # Returns
-     * * Promise that resolves to an array of created instance paths
-     *
-     * # Example (JavaScript)
-     * ```javascript
-     * const paths = await client.addMultiple([
-     *     { path: "Device.NAT.PortMapping.", parameters: { "ExternalPort": "8080" } },
-     *     { path: "Device.NAT.PortMapping.", parameters: { "ExternalPort": "8443" } }
-     * ], false);
-     * ```
-     * @param {any[]} objects
-     * @param {boolean} allow_partial
-     * @returns {Promise<any>}
-     */
-    addMultiple(objects, allow_partial) {
-        const ptr0 = passArrayJsValueToWasm0(objects, wasm.__wbindgen_export);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.uspclient_addMultiple(this.__wbg_ptr, ptr0, len0, allow_partial);
+    add(items, options) {
+        const ret = wasm.uspclient_add(this.__wbg_ptr, addHeapObject(items), isLikeNone(options) ? 0 : addHeapObject(options));
         return takeObject(ret);
     }
     /**
@@ -148,86 +120,56 @@ export class UspClient {
         }
     }
     /**
-     * Performs a Delete operation to remove an object instance
+     * Performs a Delete operation for single or multiple object instances (unified API)
      *
      * # Arguments
-     * * `path` - Object instance path to delete (e.g., "Device.NAT.PortMapping.3.")
+     * * `paths` - Single path (string) or array of paths to delete
+     * * `options` - Optional object with {allowPartial: boolean} (defaults to {allowPartial: false})
      *
      * # Returns
-     * * Promise that resolves on success, rejects on error
+     * * Promise that resolves to structured result with detailed operation status
      *
-     * # Example (JavaScript)
+     * # Examples
      * ```javascript
+     * // Single path
      * await client.delete("Device.NAT.PortMapping.3.");
-     * ```
-     * @param {string} path
-     * @returns {Promise<any>}
-     */
-    delete(path) {
-        const ptr0 = passStringToWasm0(path, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.uspclient_delete(this.__wbg_ptr, ptr0, len0);
-        return takeObject(ret);
-    }
-    /**
-     * Performs a Delete operation to remove multiple object instances
      *
-     * # Arguments
-     * * `paths` - Array of object instance paths to delete
-     * * `allow_partial` - If true, allow partial success; if false, atomic mode
-     *
-     * # Returns
-     * * Promise that resolves on success, rejects on error
-     *
-     * # Example (JavaScript)
-     * ```javascript
-     * await client.deleteMultiple([
+     * // Multiple paths with partial mode
+     * await client.delete([
      *     "Device.NAT.PortMapping.3.",
      *     "Device.NAT.PortMapping.4."
-     * ], false);
+     * ], {allowPartial: true});
      * ```
-     * @param {any[]} paths
-     * @param {boolean} allow_partial
+     * @param {any} paths
+     * @param {any | null} [options]
      * @returns {Promise<any>}
      */
-    deleteMultiple(paths, allow_partial) {
-        const ptr0 = passArrayJsValueToWasm0(paths, wasm.__wbindgen_export);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.uspclient_deleteMultiple(this.__wbg_ptr, ptr0, len0, allow_partial);
+    delete(paths, options) {
+        const ret = wasm.uspclient_delete(this.__wbg_ptr, addHeapObject(paths), isLikeNone(options) ? 0 : addHeapObject(options));
         return takeObject(ret);
     }
     /**
-     * Performs a Get operation to retrieve a single parameter value
+     * Performs a Get operation for single or multiple parameters (unified API)
      *
      * # Arguments
-     * * `path` - Parameter path (e.g., "Device.DeviceInfo.Manufacturer")
-     *
-     * # Returns
-     * * Promise that resolves to the parameter value string
-     * @param {string} path
-     * @returns {Promise<any>}
-     */
-    get(path) {
-        const ptr0 = passStringToWasm0(path, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.uspclient_get(this.__wbg_ptr, ptr0, len0);
-        return takeObject(ret);
-    }
-    /**
-     * Performs a Get operation for multiple parameters
-     *
-     * # Arguments
-     * * `paths` - Array of parameter paths
+     * * `paths` - Single parameter path (string) or array of parameter paths
      *
      * # Returns
      * * Promise that resolves to JavaScript object with path-value pairs
-     * @param {any[]} paths
+     *
+     * # Examples
+     * ```javascript
+     * // Single path
+     * await client.get("Device.DeviceInfo.Manufacturer");
+     *
+     * // Multiple paths
+     * await client.get(["Device.DeviceInfo.Manufacturer", "Device.WiFi.SSID.1.SSID"]);
+     * ```
+     * @param {any} paths
      * @returns {Promise<any>}
      */
-    getMultiple(paths) {
-        const ptr0 = passArrayJsValueToWasm0(paths, wasm.__wbindgen_export);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.uspclient_getMultiple(this.__wbg_ptr, ptr0, len0);
+    get(paths) {
+        const ret = wasm.uspclient_get(this.__wbg_ptr, addHeapObject(paths));
         return takeObject(ret);
     }
     /**
@@ -435,41 +377,69 @@ export class UspClient {
         return takeObject(ret);
     }
     /**
-     * Performs a Set operation to update a single parameter
-     *
-     * # Arguments
-     * * `path` - Parameter path
-     * * `value` - New value
-     *
-     * # Returns
-     * * Promise that resolves on success, rejects on error
-     * @param {string} path
-     * @param {string} value
-     * @returns {Promise<any>}
-     */
-    set(path, value) {
-        const ptr0 = passStringToWasm0(path, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(value, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.uspclient_set(this.__wbg_ptr, ptr0, len0, ptr1, len1);
-        return takeObject(ret);
-    }
-    /**
-     * Performs a Set operation for multiple parameters
+     * Performs a Set operation for single or multiple parameters (unified API)
      *
      * # Arguments
      * * `parameters` - JavaScript object with path-value pairs
-     * * `allow_partial` - If true, allow partial success; if false, atomic mode
+     * * `options` - Optional object with {allowPartial: boolean} (defaults to {allowPartial: false})
      *
      * # Returns
-     * * Promise that resolves on success, rejects on error
+     * * Promise that resolves to structured result with detailed operation status
+     *
+     * # Examples
+     * ```javascript
+     * // Single parameter
+     * await client.set({"Device.WiFi.SSID.1.SSID": "NewNetwork"});
+     *
+     * // Multiple parameters with partial mode
+     * await client.set({
+     *     "Device.WiFi.SSID.1.SSID": "NewNetwork",
+     *     "Device.WiFi.Radio.1.Channel": "6"
+     * }, {allowPartial: true});
+     * ```
      * @param {any} parameters
+     * @param {any | null} [options]
+     * @returns {Promise<any>}
+     */
+    set(parameters, options) {
+        const ret = wasm.uspclient_set(this.__wbg_ptr, addHeapObject(parameters), isLikeNone(options) ? 0 : addHeapObject(options));
+        return takeObject(ret);
+    }
+    /**
+     * Performs a grouped ordered Set operation preserving priority-based parameter sequence
+     *
+     * Parameters are organized into priority groups. Within each group, parameters
+     * sharing the same object path are merged into a single USP UpdateObject.
+     * Groups are sent in order, preserving the priority-based execution sequence.
+     *
+     * # Arguments
+     * * `groups_array` - JavaScript array of arrays: `[[{path, value}, ...], ...]`
+     * * `allow_partial` - If true, allows partial success
+     *
+     * # Returns
+     * * Promise that resolves to structured result with detailed operation status
+     *
+     * # Example (JavaScript)
+     * ```javascript
+     * const result = await client.setOrdered([
+     *     [
+     *       { path: "Device.WiFi.Radio.1.Enable", value: "false" }
+     *     ],
+     *     [
+     *       { path: "Device.WiFi.SSID.1.SSID", value: "NewNetwork" },
+     *       { path: "Device.WiFi.SSID.1.Enable", value: "true" }
+     *     ],
+     *     [
+     *       { path: "Device.WiFi.Radio.1.Enable", value: "true" }
+     *     ]
+     * ], true);
+     * ```
+     * @param {any} groups_array
      * @param {boolean} allow_partial
      * @returns {Promise<any>}
      */
-    setMultiple(parameters, allow_partial) {
-        const ret = wasm.uspclient_setMultiple(this.__wbg_ptr, addHeapObject(parameters), allow_partial);
+    setOrdered(groups_array, allow_partial) {
+        const ret = wasm.uspclient_setOrdered(this.__wbg_ptr, addHeapObject(groups_array), allow_partial);
         return takeObject(ret);
     }
     /**
@@ -541,6 +511,11 @@ export function init() {
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
+        __wbg___wbindgen_boolean_get_bbbb1c18aa2f5e25: function(arg0) {
+            const v = getObject(arg0);
+            const ret = typeof(v) === 'boolean' ? v : undefined;
+            return isLikeNone(ret) ? 0xFFFFFF : ret ? 1 : 0;
+        },
         __wbg___wbindgen_debug_string_0bc8482c6e3508ae: function(arg0, arg1) {
             const ret = debugString(getObject(arg1));
             const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_export, wasm.__wbindgen_export2);
@@ -559,6 +534,10 @@ function __wbg_get_imports() {
         __wbg___wbindgen_is_object_5ae8e5880f2c1fbd: function(arg0) {
             const val = getObject(arg0);
             const ret = typeof(val) === 'object' && val !== null;
+            return ret;
+        },
+        __wbg___wbindgen_is_string_cd444516edc5b180: function(arg0) {
+            const ret = typeof(getObject(arg0)) === 'string';
             return ret;
         },
         __wbg___wbindgen_is_undefined_9e4d92534c42d778: function(arg0) {
@@ -620,6 +599,10 @@ function __wbg_get_imports() {
             const ret = fetch(getObject(arg0));
             return addHeapObject(ret);
         },
+        __wbg_from_bddd64e7d5ff6941: function(arg0) {
+            const ret = Array.from(getObject(arg0));
+            return addHeapObject(ret);
+        },
         __wbg_getRandomValues_9c5c1b115e142bb8: function() { return handleError(function (arg0, arg1) {
             globalThis.crypto.getRandomValues(getArrayU8FromWasm0(arg0, arg1));
         }, arguments); },
@@ -639,6 +622,16 @@ function __wbg_get_imports() {
             const ret = getObject(arg0).headers;
             return addHeapObject(ret);
         },
+        __wbg_instanceof_Object_1c6af87502b733ed: function(arg0) {
+            let result;
+            try {
+                result = getObject(arg0) instanceof Object;
+            } catch (_) {
+                result = false;
+            }
+            const ret = result;
+            return ret;
+        },
         __wbg_instanceof_Response_ee1d54d79ae41977: function(arg0) {
             let result;
             try {
@@ -647,6 +640,10 @@ function __wbg_get_imports() {
                 result = false;
             }
             const ret = result;
+            return ret;
+        },
+        __wbg_isArray_d314bb98fcf08331: function(arg0) {
+            const ret = Array.isArray(getObject(arg0));
             return ret;
         },
         __wbg_iterator_6ff6560ca1568e55: function() {
@@ -688,7 +685,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_2137(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_2218(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -837,11 +834,16 @@ function __wbg_get_imports() {
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { dtor_idx: 155, function: Function { arguments: [Externref], shim_idx: 156, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1275, __wasm_bindgen_func_elem_1290);
+            // Cast intrinsic for `Closure(Closure { dtor_idx: 143, function: Function { arguments: [Externref], shim_idx: 144, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, wasm.__wasm_bindgen_func_elem_1354, __wasm_bindgen_func_elem_1369);
             return addHeapObject(ret);
         },
-        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
+        __wbindgen_cast_0000000000000002: function(arg0) {
+            // Cast intrinsic for `F64 -> Externref`.
+            const ret = arg0;
+            return addHeapObject(ret);
+        },
+        __wbindgen_cast_0000000000000003: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return addHeapObject(ret);
@@ -853,6 +855,10 @@ function __wbg_get_imports() {
         __wbindgen_object_drop_ref: function(arg0) {
             takeObject(arg0);
         },
+        __wbindgen_object_is_undefined: function(arg0) {
+            const ret = getObject(arg0) === undefined;
+            return ret;
+        },
     };
     return {
         __proto__: null,
@@ -860,12 +866,12 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_1290(arg0, arg1, arg2) {
-    wasm.__wasm_bindgen_func_elem_1290(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1369(arg0, arg1, arg2) {
+    wasm.__wasm_bindgen_func_elem_1369(arg0, arg1, addHeapObject(arg2));
 }
 
-function __wasm_bindgen_func_elem_2137(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_2137(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_2218(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_2218(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 
@@ -1032,16 +1038,6 @@ function makeMutClosure(arg0, arg1, dtor, f) {
     };
     CLOSURE_DTORS.register(real, state, state);
     return real;
-}
-
-function passArrayJsValueToWasm0(array, malloc) {
-    const ptr = malloc(array.length * 4, 4) >>> 0;
-    const mem = getDataViewMemory0();
-    for (let i = 0; i < array.length; i++) {
-        mem.setUint32(ptr + 4 * i, addHeapObject(array[i]), true);
-    }
-    WASM_VECTOR_LEN = array.length;
-    return ptr;
 }
 
 function passStringToWasm0(arg, malloc, realloc) {

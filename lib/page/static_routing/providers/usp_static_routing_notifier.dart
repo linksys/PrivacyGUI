@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -71,7 +72,7 @@ class UspStaticRoutingNotifier
         StaticRouteList(routes: routes),
         const StaticRoutingStatus(),
       );
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][Network][Routing] Fetch failed', error: e);
       return (
         null,
@@ -104,7 +105,7 @@ class UspStaticRoutingNotifier
             'added: ${result.added}, updated: ${result.updated}, '
             'deleted: ${result.deleted}');
       });
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][Network][Routing] Save failed', error: e);
       rethrow;
     } finally {

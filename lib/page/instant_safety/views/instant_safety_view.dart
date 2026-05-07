@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/components/shortcuts/dialogs.dart';
+import 'package:privacy_gui/components/shortcuts/snack_bar.dart';
 import 'package:privacy_gui/components/ui_kit_page_view.dart';
 import 'package:privacy_gui/route/constants.dart';
 import 'package:privacy_gui/page/instant_safety/providers/instant_safety_provider.dart';
@@ -26,21 +28,26 @@ class UspInstantSafetyView extends ConsumerWidget {
       child: (childContext, constraints) {
         return asyncState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => _buildError(context, ref),
+          error: (error, _) => _buildError(context, ref, error),
           data: (state) => _buildContent(context, ref, state),
         );
       },
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref) {
+  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          AppIcon.font(Icons.error_outline,
+              size: 48, color: Theme.of(context).colorScheme.error),
+          AppGap.xl(),
           AppText.titleMedium('Unable to load safe browsing settings'),
           AppGap.md(),
-          AppButton.text(
+          AppText.bodyMedium(error.toString()),
+          AppGap.xxl(),
+          AppButton(
             label: 'Retry',
             onTap: () => ref.invalidate(uspInstantSafetyProvider),
           ),
@@ -125,17 +132,16 @@ class UspInstantSafetyView extends ConsumerWidget {
 
   Future<void> _onSave(BuildContext context, WidgetRef ref) async {
     try {
-      await ref.read(uspInstantSafetyProvider.notifier).save();
+      await doSomethingWithSpinner(
+        context,
+        ref.read(uspInstantSafetyProvider.notifier).save(),
+      );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Safe browsing settings saved')),
-        );
+        showSuccessSnackBar(context, 'Safe browsing settings saved');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        showFailedSnackBar(context, 'Failed to save: $e');
       }
     }
   }

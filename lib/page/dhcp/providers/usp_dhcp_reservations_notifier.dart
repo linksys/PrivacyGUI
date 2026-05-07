@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
 import 'package:privacy_gui/core/usp/providers/sse_invalidation_provider.dart';
 import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
@@ -70,7 +71,7 @@ class UspDhcpReservationsNotifier
         DhcpReservationList(reservations: reservations),
         const DhcpReservationsStatus(),
       );
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][DHCP][Reservations] Fetch failed', error: e);
       return (
         null,
@@ -106,7 +107,7 @@ class UspDhcpReservationsNotifier
 
       // Invalidate Layer 1 provider to refresh dashboard card
       ref.invalidate(dhcpDataProvider);
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][DHCP][Reservations] Save failed', error: e);
       rethrow;
     } finally {
@@ -114,6 +115,53 @@ class UspDhcpReservationsNotifier
         status: state.status.copyWith(isSaving: false),
       );
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Immediate mutations (Dashboard card / Device Detail — single operations)
+  // ---------------------------------------------------------------------------
+
+  /// Toggle a reservation on/off immediately (writes to router).
+  Future<void> immediateToggle(String instancePath, bool enable) async {
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.immediateToggle(instancePath, enable);
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][DHCP] Immediate toggle failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(dhcpDataProvider);
+  }
+
+  /// Add a reservation immediately (writes to router).
+  Future<void> immediateAdd({
+    required String mac,
+    required String ip,
+    bool enable = true,
+  }) async {
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.immediateAdd(mac: mac, ip: ip, enable: enable);
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][DHCP] Immediate add failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(dhcpDataProvider);
+  }
+
+  /// Delete a reservation immediately (writes to router).
+  Future<void> immediateDelete(String instancePath) async {
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.immediateDelete(instancePath);
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][DHCP] Immediate delete failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(dhcpDataProvider);
   }
 
   // ---------------------------------------------------------------------------

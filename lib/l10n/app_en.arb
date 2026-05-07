@@ -119,7 +119,7 @@
   "dashboardSupportFAQTitle": "View FAQ",
   "dashboardSettings": "Dashboard Settings",
   "dashboardEnableCustomLayout": "Enable Custom Layout",
-  "dashboardHiddenWidgets": "Hidden Widgets",
+  "dashboardAvailableWidgets": "Available Widgets",
   "dashboardResetLayout": "Reset Layout",
   "dashboardLayoutOptimized": "Layout optimized",
   "dashboardLayoutResetToDefaults": "Layout reset to defaults",

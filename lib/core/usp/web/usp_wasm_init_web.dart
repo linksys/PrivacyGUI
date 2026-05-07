@@ -5,7 +5,7 @@ import 'dart:js_interop';
 external JSPromise<JSBoolean>? get _uspClientReady;
 
 /// Awaits the WASM client initialization that was kicked off by usp_init.js.
-/// Must be called (and awaited) before constructing [UspClientWeb] / [UspService].
+/// Must be called (and awaited) before constructing [UspClientWeb] / [UspClient].
 Future<bool> ensureUspWasmInitialized() async {
   final promise = _uspClientReady;
   if (promise == null) return false;

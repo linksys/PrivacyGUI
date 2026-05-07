@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
 import 'package:privacy_gui/page/instant_safety/models/safe_browsing_ui_model.dart';
 import 'package:privacy_gui/page/instant_safety/services/instant_safety_service.dart';
 
@@ -59,15 +61,20 @@ final uspInstantSafetyProvider =
 class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
   @override
   Future<UspInstantSafetyState> build() async {
-    final svc = ref.read(uspInstantSafetyServiceProvider);
-    final uiModel = await svc.fetch();
+    try {
+      final svc = ref.read(uspInstantSafetyServiceProvider);
+      final uiModel = await svc.fetch();
 
-    logger.d('[USP][Safety]Instant Safety fetched — type: ${uiModel.type}');
+      logger.d('[USP][Safety]Instant Safety fetched — type: ${uiModel.type}');
 
-    return UspInstantSafetyState(
-      uiModel: uiModel,
-      pendingType: uiModel.type,
-    );
+      return UspInstantSafetyState(
+        uiModel: uiModel,
+        pendingType: uiModel.type,
+      );
+    } on ServiceError catch (e) {
+      logger.e('[USP][Safety] Fetch failed', error: e);
+      rethrow;
+    }
   }
 
   /// Toggle safe browsing on/off.
@@ -85,13 +92,16 @@ class UspInstantSafetyNotifier extends AsyncNotifier<UspInstantSafetyState> {
 
     state = AsyncData(s.copyWith(isSaving: true));
     try {
-      final svc = ref.read(uspInstantSafetyServiceProvider);
-      await svc.save(s.pendingType);
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        final svc = ref.read(uspInstantSafetyServiceProvider);
+        await svc.save(s.pendingType);
+      });
       logger.d('[USP][Safety]Instant Safety saved — type: ${s.pendingType}');
 
       // Re-fetch to confirm the change took effect.
       ref.invalidateSelf();
-    } catch (e) {
+    } on ServiceError catch (e) {
+      logger.e('[USP][Safety] Save failed', error: e);
       state = AsyncData(s.copyWith(isSaving: false));
       rethrow;
     }

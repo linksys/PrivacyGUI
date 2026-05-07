@@ -29,31 +29,37 @@
 /// ```
 sealed class ServiceError implements Exception {
   const ServiceError();
+
+  /// Human-readable label derived from the class name.
+  ///
+  /// `NetworkError` → `Network error`, `InvalidCredentialsError` → `Invalid credentials`.
+  /// Subtypes with a `message` field override this to append details.
+  @override
+  String toString() {
+    final name = runtimeType.toString();
+    final base =
+        name.endsWith('Error') ? name.substring(0, name.length - 5) : name;
+    // Split into words: before uppercase after lowercase/digit, and before
+    // an uppercase letter followed by lowercase after an uppercase run.
+    final spaced = base
+        .replaceAllMapped(RegExp(r'(?<=[a-z\d])(?=[A-Z])'), (_) => ' ')
+        .replaceAllMapped(RegExp(r'(?<=[A-Z])(?=[A-Z][a-z])'), (_) => ' ');
+    if (spaced.isEmpty) return 'Unknown error';
+    // Lowercase each word unless it's all-uppercase (acronym like VPN, DNS, IP).
+    final words = spaced.split(' ');
+    final result = words.asMap().entries.map((e) {
+      final word = e.value;
+      if (word == word.toUpperCase() && word.length > 1) return word;
+      if (e.key == 0) return word;
+      return word.toLowerCase();
+    }).join(' ');
+    return result;
+  }
 }
 
 // ============================================================================
 // Authentication & Session Errors
 // ============================================================================
-
-/// Empty email provided
-final class EmptyEmailError extends ServiceError {
-  const EmptyEmailError();
-}
-
-/// Invalid password format or value
-final class InvalidPasswordError extends ServiceError {
-  const InvalidPasswordError();
-}
-
-/// Bad authentication attempt
-final class BadAuthenticationError extends ServiceError {
-  const BadAuthenticationError();
-}
-
-/// Authentication credentials missing
-final class AuthenticationMissingError extends ServiceError {
-  const AuthenticationMissingError();
-}
 
 /// User not authenticated
 final class NotAuthenticatedError extends ServiceError {
@@ -65,25 +71,9 @@ final class InvalidSessionTokenError extends ServiceError {
   const InvalidSessionTokenError();
 }
 
-/// No session token found in storage
-final class NoSessionTokenError extends ServiceError {
-  const NoSessionTokenError();
-}
-
 /// Session token has expired and cannot be refreshed
 final class SessionTokenExpiredError extends ServiceError {
   const SessionTokenExpiredError();
-}
-
-/// Token refresh operation failed
-final class TokenRefreshError extends ServiceError {
-  final Object? cause;
-  const TokenRefreshError({this.cause});
-}
-
-/// Multi-factor authentication required
-final class MfaRequiredError extends ServiceError {
-  const MfaRequiredError();
 }
 
 /// Invalid credentials (username/password combination)
@@ -91,7 +81,7 @@ final class InvalidCredentialsError extends ServiceError {
   const InvalidCredentialsError();
 }
 
-/// Unauthorized access attempt (JNAP: _ErrorUnauthorized)
+/// Unauthorized access attempt
 final class UnauthorizedError extends ServiceError {
   const UnauthorizedError();
 }
@@ -103,16 +93,6 @@ final class UnauthorizedError extends ServiceError {
 /// Requested resource not found
 final class ResourceNotFoundError extends ServiceError {
   const ResourceNotFoundError();
-}
-
-/// Resource exists but not ready
-final class ResourceNotReadyError extends ServiceError {
-  const ResourceNotReadyError();
-}
-
-/// Subject/entity not found
-final class SubjectNotFoundError extends ServiceError {
-  const SubjectNotFoundError();
 }
 
 // ============================================================================
@@ -127,25 +107,6 @@ final class InvalidOtpError extends ServiceError {
 /// OTP code has expired
 final class ExpiredOtpError extends ServiceError {
   const ExpiredOtpError();
-}
-
-// ============================================================================
-// User/Account Errors
-// ============================================================================
-
-/// Rate limit or threshold exceeded
-final class ExceedThresholdError extends ServiceError {
-  const ExceedThresholdError();
-}
-
-/// Username already exists
-final class UsernameExistsError extends ServiceError {
-  const UsernameExistsError();
-}
-
-/// Invalid phone number format
-final class InvalidPhoneError extends ServiceError {
-  const InvalidPhoneError();
 }
 
 // ============================================================================
@@ -173,103 +134,38 @@ final class InvalidAdminPasswordError extends ServiceError {
   const InvalidAdminPasswordError();
 }
 
-/// Password check is delayed (rate limiting)
-final class PasswordCheckDelayedError extends ServiceError {
-  const PasswordCheckDelayedError();
-}
-
-// ============================================================================
-// Network Configuration Errors
-// ============================================================================
-
-/// Invalid gateway address
-final class InvalidGatewayError extends ServiceError {
-  const InvalidGatewayError();
-}
-
-/// Invalid IP address
-final class InvalidIPAddressError extends ServiceError {
-  const InvalidIPAddressError();
-}
-
-/// Invalid destination IP address
-final class InvalidDestinationIPAddressError extends ServiceError {
-  const InvalidDestinationIPAddressError();
-}
-
-/// Invalid MAC address
-final class InvalidMACAddressError extends ServiceError {
-  const InvalidMACAddressError();
-}
-
-/// Invalid destination MAC address
-final class InvalidDestinationMACAddressError extends ServiceError {
-  const InvalidDestinationMACAddressError();
-}
-
-/// Invalid primary DNS server
-final class InvalidPrimaryDNSServerError extends ServiceError {
-  const InvalidPrimaryDNSServerError();
-}
-
-/// Invalid secondary DNS server
-final class InvalidSecondaryDNSServerError extends ServiceError {
-  const InvalidSecondaryDNSServerError();
-}
-
-/// Invalid tertiary DNS server
-final class InvalidTertiaryDNSServerError extends ServiceError {
-  const InvalidTertiaryDNSServerError();
-}
-
-/// Invalid server address
-final class InvalidServerError extends ServiceError {
-  const InvalidServerError();
-}
-
-/// Missing destination in configuration
-final class MissingDestinationError extends ServiceError {
-  const MissingDestinationError();
-}
-
-/// Rules overlap conflict
-final class RuleOverlapError extends ServiceError {
-  const RuleOverlapError();
-}
-
-/// Guest SSID conflict
-final class GuestSSIDConflictError extends ServiceError {
-  const GuestSSIDConflictError();
-}
-
-// ============================================================================
-// VPN Errors
-// ============================================================================
-
-/// VPN is not connected
-final class VPNNotConnectedError extends ServiceError {
-  const VPNNotConnectedError();
-}
-
-/// VPN user already exists
-final class VPNUserAlreadyExistsError extends ServiceError {
-  const VPNUserAlreadyExistsError();
-}
-
-/// VPN user not found
-final class VPNUserNotFoundError extends ServiceError {
-  const VPNUserNotFoundError();
-}
-
 // ============================================================================
 // General Errors
 // ============================================================================
+
+/// USP service not initialized or not registered.
+///
+/// Thrown when `uspServiceProvider` returns null — the app was not properly
+/// initialized (e.g. non-Web platform or WASM not loaded). This is a setup
+/// error, not a network connectivity issue.
+final class ServiceNotInitializedError extends ServiceError {
+  final String? message;
+  const ServiceNotInitializedError({this.message});
+
+  @override
+  String toString() =>
+      message != null ? 'Service not initialized: $message' : super.toString();
+}
 
 /// Invalid input data
 final class InvalidInputError extends ServiceError {
   final String? field;
   final String? message;
   const InvalidInputError({this.field, this.message});
+
+  @override
+  String toString() {
+    final detail = [
+      if (field != null) field,
+      if (message != null) message,
+    ].join(': ');
+    return detail.isNotEmpty ? 'Invalid input: $detail' : super.toString();
+  }
 }
 
 /// Unexpected error (fallback for unmapped errors)
@@ -277,18 +173,60 @@ final class UnexpectedError extends ServiceError {
   final Object? originalError;
   final String? message;
   const UnexpectedError({this.originalError, this.message});
+
+  @override
+  String toString() =>
+      message != null ? 'Unexpected error: $message' : super.toString();
 }
 
 /// Network communication error
 final class NetworkError extends ServiceError {
   final String? message;
   const NetworkError({this.message});
+
+  @override
+  String toString() =>
+      message != null ? 'Network error: $message' : super.toString();
 }
 
 /// Storage operation error
 final class StorageError extends ServiceError {
   final Object? originalError;
   const StorageError({this.originalError});
+}
+
+// ============================================================================
+// USP Operation Errors
+// ============================================================================
+
+/// USP operation failed completely (all parameters failed)
+final class UspCompleteFailureError extends ServiceError {
+  final String summary;
+  final List<String> failedPaths;
+
+  const UspCompleteFailureError({
+    required this.summary,
+    required this.failedPaths,
+  });
+
+  @override
+  String toString() => summary;
+}
+
+/// USP operation partially failed (some succeeded, some failed)
+final class UspPartialFailureError extends ServiceError {
+  final String summary;
+  final List<String> successPaths;
+  final List<String> failedPaths;
+
+  const UspPartialFailureError({
+    required this.summary,
+    required this.successPaths,
+    required this.failedPaths,
+  });
+
+  @override
+  String toString() => '(Partial) $summary';
 }
 
 // ============================================================================
@@ -307,6 +245,10 @@ final class SerialNumberMismatchError extends ServiceError {
 final class ConnectivityError extends ServiceError {
   final String? message;
   const ConnectivityError({this.message});
+
+  @override
+  String toString() =>
+      message != null ? 'Connectivity error: $message' : super.toString();
 }
 
 // ============================================================================
@@ -341,55 +283,4 @@ final class ServiceSideEffectError extends ServiceError {
   final Object? lastPolledResult;
 
   const ServiceSideEffectError([this.originalResult, this.lastPolledResult]);
-}
-
-// ============================================================================
-// Topology Operation Errors
-// ============================================================================
-
-/// Timeout while waiting for nodes to go offline after reboot/factory reset.
-///
-/// Thrown when nodes don't reach offline state within the configured timeout
-/// (default: 60 seconds = 20 retries × 3 second intervals).
-final class TopologyTimeoutError extends ServiceError {
-  /// The timeout duration that was exceeded
-  final Duration timeout;
-
-  /// Device IDs that were being monitored
-  final List<String> deviceIds;
-
-  const TopologyTimeoutError({
-    required this.timeout,
-    required this.deviceIds,
-  });
-}
-
-/// Target node is offline and cannot be reached for the requested operation.
-///
-/// Thrown when attempting LED blink or other operations on an offline node.
-final class NodeOfflineError extends ServiceError {
-  /// The device ID of the offline node
-  final String deviceId;
-
-  const NodeOfflineError({required this.deviceId});
-}
-
-/// A node operation (reboot, factory reset, LED blink) failed.
-///
-/// Contains details about which operation failed and on which device.
-final class NodeOperationFailedError extends ServiceError {
-  /// The device ID where the operation failed
-  final String deviceId;
-
-  /// The operation that failed: 'reboot', 'factoryReset', 'blinkStart', 'blinkStop'
-  final String operation;
-
-  /// The underlying error (if available)
-  final Object? originalError;
-
-  const NodeOperationFailedError({
-    required this.deviceId,
-    required this.operation,
-    this.originalError,
-  });
 }

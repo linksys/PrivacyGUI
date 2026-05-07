@@ -1,0 +1,77 @@
+{
+  "widgetId": "demo_wifi_status_simple",
+  "displayName": "WiFi Status",
+  "description": "WiFi network status display with connection information (Demo version with static data)",
+  "icon": "wifi",
+  "iconColor": "#66BB6A",
+  "navigateTo": "/wifi-manager/",
+  "headerExtra": "Linksys_5G",
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 5,
+    "preferredColumns": 4,
+    "minRows": 3,
+    "maxRows": 4,
+    "preferredRows": 3
+  },
+  "_comments": {
+    "realWorldUsage": "In production, this would use USP subscription:",
+    "subscription": {
+      "paths": [
+        "Device.WiFi.SSID.1.SSID",
+        "Device.WiFi.SSID.1.Status",
+        "Device.WiFi.AccessPoint.1.AssociatedDeviceNumberOfEntries"
+      ],
+      "interval": 5000
+    }
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "AppCard",
+          "props": {
+            "padding": 12,
+            "backgroundColor": "successContainer",
+            "children": [
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "start",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {"text": "Network Online", "variant": "bodyMedium"}
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {"size": "xs"}
+                    },
+                    {
+                      "type": "Row",
+                      "props": {
+                        "mainAxisAlignment": "spaceBetween",
+                        "children": [
+                          {
+                            "type": "AppText",
+                            "props": {"text": "12 devices", "variant": "bodySmall"}
+                          },
+                          {
+                            "type": "AppText",
+                            "props": {"text": "5 GHz", "variant": "bodySmall"}
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

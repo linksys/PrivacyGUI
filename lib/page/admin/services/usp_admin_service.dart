@@ -1,18 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/admin_users.g.dart';
 import 'package:privacy_gui/generated/time_settings.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/admin/models/admin_ui_models.dart';
-import 'package:privacy_gui/page/_shared/models/time_settings_ui_model.dart';
 
 final uspAdminServiceProvider = Provider<UspAdminService>(
-  (ref) => UspAdminService(ref.read(uspServiceProvider)!),
+  (ref) => UspAdminService(ref.read(uspClientProvider)!),
 );
 
 /// Service layer for Admin — encapsulates codegen CRUD + transform.
 class UspAdminService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspAdminService(this._usp);
 
@@ -22,8 +23,12 @@ class UspAdminService {
 
   /// Fetch admin users and return the admin user UI model.
   Future<AdminUserUIModel> fetchAdmin() async {
-    final adminUsers = await AdminUsers.fetch(_usp);
-    return _buildAdminUserUIModel(adminUsers);
+    try {
+      final adminUsers = await AdminUsers.fetch(_usp);
+      return _buildAdminUserUIModel(adminUsers);
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   /// Update the admin user password.
@@ -31,15 +36,142 @@ class UspAdminService {
     required String instancePath,
     required String newPassword,
   }) async {
-    await AdminUsers.update(
-      _usp,
-      AdminUserUpdate(instancePath: instancePath, password: newPassword),
-    );
+    try {
+      final result = await AdminUsers.update(
+        _usp,
+        [AdminUserUpdate(instancePath: instancePath, password: newPassword)],
+      );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
+          throw UspPartialFailureError(
+            summary: 'Password update partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Password update failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   // ---------------------------------------------------------------------------
-  // Transform
+  // Time Settings — mutations (from Dashboard card + Admin page)
   // ---------------------------------------------------------------------------
+
+  /// Update time settings (enable toggle, NTP servers).
+  Future<void> updateTimeSettings({
+    bool? enable,
+    String? ntpServer1,
+    String? ntpServer2,
+  }) async {
+    try {
+      final result = await TimeSettings.update(
+        _usp,
+        enable: enable,
+        ntpServer1: ntpServer1,
+        ntpServer2: ntpServer2,
+      );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
+          throw UspPartialFailureError(
+            summary: 'Time settings partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Time settings update failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Update timezone and optionally NTP servers / enable.
+  Future<void> updateTimezone({
+    String? localTimeZone,
+    String? ntpServer1,
+    String? ntpServer2,
+    bool? enable,
+  }) async {
+    try {
+      final result = await TimeSettings.update(
+        _usp,
+        localTimeZone: localTimeZone,
+        ntpServer1: ntpServer1,
+        ntpServer2: ntpServer2,
+        enable: enable,
+      );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
+          throw UspPartialFailureError(
+            summary: 'Timezone update partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Timezone update failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // System Operations
+  // ---------------------------------------------------------------------------
+
+  /// Reboot the router.
+  Future<void> reboot() async {
+    try {
+      await _usp.operate('Device.Reboot()');
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
+
+  /// Factory reset the router.
+  Future<void> factoryReset() async {
+    try {
+      await _usp.operate('Device.FactoryReset()');
+    } catch (e) {
+      throw mapUspErrorToServiceError(e);
+    }
+  }
 
   AdminUserUIModel _buildAdminUserUIModel(AdminUsers users) {
     final admin = users.items.firstWhere(
@@ -50,17 +182,6 @@ class UspAdminService {
       instancePath: admin.instancePath,
       username: admin.username,
       enable: admin.enable,
-    );
-  }
-
-  TimeSettingsUIModel buildTimeSettingsUIModel(TimeSettings ts) {
-    return TimeSettingsUIModel(
-      enable: ts.enable,
-      status: ts.status,
-      currentLocalTime: ts.currentLocalTime,
-      localTimeZone: ts.localTimeZone,
-      ntpServer1: ts.ntpServer1,
-      ntpServer2: ts.ntpServer2,
     );
   }
 }

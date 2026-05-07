@@ -1,6 +1,6 @@
-/// Mock UspService for Demo mode.
+/// Mock UspClient for Demo mode.
 ///
-/// Extends [UspService] and overrides all public methods to return data
+/// Extends [UspClient] and overrides all public methods to return data
 /// from [DemoUspDataLoader] instead of making real WASM/HTTP calls.
 ///
 /// Includes a [_DynamicSimulator] that injects time-varying values for
@@ -13,13 +13,13 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:privacy_gui/demo/usp/demo_usp_data_loader.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 
-class DemoUspService extends UspService {
+class DemoUspClient extends UspClient {
   final DemoUspDataLoader _loader;
   final _DynamicSimulator _sim = _DynamicSimulator();
 
-  DemoUspService(this._loader) : super('https://localhost');
+  DemoUspClient(this._loader) : super('https://localhost');
 
   @override
   bool get isAuthenticated => true;
@@ -48,7 +48,10 @@ class DemoUspService extends UspService {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<Map<String, dynamic>> get(List<String> paths) async {
+  Future<Map<String, dynamic>> get(
+    List<String> paths, {
+    RequestPriority? priority,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 40));
 
     final raw = _loader.resolve(paths);
@@ -76,12 +79,44 @@ class DemoUspService extends UspService {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<void> set(Map<String, dynamic> parameters,
-      {bool allowPartial = false}) async {
+  Future<Map<String, dynamic>> set(Object pathOrParams,
+      {dynamic singleValue, bool allowPartial = false}) async {
     await Future.delayed(const Duration(milliseconds: 20));
+
+    // Normalize to Map
+    final Map<String, dynamic> parameters;
+    if (pathOrParams is String && singleValue != null) {
+      parameters = {pathOrParams: singleValue.toString()};
+    } else if (pathOrParams is Map) {
+      parameters = pathOrParams.cast<String, dynamic>();
+    } else {
+      throw ArgumentError(
+          'set() expects (String, value) or (Map<String, dynamic>)');
+    }
+
+    final results = <Map<String, dynamic>>[];
     for (final entry in parameters.entries) {
       _loader.setValue(entry.key, entry.value.toString());
+      results.add({
+        'requestedPath': entry.key,
+        'success': true,
+        'updatedInstances': [
+          {
+            'affectedPath': _extractInstancePath(entry.key),
+            'updatedParams': {
+              _extractParamName(entry.key): entry.value.toString()
+            }
+          }
+        ]
+      });
     }
+
+    return {
+      'overallSuccess': true,
+      'hasAnySuccess': true,
+      'hasErrors': false,
+      'results': results
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -89,28 +124,40 @@ class DemoUspService extends UspService {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<String> add(String objectPath, Map<String, dynamic> parameters) async {
-    await Future.delayed(const Duration(milliseconds: 20));
-    final nextId = _loader.nextInstanceId(objectPath);
-    final normalized = objectPath.endsWith('.') ? objectPath : '$objectPath.';
-    final instancePath = '$normalized$nextId.';
-    for (final entry in parameters.entries) {
-      _loader.setValue('$instancePath${entry.key}', entry.value.toString());
-    }
-    debugPrint('[DemoUsp] ADD $instancePath');
-    return instancePath;
-  }
-
-  @override
-  Future<List<String>> addMultiple(List<Map<String, dynamic>> objects,
+  Future<Map<String, dynamic>> add(List<Map<String, dynamic>> items,
       {bool allowPartial = false}) async {
-    final results = <String>[];
-    for (final obj in objects) {
-      final path = obj['path'] as String? ?? '';
-      final params = obj['parameters'] as Map<String, String>? ?? {};
-      results.add(await add(path, params));
+    await Future.delayed(const Duration(milliseconds: 20));
+    final results = <Map<String, dynamic>>[];
+
+    for (final item in items) {
+      final objectPath = item['path'] as String? ?? '';
+      final parameters = item['params'] as Map<String, dynamic>? ?? {};
+      final nextId = _loader.nextInstanceId(objectPath);
+      final normalized = objectPath.endsWith('.') ? objectPath : '$objectPath.';
+      final instancePath = '$normalized$nextId.';
+
+      final initialParams = <String, String>{};
+      for (final entry in parameters.entries) {
+        _loader.setValue('$instancePath${entry.key}', entry.value.toString());
+        initialParams[entry.key] = entry.value.toString();
+      }
+
+      debugPrint('[DemoUsp] ADD $instancePath');
+      results.add({
+        'requestedPath': objectPath,
+        'success': true,
+        'createdInstances': [
+          {'affectedPath': instancePath, 'initialParams': initialParams}
+        ]
+      });
     }
-    return results;
+
+    return {
+      'overallSuccess': true,
+      'hasAnySuccess': results.isNotEmpty,
+      'hasErrors': false,
+      'results': results
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -118,17 +165,28 @@ class DemoUspService extends UspService {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<void> delete(String path) async {
-    await Future.delayed(const Duration(milliseconds: 20));
-    _loader.removeByPrefix(path);
-  }
-
-  @override
-  Future<void> deleteMultiple(List<String> paths,
+  Future<Map<String, dynamic>> delete(List<String> paths,
       {bool allowPartial = false}) async {
+    await Future.delayed(const Duration(milliseconds: 20));
+    final results = <Map<String, dynamic>>[];
+
     for (final path in paths) {
-      await delete(path);
+      _loader.removeByPrefix(path);
+      results.add({
+        'requestedPath': path,
+        'success': true,
+        'deletedInstances': [
+          {'affectedPath': path}
+        ]
+      });
     }
+
+    return {
+      'overallSuccess': true,
+      'hasAnySuccess': results.isNotEmpty,
+      'hasErrors': false,
+      'results': results
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -213,7 +271,30 @@ class DemoUspService extends UspService {
   void dispose() {}
 
   // ---------------------------------------------------------------------------
-  // Value coercion (matches UspService._coerceValue)
+  // Helper methods for structured responses
+  // ---------------------------------------------------------------------------
+
+  /// Extract instance path from parameter path (e.g., "Device.WiFi.SSID.1.SSID" -> "Device.WiFi.SSID.1.")
+  String _extractInstancePath(String paramPath) {
+    final lastDot = paramPath.lastIndexOf('.');
+    if (lastDot > 0) {
+      final beforeLastDot = paramPath.substring(0, lastDot);
+      final secondLastDot = beforeLastDot.lastIndexOf('.');
+      if (secondLastDot >= 0) {
+        return paramPath.substring(0, secondLastDot + 1);
+      }
+    }
+    return paramPath.endsWith('.') ? paramPath : '$paramPath.';
+  }
+
+  /// Extract parameter name from parameter path (e.g., "Device.WiFi.SSID.1.SSID" -> "SSID")
+  String _extractParamName(String paramPath) {
+    final lastDot = paramPath.lastIndexOf('.');
+    return lastDot >= 0 ? paramPath.substring(lastDot + 1) : paramPath;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Value coercion (matches UspClient._coerceValue)
   // ---------------------------------------------------------------------------
 
   dynamic _coerce(String path, String? raw) {
@@ -278,7 +359,7 @@ class _DynamicSimulator {
 
       // --- CPU usage: sine wave + noise (15–45%) ---
       if (key == 'Device.DeviceInfo.ProcessStatus.CPUUsage') {
-        final base = 30.0;
+        const base = 30.0;
         final wave = 15.0 * sin(elapsed * 2 * pi / 60); // 60s period
         final noise = (_rng.nextDouble() - 0.5) * 6; // ±3
         final cpu = (base + wave + noise).clamp(5, 85).round();

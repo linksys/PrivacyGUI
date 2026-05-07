@@ -1,18 +1,46 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_radios.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
+import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
-class MockUspService extends Mock implements UspService {}
+class MockUspClient extends Mock implements UspClient {}
+
+// WASM v0.11.0 response helpers
+Map<String, dynamic> uspSuccess({Map<String, dynamic> data = const {}}) => {
+      'success': true,
+      'result': {'data': data},
+    };
+
+Map<String, dynamic> uspFailure(
+        {String path = 'bulk_operation',
+        int errorCode = 7004,
+        String errorMessage = 'Operation failed'}) =>
+    {
+      'success': false,
+      'result': {
+        'data': <String, dynamic>{},
+        'error': {
+          path: {
+            'errorCode': errorCode,
+            'errorMessage': errorMessage,
+          }
+        },
+      },
+    };
 
 void main() {
   late UspWifiSettingsService svc;
 
   setUp(() {
-    svc = UspWifiSettingsService(MockUspService());
+    svc = UspWifiSettingsService(MockUspClient());
   });
 
   // -------------------------------------------------------------------------
@@ -576,6 +604,538 @@ void main() {
       // Intersection of security modes
       expect(
           qs.main!.supportedSecurityModes, ['WPA2-Personal', 'WPA3-Personal']);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // buildWifiNetworks — guest detection (per-radio instance ordering)
+  // -------------------------------------------------------------------------
+
+  group('buildWifiNetworks — guest detection', () {
+    WiFiSsid _ssid(String path, String name, String radio,
+            {bool enable = true}) =>
+        WiFiSsid(
+          instancePath: path,
+          ssid: name,
+          enable: enable,
+          status: enable ? 'Up' : 'Down',
+          bssid: 'AA:BB:CC:DD:EE:FF',
+          lowerLayers: radio,
+        );
+
+    WiFiAccessPoint _ap(String path, String ssidRef) => WiFiAccessPoint(
+          instancePath: path,
+          enable: true,
+          status: 'Enabled',
+          modesSupported: 'WPA2-Personal',
+          securityModeEnabled: 'WPA2-Personal',
+          encryptionMode: 'AES',
+          keyPassphrase: 'pass',
+          ssidAdvertisementEnabled: true,
+          ssidReference: ssidRef,
+        );
+
+    WiFiRadio _radio(String path, String band) => WiFiRadio(
+          instancePath: path,
+          enable: true,
+          status: 'Up',
+          channel: 6,
+          operatingFrequencyBand: band,
+          operatingChannelBandwidth: '20MHz',
+          possibleChannels: '1,6,11',
+          operatingStandards: 'n',
+          supportedStandards: 'b,g,n',
+          transmitPower: 100,
+          maxBitRate: 300,
+          autoChannelEnable: true,
+          ieee80211hEnabled: false,
+          supportedOperatingChannelBandwidths: 'Auto,20MHz',
+        );
+
+    test('dual-band: 2 main + 2 guest', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: WiFiSsids(items: [
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+          _ssid('Device.WiFi.SSID.3.', 'Home-Guest', 'Device.WiFi.Radio.1.',
+              enable: false),
+          _ssid('Device.WiFi.SSID.4.', 'Home-Guest', 'Device.WiFi.Radio.2.',
+              enable: false),
+        ]),
+        accessPoints: WiFiAccessPoints(items: [
+          _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+          _ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+          _ap('Device.WiFi.AccessPoint.3.', 'Device.WiFi.SSID.3.'),
+          _ap('Device.WiFi.AccessPoint.4.', 'Device.WiFi.SSID.4.'),
+        ]),
+        radios: WiFiRadios(items: [
+          _radio('Device.WiFi.Radio.1.', '2.4GHz'),
+          _radio('Device.WiFi.Radio.2.', '5GHz'),
+        ]),
+      );
+
+      expect(networks, hasLength(4));
+      expect(networks[0].isGuest, isFalse); // SSID.1 — Main
+      expect(networks[1].isGuest, isFalse); // SSID.2 — Main
+      expect(networks[2].isGuest, isTrue); // SSID.3 — Guest
+      expect(networks[3].isGuest, isTrue); // SSID.4 — Guest
+    });
+
+    test('tri-band: 3 main + 3 guest', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: WiFiSsids(items: [
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+          _ssid('Device.WiFi.SSID.3.', 'Home', 'Device.WiFi.Radio.3.'),
+          _ssid('Device.WiFi.SSID.4.', 'Home-Guest', 'Device.WiFi.Radio.1.',
+              enable: false),
+          _ssid('Device.WiFi.SSID.5.', 'Home-Guest', 'Device.WiFi.Radio.2.',
+              enable: false),
+          _ssid('Device.WiFi.SSID.6.', 'Home-Guest', 'Device.WiFi.Radio.3.',
+              enable: false),
+        ]),
+        accessPoints: WiFiAccessPoints(items: [
+          _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+          _ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+          _ap('Device.WiFi.AccessPoint.3.', 'Device.WiFi.SSID.3.'),
+          _ap('Device.WiFi.AccessPoint.4.', 'Device.WiFi.SSID.4.'),
+          _ap('Device.WiFi.AccessPoint.5.', 'Device.WiFi.SSID.5.'),
+          _ap('Device.WiFi.AccessPoint.6.', 'Device.WiFi.SSID.6.'),
+        ]),
+        radios: WiFiRadios(items: [
+          _radio('Device.WiFi.Radio.1.', '2.4GHz'),
+          _radio('Device.WiFi.Radio.2.', '5GHz'),
+          _radio('Device.WiFi.Radio.3.', '6GHz'),
+        ]),
+      );
+
+      expect(networks, hasLength(6));
+      // Main: SSID.1, SSID.2, SSID.3
+      expect(networks[0].isGuest, isFalse);
+      expect(networks[1].isGuest, isFalse);
+      expect(networks[2].isGuest, isFalse);
+      // Guest: SSID.4, SSID.5, SSID.6
+      expect(networks[3].isGuest, isTrue);
+      expect(networks[4].isGuest, isTrue);
+      expect(networks[5].isGuest, isTrue);
+    });
+
+    test('guest SSID without "guest" in name still detected', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: WiFiSsids(items: [
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+          _ssid('Device.WiFi.SSID.2.', 'Visitors', 'Device.WiFi.Radio.1.'),
+        ]),
+        accessPoints: WiFiAccessPoints(items: [
+          _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+          _ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+        ]),
+        radios: WiFiRadios(items: [
+          _radio('Device.WiFi.Radio.1.', '2.4GHz'),
+        ]),
+      );
+
+      expect(networks, hasLength(2));
+      expect(networks[0].isGuest, isFalse); // SSID.1 — Main
+      expect(networks[0].ssid, 'Home');
+      expect(
+          networks[1].isGuest, isTrue); // SSID.2 — Guest (no "guest" in name)
+      expect(networks[1].ssid, 'Visitors');
+    });
+
+    test('single SSID per radio — no guest', () {
+      final networks = svc.buildWifiNetworks(
+        ssids: WiFiSsids(items: [
+          _ssid('Device.WiFi.SSID.1.', 'Home', 'Device.WiFi.Radio.1.'),
+          _ssid('Device.WiFi.SSID.2.', 'Home', 'Device.WiFi.Radio.2.'),
+        ]),
+        accessPoints: WiFiAccessPoints(items: [
+          _ap('Device.WiFi.AccessPoint.1.', 'Device.WiFi.SSID.1.'),
+          _ap('Device.WiFi.AccessPoint.2.', 'Device.WiFi.SSID.2.'),
+        ]),
+        radios: WiFiRadios(items: [
+          _radio('Device.WiFi.Radio.1.', '2.4GHz'),
+          _radio('Device.WiFi.Radio.2.', '5GHz'),
+        ]),
+      );
+
+      expect(networks, hasLength(2));
+      expect(networks[0].isGuest, isFalse);
+      expect(networks[1].isGuest, isFalse);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // toggleRadio
+  // -------------------------------------------------------------------------
+
+  group('toggleRadio', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+    });
+
+    test('succeeds on UspSuccess', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      await writeSvc.toggleRadio('Device.WiFi.Radio.1.', true);
+
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test('throws UspCompleteFailureError on UspFailure', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspFailure());
+
+      expect(
+        () => writeSvc.toggleRadio('Device.WiFi.Radio.1.', true),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('maps transport error to ServiceError', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenThrow('Set failed: Transport error: HTTP error: HTTP 504');
+
+      expect(
+        () => writeSvc.toggleRadio('Device.WiFi.Radio.1.', true),
+        throwsA(isA<NetworkError>()),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // updateRadioChannel
+  // -------------------------------------------------------------------------
+
+  group('updateRadioChannel', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+    });
+
+    test('succeeds on UspSuccess', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      await writeSvc.updateRadioChannel(
+        'Device.WiFi.Radio.1.',
+        channel: 36,
+        autoChannel: false,
+      );
+
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test('throws UspCompleteFailureError on UspFailure', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspFailure());
+
+      expect(
+        () => writeSvc.updateRadioChannel(
+          'Device.WiFi.Radio.1.',
+          channel: 36,
+          autoChannel: false,
+        ),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // saveAdvanced — strict error handling
+  // -------------------------------------------------------------------------
+
+  group('saveAdvanced', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+    });
+
+    WifiNetworkUIModel makeNetwork({
+      String ssid = 'TestNet',
+      bool enabled = true,
+      String securityMode = 'WPA2-Personal',
+      String keyPassphrase = 'pass1234',
+      String band = '5GHz',
+      int channel = 36,
+      String channelBandwidth = '80MHz',
+      bool autoChannelEnable = true,
+    }) =>
+        WifiNetworkUIModel(
+          ssidInstancePath: 'Device.WiFi.SSID.1.',
+          accessPointInstancePath: 'Device.WiFi.AccessPoint.1.',
+          radioInstancePath: 'Device.WiFi.Radio.1.',
+          ssid: ssid,
+          enabled: enabled,
+          ssidAdvertisementEnabled: true,
+          supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+          securityMode: securityMode,
+          keyPassphrase: keyPassphrase,
+          isGuest: false,
+          band: band,
+          channel: channel,
+          channelBandwidth: channelBandwidth,
+          autoChannelEnable: autoChannelEnable,
+          possibleChannels: [36, 40, 44, 48],
+          operatingStandards: 'ax',
+          supportedStandards: 'a,n,ac,ax',
+        );
+
+    test('succeeds when all updates return UspSuccess', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+
+      final original = [makeNetwork(ssid: 'OldName')];
+      final current = [makeNetwork(ssid: 'NewName')];
+
+      await writeSvc.saveAdvanced(original: original, current: current);
+
+      verify(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .called(1);
+    });
+
+    test('throws UspCompleteFailureError when SSID update fails', () async {
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspFailure(errorMessage: 'SSID rejected'));
+
+      final original = [makeNetwork(ssid: 'OldName')];
+      final current = [makeNetwork(ssid: 'NewName')];
+
+      expect(
+        () => writeSvc.saveAdvanced(original: original, current: current),
+        throwsA(isA<UspCompleteFailureError>()),
+      );
+    });
+
+    test('skips unchanged networks', () async {
+      final networks = [makeNetwork()];
+
+      await writeSvc.saveAdvanced(
+        original: networks,
+        current: List.of(networks),
+      );
+
+      verifyNever(
+          () => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')));
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // saveQuickSetup — field-level diff
+  // -------------------------------------------------------------------------
+
+  group('saveQuickSetup', () {
+    late MockUspClient mockUsp;
+    late UspWifiSettingsService writeSvc;
+
+    setUp(() {
+      mockUsp = MockUspClient();
+      writeSvc = UspWifiSettingsService(mockUsp);
+      when(() => mockUsp.set(any(), allowPartial: any(named: 'allowPartial')))
+          .thenAnswer((_) async => uspSuccess());
+    });
+
+    WifiNetworkUIModel makeNetwork({
+      String ssidInstancePath = 'Device.WiFi.SSID.1.',
+      String accessPointInstancePath = 'Device.WiFi.AccessPoint.1.',
+      String band = '2.4GHz',
+      bool isGuest = false,
+    }) =>
+        WifiNetworkUIModel(
+          ssidInstancePath: ssidInstancePath,
+          accessPointInstancePath: accessPointInstancePath,
+          radioInstancePath: 'Device.WiFi.Radio.1.',
+          ssid: 'Home',
+          enabled: true,
+          ssidAdvertisementEnabled: true,
+          supportedSecurityModes: const ['WPA2-Personal', 'WPA3-Personal'],
+          securityMode: 'WPA2-Personal',
+          keyPassphrase: '',
+          isGuest: isGuest,
+          band: band,
+          channel: 6,
+          channelBandwidth: '20MHz',
+          autoChannelEnable: true,
+          possibleChannels: const [1, 6, 11],
+          operatingStandards: 'n',
+          supportedStandards: 'b,g,n',
+        );
+
+    /// Captures all TR-181 parameter keys that were passed to `mockUsp.set`.
+    Set<String> capturedKeys() {
+      final captured = verify(() => mockUsp.set(captureAny(),
+          allowPartial: any(named: 'allowPartial'))).captured;
+      final keys = <String>{};
+      for (final arg in captured) {
+        if (arg is Map) keys.addAll(arg.keys.cast<String>());
+      }
+      return keys;
+    }
+
+    test('skips AP write when only guest enabled toggled', () async {
+      // Guest group: only `enabled` changed. No SSID-name change, no AP change.
+      final guestAgg = WifiQuickSetupNetwork(
+        isGuest: true,
+        ssid: 'Home-Guest',
+        securityMode: 'None',
+        keyPassphrase: '',
+        supportedSecurityModes: const [],
+        ssidInstancePaths: const ['Device.WiFi.SSID.3.'],
+        apInstancePaths: const ['Device.WiFi.AccessPoint.3.'],
+      );
+      const guestOrig = WifiQuickSetupSettings(
+        isGuest: true,
+        enabled: true,
+        ssid: 'Home-Guest',
+        password: '',
+        securityMode: 'None',
+        supportedSecurityModes: [],
+      );
+
+      final original = WifiSettingsSettings(
+        networks: [
+          makeNetwork(
+            ssidInstancePath: 'Device.WiFi.SSID.3.',
+            accessPointInstancePath: 'Device.WiFi.AccessPoint.3.',
+            isGuest: true,
+          ),
+        ],
+        quickSetupEnabled: true,
+        quickSetupGuest: guestOrig,
+      );
+      final current = original.copyWith(
+        quickSetupGuest: guestOrig.copyWith(enabled: false),
+      );
+      final status = WifiSettingsStatus(quickSetupGuestAggregate: guestAgg);
+
+      await writeSvc.saveQuickSetup(
+        original: original,
+        current: current,
+        status: status,
+      );
+
+      final keys = capturedKeys();
+      // SSID enable write happens…
+      expect(keys, contains('Device.WiFi.SSID.3.Enable'));
+      // …but AP layer (KeyPassphrase / Security.ModeEnabled) must NOT be touched.
+      expect(
+        keys.any((k) => k.startsWith('Device.WiFi.AccessPoint.3.Security.')),
+        isFalse,
+      );
+    });
+
+    test('skips SSID write when only password changed', () async {
+      final mainAgg = WifiQuickSetupNetwork(
+        isGuest: false,
+        ssid: 'Home',
+        securityMode: 'WPA2-Personal',
+        keyPassphrase: '',
+        supportedSecurityModes: const ['WPA2-Personal', 'WPA3-Personal'],
+        ssidInstancePaths: const ['Device.WiFi.SSID.1.', 'Device.WiFi.SSID.2.'],
+        apInstancePaths: const [
+          'Device.WiFi.AccessPoint.1.',
+          'Device.WiFi.AccessPoint.2.'
+        ],
+      );
+      const mainOrig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA2-Personal',
+        supportedSecurityModes: ['WPA2-Personal', 'WPA3-Personal'],
+      );
+
+      final original = WifiSettingsSettings(
+        networks: [
+          makeNetwork(ssidInstancePath: 'Device.WiFi.SSID.1.'),
+          makeNetwork(
+            ssidInstancePath: 'Device.WiFi.SSID.2.',
+            accessPointInstancePath: 'Device.WiFi.AccessPoint.2.',
+            band: '5GHz',
+          ),
+        ],
+        quickSetupEnabled: true,
+        quickSetupMain: mainOrig,
+      );
+      final current = original.copyWith(
+        quickSetupMain: mainOrig.copyWith(password: 'brandnew1'),
+      );
+      final status = WifiSettingsStatus(quickSetupMainAggregate: mainAgg);
+
+      await writeSvc.saveQuickSetup(
+        original: original,
+        current: current,
+        status: status,
+      );
+
+      final keys = capturedKeys();
+      // AP layer gets written — passphrase + mode.
+      expect(
+          keys.any((k) => k.contains('AccessPoint.1.Security.KeyPassphrase')),
+          isTrue);
+      expect(
+          keys.any((k) => k.contains('AccessPoint.2.Security.KeyPassphrase')),
+          isTrue);
+      // SSID layer must NOT be touched.
+      expect(keys.any((k) => k.startsWith('Device.WiFi.SSID.')), isFalse);
+    });
+
+    test('omits keyPassphrase param when password empty on mode change',
+        () async {
+      // User switches main to Open without entering a password. AP write
+      // still happens (mode changed) but must not send an empty passphrase.
+      final mainAgg = WifiQuickSetupNetwork(
+        isGuest: false,
+        ssid: 'Home',
+        securityMode: 'WPA2-Personal',
+        keyPassphrase: '',
+        supportedSecurityModes: const ['None', 'WPA2-Personal'],
+        ssidInstancePaths: const ['Device.WiFi.SSID.1.'],
+        apInstancePaths: const ['Device.WiFi.AccessPoint.1.'],
+      );
+      const mainOrig = WifiQuickSetupSettings(
+        isGuest: false,
+        enabled: true,
+        ssid: 'Home',
+        password: '',
+        securityMode: 'WPA2-Personal',
+        supportedSecurityModes: ['None', 'WPA2-Personal'],
+      );
+
+      final original = WifiSettingsSettings(
+        networks: [makeNetwork()],
+        quickSetupEnabled: true,
+        quickSetupMain: mainOrig,
+      );
+      final current = original.copyWith(
+        quickSetupMain: mainOrig.copyWith(securityMode: 'None'),
+      );
+      final status = WifiSettingsStatus(quickSetupMainAggregate: mainAgg);
+
+      await writeSvc.saveQuickSetup(
+        original: original,
+        current: current,
+        status: status,
+      );
+
+      final keys = capturedKeys();
+      expect(keys.any((k) => k.contains('Security.ModeEnabled')), isTrue);
+      // Empty passphrase must not be sent to firmware.
+      expect(keys.any((k) => k.contains('Security.KeyPassphrase')), isFalse);
     });
   });
 }

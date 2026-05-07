@@ -1,19 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
 import 'package:privacy_gui/generated/lan_network_info.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/page/local_network/models/local_network_ui_model.dart';
 import 'package:privacy_gui/util/network_utils.dart';
 
 final uspLocalNetworkServiceProvider = Provider<UspLocalNetworkService>(
-  (ref) => UspLocalNetworkService(ref.read(uspServiceProvider)!),
+  (ref) => UspLocalNetworkService(ref.read(uspClientProvider)!),
 );
 
 /// Service layer for Local Network — encapsulates codegen CRUD + transform + validation.
 ///
 /// Uses [NetworkUtils] from `lib/utils.dart` for IP calculations.
 class UspLocalNetworkService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspLocalNetworkService(this._usp);
 
@@ -27,28 +29,57 @@ class UspLocalNetworkService {
     required LocalNetworkUIModel original,
     required LocalNetworkUIModel pending,
   }) async {
-    await LanNetworkInfo.save(
-      _usp,
-      ipAddress:
-          original.ipAddress != pending.ipAddress ? pending.ipAddress : null,
-      subnetMask:
-          original.subnetMask != pending.subnetMask ? pending.subnetMask : null,
-      hostName: original.hostName != pending.hostName ? pending.hostName : null,
-      dhcpEnabled: original.dhcpEnabled != pending.dhcpEnabled
-          ? pending.dhcpEnabled
-          : null,
-      minAddress:
-          original.minAddress != pending.minAddress ? pending.minAddress : null,
-      maxAddress:
-          original.maxAddress != pending.maxAddress ? pending.maxAddress : null,
-      leaseTime: original.leaseTimeMinutes != pending.leaseTimeMinutes
-          ? pending.leaseTimeMinutes * 60
-          : null,
-      dnsServers: _dnsChanged(original, pending)
-          ? joinDnsServers(
-              pending.dnsServer1, pending.dnsServer2, pending.dnsServer3)
-          : null,
-    );
+    try {
+      final result = await LanNetworkInfo.update(
+        _usp,
+        ipAddress:
+            original.ipAddress != pending.ipAddress ? pending.ipAddress : null,
+        subnetMask: original.subnetMask != pending.subnetMask
+            ? pending.subnetMask
+            : null,
+        hostName:
+            original.hostName != pending.hostName ? pending.hostName : null,
+        dhcpEnabled: original.dhcpEnabled != pending.dhcpEnabled
+            ? pending.dhcpEnabled
+            : null,
+        minAddress: original.minAddress != pending.minAddress
+            ? pending.minAddress
+            : null,
+        maxAddress: original.maxAddress != pending.maxAddress
+            ? pending.maxAddress
+            : null,
+        leaseTime: original.leaseTimeMinutes != pending.leaseTimeMinutes
+            ? pending.leaseTimeMinutes * 60
+            : null,
+        dnsServers: _dnsChanged(original, pending)
+            ? joinDnsServers(
+                pending.dnsServer1, pending.dnsServer2, pending.dnsServer3)
+            : null,
+      );
+      final parsed = UspResultParser.parseSetResult(result);
+      switch (parsed) {
+        case UspSuccess():
+          break;
+        case UspPartialSuccess(
+            :final errorSummary,
+            :final successes,
+            :final failures
+          ):
+          throw UspPartialFailureError(
+            summary: 'Local network update partial failure: $errorSummary',
+            successPaths: successes.map((s) => s.requestedPath).toList(),
+            failedPaths: failures.map((f) => f.requestedPath).toList(),
+          );
+        case UspFailure(:final errorSummary, :final errors):
+          throw UspCompleteFailureError(
+            summary: 'Local network update failed: $errorSummary',
+            failedPaths: errors.map((e) => e.requestedPath).toList(),
+          );
+      }
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
+    }
   }
 
   static bool _dnsChanged(LocalNetworkUIModel o, LocalNetworkUIModel p) {
@@ -124,6 +155,75 @@ class UspLocalNetworkService {
     if (ip.trim().isEmpty) return null; // optional
     if (!NetworkUtils.isValidIpAddress(ip)) return 'Invalid DNS address';
     return null;
+  }
+
+  // ─── DHCP Defaults ─────────────────────────────────────────
+
+  static const _defaultLeaseTimeMinutes = 720; // 12 hours
+  static const _defaultPoolSize = 150;
+  static const _defaultPoolOffset = 100;
+
+  /// Compute sensible DHCP defaults when the user enables DHCP and the pool
+  /// fields are empty. Returns the model unchanged if defaults are not needed.
+  LocalNetworkUIModel applyDhcpDefaults(LocalNetworkUIModel model) {
+    final needPool = model.minAddress.isEmpty || model.maxAddress.isEmpty;
+    final needLease = model.leaseTimeMinutes < 1;
+
+    if (!needPool && !needLease) return model;
+
+    var result = model;
+
+    if (needPool &&
+        NetworkUtils.isValidIpAddress(model.ipAddress) &&
+        model.subnetMask.isNotEmpty) {
+      final pool = _computeDefaultPool(model.ipAddress, model.subnetMask);
+      if (pool != null) {
+        result = result.copyWith(
+          minAddress: model.minAddress.isEmpty ? pool.$1 : null,
+          maxAddress: model.maxAddress.isEmpty ? pool.$2 : null,
+        );
+      }
+    }
+
+    if (needLease) {
+      result = result.copyWith(leaseTimeMinutes: _defaultLeaseTimeMinutes);
+    }
+
+    return result;
+  }
+
+  (String, String)? _computeDefaultPool(String routerIp, String subnetMask) {
+    try {
+      final routerNum = NetworkUtils.ipToNum(routerIp);
+      final maskNum = NetworkUtils.ipToNum(subnetMask);
+      final networkNum = routerNum & maskNum;
+      final broadcastNum = networkNum | (~maskNum & 0xFFFFFFFF);
+      final lastUsable = broadcastNum - 1;
+      final usableCount = lastUsable - networkNum - 1;
+      if (usableCount < 2) return null;
+
+      final offset = usableCount > 200
+          ? _defaultPoolOffset
+          : (usableCount ~/ 4).clamp(2, _defaultPoolOffset);
+      final poolSize = (usableCount > 100 ? _defaultPoolSize : usableCount ~/ 2)
+          .clamp(1, _defaultPoolSize);
+
+      var startNum = networkNum + offset;
+      var endNum = startNum + poolSize - 1;
+
+      // Shift past router IP if it falls within the pool
+      if (routerNum >= startNum && routerNum <= endNum) {
+        startNum = routerNum + 1;
+        endNum = startNum + poolSize - 1;
+      }
+
+      if (endNum > lastUsable) endNum = lastUsable;
+      if (startNum > endNum) return null;
+
+      return (NetworkUtils.numToIp(startNum), NetworkUtils.numToIp(endNum));
+    } catch (_) {
+      return null;
+    }
   }
 
   // ─── Prefix Lock ───────────────────────────────────────────

@@ -1,14 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
 import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/framework/preservable.dart';
 import 'package:privacy_gui/framework/preservable_contract.dart';
 import 'package:privacy_gui/framework/preservable_notifier_mixin.dart';
 import 'package:privacy_gui/core/usp/providers/usp_auth_coordinator.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
+import 'package:privacy_gui/core/usp/providers/usp_mutation_lock.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_network_ui_model.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_quick_setup_network.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_settings.dart';
 import 'package:privacy_gui/page/wifi_settings/models/wifi_settings_status.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_settings_state.dart';
+import 'package:privacy_gui/page/wifi_settings/providers/usp_wifi_advanced_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/providers/wifi_data_provider.dart';
 import 'package:privacy_gui/page/wifi_settings/services/usp_wifi_settings_service.dart';
 
@@ -21,11 +25,14 @@ final uspWifiSettingsProvider =
   UspWifiSettingsNotifier.new,
 );
 
-/// Exposes the notifier as a [PreservableContract] for [LinksysRoute]
-/// dirty-check integration.
-final preservableUspWifiSettingsProvider = AutoDisposeProvider<
+/// Route-level dirty proxy — aggregates both WiFi tabs' dirty state.
+/// Only isDirty() and revert() are invoked by LinksysRoute.onExit.
+final preservableUspWifiPageProvider = AutoDisposeProvider<
     PreservableContract<WifiSettingsSettings, WifiSettingsStatus>>(
-  (ref) => ref.watch(uspWifiSettingsProvider.notifier),
+  (ref) => _WifiPageDirtyProxy(
+    ref.watch(uspWifiSettingsProvider.notifier),
+    ref.watch(uspWifiAdvancedProvider.notifier),
+  ),
 );
 
 // ---------------------------------------------------------------------------
@@ -58,7 +65,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     bool forceRemote = false,
     bool updateStatusOnly = false,
   }) async {
-    final usp = ref.read(uspServiceProvider);
+    final usp = ref.read(uspClientProvider);
     if (usp == null) {
       return (
         null,
@@ -85,11 +92,11 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     final WifiData wifiData;
     try {
       wifiData = await ref.read(wifiDataProvider.future);
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.w('[USP][WiFi] WiFi data fetch failed: $e');
       return (
         null,
-        WifiSettingsStatus(errorMessage: 'WiFi data unavailable'),
+        WifiSettingsStatus(errorMessage: '$e'),
       );
     }
     final (:radios, :ssids, :accessPoints) = wifiData.codegenContext.raw;
@@ -115,10 +122,12 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
     if (effectiveQsEnabled) {
       qsMain = quickSetup.main != null
-          ? _buildQsSettings(quickSetup.main!, isGuest: false)
+          ? _buildQsSettings(quickSetup.main!,
+              isGuest: false, networks: networks)
           : null;
       qsGuest = quickSetup.guest != null
-          ? _buildQsSettings(quickSetup.guest!, isGuest: true)
+          ? _buildQsSettings(quickSetup.guest!,
+              isGuest: true, networks: networks)
           : null;
     }
 
@@ -150,7 +159,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       return await super.save();
       // super.save() calls performSave() → markAsSaved() → fetch().
       // fetch() rebuilds status with a fresh WifiSettingsStatus (isSaving = false).
-    } catch (e) {
+    } on ServiceError catch (e) {
       logger.e('[USP][WiFi] Save failed', error: e);
       rethrow;
     } finally {
@@ -166,15 +175,26 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
 
   @override
   Future<void> performSave() async {
-    final current = state.settings.current;
-    if (current.quickSetupEnabled) {
-      await _svc.saveQuickSetup(current: current, status: state.status);
-    } else {
-      await _svc.saveAdvanced(
-        original: state.settings.original.networks,
-        current: current.networks,
-      );
-    }
+    await ref.read(uspMutationLockProvider).withLock(() async {
+      final current = state.settings.current;
+      if (current.quickSetupEnabled) {
+        await _svc.saveQuickSetup(
+          original: state.settings.original,
+          current: current,
+          status: state.status,
+        );
+      } else {
+        await _svc.saveAdvanced(
+          original: state.settings.original.networks,
+          current: current.networks,
+        );
+      }
+    });
+    // Refresh Layer 1 cache so post-save fetch() reads fresh data.
+    // Using refresh() instead of invalidate() because the latter only marks
+    // the provider dirty — without an active subscriber it won't rebuild,
+    // and the subsequent .future call would return stale data.
+    final _ = await ref.refresh(wifiDataProvider.future);
   }
 
   // ---------------------------------------------------------------------------
@@ -241,28 +261,24 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
     if (enabled) {
       final mainAgg = state.status.quickSetupMainAggregate;
       final guestAgg = state.status.quickSetupGuestAggregate;
+      final newSettings = current.copyWith(
+        quickSetupEnabled: true,
+        quickSetupMain:
+            mainAgg != null ? _buildQsSettings(mainAgg, isGuest: false) : null,
+        quickSetupGuest:
+            guestAgg != null ? _buildQsSettings(guestAgg, isGuest: true) : null,
+      );
       state = state.copyWith(
-        settings: state.settings.update(
-          current.copyWith(
-            quickSetupEnabled: true,
-            quickSetupMain: mainAgg != null
-                ? _buildQsSettings(mainAgg, isGuest: false)
-                : null,
-            quickSetupGuest: guestAgg != null
-                ? _buildQsSettings(guestAgg, isGuest: true)
-                : null,
-          ),
-        ),
+        settings: Preservable(original: newSettings, current: newSettings),
       );
     } else {
+      final newSettings = current.copyWith(
+        quickSetupEnabled: false,
+        clearQuickSetupMain: true,
+        clearQuickSetupGuest: true,
+      );
       state = state.copyWith(
-        settings: state.settings.update(
-          current.copyWith(
-            quickSetupEnabled: false,
-            clearQuickSetupMain: true,
-            clearQuickSetupGuest: true,
-          ),
-        ),
+        settings: Preservable(original: newSettings, current: newSettings),
       );
     }
   }
@@ -306,15 +322,57 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
   }
 
   // ---------------------------------------------------------------------------
+  // Dashboard quick actions — delegate to Service, then invalidate L1
+  // ---------------------------------------------------------------------------
+
+  /// Toggles a WiFi radio on/off. Called from Dashboard card.
+  Future<void> toggleRadio(String instancePath, bool enable) async {
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.toggleRadio(instancePath, enable);
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][WiFi] Toggle radio failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(wifiDataProvider);
+  }
+
+  /// Updates a WiFi radio's channel. Called from Dashboard card.
+  Future<void> updateRadioChannel(
+    String instancePath, {
+    required int channel,
+    required bool autoChannel,
+  }) async {
+    try {
+      await ref.read(uspMutationLockProvider).withLock(() async {
+        await _svc.updateRadioChannel(
+          instancePath,
+          channel: channel,
+          autoChannel: autoChannel,
+        );
+      });
+    } on ServiceError catch (e) {
+      logger.e('[USP][WiFi] Update radio channel failed', error: e);
+      rethrow;
+    }
+    ref.invalidate(wifiDataProvider);
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
   WifiQuickSetupSettings _buildQsSettings(
     WifiQuickSetupNetwork aggregate, {
     required bool isGuest,
+    List<WifiNetworkUIModel>? networks,
   }) {
     // enabled = true only when ALL networks in the group are currently enabled.
-    final allEnabled = state.settings.current.networks
+    // Use the explicit [networks] list when called from performFetch (the new
+    // networks haven't been written to state yet at that point).
+    final effectiveNetworks = networks ?? state.settings.current.networks;
+    final allEnabled = effectiveNetworks
         .where((n) => n.isGuest == isGuest)
         .every((n) => n.enabled);
 
@@ -323,9 +381,7 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       enabled: allEnabled,
       ssid: aggregate.ssid,
       password: '',
-      securityMode: aggregate.supportedSecurityModes.isNotEmpty
-          ? aggregate.supportedSecurityModes.first
-          : aggregate.securityMode,
+      securityMode: aggregate.securityMode,
       supportedSecurityModes: aggregate.supportedSecurityModes,
     );
   }
@@ -344,4 +400,37 @@ class UspWifiSettingsNotifier extends AutoDisposeNotifier<UspWifiSettingsState>
       return null;
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Route-level Dirty Proxy
+// ---------------------------------------------------------------------------
+
+/// Aggregates dirty state from both WiFi tabs for the route's onExit guard.
+class _WifiPageDirtyProxy
+    implements PreservableContract<WifiSettingsSettings, WifiSettingsStatus> {
+  final UspWifiSettingsNotifier _wifiList;
+  final UspWifiAdvancedNotifier _advanced;
+
+  _WifiPageDirtyProxy(this._wifiList, this._advanced);
+
+  @override
+  bool isDirty() => _wifiList.isDirty() || _advanced.isDirty();
+
+  @override
+  void revert() {
+    if (_wifiList.isDirty()) _wifiList.revert();
+    if (_advanced.isDirty()) _advanced.revert();
+  }
+
+  @override
+  Future<(WifiSettingsSettings?, WifiSettingsStatus?)> performFetch({
+    bool forceRemote = false,
+    bool updateStatusOnly = false,
+  }) =>
+      throw UnsupportedError('Route proxy — not callable');
+
+  @override
+  Future<void> performSave() =>
+      throw UnsupportedError('Route proxy — not callable');
 }

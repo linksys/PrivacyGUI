@@ -1,12 +1,14 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:privacy_gui/core/errors/service_error.dart';
+import 'package:privacy_gui/core/usp/errors/usp_error.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
 import 'package:privacy_gui/generated/firewall_chain_rules.g.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
 import 'package:privacy_gui/page/firewall/models/firewall_ui_model.dart';
 
 final uspFirewallServiceProvider = Provider<UspFirewallService>(
-  (ref) => UspFirewallService(ref.read(uspServiceProvider)!),
+  (ref) => UspFirewallService(ref.read(uspClientProvider)!),
 );
 
 /// Opaque wrapper around parsed firewall rule data.
@@ -35,7 +37,7 @@ class FirewallRuleContext extends Equatable {
 /// - Accept rules: feature ON = rule disabled (bypass rule inactive)
 /// - Drop rules: block ON = rule enabled (drop rule active)
 class UspFirewallService {
-  final UspService _usp;
+  final UspClient _usp;
 
   UspFirewallService(this._usp);
   // -------------------------------------------------------------------------
@@ -57,15 +59,42 @@ class UspFirewallService {
     required FirewallUIModel pending,
     required FirewallRuleContext context,
   }) async {
-    final updates = buildSetPayload(
-      original: original,
-      pending: pending,
-      rules: context._ruleMap,
-    );
-    if (updates.isNotEmpty) {
-      await FirewallChainRules.updateMany(_usp, updates);
+    try {
+      final updates = buildSetPayload(
+        original: original,
+        pending: pending,
+        rules: context._ruleMap,
+      );
+      // Update all firewall rules in batch
+      if (updates.isNotEmpty) {
+        final result = await FirewallChainRules.update(_usp, updates);
+        final parsed = UspResultParser.parseSetResult(result);
+        switch (parsed) {
+          case UspSuccess():
+            break;
+          case UspPartialSuccess(
+              :final errorSummary,
+              :final successes,
+              :final failures
+            ):
+            // Firewall rules are paired — partial success is unacceptable
+            throw UspPartialFailureError(
+              summary: 'Firewall update partial failure: $errorSummary',
+              successPaths: successes.map((s) => s.requestedPath).toList(),
+              failedPaths: failures.map((f) => f.requestedPath).toList(),
+            );
+          case UspFailure(:final errorSummary, :final errors):
+            throw UspCompleteFailureError(
+              summary: 'Firewall update failed: $errorSummary',
+              failedPaths: errors.map((e) => e.requestedPath).toList(),
+            );
+        }
+      }
+      return updates.length;
+    } catch (e) {
+      if (e is ServiceError) rethrow;
+      throw mapUspErrorToServiceError(e);
     }
-    return updates.length;
   }
 
   // -------------------------------------------------------------------------

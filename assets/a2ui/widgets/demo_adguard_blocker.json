@@ -1,0 +1,180 @@
+{
+  "widgetId": "demo_adguard_blocker",
+  "displayName": "AdGuard DNS Blocker",
+  "description": "DNS-based ad and malware blocking statistics with real-time protection status",
+  "icon": "shield",
+  "iconColor": "#4FC3F7",
+  "headerBadge": "ON",
+  "constraints": {
+    "minColumns": 3,
+    "maxColumns": 6,
+    "preferredColumns": 4,
+    "minRows": 4,
+    "maxRows": 6,
+    "preferredRows": 4
+  },
+  "_comments": {
+    "realWorldUsage": "In production, this would use HTTP data source:",
+    "dataSource": {
+      "url": "/cgi-bin/adguard-status.cgi",
+      "method": "POST",
+      "body": {"action": "get_stats"},
+      "refreshInterval": 300,
+      "mapping": {
+        "blocked_today": "blocked_today",
+        "queries_today": "queries_today",
+        "protection_enabled": "protection_enabled"
+      }
+    }
+  },
+  "template": {
+    "type": "Column",
+    "props": {
+      "crossAxisAlignment": "stretch",
+      "children": [
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceBetween",
+            "children": [
+              {
+                "type": "AppText",
+                "props": {
+                  "text": "DNS Protection",
+                  "variant": "bodyMedium"
+                }
+              },
+              {
+                "type": "AppSwitch",
+                "props": {
+                  "value": true,
+                  "onChanged": {
+                    "$action": "toggle_adguard_protection"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "md"}
+        },
+        {
+          "type": "Row",
+          "props": {
+            "mainAxisAlignment": "spaceAround",
+            "children": [
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "center",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "2,847",
+                        "variant": "headlineMedium",
+                        "color": "error"
+                      }
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "Blocked Today",
+                        "variant": "bodySmall"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "Column",
+                "props": {
+                  "crossAxisAlignment": "center",
+                  "children": [
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "18,923",
+                        "variant": "headlineMedium",
+                        "color": "primary"
+                      }
+                    },
+                    {
+                      "type": "AppText",
+                      "props": {
+                        "text": "Total Queries",
+                        "variant": "bodySmall"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AppGap",
+          "props": {"size": "md"}
+        },
+        {
+          "type": "AppCard",
+          "props": {
+            "padding": 12,
+            "backgroundColor": "primaryContainer",
+            "children": [
+              {
+                "type": "Row",
+                "props": {
+                  "children": [
+                    {
+                      "type": "AppIcon",
+                      "props": {
+                        "name": "shield_check",
+                        "color": "primary",
+                        "size": 20
+                      }
+                    },
+                    {
+                      "type": "AppGap",
+                      "props": {"size": "sm"}
+                    },
+                    {
+                      "type": "Expanded",
+                      "props": {
+                        "child": {
+                          "type": "Column",
+                          "props": {
+                            "crossAxisAlignment": "start",
+                            "children": [
+                              {
+                                "type": "AppText",
+                                "props": {
+                                  "text": "Protection Active",
+                                  "variant": "bodyMedium"
+                                }
+                              },
+                              {
+                                "type": "AppText",
+                                "props": {
+                                  "text": "15% of queries blocked",
+                                  "variant": "bodySmall",
+                                  "color": "onSurfaceVariant"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
