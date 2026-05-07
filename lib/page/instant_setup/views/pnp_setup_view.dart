@@ -130,8 +130,9 @@ class _PnpSetupViewState extends ConsumerState<PnpSetupView> {
         stepIdx++;
       }
       if (hasMeshNodes) {
-        if (_currentStep == stepIdx)
+        if (_currentStep == stepIdx) {
           return _buildYourNetworkStep(context, phase);
+        }
       }
       return _buildMainWifiStep(context, phase);
     }

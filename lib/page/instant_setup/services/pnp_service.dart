@@ -1,20 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:privacy_gui/core/usp/providers/usp_service_provider.dart';
-import 'package:privacy_gui/core/usp/services/usp_service.dart';
+import 'package:privacy_gui/core/usp/providers/usp_client_provider.dart';
+import 'package:privacy_gui/core/usp/services/usp_client.dart';
+import 'package:privacy_gui/core/utils/logger.dart';
+import 'package:privacy_gui/generated/data_elements_network.g.dart';
 import 'package:privacy_gui/generated/device_operations.g.dart';
 import 'package:privacy_gui/generated/network_diagnostics.g.dart';
 import 'package:privacy_gui/generated/system_info.g.dart';
 import 'package:privacy_gui/generated/wan_operations.g.dart';
-import 'package:privacy_gui/generated/wan_settings.g.dart';
+import 'package:privacy_gui/generated/wan_pppoe.g.dart';
+import 'package:privacy_gui/generated/wan_static_ip.g.dart';
 import 'package:privacy_gui/generated/wan_status.g.dart';
 import 'package:privacy_gui/generated/wi_fi_access_points.g.dart';
 import 'package:privacy_gui/generated/wi_fi_ssids.g.dart';
-import 'package:privacy_gui/page/_shared/providers/mesh_node_enricher.dart';
+import 'package:privacy_gui/page/_shared/models/mesh_topology_info.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_isp_config.dart';
 import 'package:privacy_gui/page/instant_setup/models/pnp_wifi_config.dart';
 
 final pnpServiceProvider = Provider<PnpService>(
-  (ref) => PnpService(ref.read(uspServiceProvider)!),
+  (ref) => PnpService(ref.read(uspClientProvider)!),
 );
 
 /// Result of factory-default detection.
@@ -44,7 +47,7 @@ class PnpWizardFetchResult {
 /// This is the only class that imports codegen generated files.
 /// The notifier and views interact exclusively through this service.
 class PnpService {
-  final UspService _usp;
+  final UspClient _usp;
 
   PnpService(this._usp);
 
@@ -202,7 +205,7 @@ class PnpService {
       final ssidUpdates = config.ssidInstancePaths
           .map((path) => WiFiSsidUpdate(instancePath: path, ssid: config.ssid))
           .toList();
-      await WiFiSsids.updateMany(_usp, ssidUpdates);
+      await WiFiSsids.update(_usp, ssidUpdates);
     }
 
     if (config.isPasswordChanged) {
@@ -212,7 +215,7 @@ class PnpService {
                 keyPassphrase: config.password,
               ))
           .toList();
-      await WiFiAccessPoints.updateMany(_usp, apUpdates);
+      await WiFiAccessPoints.update(_usp, apUpdates);
     }
 
     // ── Guest WiFi ──
@@ -226,7 +229,7 @@ class PnpService {
                   enable: config.guestEnabled,
                 ))
             .toList();
-        await WiFiSsids.updateMany(_usp, guestSsidUpdates);
+        await WiFiSsids.update(_usp, guestSsidUpdates);
       }
 
       // Password
@@ -237,7 +240,7 @@ class PnpService {
                   keyPassphrase: config.guestPassword,
                 ))
             .toList();
-        await WiFiAccessPoints.updateMany(_usp, guestApUpdates);
+        await WiFiAccessPoints.update(_usp, guestApUpdates);
       }
     }
   }
@@ -245,34 +248,43 @@ class PnpService {
   // ─── ISP/WAN Save ───────────────────────────────────────
 
   /// Save ISP settings (PPPoE, Static IP, DHCP renewal).
+  ///
+  /// Note: PPPoE and Static IP save are still limited by firmware support.
+  /// See issue #719 for backend/FW dependency status.
   Future<void> saveIspSettings(PnpIspConfig config) async {
     switch (config.type) {
       case IspConnectionType.dhcp:
         await WanOperations.renewDhcpLease(_usp);
       case IspConnectionType.pppoe:
-        await WanSettings.save(
+        await WanPppoe.update(
           _usp,
           pppUsername: config.pppUsername,
           pppPassword: config.pppPassword,
-          pppoeServiceName: config.pppoeServiceName,
+          // Note: pppoeServiceName not yet supported in codegen
         );
       case IspConnectionType.pppoeVlan:
-        await WanSettings.save(
+        await WanPppoe.update(
           _usp,
           pppUsername: config.pppUsername,
           pppPassword: config.pppPassword,
-          pppoeServiceName: config.pppoeServiceName,
-          vlanEnabled: true,
-          vlanId: config.vlanId,
+          // Note: VLAN settings not yet supported in codegen
         );
       case IspConnectionType.staticIp:
-        await WanSettings.save(
+        // Combine DNS servers into single string if both provided
+        String? dnsServers;
+        if (config.dnsServer1.isNotEmpty) {
+          dnsServers = config.dnsServer1;
+          if (config.dnsServer2.isNotEmpty) {
+            dnsServers = '${config.dnsServer1},${config.dnsServer2}';
+          }
+        }
+        await WanStaticIp.update(
           _usp,
+          addressingType: 'Static',
           staticIpAddress: config.staticIpAddress,
           subnetMask: config.subnetMask,
           defaultGateway: config.defaultGateway,
-          dnsServer1: config.dnsServer1,
-          dnsServer2: config.dnsServer2,
+          dnsServers: dnsServers,
         );
     }
   }
@@ -281,7 +293,51 @@ class PnpService {
 
   /// Fetch mesh node list via DataElements (returns empty if non-mesh).
   Future<MeshTopologyInfo> fetchMeshTopology() async {
-    return fetchMeshNodes(_usp);
+    try {
+      final network = await DataElementsNetwork.fetch(_usp);
+      if (network.items.isEmpty) {
+        logger.d('[PnP] DataElements empty — not a mesh or unsupported');
+        return MeshTopologyInfo.empty;
+      }
+      return _buildTopologyInfo(network);
+    } catch (e) {
+      logger.d('[PnP] DataElements not supported or fetch failed: $e');
+      return MeshTopologyInfo.empty;
+    }
+  }
+
+  MeshTopologyInfo _buildTopologyInfo(DataElementsNetwork network) {
+    final nodes = <MeshNodeInfo>[];
+    final clientToNodeMap = <String, String>{};
+
+    for (final node in network.items) {
+      final rawId = node.id.trim().toUpperCase();
+      final nodeDeviceId = rawId.isNotEmpty ? rawId : node.instancePath;
+
+      for (final radio in node.radios) {
+        for (final bss in radio.bssList) {
+          for (final sta in bss.stations) {
+            final mac = sta.macAddress.trim();
+            if (mac.isNotEmpty && nodeDeviceId.isNotEmpty) {
+              clientToNodeMap[mac.toUpperCase()] = nodeDeviceId;
+            }
+          }
+        }
+      }
+
+      nodes.add(MeshNodeInfo(
+        instancePath: node.instancePath,
+        deviceId: nodeDeviceId,
+        model: node.manufacturerModel.trim(),
+        manufacturer: node.manufacturer.trim(),
+        serialNumber: node.serialNumber.trim(),
+        softwareVersion: node.softwareVersion.trim(),
+      ));
+    }
+
+    logger.d('[PnP] Mesh nodes: ${nodes.length}, '
+        'client→node mappings: ${clientToNodeMap.length}');
+    return MeshTopologyInfo(nodes: nodes, clientToNodeMap: clientToNodeMap);
   }
 
   // ─── Utility ────────────────────────────────────────────
