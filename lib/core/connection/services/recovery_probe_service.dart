@@ -22,7 +22,15 @@ class RecoveryProbeService {
 
   Future<ProbeResult> probe({bool healthOnly = false}) async {
     try {
-      await bridge.health();
+      final healthResponse = await bridge.health();
+      final agentConnected =
+          healthResponse['agent_connected'] as bool? ?? false;
+      final agentState = healthResponse['agent_state'] as String? ?? '';
+      if (!agentConnected || agentState != 'ready') {
+        logger.d('[Recovery] Health check passed but agent not ready '
+            '(connected=$agentConnected, state=$agentState)');
+        return ProbeResult.unreachable;
+      }
       logger.d('[Recovery] Health check passed');
     } catch (e) {
       logger.d('[Recovery] Health check failed: $e');

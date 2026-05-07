@@ -29,6 +29,12 @@ void main() {
     );
   });
 
+  Map<String, dynamic> healthyResponse() => {
+        'status': 'healthy',
+        'agent_connected': true,
+        'agent_state': 'ready',
+      };
+
   group('RecoveryProbeService.probe()', () {
     test('returns unreachable when health check fails', () async {
       when(() => mockBridge.health()).thenThrow(Exception('network error'));
@@ -39,8 +45,45 @@ void main() {
       verifyNever(() => mockAuth.restoreSession());
     });
 
-    test('returns unreachable when health OK but login fails', () async {
+    test('returns unreachable when agent not connected', () async {
+      when(() => mockBridge.health()).thenAnswer((_) async => {
+            'status': 'healthy',
+            'agent_connected': false,
+            'agent_state': 'connecting',
+          });
+
+      final result = await service.probe();
+
+      expect(result, ProbeResult.unreachable);
+      verifyNever(() => mockAuth.restoreSession());
+    });
+
+    test('returns unreachable when agent_state is not ready', () async {
+      when(() => mockBridge.health()).thenAnswer((_) async => {
+            'status': 'healthy',
+            'agent_connected': true,
+            'agent_state': 'connecting',
+          });
+
+      final result = await service.probe();
+
+      expect(result, ProbeResult.unreachable);
+      verifyNever(() => mockAuth.restoreSession());
+    });
+
+    test('returns unreachable when health response missing agent fields',
+        () async {
       when(() => mockBridge.health()).thenAnswer((_) async => {});
+
+      final result = await service.probe();
+
+      expect(result, ProbeResult.unreachable);
+      verifyNever(() => mockAuth.restoreSession());
+    });
+
+    test('returns unreachable when health OK but login fails', () async {
+      when(() => mockBridge.health())
+          .thenAnswer((_) async => healthyResponse());
       when(() => mockAuth.restoreSession())
           .thenThrow(Exception('login failed'));
 
@@ -52,7 +95,8 @@ void main() {
 
     test('returns recovered when health OK, login OK, serial matches',
         () async {
-      when(() => mockBridge.health()).thenAnswer((_) async => {});
+      when(() => mockBridge.health())
+          .thenAnswer((_) async => healthyResponse());
       when(() => mockAuth.restoreSession()).thenAnswer((_) async => {});
       when(() => mockAuth.getSerialNumber()).thenAnswer((_) async => 'ABC123');
       when(() => mockFingerprint.matches('ABC123'))
@@ -65,7 +109,8 @@ void main() {
 
     test('returns serialMismatch when health OK, login OK, serial differs',
         () async {
-      when(() => mockBridge.health()).thenAnswer((_) async => {});
+      when(() => mockBridge.health())
+          .thenAnswer((_) async => healthyResponse());
       when(() => mockAuth.restoreSession()).thenAnswer((_) async => {});
       when(() => mockAuth.getSerialNumber()).thenAnswer((_) async => 'XYZ789');
       when(() => mockFingerprint.matches('XYZ789'))
@@ -78,7 +123,8 @@ void main() {
 
     test('returns unreachable when health OK, login OK, serial read fails',
         () async {
-      when(() => mockBridge.health()).thenAnswer((_) async => {});
+      when(() => mockBridge.health())
+          .thenAnswer((_) async => healthyResponse());
       when(() => mockAuth.restoreSession()).thenAnswer((_) async => {});
       when(() => mockAuth.getSerialNumber()).thenThrow(Exception('USP error'));
 
